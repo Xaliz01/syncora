@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  detect-changes:
+    name: Detect changed workspaces
+    runs-on: ubuntu-latest
+    outputs:
+      frontend_changed: ${{ steps.filter.outputs.frontend }}
+      api_gateway_changed: ${{ steps.filter.outputs.api_gateway }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Detect changed files
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            frontend:
+              - 'apps/frontend/**'
+            api_gateway:
+              - 'services/api-gateway/**'
+
+  build-and-test:
+    name: Lint, test and build
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    strategy:
+      matrix:
+        service: [frontend, api-gateway]
+    env:
+      NODE_VERSION: "20"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - name: Install dependencies
+        run: npm install
+      - name: Lint
+        run: |
+          if [ "${{ matrix.service }}" = "frontend" ] && [ "${{ needs.detect-changes.outputs.frontend_changed }}" = "true" ]; then
+            cd apps/frontend && npm run lint
+          elif [ "${{ matrix.service }}" = "api-gateway" ] && [ "${{ needs.detect-changes.outputs.api_gateway_changed }}" = "true" ]; then
+            cd services/api-gateway && npm run lint
+          else
+            echo "No changes for ${{ matrix.service }}, skipping lint."
+          fi
+      - name: Test
+        run: |
+          if [ "${{ matrix.service }}" = "frontend" ] && [ "${{ needs.detect-changes.outputs.frontend_changed }}" = "true" ]; then
+            cd apps/frontend && npm run test
+          elif [ "${{ matrix.service }}" = "api-gateway" ] && [ "${{ needs.detect-changes.outputs.api_gateway_changed }}" = "true" ]; then
+            cd services/api-gateway && npm test
+          else
+            echo "No changes for ${{ matrix.service }}, skipping tests."
+          fi
+      - name: Build
+        run: |
+          if [ "${{ matrix.service }}" = "frontend" ] && [ "${{ needs.detect-changes.outputs.frontend_changed }}" = "true" ]; then
+            cd apps/frontend && npm run build
+          elif [ "${{ matrix.service }}" = "api-gateway" ] && [ "${{ needs.detect-changes.outputs.api_gateway_changed }}" = "true" ]; then
+            cd services/api-gateway && npm run build
+          else
+            echo "No changes for ${{ matrix.service }}, skipping build."
+          fi
+
+  docker-and-deploy:
+    name: Build Docker images and deploy (squelette)
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Login to Amazon ECR
+        if: false # à activer lors de la configuration AWS
+        uses: aws-actions/amazon-ecr-login@v2
+      - name: Build and push images
+        if: false # à activer et conditionner par service modifié
+        run: echo "Ici, build & push des images Docker (frontend + api-gateway) vers ECR."
+      - name: Deploy to ECS
+        if: false # à activer avec la config ECS
+        run: echo "Ici, mise à jour des services ECS."
+

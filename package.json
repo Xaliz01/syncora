@@ -1,0 +1,28 @@
+{
+  "name": "syncora",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Syncora - CRM SaaS orienté opérations terrain (monorepo TypeScript).",
+  "workspaces": [
+    "apps/*",
+    "services/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present",
+    "e2e": "npm run e2e --workspace @syncora/frontend --if-present",
+    "backend": "docker compose up -d --wait && npm run backend:run",
+    "backend:run": "wait-on -t 60000 tcp:localhost:27017 && concurrently -n org,users,gateway \"npm run start:dev -w @syncora/organizations-service\" \"npm run start:dev -w @syncora/users-service\" \"npm run start:dev -w @syncora/api-gateway\"",
+    "backend:down": "docker compose down"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0",
+    "wait-on": "^8.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
+

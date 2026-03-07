@@ -1,0 +1,44 @@
+product:
+  name: Syncora
+  type: SaaS
+  domain: CRM
+  description: >
+    Syncora est un CRM orienté opérations terrain qui permet de gérer un
+    portefeuille client, planifier et suivre des interventions, piloter les
+    stocks et le parc de camions, et gérer les intervenants.
+  main_capabilities:
+    - Gérer un portefeuille client
+    - Planifier des interventions
+    - Gérer le cycle de vie d'une intervention
+    - Gérer des stocks
+    - Gérer un parc de camions
+    - Gérer des intervenants et les assigner sur des interventions
+  core_entities:
+    - Customer
+    - Intervention
+    - InterventionLifecycle
+    - StockItem
+    - Warehouse
+    - Truck
+    - Fleet
+    - Technician
+    - Assignment
+  non_functional_goals:
+    - Scalabilité via architecture microservices
+    - Séparation claire des responsabilités par domaine métier
+    - Évolutivité front/back via contrats typés partagés
+    - Observabilité et testabilité fortes (unitaires, intégration, e2e)
+
+  auth_and_permissions:
+    model: "Organisation (tenant) + Utilisateurs avec rôle par organisation"
+    roles:
+      - admin   # Créateur de l'organisation, peut créer des utilisateurs et affecter des droits
+      - member  # Réservé pour les utilisateurs créés par l'admin (droits à affiner)
+    flows:
+      register: "Créer une organisation → Créer un utilisateur admin lié à cette organisation"
+      login: "Valider email/mot de passe → Émettre un JWT (sub, organizationId, role, email)"
+    permissions_future:
+      - "L'admin pourra créer des utilisateurs au sein de son organisation"
+      - "L'admin pourra affecter des rôles/droits (permissions granulaires) aux utilisateurs"
+      - "Les contrôles d'accès (backend et front) s'appuieront sur organizationId + role/permissions"
+

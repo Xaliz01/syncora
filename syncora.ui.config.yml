@@ -1,0 +1,66 @@
+ui:
+  name: Syncora Front Design
+  description: >
+    Design sombre moderne, avec accent violet, cartes bordées et mise en page
+    centrée sur les opérations terrain (clients, interventions, stocks, flotte).
+
+  layout:
+    background: "bg-slate-950 text-slate-100"
+    max_width: "max-w-6xl mx-auto"
+    horizontal_padding: "px-4"
+    header_height: "py-4"
+    main_spacing: "py-10"
+    grid_default: "grid gap-4"
+    grid_3_cols_md: "md:grid-cols-3"
+
+  colors:
+    background:
+      base: "#020617"         # slate-950
+      surface: "#020617"      # utilisé avec opacité pour les cartes
+    border:
+      subtle: "#1e293b"       # slate-800
+    text:
+      primary: "#e2e8f0"      # slate-200
+      muted: "#94a3b8"        # slate-400
+    brand:
+      500: "#4f46e5"
+      600: "#4338ca"
+
+  tailwind_tokens:
+    brand_color: "bg-brand-600 text-white"
+    header:
+      container: "border-b border-slate-800 bg-slate-900/60 backdrop-blur"
+      inner: "max-w-6xl mx-auto px-4 py-4 flex items-center justify-between"
+    page:
+      root: "min-h-screen flex flex-col"
+      main: "flex-1"
+    card:
+      container: "rounded-xl border border-slate-800 bg-slate-900/40 p-4"
+      title: "font-medium mb-1"
+      body: "text-sm text-slate-400"
+    typography:
+      app_title: "font-semibold text-lg"
+      app_subtitle: "text-xs text-slate-400"
+      h1: "text-3xl font-semibold mb-2"
+      lead: "text-slate-400 mb-8 max-w-xl"
+
+  components:
+    header:
+      logo:
+        shape: "rounded-lg"
+        size: "inline-flex h-8 w-8 items-center justify-center"
+        style: "bg-brand-600 text-white font-semibold"
+        content: "S"
+      title: "Syncora"
+      subtitle: "CRM des opérations terrain"
+    home_sections:
+      - key: "customers"
+        title: "Portefeuille client"
+        description: "Centralisez vos clients, sites et contacts, avec l’historique des interventions."
+      - key: "interventions"
+        title: "Interventions"
+        description: "Planifiez, assignez des intervenants et suivez le cycle de vie complet d’une intervention."
+      - key: "stocks_fleet"
+        title: "Stocks & flotte"
+        description: "Pilotez vos stocks, entrepôts et camions avec une vision temps réel."
+

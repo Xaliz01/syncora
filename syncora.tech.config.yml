@@ -1,0 +1,58 @@
+tech:
+  name: Syncora
+  languages:
+    - TypeScript
+  frontend:
+    language: TypeScript
+    framework: React
+    router: "à définir (React Router / TanStack Router)"
+    state_management: TanStack Query
+    styling: Tailwind CSS
+    testing:
+      e2e: Playwright
+    quality:
+      - ESLint
+      - Prettier
+  backend:
+    runtime: Node.js
+    framework: Nest.js
+    language: TypeScript
+    database:
+      type: MongoDB
+      orm: Mongoose
+    testing:
+      unit_integration: Jest
+    quality:
+      - ESLint
+      - Prettier
+  architecture:
+    style: hexagonale
+    pattern: microservices
+    communication: REST
+    api_gateway: true
+    shared_package:
+      name: "@syncora/shared"
+      purpose:
+        - Partage des types TypeScript
+        - Contrats front/back
+        - DTOs et schémas communs
+        - Facilitation des appels inter-microservices
+  devops:
+    cloud: AWS
+    container_orchestration: ECS
+    observability:
+      logging: Winston (JSON stdout, compatible Datadog Logs)
+      apm_tracing: dd-trace (Datadog APM, log injection pour corrélation traces/logs)
+      env_vars:
+        - "LOG_LEVEL (niveau Winston: error, warn, info, debug)"
+        - "DD_SERVICE, DD_ENV, DD_VERSION (Datadog)"
+    ci_cd:
+      provider: GitHub Actions
+      pipeline:
+        - Code quality (ESLint, Prettier)
+        - Compilation
+        - Tests unitaires et d'intégration
+        - Tests e2e
+        - Build & push images Docker conditionnel (par brique modifiée)
+        - Déploiement AWS ECS
+
