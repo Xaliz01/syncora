@@ -103,6 +103,12 @@ export function LoginPage() {
               Créer une organisation
             </Link>
           </p>
+          <p className="mt-2 text-center text-sm text-slate-400">
+            Reçu une invitation ?{" "}
+            <Link href="/accept-invitation" className="text-brand-500 hover:underline">
+              Activer votre compte invité
+            </Link>
+          </p>
         </div>
       </main>
     </div>

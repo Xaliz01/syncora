@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useAuth } from "@/components/auth/AuthContext";
+import { AdminPanel } from "@/components/admin/AdminPanel";
 
 export function HomePage() {
   const { user, logout } = useAuth();
@@ -69,6 +70,37 @@ export function HomePage() {
                 Pilotez vos stocks, entrepôts et camions avec une vision temps réel.
               </p>
             </section>
+          </div>
+
+          <div className="mt-10">
+            {user?.role === "admin" ? (
+              <section>
+                <h2 className="text-2xl font-semibold mb-2">Administration de l’organisation</h2>
+                <p className="text-slate-400 mb-4">
+                  Invitez des utilisateurs, créez des profils personnalisés et affectez des droits
+                  détaillés.
+                </p>
+                <AdminPanel />
+              </section>
+            ) : (
+              <section className="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
+                <h2 className="text-lg font-semibold mb-2">Vos permissions</h2>
+                {user?.permissions?.length ? (
+                  <div className="flex flex-wrap gap-1">
+                    {user.permissions.map((permission) => (
+                      <span
+                        key={permission}
+                        className="rounded bg-slate-800 px-2 py-0.5 text-xs text-slate-300 font-mono"
+                      >
+                        {permission}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-400">Aucune permission explicite.</p>
+                )}
+              </section>
+            )}
           </div>
         </div>
       </main>
