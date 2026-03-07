@@ -2,6 +2,8 @@
 
 import type { UserRole } from "./auth";
 
+export type UserStatus = "active" | "invited";
+
 export interface CreateUserBody {
   organizationId: string;
   email: string;
@@ -16,7 +18,21 @@ export interface UserResponse {
   email: string;
   name?: string;
   role: UserRole;
+  status: UserStatus;
   createdAt?: string;
+}
+
+export interface CreateInvitedUserBody {
+  organizationId: string;
+  email: string;
+  name?: string;
+  role?: UserRole;
+  invitedByUserId: string;
+}
+
+export interface ActivateInvitedUserBody {
+  password: string;
+  name?: string;
 }
 
 export interface ValidateCredentialsBody {
@@ -30,4 +46,5 @@ export interface ValidateCredentialsResponse {
   email: string;
   name?: string;
   role: UserRole;
+  status: UserStatus;
 }

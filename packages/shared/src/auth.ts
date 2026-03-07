@@ -1,5 +1,8 @@
 /** Contrat API auth (register / login) */
 
+import type { PermissionCode } from "./permissions";
+import type { UserStatus } from "./user";
+
 export interface RegisterBody {
   organizationName: string;
   adminEmail: string;
@@ -17,6 +20,8 @@ export interface AuthUser {
   email: string;
   organizationId: string;
   role: UserRole;
+  status: UserStatus;
+  permissions: PermissionCode[];
   name?: string;
 }
 
@@ -26,6 +31,8 @@ export interface JwtPayload {
   sub: string;
   organizationId: string;
   role: UserRole;
+  status: UserStatus;
+  permissions: PermissionCode[];
   email: string;
   name?: string;
 }

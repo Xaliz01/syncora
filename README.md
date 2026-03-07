@@ -44,6 +44,7 @@ syncora/
     api-gateway/           # API Gateway Nest.js (auth, orchestration)
     organizations-service/ # Microservice organisations (MongoDB)
     users-service/         # Microservice utilisateurs (MongoDB, bcrypt, validation credentials)
+    permissions-service/   # Microservice permissions (profils, affectations, invitations)
   packages/
     shared/                # Types & contrats partagés (@syncora/shared)
   docker-compose.yml       # MongoDB pour le dev local
@@ -60,7 +61,12 @@ syncora/
 - **Inscription** : création d’une **organisation** puis d’un **utilisateur admin** lié. (API : `POST /api/auth/register`.)
 - **Connexion** : email + mot de passe → JWT avec `sub`, `organizationId`, `role`, `email`. (API : `POST /api/auth/login`, `GET /api/auth/me`.)
 - **Rôles** : `admin` (créateur de l’org, pourra gérer les utilisateurs et droits), `member` (pour les futurs utilisateurs créés par l’admin).
-- **Évolutions prévues** : l’admin pourra créer des utilisateurs dans son organisation et leur affecter des rôles/droits ; les contrôles d’accès s’appuieront sur `organizationId` + rôle/permissions. Voir `syncora.product.config.yml` → `auth_and_permissions`.
+- **Permissions** : système granulaire piloté par le `permissions-service` (profils de droits, exceptions par utilisateur, permissions effectives).
+- **Administration organisation** :
+  - Invitation d’un utilisateur dans l’organisation
+  - Création de profils personnalisés de permissions
+  - Affectation d’un profil à un utilisateur + surcharges fines (ajouts/retraits de permissions)
+  - API admin exposée via l’API Gateway (`/api/admin/...`, admin uniquement)
 
 ## Installation
 
@@ -85,9 +91,10 @@ npm run backend
 - Attend que MongoDB soit prêt, puis lance en parallèle :
   - **organizations-service** (port 3001)
   - **users-service** (port 3002)
+  - **permissions-service** (port 3003)
   - **api-gateway** (port 3000)
 
-Les services se connectent à `localhost:27017` avec leurs bases respectives (`syncora-organizations`, `syncora-users`). Aucune variable d’environnement requise pour le dev local.
+Les services se connectent à `localhost:27017` avec leurs bases respectives (`syncora-organizations`, `syncora-users`, `syncora-permissions`). Aucune variable d’environnement requise pour le dev local.
 
 Pour arrêter uniquement MongoDB :
 
@@ -116,14 +123,30 @@ Si besoin (par ex. après `npm run backend:down` pour ne garder que MongoDB) :
 
 - **organizations-service** (3001) : `npm run start:dev -w @syncora/organizations-service`
 - **users-service** (3002) : `npm run start:dev -w @syncora/users-service`
+- **permissions-service** (3003) : `npm run start:dev -w @syncora/permissions-service`
 - **api-gateway** (3000) : `npm run start:dev -w @syncora/api-gateway`
 
-Endpoints utiles : `GET /api/health`, `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`.
+Endpoints utiles :
+
+- `GET /api/health`
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `POST /api/auth/accept-invitation`
+- `GET /api/auth/me`
+- `POST /api/admin/users/invite`
+- `GET /api/admin/users`
+- `PUT /api/admin/users/:userId/permissions`
+- `POST /api/admin/permission-profiles`
+- `GET /api/admin/permission-profiles`
+- `PATCH /api/admin/permission-profiles/:profileId`
+- `DELETE /api/admin/permission-profiles/:profileId`
+- `GET /api/admin/invitations`
 
 Variables d’environnement optionnelles :
 
 - `MONGODB_URI` (organizations-service et users-service)
-- `ORGANIZATIONS_SERVICE_URL`, `USERS_SERVICE_URL` (api-gateway, défaut localhost:3001 / 3002)
+- `MONGODB_URI` (permissions-service)
+- `ORGANIZATIONS_SERVICE_URL`, `USERS_SERVICE_URL`, `PERMISSIONS_SERVICE_URL` (api-gateway, défaut localhost:3001 / 3002 / 3003)
 - `JWT_SECRET` (api-gateway)
 - `CORS_ORIGIN` (api-gateway, défaut http://localhost:5173)
 

@@ -9,14 +9,20 @@ export class UserDocument extends Document {
   @Prop({ required: true, unique: true })
   email!: string;
 
-  @Prop({ required: true })
-  passwordHash!: string;
+  @Prop()
+  passwordHash?: string;
 
   @Prop()
   name?: string;
 
   @Prop({ required: true, default: "member" })
   role!: string;
+
+  @Prop({ required: true, enum: ["active", "invited"], default: "active" })
+  status!: "active" | "invited";
+
+  @Prop()
+  invitedByUserId?: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(UserDocument);
