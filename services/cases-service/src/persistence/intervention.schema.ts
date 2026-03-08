@@ -2,34 +2,6 @@ import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document, Types } from "mongoose";
 import type { InterventionStatus } from "@syncora/shared";
 
-@Schema({ _id: false })
-export class InterventionUsedArticleSubDoc {
-  @Prop({ required: true })
-  articleId!: string;
-
-  @Prop({ required: true })
-  articleName!: string;
-
-  @Prop()
-  articleReference?: string;
-
-  @Prop({ required: true, default: "unité" })
-  unit!: string;
-
-  @Prop({ required: true, default: 0 })
-  consumedQuantity!: number;
-
-  @Prop({ required: true, default: 0 })
-  returnedQuantity!: number;
-
-  @Prop()
-  lastMovementAt?: Date;
-}
-
-export const InterventionUsedArticleSubDocSchema = SchemaFactory.createForClass(
-  InterventionUsedArticleSubDoc
-);
-
 @Schema({ timestamps: true, _id: true })
 export class InterventionDocument extends Document {
   declare _id: Types.ObjectId;
@@ -63,9 +35,6 @@ export class InterventionDocument extends Document {
 
   @Prop()
   notes?: string;
-
-  @Prop({ type: [InterventionUsedArticleSubDocSchema], default: [] })
-  usedArticles!: InterventionUsedArticleSubDoc[];
 }
 
 export const InterventionSchema = SchemaFactory.createForClass(InterventionDocument);

@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "@/lib/cases.api";
+import * as stockApi from "@/lib/stock.api";
 import { listOrganizationUsers } from "@/lib/admin.api";
 import type { CasePriority, CaseStatus, TodoItemStatus } from "@syncora/shared";
 
@@ -77,7 +78,12 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
 
   const { data: articles } = useQuery({
     queryKey: ["articles", "intervention-usage"],
-    queryFn: () => api.listArticles({ activeOnly: true })
+    queryFn: () => stockApi.listArticles({ activeOnly: true })
+  });
+
+  const { data: stockMovements } = useQuery({
+    queryKey: ["stock-movements", caseId],
+    queryFn: () => stockApi.listArticleMovements({ caseId, limit: 200 })
   });
 
   const [showNewIntervention, setShowNewIntervention] = useState(false);
@@ -109,6 +115,8 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
     queryClient.invalidateQueries({ queryKey: ["case", caseId] });
     queryClient.invalidateQueries({ queryKey: ["interventions", caseId] });
     queryClient.invalidateQueries({ queryKey: ["cases"] });
+    queryClient.invalidateQueries({ queryKey: ["stock-movements", caseId] });
+    queryClient.invalidateQueries({ queryKey: ["articles"] });
   };
 
   const statusMutation = useMutation({
@@ -169,8 +177,8 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
       payload
     }: {
       interventionId: string;
-      payload: api.AddInterventionArticleUsagePayload;
-    }) => api.addInterventionArticleUsage(interventionId, payload),
+      payload: stockApi.AddInterventionArticleUsagePayload;
+    }) => stockApi.addInterventionArticleUsage(interventionId, payload),
     onSuccess: (_, variables) => {
       invalidateAll();
       setInterventionError("");
@@ -186,6 +194,70 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
     },
     onError: (err: Error) => setInterventionError(err.message)
   });
+
+  const interventionUsageMap = useMemo(() => {
+    const map = new Map<
+      string,
+      Array<{
+        articleId: string;
+        articleName: string;
+        articleReference?: string;
+        unit: string;
+        consumedQuantity: number;
+        returnedQuantity: number;
+        netQuantity: number;
+      }>
+    >();
+    const byInterventionArticle = new Map<
+      string,
+      {
+        interventionId: string;
+        articleId: string;
+        articleName: string;
+        articleReference?: string;
+        unit: string;
+        consumedQuantity: number;
+        returnedQuantity: number;
+        netQuantity: number;
+      }
+    >();
+    const articleUnits = new Map((articles ?? []).map((article) => [article.id, article.unit]));
+
+    for (const movement of stockMovements ?? []) {
+      if (!movement.interventionId) continue;
+      if (movement.movementType !== "in" && movement.movementType !== "out") continue;
+      const key = `${movement.interventionId}::${movement.articleId}`;
+      const existing = byInterventionArticle.get(key) ?? {
+        interventionId: movement.interventionId,
+        articleId: movement.articleId,
+        articleName: movement.articleName,
+        articleReference: movement.articleReference,
+        unit: articleUnits.get(movement.articleId) ?? "unité",
+        consumedQuantity: 0,
+        returnedQuantity: 0,
+        netQuantity: 0
+      };
+      if (movement.movementType === "out") existing.consumedQuantity += movement.quantity;
+      if (movement.movementType === "in") existing.returnedQuantity += movement.quantity;
+      existing.netQuantity = Math.max(existing.consumedQuantity - existing.returnedQuantity, 0);
+      byInterventionArticle.set(key, existing);
+    }
+
+    for (const value of byInterventionArticle.values()) {
+      const existing = map.get(value.interventionId) ?? [];
+      existing.push({
+        articleId: value.articleId,
+        articleName: value.articleName,
+        articleReference: value.articleReference,
+        unit: value.unit,
+        consumedQuantity: value.consumedQuantity,
+        returnedQuantity: value.returnedQuantity,
+        netQuantity: value.netQuantity
+      });
+      map.set(value.interventionId, existing);
+    }
+    return map;
+  }, [articles, stockMovements]);
 
   if (isLoading || !caseData) {
     return <div className="text-sm text-slate-500">Chargement…</div>;
@@ -549,11 +621,13 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
 
         {interventions && interventions.length > 0 ? (
           <div className="space-y-2">
-            {interventions.map((intervention) => (
-              <div
-                key={intervention.id}
-                className="rounded-xl border border-blue-100 bg-white p-3 shadow-sm"
-              >
+            {interventions.map((intervention) => {
+              const usedArticles = interventionUsageMap.get(intervention.id) ?? [];
+              return (
+                <div
+                  key={intervention.id}
+                  className="rounded-xl border border-blue-100 bg-white p-3 shadow-sm"
+                >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <h4 className="font-medium text-sm text-slate-800">{intervention.title}</h4>
@@ -617,13 +691,13 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                   <p className="mt-1 text-xs text-slate-400">{intervention.description}</p>
                 )}
 
-                {intervention.usedArticles.length > 0 && (
+                {usedArticles.length > 0 && (
                   <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-2">
                     <div className="text-[11px] font-semibold text-slate-700 mb-1">
                       Articles liés à l&apos;intervention
                     </div>
                     <div className="space-y-1">
-                      {intervention.usedArticles.map((item) => (
+                      {usedArticles.map((item) => (
                         <div
                           key={item.articleId}
                           className="flex items-center justify-between text-[11px] text-slate-600"
@@ -739,6 +813,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                         addInterventionArticleMutation.mutate({
                           interventionId: intervention.id,
                           payload: {
+                            caseId,
                             articleId: draft.articleId,
                             movementType: draft.movementType,
                             quantity: qty,
@@ -754,7 +829,8 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           !showNewIntervention && (

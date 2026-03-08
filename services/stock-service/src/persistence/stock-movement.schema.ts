@@ -52,3 +52,4 @@ export class StockMovementDocument extends Document {
 export const StockMovementSchema = SchemaFactory.createForClass(StockMovementDocument);
 StockMovementSchema.index({ organizationId: 1, articleId: 1, createdAt: -1 });
 StockMovementSchema.index({ organizationId: 1, interventionId: 1, createdAt: -1 });
+StockMovementSchema.index({ organizationId: 1, caseId: 1, createdAt: -1 });

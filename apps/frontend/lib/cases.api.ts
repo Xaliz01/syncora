@@ -1,11 +1,9 @@
 import type {
-  ArticleResponse,
   CaseDashboardResponse,
   CaseResponse,
   CaseSummaryResponse,
   CaseTemplateResponse,
-  InterventionResponse,
-  StockMovementResponse
+  InterventionResponse
 } from "@syncora/shared";
 import { getToken } from "./auth.api";
 
@@ -156,13 +154,6 @@ export interface UpdateInterventionPayload {
   notes?: string;
 }
 
-export interface AddInterventionArticleUsagePayload {
-  articleId: string;
-  quantity: number;
-  movementType?: "in" | "out";
-  note?: string;
-}
-
 export function listInterventions(filters?: {
   caseId?: string;
   assigneeId?: string;
@@ -202,107 +193,10 @@ export function updateIntervention(interventionId: string, payload: UpdateInterv
   );
 }
 
-export function addInterventionArticleUsage(
-  interventionId: string,
-  payload: AddInterventionArticleUsagePayload
-) {
-  return casesRequest<InterventionResponse>(
-    "POST",
-    `/cases/interventions/${interventionId}/articles`,
-    payload
-  );
-}
-
 export function deleteIntervention(interventionId: string) {
   return casesRequest<{ deleted: true }>(
     "DELETE",
     `/cases/interventions/${interventionId}`
-  );
-}
-
-// ── Articles / stock ──
-
-export interface CreateArticlePayload {
-  name: string;
-  reference: string;
-  description?: string;
-  unit?: string;
-  initialStock?: number;
-  reorderPoint?: number;
-  targetStock?: number;
-  isActive?: boolean;
-}
-
-export interface UpdateArticlePayload {
-  name?: string;
-  reference?: string;
-  description?: string;
-  unit?: string;
-  reorderPoint?: number;
-  targetStock?: number;
-  isActive?: boolean;
-}
-
-export interface CreateArticleMovementPayload {
-  articleId: string;
-  movementType: "in" | "out" | "adjustment";
-  quantity: number;
-  note?: string;
-  reason?: string;
-  interventionId?: string;
-  caseId?: string;
-}
-
-export function listArticles(filters?: {
-  search?: string;
-  lowStockOnly?: boolean;
-  activeOnly?: boolean;
-}) {
-  const params = new URLSearchParams();
-  if (filters?.search) params.set("search", filters.search);
-  if (typeof filters?.lowStockOnly === "boolean") {
-    params.set("lowStockOnly", String(filters.lowStockOnly));
-  }
-  if (typeof filters?.activeOnly === "boolean") {
-    params.set("activeOnly", String(filters.activeOnly));
-  }
-  const qs = params.toString();
-  return casesRequest<ArticleResponse[]>("GET", `/cases/articles${qs ? `?${qs}` : ""}`);
-}
-
-export function getArticle(articleId: string) {
-  return casesRequest<ArticleResponse>("GET", `/cases/articles/${articleId}`);
-}
-
-export function createArticle(payload: CreateArticlePayload) {
-  return casesRequest<ArticleResponse>("POST", "/cases/articles", payload);
-}
-
-export function updateArticle(articleId: string, payload: UpdateArticlePayload) {
-  return casesRequest<ArticleResponse>("PATCH", `/cases/articles/${articleId}`, payload);
-}
-
-export function deleteArticle(articleId: string) {
-  return casesRequest<{ deleted: true }>("DELETE", `/cases/articles/${articleId}`);
-}
-
-export function createArticleMovement(payload: CreateArticleMovementPayload) {
-  return casesRequest<StockMovementResponse>("POST", "/cases/articles/movements", payload);
-}
-
-export function listArticleMovements(filters?: {
-  articleId?: string;
-  interventionId?: string;
-  limit?: number;
-}) {
-  const params = new URLSearchParams();
-  if (filters?.articleId) params.set("articleId", filters.articleId);
-  if (filters?.interventionId) params.set("interventionId", filters.interventionId);
-  if (typeof filters?.limit === "number") params.set("limit", String(filters.limit));
-  const qs = params.toString();
-  return casesRequest<StockMovementResponse[]>(
-    "GET",
-    `/cases/articles/movements/list${qs ? `?${qs}` : ""}`
   );
 }
 

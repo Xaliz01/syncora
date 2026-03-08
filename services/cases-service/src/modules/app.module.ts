@@ -5,8 +5,6 @@ import { CasesService } from "../domain/cases.service";
 import { CaseTemplateSchema } from "../persistence/case-template.schema";
 import { CaseSchema } from "../persistence/case.schema";
 import { InterventionSchema } from "../persistence/intervention.schema";
-import { ArticleSchema } from "../persistence/article.schema";
-import { StockMovementSchema } from "../persistence/stock-movement.schema";
 
 @Module({
   imports: [
@@ -16,9 +14,7 @@ import { StockMovementSchema } from "../persistence/stock-movement.schema";
     MongooseModule.forFeature([
       { name: "CaseTemplate", schema: CaseTemplateSchema },
       { name: "Case", schema: CaseSchema },
-      { name: "Intervention", schema: InterventionSchema },
-      { name: "Article", schema: ArticleSchema },
-      { name: "StockMovement", schema: StockMovementSchema }
+      { name: "Intervention", schema: InterventionSchema }
     ])
   ],
   controllers: [CasesController],
