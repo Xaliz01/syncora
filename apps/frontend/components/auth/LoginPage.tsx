@@ -28,8 +28,8 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="border-b border-slate-800 bg-slate-900/60 backdrop-blur">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 via-white to-indigo-100">
+      <header className="border-b border-blue-100 bg-white/85 backdrop-blur">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white font-semibold">
@@ -37,30 +37,27 @@ export function LoginPage() {
             </span>
             <div>
               <div className="font-semibold text-lg">Syncora</div>
-              <div className="text-xs text-slate-400">CRM des opérations terrain</div>
+              <div className="text-xs text-slate-500">CRM des opérations terrain</div>
             </div>
           </div>
         </div>
       </header>
 
       <main className="flex-1 flex items-center justify-center px-4">
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-md rounded-2xl border border-blue-100 bg-white/95 p-6 shadow-lg shadow-blue-100/60">
           <h1 className="text-3xl font-semibold mb-2">Connexion</h1>
-          <p className="text-slate-400 mb-8 max-w-xl">
+          <p className="text-slate-600 mb-8 max-w-xl">
             Accédez à votre espace Syncora avec votre email et mot de passe.
           </p>
 
-          <form
-            onSubmit={handleSubmit}
-            className="rounded-xl border border-slate-800 bg-slate-900/40 p-6 space-y-4"
-          >
+          <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="rounded-lg bg-red-900/30 border border-red-800 text-red-200 text-sm p-3">
+              <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm p-3">
                 {error}
               </div>
             )}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-1">
+              <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">
                 Email
               </label>
               <input
@@ -70,12 +67,12 @@ export function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
-                className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-3 py-2 text-slate-100 placeholder-slate-500 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                 placeholder="vous@exemple.fr"
               />
             </div>
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-slate-300 mb-1">
+              <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1">
                 Mot de passe
               </label>
               <input
@@ -85,27 +82,27 @@ export function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 autoComplete="current-password"
-                className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-3 py-2 text-slate-100 placeholder-slate-500 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
               />
             </div>
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-lg bg-brand-600 py-2.5 font-medium text-white hover:bg-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-50"
+              className="w-full rounded-lg bg-brand-600 py-2.5 font-medium text-white hover:bg-brand-500 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-2 disabled:opacity-50"
             >
               {loading ? "Connexion…" : "Se connecter"}
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-slate-400">
+          <p className="mt-6 text-center text-sm text-slate-600">
             Pas encore de compte ?{" "}
-            <Link href="/register" className="text-brand-500 hover:underline">
+            <Link href="/register" className="text-brand-700 hover:underline">
               Créer une organisation
             </Link>
           </p>
-          <p className="mt-2 text-center text-sm text-slate-400">
+          <p className="mt-2 text-center text-sm text-slate-600">
             Reçu une invitation ?{" "}
-            <Link href="/accept-invitation" className="text-brand-500 hover:underline">
+            <Link href="/accept-invitation" className="text-brand-700 hover:underline">
               Activer votre compte invité
             </Link>
           </p>

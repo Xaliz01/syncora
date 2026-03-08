@@ -38,7 +38,7 @@ function NavLink({
       href={href}
       className={`block rounded-md px-3 py-2 text-sm transition ${
         isActive
-          ? "bg-brand-50 text-brand-700 border border-brand-200"
+          ? "bg-blue-50 text-blue-700 border border-blue-200"
           : "text-slate-700 hover:bg-slate-100"
       }`}
     >
@@ -69,10 +69,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-white to-indigo-50 text-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50/40 to-white text-slate-900">
       <div className="mx-auto max-w-7xl px-4 py-6 lg:px-6">
         <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
-          <aside className="rounded-xl border border-slate-200 bg-white/95 p-4 shadow-sm h-fit lg:sticky lg:top-6">
+          <aside className="rounded-xl border border-blue-100 bg-white/95 p-4 shadow-sm h-fit lg:sticky lg:top-6">
             <div className="mb-4">
               <div className="font-semibold text-lg">Syncora</div>
               <div className="text-xs text-slate-500">Espace organisation</div>
@@ -100,10 +100,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </aside>
 
           <div className="space-y-4">
-            <header className="rounded-xl border border-slate-200 bg-white/95 p-4 shadow-sm flex items-center justify-between">
+            <header className="rounded-xl border border-blue-100 bg-white/95 p-4 shadow-sm flex items-center justify-between">
               <div className="text-sm text-slate-700">
                 <span className="font-medium">{user?.name ?? user?.email}</span>
-                <span className="ml-2 rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-500 border border-slate-200">
+                <span className="ml-2 rounded bg-blue-50 px-2 py-0.5 text-xs text-blue-700 border border-blue-100">
                   {user?.role}
                 </span>
               </div>
@@ -116,7 +116,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </button>
             </header>
 
-            <main className="rounded-xl border border-slate-200 bg-white/95 p-5 shadow-sm">{children}</main>
+            <main className="rounded-xl border border-blue-100 bg-white/95 p-5 shadow-sm">{children}</main>
           </div>
         </div>
       </div>

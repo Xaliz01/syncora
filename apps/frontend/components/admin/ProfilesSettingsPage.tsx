@@ -60,26 +60,24 @@ export function ProfilesSettingsPage() {
           <p className="text-sm text-slate-500">Aucun profil.</p>
         ) : (
           <div className="rounded-lg border border-slate-200 overflow-hidden">
-            <div className="hidden md:grid md:grid-cols-[1.2fr_1.6fr_auto_auto] gap-3 border-b border-slate-200 px-4 py-3 text-xs uppercase tracking-wide text-slate-400">
+            <div className="hidden md:grid md:grid-cols-[1.2fr_1.6fr_auto] gap-3 border-b border-slate-200 px-4 py-3 text-xs uppercase tracking-wide text-slate-400">
               <span>Nom</span>
               <span>Description</span>
               <span>Permissions</span>
-              <span>Détail</span>
             </div>
             {profiles.map((profile) => (
               <div
                 key={profile.id}
-                className="grid md:grid-cols-[1.2fr_1.6fr_auto_auto] gap-3 items-center border-b border-slate-200 px-4 py-3 last:border-b-0"
+                className="grid md:grid-cols-[1.2fr_1.6fr_auto] gap-3 items-center border-b border-slate-200 px-4 py-3 last:border-b-0"
               >
-                <span className="font-medium">{profile.name}</span>
-                <span className="text-sm text-slate-500">{profile.description ?? "—"}</span>
-                <span className="text-sm text-slate-500">{profile.permissions.length}</span>
                 <Link
                   href={`/settings/profiles/${profile.id}`}
-                  className="text-sm text-brand-600 hover:text-brand-700 hover:underline"
+                  className="font-medium text-brand-700 hover:text-brand-800 hover:underline"
                 >
-                  Ouvrir
+                  {profile.name}
                 </Link>
+                <span className="text-sm text-slate-500">{profile.description ?? "—"}</span>
+                <span className="text-sm text-slate-500">{profile.permissions.length}</span>
               </div>
             ))}
           </div>

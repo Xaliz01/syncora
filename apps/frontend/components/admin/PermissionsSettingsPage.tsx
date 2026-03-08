@@ -1,39 +1,31 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import type { InvitationResponse, PermissionCode } from "@syncora/shared";
+import type { PermissionCode } from "@syncora/shared";
 import * as adminApi from "@/lib/admin.api";
 import { getPermissionLabel } from "@/lib/permissions-catalog";
 
-type InvitationStatusFilter = "pending" | "accepted" | "cancelled" | "all";
-
 export function PermissionsSettingsPage() {
   const [catalog, setCatalog] = useState<PermissionCode[]>([]);
-  const [invitations, setInvitations] = useState<InvitationResponse[]>([]);
-  const [statusFilter, setStatusFilter] = useState<InvitationStatusFilter>("pending");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
+  const loadCatalog = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [catalogRes, invitationsRes] = await Promise.all([
-        adminApi.getPermissionsCatalog(),
-        adminApi.listInvitations(statusFilter === "all" ? undefined : statusFilter)
-      ]);
+      const catalogRes = await adminApi.getPermissionsCatalog();
       setCatalog(catalogRes.availablePermissions);
-      setInvitations(invitationsRes);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur de chargement des permissions");
     } finally {
       setLoading(false);
     }
-  }, [statusFilter]);
+  }, []);
 
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    void loadCatalog();
+  }, [loadCatalog]);
 
   return (
     <div className="space-y-6">
@@ -41,7 +33,7 @@ export function PermissionsSettingsPage() {
         <div>
           <h1 className="text-2xl font-semibold mb-1">Paramètres → Permissions</h1>
           <p className="text-sm text-slate-500">
-            Référence des permissions disponibles et suivi des invitations.
+            Référence des permissions disponibles dans l’application.
           </p>
         </div>
       </div>
@@ -66,46 +58,6 @@ export function PermissionsSettingsPage() {
                 <div className="text-slate-800">{getPermissionLabel(permission)}</div>
                 <div className="text-xs text-slate-400 font-mono">{permission}</div>
               </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <section className="rounded-xl border border-slate-200 bg-white p-4">
-        <div className="flex items-center justify-between gap-3 mb-3">
-          <h2 className="font-semibold">Invitations</h2>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as InvitationStatusFilter)}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900"
-          >
-            <option value="pending">pending</option>
-            <option value="accepted">accepted</option>
-            <option value="cancelled">cancelled</option>
-            <option value="all">all</option>
-          </select>
-        </div>
-        {loading ? (
-          <p className="text-sm text-slate-500">Chargement...</p>
-        ) : invitations.length === 0 ? (
-          <p className="text-sm text-slate-500">Aucune invitation.</p>
-        ) : (
-          <div className="space-y-2">
-            {invitations.map((invitation) => (
-              <article
-                key={invitation.id}
-                className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm"
-              >
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-medium">{invitation.invitedEmail}</span>
-                  <span className="rounded border border-slate-200 bg-white px-2 py-0.5 text-xs text-slate-600">
-                    {invitation.status}
-                  </span>
-                </div>
-                <p className="mt-1 text-slate-500">
-                  Token: <span className="font-mono text-slate-700">{invitation.invitationToken}</span>
-                </p>
-              </article>
             ))}
           </div>
         )}
