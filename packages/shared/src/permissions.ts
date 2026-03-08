@@ -8,7 +8,20 @@ export const AVAILABLE_PERMISSION_CODES = [
   "permission_profiles.read",
   "permission_profiles.create",
   "permission_profiles.update",
-  "permission_profiles.delete"
+  "permission_profiles.delete",
+  "cases.read",
+  "cases.create",
+  "cases.update",
+  "cases.delete",
+  "cases.assign",
+  "case_templates.read",
+  "case_templates.create",
+  "case_templates.update",
+  "case_templates.delete",
+  "interventions.read",
+  "interventions.create",
+  "interventions.update",
+  "interventions.delete"
 ] as const;
 
 export type PermissionCode = (typeof AVAILABLE_PERMISSION_CODES)[number];

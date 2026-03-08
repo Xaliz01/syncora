@@ -20,6 +20,9 @@ function isLinkActive(currentPath: string, href: string): boolean {
   if (href === "/users") {
     return currentPath === "/users" || currentPath.startsWith("/users/");
   }
+  if (href === "/cases") {
+    return currentPath === "/cases" || (currentPath.startsWith("/cases/") && !currentPath.startsWith("/cases/calendar"));
+  }
   return currentPath === href || currentPath.startsWith(`${href}/`);
 }
 
@@ -51,7 +54,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const pathname = usePathname();
 
-  const menuSections: MenuSection[] = [{ label: "Général", links: [{ label: "Accueil", href: "/" }] }];
+  const menuSections: MenuSection[] = [
+    { label: "Général", links: [{ label: "Tableau de bord", href: "/" }] },
+    {
+      label: "Dossiers",
+      links: [
+        { label: "Tous les dossiers", href: "/cases" },
+        { label: "Calendrier", href: "/cases/calendar" }
+      ]
+    }
+  ];
   if (user?.role === "admin") {
     menuSections.push(
       {
@@ -61,6 +73,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {
         label: "Paramètres",
         links: [
+          { label: "Modèles de dossier", href: "/settings/case-templates" },
           { label: "Permissions", href: "/settings/permissions" },
           { label: "Profils", href: "/settings/profiles" }
         ]
