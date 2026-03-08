@@ -13,18 +13,18 @@ import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
 import { RequirePermissionGuard, RequirePermissions } from "../../infrastructure/require-permission.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
 import type { AuthUser } from "@syncora/shared";
-import { StockGatewayService } from "../../domain/stock.service";
+import { AbstractStockGatewayService } from "../../domain/ports/stock.service.port";
 import type {
   AddInterventionArticleUsageForOrgBody,
   CreateArticleForOrgBody,
   CreateArticleMovementForOrgBody,
   UpdateArticleForOrgBody
-} from "../../domain/stock.service";
+} from "../../domain/ports/stock.service.port";
 
 @Controller("stock")
 @UseGuards(JwtAuthGuard, RequirePermissionGuard)
 export class StockController {
-  constructor(private readonly stockService: StockGatewayService) {}
+  constructor(private readonly stockService: AbstractStockGatewayService) {}
 
   @Post("articles")
   @RequirePermissions("stock.articles.create")

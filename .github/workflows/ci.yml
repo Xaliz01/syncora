@@ -37,6 +37,7 @@ jobs:
           - "@syncora/fleet-service"
           - "@syncora/technicians-service"
           - "@syncora/cases-service"
+          - "@syncora/stock-service"
           - "@syncora/api-gateway"
     steps:
       - uses: actions/checkout@v4

@@ -19,15 +19,18 @@ import type {
 } from "@syncora/shared";
 import type { ArticleDocument } from "../persistence/article.schema";
 import type { StockMovementDocument } from "../persistence/stock-movement.schema";
+import { AbstractStockService } from "./ports/stock.service.port";
 
 @Injectable()
-export class StockService {
+export class StockService extends AbstractStockService {
   constructor(
     @InjectModel("Article")
     private readonly articleModel: Model<ArticleDocument>,
     @InjectModel("StockMovement")
     private readonly stockMovementModel: Model<StockMovementDocument>
-  ) {}
+  ) {
+    super();
+  }
 
   async createArticle(body: CreateArticleBody): Promise<ArticleResponse> {
     const name = body.name?.trim();
