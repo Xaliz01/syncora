@@ -4,7 +4,11 @@ import React, { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "@/lib/stock.api";
 
-export function StockArticlesPage() {
+type StockPageMode = "catalog" | "movements" | "full";
+
+export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
+  const showCatalogActions = mode !== "movements";
+  const showMovementActions = mode !== "catalog";
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [lowStockOnly, setLowStockOnly] = useState(false);
@@ -36,7 +40,8 @@ export function StockArticlesPage() {
 
   const { data: recentMovements } = useQuery({
     queryKey: ["article-movements"],
-    queryFn: () => api.listArticleMovements({ limit: 20 })
+    queryFn: () => api.listArticleMovements({ limit: 20 }),
+    enabled: showMovementActions
   });
 
   const lowStockArticles = useMemo(
@@ -88,22 +93,34 @@ export function StockArticlesPage() {
   });
 
   const selectedMovementArticle = (articles ?? []).find((article) => article.id === movementArticleId);
+  const pageTitle =
+    mode === "catalog"
+      ? "Catalogue articles"
+      : mode === "movements"
+        ? "Mouvements de stock"
+        : "Stock articles";
+  const pageDescription =
+    mode === "catalog"
+      ? "Paramétrez les articles utilisés par les équipes terrain."
+      : mode === "movements"
+        ? "Pilotez les entrées, sorties et ajustements de stock au quotidien."
+        : "Gérez vos consommables, suivez les mouvements et anticipez les ruptures.";
 
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">Stock articles</h1>
-          <p className="text-sm text-slate-500">
-            Gérez vos consommables, suivez les mouvements et anticipez les ruptures.
-          </p>
+          <h1 className="text-2xl font-semibold">{pageTitle}</h1>
+          <p className="text-sm text-slate-500">{pageDescription}</p>
         </div>
-        <button
-          onClick={() => setShowCreateForm((prev) => !prev)}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          {showCreateForm ? "Fermer" : "+ Nouvel article"}
-        </button>
+        {showCatalogActions && (
+          <button
+            onClick={() => setShowCreateForm((prev) => !prev)}
+            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            {showCreateForm ? "Fermer" : "+ Nouvel article"}
+          </button>
+        )}
       </div>
 
       {error && (
@@ -131,30 +148,36 @@ export function StockArticlesPage() {
                     Stock: {article.stockQuantity} {article.unit} — Seuil: {article.reorderPoint}
                   </div>
                 </div>
-                <button
-                  onClick={() =>
-                    restockToTargetMutation.mutate({
-                      articleId: article.id,
-                      movementType: "adjustment",
-                      quantity: article.targetStock,
-                      reason: "restock",
-                      note: "Réapprovisionnement rapide au stock cible"
-                    })
-                  }
-                  disabled={
-                    restockToTargetMutation.isPending || article.targetStock <= article.stockQuantity
-                  }
-                  className="rounded-lg border border-amber-300 bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-800 disabled:opacity-50"
-                >
-                  Remettre à {article.targetStock} {article.unit}
-                </button>
+                {showMovementActions ? (
+                  <button
+                    onClick={() =>
+                      restockToTargetMutation.mutate({
+                        articleId: article.id,
+                        movementType: "adjustment",
+                        quantity: article.targetStock,
+                        reason: "restock",
+                        note: "Réapprovisionnement rapide au stock cible"
+                      })
+                    }
+                    disabled={
+                      restockToTargetMutation.isPending || article.targetStock <= article.stockQuantity
+                    }
+                    className="rounded-lg border border-amber-300 bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-800 disabled:opacity-50"
+                  >
+                    Remettre à {article.targetStock} {article.unit}
+                  </button>
+                ) : (
+                  <span className="text-xs text-amber-700">
+                    Stock cible: {article.targetStock} {article.unit}
+                  </span>
+                )}
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {showCreateForm && (
+      {showCatalogActions && showCreateForm && (
         <div className="rounded-xl border border-blue-100 bg-white p-4 shadow-sm">
           <h2 className="mb-3 text-sm font-semibold text-slate-800">Créer un article</h2>
           <div className="grid grid-cols-3 gap-3">
@@ -229,77 +252,79 @@ export function StockArticlesPage() {
         </div>
       )}
 
-      <div className="rounded-xl border border-blue-100 bg-white p-4 shadow-sm space-y-3">
-        <h2 className="text-sm font-semibold text-slate-800">Mouvement rapide</h2>
-        <div className="grid grid-cols-4 gap-3">
-          <select
-            value={movementArticleId}
-            onChange={(e) => setMovementArticleId(e.target.value)}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          >
-            <option value="">Choisir un article</option>
-            {(articles ?? []).map((article) => (
-              <option key={article.id} value={article.id}>
-                {article.reference} — {article.name}
-              </option>
-            ))}
-          </select>
-          <select
-            value={movementType}
-            onChange={(e) => setMovementType(e.target.value as "in" | "out" | "adjustment")}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          >
-            <option value="out">Sortie (consommation)</option>
-            <option value="in">Entrée (réassort/retour)</option>
-            <option value="adjustment">Ajustement (stock final)</option>
-          </select>
-          <input
-            type="number"
-            min="0"
-            step="0.01"
-            value={movementQuantity}
-            onChange={(e) => setMovementQuantity(e.target.value)}
-            placeholder={movementType === "adjustment" ? "Stock final" : "Quantité"}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          />
-          <input
-            value={movementNote}
-            onChange={(e) => setMovementNote(e.target.value)}
-            placeholder="Note (optionnelle)"
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          />
+      {showMovementActions && (
+        <div className="rounded-xl border border-blue-100 bg-white p-4 shadow-sm space-y-3">
+          <h2 className="text-sm font-semibold text-slate-800">Mouvement rapide</h2>
+          <div className="grid grid-cols-4 gap-3">
+            <select
+              value={movementArticleId}
+              onChange={(e) => setMovementArticleId(e.target.value)}
+              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            >
+              <option value="">Choisir un article</option>
+              {(articles ?? []).map((article) => (
+                <option key={article.id} value={article.id}>
+                  {article.reference} — {article.name}
+                </option>
+              ))}
+            </select>
+            <select
+              value={movementType}
+              onChange={(e) => setMovementType(e.target.value as "in" | "out" | "adjustment")}
+              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            >
+              <option value="out">Sortie (consommation)</option>
+              <option value="in">Entrée (réassort/retour)</option>
+              <option value="adjustment">Ajustement (stock final)</option>
+            </select>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={movementQuantity}
+              onChange={(e) => setMovementQuantity(e.target.value)}
+              placeholder={movementType === "adjustment" ? "Stock final" : "Quantité"}
+              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            />
+            <input
+              value={movementNote}
+              onChange={(e) => setMovementNote(e.target.value)}
+              placeholder="Note (optionnelle)"
+              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            />
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => {
+                if (!movementArticleId) {
+                  setError("Sélectionnez un article");
+                  return;
+                }
+                const quantity = Number(movementQuantity);
+                if (!Number.isFinite(quantity) || quantity < 0) {
+                  setError("Quantité invalide");
+                  return;
+                }
+                movementMutation.mutate({
+                  articleId: movementArticleId,
+                  movementType,
+                  quantity,
+                  note: movementNote.trim() || undefined
+                });
+              }}
+              disabled={movementMutation.isPending}
+              className="rounded-lg bg-blue-600 px-4 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+            >
+              Enregistrer le mouvement
+            </button>
+            {selectedMovementArticle && (
+              <span className="text-xs text-slate-500">
+                Stock actuel: {selectedMovementArticle.stockQuantity} {selectedMovementArticle.unit}
+              </span>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => {
-              if (!movementArticleId) {
-                setError("Sélectionnez un article");
-                return;
-              }
-              const quantity = Number(movementQuantity);
-              if (!Number.isFinite(quantity) || quantity < 0) {
-                setError("Quantité invalide");
-                return;
-              }
-              movementMutation.mutate({
-                articleId: movementArticleId,
-                movementType,
-                quantity,
-                note: movementNote.trim() || undefined
-              });
-            }}
-            disabled={movementMutation.isPending}
-            className="rounded-lg bg-blue-600 px-4 py-1.5 text-sm font-medium text-white disabled:opacity-50"
-          >
-            Enregistrer le mouvement
-          </button>
-          {selectedMovementArticle && (
-            <span className="text-xs text-slate-500">
-              Stock actuel: {selectedMovementArticle.stockQuantity} {selectedMovementArticle.unit}
-            </span>
-          )}
-        </div>
-      </div>
+      )}
 
       <div className="rounded-xl border border-blue-100 bg-white p-4 shadow-sm">
         <div className="mb-3 flex flex-wrap items-center gap-3">
@@ -317,14 +342,16 @@ export function StockArticlesPage() {
             />
             Stock bas uniquement
           </label>
-          <label className="flex items-center gap-2 text-sm text-slate-600">
-            <input
-              type="checkbox"
-              checked={showInactive}
-              onChange={(e) => setShowInactive(e.target.checked)}
-            />
-            Inclure inactifs
-          </label>
+          {showCatalogActions && (
+            <label className="flex items-center gap-2 text-sm text-slate-600">
+              <input
+                type="checkbox"
+                checked={showInactive}
+                onChange={(e) => setShowInactive(e.target.checked)}
+              />
+              Inclure inactifs
+            </label>
+          )}
         </div>
 
         {isLoading ? (
@@ -379,25 +406,27 @@ export function StockArticlesPage() {
                     </td>
                     <td className="px-2 py-2">
                       <div className="flex items-center gap-2">
-                        <button
-                          onClick={() =>
-                            restockToTargetMutation.mutate({
-                              articleId: article.id,
-                              movementType: "adjustment",
-                              quantity: article.targetStock,
-                              reason: "restock",
-                              note: "Réassort au stock cible"
-                            })
-                          }
-                          disabled={
-                            restockToTargetMutation.isPending ||
-                            article.targetStock <= article.stockQuantity
-                          }
-                          className="rounded border border-blue-200 px-2 py-1 text-xs text-blue-700 disabled:opacity-50"
-                        >
-                          Réassort
-                        </button>
-                        {article.isActive && (
+                        {showMovementActions && (
+                          <button
+                            onClick={() =>
+                              restockToTargetMutation.mutate({
+                                articleId: article.id,
+                                movementType: "adjustment",
+                                quantity: article.targetStock,
+                                reason: "restock",
+                                note: "Réassort au stock cible"
+                              })
+                            }
+                            disabled={
+                              restockToTargetMutation.isPending ||
+                              article.targetStock <= article.stockQuantity
+                            }
+                            className="rounded border border-blue-200 px-2 py-1 text-xs text-blue-700 disabled:opacity-50"
+                          >
+                            Réassort
+                          </button>
+                        )}
+                        {showCatalogActions && article.isActive && (
                           <button
                             onClick={() => deactivateMutation.mutate(article.id)}
                             disabled={deactivateMutation.isPending}
@@ -416,32 +445,34 @@ export function StockArticlesPage() {
         )}
       </div>
 
-      <div className="rounded-xl border border-blue-100 bg-white p-4 shadow-sm">
-        <h2 className="mb-3 text-sm font-semibold text-slate-800">Derniers mouvements</h2>
-        {!recentMovements?.length ? (
-          <div className="text-sm text-slate-500">Aucun mouvement pour le moment.</div>
-        ) : (
-          <div className="space-y-2">
-            {recentMovements.map((movement) => (
-              <div
-                key={movement.id}
-                className="flex items-center justify-between rounded-lg border border-blue-50 p-2"
-              >
-                <div className="text-sm">
-                  <span className="font-medium text-slate-800">{movement.articleName}</span>
-                  <span className="ml-2 text-xs text-slate-500">
-                    ({movement.articleReference ?? "sans ref"})
-                  </span>
+      {showMovementActions && (
+        <div className="rounded-xl border border-blue-100 bg-white p-4 shadow-sm">
+          <h2 className="mb-3 text-sm font-semibold text-slate-800">Derniers mouvements</h2>
+          {!recentMovements?.length ? (
+            <div className="text-sm text-slate-500">Aucun mouvement pour le moment.</div>
+          ) : (
+            <div className="space-y-2">
+              {recentMovements.map((movement) => (
+                <div
+                  key={movement.id}
+                  className="flex items-center justify-between rounded-lg border border-blue-50 p-2"
+                >
+                  <div className="text-sm">
+                    <span className="font-medium text-slate-800">{movement.articleName}</span>
+                    <span className="ml-2 text-xs text-slate-500">
+                      ({movement.articleReference ?? "sans ref"})
+                    </span>
+                  </div>
+                  <div className="text-xs text-slate-600">
+                    {movement.movementType} {movement.quantity} —{" "}
+                    {movement.previousStock} → {movement.newStock}
+                  </div>
                 </div>
-                <div className="text-xs text-slate-600">
-                  {movement.movementType} {movement.quantity} —{" "}
-                  {movement.previousStock} → {movement.newStock}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

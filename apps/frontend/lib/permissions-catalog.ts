@@ -111,6 +111,46 @@ export const PERMISSION_METADATA: Record<PermissionCode, PermissionMetadata> = {
     code: "interventions.delete",
     label: "Supprimer des interventions",
     description: "Supprimer des interventions."
+  },
+  "stock.articles.read": {
+    code: "stock.articles.read",
+    label: "Voir les articles de stock",
+    description: "Consulter le catalogue des articles et les niveaux de stock."
+  },
+  "stock.articles.create": {
+    code: "stock.articles.create",
+    label: "Créer des articles de stock",
+    description: "Créer de nouveaux articles dans le catalogue stock."
+  },
+  "stock.articles.update": {
+    code: "stock.articles.update",
+    label: "Modifier des articles de stock",
+    description: "Modifier les paramètres des articles existants."
+  },
+  "stock.articles.delete": {
+    code: "stock.articles.delete",
+    label: "Désactiver des articles de stock",
+    description: "Désactiver des articles du catalogue stock."
+  },
+  "stock.movements.read": {
+    code: "stock.movements.read",
+    label: "Voir les mouvements de stock",
+    description: "Consulter l'historique des entrées, sorties et ajustements."
+  },
+  "stock.movements.create": {
+    code: "stock.movements.create",
+    label: "Créer des mouvements de stock",
+    description: "Enregistrer des entrées, sorties ou ajustements de stock."
+  },
+  "stock.interventions.read": {
+    code: "stock.interventions.read",
+    label: "Voir les consommations d'intervention",
+    description: "Consulter les articles consommés/retournés sur les interventions."
+  },
+  "stock.interventions.create": {
+    code: "stock.interventions.create",
+    label: "Ajouter des consommations d'intervention",
+    description: "Associer des articles à une intervention et générer les mouvements."
   }
 };
 

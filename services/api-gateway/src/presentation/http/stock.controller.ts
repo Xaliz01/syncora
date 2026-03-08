@@ -27,7 +27,7 @@ export class StockController {
   constructor(private readonly stockService: StockGatewayService) {}
 
   @Post("articles")
-  @RequirePermissions("cases.update")
+  @RequirePermissions("stock.articles.create")
   async createArticle(
     @CurrentUser() user: AuthUser,
     @Body() body: CreateArticleForOrgBody
@@ -36,7 +36,7 @@ export class StockController {
   }
 
   @Get("articles")
-  @RequirePermissions("cases.read")
+  @RequirePermissions("stock.articles.read")
   async listArticles(
     @CurrentUser() user: AuthUser,
     @Query("search") search?: string,
@@ -51,7 +51,7 @@ export class StockController {
   }
 
   @Get("articles/:articleId")
-  @RequirePermissions("cases.read")
+  @RequirePermissions("stock.articles.read")
   async getArticle(
     @CurrentUser() user: AuthUser,
     @Param("articleId") articleId: string
@@ -60,7 +60,7 @@ export class StockController {
   }
 
   @Patch("articles/:articleId")
-  @RequirePermissions("cases.update")
+  @RequirePermissions("stock.articles.update")
   async updateArticle(
     @CurrentUser() user: AuthUser,
     @Param("articleId") articleId: string,
@@ -70,7 +70,7 @@ export class StockController {
   }
 
   @Delete("articles/:articleId")
-  @RequirePermissions("cases.update")
+  @RequirePermissions("stock.articles.delete")
   async deleteArticle(
     @CurrentUser() user: AuthUser,
     @Param("articleId") articleId: string
@@ -79,7 +79,7 @@ export class StockController {
   }
 
   @Post("movements")
-  @RequirePermissions("cases.update")
+  @RequirePermissions("stock.movements.create")
   async createArticleMovement(
     @CurrentUser() user: AuthUser,
     @Body() body: CreateArticleMovementForOrgBody
@@ -88,7 +88,7 @@ export class StockController {
   }
 
   @Get("movements")
-  @RequirePermissions("cases.read")
+  @RequirePermissions("stock.movements.read")
   async listArticleMovements(
     @CurrentUser() user: AuthUser,
     @Query("articleId") articleId?: string,
@@ -105,7 +105,7 @@ export class StockController {
   }
 
   @Post("interventions/:interventionId/articles")
-  @RequirePermissions("interventions.update")
+  @RequirePermissions("stock.interventions.create")
   async addInterventionArticleUsage(
     @CurrentUser() user: AuthUser,
     @Param("interventionId") interventionId: string,
@@ -115,7 +115,7 @@ export class StockController {
   }
 
   @Get("interventions/:interventionId/usage")
-  @RequirePermissions("interventions.read")
+  @RequirePermissions("stock.interventions.read")
   async getInterventionUsage(
     @CurrentUser() user: AuthUser,
     @Param("interventionId") interventionId: string
