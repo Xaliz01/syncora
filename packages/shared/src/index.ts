@@ -14,6 +14,7 @@ export * from "./case";
 export * from "./organization";
 export * from "./permissions";
 export * from "./user";
+export * from "./fleet";
 export * from "./logger";
 export * from "./nest-logger.adapter";
 

@@ -67,6 +67,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (user?.role === "admin") {
     menuSections.push(
       {
+        label: "Gestion de la flotte",
+        links: [
+          { label: "Véhicules", href: "/fleet/vehicles" },
+          { label: "Techniciens", href: "/fleet/technicians" }
+        ]
+      },
+      {
         label: "Utilisateurs",
         links: [{ label: "Gérer les utilisateurs", href: "/users" }]
       },
