@@ -32,7 +32,7 @@ export function ProfilesSettingsPage() {
       <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold mb-1">Paramètres → Profils</h1>
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-slate-500">
             Liste des profils de permissions. Ouvrez un profil pour voir son détail.
           </p>
         </div>
@@ -45,29 +45,22 @@ export function ProfilesSettingsPage() {
       </div>
 
       {error && (
-        <div className="rounded-lg bg-red-900/30 border border-red-800 text-red-200 text-sm p-3">
+        <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm p-3">
           {error}
         </div>
       )}
 
-      <section className="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
-        <div className="flex items-center justify-between mb-3">
+      <section className="rounded-xl border border-slate-200 bg-white p-4">
+        <div className="mb-3">
           <h2 className="font-semibold">Liste des profils</h2>
-          <button
-            type="button"
-            onClick={() => void refresh()}
-            className="rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800"
-          >
-            Rafraîchir
-          </button>
         </div>
         {loading ? (
-          <p className="text-sm text-slate-400">Chargement...</p>
+          <p className="text-sm text-slate-500">Chargement...</p>
         ) : profiles.length === 0 ? (
-          <p className="text-sm text-slate-400">Aucun profil.</p>
+          <p className="text-sm text-slate-500">Aucun profil.</p>
         ) : (
-          <div className="rounded-lg border border-slate-700 overflow-hidden">
-            <div className="hidden md:grid md:grid-cols-[1.2fr_1.6fr_auto_auto] gap-3 border-b border-slate-800 px-4 py-3 text-xs uppercase tracking-wide text-slate-500">
+          <div className="rounded-lg border border-slate-200 overflow-hidden">
+            <div className="hidden md:grid md:grid-cols-[1.2fr_1.6fr_auto_auto] gap-3 border-b border-slate-200 px-4 py-3 text-xs uppercase tracking-wide text-slate-400">
               <span>Nom</span>
               <span>Description</span>
               <span>Permissions</span>
@@ -76,14 +69,14 @@ export function ProfilesSettingsPage() {
             {profiles.map((profile) => (
               <div
                 key={profile.id}
-                className="grid md:grid-cols-[1.2fr_1.6fr_auto_auto] gap-3 items-center border-b border-slate-800 px-4 py-3 last:border-b-0"
+                className="grid md:grid-cols-[1.2fr_1.6fr_auto_auto] gap-3 items-center border-b border-slate-200 px-4 py-3 last:border-b-0"
               >
                 <span className="font-medium">{profile.name}</span>
-                <span className="text-sm text-slate-400">{profile.description ?? "—"}</span>
-                <span className="text-sm text-slate-400">{profile.permissions.length}</span>
+                <span className="text-sm text-slate-500">{profile.description ?? "—"}</span>
+                <span className="text-sm text-slate-500">{profile.permissions.length}</span>
                 <Link
                   href={`/settings/profiles/${profile.id}`}
-                  className="text-sm text-brand-400 hover:text-brand-300 hover:underline"
+                  className="text-sm text-brand-600 hover:text-brand-700 hover:underline"
                 >
                   Ouvrir
                 </Link>

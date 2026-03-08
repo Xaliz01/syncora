@@ -40,51 +40,44 @@ export function PermissionsSettingsPage() {
       <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold mb-1">Paramètres → Permissions</h1>
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-slate-500">
             Référence des permissions disponibles et suivi des invitations.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => void refresh()}
-          className="rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800"
-        >
-          Rafraîchir
-        </button>
       </div>
 
       {error && (
-        <div className="rounded-lg bg-red-900/30 border border-red-800 text-red-200 text-sm p-3">
+        <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm p-3">
           {error}
         </div>
       )}
 
-      <section className="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
+      <section className="rounded-xl border border-slate-200 bg-white p-4">
         <h2 className="font-semibold mb-3">Catalogue des permissions</h2>
         {loading ? (
-          <p className="text-sm text-slate-400">Chargement...</p>
+          <p className="text-sm text-slate-500">Chargement...</p>
         ) : (
           <div className="grid gap-2 md:grid-cols-2">
             {catalog.map((permission) => (
               <div
                 key={permission}
-                className="rounded-lg border border-slate-700 bg-slate-900/40 px-3 py-2 text-sm text-slate-300"
+                className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700"
               >
-                <div className="text-slate-100">{getPermissionLabel(permission)}</div>
-                <div className="text-xs text-slate-500 font-mono">{permission}</div>
+                <div className="text-slate-800">{getPermissionLabel(permission)}</div>
+                <div className="text-xs text-slate-400 font-mono">{permission}</div>
               </div>
             ))}
           </div>
         )}
       </section>
 
-      <section className="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
+      <section className="rounded-xl border border-slate-200 bg-white p-4">
         <div className="flex items-center justify-between gap-3 mb-3">
           <h2 className="font-semibold">Invitations</h2>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as InvitationStatusFilter)}
-            className="rounded-lg border border-slate-700 bg-slate-800/60 px-3 py-1.5 text-sm text-slate-100"
+            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900"
           >
             <option value="pending">pending</option>
             <option value="accepted">accepted</option>
@@ -93,24 +86,24 @@ export function PermissionsSettingsPage() {
           </select>
         </div>
         {loading ? (
-          <p className="text-sm text-slate-400">Chargement...</p>
+          <p className="text-sm text-slate-500">Chargement...</p>
         ) : invitations.length === 0 ? (
-          <p className="text-sm text-slate-400">Aucune invitation.</p>
+          <p className="text-sm text-slate-500">Aucune invitation.</p>
         ) : (
           <div className="space-y-2">
             {invitations.map((invitation) => (
               <article
                 key={invitation.id}
-                className="rounded-lg border border-slate-700 bg-slate-900/40 p-3 text-sm"
+                className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm"
               >
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-medium">{invitation.invitedEmail}</span>
-                  <span className="rounded bg-slate-800 px-2 py-0.5 text-xs text-slate-300">
+                  <span className="rounded border border-slate-200 bg-white px-2 py-0.5 text-xs text-slate-600">
                     {invitation.status}
                   </span>
                 </div>
-                <p className="mt-1 text-slate-400">
-                  Token: <span className="font-mono text-slate-300">{invitation.invitationToken}</span>
+                <p className="mt-1 text-slate-500">
+                  Token: <span className="font-mono text-slate-700">{invitation.invitationToken}</span>
                 </p>
               </article>
             ))}

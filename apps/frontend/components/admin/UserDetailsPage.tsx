@@ -6,6 +6,7 @@ import type { PermissionCode, PermissionProfileResponse } from "@syncora/shared"
 import * as adminApi from "@/lib/admin.api";
 import { getPermissionLabel } from "@/lib/permissions-catalog";
 import type { ManagedOrganizationUser } from "@/lib/admin.api";
+import { useToast } from "@/components/ui/ToastProvider";
 
 function togglePermission(list: PermissionCode[], permission: PermissionCode): PermissionCode[] {
   if (list.includes(permission)) return list.filter((item) => item !== permission);
@@ -13,6 +14,7 @@ function togglePermission(list: PermissionCode[], permission: PermissionCode): P
 }
 
 export function UserDetailsPage({ userId }: { userId: string }) {
+  const { showToast } = useToast();
   const [catalog, setCatalog] = useState<PermissionCode[]>([]);
   const [profiles, setProfiles] = useState<PermissionProfileResponse[]>([]);
   const [user, setUser] = useState<ManagedOrganizationUser | null>(null);
@@ -22,7 +24,6 @@ export function UserDetailsPage({ userId }: { userId: string }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
 
   const isOrganizationAdmin = user?.role === "admin";
 
@@ -62,14 +63,13 @@ export function UserDetailsPage({ userId }: { userId: string }) {
     if (!user || isOrganizationAdmin) return;
     setSaving(true);
     setError(null);
-    setNotice(null);
     try {
       await adminApi.updateOrganizationUserPermissions(user.id, {
         profileId: profileId || null,
         extraPermissions,
         revokedPermissions
       });
-      setNotice("Droits utilisateur mis à jour.");
+      showToast("Droits utilisateur mis à jour.");
       await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Impossible de sauvegarder les droits");
@@ -80,7 +80,7 @@ export function UserDetailsPage({ userId }: { userId: string }) {
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-4 text-sm text-slate-400">
+      <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-500">
         Chargement de la fiche utilisateur...
       </div>
     );
@@ -89,8 +89,8 @@ export function UserDetailsPage({ userId }: { userId: string }) {
   if (!user) {
     return (
       <div className="space-y-3">
-        <p className="text-slate-300">Utilisateur introuvable.</p>
-        <Link href="/users" className="text-brand-400 hover:underline">
+        <p className="text-slate-700">Utilisateur introuvable.</p>
+        <Link href="/users" className="text-brand-600 hover:underline">
           Retour à la liste
         </Link>
       </div>
@@ -102,59 +102,54 @@ export function UserDetailsPage({ userId }: { userId: string }) {
       <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold mb-1">Fiche utilisateur</h1>
-          <p className="text-sm text-slate-400">
-            Gérez les droits de <span className="font-medium text-slate-300">{user.email}</span>.
+          <p className="text-sm text-slate-500">
+            Gérez les droits de <span className="font-medium text-slate-700">{user.email}</span>.
           </p>
         </div>
         <Link
           href="/users"
-          className="rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800"
+          className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100"
         >
           Retour à la liste
         </Link>
       </div>
 
       {error && (
-        <div className="rounded-lg bg-red-900/30 border border-red-800 text-red-200 text-sm p-3">
+        <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm p-3">
           {error}
         </div>
       )}
-      {notice && (
-        <div className="rounded-lg bg-emerald-900/30 border border-emerald-800 text-emerald-200 text-sm p-3">
-          {notice}
-        </div>
-      )}
 
-      <section className="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
+      <section className="rounded-xl border border-slate-200 bg-white p-4">
         <div className="grid gap-2 md:grid-cols-2 text-sm">
           <div>
-            <span className="text-slate-500">Nom</span>
+            <span className="text-slate-400">Nom</span>
             <p>{user.name ?? "—"}</p>
           </div>
           <div>
-            <span className="text-slate-500">Email</span>
+            <span className="text-slate-400">Email</span>
             <p>{user.email}</p>
           </div>
           <div>
-            <span className="text-slate-500">Rôle</span>
+            <span className="text-slate-400">Rôle</span>
             <p>{user.role}</p>
           </div>
           <div>
-            <span className="text-slate-500">Statut</span>
+            <span className="text-slate-400">Statut</span>
             <p>{user.status}</p>
           </div>
         </div>
       </section>
 
-      <section className="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
+      <section className="rounded-xl border border-slate-200 bg-white p-4">
         <h2 className="font-semibold mb-2">Permissions effectives</h2>
         <div className="flex flex-wrap gap-2">
           {user.permissions.map((permission) => (
             <div
               key={permission}
-              className="rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-1 text-xs"
+              className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1 text-xs"
             >
-              <div className="text-slate-200">{getPermissionLabel(permission)}</div>
+              <div className="text-slate-800">{getPermissionLabel(permission)}</div>
               <div className="text-slate-500 font-mono">{permission}</div>
             </div>
           ))}
@@ -162,20 +157,20 @@ export function UserDetailsPage({ userId }: { userId: string }) {
       </section>
 
       {isOrganizationAdmin ? (
-        <section className="rounded-xl border border-amber-700/40 bg-amber-900/20 p-4 text-sm text-amber-100">
+        <section className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700">
           Cet utilisateur est administrateur d’organisation : ses droits sont complets et ne peuvent
           pas être modifiés.
         </section>
       ) : (
-        <section className="rounded-xl border border-slate-800 bg-slate-900/40 p-4 space-y-4">
+        <section className="rounded-xl border border-slate-200 bg-white p-4 space-y-4">
           <h2 className="font-semibold">Affectation et exceptions</h2>
 
           <div>
-            <label className="block text-sm text-slate-400 mb-1">Profil affecté</label>
+            <label className="block text-sm text-slate-500 mb-1">Profil affecté</label>
             <select
               value={profileId}
               onChange={(e) => setProfileId(e.target.value)}
-              className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-3 py-2 text-slate-100"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
             >
               <option value="">Aucun profil</option>
               {profiles.map((profile) => (
@@ -184,12 +179,12 @@ export function UserDetailsPage({ userId }: { userId: string }) {
                 </option>
               ))}
             </select>
-            <p className="mt-1 text-xs text-slate-500">Profil sélectionné : {selectedProfileName}</p>
+            <p className="mt-1 text-xs text-slate-400">Profil sélectionné : {selectedProfileName}</p>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <p className="text-sm font-medium text-slate-300 mb-2">Permissions à ajouter</p>
+              <p className="text-sm font-medium text-slate-700 mb-2">Permissions à ajouter</p>
               <div className="grid gap-2">
                 {catalog.map((permission) => (
                   <label key={`add-${permission}`} className="flex items-start gap-2 text-sm">
@@ -202,15 +197,15 @@ export function UserDetailsPage({ userId }: { userId: string }) {
                       }
                     />
                     <span>
-                      <span className="block text-slate-200">{getPermissionLabel(permission)}</span>
-                      <span className="block text-xs text-slate-500 font-mono">{permission}</span>
+                      <span className="block text-slate-700">{getPermissionLabel(permission)}</span>
+                      <span className="block text-xs text-slate-400 font-mono">{permission}</span>
                     </span>
                   </label>
                 ))}
               </div>
             </div>
             <div>
-              <p className="text-sm font-medium text-slate-300 mb-2">Permissions à retirer</p>
+              <p className="text-sm font-medium text-slate-700 mb-2">Permissions à retirer</p>
               <div className="grid gap-2">
                 {catalog.map((permission) => (
                   <label key={`remove-${permission}`} className="flex items-start gap-2 text-sm">
@@ -223,8 +218,8 @@ export function UserDetailsPage({ userId }: { userId: string }) {
                       }
                     />
                     <span>
-                      <span className="block text-slate-200">{getPermissionLabel(permission)}</span>
-                      <span className="block text-xs text-slate-500 font-mono">{permission}</span>
+                      <span className="block text-slate-700">{getPermissionLabel(permission)}</span>
+                      <span className="block text-xs text-slate-400 font-mono">{permission}</span>
                     </span>
                   </label>
                 ))}

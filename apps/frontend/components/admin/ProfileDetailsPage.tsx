@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useState } from "react";
 import type { PermissionCode } from "@syncora/shared";
 import * as adminApi from "@/lib/admin.api";
 import { getPermissionLabel } from "@/lib/permissions-catalog";
+import { useToast } from "@/components/ui/ToastProvider";
 
 function togglePermission(list: PermissionCode[], permission: PermissionCode): PermissionCode[] {
   if (list.includes(permission)) return list.filter((item) => item !== permission);
@@ -12,6 +14,8 @@ function togglePermission(list: PermissionCode[], permission: PermissionCode): P
 }
 
 export function ProfileDetailsPage({ profileId }: { profileId: string }) {
+  const router = useRouter();
+  const { showToast } = useToast();
   const [catalog, setCatalog] = useState<PermissionCode[]>([]);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -20,7 +24,6 @@ export function ProfileDetailsPage({ profileId }: { profileId: string }) {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -49,14 +52,13 @@ export function ProfileDetailsPage({ profileId }: { profileId: string }) {
     event.preventDefault();
     setSaving(true);
     setError(null);
-    setNotice(null);
     try {
       await adminApi.updatePermissionProfile(profileId, {
         name,
         description: description.trim() || undefined,
         permissions
       });
-      setNotice("Profil mis à jour.");
+      showToast("Profil mis à jour.");
       await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Impossible de mettre à jour ce profil");
@@ -68,10 +70,10 @@ export function ProfileDetailsPage({ profileId }: { profileId: string }) {
   const handleDelete = async () => {
     setDeleting(true);
     setError(null);
-    setNotice(null);
     try {
       await adminApi.deletePermissionProfile(profileId);
-      setNotice("Profil supprimé.");
+      showToast("Profil supprimé.");
+      router.push("/settings/profiles");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Impossible de supprimer ce profil");
     } finally {
@@ -84,30 +86,25 @@ export function ProfileDetailsPage({ profileId }: { profileId: string }) {
       <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold mb-1">Fiche profil</h1>
-          <p className="text-sm text-slate-400">Consultez et mettez à jour ce profil de permissions.</p>
+          <p className="text-sm text-slate-500">Consultez et mettez à jour ce profil de permissions.</p>
         </div>
         <Link
           href="/settings/profiles"
-          className="rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800"
+          className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100"
         >
           Retour aux profils
         </Link>
       </div>
 
       {error && (
-        <div className="rounded-lg bg-red-900/30 border border-red-800 text-red-200 text-sm p-3">
+        <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm p-3">
           {error}
         </div>
       )}
-      {notice && (
-        <div className="rounded-lg bg-emerald-900/30 border border-emerald-800 text-emerald-200 text-sm p-3">
-          {notice}
-        </div>
-      )}
 
-      <section className="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
+      <section className="rounded-xl border border-slate-200 bg-white p-4">
         {loading ? (
-          <p className="text-sm text-slate-400">Chargement...</p>
+          <p className="text-sm text-slate-500">Chargement...</p>
         ) : (
           <form onSubmit={handleSave} className="space-y-4">
             <div className="grid gap-3 md:grid-cols-2">
@@ -116,14 +113,14 @@ export function ProfileDetailsPage({ profileId }: { profileId: string }) {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                className="rounded-lg border border-slate-700 bg-slate-800/60 px-3 py-2 text-slate-100"
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
               />
               <input
                 type="text"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Description (optionnel)"
-                className="rounded-lg border border-slate-700 bg-slate-800/60 px-3 py-2 text-slate-100"
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
               />
             </div>
             <div className="grid gap-2 md:grid-cols-2">
@@ -138,8 +135,8 @@ export function ProfileDetailsPage({ profileId }: { profileId: string }) {
                     }
                   />
                   <span>
-                    <span className="block text-slate-200">{getPermissionLabel(permission)}</span>
-                    <span className="block text-xs text-slate-500 font-mono">{permission}</span>
+                    <span className="block text-slate-700">{getPermissionLabel(permission)}</span>
+                    <span className="block text-xs text-slate-400 font-mono">{permission}</span>
                   </span>
                 </label>
               ))}
@@ -156,7 +153,7 @@ export function ProfileDetailsPage({ profileId }: { profileId: string }) {
                 type="button"
                 onClick={() => void handleDelete()}
                 disabled={deleting}
-                className="rounded-lg border border-red-800 px-4 py-2 text-red-300 hover:bg-red-900/20 disabled:opacity-50"
+                className="rounded-lg border border-red-300 px-4 py-2 text-red-700 hover:bg-red-50 disabled:opacity-50"
               >
                 {deleting ? "Suppression..." : "Supprimer le profil"}
               </button>

@@ -13,7 +13,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr" className="bg-slate-950 text-slate-100">
+    <html lang="fr" className="bg-slate-100 text-slate-900">
       <body>
         <Providers>{children}</Providers>
       </body>

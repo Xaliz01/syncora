@@ -15,6 +15,14 @@ interface MenuSection {
   links: MenuLink[];
 }
 
+function isLinkActive(currentPath: string, href: string): boolean {
+  if (href === "/") return currentPath === "/";
+  if (href === "/users") {
+    return currentPath === "/users" || currentPath.startsWith("/users/");
+  }
+  return currentPath === href || currentPath.startsWith(`${href}/`);
+}
+
 function NavLink({
   href,
   label,
@@ -24,16 +32,14 @@ function NavLink({
   label: string;
   currentPath: string;
 }) {
-  const isActive =
-    currentPath === href ||
-    (href !== "/" && (currentPath.startsWith(`${href}/`) || currentPath.startsWith(`${href}?`)));
+  const isActive = isLinkActive(currentPath, href);
   return (
     <Link
       href={href}
       className={`block rounded-md px-3 py-2 text-sm transition ${
         isActive
-          ? "bg-brand-600/20 text-brand-300 border border-brand-700/50"
-          : "text-slate-300 hover:bg-slate-800"
+          ? "bg-brand-50 text-brand-700 border border-brand-200"
+          : "text-slate-700 hover:bg-slate-100"
       }`}
     >
       {label}
@@ -50,10 +56,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     menuSections.push(
       {
         label: "Utilisateurs",
-        links: [
-          { label: "Inviter / créer", href: "/users/new" },
-          { label: "Gérer les utilisateurs", href: "/users" }
-        ]
+        links: [{ label: "Gérer les utilisateurs", href: "/users" }]
       },
       {
         label: "Paramètres",
@@ -66,19 +69,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-white to-indigo-50 text-slate-900">
       <div className="mx-auto max-w-7xl px-4 py-6 lg:px-6">
         <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
-          <aside className="rounded-xl border border-slate-800 bg-slate-900/40 p-4 h-fit lg:sticky lg:top-6">
+          <aside className="rounded-xl border border-slate-200 bg-white/95 p-4 shadow-sm h-fit lg:sticky lg:top-6">
             <div className="mb-4">
               <div className="font-semibold text-lg">Syncora</div>
-              <div className="text-xs text-slate-400">Espace organisation</div>
+              <div className="text-xs text-slate-500">Espace organisation</div>
             </div>
 
             <nav className="space-y-4">
               {menuSections.map((section) => (
                 <section key={section.label}>
-                  <h2 className="mb-2 px-1 text-xs uppercase tracking-wide text-slate-500">
+                  <h2 className="mb-2 px-1 text-xs uppercase tracking-wide text-slate-400">
                     {section.label}
                   </h2>
                   <div className="space-y-1">
@@ -97,23 +100,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </aside>
 
           <div className="space-y-4">
-            <header className="rounded-xl border border-slate-800 bg-slate-900/40 p-4 flex items-center justify-between">
-              <div className="text-sm text-slate-300">
+            <header className="rounded-xl border border-slate-200 bg-white/95 p-4 shadow-sm flex items-center justify-between">
+              <div className="text-sm text-slate-700">
                 <span className="font-medium">{user?.name ?? user?.email}</span>
-                <span className="ml-2 rounded bg-slate-800 px-2 py-0.5 text-xs text-slate-400">
+                <span className="ml-2 rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-500 border border-slate-200">
                   {user?.role}
                 </span>
               </div>
               <button
                 type="button"
                 onClick={logout}
-                className="text-sm text-slate-400 hover:text-slate-200"
+                className="text-sm text-slate-500 hover:text-slate-700"
               >
                 Déconnexion
               </button>
             </header>
 
-            <main className="rounded-xl border border-slate-800 bg-slate-900/30 p-5">{children}</main>
+            <main className="rounded-xl border border-slate-200 bg-white/95 p-5 shadow-sm">{children}</main>
           </div>
         </div>
       </div>
