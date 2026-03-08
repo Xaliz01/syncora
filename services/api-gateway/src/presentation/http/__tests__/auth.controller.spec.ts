@@ -1,9 +1,9 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { JwtModule } from "@nestjs/jwt";
 import type { AuthResponse } from "@syncora/shared";
-import { AuthController } from "./auth.controller";
-import { AbstractAuthService } from "../../domain/ports/auth.service.port";
-import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
+import { AuthController } from "../auth.controller";
+import { AbstractAuthService } from "../../../domain/ports/auth.service.port";
+import { JwtAuthGuard } from "../../../infrastructure/jwt-auth.guard";
 
 describe("AuthController", () => {
   let controller: AuthController;

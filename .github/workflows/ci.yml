@@ -35,6 +35,7 @@ jobs:
           - "@syncora/users-service"
           - "@syncora/permissions-service"
           - "@syncora/fleet-service"
+          - "@syncora/technicians-service"
           - "@syncora/cases-service"
           - "@syncora/api-gateway"
     steps:

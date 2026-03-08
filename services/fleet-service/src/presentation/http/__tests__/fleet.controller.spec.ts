@@ -1,7 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { BadRequestException } from "@nestjs/common";
-import { FleetController } from "./fleet.controller";
-import { AbstractFleetService } from "../../domain/ports/fleet.service.port";
+import { FleetController } from "../fleet.controller";
+import { AbstractFleetService } from "../../../domain/ports/fleet.service.port";
 
 describe("FleetController", () => {
   let controller: FleetController;
@@ -14,14 +14,9 @@ describe("FleetController", () => {
       getVehicle: jest.fn(),
       updateVehicle: jest.fn(),
       deleteVehicle: jest.fn(),
-      assignTechnicianToVehicle: jest.fn(),
-      unassignTechnicianFromVehicle: jest.fn(),
-      createTechnician: jest.fn(),
-      listTechnicians: jest.fn(),
-      getTechnician: jest.fn(),
-      updateTechnician: jest.fn(),
-      deleteTechnician: jest.fn(),
-      linkUserToTechnician: jest.fn()
+      assignTechnician: jest.fn(),
+      unassignTechnician: jest.fn(),
+      unassignTechnicianFromAllVehicles: jest.fn()
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -112,38 +107,51 @@ describe("FleetController", () => {
     });
   });
 
-  describe("createTechnician", () => {
-    it("should call fleetService.createTechnician with body", async () => {
-      const body = {
-        organizationId: "org-1",
-        firstName: "John",
-        lastName: "Doe",
-        email: "john@example.com"
-      };
-      mockFleetService.createTechnician.mockResolvedValue({ id: "t1", ...body } as never);
+  describe("assignTechnician", () => {
+    it("should call fleetService.assignTechnician with params", async () => {
+      mockFleetService.assignTechnician.mockResolvedValue({
+        id: "v1",
+        assignedTechnicianId: "tech-1"
+      } as never);
 
-      const result = await controller.createTechnician(body);
+      const result = await controller.assignTechnician("v1", "org-1", {
+        technicianId: "tech-1"
+      });
 
-      expect(mockFleetService.createTechnician).toHaveBeenCalledWith(body);
-      expect(result.id).toBe("t1");
-    });
-  });
-
-  describe("listTechnicians", () => {
-    it("should call fleetService.listTechnicians with organizationId", async () => {
-      mockFleetService.listTechnicians.mockResolvedValue([{ id: "t1" }] as never);
-
-      const result = await controller.listTechnicians("org-1");
-
-      expect(mockFleetService.listTechnicians).toHaveBeenCalledWith("org-1");
-      expect(result).toHaveLength(1);
+      expect(mockFleetService.assignTechnician).toHaveBeenCalledWith(
+        "org-1",
+        "v1",
+        "tech-1"
+      );
+      expect(result.assignedTechnicianId).toBe("tech-1");
     });
 
     it("should throw BadRequestException when organizationId is missing", async () => {
-      await expect(controller.listTechnicians(undefined as never)).rejects.toThrow(
+      await expect(
+        controller.assignTechnician("v1", undefined as never, { technicianId: "tech-1" })
+      ).rejects.toThrow(BadRequestException);
+      expect(mockFleetService.assignTechnician).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("unassignTechnician", () => {
+    it("should call fleetService.unassignTechnician with id and organizationId", async () => {
+      mockFleetService.unassignTechnician.mockResolvedValue({
+        id: "v1",
+        assignedTechnicianId: undefined
+      } as never);
+
+      const result = await controller.unassignTechnician("v1", "org-1");
+
+      expect(mockFleetService.unassignTechnician).toHaveBeenCalledWith("org-1", "v1");
+      expect(result.assignedTechnicianId).toBeUndefined();
+    });
+
+    it("should throw BadRequestException when organizationId is missing", async () => {
+      await expect(controller.unassignTechnician("v1", undefined as never)).rejects.toThrow(
         BadRequestException
       );
-      expect(mockFleetService.listTechnicians).not.toHaveBeenCalled();
+      expect(mockFleetService.unassignTechnician).not.toHaveBeenCalled();
     });
   });
 });

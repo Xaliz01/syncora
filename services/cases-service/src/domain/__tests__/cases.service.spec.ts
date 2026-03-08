@@ -1,8 +1,8 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getModelToken } from "@nestjs/mongoose";
 import { ConflictException, NotFoundException } from "@nestjs/common";
-import { CasesService } from "./cases.service";
-import { AbstractCasesService } from "./ports/cases.service.port";
+import { CasesService } from "../cases.service";
+import { AbstractCasesService } from "../ports/cases.service.port";
 
 describe("CasesService", () => {
   let service: CasesService;

@@ -16,12 +16,9 @@ import { CurrentUser } from "../../infrastructure/current-user.decorator";
 import type { AuthUser } from "@syncora/shared";
 import type {
   AssignTechnicianToVehicleBody,
-  CreateTechnicianUserAccountBody,
   UpdateVehicleBody,
-  UpdateTechnicianBody,
   VehicleType,
-  VehicleStatus,
-  TechnicianStatus
+  VehicleStatus
 } from "@syncora/shared";
 
 interface CreateVehiclePayload {
@@ -34,17 +31,6 @@ interface CreateVehiclePayload {
   vin?: string;
   mileage?: number;
   status?: VehicleStatus;
-}
-
-interface CreateTechnicianPayload {
-  firstName: string;
-  lastName: string;
-  email?: string;
-  phone?: string;
-  speciality?: string;
-  status?: TechnicianStatus;
-  createUserAccount?: boolean;
-  userAccountPassword?: string;
 }
 
 @Controller("fleet")
@@ -105,52 +91,5 @@ export class FleetController {
     @Param("vehicleId") vehicleId: string
   ) {
     return this.fleetService.unassignTechnicianFromVehicle(user, vehicleId);
-  }
-
-  @Post("technicians")
-  async createTechnician(
-    @CurrentUser() user: AuthUser,
-    @Body() body: CreateTechnicianPayload
-  ) {
-    return this.fleetService.createTechnician(user, body);
-  }
-
-  @Get("technicians")
-  async listTechnicians(@CurrentUser() user: AuthUser) {
-    return this.fleetService.listTechnicians(user);
-  }
-
-  @Get("technicians/:technicianId")
-  async getTechnician(
-    @CurrentUser() user: AuthUser,
-    @Param("technicianId") technicianId: string
-  ) {
-    return this.fleetService.getTechnician(user, technicianId);
-  }
-
-  @Patch("technicians/:technicianId")
-  async updateTechnician(
-    @CurrentUser() user: AuthUser,
-    @Param("technicianId") technicianId: string,
-    @Body() body: UpdateTechnicianBody
-  ) {
-    return this.fleetService.updateTechnician(user, technicianId, body);
-  }
-
-  @Delete("technicians/:technicianId")
-  async deleteTechnician(
-    @CurrentUser() user: AuthUser,
-    @Param("technicianId") technicianId: string
-  ) {
-    return this.fleetService.deleteTechnician(user, technicianId);
-  }
-
-  @Post("technicians/:technicianId/create-account")
-  async createTechnicianAccount(
-    @CurrentUser() user: AuthUser,
-    @Param("technicianId") technicianId: string,
-    @Body() body: CreateTechnicianUserAccountBody
-  ) {
-    return this.fleetService.createTechnicianUserAccount(user, technicianId, body);
   }
 }

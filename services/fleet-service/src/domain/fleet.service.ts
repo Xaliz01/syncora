@@ -1,23 +1,17 @@
 import {
   Injectable,
   ConflictException,
-  NotFoundException,
-  BadRequestException
+  NotFoundException
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import type { VehicleDocument } from "../persistence/vehicle.schema";
-import type { TechnicianDocument } from "../persistence/technician.schema";
 import type {
   CreateVehicleBody,
   UpdateVehicleBody,
   VehicleResponse,
-  CreateTechnicianBody,
-  UpdateTechnicianBody,
-  TechnicianResponse,
   VehicleStatus,
-  VehicleType,
-  TechnicianStatus
+  VehicleType
 } from "@syncora/shared";
 import { AbstractFleetService } from "./ports/fleet.service.port";
 
@@ -25,14 +19,10 @@ import { AbstractFleetService } from "./ports/fleet.service.port";
 export class FleetService extends AbstractFleetService {
   constructor(
     @InjectModel("Vehicle")
-    private readonly vehicleModel: Model<VehicleDocument>,
-    @InjectModel("Technician")
-    private readonly technicianModel: Model<TechnicianDocument>
+    private readonly vehicleModel: Model<VehicleDocument>
   ) {
     super();
   }
-
-  // ─── Vehicles ───
 
   async createVehicle(body: CreateVehicleBody): Promise<VehicleResponse> {
     const existing = await this.vehicleModel
@@ -114,17 +104,11 @@ export class FleetService extends AbstractFleetService {
     if (!doc || doc.organizationId !== organizationId) {
       throw new NotFoundException("Véhicule introuvable");
     }
-    if (doc.assignedTechnicianId) {
-      await this.technicianModel.updateOne(
-        { _id: doc.assignedTechnicianId },
-        { $pull: { assignedVehicleIds: vehicleId } }
-      );
-    }
     await doc.deleteOne();
     return { deleted: true };
   }
 
-  async assignTechnicianToVehicle(
+  async assignTechnician(
     organizationId: string,
     vehicleId: string,
     technicianId: string
@@ -133,30 +117,12 @@ export class FleetService extends AbstractFleetService {
     if (!vehicle || vehicle.organizationId !== organizationId) {
       throw new NotFoundException("Véhicule introuvable");
     }
-    const technician = await this.technicianModel.findById(technicianId).exec();
-    if (!technician || technician.organizationId !== organizationId) {
-      throw new NotFoundException("Technicien introuvable");
-    }
-
-    if (vehicle.assignedTechnicianId && vehicle.assignedTechnicianId !== technicianId) {
-      await this.technicianModel.updateOne(
-        { _id: vehicle.assignedTechnicianId },
-        { $pull: { assignedVehicleIds: vehicleId } }
-      );
-    }
-
     vehicle.assignedTechnicianId = technicianId;
     await vehicle.save();
-
-    if (!technician.assignedVehicleIds.includes(vehicleId)) {
-      technician.assignedVehicleIds.push(vehicleId);
-      await technician.save();
-    }
-
     return this.toVehicleResponse(vehicle);
   }
 
-  async unassignTechnicianFromVehicle(
+  async unassignTechnician(
     organizationId: string,
     vehicleId: string
   ): Promise<VehicleResponse> {
@@ -164,101 +130,20 @@ export class FleetService extends AbstractFleetService {
     if (!vehicle || vehicle.organizationId !== organizationId) {
       throw new NotFoundException("Véhicule introuvable");
     }
-    if (vehicle.assignedTechnicianId) {
-      await this.technicianModel.updateOne(
-        { _id: vehicle.assignedTechnicianId },
-        { $pull: { assignedVehicleIds: vehicleId } }
-      );
-      vehicle.assignedTechnicianId = undefined;
-      await vehicle.save();
-    }
+    vehicle.assignedTechnicianId = undefined;
+    await vehicle.save();
     return this.toVehicleResponse(vehicle);
   }
 
-  // ─── Technicians ───
-
-  async createTechnician(body: CreateTechnicianBody): Promise<TechnicianResponse> {
-    const doc = await this.technicianModel.create({
-      organizationId: body.organizationId,
-      firstName: body.firstName,
-      lastName: body.lastName,
-      email: body.email,
-      phone: body.phone,
-      speciality: body.speciality,
-      status: body.status ?? "actif"
-    });
-    return this.toTechnicianResponse(doc);
-  }
-
-  async updateTechnician(
-    organizationId: string,
-    technicianId: string,
-    body: UpdateTechnicianBody
-  ): Promise<TechnicianResponse> {
-    const doc = await this.technicianModel.findById(technicianId).exec();
-    if (!doc || doc.organizationId !== organizationId) {
-      throw new NotFoundException("Technicien introuvable");
-    }
-    if (body.firstName !== undefined) doc.firstName = body.firstName;
-    if (body.lastName !== undefined) doc.lastName = body.lastName;
-    if (body.email !== undefined) doc.email = body.email;
-    if (body.phone !== undefined) doc.phone = body.phone;
-    if (body.speciality !== undefined) doc.speciality = body.speciality;
-    if (body.status !== undefined) doc.status = body.status;
-    await doc.save();
-    return this.toTechnicianResponse(doc);
-  }
-
-  async getTechnician(organizationId: string, technicianId: string): Promise<TechnicianResponse> {
-    const doc = await this.technicianModel.findById(technicianId).exec();
-    if (!doc || doc.organizationId !== organizationId) {
-      throw new NotFoundException("Technicien introuvable");
-    }
-    return this.toTechnicianResponse(doc);
-  }
-
-  async listTechnicians(organizationId: string): Promise<TechnicianResponse[]> {
-    const docs = await this.technicianModel
-      .find({ organizationId })
-      .sort({ createdAt: -1 })
-      .exec();
-    return docs.map((doc) => this.toTechnicianResponse(doc));
-  }
-
-  async deleteTechnician(
+  async unassignTechnicianFromAllVehicles(
     organizationId: string,
     technicianId: string
-  ): Promise<{ deleted: true }> {
-    const doc = await this.technicianModel.findById(technicianId).exec();
-    if (!doc || doc.organizationId !== organizationId) {
-      throw new NotFoundException("Technicien introuvable");
-    }
+  ): Promise<void> {
     await this.vehicleModel.updateMany(
-      { assignedTechnicianId: technicianId },
+      { organizationId, assignedTechnicianId: technicianId },
       { $unset: { assignedTechnicianId: "" } }
     );
-    await doc.deleteOne();
-    return { deleted: true };
   }
-
-  async linkUserToTechnician(
-    organizationId: string,
-    technicianId: string,
-    userId: string
-  ): Promise<TechnicianResponse> {
-    const doc = await this.technicianModel.findById(technicianId).exec();
-    if (!doc || doc.organizationId !== organizationId) {
-      throw new NotFoundException("Technicien introuvable");
-    }
-    if (doc.userId) {
-      throw new BadRequestException("Ce technicien a déjà un compte utilisateur associé");
-    }
-    doc.userId = userId;
-    await doc.save();
-    return this.toTechnicianResponse(doc);
-  }
-
-  // ─── Mappers ───
 
   private toVehicleResponse(doc: VehicleDocument): VehicleResponse {
     return {
@@ -274,23 +159,6 @@ export class FleetService extends AbstractFleetService {
       mileage: doc.mileage,
       status: doc.status as VehicleStatus,
       assignedTechnicianId: doc.assignedTechnicianId,
-      createdAt: doc.get("createdAt")?.toISOString(),
-      updatedAt: doc.get("updatedAt")?.toISOString()
-    };
-  }
-
-  private toTechnicianResponse(doc: TechnicianDocument): TechnicianResponse {
-    return {
-      id: doc._id.toString(),
-      organizationId: doc.organizationId,
-      firstName: doc.firstName,
-      lastName: doc.lastName,
-      email: doc.email,
-      phone: doc.phone,
-      speciality: doc.speciality,
-      status: doc.status as TechnicianStatus,
-      userId: doc.userId,
-      assignedVehicleIds: doc.assignedVehicleIds,
       createdAt: doc.get("createdAt")?.toISOString(),
       updatedAt: doc.get("updatedAt")?.toISOString()
     };

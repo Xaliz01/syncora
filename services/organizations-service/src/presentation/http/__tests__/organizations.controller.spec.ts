@@ -1,7 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { NotFoundException } from "@nestjs/common";
-import { OrganizationsController } from "./organizations.controller";
-import { AbstractOrganizationsService } from "../../domain/ports/organizations.service.port";
+import { OrganizationsController } from "../organizations.controller";
+import { AbstractOrganizationsService } from "../../../domain/ports/organizations.service.port";
 
 describe("OrganizationsController", () => {
   let controller: OrganizationsController;

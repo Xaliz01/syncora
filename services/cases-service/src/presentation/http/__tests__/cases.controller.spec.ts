@@ -1,7 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { BadRequestException } from "@nestjs/common";
-import { CasesController } from "./cases.controller";
-import { AbstractCasesService } from "../../domain/ports/cases.service.port";
+import { CasesController } from "../cases.controller";
+import { AbstractCasesService } from "../../../domain/ports/cases.service.port";
 
 describe("CasesController", () => {
   let controller: CasesController;

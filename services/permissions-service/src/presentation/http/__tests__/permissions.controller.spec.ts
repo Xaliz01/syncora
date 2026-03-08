@@ -1,8 +1,8 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { BadRequestException } from "@nestjs/common";
 import type { PermissionCode } from "@syncora/shared";
-import { PermissionsController } from "./permissions.controller";
-import { AbstractPermissionsService } from "../../domain/ports/permissions.service.port";
+import { PermissionsController } from "../permissions.controller";
+import { AbstractPermissionsService } from "../../../domain/ports/permissions.service.port";
 
 describe("PermissionsController", () => {
   let controller: PermissionsController;

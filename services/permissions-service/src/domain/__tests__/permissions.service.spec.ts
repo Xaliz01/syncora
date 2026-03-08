@@ -1,8 +1,8 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getModelToken } from "@nestjs/mongoose";
 import { ConflictException, NotFoundException, BadRequestException } from "@nestjs/common";
-import { PermissionsService } from "./permissions.service";
-import { AbstractPermissionsService } from "./ports/permissions.service.port";
+import { PermissionsService } from "../permissions.service";
+import { AbstractPermissionsService } from "../ports/permissions.service.port";
 import { AVAILABLE_PERMISSION_CODES } from "@syncora/shared";
 
 describe("PermissionsService", () => {

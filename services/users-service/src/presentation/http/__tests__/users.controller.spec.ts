@@ -1,7 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { NotFoundException, BadRequestException, UnauthorizedException } from "@nestjs/common";
-import { UsersController } from "./users.controller";
-import { AbstractUsersService } from "../../domain/ports/users.service.port";
+import { UsersController } from "../users.controller";
+import { AbstractUsersService } from "../../../domain/ports/users.service.port";
 
 describe("UsersController", () => {
   let controller: UsersController;

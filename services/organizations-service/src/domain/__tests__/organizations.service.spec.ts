@@ -1,7 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getModelToken } from "@nestjs/mongoose";
-import { OrganizationsService } from "./organizations.service";
-import { AbstractOrganizationsService } from "./ports/organizations.service.port";
+import { OrganizationsService } from "../organizations.service";
+import { AbstractOrganizationsService } from "../ports/organizations.service.port";
 
 describe("OrganizationsService", () => {
   let service: OrganizationsService;

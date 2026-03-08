@@ -4,8 +4,8 @@ import { HttpModule, HttpService } from "@nestjs/axios";
 import { UnauthorizedException } from "@nestjs/common";
 import { of, throwError } from "rxjs";
 import type { AxiosResponse } from "axios";
-import { AuthService } from "./auth.service";
-import { AbstractAuthService } from "./ports/auth.service.port";
+import { AuthService } from "../auth.service";
+import { AbstractAuthService } from "../ports/auth.service.port";
 
 describe("AuthService", () => {
   let service: AuthService;

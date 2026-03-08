@@ -2,8 +2,8 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { getModelToken } from "@nestjs/mongoose";
 import { ConflictException, NotFoundException, BadRequestException } from "@nestjs/common";
 import * as bcrypt from "bcrypt";
-import { UsersService } from "./users.service";
-import { AbstractUsersService } from "./ports/users.service.port";
+import { UsersService } from "../users.service";
+import { AbstractUsersService } from "../ports/users.service.port";
 
 jest.mock("bcrypt", () => ({
   hash: jest.fn().mockResolvedValue("hashed"),
