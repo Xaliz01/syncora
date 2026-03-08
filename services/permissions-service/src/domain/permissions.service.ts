@@ -67,6 +67,15 @@ export class PermissionsService {
     return docs.map((doc) => this.toProfileResponse(doc));
   }
 
+  async findProfileById(
+    id: string,
+    organizationId: string
+  ): Promise<PermissionProfileResponse> {
+    const doc = await this.permissionProfileModel.findOne({ _id: id, organizationId }).exec();
+    if (!doc) throw new NotFoundException("Profile not found");
+    return this.toProfileResponse(doc);
+  }
+
   async updateProfile(
     id: string,
     body: UpdatePermissionProfileBody
@@ -174,6 +183,10 @@ export class PermissionsService {
   async resolveEffectivePermissions(
     body: ResolveEffectivePermissionsBody
   ): Promise<EffectivePermissionsResponse> {
+    // Admin users always keep the full permission set for their organization.
+    if (body.role === "admin") {
+      return { permissions: [...AVAILABLE_PERMISSION_CODES] };
+    }
     const defaultPermissions = ROLE_DEFAULT_PERMISSIONS[body.role] ?? [];
     const assignment = await this.userAssignmentModel
       .findOne({ organizationId: body.organizationId, userId: body.userId })

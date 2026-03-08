@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import type { InvitationResponse, PermissionCode, PermissionProfileResponse } from "@syncora/shared";
 import * as adminApi from "@/lib/admin.api";
+import { getPermissionLabel } from "@/lib/permissions-catalog";
 
 function togglePermission(list: PermissionCode[], permission: PermissionCode): PermissionCode[] {
   if (list.includes(permission)) return list.filter((item) => item !== permission);
@@ -22,6 +23,7 @@ export function CreateUserPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [invitation, setInvitation] = useState<InvitationResponse | null>(null);
+  const adminRoleSelected = role === "admin";
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -53,9 +55,9 @@ export function CreateUserPage() {
         email,
         name: name.trim() || undefined,
         role,
-        profileId: profileId || undefined,
-        extraPermissions,
-        revokedPermissions
+        profileId: adminRoleSelected ? undefined : profileId || undefined,
+        extraPermissions: adminRoleSelected ? [] : extraPermissions,
+        revokedPermissions: adminRoleSelected ? [] : revokedPermissions
       });
       setInvitation(result.invitation);
       setEmail("");
@@ -126,7 +128,15 @@ export function CreateUserPage() {
             <div className="grid gap-3 md:grid-cols-2">
               <select
                 value={role}
-                onChange={(e) => setRole(e.target.value as "admin" | "member")}
+                onChange={(e) => {
+                  const nextRole = e.target.value as "admin" | "member";
+                  setRole(nextRole);
+                  if (nextRole === "admin") {
+                    setProfileId("");
+                    setExtraPermissions([]);
+                    setRevokedPermissions([]);
+                  }
+                }}
                 className="rounded-lg border border-slate-700 bg-slate-800/60 px-3 py-2 text-slate-100"
               >
                 <option value="member">member</option>
@@ -135,6 +145,7 @@ export function CreateUserPage() {
               <select
                 value={profileId}
                 onChange={(e) => setProfileId(e.target.value)}
+                disabled={adminRoleSelected}
                 className="rounded-lg border border-slate-700 bg-slate-800/60 px-3 py-2 text-slate-100"
               >
                 <option value="">Aucun profil</option>
@@ -145,7 +156,13 @@ export function CreateUserPage() {
                 ))}
               </select>
             </div>
-            <div className="grid gap-4 md:grid-cols-2">
+            {adminRoleSelected && (
+              <div className="rounded-lg border border-amber-700/40 bg-amber-900/20 px-3 py-2 text-sm text-amber-100">
+                Un administrateur d’organisation possède automatiquement tous les droits. Aucun
+                profil ni permission personnalisée ne peut lui être affecté.
+              </div>
+            )}
+            <div className={`grid gap-4 md:grid-cols-2 ${adminRoleSelected ? "opacity-60" : ""}`}>
               <div>
                 <p className="text-sm font-medium text-slate-300 mb-2">Permissions à ajouter</p>
                 <div className="grid gap-1">
@@ -153,12 +170,16 @@ export function CreateUserPage() {
                     <label key={`add-${permission}`} className="flex items-center gap-2 text-sm">
                       <input
                         type="checkbox"
+                        disabled={adminRoleSelected}
                         checked={extraPermissions.includes(permission)}
                         onChange={() =>
                           setExtraPermissions((previous) => togglePermission(previous, permission))
                         }
                       />
-                      <span className="font-mono text-slate-300">{permission}</span>
+                      <span>
+                        <span className="block text-slate-300">{getPermissionLabel(permission)}</span>
+                        <span className="block font-mono text-xs text-slate-500">{permission}</span>
+                      </span>
                     </label>
                   ))}
                 </div>
@@ -173,12 +194,16 @@ export function CreateUserPage() {
                     >
                       <input
                         type="checkbox"
+                        disabled={adminRoleSelected}
                         checked={revokedPermissions.includes(permission)}
                         onChange={() =>
                           setRevokedPermissions((previous) => togglePermission(previous, permission))
                         }
                       />
-                      <span className="font-mono text-slate-300">{permission}</span>
+                      <span>
+                        <span className="block text-slate-300">{getPermissionLabel(permission)}</span>
+                        <span className="block font-mono text-xs text-slate-500">{permission}</span>
+                      </span>
                     </label>
                   ))}
                 </div>

@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import type { InvitationResponse, PermissionCode } from "@syncora/shared";
 import * as adminApi from "@/lib/admin.api";
+import { getPermissionLabel } from "@/lib/permissions-catalog";
 
 type InvitationStatusFilter = "pending" | "accepted" | "cancelled" | "all";
 
@@ -67,9 +68,10 @@ export function PermissionsSettingsPage() {
             {catalog.map((permission) => (
               <div
                 key={permission}
-                className="rounded-lg border border-slate-700 bg-slate-900/40 px-3 py-2 text-sm font-mono text-slate-300"
+                className="rounded-lg border border-slate-700 bg-slate-900/40 px-3 py-2 text-sm text-slate-300"
               >
-                {permission}
+                <div className="text-slate-100">{getPermissionLabel(permission)}</div>
+                <div className="text-xs text-slate-500 font-mono">{permission}</div>
               </div>
             ))}
           </div>

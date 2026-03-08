@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useAuth } from "@/components/auth/AuthContext";
+import { getPermissionLabel } from "@/lib/permissions-catalog";
 
 export function HomePage() {
   const { user } = useAuth();
@@ -47,9 +48,10 @@ export function HomePage() {
             {user.permissions.map((permission) => (
               <span
                 key={permission}
-                className="rounded bg-slate-800 px-2 py-0.5 text-xs text-slate-300 font-mono"
+                title={permission}
+                className="rounded bg-slate-800 px-2 py-0.5 text-xs text-slate-300"
               >
-                {permission}
+                {getPermissionLabel(permission)}
               </span>
             ))}
           </div>

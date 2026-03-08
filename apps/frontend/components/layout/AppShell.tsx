@@ -24,7 +24,9 @@ function NavLink({
   label: string;
   currentPath: string;
 }) {
-  const isActive = currentPath === href;
+  const isActive =
+    currentPath === href ||
+    (href !== "/" && (currentPath.startsWith(`${href}/`) || currentPath.startsWith(`${href}?`)));
   return (
     <Link
       href={href}

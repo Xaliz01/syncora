@@ -45,6 +45,11 @@ export class AdminController {
     return this.adminService.listOrganizationUsers(user);
   }
 
+  @Get("users/:userId")
+  async getOrganizationUser(@CurrentUser() user: AuthUser, @Param("userId") userId: string) {
+    return this.adminService.getOrganizationUser(user, userId);
+  }
+
   @Put("users/:userId/permissions")
   async assignUserPermissions(
     @CurrentUser() user: AuthUser,
@@ -65,6 +70,14 @@ export class AdminController {
   @Get("permission-profiles")
   async listPermissionProfiles(@CurrentUser() user: AuthUser) {
     return this.adminService.listPermissionProfiles(user);
+  }
+
+  @Get("permission-profiles/:profileId")
+  async getPermissionProfile(
+    @CurrentUser() user: AuthUser,
+    @Param("profileId") profileId: string
+  ) {
+    return this.adminService.getPermissionProfile(user, profileId);
   }
 
   @Patch("permission-profiles/:profileId")

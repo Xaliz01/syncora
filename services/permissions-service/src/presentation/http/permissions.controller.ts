@@ -34,6 +34,15 @@ export class PermissionsController {
     return this.permissionsService.listProfiles(organizationId);
   }
 
+  @Get("profiles/:id")
+  async findProfileById(
+    @Param("id") id: string,
+    @Query("organizationId") organizationId: string
+  ) {
+    this.ensureOrganizationId(organizationId);
+    return this.permissionsService.findProfileById(id, organizationId);
+  }
+
   @Patch("profiles/:id")
   async updateProfile(@Param("id") id: string, @Body() body: UpdatePermissionProfileBody) {
     return this.permissionsService.updateProfile(id, body);

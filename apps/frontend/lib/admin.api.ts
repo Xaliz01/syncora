@@ -77,8 +77,23 @@ export function listPermissionProfiles() {
   return adminRequest<PermissionProfileResponse[]>("GET", "/admin/permission-profiles");
 }
 
+export function getPermissionProfile(profileId: string) {
+  return adminRequest<PermissionProfileResponse>("GET", `/admin/permission-profiles/${profileId}`);
+}
+
 export function createPermissionProfile(payload: CreatePermissionProfilePayload) {
   return adminRequest<PermissionProfileResponse>("POST", "/admin/permission-profiles", payload);
+}
+
+export function updatePermissionProfile(
+  profileId: string,
+  payload: Partial<CreatePermissionProfilePayload>
+) {
+  return adminRequest<PermissionProfileResponse>(
+    "PATCH",
+    `/admin/permission-profiles/${profileId}`,
+    payload
+  );
 }
 
 export function deletePermissionProfile(profileId: string) {
@@ -87,6 +102,10 @@ export function deletePermissionProfile(profileId: string) {
 
 export function listOrganizationUsers() {
   return adminRequest<{ users: ManagedOrganizationUser[] }>("GET", "/admin/users");
+}
+
+export function getOrganizationUser(userId: string) {
+  return adminRequest<{ user: ManagedOrganizationUser }>("GET", `/admin/users/${userId}`);
 }
 
 export function inviteOrganizationUser(payload: InviteOrganizationUserPayload) {

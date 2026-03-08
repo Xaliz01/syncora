@@ -64,11 +64,21 @@ export class AdminService {
   }
 
   async inviteUser(currentUser: AuthUser, body: InviteOrganizationUserBody) {
+    const invitedRole = body.role ?? "member";
+    if (
+      invitedRole === "admin" &&
+      (body.profileId || (body.extraPermissions?.length ?? 0) > 0 || (body.revokedPermissions?.length ?? 0) > 0)
+    ) {
+      throw new BadRequestException(
+        "Organization admins always have full rights; profile or custom permissions are not allowed"
+      );
+    }
+
     const createInvitedUserBody: CreateInvitedUserBody = {
       organizationId: currentUser.organizationId,
       email: body.email,
       name: body.name,
-      role: body.role ?? "member",
+      role: invitedRole,
       invitedByUserId: currentUser.id
     };
     const invitedUser = await this.callUsersService<UserResponse>({
@@ -77,17 +87,26 @@ export class AdminService {
       body: createInvitedUserBody
     });
 
-    const assignment = await this.callPermissionsService<UserPermissionAssignmentResponse>({
-      method: "put",
-      path: `/assignments/${invitedUser.id}`,
-      body: {
-        organizationId: currentUser.organizationId,
-        userId: invitedUser.id,
-        profileId: body.profileId ?? null,
-        extraPermissions: body.extraPermissions ?? [],
-        revokedPermissions: body.revokedPermissions ?? []
-      } satisfies AssignUserPermissionsBody
-    });
+    const assignment =
+      invitedUser.role === "admin"
+        ? {
+            organizationId: currentUser.organizationId,
+            userId: invitedUser.id,
+            extraPermissions: [],
+            revokedPermissions: [],
+            effectivePermissions: [...AVAILABLE_PERMISSION_CODES]
+          }
+        : await this.callPermissionsService<UserPermissionAssignmentResponse>({
+            method: "put",
+            path: `/assignments/${invitedUser.id}`,
+            body: {
+              organizationId: currentUser.organizationId,
+              userId: invitedUser.id,
+              profileId: body.profileId ?? null,
+              extraPermissions: body.extraPermissions ?? [],
+              revokedPermissions: body.revokedPermissions ?? []
+            } satisfies AssignUserPermissionsBody
+          });
 
     const invitation = await this.callPermissionsService<InvitationResponse>({
       method: "post",
@@ -98,9 +117,9 @@ export class AdminService {
         invitedEmail: invitedUser.email,
         invitedName: invitedUser.name,
         invitedByUserId: currentUser.id,
-        profileId: body.profileId,
-        extraPermissions: body.extraPermissions ?? [],
-        revokedPermissions: body.revokedPermissions ?? []
+        profileId: invitedUser.role === "admin" ? undefined : body.profileId,
+        extraPermissions: invitedUser.role === "admin" ? [] : body.extraPermissions ?? [],
+        revokedPermissions: invitedUser.role === "admin" ? [] : body.revokedPermissions ?? []
       } satisfies CreateInvitationBody
     });
 
@@ -148,6 +167,41 @@ export class AdminService {
     };
   }
 
+  async getOrganizationUser(currentUser: AuthUser, userId: string) {
+    const user = await this.callUsersService<UserResponse>({
+      method: "get",
+      path: `/users/${userId}`
+    });
+    if (user.organizationId !== currentUser.organizationId) {
+      throw new ForbiddenException("Cannot access user from another organization");
+    }
+
+    const [assignment, effectivePermissions] = await Promise.all([
+      this.callPermissionsService<UserPermissionAssignmentResponse>({
+        method: "get",
+        path: `/assignments/${user.id}`,
+        query: { organizationId: currentUser.organizationId }
+      }),
+      this.callPermissionsService<EffectivePermissionsResponse>({
+        method: "post",
+        path: "/permissions/effective",
+        body: {
+          organizationId: currentUser.organizationId,
+          userId: user.id,
+          role: user.role
+        }
+      })
+    ]);
+
+    return {
+      user: {
+        ...user,
+        permissions: effectivePermissions.permissions,
+        permissionAssignment: assignment
+      }
+    };
+  }
+
   async assignUserPermissions(
     currentUser: AuthUser,
     userId: string,
@@ -159,6 +213,11 @@ export class AdminService {
     });
     if (targetUser.organizationId !== currentUser.organizationId) {
       throw new ForbiddenException("Cannot manage user from another organization");
+    }
+    if (targetUser.role === "admin") {
+      throw new BadRequestException(
+        "Organization admins always have full rights and cannot have custom profiles/permissions"
+      );
     }
 
     const assignment = await this.callPermissionsService<UserPermissionAssignmentResponse>({
@@ -211,6 +270,14 @@ export class AdminService {
     return this.callPermissionsService({
       method: "get",
       path: "/profiles",
+      query: { organizationId: currentUser.organizationId }
+    });
+  }
+
+  async getPermissionProfile(currentUser: AuthUser, profileId: string) {
+    return this.callPermissionsService({
+      method: "get",
+      path: `/profiles/${profileId}`,
       query: { organizationId: currentUser.organizationId }
     });
   }
