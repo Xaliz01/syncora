@@ -37,7 +37,7 @@ export function UsersManagementPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold mb-1">Utilisateurs → Gérer les utilisateurs</h1>
+          <h1 className="text-2xl font-semibold mb-1">Utilisateurs</h1>
           <p className="text-sm text-slate-500">
             Liste des utilisateurs de l’organisation. Cliquez sur un nom pour ouvrir sa fiche.
           </p>

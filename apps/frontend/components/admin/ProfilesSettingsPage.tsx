@@ -31,7 +31,7 @@ export function ProfilesSettingsPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold mb-1">Paramètres → Profils</h1>
+          <h1 className="text-2xl font-semibold mb-1">Profils</h1>
           <p className="text-sm text-slate-500">
             Liste des profils de permissions. Ouvrez un profil pour voir son détail.
           </p>

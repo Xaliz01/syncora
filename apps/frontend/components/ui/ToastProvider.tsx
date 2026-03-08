@@ -34,7 +34,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div className="pointer-events-none fixed right-4 top-4 z-50 space-y-2">
+      <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center">
+        <div className="space-y-2">
         {toasts.map((toast) => {
           const style =
             toast.type === "error"
@@ -45,13 +46,14 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           return (
             <div
               key={toast.id}
-              className={`rounded-lg border px-4 py-2 text-sm shadow-md ${style}`}
+              className={`min-w-[260px] rounded-lg border px-4 py-2 text-center text-sm shadow-md ${style}`}
               role="status"
             >
               {toast.message}
             </div>
           );
         })}
+        </div>
       </div>
     </ToastContext.Provider>
   );
