@@ -7,7 +7,7 @@ import { createNestLogger } from "@syncora/shared";
 async function bootstrap() {
   const logger = createNestLogger("stock-service");
   const app = await NestFactory.create(AppModule, { logger });
-  const port = process.env.PORT ?? 3006;
+  const port = process.env.PORT ?? 3007;
   await app.listen(port);
   logger.info("Stock service is running", { port });
 }

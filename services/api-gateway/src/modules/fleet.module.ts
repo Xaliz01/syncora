@@ -1,12 +1,16 @@
 import { Module } from "@nestjs/common";
 import { HttpModule } from "@nestjs/axios";
 import { FleetController } from "../presentation/http/fleet.controller";
+import { AbstractFleetGatewayService } from "../domain/ports/fleet.service.port";
 import { FleetGatewayService } from "../domain/fleet.service";
 import { AdminRoleGuard } from "../infrastructure/admin-role.guard";
 
 @Module({
   imports: [HttpModule.register({ timeout: 5000, maxRedirects: 0 })],
   controllers: [FleetController],
-  providers: [FleetGatewayService, AdminRoleGuard]
+  providers: [
+    { provide: AbstractFleetGatewayService, useClass: FleetGatewayService },
+    AdminRoleGuard
+  ]
 })
 export class FleetModule {}

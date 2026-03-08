@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
 import { CasesController } from "../presentation/http/cases.controller";
+import { AbstractCasesService } from "../domain/ports/cases.service.port";
 import { CasesService } from "../domain/cases.service";
 import { CaseTemplateSchema } from "../persistence/case-template.schema";
 import { CaseSchema } from "../persistence/case.schema";
@@ -18,6 +19,6 @@ import { InterventionSchema } from "../persistence/intervention.schema";
     ])
   ],
   controllers: [CasesController],
-  providers: [CasesService]
+  providers: [{ provide: AbstractCasesService, useClass: CasesService }]
 })
 export class AppModule {}

@@ -22,70 +22,25 @@ import type {
   UpdateInterventionBody,
   UpdateTodoBody
 } from "@syncora/shared";
+import {
+  AbstractCasesGatewayService,
+  type CreateCaseForOrgBody,
+  type UpdateCaseForOrgBody,
+  type CreateTemplateForOrgBody,
+  type UpdateTemplateForOrgBody,
+  type CreateInterventionForOrgBody,
+  type UpdateInterventionForOrgBody,
+  type UpdateTodoForOrgBody
+} from "./ports/cases.service.port";
 
 const CASES_URL =
   process.env.CASES_SERVICE_URL ?? "http://localhost:3004";
 
-export interface CreateCaseForOrgBody {
-  templateId?: string;
-  title: string;
-  description?: string;
-  priority?: string;
-  assigneeId?: string;
-  dueDate?: string;
-  tags?: string[];
-}
-
-export interface UpdateCaseForOrgBody {
-  title?: string;
-  description?: string;
-  status?: string;
-  priority?: string;
-  assigneeId?: string | null;
-  dueDate?: string | null;
-  tags?: string[];
-}
-
-export interface CreateTemplateForOrgBody {
-  name: string;
-  description?: string;
-  steps: { name: string; description?: string; order: number; todos: { label: string; description?: string }[] }[];
-}
-
-export interface UpdateTemplateForOrgBody {
-  name?: string;
-  description?: string;
-  steps?: { name: string; description?: string; order: number; todos: { label: string; description?: string }[] }[];
-}
-
-export interface CreateInterventionForOrgBody {
-  caseId: string;
-  title: string;
-  description?: string;
-  assigneeId?: string;
-  scheduledStart?: string;
-  scheduledEnd?: string;
-}
-
-export interface UpdateInterventionForOrgBody {
-  title?: string;
-  description?: string;
-  status?: string;
-  assigneeId?: string | null;
-  scheduledStart?: string | null;
-  scheduledEnd?: string | null;
-  notes?: string;
-}
-
-export interface UpdateTodoForOrgBody {
-  stepId: string;
-  todoId: string;
-  status: string;
-}
-
 @Injectable()
-export class CasesGatewayService {
-  constructor(private readonly httpService: HttpService) {}
+export class CasesGatewayService extends AbstractCasesGatewayService {
+  constructor(private readonly httpService: HttpService) {
+    super();
+  }
 
   // ── Templates ──
 

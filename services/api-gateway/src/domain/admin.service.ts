@@ -15,47 +15,28 @@ import type {
   CreatePermissionProfileBody,
   EffectivePermissionsResponse,
   InvitationResponse,
-  PermissionCode,
   UpdatePermissionProfileBody,
   UserPermissionAssignmentResponse,
   UserResponse
 } from "@syncora/shared";
 import { AVAILABLE_PERMISSION_CODES } from "@syncora/shared";
+import {
+  AbstractAdminService,
+  type InviteOrganizationUserBody,
+  type UpdateUserPermissionsBody,
+  type CreatePermissionProfileForOrgBody,
+  type UpdatePermissionProfileForOrgBody
+} from "./ports/admin.service.port";
 
 const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
 const PERMISSIONS_URL =
   process.env.PERMISSIONS_SERVICE_URL ?? "http://localhost:3003";
 
-export interface InviteOrganizationUserBody {
-  email: string;
-  name?: string;
-  role?: "admin" | "member";
-  profileId?: string;
-  extraPermissions?: PermissionCode[];
-  revokedPermissions?: PermissionCode[];
-}
-
-export interface UpdateUserPermissionsBody {
-  profileId?: string | null;
-  extraPermissions?: PermissionCode[];
-  revokedPermissions?: PermissionCode[];
-}
-
-export interface CreatePermissionProfileForOrgBody {
-  name: string;
-  description?: string;
-  permissions: PermissionCode[];
-}
-
-export interface UpdatePermissionProfileForOrgBody {
-  name?: string;
-  description?: string;
-  permissions?: PermissionCode[];
-}
-
 @Injectable()
-export class AdminService {
-  constructor(private readonly httpService: HttpService) {}
+export class AdminService extends AbstractAdminService {
+  constructor(private readonly httpService: HttpService) {
+    super();
+  }
 
   getPermissionsCatalog() {
     return {

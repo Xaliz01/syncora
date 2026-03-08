@@ -24,6 +24,7 @@ import type { UserRole } from "@syncora/shared";
 import type { PermissionProfileDocument } from "../persistence/permission-profile.schema";
 import type { UserPermissionAssignmentDocument } from "../persistence/user-permission-assignment.schema";
 import type { InvitationDocument } from "../persistence/invitation.schema";
+import { AbstractPermissionsService } from "./ports/permissions.service.port";
 
 const ROLE_DEFAULT_PERMISSIONS: Record<UserRole, PermissionCode[]> = {
   admin: [...AVAILABLE_PERMISSION_CODES],
@@ -31,7 +32,7 @@ const ROLE_DEFAULT_PERMISSIONS: Record<UserRole, PermissionCode[]> = {
 };
 
 @Injectable()
-export class PermissionsService {
+export class PermissionsService extends AbstractPermissionsService {
   constructor(
     @InjectModel("PermissionProfile")
     private readonly permissionProfileModel: Model<PermissionProfileDocument>,
@@ -39,7 +40,9 @@ export class PermissionsService {
     private readonly userAssignmentModel: Model<UserPermissionAssignmentDocument>,
     @InjectModel("Invitation")
     private readonly invitationModel: Model<InvitationDocument>
-  ) {}
+  ) {
+    super();
+  }
 
   async createProfile(body: CreatePermissionProfileBody): Promise<PermissionProfileResponse> {
     const permissions = this.normalizePermissions(body.permissions);

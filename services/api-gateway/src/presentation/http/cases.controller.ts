@@ -10,11 +10,7 @@ import {
   Query,
   UseGuards
 } from "@nestjs/common";
-import { CasesGatewayService } from "../../domain/cases.service";
-import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
-import { RequirePermissionGuard, RequirePermissions } from "../../infrastructure/require-permission.guard";
-import { CurrentUser } from "../../infrastructure/current-user.decorator";
-import type { AuthUser } from "@syncora/shared";
+import { AbstractCasesGatewayService } from "../../domain/ports/cases.service.port";
 import type {
   CreateCaseForOrgBody,
   CreateInterventionForOrgBody,
@@ -23,14 +19,16 @@ import type {
   UpdateInterventionForOrgBody,
   UpdateTemplateForOrgBody,
   UpdateTodoForOrgBody
-} from "../../domain/cases.service";
+} from "../../domain/ports/cases.service.port";
+import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
+import { RequirePermissionGuard, RequirePermissions } from "../../infrastructure/require-permission.guard";
+import { CurrentUser } from "../../infrastructure/current-user.decorator";
+import type { AuthUser } from "@syncora/shared";
 
 @Controller("cases")
 @UseGuards(JwtAuthGuard, RequirePermissionGuard)
 export class CasesController {
-  constructor(private readonly casesService: CasesGatewayService) {}
-
-  // ── Templates ──
+  constructor(private readonly casesService: AbstractCasesGatewayService) {}
 
   @Post("templates")
   @RequirePermissions("case_templates.create")
@@ -74,8 +72,6 @@ export class CasesController {
   ) {
     return this.casesService.deleteTemplate(user, templateId);
   }
-
-  // ── Cases ──
 
   @Post("items")
   @RequirePermissions("cases.create")
@@ -136,8 +132,6 @@ export class CasesController {
     return this.casesService.updateTodo(user, caseId, body);
   }
 
-  // ── Interventions ──
-
   @Post("interventions")
   @RequirePermissions("interventions.create")
   async createIntervention(
@@ -193,8 +187,6 @@ export class CasesController {
   ) {
     return this.casesService.deleteIntervention(user, interventionId);
   }
-
-  // ── Dashboard ──
 
   @Get("dashboard")
   @RequirePermissions("cases.read")

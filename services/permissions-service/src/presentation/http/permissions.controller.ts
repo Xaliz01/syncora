@@ -10,7 +10,7 @@ import {
   Put,
   Query
 } from "@nestjs/common";
-import { PermissionsService } from "../../domain/permissions.service";
+import { AbstractPermissionsService } from "../../domain/ports/permissions.service.port";
 import type {
   AssignUserPermissionsBody,
   CreateInvitationBody,
@@ -21,7 +21,7 @@ import type {
 
 @Controller()
 export class PermissionsController {
-  constructor(private readonly permissionsService: PermissionsService) {}
+  constructor(private readonly permissionsService: AbstractPermissionsService) {}
 
   @Post("profiles")
   async createProfile(@Body() body: CreatePermissionProfileBody) {

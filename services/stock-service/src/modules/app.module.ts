@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
 import { StockController } from "../presentation/http/stock.controller";
+import { AbstractStockService } from "../domain/ports/stock.service.port";
 import { StockService } from "../domain/stock.service";
 import { ArticleSchema } from "../persistence/article.schema";
 import { StockMovementSchema } from "../persistence/stock-movement.schema";
@@ -16,6 +17,6 @@ import { StockMovementSchema } from "../persistence/stock-movement.schema";
     ])
   ],
   controllers: [StockController],
-  providers: [StockService]
+  providers: [{ provide: AbstractStockService, useClass: StockService }]
 })
 export class AppModule {}

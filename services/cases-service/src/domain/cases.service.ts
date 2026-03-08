@@ -22,9 +22,10 @@ import type {
 import type { CaseTemplateDocument } from "../persistence/case-template.schema";
 import type { CaseDocument } from "../persistence/case.schema";
 import type { InterventionDocument } from "../persistence/intervention.schema";
+import { AbstractCasesService } from "./ports/cases.service.port";
 
 @Injectable()
-export class CasesService {
+export class CasesService extends AbstractCasesService {
   constructor(
     @InjectModel("CaseTemplate")
     private readonly templateModel: Model<CaseTemplateDocument>,
@@ -32,7 +33,9 @@ export class CasesService {
     private readonly caseModel: Model<CaseDocument>,
     @InjectModel("Intervention")
     private readonly interventionModel: Model<InterventionDocument>
-  ) {}
+  ) {
+    super();
+  }
 
   // ── Templates ──
 

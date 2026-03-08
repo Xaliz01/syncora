@@ -9,7 +9,7 @@ import {
   Post,
   Query
 } from "@nestjs/common";
-import { StockService } from "../../domain/stock.service";
+import { AbstractStockService } from "../../domain/ports/stock.service.port";
 import type {
   AddInterventionArticleUsageBody,
   CreateArticleBody,
@@ -19,7 +19,7 @@ import type {
 
 @Controller()
 export class StockController {
-  constructor(private readonly stockService: StockService) {}
+  constructor(private readonly stockService: AbstractStockService) {}
 
   @Post("articles")
   async createArticle(@Body() body: CreateArticleBody) {

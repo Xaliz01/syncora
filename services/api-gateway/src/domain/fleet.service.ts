@@ -12,26 +12,20 @@ import type {
   CreateVehicleBody,
   UpdateVehicleBody,
   VehicleResponse,
-  CreateTechnicianBody,
-  UpdateTechnicianBody,
-  TechnicianResponse,
   AssignTechnicianToVehicleBody,
-  CreateUserBody,
-  UserResponse,
   VehicleType,
-  VehicleStatus,
-  TechnicianStatus,
-  CreateTechnicianUserAccountBody
+  VehicleStatus
 } from "@syncora/shared";
+import { AbstractFleetGatewayService } from "./ports/fleet.service.port";
 
 const FLEET_URL = process.env.FLEET_SERVICE_URL ?? "http://localhost:3005";
-const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
+const TECHNICIANS_URL = process.env.TECHNICIANS_SERVICE_URL ?? "http://localhost:3006";
 
 @Injectable()
-export class FleetGatewayService {
-  constructor(private readonly httpService: HttpService) {}
-
-  // ─── Vehicles ───
+export class FleetGatewayService extends AbstractFleetGatewayService {
+  constructor(private readonly httpService: HttpService) {
+    super();
+  }
 
   async createVehicle(
     currentUser: AuthUser,
@@ -90,11 +84,27 @@ export class FleetGatewayService {
     currentUser: AuthUser,
     vehicleId: string
   ): Promise<{ deleted: true }> {
-    return this.callFleetService<{ deleted: true }>({
+    const vehicle = await this.getVehicle(currentUser, vehicleId);
+
+    const result = await this.callFleetService<{ deleted: true }>({
       method: "delete",
       path: `/vehicles/${vehicleId}`,
       query: { organizationId: currentUser.organizationId }
     });
+
+    if (vehicle.assignedTechnicianId) {
+      try {
+        await this.callTechniciansService({
+          method: "delete",
+          path: `/technicians/${vehicle.assignedTechnicianId}/vehicles/${vehicleId}`,
+          query: { organizationId: currentUser.organizationId }
+        });
+      } catch {
+        // best-effort cross-service cleanup
+      }
+    }
+
+    return result;
   }
 
   async assignTechnicianToVehicle(
@@ -102,164 +112,65 @@ export class FleetGatewayService {
     vehicleId: string,
     body: AssignTechnicianToVehicleBody
   ): Promise<VehicleResponse> {
-    return this.callFleetService<VehicleResponse>({
+    const currentVehicle = await this.getVehicle(currentUser, vehicleId);
+
+    if (currentVehicle.assignedTechnicianId && currentVehicle.assignedTechnicianId !== body.technicianId) {
+      try {
+        await this.callTechniciansService({
+          method: "delete",
+          path: `/technicians/${currentVehicle.assignedTechnicianId}/vehicles/${vehicleId}`,
+          query: { organizationId: currentUser.organizationId }
+        });
+      } catch {
+        // best-effort
+      }
+    }
+
+    const vehicle = await this.callFleetService<VehicleResponse>({
       method: "put",
       path: `/vehicles/${vehicleId}/assign`,
       query: { organizationId: currentUser.organizationId },
       body
     });
+
+    try {
+      await this.callTechniciansService({
+        method: "put",
+        path: `/technicians/${body.technicianId}/vehicles/${vehicleId}`,
+        query: { organizationId: currentUser.organizationId }
+      });
+    } catch {
+      // best-effort
+    }
+
+    return vehicle;
   }
 
   async unassignTechnicianFromVehicle(
     currentUser: AuthUser,
     vehicleId: string
   ): Promise<VehicleResponse> {
-    return this.callFleetService<VehicleResponse>({
+    const currentVehicle = await this.getVehicle(currentUser, vehicleId);
+
+    const vehicle = await this.callFleetService<VehicleResponse>({
       method: "delete",
       path: `/vehicles/${vehicleId}/assign`,
       query: { organizationId: currentUser.organizationId }
     });
-  }
 
-  // ─── Technicians ───
-
-  async createTechnician(
-    currentUser: AuthUser,
-    body: {
-      firstName: string;
-      lastName: string;
-      email?: string;
-      phone?: string;
-      speciality?: string;
-      status?: TechnicianStatus;
-      createUserAccount?: boolean;
-      userAccountPassword?: string;
-    }
-  ): Promise<TechnicianResponse> {
-    const { createUserAccount, userAccountPassword, ...technicianFields } = body;
-
-    const technician = await this.callFleetService<TechnicianResponse>({
-      method: "post",
-      path: "/technicians",
-      body: {
-        organizationId: currentUser.organizationId,
-        ...technicianFields
-      } satisfies CreateTechnicianBody
-    });
-
-    if (createUserAccount && body.email) {
-      if (!userAccountPassword) {
-        throw new BadRequestException(
-          "Un mot de passe est requis pour créer un compte utilisateur"
-        );
+    if (currentVehicle.assignedTechnicianId) {
+      try {
+        await this.callTechniciansService({
+          method: "delete",
+          path: `/technicians/${currentVehicle.assignedTechnicianId}/vehicles/${vehicleId}`,
+          query: { organizationId: currentUser.organizationId }
+        });
+      } catch {
+        // best-effort
       }
-      const user = await this.createUserForTechnician(
-        currentUser.organizationId,
-        body.email,
-        `${body.firstName} ${body.lastName}`,
-        userAccountPassword
-      );
-      return this.callFleetService<TechnicianResponse>({
-        method: "put",
-        path: `/technicians/${technician.id}/link-user`,
-        query: { organizationId: currentUser.organizationId },
-        body: { userId: user.id }
-      });
     }
 
-    return technician;
-  }
-
-  async listTechnicians(currentUser: AuthUser): Promise<TechnicianResponse[]> {
-    return this.callFleetService<TechnicianResponse[]>({
-      method: "get",
-      path: "/technicians",
-      query: { organizationId: currentUser.organizationId }
-    });
-  }
-
-  async getTechnician(
-    currentUser: AuthUser,
-    technicianId: string
-  ): Promise<TechnicianResponse> {
-    return this.callFleetService<TechnicianResponse>({
-      method: "get",
-      path: `/technicians/${technicianId}`,
-      query: { organizationId: currentUser.organizationId }
-    });
-  }
-
-  async updateTechnician(
-    currentUser: AuthUser,
-    technicianId: string,
-    body: UpdateTechnicianBody
-  ): Promise<TechnicianResponse> {
-    return this.callFleetService<TechnicianResponse>({
-      method: "patch",
-      path: `/technicians/${technicianId}`,
-      query: { organizationId: currentUser.organizationId },
-      body
-    });
-  }
-
-  async deleteTechnician(
-    currentUser: AuthUser,
-    technicianId: string
-  ): Promise<{ deleted: true }> {
-    return this.callFleetService<{ deleted: true }>({
-      method: "delete",
-      path: `/technicians/${technicianId}`,
-      query: { organizationId: currentUser.organizationId }
-    });
-  }
-
-  async createTechnicianUserAccount(
-    currentUser: AuthUser,
-    technicianId: string,
-    body: CreateTechnicianUserAccountBody
-  ): Promise<TechnicianResponse> {
-    const technician = await this.getTechnician(currentUser, technicianId);
-    if (technician.userId) {
-      throw new BadRequestException("Ce technicien a déjà un compte utilisateur");
-    }
-    if (!technician.email) {
-      throw new BadRequestException(
-        "Le technicien doit avoir une adresse email pour créer un compte"
-      );
-    }
-    const user = await this.createUserForTechnician(
-      currentUser.organizationId,
-      technician.email,
-      `${technician.firstName} ${technician.lastName}`,
-      body.password
-    );
-    return this.callFleetService<TechnicianResponse>({
-      method: "put",
-      path: `/technicians/${technicianId}/link-user`,
-      query: { organizationId: currentUser.organizationId },
-      body: { userId: user.id }
-    });
-  }
-
-  // ─── Helpers ───
-
-  private async createUserForTechnician(
-    organizationId: string,
-    email: string,
-    name: string,
-    password: string
-  ): Promise<UserResponse> {
-    return this.callUsersService<UserResponse>({
-      method: "post",
-      path: "/users",
-      body: {
-        organizationId,
-        email,
-        name,
-        password,
-        role: "member"
-      } satisfies CreateUserBody
-    });
+    return vehicle;
   }
 
   private async callFleetService<T>(params: {
@@ -283,7 +194,7 @@ export class FleetGatewayService {
     }
   }
 
-  private async callUsersService<T>(params: {
+  private async callTechniciansService<T = unknown>(params: {
     method: "get" | "post" | "patch" | "put" | "delete";
     path: string;
     body?: unknown;
@@ -293,7 +204,7 @@ export class FleetGatewayService {
       const response = await firstValueFrom(
         this.httpService.request<T>({
           method: params.method,
-          url: `${USERS_URL}${params.path}`,
+          url: `${TECHNICIANS_URL}${params.path}`,
           data: params.body,
           params: params.query
         })

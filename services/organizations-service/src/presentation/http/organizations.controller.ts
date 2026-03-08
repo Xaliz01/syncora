@@ -1,10 +1,10 @@
 import { Body, Controller, Get, Param, Post, NotFoundException } from "@nestjs/common";
-import { OrganizationsService } from "../../domain/organizations.service";
+import { AbstractOrganizationsService } from "../../domain/ports/organizations.service.port";
 import type { CreateOrganizationBody } from "@syncora/shared";
 
 @Controller("organizations")
 export class OrganizationsController {
-  constructor(private readonly organizationsService: OrganizationsService) {}
+  constructor(private readonly organizationsService: AbstractOrganizationsService) {}
 
   @Post()
   async create(@Body() body: CreateOrganizationBody) {

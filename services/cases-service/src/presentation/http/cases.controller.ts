@@ -10,7 +10,7 @@ import {
   Put,
   Query
 } from "@nestjs/common";
-import { CasesService } from "../../domain/cases.service";
+import { AbstractCasesService } from "../../domain/ports/cases.service.port";
 import type {
   CreateCaseBody,
   CreateCaseTemplateBody,
@@ -23,7 +23,7 @@ import type {
 
 @Controller()
 export class CasesController {
-  constructor(private readonly casesService: CasesService) {}
+  constructor(private readonly casesService: AbstractCasesService) {}
 
   // ── Templates ──
 

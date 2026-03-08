@@ -3,13 +3,16 @@ import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import type { OrganizationDocument } from "../persistence/organization.schema";
 import type { OrganizationResponse } from "@syncora/shared";
+import { AbstractOrganizationsService } from "./ports/organizations.service.port";
 
 @Injectable()
-export class OrganizationsService {
+export class OrganizationsService extends AbstractOrganizationsService {
   constructor(
     @InjectModel("Organization")
     private readonly organizationModel: Model<OrganizationDocument>
-  ) {}
+  ) {
+    super();
+  }
 
   async create(name: string): Promise<OrganizationResponse> {
     const doc = await this.organizationModel.create({ name });

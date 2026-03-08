@@ -17,51 +17,21 @@ import type {
   StockMovementResponse,
   UpdateArticleBody
 } from "@syncora/shared";
+import {
+  AbstractStockGatewayService,
+  type AddInterventionArticleUsageForOrgBody,
+  type CreateArticleForOrgBody,
+  type UpdateArticleForOrgBody,
+  type CreateArticleMovementForOrgBody
+} from "./ports/stock.service.port";
 
-const STOCK_URL = process.env.STOCK_SERVICE_URL ?? "http://localhost:3006";
-
-export interface AddInterventionArticleUsageForOrgBody {
-  caseId?: string;
-  articleId: string;
-  quantity: number;
-  movementType?: "in" | "out";
-  note?: string;
-}
-
-export interface CreateArticleForOrgBody {
-  name: string;
-  reference: string;
-  description?: string;
-  unit?: string;
-  initialStock?: number;
-  reorderPoint?: number;
-  targetStock?: number;
-  isActive?: boolean;
-}
-
-export interface UpdateArticleForOrgBody {
-  name?: string;
-  reference?: string;
-  description?: string;
-  unit?: string;
-  reorderPoint?: number;
-  targetStock?: number;
-  isActive?: boolean;
-}
-
-export interface CreateArticleMovementForOrgBody {
-  articleId: string;
-  movementType: "in" | "out" | "adjustment";
-  quantity: number;
-  note?: string;
-  reason?: string;
-  interventionId?: string;
-  caseId?: string;
-}
+const STOCK_URL = process.env.STOCK_SERVICE_URL ?? "http://localhost:3007";
 
 @Injectable()
-export class StockGatewayService {
-  constructor(private readonly httpService: HttpService) {}
+export class StockGatewayService extends AbstractStockGatewayService {
+  constructor(private readonly httpService: HttpService) {
+    super();
+  }
 
   async createArticle(user: AuthUser, body: CreateArticleForOrgBody) {
     return this.callStockService<ArticleResponse>({
