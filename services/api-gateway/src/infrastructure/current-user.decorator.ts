@@ -11,6 +11,8 @@ export const CurrentUser = createParamDecorator(
       email: p.email,
       organizationId: p.organizationId,
       role: p.role,
+      status: p.status,
+      permissions: p.permissions,
       name: p.name
     };
   }

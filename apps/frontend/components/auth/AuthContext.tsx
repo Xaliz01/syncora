@@ -18,6 +18,11 @@ interface AuthContextValue extends AuthState {
     adminPassword: string;
     adminName?: string;
   }) => Promise<void>;
+  acceptInvitation: (payload: {
+    invitationToken: string;
+    password: string;
+    name?: string;
+  }) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -72,6 +77,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [persistAuth]
   );
 
+  const acceptInvitation = useCallback(
+    async (payload: { invitationToken: string; password: string; name?: string }) => {
+      const { accessToken, user } = await authApi.acceptInvitation(payload);
+      persistAuth(accessToken, user);
+    },
+    [persistAuth]
+  );
+
   const logout = useCallback(() => {
     authApi.clearToken();
     setState({ user: null, token: null, isReady: true });
@@ -84,9 +97,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated: !!state.token && !!state.user,
       login,
       register,
+      acceptInvitation,
       logout
     }),
-    [state, login, register, logout]
+    [state, login, register, acceptInvitation, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

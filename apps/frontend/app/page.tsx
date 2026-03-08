@@ -2,11 +2,14 @@
 
 import { RequireAuth } from "@/components/auth/RequireAuth";
 import { HomePage } from "@/components/HomePage";
+import { AppShell } from "@/components/layout/AppShell";
 
 export default function Home() {
   return (
     <RequireAuth>
-      <HomePage />
+      <AppShell>
+        <HomePage />
+      </AppShell>
     </RequireAuth>
   );
 }

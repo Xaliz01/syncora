@@ -19,6 +19,9 @@
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
+      "@syncora/shared": [
+        "../../packages/shared/src"
+      ],
       "@/*": [
         "./*"
       ]

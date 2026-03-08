@@ -38,7 +38,8 @@ product:
       register: "Créer une organisation → Créer un utilisateur admin lié à cette organisation"
       login: "Valider email/mot de passe → Émettre un JWT (sub, organizationId, role, email)"
     permissions_future:
-      - "L'admin pourra créer des utilisateurs au sein de son organisation"
-      - "L'admin pourra affecter des rôles/droits (permissions granulaires) aux utilisateurs"
-      - "Les contrôles d'accès (backend et front) s'appuieront sur organizationId + role/permissions"
+      - "Invitations d'utilisateurs d'organisation (status invited -> active)"
+      - "Profils de permissions personnalisés par organisation"
+      - "Affectation profil + permissions granulaires (ajouts/retraits) par utilisateur"
+      - "Permissions effectives exposées par l'auth et via API admin"
 

@@ -3,19 +3,25 @@ import { JwtService } from "@nestjs/jwt";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
 import type {
+  AcceptInvitationBody,
   RegisterBody,
   LoginBody,
   AuthResponse,
   AuthUser,
   JwtPayload,
+  EffectivePermissionsResponse,
+  InvitationResponse,
   OrganizationResponse,
   UserResponse,
   ValidateCredentialsResponse
 } from "@syncora/shared";
+import { AVAILABLE_PERMISSION_CODES } from "@syncora/shared";
 
 const ORGANIZATIONS_URL =
   process.env.ORGANIZATIONS_SERVICE_URL ?? "http://localhost:3001";
 const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
+const PERMISSIONS_URL =
+  process.env.PERMISSIONS_SERVICE_URL ?? "http://localhost:3003";
 
 @Injectable()
 export class AuthService {
@@ -39,7 +45,7 @@ export class AuthService {
       throw err;
     }
 
-    let user: UserResponse | ValidateCredentialsResponse;
+    let user: UserResponse;
     try {
       const res = await firstValueFrom(
         this.httpService.post<UserResponse>(`${USERS_URL}/users`, {
@@ -57,17 +63,26 @@ export class AuthService {
       throw err;
     }
 
+    const permissions = await this.resolveEffectivePermissions(
+      user.organizationId,
+      user.id,
+      user.role
+    );
     const authUser: AuthUser = {
       id: user.id,
       email: user.email,
       organizationId: user.organizationId,
       role: user.role,
+      status: user.status,
+      permissions,
       name: user.name
     };
     const payload: JwtPayload = {
       sub: user.id,
       organizationId: user.organizationId,
       role: user.role,
+      status: user.status,
+      permissions,
       email: user.email,
       name: user.name
     };
@@ -91,21 +106,121 @@ export class AuthService {
       throw err;
     }
 
+    const permissions = await this.resolveEffectivePermissions(
+      user.organizationId,
+      user.id,
+      user.role
+    );
     const authUser: AuthUser = {
       id: user.id,
       email: user.email,
       organizationId: user.organizationId,
       role: user.role,
+      status: user.status,
+      permissions,
       name: user.name
     };
     const payload: JwtPayload = {
       sub: user.id,
       organizationId: user.organizationId,
       role: user.role,
+      status: user.status,
+      permissions,
       email: user.email,
       name: user.name
     };
     const accessToken = this.jwtService.sign(payload);
     return { accessToken, user: authUser };
+  }
+
+  async acceptInvitation(body: AcceptInvitationBody): Promise<AuthResponse> {
+    let invitation: InvitationResponse;
+    try {
+      const res = await firstValueFrom(
+        this.httpService.post<InvitationResponse>(`${PERMISSIONS_URL}/invitations/resolve`, {
+          invitationToken: body.invitationToken
+        })
+      );
+      invitation = res.data;
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 404) throw new UnauthorizedException("Invitation not found");
+      if (status === 409) throw new UnauthorizedException("Invitation has already been used");
+      throw err;
+    }
+
+    let user: UserResponse;
+    try {
+      const res = await firstValueFrom(
+        this.httpService.post<UserResponse>(`${USERS_URL}/users/${invitation.invitedUserId}/activate`, {
+          password: body.password,
+          name: body.name
+        })
+      );
+      user = res.data;
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 404) throw new UnauthorizedException("Invited user not found");
+      if (status === 400) throw new UnauthorizedException("Invalid invitation activation state");
+      throw err;
+    }
+
+    try {
+      await firstValueFrom(
+        this.httpService.post<InvitationResponse>(`${PERMISSIONS_URL}/invitations/accept`, {
+          invitationToken: body.invitationToken
+        })
+      );
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 404) throw new UnauthorizedException("Invitation could not be finalized");
+      if (status === 409) throw new UnauthorizedException("Invitation has already been used");
+      throw err;
+    }
+
+    const permissions = await this.resolveEffectivePermissions(
+      user.organizationId,
+      user.id,
+      user.role
+    );
+    const authUser: AuthUser = {
+      id: user.id,
+      email: user.email,
+      organizationId: user.organizationId,
+      role: user.role,
+      status: user.status,
+      permissions,
+      name: user.name
+    };
+    const payload: JwtPayload = {
+      sub: user.id,
+      organizationId: user.organizationId,
+      role: user.role,
+      status: user.status,
+      permissions,
+      email: user.email,
+      name: user.name
+    };
+    const accessToken = this.jwtService.sign(payload);
+    return { accessToken, user: authUser };
+  }
+
+  private async resolveEffectivePermissions(
+    organizationId: string,
+    userId: string,
+    role: "admin" | "member"
+  ): Promise<EffectivePermissionsResponse["permissions"]> {
+    try {
+      const res = await firstValueFrom(
+        this.httpService.post<EffectivePermissionsResponse>(`${PERMISSIONS_URL}/permissions/effective`, {
+          organizationId,
+          userId,
+          role
+        })
+      );
+      return res.data.permissions;
+    } catch {
+      return role === "admin" ? [...AVAILABLE_PERMISSION_CODES] : [];
+    }
   }
 }

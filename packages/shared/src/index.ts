@@ -11,6 +11,7 @@ export interface HealthPayload {
 
 export * from "./auth";
 export * from "./organization";
+export * from "./permissions";
 export * from "./user";
 export * from "./logger";
 export * from "./nest-logger.adapter";

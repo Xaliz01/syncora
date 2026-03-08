@@ -38,6 +38,23 @@ export async function register(payload: {
   return res.json() as Promise<{ accessToken: string; user: import("@syncora/shared").AuthUser }>;
 }
 
+export async function acceptInvitation(payload: {
+  invitationToken: string;
+  password: string;
+  name?: string;
+}) {
+  const res = await fetch(`${API_BASE}/auth/accept-invitation`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { message?: string }).message ?? "Acceptation impossible");
+  }
+  return res.json() as Promise<{ accessToken: string; user: import("@syncora/shared").AuthUser }>;
+}
+
 export function setToken(token: string) {
   if (typeof window !== "undefined") localStorage.setItem("syncora_access_token", token);
 }
