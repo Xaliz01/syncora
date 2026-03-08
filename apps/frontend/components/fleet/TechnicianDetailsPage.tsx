@@ -147,12 +147,12 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold mb-1">
+          <h1 className="text-xl sm:text-2xl font-semibold mb-1">
             {technician.firstName} {technician.lastName}
           </h1>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-500 mt-1">
             Fiche technicien
             {technician.speciality ? ` — ${technician.speciality}` : ""}
           </p>
@@ -161,7 +161,7 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
           <button
             type="button"
             onClick={() => setIsEditing((p) => !p)}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100"
+            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
           >
             {isEditing ? "Annuler" : "Modifier"}
           </button>
@@ -174,7 +174,7 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
           </button>
           <Link
             href="/fleet/technicians"
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100"
+            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
           >
             Retour
           </Link>
@@ -229,31 +229,31 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
           <div className="grid gap-3 md:grid-cols-2">
             <div>
               <label className="block text-sm text-slate-500 mb-1">Prénom</label>
-              <input type="text" value={editFirstName} onChange={(e) => setEditFirstName(e.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900" />
+              <input type="text" value={editFirstName} onChange={(e) => setEditFirstName(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900" />
             </div>
             <div>
               <label className="block text-sm text-slate-500 mb-1">Nom</label>
-              <input type="text" value={editLastName} onChange={(e) => setEditLastName(e.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900" />
+              <input type="text" value={editLastName} onChange={(e) => setEditLastName(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900" />
             </div>
           </div>
           <div className="grid gap-3 md:grid-cols-2">
             <div>
               <label className="block text-sm text-slate-500 mb-1">Email</label>
-              <input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900" />
+              <input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900" />
             </div>
             <div>
               <label className="block text-sm text-slate-500 mb-1">Téléphone</label>
-              <input type="tel" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900" />
+              <input type="tel" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900" />
             </div>
           </div>
           <div className="grid gap-3 md:grid-cols-2">
             <div>
               <label className="block text-sm text-slate-500 mb-1">Spécialité</label>
-              <input type="text" value={editSpeciality} onChange={(e) => setEditSpeciality(e.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900" />
+              <input type="text" value={editSpeciality} onChange={(e) => setEditSpeciality(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900" />
             </div>
             <div>
               <label className="block text-sm text-slate-500 mb-1">Statut</label>
-              <select value={editStatus} onChange={(e) => setEditStatus(e.target.value as TechnicianStatus)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900">
+              <select value={editStatus} onChange={(e) => setEditStatus(e.target.value as TechnicianStatus)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900">
                 {TECHNICIAN_STATUSES.map((s) => (
                   <option key={s} value={s}>{s === "actif" ? "Actif" : "Inactif"}</option>
                 ))}
@@ -265,7 +265,7 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
               type="button"
               onClick={() => void handleSave()}
               disabled={saving}
-              className="rounded-lg bg-brand-600 px-4 py-2 text-white hover:bg-brand-500 disabled:opacity-50"
+              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50"
             >
               {saving ? "Enregistrement..." : "Enregistrer"}
             </button>
@@ -288,12 +288,12 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
               <button
                 type="button"
                 onClick={() => setShowCreateAccount(true)}
-                className="rounded-lg bg-brand-600 px-4 py-2 text-sm text-white hover:bg-brand-500"
+                className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500"
               >
                 Créer un compte utilisateur
               </button>
             ) : (
-              <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-4 space-y-3">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
                 <p className="text-sm font-medium text-slate-700">
                   Créer un compte pour {technician.firstName} {technician.lastName}
                 </p>
@@ -309,7 +309,7 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
                       type="email"
                       value={technician.email ?? ""}
                       disabled
-                      className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-slate-500"
+                      className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-slate-500"
                     />
                   </div>
                   <div>
@@ -321,7 +321,7 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
                       placeholder="Mot de passe initial"
                       value={accountPassword}
                       onChange={(e) => setAccountPassword(e.target.value)}
-                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900"
                     />
                   </div>
                 </div>
@@ -330,7 +330,7 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
                     type="button"
                     onClick={() => void handleCreateAccount()}
                     disabled={creatingAccount || !technician.email}
-                    className="rounded-lg bg-brand-600 px-4 py-2 text-sm text-white hover:bg-brand-500 disabled:opacity-50"
+                    className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50"
                   >
                     {creatingAccount ? "Création..." : "Créer le compte"}
                   </button>
@@ -340,7 +340,7 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
                       setShowCreateAccount(false);
                       setAccountPassword("");
                     }}
-                    className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100"
+                    className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
                   >
                     Annuler
                   </button>
@@ -364,7 +364,7 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
                 className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm hover:bg-slate-100 transition"
               >
                 <div>
-                  <span className="font-medium text-brand-700">
+                  <span className="font-medium text-brand-600">
                     {vehicle.registrationNumber}
                   </span>
                   <span className="ml-2 text-slate-500">

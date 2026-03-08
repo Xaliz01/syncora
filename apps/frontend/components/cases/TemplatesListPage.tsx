@@ -19,16 +19,16 @@ export function TemplatesListPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">Modèles de dossier</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="text-xl sm:text-2xl font-semibold">Modèles de dossier</h1>
+          <p className="text-sm text-slate-500 mt-1">
             Configurez des modèles avec étapes et tâches pour créer rapidement des dossiers typés.
           </p>
         </div>
         <Link
           href="/settings/case-templates/new"
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition"
+          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition self-start flex-shrink-0"
         >
           Nouveau modèle
         </Link>
@@ -37,7 +37,7 @@ export function TemplatesListPage() {
       {isLoading ? (
         <div className="text-sm text-slate-500">Chargement…</div>
       ) : !templates?.length ? (
-        <div className="rounded-xl border border-dashed border-blue-200 bg-blue-50/50 p-8 text-center">
+        <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
           <p className="text-slate-600 mb-2">Aucun modèle de dossier</p>
           <p className="text-sm text-slate-500">
             Créez votre premier modèle pour standardiser la gestion de vos dossiers.
@@ -48,7 +48,7 @@ export function TemplatesListPage() {
           {templates.map((template) => (
             <div
               key={template.id}
-              className="rounded-xl border border-blue-100 bg-white p-4 shadow-sm hover:shadow-md transition"
+              className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition"
             >
               <Link href={`/settings/case-templates/${template.id}`} className="block">
                 <h3 className="font-semibold text-slate-800">{template.name}</h3>
@@ -66,7 +66,7 @@ export function TemplatesListPage() {
               <div className="mt-3 flex gap-2 border-t border-slate-100 pt-3">
                 <Link
                   href={`/settings/case-templates/${template.id}`}
-                  className="text-xs text-blue-600 hover:text-blue-700"
+                  className="text-xs text-brand-600 hover:text-brand-500 font-medium"
                 >
                   Modifier
                 </Link>

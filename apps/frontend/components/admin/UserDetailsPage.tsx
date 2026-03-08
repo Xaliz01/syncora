@@ -106,10 +106,10 @@ export function UserDetailsPage({ userId }: { userId: string }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold mb-1">Fiche utilisateur</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="text-xl sm:text-2xl font-semibold mb-1">Fiche utilisateur</h1>
+          <p className="text-sm text-slate-500 mt-1">
             Détail de <span className="font-medium text-slate-700">{user.email}</span>.
           </p>
         </div>
@@ -118,14 +118,14 @@ export function UserDetailsPage({ userId }: { userId: string }) {
             <button
               type="button"
               onClick={() => setIsEditing((previous) => !previous)}
-              className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100"
+              className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
             >
               {isEditing ? "Annuler" : "Modifier"}
             </button>
           )}
           <Link
             href="/users"
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100"
+            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
           >
             Retour à la liste
           </Link>
@@ -217,7 +217,7 @@ export function UserDetailsPage({ userId }: { userId: string }) {
                       profiles.find((profile) => profile.id === nextProfileId)?.permissions ?? [];
                     setSelectedPermissions(profilePermissions);
                   }}
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900"
                 >
                   <option value="">Aucun profil</option>
                   {profiles.map((profile) => (
@@ -258,7 +258,7 @@ export function UserDetailsPage({ userId }: { userId: string }) {
                   type="button"
                   onClick={() => void handleSave()}
                   disabled={saving}
-                  className="rounded-lg bg-brand-600 px-4 py-2 text-white hover:bg-brand-500 disabled:opacity-50"
+                  className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50"
                 >
                   {saving ? "Enregistrement..." : "Enregistrer"}
                 </button>

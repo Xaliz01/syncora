@@ -86,22 +86,22 @@ export function ProfileDetailsPage({ profileId }: { profileId: string }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold mb-1">Fiche profil</h1>
-          <p className="text-sm text-slate-500">Consultez ce profil de permissions.</p>
+          <h1 className="text-xl sm:text-2xl font-semibold mb-1">Fiche profil</h1>
+          <p className="text-sm text-slate-500 mt-1">Consultez ce profil de permissions.</p>
         </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => setIsEditing((previous) => !previous)}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100"
+            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
           >
             {isEditing ? "Annuler" : "Modifier"}
           </button>
           <Link
             href="/settings/profiles"
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100"
+            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
           >
             Retour aux profils
           </Link>
@@ -152,14 +152,14 @@ export function ProfileDetailsPage({ profileId }: { profileId: string }) {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
+                    className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900"
                   />
                   <input
                     type="text"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Description (optionnel)"
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
+                    className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900"
                   />
                 </div>
                 <div className="grid gap-2 md:grid-cols-2">
@@ -184,7 +184,7 @@ export function ProfileDetailsPage({ profileId }: { profileId: string }) {
                   <button
                     type="submit"
                     disabled={saving}
-                    className="rounded-lg bg-brand-600 px-4 py-2 text-white hover:bg-brand-500 disabled:opacity-50"
+                    className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50"
                   >
                     {saving ? "Enregistrement..." : "Enregistrer"}
                   </button>

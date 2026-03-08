@@ -34,16 +34,16 @@ export function TechniciansListPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold mb-1">Techniciens</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="text-xl sm:text-2xl font-semibold">Techniciens</h1>
+          <p className="text-sm text-slate-500 mt-1">
             Liste des techniciens de l&apos;organisation.
           </p>
         </div>
         <Link
           href="/fleet/technicians/new"
-          className="rounded-lg bg-brand-600 px-4 py-2 text-sm text-white hover:bg-brand-500"
+          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition self-start flex-shrink-0"
         >
           Ajouter un technicien
         </Link>
@@ -64,7 +64,7 @@ export function TechniciansListPage() {
           <p className="text-sm text-slate-500 mb-3">Aucun technicien enregistré.</p>
           <Link
             href="/fleet/technicians/new"
-            className="text-sm text-brand-600 hover:underline"
+            className="text-sm text-brand-600 hover:underline font-medium"
           >
             Ajouter votre premier technicien
           </Link>
@@ -82,16 +82,16 @@ export function TechniciansListPage() {
             <Link
               key={tech.id}
               href={`/fleet/technicians/${tech.id}`}
-              className="grid md:grid-cols-[1.2fr_1fr_0.8fr_0.5fr_0.5fr] gap-3 items-center px-4 py-3 border-b border-slate-200 last:border-b-0 hover:bg-slate-50 transition"
+              className="grid md:grid-cols-[1.2fr_1fr_0.8fr_0.5fr_0.5fr] gap-2 md:gap-3 items-center px-4 py-3 border-b border-slate-200 last:border-b-0 hover:bg-slate-50 transition"
             >
-              <span className="font-medium text-brand-700">
+              <span className="font-medium text-brand-600">
                 {tech.firstName} {tech.lastName}
               </span>
-              <span className="text-sm text-slate-500">{tech.email || "—"}</span>
+              <span className="text-sm text-slate-500 truncate">{tech.email || "—"}</span>
               <span className="text-sm text-slate-600">{tech.speciality || "—"}</span>
               <span className="text-sm text-slate-600">{tech.assignedVehicleIds.length}</span>
               <span
-                className={`inline-flex w-fit rounded border px-2 py-0.5 text-xs capitalize ${STATUS_COLORS[tech.status] ?? "bg-slate-50 text-slate-700 border-slate-200"}`}
+                className={`inline-flex w-fit rounded-full border px-2 py-0.5 text-xs capitalize ${STATUS_COLORS[tech.status] ?? "bg-slate-50 text-slate-700 border-slate-200"}`}
               >
                 {tech.status}
               </span>

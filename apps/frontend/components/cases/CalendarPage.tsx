@@ -7,7 +7,7 @@ import type { InterventionResponse } from "@syncora/shared";
 
 type ViewMode = "week" | "month";
 
-const HOURS = Array.from({ length: 14 }, (_, i) => i + 7); // 7h-20h
+const HOURS = Array.from({ length: 14 }, (_, i) => i + 7);
 
 function getWeekDays(referenceDate: Date): Date[] {
   const d = new Date(referenceDate);
@@ -184,19 +184,19 @@ export function CalendarPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">Calendrier</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="text-xl sm:text-2xl font-semibold">Calendrier</h1>
+          <p className="text-sm text-slate-500 mt-1">
             Planifiez et déplacez vos interventions par glisser-déposer.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex rounded-lg border border-slate-300 overflow-hidden">
+        <div className="flex items-center gap-2 self-start">
+          <div className="flex rounded-lg border border-slate-200 overflow-hidden">
             <button
               onClick={() => setView("week")}
               className={`px-3 py-1.5 text-xs font-medium transition ${
-                view === "week" ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-50"
+                view === "week" ? "bg-brand-600 text-white" : "text-slate-600 hover:bg-slate-50"
               }`}
             >
               Semaine
@@ -204,7 +204,7 @@ export function CalendarPage() {
             <button
               onClick={() => setView("month")}
               className={`px-3 py-1.5 text-xs font-medium transition ${
-                view === "month" ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-50"
+                view === "month" ? "bg-brand-600 text-white" : "text-slate-600 hover:bg-slate-50"
               }`}
             >
               Mois
@@ -213,23 +213,23 @@ export function CalendarPage() {
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-2">
           <button
             onClick={() => navigate(-1)}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm hover:bg-slate-50"
           >
             &larr;
           </button>
           <button
             onClick={goToday}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium hover:bg-slate-50"
           >
             Aujourd&apos;hui
           </button>
           <button
             onClick={() => navigate(1)}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm hover:bg-slate-50"
           >
             &rarr;
           </button>
@@ -238,31 +238,29 @@ export function CalendarPage() {
       </div>
 
       {view === "week" ? (
-        <div className="rounded-xl border border-blue-100 bg-white shadow-sm overflow-auto">
+        <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-auto">
           <div className="grid grid-cols-[60px_repeat(7,1fr)] min-w-[800px]">
-            {/* Day headers */}
-            <div className="border-b border-r border-blue-100 p-2" />
+            <div className="border-b border-r border-slate-200 p-2" />
             {weekDays.map((day, i) => {
               const isToday = isSameDay(day, today);
               return (
                 <div
                   key={i}
-                  className={`border-b border-r border-blue-100 p-2 text-center text-xs font-medium ${
-                    isToday ? "bg-blue-50 text-blue-700" : "text-slate-600"
+                  className={`border-b border-r border-slate-200 p-2 text-center text-xs font-medium ${
+                    isToday ? "bg-brand-600/5 text-brand-600" : "text-slate-600"
                   }`}
                 >
                   <div>{DAY_NAMES[i]}</div>
-                  <div className={`text-lg font-semibold ${isToday ? "text-blue-700" : "text-slate-800"}`}>
+                  <div className={`text-lg font-semibold ${isToday ? "text-brand-600" : "text-slate-800"}`}>
                     {day.getDate()}
                   </div>
                 </div>
               );
             })}
 
-            {/* Time slots */}
             {HOURS.map((hour) => (
               <React.Fragment key={hour}>
-                <div className="border-r border-b border-blue-50 p-1 text-[10px] text-slate-400 text-right pr-2">
+                <div className="border-r border-b border-slate-100 p-1 text-[10px] text-slate-400 text-right pr-2">
                   {hour}:00
                 </div>
                 {weekDays.map((day, dayIdx) => {
@@ -273,7 +271,7 @@ export function CalendarPage() {
                   return (
                     <div
                       key={dayIdx}
-                      className="border-r border-b border-blue-50 p-0.5 min-h-[40px] relative"
+                      className="border-r border-b border-slate-100 p-0.5 min-h-[40px] relative"
                       onDragOver={handleDragOver}
                       onDrop={(e) => handleDrop(e, day, hour)}
                     >
@@ -302,10 +300,10 @@ export function CalendarPage() {
           </div>
         </div>
       ) : (
-        <div className="rounded-xl border border-blue-100 bg-white shadow-sm overflow-hidden">
+        <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
           <div className="grid grid-cols-7">
             {DAY_NAMES.map((day) => (
-              <div key={day} className="border-b border-blue-100 p-2 text-center text-xs font-medium text-slate-600">
+              <div key={day} className="border-b border-slate-200 p-2 text-center text-xs font-medium text-slate-600">
                 {day}
               </div>
             ))}
@@ -316,15 +314,15 @@ export function CalendarPage() {
                 return (
                   <div
                     key={`${wi}-${di}`}
-                    className={`border-b border-r border-blue-50 p-1.5 min-h-[80px] ${
-                      !day ? "bg-slate-50/50" : isToday ? "bg-blue-50/50" : ""
+                    className={`border-b border-r border-slate-100 p-1.5 min-h-[80px] ${
+                      !day ? "bg-slate-50/50" : isToday ? "bg-brand-600/5" : ""
                     }`}
                     onDragOver={day ? handleDragOver : undefined}
                     onDrop={day ? (e) => handleDrop(e, day) : undefined}
                   >
                     {day && (
                       <>
-                        <div className={`text-xs font-medium mb-1 ${isToday ? "text-blue-700" : "text-slate-600"}`}>
+                        <div className={`text-xs font-medium mb-1 ${isToday ? "text-brand-600" : "text-slate-600"}`}>
                           {day.getDate()}
                         </div>
                         <div className="space-y-0.5">
@@ -358,7 +356,6 @@ export function CalendarPage() {
         </div>
       )}
 
-      {/* Legend */}
       <div className="flex items-center gap-4 text-xs text-slate-500">
         <span className="flex items-center gap-1">
           <span className="h-2 w-2 rounded-full bg-blue-500" /> Planifiée

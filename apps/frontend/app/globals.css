@@ -6,7 +6,7 @@ body {
   margin: 0;
   min-height: 100vh;
   color: #0f172a;
-  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  background: #f8fafc;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
     "Segoe UI", sans-serif;
 }

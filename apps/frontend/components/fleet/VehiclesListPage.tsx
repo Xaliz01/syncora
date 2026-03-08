@@ -41,16 +41,16 @@ export function VehiclesListPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold mb-1">Véhicules</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="text-xl sm:text-2xl font-semibold">Véhicules</h1>
+          <p className="text-sm text-slate-500 mt-1">
             Flotte de véhicules de l&apos;organisation. Cliquez sur un véhicule pour voir sa fiche.
           </p>
         </div>
         <Link
           href="/fleet/vehicles/new"
-          className="rounded-lg bg-brand-600 px-4 py-2 text-sm text-white hover:bg-brand-500"
+          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition self-start flex-shrink-0"
         >
           Ajouter un véhicule
         </Link>
@@ -71,7 +71,7 @@ export function VehiclesListPage() {
           <p className="text-sm text-slate-500 mb-3">Aucun véhicule enregistré.</p>
           <Link
             href="/fleet/vehicles/new"
-            className="text-sm text-brand-600 hover:underline"
+            className="text-sm text-brand-600 hover:underline font-medium"
           >
             Ajouter votre premier véhicule
           </Link>
@@ -89,12 +89,12 @@ export function VehiclesListPage() {
             <Link
               key={vehicle.id}
               href={`/fleet/vehicles/${vehicle.id}`}
-              className="grid md:grid-cols-[1fr_1fr_0.8fr_0.6fr_0.6fr] gap-3 items-center px-4 py-3 border-b border-slate-200 last:border-b-0 hover:bg-slate-50 transition"
+              className="grid md:grid-cols-[1fr_1fr_0.8fr_0.6fr_0.6fr] gap-2 md:gap-3 items-center px-4 py-3 border-b border-slate-200 last:border-b-0 hover:bg-slate-50 transition"
             >
-              <span className="font-medium text-brand-700">
+              <span className="font-medium text-brand-600">
                 {vehicle.registrationNumber}
               </span>
-              <span className="text-sm text-slate-600">
+              <span className="text-sm text-slate-600 truncate">
                 {[vehicle.brand, vehicle.model].filter(Boolean).join(" ") || "—"}
               </span>
               <span className="text-sm text-slate-600 capitalize">{vehicle.type}</span>
@@ -102,7 +102,7 @@ export function VehiclesListPage() {
                 {vehicle.mileage != null ? `${vehicle.mileage.toLocaleString("fr-FR")} km` : "—"}
               </span>
               <span
-                className={`inline-flex w-fit rounded border px-2 py-0.5 text-xs ${STATUS_COLORS[vehicle.status] ?? "bg-slate-50 text-slate-700 border-slate-200"}`}
+                className={`inline-flex w-fit rounded-full border px-2 py-0.5 text-xs ${STATUS_COLORS[vehicle.status] ?? "bg-slate-50 text-slate-700 border-slate-200"}`}
               >
                 {STATUS_LABELS[vehicle.status] ?? vehicle.status}
               </span>

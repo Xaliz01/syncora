@@ -35,16 +35,16 @@ export function UsersManagementPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold mb-1">Utilisateurs</h1>
-          <p className="text-sm text-slate-500">
-            Liste des utilisateurs de l’organisation. Cliquez sur un nom pour ouvrir sa fiche.
+          <h1 className="text-xl sm:text-2xl font-semibold">Utilisateurs</h1>
+          <p className="text-sm text-slate-500 mt-1">
+            Liste des utilisateurs de l&apos;organisation. Cliquez sur un nom pour ouvrir sa fiche.
           </p>
         </div>
         <Link
           href="/users/new"
-          className="rounded-lg bg-brand-600 px-4 py-2 text-sm text-white hover:bg-brand-500"
+          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition self-start flex-shrink-0"
         >
           Inviter un utilisateur
         </Link>
@@ -75,19 +75,19 @@ export function UsersManagementPage() {
           {users.map((user) => (
             <div
               key={user.id}
-              className="grid md:grid-cols-[1.2fr_1.2fr_auto_auto] gap-3 items-center px-4 py-3 border-b border-slate-200 last:border-b-0"
+              className="grid md:grid-cols-[1.2fr_1.2fr_auto_auto] gap-2 md:gap-3 items-center px-4 py-3 border-b border-slate-200 last:border-b-0"
             >
               <Link
                 href={`/users/${user.id}`}
-                className="font-medium text-brand-700 hover:text-brand-800 hover:underline"
+                className="font-medium text-brand-600 hover:text-brand-500 hover:underline"
               >
                 {user.name ?? user.email}
               </Link>
-              <div className="text-sm text-slate-500">{user.email}</div>
-              <span className="inline-flex w-fit rounded bg-slate-100 border border-slate-200 px-2 py-0.5 text-xs text-slate-700">
+              <div className="text-sm text-slate-500 truncate">{user.email}</div>
+              <span className="inline-flex w-fit rounded-full bg-slate-100 border border-slate-200 px-2 py-0.5 text-xs text-slate-700">
                 {user.role}
               </span>
-              <span className="inline-flex w-fit rounded bg-slate-100 border border-slate-200 px-2 py-0.5 text-xs text-slate-700">
+              <span className="inline-flex w-fit rounded-full bg-slate-100 border border-slate-200 px-2 py-0.5 text-xs text-slate-700">
                 {user.status}
               </span>
             </div>
@@ -109,13 +109,13 @@ export function UsersManagementPage() {
                 >
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-medium">{invitation.invitedEmail}</span>
-                    <span className="rounded border border-slate-200 bg-white px-2 py-0.5 text-xs text-slate-600">
+                    <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-xs text-slate-600">
                       {invitation.status}
                     </span>
                   </div>
                   <p className="mt-1 text-slate-500">
                     Token:{" "}
-                    <span className="font-mono text-slate-700 break-all">{invitation.invitationToken}</span>
+                    <span className="font-mono text-slate-700 break-all text-xs">{invitation.invitationToken}</span>
                   </p>
                 </article>
               ))}

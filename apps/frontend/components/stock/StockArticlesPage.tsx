@@ -108,15 +108,15 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">{pageTitle}</h1>
-          <p className="text-sm text-slate-500">{pageDescription}</p>
+          <h1 className="text-xl sm:text-2xl font-semibold">{pageTitle}</h1>
+          <p className="text-sm text-slate-500 mt-1">{pageDescription}</p>
         </div>
         {showCatalogActions && (
           <button
             onClick={() => setShowCreateForm((prev) => !prev)}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition self-start flex-shrink-0"
           >
             {showCreateForm ? "Fermer" : "+ Nouvel article"}
           </button>
@@ -138,7 +138,7 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
             {lowStockArticles.slice(0, 6).map((article) => (
               <div
                 key={article.id}
-                className="flex items-center justify-between rounded-lg border border-amber-100 bg-white px-3 py-2"
+                className="flex flex-col sm:flex-row sm:items-center sm:justify-between rounded-lg border border-amber-100 bg-white px-3 py-2 gap-2"
               >
                 <div>
                   <div className="text-sm font-medium text-slate-800">
@@ -162,7 +162,7 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
                     disabled={
                       restockToTargetMutation.isPending || article.targetStock <= article.stockQuantity
                     }
-                    className="rounded-lg border border-amber-300 bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-800 disabled:opacity-50"
+                    className="rounded-lg border border-amber-300 bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-800 disabled:opacity-50 self-start flex-shrink-0"
                   >
                     Remettre à {article.targetStock} {article.unit}
                   </button>
@@ -178,26 +178,26 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
       )}
 
       {showCatalogActions && showCreateForm && (
-        <div className="rounded-xl border border-blue-100 bg-white p-4 shadow-sm">
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="mb-3 text-sm font-semibold text-slate-800">Créer un article</h2>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <input
               value={createName}
               onChange={(e) => setCreateName(e.target.value)}
               placeholder="Nom"
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
             />
             <input
               value={createReference}
               onChange={(e) => setCreateReference(e.target.value)}
               placeholder="Référence (SKU)"
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
             />
             <input
               value={createUnit}
               onChange={(e) => setCreateUnit(e.target.value)}
               placeholder="Unité"
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
             />
             <input
               type="number"
@@ -206,7 +206,7 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
               value={createInitialStock}
               onChange={(e) => setCreateInitialStock(e.target.value)}
               placeholder="Stock initial"
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
             />
             <input
               type="number"
@@ -215,7 +215,7 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
               value={createReorderPoint}
               onChange={(e) => setCreateReorderPoint(e.target.value)}
               placeholder="Seuil d'alerte"
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
             />
             <input
               type="number"
@@ -224,7 +224,7 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
               value={createTargetStock}
               onChange={(e) => setCreateTargetStock(e.target.value)}
               placeholder="Stock cible"
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
             />
           </div>
           <div className="mt-3">
@@ -244,7 +244,7 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
                 });
               }}
               disabled={createArticleMutation.isPending}
-              className="rounded-lg bg-blue-600 px-4 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+              className="rounded-lg bg-brand-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
             >
               Créer l&apos;article
             </button>
@@ -253,13 +253,13 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
       )}
 
       {showMovementActions && (
-        <div className="rounded-xl border border-blue-100 bg-white p-4 shadow-sm space-y-3">
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm space-y-3">
           <h2 className="text-sm font-semibold text-slate-800">Mouvement rapide</h2>
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <select
               value={movementArticleId}
               onChange={(e) => setMovementArticleId(e.target.value)}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
             >
               <option value="">Choisir un article</option>
               {(articles ?? []).map((article) => (
@@ -271,7 +271,7 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
             <select
               value={movementType}
               onChange={(e) => setMovementType(e.target.value as "in" | "out" | "adjustment")}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
             >
               <option value="out">Sortie (consommation)</option>
               <option value="in">Entrée (réassort/retour)</option>
@@ -284,16 +284,16 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
               value={movementQuantity}
               onChange={(e) => setMovementQuantity(e.target.value)}
               placeholder={movementType === "adjustment" ? "Stock final" : "Quantité"}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
             />
             <input
               value={movementNote}
               onChange={(e) => setMovementNote(e.target.value)}
               placeholder="Note (optionnelle)"
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
             />
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={() => {
                 if (!movementArticleId) {
@@ -313,7 +313,7 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
                 });
               }}
               disabled={movementMutation.isPending}
-              className="rounded-lg bg-blue-600 px-4 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+              className="rounded-lg bg-brand-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
             >
               Enregistrer le mouvement
             </button>
@@ -326,13 +326,13 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
         </div>
       )}
 
-      <div className="rounded-xl border border-blue-100 bg-white p-4 shadow-sm">
-        <div className="mb-3 flex flex-wrap items-center gap-3">
+      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="mb-3 flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-3">
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Rechercher un article..."
-            className="w-72 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className="w-full sm:w-72 rounded-lg border border-slate-200 px-3 py-2 text-sm"
           />
           <label className="flex items-center gap-2 text-sm text-slate-600">
             <input
@@ -359,15 +359,15 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
         ) : !(articles ?? []).length ? (
           <div className="text-sm text-slate-500">Aucun article trouvé.</div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto -mx-4 px-4">
             <table className="min-w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-left text-slate-500">
                   <th className="px-2 py-2">Référence</th>
                   <th className="px-2 py-2">Nom</th>
                   <th className="px-2 py-2">Stock</th>
-                  <th className="px-2 py-2">Seuil</th>
-                  <th className="px-2 py-2">Cible</th>
+                  <th className="px-2 py-2 hidden sm:table-cell">Seuil</th>
+                  <th className="px-2 py-2 hidden sm:table-cell">Cible</th>
                   <th className="px-2 py-2">Statut</th>
                   <th className="px-2 py-2">Actions</th>
                 </tr>
@@ -385,8 +385,8 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
                     <td className="px-2 py-2">
                       {article.stockQuantity} {article.unit}
                     </td>
-                    <td className="px-2 py-2">{article.reorderPoint}</td>
-                    <td className="px-2 py-2">{article.targetStock}</td>
+                    <td className="px-2 py-2 hidden sm:table-cell">{article.reorderPoint}</td>
+                    <td className="px-2 py-2 hidden sm:table-cell">{article.targetStock}</td>
                     <td className="px-2 py-2">
                       <span
                         className={`rounded-full px-2 py-0.5 text-xs font-medium ${
@@ -421,7 +421,7 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
                               restockToTargetMutation.isPending ||
                               article.targetStock <= article.stockQuantity
                             }
-                            className="rounded border border-blue-200 px-2 py-1 text-xs text-blue-700 disabled:opacity-50"
+                            className="rounded border border-slate-200 px-2 py-1 text-xs text-brand-600 disabled:opacity-50"
                           >
                             Réassort
                           </button>
@@ -430,7 +430,7 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
                           <button
                             onClick={() => deactivateMutation.mutate(article.id)}
                             disabled={deactivateMutation.isPending}
-                            className="rounded border border-slate-300 px-2 py-1 text-xs text-slate-600 disabled:opacity-50"
+                            className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-600 disabled:opacity-50"
                           >
                             Désactiver
                           </button>
@@ -446,7 +446,7 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
       </div>
 
       {showMovementActions && (
-        <div className="rounded-xl border border-blue-100 bg-white p-4 shadow-sm">
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="mb-3 text-sm font-semibold text-slate-800">Derniers mouvements</h2>
           {!recentMovements?.length ? (
             <div className="text-sm text-slate-500">Aucun mouvement pour le moment.</div>
@@ -455,7 +455,7 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
               {recentMovements.map((movement) => (
                 <div
                   key={movement.id}
-                  className="flex items-center justify-between rounded-lg border border-blue-50 p-2"
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between rounded-lg border border-slate-100 p-2 gap-1"
                 >
                   <div className="text-sm">
                     <span className="font-medium text-slate-800">{movement.articleName}</span>
