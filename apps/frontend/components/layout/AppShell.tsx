@@ -60,7 +60,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       label: "Dossiers",
       links: [
         { label: "Tous les dossiers", href: "/cases" },
-        { label: "Calendrier", href: "/cases/calendar" }
+        { label: "Calendrier", href: "/cases/calendar" },
+        { label: "Mouvements de stock", href: "/stock" }
       ]
     }
   ];
@@ -80,6 +81,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {
         label: "Paramètres",
         links: [
+          { label: "Catalogue articles", href: "/settings/stock/articles" },
           { label: "Modèles de dossier", href: "/settings/case-templates" },
           { label: "Permissions", href: "/settings/permissions" },
           { label: "Profils", href: "/settings/profiles" }

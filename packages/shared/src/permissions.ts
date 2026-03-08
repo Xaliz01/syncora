@@ -21,7 +21,15 @@ export const AVAILABLE_PERMISSION_CODES = [
   "interventions.read",
   "interventions.create",
   "interventions.update",
-  "interventions.delete"
+  "interventions.delete",
+  "stock.articles.read",
+  "stock.articles.create",
+  "stock.articles.update",
+  "stock.articles.delete",
+  "stock.movements.read",
+  "stock.movements.create",
+  "stock.interventions.read",
+  "stock.interventions.create"
 ] as const;
 
 export type PermissionCode = (typeof AVAILABLE_PERMISSION_CODES)[number];
