@@ -10,7 +10,7 @@ export interface HealthPayload {
 }
 
 export * from "./auth";
-export * from "./dossier";
+export * from "./case";
 export * from "./organization";
 export * from "./permissions";
 export * from "./user";

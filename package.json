@@ -14,7 +14,7 @@
     "build": "npm run build --workspaces --if-present",
     "e2e": "npm run e2e --workspace @syncora/frontend --if-present",
     "backend": "docker compose up -d --wait && npm run backend:run",
-    "backend:run": "wait-on -t 60000 tcp:localhost:27017 && concurrently -n org,users,permissions,dossiers,gateway \"npm run start:dev -w @syncora/organizations-service\" \"npm run start:dev -w @syncora/users-service\" \"npm run start:dev -w @syncora/permissions-service\" \"npm run start:dev -w @syncora/dossiers-service\" \"npm run start:dev -w @syncora/api-gateway\"",
+    "backend:run": "wait-on -t 60000 tcp:localhost:27017 && concurrently -n org,users,permissions,dossiers,gateway \"npm run start:dev -w @syncora/organizations-service\" \"npm run start:dev -w @syncora/users-service\" \"npm run start:dev -w @syncora/permissions-service\" \"npm run start:dev -w @syncora/cases-service\" \"npm run start:dev -w @syncora/api-gateway\"",
     "backend:down": "docker compose down"
   },
   "devDependencies": {

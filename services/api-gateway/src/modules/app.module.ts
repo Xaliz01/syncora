@@ -3,10 +3,10 @@ import { AppController } from "../presentation/http/app.controller";
 import { AppService } from "../services/app.service";
 import { AuthModule } from "./auth.module";
 import { AdminModule } from "./admin.module";
-import { DossiersModule } from "./dossiers.module";
+import { CasesModule } from "./cases.module";
 
 @Module({
-  imports: [AuthModule, AdminModule, DossiersModule],
+  imports: [AuthModule, AdminModule, CasesModule],
   controllers: [AppController],
   providers: [AppService]
 })

@@ -20,8 +20,8 @@ function isLinkActive(currentPath: string, href: string): boolean {
   if (href === "/users") {
     return currentPath === "/users" || currentPath.startsWith("/users/");
   }
-  if (href === "/dossiers") {
-    return currentPath === "/dossiers" || (currentPath.startsWith("/dossiers/") && !currentPath.startsWith("/dossiers/calendar") && !currentPath.startsWith("/dossiers/templates"));
+  if (href === "/cases") {
+    return currentPath === "/cases" || (currentPath.startsWith("/cases/") && !currentPath.startsWith("/cases/calendar"));
   }
   return currentPath === href || currentPath.startsWith(`${href}/`);
 }
@@ -59,9 +59,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     {
       label: "Dossiers",
       links: [
-        { label: "Tous les dossiers", href: "/dossiers" },
-        { label: "Calendrier", href: "/dossiers/calendar" },
-        { label: "Modèles", href: "/dossiers/templates" }
+        { label: "Tous les dossiers", href: "/cases" },
+        { label: "Calendrier", href: "/cases/calendar" }
       ]
     }
   ];
@@ -74,6 +73,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {
         label: "Paramètres",
         links: [
+          { label: "Modèles de dossier", href: "/settings/case-templates" },
           { label: "Permissions", href: "/settings/permissions" },
           { label: "Profils", href: "/settings/profiles" }
         ]
