@@ -72,19 +72,30 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 via-indigo-50/40 to-white text-slate-900">
       <header className="w-full border-b border-blue-100 bg-white/95 backdrop-blur">
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-4 lg:px-6">
-          <div className="text-sm text-slate-700">
+          <div className="flex items-center gap-3">
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white font-semibold">
+              S
+            </span>
+            <div>
+              <div className="font-semibold text-base">Syncora</div>
+              <div className="text-xs text-slate-500">CRM des opérations terrain</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 text-sm text-slate-700">
             <span className="font-medium">{user?.name ?? user?.email}</span>
-            <span className="ml-2 rounded bg-blue-50 px-2 py-0.5 text-xs text-blue-700 border border-blue-100">
+            <span className="rounded bg-blue-50 px-2 py-0.5 text-xs text-blue-700 border border-blue-100">
               {user?.role}
             </span>
           </div>
-          <button
-            type="button"
-            onClick={logout}
-            className="text-sm text-slate-500 hover:text-slate-700"
-          >
-            Déconnexion
-          </button>
+          <div>
+            <button
+              type="button"
+              onClick={logout}
+              className="text-sm text-slate-500 hover:text-slate-700"
+            >
+              Déconnexion
+            </button>
+          </div>
         </div>
       </header>
 

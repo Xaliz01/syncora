@@ -21,8 +21,7 @@ export function CreateUserPage() {
   const [name, setName] = useState("");
   const [role, setRole] = useState<"admin" | "member">("member");
   const [profileId, setProfileId] = useState("");
-  const [extraPermissions, setExtraPermissions] = useState<PermissionCode[]>([]);
-  const [revokedPermissions, setRevokedPermissions] = useState<PermissionCode[]>([]);
+  const [selectedPermissions, setSelectedPermissions] = useState<PermissionCode[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,8 +58,18 @@ export function CreateUserPage() {
         name: name.trim() || undefined,
         role,
         profileId: adminRoleSelected ? undefined : profileId || undefined,
-        extraPermissions: adminRoleSelected ? [] : extraPermissions,
-        revokedPermissions: adminRoleSelected ? [] : revokedPermissions
+        extraPermissions: adminRoleSelected
+          ? []
+          : selectedPermissions.filter((permission) => {
+              const profilePermissions =
+                profiles.find((profile) => profile.id === profileId)?.permissions ?? [];
+              return !profilePermissions.includes(permission);
+            }),
+        revokedPermissions: adminRoleSelected
+          ? []
+          : (profiles.find((profile) => profile.id === profileId)?.permissions ?? []).filter(
+              (permission) => !selectedPermissions.includes(permission)
+            )
       });
       const invitationUrl = `${window.location.origin}/accept-invitation?token=${encodeURIComponent(
         result.invitation.invitationToken
@@ -71,8 +80,7 @@ export function CreateUserPage() {
       setName("");
       setRole("member");
       setProfileId("");
-      setExtraPermissions([]);
-      setRevokedPermissions([]);
+      setSelectedPermissions([]);
       router.push("/users");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Impossible d’inviter l’utilisateur");
@@ -126,8 +134,7 @@ export function CreateUserPage() {
                   setRole(nextRole);
                   if (nextRole === "admin") {
                     setProfileId("");
-                    setExtraPermissions([]);
-                    setRevokedPermissions([]);
+                    setSelectedPermissions([]);
                   }
                 }}
                 className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
@@ -137,7 +144,13 @@ export function CreateUserPage() {
               </select>
               <select
                 value={profileId}
-                onChange={(e) => setProfileId(e.target.value)}
+                onChange={(e) => {
+                  const nextProfileId = e.target.value;
+                  setProfileId(nextProfileId);
+                  const profilePermissions =
+                    profiles.find((profile) => profile.id === nextProfileId)?.permissions ?? [];
+                  setSelectedPermissions(profilePermissions);
+                }}
                 disabled={adminRoleSelected}
                 className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
               >
@@ -155,42 +168,18 @@ export function CreateUserPage() {
                 profil ni permission personnalisée ne peut lui être affecté.
               </div>
             )}
-            <div className={`grid gap-4 md:grid-cols-2 ${adminRoleSelected ? "opacity-60" : ""}`}>
+            <div className={`${adminRoleSelected ? "opacity-60" : ""}`}>
               <div>
-                <p className="text-sm font-medium text-slate-700 mb-2">Permissions à ajouter</p>
-                <div className="grid gap-1">
+                <p className="text-sm font-medium text-slate-700 mb-2">Permissions</p>
+                <div className="grid gap-1 md:grid-cols-2">
                   {catalog.map((permission) => (
-                    <label key={`add-${permission}`} className="flex items-center gap-2 text-sm">
+                    <label key={permission} className="flex items-center gap-2 text-sm">
                       <input
                         type="checkbox"
                         disabled={adminRoleSelected}
-                        checked={extraPermissions.includes(permission)}
+                        checked={selectedPermissions.includes(permission)}
                         onChange={() =>
-                          setExtraPermissions((previous) => togglePermission(previous, permission))
-                        }
-                      />
-                      <span>
-                        <span className="block text-slate-700">{getPermissionLabel(permission)}</span>
-                        <span className="block font-mono text-xs text-slate-400">{permission}</span>
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-slate-700 mb-2">Permissions à retirer</p>
-                <div className="grid gap-1">
-                  {catalog.map((permission) => (
-                    <label
-                      key={`revoke-${permission}`}
-                      className="flex items-center gap-2 text-sm"
-                    >
-                      <input
-                        type="checkbox"
-                        disabled={adminRoleSelected}
-                        checked={revokedPermissions.includes(permission)}
-                        onChange={() =>
-                          setRevokedPermissions((previous) => togglePermission(previous, permission))
+                          setSelectedPermissions((previous) => togglePermission(previous, permission))
                         }
                       />
                       <span>
