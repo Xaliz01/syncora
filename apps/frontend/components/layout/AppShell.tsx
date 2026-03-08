@@ -20,6 +20,9 @@ function isLinkActive(currentPath: string, href: string): boolean {
   if (href === "/users") {
     return currentPath === "/users" || currentPath.startsWith("/users/");
   }
+  if (href === "/dossiers") {
+    return currentPath === "/dossiers" || (currentPath.startsWith("/dossiers/") && !currentPath.startsWith("/dossiers/calendar") && !currentPath.startsWith("/dossiers/templates"));
+  }
   return currentPath === href || currentPath.startsWith(`${href}/`);
 }
 
@@ -51,7 +54,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const pathname = usePathname();
 
-  const menuSections: MenuSection[] = [{ label: "Général", links: [{ label: "Accueil", href: "/" }] }];
+  const menuSections: MenuSection[] = [
+    { label: "Général", links: [{ label: "Tableau de bord", href: "/" }] },
+    {
+      label: "Dossiers",
+      links: [
+        { label: "Tous les dossiers", href: "/dossiers" },
+        { label: "Calendrier", href: "/dossiers/calendar" },
+        { label: "Modèles", href: "/dossiers/templates" }
+      ]
+    }
+  ];
   if (user?.role === "admin") {
     menuSections.push(
       {
