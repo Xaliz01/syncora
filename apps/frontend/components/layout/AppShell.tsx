@@ -60,7 +60,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       label: "Dossiers",
       links: [
         { label: "Tous les dossiers", href: "/cases" },
-        { label: "Calendrier", href: "/cases/calendar" }
+        { label: "Calendrier", href: "/cases/calendar" },
+        { label: "Stock articles", href: "/stock" }
       ]
     }
   ];

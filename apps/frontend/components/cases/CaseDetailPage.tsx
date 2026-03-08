@@ -75,6 +75,11 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
     queryFn: () => listOrganizationUsers()
   });
 
+  const { data: articles } = useQuery({
+    queryKey: ["articles", "intervention-usage"],
+    queryFn: () => api.listArticles({ activeOnly: true })
+  });
+
   const [showNewIntervention, setShowNewIntervention] = useState(false);
   const [newIntTitle, setNewIntTitle] = useState("");
   const [newIntDesc, setNewIntDesc] = useState("");
@@ -87,6 +92,18 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   const [editPriority, setEditPriority] = useState<CasePriority>("medium");
   const [editAssignee, setEditAssignee] = useState("");
   const [editDueDate, setEditDueDate] = useState("");
+  const [interventionError, setInterventionError] = useState("");
+  const [usageDrafts, setUsageDrafts] = useState<
+    Record<
+      string,
+      {
+        articleId: string;
+        quantity: string;
+        movementType: "in" | "out";
+        note: string;
+      }
+    >
+  >({});
 
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: ["case", caseId] });
@@ -131,13 +148,43 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
       setNewIntAssignee("");
       setNewIntStart("");
       setNewIntEnd("");
-    }
+      setInterventionError("");
+    },
+    onError: (err: Error) => setInterventionError(err.message)
   });
 
   const updateInterventionMutation = useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: api.UpdateInterventionPayload }) =>
       api.updateIntervention(id, payload),
-    onSuccess: invalidateAll
+    onSuccess: () => {
+      invalidateAll();
+      setInterventionError("");
+    },
+    onError: (err: Error) => setInterventionError(err.message)
+  });
+
+  const addInterventionArticleMutation = useMutation({
+    mutationFn: ({
+      interventionId,
+      payload
+    }: {
+      interventionId: string;
+      payload: api.AddInterventionArticleUsagePayload;
+    }) => api.addInterventionArticleUsage(interventionId, payload),
+    onSuccess: (_, variables) => {
+      invalidateAll();
+      setInterventionError("");
+      setUsageDrafts((prev) => ({
+        ...prev,
+        [variables.interventionId]: {
+          articleId: "",
+          quantity: "1",
+          movementType: "out",
+          note: ""
+        }
+      }));
+    },
+    onError: (err: Error) => setInterventionError(err.message)
   });
 
   if (isLoading || !caseData) {
@@ -427,6 +474,12 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
           </button>
         </div>
 
+        {interventionError && (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+            {interventionError}
+          </div>
+        )}
+
         {showNewIntervention && (
           <div className="rounded-xl border border-blue-100 bg-white p-4 shadow-sm space-y-3">
             <div className="grid grid-cols-2 gap-3">
@@ -563,6 +616,143 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                 {intervention.description && (
                   <p className="mt-1 text-xs text-slate-400">{intervention.description}</p>
                 )}
+
+                {intervention.usedArticles.length > 0 && (
+                  <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-2">
+                    <div className="text-[11px] font-semibold text-slate-700 mb-1">
+                      Articles liés à l&apos;intervention
+                    </div>
+                    <div className="space-y-1">
+                      {intervention.usedArticles.map((item) => (
+                        <div
+                          key={item.articleId}
+                          className="flex items-center justify-between text-[11px] text-slate-600"
+                        >
+                          <span>
+                            {item.articleName}
+                            {item.articleReference ? ` (${item.articleReference})` : ""}
+                          </span>
+                          <span>
+                            consommé: {item.consumedQuantity} / retourné: {item.returnedQuantity} / net:{" "}
+                            {item.netQuantity} {item.unit}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50/40 p-2">
+                  <div className="mb-1 text-[11px] font-semibold text-blue-700">
+                    Mouvement de stock sur cette intervention
+                  </div>
+                  <div className="grid grid-cols-4 gap-2">
+                    <select
+                      value={usageDrafts[intervention.id]?.articleId ?? ""}
+                      onChange={(e) =>
+                        setUsageDrafts((prev) => ({
+                          ...prev,
+                          [intervention.id]: {
+                            articleId: e.target.value,
+                            quantity: prev[intervention.id]?.quantity ?? "1",
+                            movementType: prev[intervention.id]?.movementType ?? "out",
+                            note: prev[intervention.id]?.note ?? ""
+                          }
+                        }))
+                      }
+                      className="rounded border border-slate-300 px-2 py-1 text-xs"
+                    >
+                      <option value="">Article</option>
+                      {(articles ?? []).map((article) => (
+                        <option key={article.id} value={article.id}>
+                          {article.reference} — {article.name} ({article.stockQuantity})
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      value={usageDrafts[intervention.id]?.movementType ?? "out"}
+                      onChange={(e) =>
+                        setUsageDrafts((prev) => ({
+                          ...prev,
+                          [intervention.id]: {
+                            articleId: prev[intervention.id]?.articleId ?? "",
+                            quantity: prev[intervention.id]?.quantity ?? "1",
+                            movementType: e.target.value as "in" | "out",
+                            note: prev[intervention.id]?.note ?? ""
+                          }
+                        }))
+                      }
+                      className="rounded border border-slate-300 px-2 py-1 text-xs"
+                    >
+                      <option value="out">Consommation (-)</option>
+                      <option value="in">Retour (+)</option>
+                    </select>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={usageDrafts[intervention.id]?.quantity ?? "1"}
+                      onChange={(e) =>
+                        setUsageDrafts((prev) => ({
+                          ...prev,
+                          [intervention.id]: {
+                            articleId: prev[intervention.id]?.articleId ?? "",
+                            quantity: e.target.value,
+                            movementType: prev[intervention.id]?.movementType ?? "out",
+                            note: prev[intervention.id]?.note ?? ""
+                          }
+                        }))
+                      }
+                      className="rounded border border-slate-300 px-2 py-1 text-xs"
+                      placeholder="Quantité"
+                    />
+                    <input
+                      value={usageDrafts[intervention.id]?.note ?? ""}
+                      onChange={(e) =>
+                        setUsageDrafts((prev) => ({
+                          ...prev,
+                          [intervention.id]: {
+                            articleId: prev[intervention.id]?.articleId ?? "",
+                            quantity: prev[intervention.id]?.quantity ?? "1",
+                            movementType: prev[intervention.id]?.movementType ?? "out",
+                            note: e.target.value
+                          }
+                        }))
+                      }
+                      className="rounded border border-slate-300 px-2 py-1 text-xs"
+                      placeholder="Note (optionnelle)"
+                    />
+                  </div>
+                  <div className="mt-2">
+                    <button
+                      onClick={() => {
+                        const draft = usageDrafts[intervention.id];
+                        if (!draft?.articleId) {
+                          setInterventionError("Sélectionnez un article avant de valider le mouvement");
+                          return;
+                        }
+                        const qty = Number(draft.quantity);
+                        if (!Number.isFinite(qty) || qty <= 0) {
+                          setInterventionError("La quantité doit être strictement positive");
+                          return;
+                        }
+                        addInterventionArticleMutation.mutate({
+                          interventionId: intervention.id,
+                          payload: {
+                            articleId: draft.articleId,
+                            movementType: draft.movementType,
+                            quantity: qty,
+                            note: draft.note.trim() || undefined
+                          }
+                        });
+                      }}
+                      disabled={addInterventionArticleMutation.isPending}
+                      className="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white disabled:opacity-50"
+                    >
+                      Enregistrer le mouvement
+                    </button>
+                  </div>
+                </div>
               </div>
             ))}
           </div>

@@ -12,9 +12,13 @@ import {
 } from "@nestjs/common";
 import { CasesService } from "../../domain/cases.service";
 import type {
+  AddInterventionArticleUsageBody,
+  CreateArticleBody,
+  CreateArticleMovementBody,
   CreateCaseBody,
   CreateCaseTemplateBody,
   CreateInterventionBody,
+  UpdateArticleBody,
   UpdateCaseBody,
   UpdateCaseTemplateBody,
   UpdateInterventionBody,
@@ -153,6 +157,14 @@ export class CasesController {
     return this.casesService.updateIntervention(id, body);
   }
 
+  @Post("interventions/:id/articles")
+  async addInterventionArticleUsage(
+    @Param("id") id: string,
+    @Body() body: AddInterventionArticleUsageBody
+  ) {
+    return this.casesService.addInterventionArticleUsage(id, body);
+  }
+
   @Delete("interventions/:id")
   async deleteIntervention(
     @Param("id") id: string,
@@ -172,6 +184,71 @@ export class CasesController {
     this.ensureOrganizationId(organizationId);
     if (!userId) throw new BadRequestException("userId query param is required");
     return this.casesService.getDashboard(organizationId, userId);
+  }
+
+  // ── Articles / Stock ──
+
+  @Post("articles")
+  async createArticle(@Body() body: CreateArticleBody) {
+    return this.casesService.createArticle(body);
+  }
+
+  @Get("articles")
+  async listArticles(
+    @Query("organizationId") organizationId: string,
+    @Query("search") search?: string,
+    @Query("lowStockOnly") lowStockOnly?: string,
+    @Query("activeOnly") activeOnly?: string
+  ) {
+    this.ensureOrganizationId(organizationId);
+    return this.casesService.listArticles(organizationId, {
+      search,
+      lowStockOnly: lowStockOnly === "true",
+      activeOnly: activeOnly === undefined ? true : activeOnly === "true"
+    });
+  }
+
+  @Get("articles/:id")
+  async getArticle(
+    @Param("id") id: string,
+    @Query("organizationId") organizationId: string
+  ) {
+    this.ensureOrganizationId(organizationId);
+    return this.casesService.getArticle(id, organizationId);
+  }
+
+  @Patch("articles/:id")
+  async updateArticle(@Param("id") id: string, @Body() body: UpdateArticleBody) {
+    return this.casesService.updateArticle(id, body);
+  }
+
+  @Delete("articles/:id")
+  async deleteArticle(
+    @Param("id") id: string,
+    @Query("organizationId") organizationId: string
+  ) {
+    this.ensureOrganizationId(organizationId);
+    return this.casesService.deleteArticle(id, organizationId);
+  }
+
+  @Post("articles/movements")
+  async createArticleMovement(@Body() body: CreateArticleMovementBody) {
+    return this.casesService.createArticleMovement(body);
+  }
+
+  @Get("articles/movements/list")
+  async listArticleMovements(
+    @Query("organizationId") organizationId: string,
+    @Query("articleId") articleId?: string,
+    @Query("interventionId") interventionId?: string,
+    @Query("limit") limit?: string
+  ) {
+    this.ensureOrganizationId(organizationId);
+    return this.casesService.listArticleMovements(organizationId, {
+      articleId,
+      interventionId,
+      limit: limit ? Number(limit) : undefined
+    });
   }
 
   private ensureOrganizationId(organizationId: string): void {

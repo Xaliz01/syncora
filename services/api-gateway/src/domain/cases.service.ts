@@ -8,6 +8,10 @@ import {
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
 import type {
+  AddInterventionArticleUsageBody,
+  ArticleResponse,
+  CreateArticleBody,
+  CreateArticleMovementBody,
   AuthUser,
   CreateCaseBody,
   CreateCaseTemplateBody,
@@ -17,6 +21,8 @@ import type {
   CaseSummaryResponse,
   CaseTemplateResponse,
   InterventionResponse,
+  StockMovementResponse,
+  UpdateArticleBody,
   UpdateCaseBody,
   UpdateCaseTemplateBody,
   UpdateInterventionBody,
@@ -75,6 +81,44 @@ export interface UpdateInterventionForOrgBody {
   scheduledStart?: string | null;
   scheduledEnd?: string | null;
   notes?: string;
+}
+
+export interface AddInterventionArticleUsageForOrgBody {
+  articleId: string;
+  quantity: number;
+  movementType?: "in" | "out";
+  note?: string;
+}
+
+export interface CreateArticleForOrgBody {
+  name: string;
+  reference: string;
+  description?: string;
+  unit?: string;
+  initialStock?: number;
+  reorderPoint?: number;
+  targetStock?: number;
+  isActive?: boolean;
+}
+
+export interface UpdateArticleForOrgBody {
+  name?: string;
+  reference?: string;
+  description?: string;
+  unit?: string;
+  reorderPoint?: number;
+  targetStock?: number;
+  isActive?: boolean;
+}
+
+export interface CreateArticleMovementForOrgBody {
+  articleId: string;
+  movementType: "in" | "out" | "adjustment";
+  quantity: number;
+  note?: string;
+  reason?: string;
+  interventionId?: string;
+  caseId?: string;
 }
 
 export interface UpdateTodoForOrgBody {
@@ -252,11 +296,109 @@ export class CasesGatewayService {
     });
   }
 
+  async addInterventionArticleUsage(
+    user: AuthUser,
+    interventionId: string,
+    body: AddInterventionArticleUsageForOrgBody
+  ) {
+    return this.callCasesService<InterventionResponse>({
+      method: "post",
+      path: `/interventions/${interventionId}/articles`,
+      body: {
+        organizationId: user.organizationId,
+        actorUserId: user.id,
+        actorUserName: user.name,
+        ...body
+      } as AddInterventionArticleUsageBody
+    });
+  }
+
   async deleteIntervention(user: AuthUser, interventionId: string) {
     return this.callCasesService<{ deleted: true }>({
       method: "delete",
       path: `/interventions/${interventionId}`,
       query: { organizationId: user.organizationId }
+    });
+  }
+
+  // ── Articles / stock ──
+
+  async createArticle(user: AuthUser, body: CreateArticleForOrgBody) {
+    return this.callCasesService<ArticleResponse>({
+      method: "post",
+      path: "/articles",
+      body: {
+        organizationId: user.organizationId,
+        ...body
+      } as CreateArticleBody
+    });
+  }
+
+  async listArticles(
+    user: AuthUser,
+    filters?: { search?: string; lowStockOnly?: boolean; activeOnly?: boolean }
+  ) {
+    return this.callCasesService<ArticleResponse[]>({
+      method: "get",
+      path: "/articles",
+      query: {
+        organizationId: user.organizationId,
+        ...filters
+      }
+    });
+  }
+
+  async getArticle(user: AuthUser, articleId: string) {
+    return this.callCasesService<ArticleResponse>({
+      method: "get",
+      path: `/articles/${articleId}`,
+      query: { organizationId: user.organizationId }
+    });
+  }
+
+  async updateArticle(user: AuthUser, articleId: string, body: UpdateArticleForOrgBody) {
+    return this.callCasesService<ArticleResponse>({
+      method: "patch",
+      path: `/articles/${articleId}`,
+      body: {
+        organizationId: user.organizationId,
+        ...body
+      } as UpdateArticleBody
+    });
+  }
+
+  async deleteArticle(user: AuthUser, articleId: string) {
+    return this.callCasesService<{ deleted: true }>({
+      method: "delete",
+      path: `/articles/${articleId}`,
+      query: { organizationId: user.organizationId }
+    });
+  }
+
+  async createArticleMovement(user: AuthUser, body: CreateArticleMovementForOrgBody) {
+    return this.callCasesService<StockMovementResponse>({
+      method: "post",
+      path: "/articles/movements",
+      body: {
+        organizationId: user.organizationId,
+        actorUserId: user.id,
+        actorUserName: user.name,
+        ...body
+      } as CreateArticleMovementBody
+    });
+  }
+
+  async listArticleMovements(
+    user: AuthUser,
+    filters?: { articleId?: string; interventionId?: string; limit?: number }
+  ) {
+    return this.callCasesService<StockMovementResponse[]>({
+      method: "get",
+      path: "/articles/movements/list",
+      query: {
+        organizationId: user.organizationId,
+        ...filters
+      }
     });
   }
 

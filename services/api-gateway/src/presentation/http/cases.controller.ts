@@ -16,9 +16,13 @@ import { RequirePermissionGuard, RequirePermissions } from "../../infrastructure
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
 import type { AuthUser } from "@syncora/shared";
 import type {
+  AddInterventionArticleUsageForOrgBody,
+  CreateArticleForOrgBody,
+  CreateArticleMovementForOrgBody,
   CreateCaseForOrgBody,
   CreateInterventionForOrgBody,
   CreateTemplateForOrgBody,
+  UpdateArticleForOrgBody,
   UpdateCaseForOrgBody,
   UpdateInterventionForOrgBody,
   UpdateTemplateForOrgBody,
@@ -185,6 +189,16 @@ export class CasesController {
     return this.casesService.updateIntervention(user, interventionId, body);
   }
 
+  @Post("interventions/:interventionId/articles")
+  @RequirePermissions("interventions.update")
+  async addInterventionArticleUsage(
+    @CurrentUser() user: AuthUser,
+    @Param("interventionId") interventionId: string,
+    @Body() body: AddInterventionArticleUsageForOrgBody
+  ) {
+    return this.casesService.addInterventionArticleUsage(user, interventionId, body);
+  }
+
   @Delete("interventions/:interventionId")
   @RequirePermissions("interventions.delete")
   async deleteIntervention(
@@ -192,6 +206,84 @@ export class CasesController {
     @Param("interventionId") interventionId: string
   ) {
     return this.casesService.deleteIntervention(user, interventionId);
+  }
+
+  // ── Articles / stock ──
+
+  @Post("articles")
+  @RequirePermissions("cases.update")
+  async createArticle(
+    @CurrentUser() user: AuthUser,
+    @Body() body: CreateArticleForOrgBody
+  ) {
+    return this.casesService.createArticle(user, body);
+  }
+
+  @Get("articles")
+  @RequirePermissions("cases.read")
+  async listArticles(
+    @CurrentUser() user: AuthUser,
+    @Query("search") search?: string,
+    @Query("lowStockOnly") lowStockOnly?: string,
+    @Query("activeOnly") activeOnly?: string
+  ) {
+    return this.casesService.listArticles(user, {
+      search,
+      lowStockOnly: lowStockOnly === "true",
+      activeOnly: activeOnly === undefined ? true : activeOnly === "true"
+    });
+  }
+
+  @Get("articles/:articleId")
+  @RequirePermissions("cases.read")
+  async getArticle(
+    @CurrentUser() user: AuthUser,
+    @Param("articleId") articleId: string
+  ) {
+    return this.casesService.getArticle(user, articleId);
+  }
+
+  @Patch("articles/:articleId")
+  @RequirePermissions("cases.update")
+  async updateArticle(
+    @CurrentUser() user: AuthUser,
+    @Param("articleId") articleId: string,
+    @Body() body: UpdateArticleForOrgBody
+  ) {
+    return this.casesService.updateArticle(user, articleId, body);
+  }
+
+  @Delete("articles/:articleId")
+  @RequirePermissions("cases.update")
+  async deleteArticle(
+    @CurrentUser() user: AuthUser,
+    @Param("articleId") articleId: string
+  ) {
+    return this.casesService.deleteArticle(user, articleId);
+  }
+
+  @Post("articles/movements")
+  @RequirePermissions("cases.update")
+  async createArticleMovement(
+    @CurrentUser() user: AuthUser,
+    @Body() body: CreateArticleMovementForOrgBody
+  ) {
+    return this.casesService.createArticleMovement(user, body);
+  }
+
+  @Get("articles/movements/list")
+  @RequirePermissions("cases.read")
+  async listArticleMovements(
+    @CurrentUser() user: AuthUser,
+    @Query("articleId") articleId?: string,
+    @Query("interventionId") interventionId?: string,
+    @Query("limit") limit?: string
+  ) {
+    return this.casesService.listArticleMovements(user, {
+      articleId,
+      interventionId,
+      limit: limit ? Number(limit) : undefined
+    });
   }
 
   // ── Dashboard ──
