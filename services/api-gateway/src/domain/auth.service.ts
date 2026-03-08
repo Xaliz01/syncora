@@ -16,6 +16,7 @@ import type {
   ValidateCredentialsResponse
 } from "@syncora/shared";
 import { AVAILABLE_PERMISSION_CODES } from "@syncora/shared";
+import { AbstractAuthService } from "./ports/auth.service.port";
 
 const ORGANIZATIONS_URL =
   process.env.ORGANIZATIONS_SERVICE_URL ?? "http://localhost:3001";
@@ -24,11 +25,13 @@ const PERMISSIONS_URL =
   process.env.PERMISSIONS_SERVICE_URL ?? "http://localhost:3003";
 
 @Injectable()
-export class AuthService {
+export class AuthService extends AbstractAuthService {
   constructor(
     private readonly httpService: HttpService,
     private readonly jwtService: JwtService
-  ) {}
+  ) {
+    super();
+  }
 
   async register(body: RegisterBody): Promise<AuthResponse> {
     let org: OrganizationResponse;

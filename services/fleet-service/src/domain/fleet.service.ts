@@ -19,15 +19,18 @@ import type {
   VehicleType,
   TechnicianStatus
 } from "@syncora/shared";
+import { AbstractFleetService } from "./ports/fleet.service.port";
 
 @Injectable()
-export class FleetService {
+export class FleetService extends AbstractFleetService {
   constructor(
     @InjectModel("Vehicle")
     private readonly vehicleModel: Model<VehicleDocument>,
     @InjectModel("Technician")
     private readonly technicianModel: Model<TechnicianDocument>
-  ) {}
+  ) {
+    super();
+  }
 
   // ─── Vehicles ───
 

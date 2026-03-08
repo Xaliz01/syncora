@@ -10,7 +10,7 @@ import {
   Put,
   Query
 } from "@nestjs/common";
-import { FleetService } from "../../domain/fleet.service";
+import { AbstractFleetService } from "../../domain/ports/fleet.service.port";
 import type {
   AssignTechnicianToVehicleBody,
   CreateTechnicianBody,
@@ -21,7 +21,7 @@ import type {
 
 @Controller()
 export class FleetController {
-  constructor(private readonly fleetService: FleetService) {}
+  constructor(private readonly fleetService: AbstractFleetService) {}
 
   // ─── Vehicles ───
 

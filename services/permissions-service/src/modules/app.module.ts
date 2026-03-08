@@ -1,13 +1,10 @@
 import { Module } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
 import { PermissionsController } from "../presentation/http/permissions.controller";
+import { AbstractPermissionsService } from "../domain/ports/permissions.service.port";
 import { PermissionsService } from "../domain/permissions.service";
-import {
-  PermissionProfileSchema
-} from "../persistence/permission-profile.schema";
-import {
-  UserPermissionAssignmentSchema
-} from "../persistence/user-permission-assignment.schema";
+import { PermissionProfileSchema } from "../persistence/permission-profile.schema";
+import { UserPermissionAssignmentSchema } from "../persistence/user-permission-assignment.schema";
 import { InvitationSchema } from "../persistence/invitation.schema";
 
 @Module({
@@ -22,6 +19,6 @@ import { InvitationSchema } from "../persistence/invitation.schema";
     ])
   ],
   controllers: [PermissionsController],
-  providers: [PermissionsService]
+  providers: [{ provide: AbstractPermissionsService, useClass: PermissionsService }]
 })
 export class AppModule {}

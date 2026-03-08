@@ -3,6 +3,7 @@ import { JwtModule } from "@nestjs/jwt";
 import { ConfigModule } from "@nestjs/config";
 import { HttpModule } from "@nestjs/axios";
 import { AuthController } from "../presentation/http/auth.controller";
+import { AbstractAuthService } from "../domain/ports/auth.service.port";
 import { AuthService } from "../domain/auth.service";
 
 @Module({
@@ -16,6 +17,6 @@ import { AuthService } from "../domain/auth.service";
     })
   ],
   controllers: [AuthController],
-  providers: [AuthService]
+  providers: [{ provide: AbstractAuthService, useClass: AuthService }]
 })
 export class AuthModule {}

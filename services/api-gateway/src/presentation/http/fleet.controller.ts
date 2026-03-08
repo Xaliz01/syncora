@@ -9,7 +9,7 @@ import {
   Put,
   UseGuards
 } from "@nestjs/common";
-import { FleetGatewayService } from "../../domain/fleet.service";
+import { AbstractFleetGatewayService } from "../../domain/ports/fleet.service.port";
 import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
 import { AdminRoleGuard } from "../../infrastructure/admin-role.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
@@ -50,9 +50,7 @@ interface CreateTechnicianPayload {
 @Controller("fleet")
 @UseGuards(JwtAuthGuard, AdminRoleGuard)
 export class FleetController {
-  constructor(private readonly fleetService: FleetGatewayService) {}
-
-  // ─── Vehicles ───
+  constructor(private readonly fleetService: AbstractFleetGatewayService) {}
 
   @Post("vehicles")
   async createVehicle(
@@ -108,8 +106,6 @@ export class FleetController {
   ) {
     return this.fleetService.unassignTechnicianFromVehicle(user, vehicleId);
   }
-
-  // ─── Technicians ───
 
   @Post("technicians")
   async createTechnician(

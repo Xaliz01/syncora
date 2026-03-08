@@ -10,22 +10,22 @@ import {
   Query,
   UseGuards
 } from "@nestjs/common";
-import { AdminService } from "../../domain/admin.service";
-import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
-import { AdminRoleGuard } from "../../infrastructure/admin-role.guard";
-import { CurrentUser } from "../../infrastructure/current-user.decorator";
-import type { AuthUser } from "@syncora/shared";
+import { AbstractAdminService } from "../../domain/ports/admin.service.port";
 import type {
   CreatePermissionProfileForOrgBody,
   InviteOrganizationUserBody,
   UpdatePermissionProfileForOrgBody,
   UpdateUserPermissionsBody
-} from "../../domain/admin.service";
+} from "../../domain/ports/admin.service.port";
+import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
+import { AdminRoleGuard } from "../../infrastructure/admin-role.guard";
+import { CurrentUser } from "../../infrastructure/current-user.decorator";
+import type { AuthUser } from "@syncora/shared";
 
 @Controller("admin")
 @UseGuards(JwtAuthGuard, AdminRoleGuard)
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(private readonly adminService: AbstractAdminService) {}
 
   @Get("permissions/catalog")
   getPermissionsCatalog() {

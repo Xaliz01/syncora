@@ -23,13 +23,16 @@ import type {
   TechnicianStatus,
   CreateTechnicianUserAccountBody
 } from "@syncora/shared";
+import { AbstractFleetGatewayService } from "./ports/fleet.service.port";
 
 const FLEET_URL = process.env.FLEET_SERVICE_URL ?? "http://localhost:3005";
 const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
 
 @Injectable()
-export class FleetGatewayService {
-  constructor(private readonly httpService: HttpService) {}
+export class FleetGatewayService extends AbstractFleetGatewayService {
+  constructor(private readonly httpService: HttpService) {
+    super();
+  }
 
   // ─── Vehicles ───
 

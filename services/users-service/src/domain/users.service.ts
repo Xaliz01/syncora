@@ -15,15 +15,18 @@ import type {
   UserResponse,
   ValidateCredentialsResponse
 } from "@syncora/shared";
+import { AbstractUsersService } from "./ports/users.service.port";
 
 const SALT_ROUNDS = 10;
 
 @Injectable()
-export class UsersService {
+export class UsersService extends AbstractUsersService {
   constructor(
     @InjectModel("User")
     private readonly userModel: Model<UserDocument>
-  ) {}
+  ) {
+    super();
+  }
 
   async create(body: CreateUserBody): Promise<UserResponse> {
     const existing = await this.userModel.findOne({ email: body.email }).exec();

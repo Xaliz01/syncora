@@ -9,7 +9,7 @@ import {
   Query,
   UnauthorizedException
 } from "@nestjs/common";
-import { UsersService } from "../../domain/users.service";
+import { AbstractUsersService } from "../../domain/ports/users.service.port";
 import type {
   ActivateInvitedUserBody,
   CreateInvitedUserBody,
@@ -20,7 +20,7 @@ import type {
 
 @Controller("users")
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: AbstractUsersService) {}
 
   @Post()
   async create(@Body() body: CreateUserBody) {

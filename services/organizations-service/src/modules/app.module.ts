@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
 import { OrganizationsController } from "../presentation/http/organizations.controller";
 import { OrganizationSchema } from "../persistence/organization.schema";
+import { AbstractOrganizationsService } from "../domain/ports/organizations.service.port";
 import { OrganizationsService } from "../domain/organizations.service";
 
 @Module({
@@ -10,6 +11,6 @@ import { OrganizationsService } from "../domain/organizations.service";
     MongooseModule.forFeature([{ name: "Organization", schema: OrganizationSchema }])
   ],
   controllers: [OrganizationsController],
-  providers: [OrganizationsService]
+  providers: [{ provide: AbstractOrganizationsService, useClass: OrganizationsService }]
 })
 export class AppModule {}
