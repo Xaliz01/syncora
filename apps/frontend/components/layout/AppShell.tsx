@@ -160,7 +160,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div className="hidden sm:flex items-center gap-2 text-sm text-slate-600">
               <span className="font-medium">{user?.name ?? user?.email}</span>
               <span className="rounded-full bg-brand-600/10 px-2 py-0.5 text-xs font-medium text-brand-600">
-                {user?.role}
+                {user?.role === "admin" ? "Administrateur" : "Membre"}
               </span>
             </div>
             <button

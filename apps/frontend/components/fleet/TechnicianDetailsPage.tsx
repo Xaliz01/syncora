@@ -18,6 +18,17 @@ const STATUS_COLORS: Record<string, string> = {
   inactif: "bg-slate-100 text-slate-500 border-slate-200"
 };
 
+const STATUS_LABELS: Record<string, string> = {
+  actif: "Actif",
+  inactif: "Inactif"
+};
+
+const VEHICLE_STATUS_LABELS: Record<string, string> = {
+  actif: "Actif",
+  maintenance: "Maintenance",
+  hors_service: "Hors service"
+};
+
 export function TechnicianDetailsPage({ technicianId }: { technicianId: string }) {
   const router = useRouter();
   const { showToast } = useToast();
@@ -215,9 +226,9 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
               <span className="text-slate-400">Statut</span>
               <p>
                 <span
-                  className={`inline-flex rounded border px-2 py-0.5 text-xs capitalize ${STATUS_COLORS[technician.status] ?? "bg-slate-50 text-slate-700 border-slate-200"}`}
+                  className={`inline-flex rounded border px-2 py-0.5 text-xs ${STATUS_COLORS[technician.status] ?? "bg-slate-50 text-slate-700 border-slate-200"}`}
                 >
-                  {technician.status}
+                  {STATUS_LABELS[technician.status] ?? technician.status}
                 </span>
               </p>
             </div>
@@ -371,7 +382,7 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
                     {[vehicle.brand, vehicle.model].filter(Boolean).join(" ") || vehicle.type}
                   </span>
                 </div>
-                <span className="text-xs text-slate-400 capitalize">{vehicle.status}</span>
+                <span className="text-xs text-slate-400">{VEHICLE_STATUS_LABELS[vehicle.status] ?? vehicle.status}</span>
               </Link>
             ))}
           </div>

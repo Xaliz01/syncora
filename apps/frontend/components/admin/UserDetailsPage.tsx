@@ -8,6 +8,18 @@ import { getPermissionLabel } from "@/lib/permissions-catalog";
 import type { ManagedOrganizationUser } from "@/lib/admin.api";
 import { useToast } from "@/components/ui/ToastProvider";
 
+const ROLE_LABELS: Record<string, string> = {
+  admin: "Administrateur",
+  member: "Membre"
+};
+
+const USER_STATUS_LABELS: Record<string, string> = {
+  active: "Actif",
+  pending: "En attente",
+  inactive: "Inactif",
+  suspended: "Suspendu"
+};
+
 function togglePermission(list: PermissionCode[], permission: PermissionCode): PermissionCode[] {
   if (list.includes(permission)) return list.filter((item) => item !== permission);
   return [...list, permission];
@@ -150,11 +162,11 @@ export function UserDetailsPage({ userId }: { userId: string }) {
           </div>
           <div>
             <span className="text-slate-400">Rôle</span>
-            <p>{user.role}</p>
+            <p>{ROLE_LABELS[user.role] ?? user.role}</p>
           </div>
           <div>
             <span className="text-slate-400">Statut</span>
-            <p>{user.status}</p>
+            <p>{USER_STATUS_LABELS[user.status] ?? user.status}</p>
           </div>
         </div>
       </section>

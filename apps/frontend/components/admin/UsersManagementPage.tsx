@@ -6,6 +6,25 @@ import type { InvitationResponse } from "@syncora/shared";
 import * as adminApi from "@/lib/admin.api";
 import type { ManagedOrganizationUser } from "@/lib/admin.api";
 
+const ROLE_LABELS: Record<string, string> = {
+  admin: "Administrateur",
+  member: "Membre"
+};
+
+const USER_STATUS_LABELS: Record<string, string> = {
+  active: "Actif",
+  pending: "En attente",
+  inactive: "Inactif",
+  suspended: "Suspendu"
+};
+
+const INVITATION_STATUS_LABELS: Record<string, string> = {
+  pending: "En attente",
+  accepted: "Acceptée",
+  expired: "Expirée",
+  revoked: "Révoquée"
+};
+
 export function UsersManagementPage() {
   const [users, setUsers] = useState<ManagedOrganizationUser[]>([]);
   const [invitations, setInvitations] = useState<InvitationResponse[]>([]);
@@ -85,10 +104,10 @@ export function UsersManagementPage() {
               </Link>
               <div className="text-sm text-slate-500 truncate">{user.email}</div>
               <span className="inline-flex w-fit rounded-full bg-slate-100 border border-slate-200 px-2 py-0.5 text-xs text-slate-700">
-                {user.role}
+                {ROLE_LABELS[user.role] ?? user.role}
               </span>
               <span className="inline-flex w-fit rounded-full bg-slate-100 border border-slate-200 px-2 py-0.5 text-xs text-slate-700">
-                {user.status}
+                {USER_STATUS_LABELS[user.status] ?? user.status}
               </span>
             </div>
           ))}
@@ -110,7 +129,7 @@ export function UsersManagementPage() {
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-medium">{invitation.invitedEmail}</span>
                     <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-xs text-slate-600">
-                      {invitation.status}
+                      {INVITATION_STATUS_LABELS[invitation.status] ?? invitation.status}
                     </span>
                   </div>
                   <p className="mt-1 text-slate-500">

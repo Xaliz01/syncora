@@ -139,8 +139,8 @@ export function CreateUserPage() {
                 }}
                 className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:outline-none"
               >
-                <option value="member">member</option>
-                <option value="admin">admin</option>
+                <option value="member">Membre</option>
+                <option value="admin">Administrateur</option>
               </select>
               <select
                 value={profileId}

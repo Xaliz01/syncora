@@ -10,6 +10,11 @@ const STATUS_COLORS: Record<string, string> = {
   inactif: "bg-slate-100 text-slate-500 border-slate-200"
 };
 
+const STATUS_LABELS: Record<string, string> = {
+  actif: "Actif",
+  inactif: "Inactif"
+};
+
 export function TechniciansListPage() {
   const [technicians, setTechnicians] = useState<TechnicianResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -91,9 +96,9 @@ export function TechniciansListPage() {
               <span className="text-sm text-slate-600">{tech.speciality || "—"}</span>
               <span className="text-sm text-slate-600">{tech.assignedVehicleIds.length}</span>
               <span
-                className={`inline-flex w-fit rounded-full border px-2 py-0.5 text-xs capitalize ${STATUS_COLORS[tech.status] ?? "bg-slate-50 text-slate-700 border-slate-200"}`}
+                className={`inline-flex w-fit rounded-full border px-2 py-0.5 text-xs ${STATUS_COLORS[tech.status] ?? "bg-slate-50 text-slate-700 border-slate-200"}`}
               >
-                {tech.status}
+                {STATUS_LABELS[tech.status] ?? tech.status}
               </span>
             </Link>
           ))}

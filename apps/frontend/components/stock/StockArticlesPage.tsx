@@ -6,6 +6,12 @@ import * as api from "@/lib/stock.api";
 
 type StockPageMode = "catalog" | "movements" | "full";
 
+const MOVEMENT_TYPE_LABELS: Record<string, string> = {
+  in: "Entrée",
+  out: "Sortie",
+  adjustment: "Ajustement"
+};
+
 export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
   const showCatalogActions = mode !== "movements";
   const showMovementActions = mode !== "catalog";
@@ -464,7 +470,7 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
                     </span>
                   </div>
                   <div className="text-xs text-slate-600">
-                    {movement.movementType} {movement.quantity} —{" "}
+                    {MOVEMENT_TYPE_LABELS[movement.movementType] ?? movement.movementType} {movement.quantity} —{" "}
                     {movement.previousStock} → {movement.newStock}
                   </div>
                 </div>
