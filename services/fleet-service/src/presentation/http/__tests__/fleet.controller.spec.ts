@@ -16,7 +16,10 @@ describe("FleetController", () => {
       deleteVehicle: jest.fn(),
       assignTechnician: jest.fn(),
       unassignTechnician: jest.fn(),
-      unassignTechnicianFromAllVehicles: jest.fn()
+      unassignTechnicianFromAllVehicles: jest.fn(),
+      assignTeam: jest.fn(),
+      unassignTeam: jest.fn(),
+      unassignTeamFromAllVehicles: jest.fn()
     };
 
     const module: TestingModule = await Test.createTestingModule({

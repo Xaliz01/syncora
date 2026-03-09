@@ -3,6 +3,7 @@ import type {
   VehicleResponse,
   UpdateVehicleBody,
   AssignTechnicianToVehicleBody,
+  AssignTeamToVehicleBody,
   VehicleType,
   VehicleStatus
 } from "@syncora/shared";
@@ -36,6 +37,15 @@ export abstract class AbstractFleetGatewayService {
     body: AssignTechnicianToVehicleBody
   ): Promise<VehicleResponse>;
   abstract unassignTechnicianFromVehicle(
+    currentUser: AuthUser,
+    vehicleId: string
+  ): Promise<VehicleResponse>;
+  abstract assignTeamToVehicle(
+    currentUser: AuthUser,
+    vehicleId: string,
+    body: AssignTeamToVehicleBody
+  ): Promise<VehicleResponse>;
+  abstract unassignTeamFromVehicle(
     currentUser: AuthUser,
     vehicleId: string
   ): Promise<VehicleResponse>;

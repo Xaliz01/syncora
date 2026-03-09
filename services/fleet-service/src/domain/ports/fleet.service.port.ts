@@ -27,4 +27,17 @@ export abstract class AbstractFleetService {
     organizationId: string,
     technicianId: string
   ): Promise<void>;
+  abstract assignTeam(
+    organizationId: string,
+    vehicleId: string,
+    teamId: string
+  ): Promise<VehicleResponse>;
+  abstract unassignTeam(
+    organizationId: string,
+    vehicleId: string
+  ): Promise<VehicleResponse>;
+  abstract unassignTeamFromAllVehicles(
+    organizationId: string,
+    teamId: string
+  ): Promise<void>;
 }

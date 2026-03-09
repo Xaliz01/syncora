@@ -5,6 +5,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import type {
   VehicleResponse,
   TechnicianResponse,
+  TeamResponse,
   VehicleType,
   VehicleStatus
 } from "@syncora/shared";
@@ -44,7 +45,9 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
   const { showToast } = useToast();
   const [vehicle, setVehicle] = useState<VehicleResponse | null>(null);
   const [technicians, setTechnicians] = useState<TechnicianResponse[]>([]);
+  const [teams, setTeams] = useState<TeamResponse[]>([]);
   const [assignedTechnician, setAssignedTechnician] = useState<TechnicianResponse | null>(null);
+  const [assignedTeam, setAssignedTeam] = useState<TeamResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -61,17 +64,20 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
   const [editStatus, setEditStatus] = useState<VehicleStatus>("actif");
 
   const [selectedTechnicianId, setSelectedTechnicianId] = useState("");
+  const [selectedTeamId, setSelectedTeamId] = useState("");
 
   const refresh = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [vehicleData, techList] = await Promise.all([
+      const [vehicleData, techList, teamList] = await Promise.all([
         fleetApi.getVehicle(vehicleId),
-        fleetApi.listTechnicians()
+        fleetApi.listTechnicians(),
+        fleetApi.listTeams()
       ]);
       setVehicle(vehicleData);
       setTechnicians(techList);
+      setTeams(teamList);
 
       setEditType(vehicleData.type);
       setEditReg(vehicleData.registrationNumber);
@@ -90,6 +96,15 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
       } else {
         setAssignedTechnician(null);
         setSelectedTechnicianId("");
+      }
+
+      if (vehicleData.assignedTeamId) {
+        const team = teamList.find((t) => t.id === vehicleData.assignedTeamId) ?? null;
+        setAssignedTeam(team);
+        setSelectedTeamId(vehicleData.assignedTeamId);
+      } else {
+        setAssignedTeam(null);
+        setSelectedTeamId("");
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur de chargement");
@@ -150,6 +165,36 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
     try {
       await fleetApi.unassignTechnicianFromVehicle(vehicle.id);
       showToast("Technicien désaffecté.");
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Impossible de désaffecter");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAssignTeam = async () => {
+    if (!vehicle || !selectedTeamId) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await fleetApi.assignTeamToVehicle(vehicle.id, selectedTeamId);
+      showToast("Équipe affectée au véhicule.");
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Impossible d'affecter l'équipe");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleUnassignTeam = async () => {
+    if (!vehicle) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await fleetApi.unassignTeamFromVehicle(vehicle.id);
+      showToast("Équipe désaffectée.");
       await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Impossible de désaffecter");
@@ -402,6 +447,60 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
               type="button"
               onClick={() => void handleAssign()}
               disabled={saving || !selectedTechnicianId}
+              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50"
+            >
+              Affecter
+            </button>
+          </div>
+        )}
+      </section>
+
+      <section className="rounded-xl border border-slate-200 bg-white p-4 space-y-4">
+        <h2 className="font-semibold">Équipe affectée</h2>
+        {assignedTeam ? (
+          <div className="flex items-center justify-between">
+            <div>
+              <Link
+                href={`/fleet/teams/${assignedTeam.id}`}
+                className="font-medium text-brand-600 hover:text-brand-500 hover:underline"
+              >
+                {assignedTeam.name}
+              </Link>
+              <span className="ml-2 text-sm text-slate-500">
+                ({assignedTeam.technicianIds.length} membre{assignedTeam.technicianIds.length !== 1 ? "s" : ""})
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => void handleUnassignTeam()}
+              disabled={saving}
+              className="rounded-lg border border-red-300 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
+            >
+              Désaffecter
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-end gap-3">
+            <div className="flex-1">
+              <label className="block text-sm text-slate-500 mb-1">Affecter une équipe</label>
+              <select
+                value={selectedTeamId}
+                onChange={(e) => setSelectedTeamId(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900"
+              >
+                <option value="">Sélectionner une équipe</option>
+                {teams.map((team) => (
+                  <option key={team.id} value={team.id}>
+                    {team.name}
+                    {team.agenceName ? ` (${team.agenceName})` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button
+              type="button"
+              onClick={() => void handleAssignTeam()}
+              disabled={saving || !selectedTeamId}
               className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50"
             >
               Affecter

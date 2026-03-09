@@ -54,6 +54,7 @@ export interface CreateInterventionForOrgBody {
   title: string;
   description?: string;
   assigneeId?: string;
+  assignedTeamId?: string;
   scheduledStart?: string;
   scheduledEnd?: string;
 }
@@ -63,6 +64,7 @@ export interface UpdateInterventionForOrgBody {
   description?: string;
   status?: string;
   assigneeId?: string | null;
+  assignedTeamId?: string | null;
   scheduledStart?: string | null;
   scheduledEnd?: string | null;
   notes?: string;

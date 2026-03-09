@@ -13,6 +13,7 @@ import type {
   UpdateVehicleBody,
   VehicleResponse,
   AssignTechnicianToVehicleBody,
+  AssignTeamToVehicleBody,
   VehicleType,
   VehicleStatus
 } from "@syncora/shared";
@@ -171,6 +172,30 @@ export class FleetGatewayService extends AbstractFleetGatewayService {
     }
 
     return vehicle;
+  }
+
+  async assignTeamToVehicle(
+    currentUser: AuthUser,
+    vehicleId: string,
+    body: AssignTeamToVehicleBody
+  ): Promise<VehicleResponse> {
+    return this.callFleetService<VehicleResponse>({
+      method: "put",
+      path: `/vehicles/${vehicleId}/assign-team`,
+      query: { organizationId: currentUser.organizationId },
+      body
+    });
+  }
+
+  async unassignTeamFromVehicle(
+    currentUser: AuthUser,
+    vehicleId: string
+  ): Promise<VehicleResponse> {
+    return this.callFleetService<VehicleResponse>({
+      method: "delete",
+      path: `/vehicles/${vehicleId}/assign-team`,
+      query: { organizationId: currentUser.organizationId }
+    });
   }
 
   private async callFleetService<T>(params: {

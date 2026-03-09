@@ -145,6 +145,43 @@ export class FleetService extends AbstractFleetService {
     );
   }
 
+  async assignTeam(
+    organizationId: string,
+    vehicleId: string,
+    teamId: string
+  ): Promise<VehicleResponse> {
+    const vehicle = await this.vehicleModel.findById(vehicleId).exec();
+    if (!vehicle || vehicle.organizationId !== organizationId) {
+      throw new NotFoundException("Véhicule introuvable");
+    }
+    vehicle.assignedTeamId = teamId;
+    await vehicle.save();
+    return this.toVehicleResponse(vehicle);
+  }
+
+  async unassignTeam(
+    organizationId: string,
+    vehicleId: string
+  ): Promise<VehicleResponse> {
+    const vehicle = await this.vehicleModel.findById(vehicleId).exec();
+    if (!vehicle || vehicle.organizationId !== organizationId) {
+      throw new NotFoundException("Véhicule introuvable");
+    }
+    vehicle.assignedTeamId = undefined;
+    await vehicle.save();
+    return this.toVehicleResponse(vehicle);
+  }
+
+  async unassignTeamFromAllVehicles(
+    organizationId: string,
+    teamId: string
+  ): Promise<void> {
+    await this.vehicleModel.updateMany(
+      { organizationId, assignedTeamId: teamId },
+      { $unset: { assignedTeamId: "" } }
+    );
+  }
+
   private toVehicleResponse(doc: VehicleDocument): VehicleResponse {
     return {
       id: doc._id.toString(),
@@ -159,6 +196,7 @@ export class FleetService extends AbstractFleetService {
       mileage: doc.mileage,
       status: doc.status as VehicleStatus,
       assignedTechnicianId: doc.assignedTechnicianId,
+      assignedTeamId: doc.assignedTeamId,
       createdAt: doc.get("createdAt")?.toISOString(),
       updatedAt: doc.get("updatedAt")?.toISOString()
     };

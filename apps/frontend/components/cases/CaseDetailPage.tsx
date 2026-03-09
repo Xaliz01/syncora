@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "@/lib/cases.api";
+import * as fleetApi from "@/lib/fleet.api";
 import * as stockApi from "@/lib/stock.api";
 import { listOrganizationUsers } from "@/lib/admin.api";
 import type { CasePriority, CaseStatus, TodoItemStatus } from "@syncora/shared";
@@ -76,6 +77,11 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
     queryFn: () => listOrganizationUsers()
   });
 
+  const { data: teamsData } = useQuery({
+    queryKey: ["teams"],
+    queryFn: () => fleetApi.listTeams()
+  });
+
   const { data: articles } = useQuery({
     queryKey: ["articles", "intervention-usage"],
     queryFn: () => stockApi.listArticles({ activeOnly: true })
@@ -90,6 +96,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   const [newIntTitle, setNewIntTitle] = useState("");
   const [newIntDesc, setNewIntDesc] = useState("");
   const [newIntAssignee, setNewIntAssignee] = useState("");
+  const [newIntTeamId, setNewIntTeamId] = useState("");
   const [newIntStart, setNewIntStart] = useState("");
   const [newIntEnd, setNewIntEnd] = useState("");
   const [isEditing, setIsEditing] = useState(false);
@@ -154,6 +161,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
       setNewIntTitle("");
       setNewIntDesc("");
       setNewIntAssignee("");
+      setNewIntTeamId("");
       setNewIntStart("");
       setNewIntEnd("");
       setInterventionError("");
@@ -567,16 +575,25 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                 className="sm:col-span-2 rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
               />
               <select
+                value={newIntTeamId}
+                onChange={(e) => setNewIntTeamId(e.target.value)}
+                className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
+              >
+                <option value="">Équipe (aucune)</option>
+                {teamsData?.map((t) => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+              <select
                 value={newIntAssignee}
                 onChange={(e) => setNewIntAssignee(e.target.value)}
                 className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
               >
-                <option value="">Non assignée</option>
+                <option value="">Assignée à (personne)</option>
                 {usersData?.users.map((u) => (
                   <option key={u.id} value={u.id}>{u.name ?? u.email}</option>
                 ))}
               </select>
-              <div />
               <div>
                 <label className="text-xs text-slate-500">Début</label>
                 <input
@@ -604,6 +621,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                   title: newIntTitle.trim(),
                   description: newIntDesc.trim() || undefined,
                   assigneeId: newIntAssignee || undefined,
+                  assignedTeamId: newIntTeamId || undefined,
                   scheduledStart: newIntStart ? new Date(newIntStart).toISOString() : undefined,
                   scheduledEnd: newIntEnd ? new Date(newIntEnd).toISOString() : undefined
                 });
@@ -664,6 +682,11 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                   </div>
                 </div>
                 <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                  {intervention.assignedTeamName && (
+                    <span className="rounded bg-indigo-50 border border-indigo-200 text-indigo-700 px-1.5 py-0.5 text-xs">
+                      {intervention.assignedTeamName}
+                    </span>
+                  )}
                   {intervention.assigneeName && <span>{intervention.assigneeName}</span>}
                   {intervention.scheduledStart && (
                     <span>

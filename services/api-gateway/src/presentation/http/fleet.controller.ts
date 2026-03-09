@@ -16,6 +16,7 @@ import { CurrentUser } from "../../infrastructure/current-user.decorator";
 import type { AuthUser } from "@syncora/shared";
 import type {
   AssignTechnicianToVehicleBody,
+  AssignTeamToVehicleBody,
   UpdateVehicleBody,
   VehicleType,
   VehicleStatus
@@ -91,5 +92,22 @@ export class FleetController {
     @Param("vehicleId") vehicleId: string
   ) {
     return this.fleetService.unassignTechnicianFromVehicle(user, vehicleId);
+  }
+
+  @Put("vehicles/:vehicleId/assign-team")
+  async assignTeam(
+    @CurrentUser() user: AuthUser,
+    @Param("vehicleId") vehicleId: string,
+    @Body() body: AssignTeamToVehicleBody
+  ) {
+    return this.fleetService.assignTeamToVehicle(user, vehicleId, body);
+  }
+
+  @Delete("vehicles/:vehicleId/assign-team")
+  async unassignTeam(
+    @CurrentUser() user: AuthUser,
+    @Param("vehicleId") vehicleId: string
+  ) {
+    return this.fleetService.unassignTeamFromVehicle(user, vehicleId);
   }
 }

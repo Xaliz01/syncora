@@ -1,4 +1,4 @@
-/** Contrats API fleet-service (véhicules, techniciens, affectations) */
+/** Contrats API fleet-service (véhicules, techniciens, équipes, agences, affectations) */
 
 export const VEHICLE_TYPES = [
   "camion",
@@ -17,6 +17,11 @@ export type VehicleStatus = (typeof VEHICLE_STATUSES)[number];
 
 export const TECHNICIAN_STATUSES = ["actif", "inactif"] as const;
 export type TechnicianStatus = (typeof TECHNICIAN_STATUSES)[number];
+
+export const TEAM_STATUSES = ["active", "inactive"] as const;
+export type TeamStatus = (typeof TEAM_STATUSES)[number];
+
+// ── Vehicles ──
 
 export interface CreateVehicleBody {
   organizationId: string;
@@ -56,9 +61,12 @@ export interface VehicleResponse {
   mileage?: number;
   status: VehicleStatus;
   assignedTechnicianId?: string;
+  assignedTeamId?: string;
   createdAt?: string;
   updatedAt?: string;
 }
+
+// ── Technicians ──
 
 export interface CreateTechnicianBody {
   organizationId: string;
@@ -90,6 +98,7 @@ export interface TechnicianResponse {
   status: TechnicianStatus;
   userId?: string;
   assignedVehicleIds: string[];
+  teamId?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -100,4 +109,68 @@ export interface AssignTechnicianToVehicleBody {
 
 export interface CreateTechnicianUserAccountBody {
   password: string;
+}
+
+// ── Teams (Équipes) ──
+
+export interface CreateTeamBody {
+  organizationId: string;
+  name: string;
+  agenceId?: string;
+  technicianIds?: string[];
+  status?: TeamStatus;
+}
+
+export interface UpdateTeamBody {
+  name?: string;
+  agenceId?: string | null;
+  technicianIds?: string[];
+  status?: TeamStatus;
+}
+
+export interface TeamResponse {
+  id: string;
+  organizationId: string;
+  name: string;
+  agenceId?: string;
+  agenceName?: string;
+  technicianIds: string[];
+  status: TeamStatus;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface AssignTeamToVehicleBody {
+  teamId: string;
+}
+
+// ── Agences ──
+
+export interface CreateAgenceBody {
+  organizationId: string;
+  name: string;
+  address?: string;
+  city?: string;
+  postalCode?: string;
+  phone?: string;
+}
+
+export interface UpdateAgenceBody {
+  name?: string;
+  address?: string;
+  city?: string;
+  postalCode?: string;
+  phone?: string;
+}
+
+export interface AgenceResponse {
+  id: string;
+  organizationId: string;
+  name: string;
+  address?: string;
+  city?: string;
+  postalCode?: string;
+  phone?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
