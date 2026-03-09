@@ -40,7 +40,7 @@ export class AdminService extends AbstractAdminService {
 
   getPermissionsCatalog() {
     return {
-      availablePermissions: AVAILABLE_PERMISSION_CODES
+      availablePermissions: [...AVAILABLE_PERMISSION_CODES]
     };
   }
 
