@@ -112,6 +112,46 @@ export const PERMISSION_METADATA: Record<PermissionCode, PermissionMetadata> = {
     label: "Supprimer des interventions",
     description: "Supprimer des interventions."
   },
+  "teams.read": {
+    code: "teams.read",
+    label: "Voir les équipes",
+    description: "Consulter la liste et le détail des équipes."
+  },
+  "teams.create": {
+    code: "teams.create",
+    label: "Créer des équipes",
+    description: "Créer de nouvelles équipes de techniciens."
+  },
+  "teams.update": {
+    code: "teams.update",
+    label: "Modifier les équipes",
+    description: "Modifier les équipes, gérer les membres et les affectations."
+  },
+  "teams.delete": {
+    code: "teams.delete",
+    label: "Supprimer des équipes",
+    description: "Supprimer des équipes."
+  },
+  "agences.read": {
+    code: "agences.read",
+    label: "Voir les agences",
+    description: "Consulter la liste et le détail des agences."
+  },
+  "agences.create": {
+    code: "agences.create",
+    label: "Créer des agences",
+    description: "Créer de nouvelles agences (sites, bases)."
+  },
+  "agences.update": {
+    code: "agences.update",
+    label: "Modifier les agences",
+    description: "Modifier les informations des agences."
+  },
+  "agences.delete": {
+    code: "agences.delete",
+    label: "Supprimer des agences",
+    description: "Supprimer des agences."
+  },
   "stock.articles.read": {
     code: "stock.articles.read",
     label: "Voir les articles de stock",

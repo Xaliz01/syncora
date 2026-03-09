@@ -144,6 +144,7 @@ export class TechniciansService extends AbstractTechniciansService {
       status: doc.status as TechnicianStatus,
       userId: doc.userId,
       assignedVehicleIds: doc.assignedVehicleIds,
+      teamId: doc.teamId,
       createdAt: doc.get("createdAt")?.toISOString(),
       updatedAt: doc.get("updatedAt")?.toISOString()
     };
