@@ -29,13 +29,11 @@ export function PermissionsSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold mb-1">Permissions</h1>
-          <p className="text-sm text-slate-500">
-            Référence des permissions disponibles dans l’application.
-          </p>
-        </div>
+      <div>
+        <h1 className="text-xl sm:text-2xl font-semibold">Permissions</h1>
+        <p className="text-sm text-slate-500 mt-1">
+          Référence des permissions disponibles dans l&apos;application.
+        </p>
       </div>
 
       {error && (
@@ -49,7 +47,7 @@ export function PermissionsSettingsPage() {
         {loading ? (
           <p className="text-sm text-slate-500">Chargement...</p>
         ) : (
-          <div className="grid gap-2 md:grid-cols-2">
+          <div className="grid gap-2 sm:grid-cols-2">
             {catalog.map((permission) => (
               <div
                 key={permission}

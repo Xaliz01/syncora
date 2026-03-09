@@ -65,11 +65,11 @@ export function clearToken() {
 
 export async function getMe(): Promise<import("@syncora/shared").AuthUser> {
   const token = getToken();
-  if (!token) throw new Error("No token");
+  if (!token) throw new Error("Session non authentifiée");
   const res = await fetch(`${API_BASE}/auth/me`, {
     headers: { Authorization: `Bearer ${token}` }
   });
-  if (!res.ok) throw new Error("Session expired");
+  if (!res.ok) throw new Error("Session expirée");
   return res.json();
 }
 

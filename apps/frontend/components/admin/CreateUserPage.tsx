@@ -75,7 +75,7 @@ export function CreateUserPage() {
         result.invitation.invitationToken
       )}`;
       await navigator.clipboard.writeText(invitationUrl).catch(() => undefined);
-      showToast("Invitation créée. Lien d’activation copié (2s).");
+      showToast("Invitation créée. Lien d'activation copié (2s).");
       setEmail("");
       setName("");
       setRole("member");
@@ -83,7 +83,7 @@ export function CreateUserPage() {
       setSelectedPermissions([]);
       router.push("/users");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Impossible d’inviter l’utilisateur");
+      setError(err instanceof Error ? err.message : "Impossible d'inviter l'utilisateur");
     } finally {
       setSaving(false);
     }
@@ -92,8 +92,8 @@ export function CreateUserPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold mb-1">Inviter un utilisateur</h1>
-        <p className="text-sm text-slate-500">
+        <h1 className="text-xl sm:text-2xl font-semibold">Inviter un utilisateur</h1>
+        <p className="text-sm text-slate-500 mt-1">
           Invitez un utilisateur dans votre organisation et pré-configurez ses droits.
         </p>
       </div>
@@ -104,29 +104,29 @@ export function CreateUserPage() {
         </div>
       )}
 
-      <section className="rounded-xl border border-slate-200 bg-white p-4">
+      <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
         {loading ? (
           <p className="text-sm text-slate-500">Chargement...</p>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid gap-3 md:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               <input
                 type="email"
                 placeholder="Email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
               />
               <input
                 type="text"
                 placeholder="Nom (optionnel)"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
               />
             </div>
-            <div className="grid gap-3 md:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               <select
                 value={role}
                 onChange={(e) => {
@@ -137,10 +137,10 @@ export function CreateUserPage() {
                     setSelectedPermissions([]);
                   }
                 }}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:outline-none"
               >
-                <option value="member">member</option>
-                <option value="admin">admin</option>
+                <option value="member">Membre</option>
+                <option value="admin">Administrateur</option>
               </select>
               <select
                 value={profileId}
@@ -152,7 +152,7 @@ export function CreateUserPage() {
                   setSelectedPermissions(profilePermissions);
                 }}
                 disabled={adminRoleSelected}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:outline-none"
               >
                 <option value="">Aucun profil</option>
                 {profiles.map((profile) => (
@@ -164,14 +164,14 @@ export function CreateUserPage() {
             </div>
             {adminRoleSelected && (
               <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-                Un administrateur d’organisation possède automatiquement tous les droits. Aucun
+                Un administrateur d&apos;organisation possède automatiquement tous les droits. Aucun
                 profil ni permission personnalisée ne peut lui être affecté.
               </div>
             )}
             <div className={`${adminRoleSelected ? "opacity-60" : ""}`}>
               <div>
                 <p className="text-sm font-medium text-slate-700 mb-2">Permissions</p>
-                <div className="grid gap-1 md:grid-cols-2">
+                <div className="grid gap-1 sm:grid-cols-2">
                   {catalog.map((permission) => (
                     <label key={permission} className="flex items-center gap-2 text-sm">
                       <input
@@ -194,9 +194,9 @@ export function CreateUserPage() {
             <button
               type="submit"
               disabled={saving}
-              className="rounded-lg bg-brand-600 px-4 py-2 text-white hover:bg-brand-500 disabled:opacity-50"
+              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
             >
-              {saving ? "Invitation..." : "Inviter l’utilisateur"}
+              {saving ? "Invitation..." : "Inviter l'utilisateur"}
             </button>
           </form>
         )}

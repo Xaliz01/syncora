@@ -190,12 +190,12 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold mb-1">
+          <h1 className="text-xl sm:text-2xl font-semibold mb-1">
             {vehicle.registrationNumber}
           </h1>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-500 mt-1">
             {TYPE_LABELS[vehicle.type] ?? vehicle.type}
             {vehicle.brand ? ` — ${vehicle.brand}` : ""}
             {vehicle.model ? ` ${vehicle.model}` : ""}
@@ -205,7 +205,7 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
           <button
             type="button"
             onClick={() => setIsEditing((p) => !p)}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100"
+            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
           >
             {isEditing ? "Annuler" : "Modifier"}
           </button>
@@ -218,7 +218,7 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
           </button>
           <Link
             href="/fleet/vehicles"
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100"
+            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
           >
             Retour
           </Link>
@@ -289,7 +289,7 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
                 type="text"
                 value={editReg}
                 onChange={(e) => setEditReg(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900"
               />
             </div>
             <div>
@@ -297,7 +297,7 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
               <select
                 value={editType}
                 onChange={(e) => setEditType(e.target.value as VehicleType)}
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900"
               >
                 {VEHICLE_TYPES.map((t) => (
                   <option key={t} value={t}>{TYPE_LABELS[t] ?? t}</option>
@@ -308,35 +308,35 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
           <div className="grid gap-3 md:grid-cols-2">
             <div>
               <label className="block text-sm text-slate-500 mb-1">Marque</label>
-              <input type="text" value={editBrand} onChange={(e) => setEditBrand(e.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900" />
+              <input type="text" value={editBrand} onChange={(e) => setEditBrand(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900" />
             </div>
             <div>
               <label className="block text-sm text-slate-500 mb-1">Modèle</label>
-              <input type="text" value={editModel} onChange={(e) => setEditModel(e.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900" />
+              <input type="text" value={editModel} onChange={(e) => setEditModel(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900" />
             </div>
           </div>
           <div className="grid gap-3 md:grid-cols-3">
             <div>
               <label className="block text-sm text-slate-500 mb-1">Année</label>
-              <input type="number" value={editYear} onChange={(e) => setEditYear(e.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900" />
+              <input type="number" value={editYear} onChange={(e) => setEditYear(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900" />
             </div>
             <div>
               <label className="block text-sm text-slate-500 mb-1">Couleur</label>
-              <input type="text" value={editColor} onChange={(e) => setEditColor(e.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900" />
+              <input type="text" value={editColor} onChange={(e) => setEditColor(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900" />
             </div>
             <div>
               <label className="block text-sm text-slate-500 mb-1">Kilométrage</label>
-              <input type="number" value={editMileage} onChange={(e) => setEditMileage(e.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900" />
+              <input type="number" value={editMileage} onChange={(e) => setEditMileage(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900" />
             </div>
           </div>
           <div className="grid gap-3 md:grid-cols-2">
             <div>
               <label className="block text-sm text-slate-500 mb-1">VIN</label>
-              <input type="text" value={editVin} onChange={(e) => setEditVin(e.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900" />
+              <input type="text" value={editVin} onChange={(e) => setEditVin(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900" />
             </div>
             <div>
               <label className="block text-sm text-slate-500 mb-1">Statut</label>
-              <select value={editStatus} onChange={(e) => setEditStatus(e.target.value as VehicleStatus)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900">
+              <select value={editStatus} onChange={(e) => setEditStatus(e.target.value as VehicleStatus)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900">
                 {VEHICLE_STATUSES.map((s) => (
                   <option key={s} value={s}>{STATUS_LABELS[s] ?? s}</option>
                 ))}
@@ -348,7 +348,7 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
               type="button"
               onClick={() => void handleSave()}
               disabled={saving}
-              className="rounded-lg bg-brand-600 px-4 py-2 text-white hover:bg-brand-500 disabled:opacity-50"
+              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50"
             >
               {saving ? "Enregistrement..." : "Enregistrer"}
             </button>
@@ -363,7 +363,7 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
             <div>
               <Link
                 href={`/fleet/technicians/${assignedTechnician.id}`}
-                className="font-medium text-brand-700 hover:underline"
+                className="font-medium text-brand-600 hover:text-brand-500 hover:underline"
               >
                 {assignedTechnician.firstName} {assignedTechnician.lastName}
               </Link>
@@ -387,7 +387,7 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
               <select
                 value={selectedTechnicianId}
                 onChange={(e) => setSelectedTechnicianId(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900"
               >
                 <option value="">Sélectionner un technicien</option>
                 {technicians.map((tech) => (
@@ -402,7 +402,7 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
               type="button"
               onClick={() => void handleAssign()}
               disabled={saving || !selectedTechnicianId}
-              className="rounded-lg bg-brand-600 px-4 py-2 text-white hover:bg-brand-500 disabled:opacity-50"
+              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50"
             >
               Affecter
             </button>

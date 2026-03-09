@@ -28,8 +28,8 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 via-white to-indigo-100">
-      <header className="border-b border-blue-100 bg-white/85 backdrop-blur">
+    <div className="min-h-screen flex flex-col bg-slate-50">
+      <header className="border-b border-slate-200 bg-white/95 backdrop-blur">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white font-semibold">
@@ -44,8 +44,8 @@ export function LoginPage() {
       </header>
 
       <main className="flex-1 flex items-center justify-center px-4 py-8">
-        <div className="w-full max-w-6xl grid gap-6 lg:grid-cols-[1.2fr_1fr]">
-          <section className="rounded-2xl border border-blue-100 bg-white/95 p-6 shadow-lg shadow-blue-100/40">
+        <div className="w-full max-w-6xl grid gap-6 md:grid-cols-[1.2fr_1fr]">
+          <section className="rounded-2xl border border-slate-200 bg-white/95 p-6 shadow-sm">
             <h1 className="text-3xl font-semibold mb-2">Bienvenue sur Syncora</h1>
             <p className="text-slate-600 mb-8 max-w-xl">
               Gérez votre portefeuille client, planifiez vos interventions, suivez vos stocks et
@@ -53,20 +53,20 @@ export function LoginPage() {
             </p>
 
             <div className="grid gap-4 md:grid-cols-3">
-              <article className="rounded-xl border border-blue-100 bg-blue-50/40 p-4">
+              <article className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                 <h2 className="font-medium mb-1">Portefeuille client</h2>
                 <p className="text-sm text-slate-600">
                   Centralisez vos clients, sites et contacts, avec l’historique des interventions.
                 </p>
               </article>
-              <article className="rounded-xl border border-blue-100 bg-blue-50/40 p-4">
+              <article className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                 <h2 className="font-medium mb-1">Interventions</h2>
                 <p className="text-sm text-slate-600">
                   Planifiez, assignez des intervenants et suivez le cycle de vie complet d’une
                   intervention.
                 </p>
               </article>
-              <article className="rounded-xl border border-blue-100 bg-blue-50/40 p-4">
+              <article className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                 <h2 className="font-medium mb-1">Stocks & flotte</h2>
                 <p className="text-sm text-slate-600">
                   Pilotez vos stocks, entrepôts et camions avec une vision temps réel.
@@ -75,7 +75,7 @@ export function LoginPage() {
             </div>
           </section>
 
-          <section className="rounded-2xl border border-blue-100 bg-white/95 p-6 shadow-lg shadow-blue-100/60">
+          <section className="rounded-2xl border border-slate-200 bg-white/95 p-6 shadow-sm">
             <h2 className="text-2xl font-semibold mb-2">Connexion</h2>
             <p className="text-slate-600 mb-8 max-w-xl">
               Accédez à votre espace Syncora avec votre email et mot de passe.
@@ -98,7 +98,7 @@ export function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   autoComplete="email"
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                   placeholder="vous@exemple.fr"
                 />
               </div>
@@ -113,13 +113,13 @@ export function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   autoComplete="current-password"
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                 />
               </div>
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-lg bg-brand-600 py-2.5 font-medium text-white hover:bg-brand-500 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-2 disabled:opacity-50"
+                className="w-full rounded-lg bg-brand-600 py-2.5 font-medium text-white hover:bg-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-50"
               >
                 {loading ? "Connexion…" : "Se connecter"}
               </button>
@@ -127,13 +127,13 @@ export function LoginPage() {
 
             <p className="mt-6 text-center text-sm text-slate-600">
               Pas encore de compte ?{" "}
-              <Link href="/register" className="text-brand-700 hover:underline">
+              <Link href="/register" className="text-brand-600 hover:text-brand-500 hover:underline font-medium">
                 Créer une organisation
               </Link>
             </p>
             <p className="mt-2 text-center text-sm text-slate-600">
               Reçu une invitation ?{" "}
-              <Link href="/accept-invitation" className="text-brand-700 hover:underline">
+              <Link href="/accept-invitation" className="text-brand-600 hover:text-brand-500 hover:underline font-medium">
                 Activer votre compte invité
               </Link>
             </p>

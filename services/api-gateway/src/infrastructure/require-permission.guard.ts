@@ -26,14 +26,14 @@ export class RequirePermissionGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest<{ user?: JwtPayload }>();
     const user = request.user;
-    if (!user) throw new ForbiddenException("User context is missing");
+    if (!user) throw new ForbiddenException("Contexte utilisateur manquant");
 
     if (user.role === "admin") return true;
 
     const userPermissions = new Set(user.permissions ?? []);
     const hasAll = requiredPermissions.every((p) => userPermissions.has(p));
     if (!hasAll) {
-      throw new ForbiddenException("Insufficient permissions");
+      throw new ForbiddenException("Permissions insuffisantes");
     }
     return true;
   }

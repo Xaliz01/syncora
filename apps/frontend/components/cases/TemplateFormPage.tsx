@@ -147,10 +147,10 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
   return (
     <div className="space-y-6 max-w-3xl">
       <div>
-        <h1 className="text-2xl font-semibold">
+        <h1 className="text-xl sm:text-2xl font-semibold">
           {isEdit ? "Modifier le modèle" : "Nouveau modèle de dossier"}
         </h1>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-slate-500 mt-1">
           Définissez les étapes et tâches qui seront automatiquement créées pour chaque dossier basé sur ce modèle.
         </p>
       </div>
@@ -162,7 +162,7 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="space-y-4 rounded-xl border border-blue-100 bg-white p-5 shadow-sm">
+        <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
               Nom du modèle
@@ -171,7 +171,7 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
               placeholder="Ex: Dossier CEED, Audit énergétique…"
             />
           </div>
@@ -183,19 +183,19 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
               placeholder="Description optionnelle du modèle…"
             />
           </div>
         </div>
 
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <h2 className="text-lg font-semibold text-slate-800">Étapes</h2>
             <button
               type="button"
               onClick={addStep}
-              className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100 transition"
+              className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 transition self-start"
             >
               + Ajouter une étape
             </button>
@@ -204,19 +204,19 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
           {steps.map((step, stepIdx) => (
             <div
               key={stepIdx}
-              className="rounded-xl border border-blue-100 bg-white p-4 shadow-sm space-y-3"
+              className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm space-y-3"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 space-y-2">
                   <div className="flex items-center gap-2">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold text-blue-700">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-600/10 text-xs font-semibold text-brand-600">
                       {stepIdx + 1}
                     </span>
                     <input
                       type="text"
                       value={step.name}
                       onChange={(e) => updateStep(stepIdx, "name", e.target.value)}
-                      className="flex-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                       placeholder="Nom de l'étape"
                     />
                   </div>
@@ -224,7 +224,7 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
                     type="text"
                     value={step.description}
                     onChange={(e) => updateStep(stepIdx, "description", e.target.value)}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-xs focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                     placeholder="Description de l'étape (optionnel)"
                   />
                 </div>
@@ -248,7 +248,7 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
                       type="text"
                       value={todo.label}
                       onChange={(e) => updateTodo(stepIdx, todoIdx, "label", e.target.value)}
-                      className="flex-1 rounded border border-slate-200 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="flex-1 rounded border border-slate-200 px-2 py-1 text-xs focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                       placeholder="Libellé de la tâche"
                     />
                     {step.todos.length > 1 && (
@@ -265,7 +265,7 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
                 <button
                   type="button"
                   onClick={() => addTodo(stepIdx)}
-                  className="text-xs text-blue-600 hover:text-blue-700"
+                  className="text-xs text-brand-600 hover:text-brand-500 font-medium"
                 >
                   + Ajouter une tâche
                 </button>
@@ -274,18 +274,18 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
           ))}
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <button
             type="submit"
             disabled={isPending}
-            className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 transition"
+            className="rounded-lg bg-brand-600 px-5 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
           >
             {isPending ? "Enregistrement…" : isEdit ? "Mettre à jour" : "Créer le modèle"}
           </button>
           <button
             type="button"
             onClick={() => router.push("/settings/case-templates")}
-            className="rounded-lg border border-slate-300 px-5 py-2 text-sm text-slate-600 hover:bg-slate-50 transition"
+            className="rounded-lg border border-slate-200 px-5 py-2 text-sm text-slate-600 hover:bg-slate-50 transition"
           >
             Annuler
           </button>

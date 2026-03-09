@@ -40,7 +40,7 @@ export class AdminService extends AbstractAdminService {
 
   getPermissionsCatalog() {
     return {
-      availablePermissions: AVAILABLE_PERMISSION_CODES
+      availablePermissions: [...AVAILABLE_PERMISSION_CODES]
     };
   }
 
@@ -51,7 +51,7 @@ export class AdminService extends AbstractAdminService {
       (body.profileId || (body.extraPermissions?.length ?? 0) > 0 || (body.revokedPermissions?.length ?? 0) > 0)
     ) {
       throw new BadRequestException(
-        "Organization admins always have full rights; profile or custom permissions are not allowed"
+        "Les administrateurs d'organisation ont tous les droits ; les profils et permissions personnalisées ne sont pas autorisés"
       );
     }
 
@@ -154,7 +154,7 @@ export class AdminService extends AbstractAdminService {
       path: `/users/${userId}`
     });
     if (user.organizationId !== currentUser.organizationId) {
-      throw new ForbiddenException("Cannot access user from another organization");
+      throw new ForbiddenException("Impossible d'accéder à un utilisateur d'une autre organisation");
     }
 
     const [assignment, effectivePermissions] = await Promise.all([
@@ -193,11 +193,11 @@ export class AdminService extends AbstractAdminService {
       path: `/users/${userId}`
     });
     if (targetUser.organizationId !== currentUser.organizationId) {
-      throw new ForbiddenException("Cannot manage user from another organization");
+      throw new ForbiddenException("Impossible de gérer un utilisateur d'une autre organisation");
     }
     if (targetUser.role === "admin") {
       throw new BadRequestException(
-        "Organization admins always have full rights and cannot have custom profiles/permissions"
+        "Les administrateurs d'organisation ont tous les droits et ne peuvent pas avoir de profils/permissions personnalisés"
       );
     }
 

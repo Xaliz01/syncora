@@ -44,7 +44,7 @@ export class AuthService extends AbstractAuthService {
       org = res.data;
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } })?.response?.status;
-      if (status === 409) throw new ConflictException("Organization name already taken");
+      if (status === 409) throw new ConflictException("Ce nom d'organisation est déjà utilisé");
       throw err;
     }
 
@@ -62,7 +62,7 @@ export class AuthService extends AbstractAuthService {
       user = res.data;
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } })?.response?.status;
-      if (status === 409) throw new ConflictException("User with this email already exists");
+      if (status === 409) throw new ConflictException("Un utilisateur avec cet email existe déjà");
       throw err;
     }
 
@@ -105,7 +105,7 @@ export class AuthService extends AbstractAuthService {
       user = res.data;
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } })?.response?.status;
-      if (status === 401) throw new UnauthorizedException("Invalid email or password");
+      if (status === 401) throw new UnauthorizedException("Email ou mot de passe incorrect");
       throw err;
     }
 
@@ -147,8 +147,8 @@ export class AuthService extends AbstractAuthService {
       invitation = res.data;
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } })?.response?.status;
-      if (status === 404) throw new UnauthorizedException("Invitation not found");
-      if (status === 409) throw new UnauthorizedException("Invitation has already been used");
+      if (status === 404) throw new UnauthorizedException("Invitation introuvable");
+      if (status === 409) throw new UnauthorizedException("Cette invitation a déjà été utilisée");
       throw err;
     }
 
@@ -163,8 +163,8 @@ export class AuthService extends AbstractAuthService {
       user = res.data;
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } })?.response?.status;
-      if (status === 404) throw new UnauthorizedException("Invited user not found");
-      if (status === 400) throw new UnauthorizedException("Invalid invitation activation state");
+      if (status === 404) throw new UnauthorizedException("Utilisateur invité introuvable");
+      if (status === 400) throw new UnauthorizedException("État d'activation de l'invitation invalide");
       throw err;
     }
 
@@ -176,8 +176,8 @@ export class AuthService extends AbstractAuthService {
       );
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } })?.response?.status;
-      if (status === 404) throw new UnauthorizedException("Invitation could not be finalized");
-      if (status === 409) throw new UnauthorizedException("Invitation has already been used");
+      if (status === 404) throw new UnauthorizedException("Impossible de finaliser l'invitation");
+      if (status === 409) throw new UnauthorizedException("Cette invitation a déjà été utilisée");
       throw err;
     }
 

@@ -55,33 +55,33 @@ export function CasesListPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">Dossiers</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="text-xl sm:text-2xl font-semibold">Dossiers</h1>
+          <p className="text-sm text-slate-500 mt-1">
             Gérez le cycle de vie complet de vos dossiers.
           </p>
         </div>
         <Link
           href="/cases/new"
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition"
+          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition self-start flex-shrink-0"
         >
           Nouveau dossier
         </Link>
       </div>
 
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-col sm:flex-row flex-wrap gap-3">
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Rechercher un dossier…"
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 w-64"
+          className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 w-full sm:w-64"
         />
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+          className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
         >
           <option value="">Tous les statuts</option>
           {(Object.keys(STATUS_LABELS) as CaseStatus[]).map((s) => (
@@ -91,7 +91,7 @@ export function CasesListPage() {
         <select
           value={priorityFilter}
           onChange={(e) => setPriorityFilter(e.target.value)}
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+          className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
         >
           <option value="">Toutes les priorités</option>
           {(Object.keys(PRIORITY_LABELS) as CasePriority[]).map((p) => (
@@ -103,7 +103,7 @@ export function CasesListPage() {
       {isLoading ? (
         <div className="text-sm text-slate-500">Chargement…</div>
       ) : !cases?.length ? (
-        <div className="rounded-xl border border-dashed border-blue-200 bg-blue-50/50 p-8 text-center">
+        <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
           <p className="text-slate-600 mb-2">Aucun dossier trouvé</p>
           <p className="text-sm text-slate-500">
             Créez votre premier dossier pour commencer le suivi.
@@ -115,9 +115,9 @@ export function CasesListPage() {
             <Link
               key={c.id}
               href={`/cases/${c.id}`}
-              className="block rounded-xl border border-blue-100 bg-white p-4 shadow-sm hover:shadow-md transition"
+              className="block rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition"
             >
-              <div className="flex items-start justify-between">
+              <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-semibold text-slate-800 truncate">{c.title}</h3>
@@ -137,7 +137,7 @@ export function CasesListPage() {
                     </span>
                   </div>
 
-                  <div className="mt-2 flex items-center gap-4 text-xs text-slate-500">
+                  <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
                     {c.assigneeName && (
                       <span>Assigné à : {c.assigneeName}</span>
                     )}
@@ -163,12 +163,12 @@ export function CasesListPage() {
                   )}
                 </div>
 
-                <div className="ml-4 flex flex-col items-end gap-1">
+                <div className="flex-shrink-0 flex flex-col items-end gap-1">
                   <div className="text-right">
                     <div className="text-sm font-semibold text-slate-700">{c.progress}%</div>
-                    <div className="w-20 h-1.5 rounded-full bg-slate-100 mt-1">
+                    <div className="w-16 sm:w-20 h-1.5 rounded-full bg-slate-100 mt-1">
                       <div
-                        className="h-full rounded-full bg-blue-500 transition-all"
+                        className="h-full rounded-full bg-brand-600 transition-all"
                         style={{ width: `${c.progress}%` }}
                       />
                     </div>
