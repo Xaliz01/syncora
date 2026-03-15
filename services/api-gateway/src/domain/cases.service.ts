@@ -176,6 +176,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       startDate?: string;
       endDate?: string;
       status?: string;
+      unscheduled?: string;
     }
   ) {
     return this.callCasesService<InterventionResponse[]>({

@@ -272,13 +272,19 @@ export class CasesService extends AbstractCasesService {
       startDate?: string;
       endDate?: string;
       status?: string;
+      unscheduled?: string;
     }
   ): Promise<InterventionResponse[]> {
     const query: Record<string, unknown> = { organizationId };
     if (filters?.caseId) query.caseId = filters.caseId;
     if (filters?.assigneeId) query.assigneeId = filters.assigneeId;
     if (filters?.status) query.status = filters.status;
-    if (filters?.startDate || filters?.endDate) {
+    if (filters?.unscheduled === "true") {
+      query.$or = [
+        { scheduledStart: { $exists: false } },
+        { scheduledStart: null }
+      ];
+    } else if (filters?.startDate || filters?.endDate) {
       const dateFilter: Record<string, unknown> = {};
       if (filters?.startDate) dateFilter.$gte = new Date(filters.startDate);
       if (filters?.endDate) dateFilter.$lte = new Date(filters.endDate);

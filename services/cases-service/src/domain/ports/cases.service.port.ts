@@ -45,6 +45,7 @@ export abstract class AbstractCasesService {
       startDate?: string;
       endDate?: string;
       status?: string;
+      unscheduled?: string;
     }
   ): Promise<InterventionResponse[]>;
   abstract getIntervention(id: string, organizationId: string): Promise<InterventionResponse>;
