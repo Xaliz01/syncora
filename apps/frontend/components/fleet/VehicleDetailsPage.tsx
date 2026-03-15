@@ -4,7 +4,6 @@ import Link from "next/link";
 import React, { useCallback, useEffect, useState } from "react";
 import type {
   VehicleResponse,
-  TechnicianResponse,
   TeamResponse,
   VehicleType,
   VehicleStatus
@@ -44,9 +43,7 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
   const router = useRouter();
   const { showToast } = useToast();
   const [vehicle, setVehicle] = useState<VehicleResponse | null>(null);
-  const [technicians, setTechnicians] = useState<TechnicianResponse[]>([]);
   const [teams, setTeams] = useState<TeamResponse[]>([]);
-  const [assignedTechnician, setAssignedTechnician] = useState<TechnicianResponse | null>(null);
   const [assignedTeam, setAssignedTeam] = useState<TeamResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -63,20 +60,17 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
   const [editMileage, setEditMileage] = useState("");
   const [editStatus, setEditStatus] = useState<VehicleStatus>("actif");
 
-  const [selectedTechnicianId, setSelectedTechnicianId] = useState("");
   const [selectedTeamId, setSelectedTeamId] = useState("");
 
   const refresh = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [vehicleData, techList, teamList] = await Promise.all([
+      const [vehicleData, teamList] = await Promise.all([
         fleetApi.getVehicle(vehicleId),
-        fleetApi.listTechnicians(),
         fleetApi.listTeams()
       ]);
       setVehicle(vehicleData);
-      setTechnicians(techList);
       setTeams(teamList);
 
       setEditType(vehicleData.type);
@@ -88,15 +82,6 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
       setEditVin(vehicleData.vin ?? "");
       setEditMileage(vehicleData.mileage?.toString() ?? "");
       setEditStatus(vehicleData.status);
-
-      if (vehicleData.assignedTechnicianId) {
-        const tech = techList.find((t) => t.id === vehicleData.assignedTechnicianId) ?? null;
-        setAssignedTechnician(tech);
-        setSelectedTechnicianId(vehicleData.assignedTechnicianId);
-      } else {
-        setAssignedTechnician(null);
-        setSelectedTechnicianId("");
-      }
 
       if (vehicleData.assignedTeamId) {
         const team = teamList.find((t) => t.id === vehicleData.assignedTeamId) ?? null;
@@ -138,36 +123,6 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
       await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Impossible de sauvegarder");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleAssign = async () => {
-    if (!vehicle || !selectedTechnicianId) return;
-    setSaving(true);
-    setError(null);
-    try {
-      await fleetApi.assignTechnicianToVehicle(vehicle.id, selectedTechnicianId);
-      showToast("Technicien affecté au véhicule.");
-      await refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Impossible d'affecter le technicien");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleUnassign = async () => {
-    if (!vehicle) return;
-    setSaving(true);
-    setError(null);
-    try {
-      await fleetApi.unassignTechnicianFromVehicle(vehicle.id);
-      showToast("Technicien désaffecté.");
-      await refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Impossible de désaffecter");
     } finally {
       setSaving(false);
     }
@@ -330,20 +285,11 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
           <div className="grid gap-3 md:grid-cols-2">
             <div>
               <label className="block text-sm text-slate-500 mb-1">Immatriculation</label>
-              <input
-                type="text"
-                value={editReg}
-                onChange={(e) => setEditReg(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900"
-              />
+              <input type="text" value={editReg} onChange={(e) => setEditReg(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900" />
             </div>
             <div>
               <label className="block text-sm text-slate-500 mb-1">Type</label>
-              <select
-                value={editType}
-                onChange={(e) => setEditType(e.target.value as VehicleType)}
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900"
-              >
+              <select value={editType} onChange={(e) => setEditType(e.target.value as VehicleType)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900">
                 {VEHICLE_TYPES.map((t) => (
                   <option key={t} value={t}>{TYPE_LABELS[t] ?? t}</option>
                 ))}
@@ -400,60 +346,6 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
           </div>
         </section>
       )}
-
-      <section className="rounded-xl border border-slate-200 bg-white p-4 space-y-4">
-        <h2 className="font-semibold">Technicien affecté</h2>
-        {assignedTechnician ? (
-          <div className="flex items-center justify-between">
-            <div>
-              <Link
-                href={`/fleet/technicians/${assignedTechnician.id}`}
-                className="font-medium text-brand-600 hover:text-brand-500 hover:underline"
-              >
-                {assignedTechnician.firstName} {assignedTechnician.lastName}
-              </Link>
-              {assignedTechnician.speciality && (
-                <span className="ml-2 text-sm text-slate-500">({assignedTechnician.speciality})</span>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={() => void handleUnassign()}
-              disabled={saving}
-              className="rounded-lg border border-red-300 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
-            >
-              Désaffecter
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-end gap-3">
-            <div className="flex-1">
-              <label className="block text-sm text-slate-500 mb-1">Affecter un technicien</label>
-              <select
-                value={selectedTechnicianId}
-                onChange={(e) => setSelectedTechnicianId(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900"
-              >
-                <option value="">Sélectionner un technicien</option>
-                {technicians.map((tech) => (
-                  <option key={tech.id} value={tech.id}>
-                    {tech.firstName} {tech.lastName}
-                    {tech.speciality ? ` (${tech.speciality})` : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <button
-              type="button"
-              onClick={() => void handleAssign()}
-              disabled={saving || !selectedTechnicianId}
-              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50"
-            >
-              Affecter
-            </button>
-          </div>
-        )}
-      </section>
 
       <section className="rounded-xl border border-slate-200 bg-white p-4 space-y-4">
         <h2 className="font-semibold">Équipe affectée</h2>

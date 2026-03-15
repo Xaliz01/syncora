@@ -60,7 +60,6 @@ export interface VehicleResponse {
   vin?: string;
   mileage?: number;
   status: VehicleStatus;
-  assignedTechnicianId?: string;
   assignedTeamId?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -97,14 +96,8 @@ export interface TechnicianResponse {
   speciality?: string;
   status: TechnicianStatus;
   userId?: string;
-  assignedVehicleIds: string[];
-  teamId?: string;
   createdAt?: string;
   updatedAt?: string;
-}
-
-export interface AssignTechnicianToVehicleBody {
-  technicianId: string;
 }
 
 export interface CreateTechnicianUserAccountBody {

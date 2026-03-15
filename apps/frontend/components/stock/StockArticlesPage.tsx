@@ -187,51 +187,76 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="mb-3 text-sm font-semibold text-slate-800">Créer un article</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <input
-              value={createName}
-              onChange={(e) => setCreateName(e.target.value)}
-              placeholder="Nom"
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
-            />
-            <input
-              value={createReference}
-              onChange={(e) => setCreateReference(e.target.value)}
-              placeholder="Référence (SKU)"
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
-            />
-            <input
-              value={createUnit}
-              onChange={(e) => setCreateUnit(e.target.value)}
-              placeholder="Unité"
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
-            />
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={createInitialStock}
-              onChange={(e) => setCreateInitialStock(e.target.value)}
-              placeholder="Stock initial"
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
-            />
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={createReorderPoint}
-              onChange={(e) => setCreateReorderPoint(e.target.value)}
-              placeholder="Seuil d'alerte"
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
-            />
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={createTargetStock}
-              onChange={(e) => setCreateTargetStock(e.target.value)}
-              placeholder="Stock cible"
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
-            />
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">
+                Nom <span className="text-red-500">*</span>
+              </label>
+              <input
+                value={createName}
+                onChange={(e) => setCreateName(e.target.value)}
+                placeholder="Ex: Câble RJ45 Cat.6"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">
+                Référence (SKU) <span className="text-red-500">*</span>
+              </label>
+              <input
+                value={createReference}
+                onChange={(e) => setCreateReference(e.target.value)}
+                placeholder="Ex: CAB-RJ45-001"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Unité de mesure</label>
+              <input
+                value={createUnit}
+                onChange={(e) => setCreateUnit(e.target.value)}
+                placeholder="Ex: mètre, unité, litre"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Stock initial</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={createInitialStock}
+                onChange={(e) => setCreateInitialStock(e.target.value)}
+                placeholder="0"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+              />
+              <p className="mt-0.5 text-[11px] text-slate-400">Quantité en stock au démarrage</p>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Seuil d&apos;alerte</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={createReorderPoint}
+                onChange={(e) => setCreateReorderPoint(e.target.value)}
+                placeholder="0"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+              />
+              <p className="mt-0.5 text-[11px] text-slate-400">Alerte quand le stock passe en dessous</p>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Stock cible</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={createTargetStock}
+                onChange={(e) => setCreateTargetStock(e.target.value)}
+                placeholder="0"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+              />
+              <p className="mt-0.5 text-[11px] text-slate-400">Niveau de stock optimal visé</p>
+            </div>
           </div>
           <div className="mt-3">
             <button

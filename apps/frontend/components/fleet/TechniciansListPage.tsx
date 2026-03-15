@@ -76,25 +76,23 @@ export function TechniciansListPage() {
         </div>
       ) : (
         <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-          <div className="hidden md:grid md:grid-cols-[1.2fr_1fr_0.8fr_0.5fr_0.5fr] gap-3 border-b border-slate-200 px-4 py-3 text-xs uppercase tracking-wide text-slate-400">
+          <div className="hidden md:grid md:grid-cols-[1.2fr_1fr_0.8fr_0.5fr] gap-3 border-b border-slate-200 px-4 py-3 text-xs uppercase tracking-wide text-slate-400">
             <span>Nom</span>
             <span>Email</span>
             <span>Spécialité</span>
-            <span>Véhicules</span>
             <span>Statut</span>
           </div>
           {technicians.map((tech) => (
             <Link
               key={tech.id}
               href={`/fleet/technicians/${tech.id}`}
-              className="grid md:grid-cols-[1.2fr_1fr_0.8fr_0.5fr_0.5fr] gap-2 md:gap-3 items-center px-4 py-3 border-b border-slate-200 last:border-b-0 hover:bg-slate-50 transition"
+              className="grid md:grid-cols-[1.2fr_1fr_0.8fr_0.5fr] gap-2 md:gap-3 items-center px-4 py-3 border-b border-slate-200 last:border-b-0 hover:bg-slate-50 transition"
             >
               <span className="font-medium text-brand-600">
                 {tech.firstName} {tech.lastName}
               </span>
               <span className="text-sm text-slate-500 truncate">{tech.email || "—"}</span>
               <span className="text-sm text-slate-600">{tech.speciality || "—"}</span>
-              <span className="text-sm text-slate-600">{tech.assignedVehicleIds.length}</span>
               <span
                 className={`inline-flex w-fit rounded-full border px-2 py-0.5 text-xs ${STATUS_COLORS[tech.status] ?? "bg-slate-50 text-slate-700 border-slate-200"}`}
               >

@@ -92,16 +92,6 @@ export function deleteVehicle(vehicleId: string) {
   return fleetRequest<{ deleted: true }>("DELETE", `/fleet/vehicles/${vehicleId}`);
 }
 
-export function assignTechnicianToVehicle(vehicleId: string, technicianId: string) {
-  return fleetRequest<VehicleResponse>("PUT", `/fleet/vehicles/${vehicleId}/assign`, {
-    technicianId
-  });
-}
-
-export function unassignTechnicianFromVehicle(vehicleId: string) {
-  return fleetRequest<VehicleResponse>("DELETE", `/fleet/vehicles/${vehicleId}/assign`);
-}
-
 // ─── Technicians ───
 
 export function listTechnicians() {

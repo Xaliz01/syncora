@@ -112,6 +112,46 @@ export const PERMISSION_METADATA: Record<PermissionCode, PermissionMetadata> = {
     label: "Supprimer des interventions",
     description: "Supprimer des interventions."
   },
+  "vehicles.read": {
+    code: "vehicles.read",
+    label: "Voir les véhicules",
+    description: "Consulter la liste et le détail des véhicules."
+  },
+  "vehicles.create": {
+    code: "vehicles.create",
+    label: "Créer des véhicules",
+    description: "Ajouter de nouveaux véhicules à la flotte."
+  },
+  "vehicles.update": {
+    code: "vehicles.update",
+    label: "Modifier les véhicules",
+    description: "Modifier les informations des véhicules et gérer les affectations d'équipes."
+  },
+  "vehicles.delete": {
+    code: "vehicles.delete",
+    label: "Supprimer des véhicules",
+    description: "Supprimer des véhicules de la flotte."
+  },
+  "technicians.read": {
+    code: "technicians.read",
+    label: "Voir les techniciens",
+    description: "Consulter la liste et le détail des techniciens."
+  },
+  "technicians.create": {
+    code: "technicians.create",
+    label: "Créer des techniciens",
+    description: "Ajouter de nouveaux techniciens."
+  },
+  "technicians.update": {
+    code: "technicians.update",
+    label: "Modifier les techniciens",
+    description: "Modifier les informations des techniciens et gérer leurs comptes utilisateur."
+  },
+  "technicians.delete": {
+    code: "technicians.delete",
+    label: "Supprimer des techniciens",
+    description: "Supprimer des techniciens."
+  },
   "teams.read": {
     code: "teams.read",
     label: "Voir les équipes",
