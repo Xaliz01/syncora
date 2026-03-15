@@ -10,7 +10,6 @@ describe("TechniciansService", () => {
     findOne: jest.Mock;
     findById: jest.Mock;
     find: jest.Mock;
-    findOneAndUpdate: jest.Mock;
   };
 
   const mockTechnicianDoc = (overrides: Record<string, unknown> = {}) => ({
@@ -23,7 +22,6 @@ describe("TechniciansService", () => {
     speciality: "mechanic",
     status: "actif",
     userId: undefined,
-    assignedVehicleIds: [] as string[],
     get: jest.fn((key: string) =>
       key === "createdAt" ? new Date("2025-01-01") : key === "updatedAt" ? new Date("2025-01-02") : undefined
     ),
@@ -42,8 +40,7 @@ describe("TechniciansService", () => {
       create: jest.fn(),
       findOne: jest.fn().mockReturnValue({ exec: execMock }),
       findById: jest.fn().mockReturnValue({ exec: execMock }),
-      find: jest.fn().mockReturnValue(findChain),
-      findOneAndUpdate: jest.fn().mockReturnValue({ exec: execMock })
+      find: jest.fn().mockReturnValue(findChain)
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -94,7 +91,6 @@ describe("TechniciansService", () => {
       expect(result.speciality).toBe("mechanic");
       expect(result.status).toBe("actif");
       expect(result.userId).toBeUndefined();
-      expect(result.assignedVehicleIds).toEqual([]);
     });
   });
 
@@ -218,68 +214,4 @@ describe("TechniciansService", () => {
     });
   });
 
-  describe("addVehicleAssignment", () => {
-    it("should add vehicleId to array if not present", async () => {
-      const doc = mockTechnicianDoc({ assignedVehicleIds: [] });
-      mockTechnicianModel.findById.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(doc)
-      });
-
-      const result = await service.addVehicleAssignment("org-1", "tech-123", "vehicle-789");
-
-      expect(doc.assignedVehicleIds).toContain("vehicle-789");
-      expect(doc.save).toHaveBeenCalled();
-      expect(result.assignedVehicleIds).toContain("vehicle-789");
-    });
-
-    it("should not duplicate when vehicleId already present", async () => {
-      const doc = mockTechnicianDoc({ assignedVehicleIds: ["vehicle-789"] });
-      mockTechnicianModel.findById.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(doc)
-      });
-
-      await service.addVehicleAssignment("org-1", "tech-123", "vehicle-789");
-
-      expect(doc.assignedVehicleIds).toEqual(["vehicle-789"]);
-      expect(doc.save).not.toHaveBeenCalled();
-    });
-
-    it("should throw NotFoundException when technician not found", async () => {
-      mockTechnicianModel.findById.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(null)
-      });
-
-      await expect(
-        service.addVehicleAssignment("org-1", "non-existent", "vehicle-789")
-      ).rejects.toThrow(NotFoundException);
-    });
-  });
-
-  describe("removeVehicleAssignment", () => {
-    it("should use findOneAndUpdate with $pull", async () => {
-      const doc = mockTechnicianDoc({ assignedVehicleIds: ["vehicle-789"] });
-      mockTechnicianModel.findOneAndUpdate.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(doc)
-      });
-
-      const result = await service.removeVehicleAssignment("org-1", "tech-123", "vehicle-789");
-
-      expect(mockTechnicianModel.findOneAndUpdate).toHaveBeenCalledWith(
-        { _id: "tech-123", organizationId: "org-1" },
-        { $pull: { assignedVehicleIds: "vehicle-789" } },
-        { new: true }
-      );
-      expect(result.id).toBe("tech-123");
-    });
-
-    it("should throw NotFoundException when technician not found", async () => {
-      mockTechnicianModel.findOneAndUpdate.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(null)
-      });
-
-      await expect(
-        service.removeVehicleAssignment("org-1", "non-existent", "vehicle-789")
-      ).rejects.toThrow(NotFoundException);
-    });
-  });
 });

@@ -26,12 +26,6 @@ export class TechnicianDocument extends Document {
 
   @Prop()
   userId?: string;
-
-  @Prop({ type: [String], default: [] })
-  assignedVehicleIds!: string[];
-
-  @Prop()
-  teamId?: string;
 }
 
 export const TechnicianSchema = SchemaFactory.createForClass(TechnicianDocument);

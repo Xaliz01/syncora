@@ -69,26 +69,6 @@ export class TechniciansController {
     return this.techniciansService.linkUserToTechnician(organizationId, id, body.userId);
   }
 
-  @Put(":id/vehicles/:vehicleId")
-  async addVehicleAssignment(
-    @Param("id") id: string,
-    @Param("vehicleId") vehicleId: string,
-    @Query("organizationId") organizationId: string
-  ) {
-    this.ensureOrganizationId(organizationId);
-    return this.techniciansService.addVehicleAssignment(organizationId, id, vehicleId);
-  }
-
-  @Delete(":id/vehicles/:vehicleId")
-  async removeVehicleAssignment(
-    @Param("id") id: string,
-    @Param("vehicleId") vehicleId: string,
-    @Query("organizationId") organizationId: string
-  ) {
-    this.ensureOrganizationId(organizationId);
-    return this.techniciansService.removeVehicleAssignment(organizationId, id, vehicleId);
-  }
-
   private ensureOrganizationId(organizationId: string): void {
     if (!organizationId) {
       throw new BadRequestException("organizationId query param is required");

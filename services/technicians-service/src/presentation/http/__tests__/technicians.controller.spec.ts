@@ -14,9 +14,7 @@ describe("TechniciansController", () => {
       getTechnician: jest.fn(),
       listTechnicians: jest.fn(),
       deleteTechnician: jest.fn(),
-      linkUserToTechnician: jest.fn(),
-      addVehicleAssignment: jest.fn(),
-      removeVehicleAssignment: jest.fn()
+      linkUserToTechnician: jest.fn()
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -126,31 +124,6 @@ describe("TechniciansController", () => {
         controller.linkUserToTechnician("t1", undefined as never, { userId: "u1" })
       ).rejects.toThrow(BadRequestException);
       expect(mockTechniciansService.linkUserToTechnician).not.toHaveBeenCalled();
-    });
-  });
-
-  describe("addVehicleAssignment", () => {
-    it("should call techniciansService.addVehicleAssignment with params", async () => {
-      mockTechniciansService.addVehicleAssignment.mockResolvedValue({
-        id: "t1",
-        assignedVehicleIds: ["v1"]
-      } as never);
-
-      const result = await controller.addVehicleAssignment("t1", "v1", "org-1");
-
-      expect(mockTechniciansService.addVehicleAssignment).toHaveBeenCalledWith(
-        "org-1",
-        "t1",
-        "v1"
-      );
-      expect(result.assignedVehicleIds).toContain("v1");
-    });
-
-    it("should throw BadRequestException when organizationId is missing", async () => {
-      await expect(
-        controller.addVehicleAssignment("t1", "v1", undefined as never)
-      ).rejects.toThrow(BadRequestException);
-      expect(mockTechniciansService.addVehicleAssignment).not.toHaveBeenCalled();
     });
   });
 });
