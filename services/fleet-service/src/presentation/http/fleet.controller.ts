@@ -12,7 +12,6 @@ import {
 } from "@nestjs/common";
 import { AbstractFleetService } from "../../domain/ports/fleet.service.port";
 import type {
-  AssignTechnicianToVehicleBody,
   AssignTeamToVehicleBody,
   CreateVehicleBody,
   UpdateVehicleBody
@@ -59,35 +58,6 @@ export class FleetController {
   ) {
     this.ensureOrganizationId(organizationId);
     return this.fleetService.deleteVehicle(organizationId, id);
-  }
-
-  @Put(":id/assign")
-  async assignTechnician(
-    @Param("id") id: string,
-    @Query("organizationId") organizationId: string,
-    @Body() body: AssignTechnicianToVehicleBody
-  ) {
-    this.ensureOrganizationId(organizationId);
-    return this.fleetService.assignTechnician(organizationId, id, body.technicianId);
-  }
-
-  @Delete(":id/assign")
-  async unassignTechnician(
-    @Param("id") id: string,
-    @Query("organizationId") organizationId: string
-  ) {
-    this.ensureOrganizationId(organizationId);
-    return this.fleetService.unassignTechnician(organizationId, id);
-  }
-
-  @Delete("by-technician/:technicianId")
-  async unassignTechnicianFromAllVehicles(
-    @Param("technicianId") technicianId: string,
-    @Query("organizationId") organizationId: string
-  ) {
-    this.ensureOrganizationId(organizationId);
-    await this.fleetService.unassignTechnicianFromAllVehicles(organizationId, technicianId);
-    return { success: true };
   }
 
   @Put(":id/assign-team")

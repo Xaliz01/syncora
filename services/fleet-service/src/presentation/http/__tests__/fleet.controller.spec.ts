@@ -14,9 +14,6 @@ describe("FleetController", () => {
       getVehicle: jest.fn(),
       updateVehicle: jest.fn(),
       deleteVehicle: jest.fn(),
-      assignTechnician: jest.fn(),
-      unassignTechnician: jest.fn(),
-      unassignTechnicianFromAllVehicles: jest.fn(),
       assignTeam: jest.fn(),
       unassignTeam: jest.fn(),
       unassignTeamFromAllVehicles: jest.fn()
@@ -107,54 +104,6 @@ describe("FleetController", () => {
         BadRequestException
       );
       expect(mockFleetService.deleteVehicle).not.toHaveBeenCalled();
-    });
-  });
-
-  describe("assignTechnician", () => {
-    it("should call fleetService.assignTechnician with params", async () => {
-      mockFleetService.assignTechnician.mockResolvedValue({
-        id: "v1",
-        assignedTechnicianId: "tech-1"
-      } as never);
-
-      const result = await controller.assignTechnician("v1", "org-1", {
-        technicianId: "tech-1"
-      });
-
-      expect(mockFleetService.assignTechnician).toHaveBeenCalledWith(
-        "org-1",
-        "v1",
-        "tech-1"
-      );
-      expect(result.assignedTechnicianId).toBe("tech-1");
-    });
-
-    it("should throw BadRequestException when organizationId is missing", async () => {
-      await expect(
-        controller.assignTechnician("v1", undefined as never, { technicianId: "tech-1" })
-      ).rejects.toThrow(BadRequestException);
-      expect(mockFleetService.assignTechnician).not.toHaveBeenCalled();
-    });
-  });
-
-  describe("unassignTechnician", () => {
-    it("should call fleetService.unassignTechnician with id and organizationId", async () => {
-      mockFleetService.unassignTechnician.mockResolvedValue({
-        id: "v1",
-        assignedTechnicianId: undefined
-      } as never);
-
-      const result = await controller.unassignTechnician("v1", "org-1");
-
-      expect(mockFleetService.unassignTechnician).toHaveBeenCalledWith("org-1", "v1");
-      expect(result.assignedTechnicianId).toBeUndefined();
-    });
-
-    it("should throw BadRequestException when organizationId is missing", async () => {
-      await expect(controller.unassignTechnician("v1", undefined as never)).rejects.toThrow(
-        BadRequestException
-      );
-      expect(mockFleetService.unassignTechnician).not.toHaveBeenCalled();
     });
   });
 });

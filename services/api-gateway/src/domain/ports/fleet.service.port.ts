@@ -2,7 +2,6 @@ import type {
   AuthUser,
   VehicleResponse,
   UpdateVehicleBody,
-  AssignTechnicianToVehicleBody,
   AssignTeamToVehicleBody,
   VehicleType,
   VehicleStatus
@@ -31,15 +30,6 @@ export abstract class AbstractFleetGatewayService {
     body: UpdateVehicleBody
   ): Promise<VehicleResponse>;
   abstract deleteVehicle(currentUser: AuthUser, vehicleId: string): Promise<{ deleted: true }>;
-  abstract assignTechnicianToVehicle(
-    currentUser: AuthUser,
-    vehicleId: string,
-    body: AssignTechnicianToVehicleBody
-  ): Promise<VehicleResponse>;
-  abstract unassignTechnicianFromVehicle(
-    currentUser: AuthUser,
-    vehicleId: string
-  ): Promise<VehicleResponse>;
   abstract assignTeamToVehicle(
     currentUser: AuthUser,
     vehicleId: string,

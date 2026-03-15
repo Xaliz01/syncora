@@ -25,7 +25,6 @@ describe("FleetService", () => {
     vin: "VIN123",
     mileage: 10000,
     status: "actif",
-    assignedTechnicianId: undefined,
     get: jest.fn((key: string) =>
       key === "createdAt" ? new Date("2025-01-01") : key === "updatedAt" ? new Date("2025-01-02") : undefined
     ),
@@ -195,71 +194,4 @@ describe("FleetService", () => {
     });
   });
 
-  describe("assignTechnician", () => {
-    it("should find vehicle, set assignedTechnicianId and save", async () => {
-      const doc = mockVehicleDoc({ organizationId: "org-1" });
-      mockVehicleModel.findById.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(doc)
-      });
-
-      const result = await service.assignTechnician("org-1", "vehicle-123", "tech-456");
-
-      expect(mockVehicleModel.findById).toHaveBeenCalledWith("vehicle-123");
-      expect(doc.assignedTechnicianId).toBe("tech-456");
-      expect(doc.save).toHaveBeenCalled();
-      expect(result.assignedTechnicianId).toBe("tech-456");
-    });
-
-    it("should throw NotFoundException when vehicle not found", async () => {
-      mockVehicleModel.findById.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(null)
-      });
-
-      await expect(
-        service.assignTechnician("org-1", "non-existent", "tech-456")
-      ).rejects.toThrow(NotFoundException);
-    });
-  });
-
-  describe("unassignTechnician", () => {
-    it("should find vehicle, unset assignedTechnicianId and save", async () => {
-      const doc = mockVehicleDoc({
-        organizationId: "org-1",
-        assignedTechnicianId: "tech-456"
-      });
-      mockVehicleModel.findById.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(doc)
-      });
-
-      const result = await service.unassignTechnician("org-1", "vehicle-123");
-
-      expect(mockVehicleModel.findById).toHaveBeenCalledWith("vehicle-123");
-      expect(doc.assignedTechnicianId).toBeUndefined();
-      expect(doc.save).toHaveBeenCalled();
-      expect(result.assignedTechnicianId).toBeUndefined();
-    });
-
-    it("should throw NotFoundException when vehicle not found", async () => {
-      mockVehicleModel.findById.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(null)
-      });
-
-      await expect(service.unassignTechnician("org-1", "non-existent")).rejects.toThrow(
-        NotFoundException
-      );
-    });
-  });
-
-  describe("unassignTechnicianFromAllVehicles", () => {
-    it("should call updateMany", async () => {
-      mockVehicleModel.updateMany.mockResolvedValue({ modifiedCount: 3 });
-
-      await service.unassignTechnicianFromAllVehicles("org-1", "tech-456");
-
-      expect(mockVehicleModel.updateMany).toHaveBeenCalledWith(
-        { organizationId: "org-1", assignedTechnicianId: "tech-456" },
-        { $unset: { assignedTechnicianId: "" } }
-      );
-    });
-  });
 });

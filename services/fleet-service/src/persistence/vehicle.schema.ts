@@ -34,9 +34,6 @@ export class VehicleDocument extends Document {
   status!: string;
 
   @Prop()
-  assignedTechnicianId?: string;
-
-  @Prop()
   assignedTeamId?: string;
 }
 
