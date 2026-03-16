@@ -8,9 +8,10 @@ import { FleetModule } from "./fleet.module";
 import { TechniciansModule } from "./technicians.module";
 import { CasesModule } from "./cases.module";
 import { StockModule } from "./stock.module";
+import { SearchModule } from "./search.module";
 
 @Module({
-  imports: [AuthModule, AdminModule, FleetModule, TechniciansModule, CasesModule, StockModule],
+  imports: [AuthModule, AdminModule, FleetModule, TechniciansModule, CasesModule, StockModule, SearchModule],
   controllers: [AppController],
   providers: [{ provide: AbstractAppService, useClass: AppService }]
 })
