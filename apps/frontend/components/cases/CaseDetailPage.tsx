@@ -641,7 +641,8 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
               return (
                 <div
                   key={intervention.id}
-                  className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
+                  id={`intervention-${intervention.id}`}
+                  className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm scroll-mt-4"
                 >
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center gap-2">

@@ -149,14 +149,16 @@ export class CasesController {
     @Query("assigneeId") assigneeId?: string,
     @Query("startDate") startDate?: string,
     @Query("endDate") endDate?: string,
-    @Query("status") status?: string
+    @Query("status") status?: string,
+    @Query("unscheduled") unscheduled?: string
   ) {
     return this.casesService.listInterventions(user, {
       caseId,
       assigneeId,
       startDate,
       endDate,
-      status
+      status,
+      unscheduled
     });
   }
 

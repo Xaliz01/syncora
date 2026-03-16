@@ -115,6 +115,7 @@ export abstract class AbstractCasesGatewayService {
       startDate?: string;
       endDate?: string;
       status?: string;
+      unscheduled?: string;
     }
   ): Promise<InterventionResponse[]>;
   abstract getIntervention(

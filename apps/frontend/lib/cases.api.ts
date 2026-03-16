@@ -162,6 +162,7 @@ export function listInterventions(filters?: {
   startDate?: string;
   endDate?: string;
   status?: string;
+  unscheduled?: string;
 }) {
   const params = new URLSearchParams();
   if (filters?.caseId) params.set("caseId", filters.caseId);
@@ -169,6 +170,7 @@ export function listInterventions(filters?: {
   if (filters?.startDate) params.set("startDate", filters.startDate);
   if (filters?.endDate) params.set("endDate", filters.endDate);
   if (filters?.status) params.set("status", filters.status);
+  if (filters?.unscheduled) params.set("unscheduled", filters.unscheduled);
   const qs = params.toString();
   return casesRequest<InterventionResponse[]>(
     "GET",
