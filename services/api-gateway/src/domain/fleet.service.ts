@@ -12,14 +12,13 @@ import type {
   CreateVehicleBody,
   UpdateVehicleBody,
   VehicleResponse,
-  AssignTechnicianToVehicleBody,
+  AssignTeamToVehicleBody,
   VehicleType,
   VehicleStatus
 } from "@syncora/shared";
 import { AbstractFleetGatewayService } from "./ports/fleet.service.port";
 
 const FLEET_URL = process.env.FLEET_SERVICE_URL ?? "http://localhost:3005";
-const TECHNICIANS_URL = process.env.TECHNICIANS_SERVICE_URL ?? "http://localhost:3006";
 
 @Injectable()
 export class FleetGatewayService extends AbstractFleetGatewayService {
@@ -84,93 +83,35 @@ export class FleetGatewayService extends AbstractFleetGatewayService {
     currentUser: AuthUser,
     vehicleId: string
   ): Promise<{ deleted: true }> {
-    const vehicle = await this.getVehicle(currentUser, vehicleId);
-
-    const result = await this.callFleetService<{ deleted: true }>({
+    return this.callFleetService<{ deleted: true }>({
       method: "delete",
       path: `/vehicles/${vehicleId}`,
       query: { organizationId: currentUser.organizationId }
     });
-
-    if (vehicle.assignedTechnicianId) {
-      try {
-        await this.callTechniciansService({
-          method: "delete",
-          path: `/technicians/${vehicle.assignedTechnicianId}/vehicles/${vehicleId}`,
-          query: { organizationId: currentUser.organizationId }
-        });
-      } catch {
-        // best-effort cross-service cleanup
-      }
-    }
-
-    return result;
   }
 
-  async assignTechnicianToVehicle(
+  async assignTeamToVehicle(
     currentUser: AuthUser,
     vehicleId: string,
-    body: AssignTechnicianToVehicleBody
+    body: AssignTeamToVehicleBody
   ): Promise<VehicleResponse> {
-    const currentVehicle = await this.getVehicle(currentUser, vehicleId);
-
-    if (currentVehicle.assignedTechnicianId && currentVehicle.assignedTechnicianId !== body.technicianId) {
-      try {
-        await this.callTechniciansService({
-          method: "delete",
-          path: `/technicians/${currentVehicle.assignedTechnicianId}/vehicles/${vehicleId}`,
-          query: { organizationId: currentUser.organizationId }
-        });
-      } catch {
-        // best-effort
-      }
-    }
-
-    const vehicle = await this.callFleetService<VehicleResponse>({
+    return this.callFleetService<VehicleResponse>({
       method: "put",
-      path: `/vehicles/${vehicleId}/assign`,
+      path: `/vehicles/${vehicleId}/assign-team`,
       query: { organizationId: currentUser.organizationId },
       body
     });
-
-    try {
-      await this.callTechniciansService({
-        method: "put",
-        path: `/technicians/${body.technicianId}/vehicles/${vehicleId}`,
-        query: { organizationId: currentUser.organizationId }
-      });
-    } catch {
-      // best-effort
-    }
-
-    return vehicle;
   }
 
-  async unassignTechnicianFromVehicle(
+  async unassignTeamFromVehicle(
     currentUser: AuthUser,
     vehicleId: string
   ): Promise<VehicleResponse> {
-    const currentVehicle = await this.getVehicle(currentUser, vehicleId);
-
-    const vehicle = await this.callFleetService<VehicleResponse>({
+    return this.callFleetService<VehicleResponse>({
       method: "delete",
-      path: `/vehicles/${vehicleId}/assign`,
+      path: `/vehicles/${vehicleId}/assign-team`,
       query: { organizationId: currentUser.organizationId }
     });
-
-    if (currentVehicle.assignedTechnicianId) {
-      try {
-        await this.callTechniciansService({
-          method: "delete",
-          path: `/technicians/${currentVehicle.assignedTechnicianId}/vehicles/${vehicleId}`,
-          query: { organizationId: currentUser.organizationId }
-        });
-      } catch {
-        // best-effort
-      }
-    }
-
-    return vehicle;
   }
 
   private async callFleetService<T>(params: {
@@ -184,27 +125,6 @@ export class FleetGatewayService extends AbstractFleetGatewayService {
         this.httpService.request<T>({
           method: params.method,
           url: `${FLEET_URL}${params.path}`,
-          data: params.body,
-          params: params.query
-        })
-      );
-      return response.data;
-    } catch (err: unknown) {
-      this.rethrowAsHttpException(err);
-    }
-  }
-
-  private async callTechniciansService<T = unknown>(params: {
-    method: "get" | "post" | "patch" | "put" | "delete";
-    path: string;
-    body?: unknown;
-    query?: Record<string, unknown>;
-  }): Promise<T> {
-    try {
-      const response = await firstValueFrom(
-        this.httpService.request<T>({
-          method: params.method,
-          url: `${TECHNICIANS_URL}${params.path}`,
           data: params.body,
           params: params.query
         })

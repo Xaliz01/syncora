@@ -34,7 +34,7 @@ export class VehicleDocument extends Document {
   status!: string;
 
   @Prop()
-  assignedTechnicianId?: string;
+  assignedTeamId?: string;
 }
 
 export const VehicleSchema = SchemaFactory.createForClass(VehicleDocument);

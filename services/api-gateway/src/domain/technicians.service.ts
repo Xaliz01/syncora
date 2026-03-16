@@ -21,7 +21,6 @@ import { AbstractTechniciansGatewayService } from "./ports/technicians.service.p
 
 const TECHNICIANS_URL = process.env.TECHNICIANS_SERVICE_URL ?? "http://localhost:3006";
 const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
-const FLEET_URL = process.env.FLEET_SERVICE_URL ?? "http://localhost:3005";
 
 @Injectable()
 export class TechniciansGatewayService extends AbstractTechniciansGatewayService {
@@ -112,23 +111,11 @@ export class TechniciansGatewayService extends AbstractTechniciansGatewayService
     currentUser: AuthUser,
     technicianId: string
   ): Promise<{ deleted: true }> {
-    const result = await this.callTechniciansService<{ deleted: true }>({
+    return this.callTechniciansService<{ deleted: true }>({
       method: "delete",
       path: `/technicians/${technicianId}`,
       query: { organizationId: currentUser.organizationId }
     });
-
-    try {
-      await this.callFleetService({
-        method: "delete",
-        path: `/vehicles/by-technician/${technicianId}`,
-        query: { organizationId: currentUser.organizationId }
-      });
-    } catch {
-      // best-effort cross-service cleanup
-    }
-
-    return result;
   }
 
   async createTechnicianUserAccount(
@@ -210,27 +197,6 @@ export class TechniciansGatewayService extends AbstractTechniciansGatewayService
         this.httpService.request<T>({
           method: params.method,
           url: `${USERS_URL}${params.path}`,
-          data: params.body,
-          params: params.query
-        })
-      );
-      return response.data;
-    } catch (err: unknown) {
-      this.rethrowAsHttpException(err);
-    }
-  }
-
-  private async callFleetService<T = unknown>(params: {
-    method: "get" | "post" | "patch" | "put" | "delete";
-    path: string;
-    body?: unknown;
-    query?: Record<string, unknown>;
-  }): Promise<T> {
-    try {
-      const response = await firstValueFrom(
-        this.httpService.request<T>({
-          method: params.method,
-          url: `${FLEET_URL}${params.path}`,
           data: params.body,
           params: params.query
         })

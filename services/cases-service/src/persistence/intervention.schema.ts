@@ -28,6 +28,12 @@ export class InterventionDocument extends Document {
   assigneeName?: string;
 
   @Prop()
+  assignedTeamId?: string;
+
+  @Prop()
+  assignedTeamName?: string;
+
+  @Prop()
   scheduledStart?: Date;
 
   @Prop()

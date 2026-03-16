@@ -10,7 +10,7 @@ import {
 } from "@nestjs/common";
 import { AbstractTechniciansGatewayService } from "../../domain/ports/technicians.service.port";
 import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
-import { AdminRoleGuard } from "../../infrastructure/admin-role.guard";
+import { RequirePermissionGuard, RequirePermissions } from "../../infrastructure/require-permission.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
 import type { AuthUser } from "@syncora/shared";
 import type {
@@ -31,11 +31,12 @@ interface CreateTechnicianPayload {
 }
 
 @Controller("fleet/technicians")
-@UseGuards(JwtAuthGuard, AdminRoleGuard)
+@UseGuards(JwtAuthGuard, RequirePermissionGuard)
 export class TechniciansController {
   constructor(private readonly techniciansService: AbstractTechniciansGatewayService) {}
 
   @Post()
+  @RequirePermissions("technicians.create")
   async createTechnician(
     @CurrentUser() user: AuthUser,
     @Body() body: CreateTechnicianPayload
@@ -44,11 +45,13 @@ export class TechniciansController {
   }
 
   @Get()
+  @RequirePermissions("technicians.read")
   async listTechnicians(@CurrentUser() user: AuthUser) {
     return this.techniciansService.listTechnicians(user);
   }
 
   @Get(":technicianId")
+  @RequirePermissions("technicians.read")
   async getTechnician(
     @CurrentUser() user: AuthUser,
     @Param("technicianId") technicianId: string
@@ -57,6 +60,7 @@ export class TechniciansController {
   }
 
   @Patch(":technicianId")
+  @RequirePermissions("technicians.update")
   async updateTechnician(
     @CurrentUser() user: AuthUser,
     @Param("technicianId") technicianId: string,
@@ -66,6 +70,7 @@ export class TechniciansController {
   }
 
   @Delete(":technicianId")
+  @RequirePermissions("technicians.delete")
   async deleteTechnician(
     @CurrentUser() user: AuthUser,
     @Param("technicianId") technicianId: string
@@ -74,6 +79,7 @@ export class TechniciansController {
   }
 
   @Post(":technicianId/create-account")
+  @RequirePermissions("technicians.update")
   async createTechnicianAccount(
     @CurrentUser() user: AuthUser,
     @Param("technicianId") technicianId: string,

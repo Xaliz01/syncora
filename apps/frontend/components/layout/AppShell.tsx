@@ -109,8 +109,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {
         label: "Gestion de la flotte",
         links: [
+          { label: "Équipes", href: "/fleet/teams" },
+          { label: "Techniciens", href: "/fleet/technicians" },
           { label: "Véhicules", href: "/fleet/vehicles" },
-          { label: "Techniciens", href: "/fleet/technicians" }
+          { label: "Agences", href: "/fleet/agences" }
         ]
       },
       {

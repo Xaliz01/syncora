@@ -100,38 +100,6 @@ export class TechniciansService extends AbstractTechniciansService {
     return this.toTechnicianResponse(doc);
   }
 
-  async addVehicleAssignment(
-    organizationId: string,
-    technicianId: string,
-    vehicleId: string
-  ): Promise<TechnicianResponse> {
-    const doc = await this.technicianModel.findById(technicianId).exec();
-    if (!doc || doc.organizationId !== organizationId) {
-      throw new NotFoundException("Technicien introuvable");
-    }
-    if (!doc.assignedVehicleIds.includes(vehicleId)) {
-      doc.assignedVehicleIds.push(vehicleId);
-      await doc.save();
-    }
-    return this.toTechnicianResponse(doc);
-  }
-
-  async removeVehicleAssignment(
-    organizationId: string,
-    technicianId: string,
-    vehicleId: string
-  ): Promise<TechnicianResponse> {
-    const doc = await this.technicianModel
-      .findOneAndUpdate(
-        { _id: technicianId, organizationId },
-        { $pull: { assignedVehicleIds: vehicleId } },
-        { new: true }
-      )
-      .exec();
-    if (!doc) throw new NotFoundException("Technicien introuvable");
-    return this.toTechnicianResponse(doc);
-  }
-
   private toTechnicianResponse(doc: TechnicianDocument): TechnicianResponse {
     return {
       id: doc._id.toString(),
@@ -143,7 +111,6 @@ export class TechniciansService extends AbstractTechniciansService {
       speciality: doc.speciality,
       status: doc.status as TechnicianStatus,
       userId: doc.userId,
-      assignedVehicleIds: doc.assignedVehicleIds,
       createdAt: doc.get("createdAt")?.toISOString(),
       updatedAt: doc.get("updatedAt")?.toISOString()
     };

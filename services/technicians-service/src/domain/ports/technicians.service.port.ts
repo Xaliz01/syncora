@@ -25,14 +25,4 @@ export abstract class AbstractTechniciansService {
     technicianId: string,
     userId: string
   ): Promise<TechnicianResponse>;
-  abstract addVehicleAssignment(
-    organizationId: string,
-    technicianId: string,
-    vehicleId: string
-  ): Promise<TechnicianResponse>;
-  abstract removeVehicleAssignment(
-    organizationId: string,
-    technicianId: string,
-    vehicleId: string
-  ): Promise<TechnicianResponse>;
 }

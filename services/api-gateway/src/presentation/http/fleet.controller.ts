@@ -11,11 +11,11 @@ import {
 } from "@nestjs/common";
 import { AbstractFleetGatewayService } from "../../domain/ports/fleet.service.port";
 import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
-import { AdminRoleGuard } from "../../infrastructure/admin-role.guard";
+import { RequirePermissionGuard, RequirePermissions } from "../../infrastructure/require-permission.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
 import type { AuthUser } from "@syncora/shared";
 import type {
-  AssignTechnicianToVehicleBody,
+  AssignTeamToVehicleBody,
   UpdateVehicleBody,
   VehicleType,
   VehicleStatus
@@ -34,11 +34,12 @@ interface CreateVehiclePayload {
 }
 
 @Controller("fleet")
-@UseGuards(JwtAuthGuard, AdminRoleGuard)
+@UseGuards(JwtAuthGuard, RequirePermissionGuard)
 export class FleetController {
   constructor(private readonly fleetService: AbstractFleetGatewayService) {}
 
   @Post("vehicles")
+  @RequirePermissions("vehicles.create")
   async createVehicle(
     @CurrentUser() user: AuthUser,
     @Body() body: CreateVehiclePayload
@@ -47,11 +48,13 @@ export class FleetController {
   }
 
   @Get("vehicles")
+  @RequirePermissions("vehicles.read")
   async listVehicles(@CurrentUser() user: AuthUser) {
     return this.fleetService.listVehicles(user);
   }
 
   @Get("vehicles/:vehicleId")
+  @RequirePermissions("vehicles.read")
   async getVehicle(
     @CurrentUser() user: AuthUser,
     @Param("vehicleId") vehicleId: string
@@ -60,6 +63,7 @@ export class FleetController {
   }
 
   @Patch("vehicles/:vehicleId")
+  @RequirePermissions("vehicles.update")
   async updateVehicle(
     @CurrentUser() user: AuthUser,
     @Param("vehicleId") vehicleId: string,
@@ -69,6 +73,7 @@ export class FleetController {
   }
 
   @Delete("vehicles/:vehicleId")
+  @RequirePermissions("vehicles.delete")
   async deleteVehicle(
     @CurrentUser() user: AuthUser,
     @Param("vehicleId") vehicleId: string
@@ -76,20 +81,22 @@ export class FleetController {
     return this.fleetService.deleteVehicle(user, vehicleId);
   }
 
-  @Put("vehicles/:vehicleId/assign")
-  async assignTechnician(
+  @Put("vehicles/:vehicleId/assign-team")
+  @RequirePermissions("vehicles.update")
+  async assignTeam(
     @CurrentUser() user: AuthUser,
     @Param("vehicleId") vehicleId: string,
-    @Body() body: AssignTechnicianToVehicleBody
+    @Body() body: AssignTeamToVehicleBody
   ) {
-    return this.fleetService.assignTechnicianToVehicle(user, vehicleId, body);
+    return this.fleetService.assignTeamToVehicle(user, vehicleId, body);
   }
 
-  @Delete("vehicles/:vehicleId/assign")
-  async unassignTechnician(
+  @Delete("vehicles/:vehicleId/assign-team")
+  @RequirePermissions("vehicles.update")
+  async unassignTeam(
     @CurrentUser() user: AuthUser,
     @Param("vehicleId") vehicleId: string
   ) {
-    return this.fleetService.unassignTechnicianFromVehicle(user, vehicleId);
+    return this.fleetService.unassignTeamFromVehicle(user, vehicleId);
   }
 }

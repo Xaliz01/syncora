@@ -1,11 +1,16 @@
 import type {
   VehicleResponse,
   TechnicianResponse,
+  TeamResponse,
+  AgenceResponse,
   VehicleType,
   VehicleStatus,
   TechnicianStatus,
+  TeamStatus,
   UpdateVehicleBody,
-  UpdateTechnicianBody
+  UpdateTechnicianBody,
+  UpdateTeamBody,
+  UpdateAgenceBody
 } from "@syncora/shared";
 import { getToken } from "./auth.api";
 
@@ -87,16 +92,6 @@ export function deleteVehicle(vehicleId: string) {
   return fleetRequest<{ deleted: true }>("DELETE", `/fleet/vehicles/${vehicleId}`);
 }
 
-export function assignTechnicianToVehicle(vehicleId: string, technicianId: string) {
-  return fleetRequest<VehicleResponse>("PUT", `/fleet/vehicles/${vehicleId}/assign`, {
-    technicianId
-  });
-}
-
-export function unassignTechnicianFromVehicle(vehicleId: string) {
-  return fleetRequest<VehicleResponse>("DELETE", `/fleet/vehicles/${vehicleId}/assign`);
-}
-
 // ─── Technicians ───
 
 export function listTechnicians() {
@@ -129,4 +124,81 @@ export function createTechnicianUserAccount(technicianId: string, password: stri
     `/fleet/technicians/${technicianId}/create-account`,
     { password }
   );
+}
+
+// ─── Teams (Équipes) ───
+
+export interface CreateTeamPayload {
+  name: string;
+  agenceId?: string;
+  technicianIds?: string[];
+  status?: TeamStatus;
+}
+
+export function listTeams() {
+  return fleetRequest<TeamResponse[]>("GET", "/fleet/teams");
+}
+
+export function getTeam(teamId: string) {
+  return fleetRequest<TeamResponse>("GET", `/fleet/teams/${teamId}`);
+}
+
+export function createTeam(payload: CreateTeamPayload) {
+  return fleetRequest<TeamResponse>("POST", "/fleet/teams", payload);
+}
+
+export function updateTeam(teamId: string, payload: UpdateTeamBody) {
+  return fleetRequest<TeamResponse>("PATCH", `/fleet/teams/${teamId}`, payload);
+}
+
+export function deleteTeam(teamId: string) {
+  return fleetRequest<{ deleted: true }>("DELETE", `/fleet/teams/${teamId}`);
+}
+
+export function addTeamMember(teamId: string, technicianId: string) {
+  return fleetRequest<TeamResponse>("PUT", `/fleet/teams/${teamId}/members/${technicianId}`);
+}
+
+export function removeTeamMember(teamId: string, technicianId: string) {
+  return fleetRequest<TeamResponse>("DELETE", `/fleet/teams/${teamId}/members/${technicianId}`);
+}
+
+export function assignTeamToVehicle(vehicleId: string, teamId: string) {
+  return fleetRequest<VehicleResponse>("PUT", `/fleet/vehicles/${vehicleId}/assign-team`, {
+    teamId
+  });
+}
+
+export function unassignTeamFromVehicle(vehicleId: string) {
+  return fleetRequest<VehicleResponse>("DELETE", `/fleet/vehicles/${vehicleId}/assign-team`);
+}
+
+// ─── Agences ───
+
+export interface CreateAgencePayload {
+  name: string;
+  address?: string;
+  city?: string;
+  postalCode?: string;
+  phone?: string;
+}
+
+export function listAgences() {
+  return fleetRequest<AgenceResponse[]>("GET", "/fleet/agences");
+}
+
+export function getAgence(agenceId: string) {
+  return fleetRequest<AgenceResponse>("GET", `/fleet/agences/${agenceId}`);
+}
+
+export function createAgence(payload: CreateAgencePayload) {
+  return fleetRequest<AgenceResponse>("POST", "/fleet/agences", payload);
+}
+
+export function updateAgence(agenceId: string, payload: UpdateAgenceBody) {
+  return fleetRequest<AgenceResponse>("PATCH", `/fleet/agences/${agenceId}`, payload);
+}
+
+export function deleteAgence(agenceId: string) {
+  return fleetRequest<{ deleted: true }>("DELETE", `/fleet/agences/${agenceId}`);
 }

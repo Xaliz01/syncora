@@ -12,7 +12,7 @@ import {
 } from "@nestjs/common";
 import { AbstractFleetService } from "../../domain/ports/fleet.service.port";
 import type {
-  AssignTechnicianToVehicleBody,
+  AssignTeamToVehicleBody,
   CreateVehicleBody,
   UpdateVehicleBody
 } from "@syncora/shared";
@@ -60,32 +60,32 @@ export class FleetController {
     return this.fleetService.deleteVehicle(organizationId, id);
   }
 
-  @Put(":id/assign")
-  async assignTechnician(
+  @Put(":id/assign-team")
+  async assignTeam(
     @Param("id") id: string,
     @Query("organizationId") organizationId: string,
-    @Body() body: AssignTechnicianToVehicleBody
+    @Body() body: AssignTeamToVehicleBody
   ) {
     this.ensureOrganizationId(organizationId);
-    return this.fleetService.assignTechnician(organizationId, id, body.technicianId);
+    return this.fleetService.assignTeam(organizationId, id, body.teamId);
   }
 
-  @Delete(":id/assign")
-  async unassignTechnician(
+  @Delete(":id/assign-team")
+  async unassignTeam(
     @Param("id") id: string,
     @Query("organizationId") organizationId: string
   ) {
     this.ensureOrganizationId(organizationId);
-    return this.fleetService.unassignTechnician(organizationId, id);
+    return this.fleetService.unassignTeam(organizationId, id);
   }
 
-  @Delete("by-technician/:technicianId")
-  async unassignTechnicianFromAllVehicles(
-    @Param("technicianId") technicianId: string,
+  @Delete("by-team/:teamId")
+  async unassignTeamFromAllVehicles(
+    @Param("teamId") teamId: string,
     @Query("organizationId") organizationId: string
   ) {
     this.ensureOrganizationId(organizationId);
-    await this.fleetService.unassignTechnicianFromAllVehicles(organizationId, technicianId);
+    await this.fleetService.unassignTeamFromAllVehicles(organizationId, teamId);
     return { success: true };
   }
 

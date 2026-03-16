@@ -4,7 +4,7 @@ import Link from "next/link";
 import React, { useCallback, useEffect, useState } from "react";
 import type {
   TechnicianResponse,
-  VehicleResponse,
+  TeamResponse,
   TechnicianStatus
 } from "@syncora/shared";
 
@@ -23,17 +23,16 @@ const STATUS_LABELS: Record<string, string> = {
   inactif: "Inactif"
 };
 
-const VEHICLE_STATUS_LABELS: Record<string, string> = {
-  actif: "Actif",
-  maintenance: "Maintenance",
-  hors_service: "Hors service"
+const TEAM_STATUS_LABELS: Record<string, string> = {
+  active: "Active",
+  inactive: "Inactive"
 };
 
 export function TechnicianDetailsPage({ technicianId }: { technicianId: string }) {
   const router = useRouter();
   const { showToast } = useToast();
   const [technician, setTechnician] = useState<TechnicianResponse | null>(null);
-  const [vehicles, setVehicles] = useState<VehicleResponse[]>([]);
+  const [memberTeams, setMemberTeams] = useState<TeamResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -54,16 +53,12 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
     setLoading(true);
     setError(null);
     try {
-      const [techData, allVehicles] = await Promise.all([
+      const [techData, allTeams] = await Promise.all([
         fleetApi.getTechnician(technicianId),
-        fleetApi.listVehicles()
+        fleetApi.listTeams()
       ]);
       setTechnician(techData);
-
-      const assignedVehicles = allVehicles.filter((v) =>
-        techData.assignedVehicleIds.includes(v.id)
-      );
-      setVehicles(assignedVehicles);
+      setMemberTeams(allTeams.filter((t) => t.technicianIds.includes(technicianId)));
 
       setEditFirstName(techData.firstName);
       setEditLastName(techData.lastName);
@@ -285,6 +280,38 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
       )}
 
       <section className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
+        <h2 className="font-semibold">Équipes</h2>
+        {memberTeams.length === 0 ? (
+          <p className="text-sm text-slate-500">Ce technicien n&apos;est membre d&apos;aucune équipe.</p>
+        ) : (
+          <div className="space-y-2">
+            {memberTeams.map((team) => (
+              <Link
+                key={team.id}
+                href={`/fleet/teams/${team.id}`}
+                className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm hover:bg-slate-100 transition"
+              >
+                <div>
+                  <span className="font-medium text-brand-600">{team.name}</span>
+                  {team.agenceName && (
+                    <span className="ml-2 text-slate-500">({team.agenceName})</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-400">
+                    {team.technicianIds.length} membre{team.technicianIds.length !== 1 ? "s" : ""}
+                  </span>
+                  <span className="text-xs text-slate-400">
+                    {TEAM_STATUS_LABELS[team.status] ?? team.status}
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
         <h2 className="font-semibold">Compte utilisateur</h2>
         {technician.userId ? (
           <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
@@ -359,33 +386,6 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
               </div>
             )}
           </>
-        )}
-      </section>
-
-      <section className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
-        <h2 className="font-semibold">Véhicules affectés</h2>
-        {vehicles.length === 0 ? (
-          <p className="text-sm text-slate-500">Aucun véhicule affecté.</p>
-        ) : (
-          <div className="space-y-2">
-            {vehicles.map((vehicle) => (
-              <Link
-                key={vehicle.id}
-                href={`/fleet/vehicles/${vehicle.id}`}
-                className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm hover:bg-slate-100 transition"
-              >
-                <div>
-                  <span className="font-medium text-brand-600">
-                    {vehicle.registrationNumber}
-                  </span>
-                  <span className="ml-2 text-slate-500">
-                    {[vehicle.brand, vehicle.model].filter(Boolean).join(" ") || vehicle.type}
-                  </span>
-                </div>
-                <span className="text-xs text-slate-400">{VEHICLE_STATUS_LABELS[vehicle.status] ?? vehicle.status}</span>
-              </Link>
-            ))}
-          </div>
         )}
       </section>
     </div>

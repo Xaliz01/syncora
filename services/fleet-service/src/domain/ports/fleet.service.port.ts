@@ -14,17 +14,17 @@ export abstract class AbstractFleetService {
   abstract getVehicle(organizationId: string, vehicleId: string): Promise<VehicleResponse>;
   abstract listVehicles(organizationId: string): Promise<VehicleResponse[]>;
   abstract deleteVehicle(organizationId: string, vehicleId: string): Promise<{ deleted: true }>;
-  abstract assignTechnician(
+  abstract assignTeam(
     organizationId: string,
     vehicleId: string,
-    technicianId: string
+    teamId: string
   ): Promise<VehicleResponse>;
-  abstract unassignTechnician(
+  abstract unassignTeam(
     organizationId: string,
     vehicleId: string
   ): Promise<VehicleResponse>;
-  abstract unassignTechnicianFromAllVehicles(
+  abstract unassignTeamFromAllVehicles(
     organizationId: string,
-    technicianId: string
+    teamId: string
   ): Promise<void>;
 }

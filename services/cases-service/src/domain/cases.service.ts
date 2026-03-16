@@ -251,6 +251,7 @@ export class CasesService extends AbstractCasesService {
       title: body.title,
       description: body.description,
       assigneeId: body.assigneeId,
+      assignedTeamId: body.assignedTeamId,
       scheduledStart: body.scheduledStart ? new Date(body.scheduledStart) : undefined,
       scheduledEnd: body.scheduledEnd ? new Date(body.scheduledEnd) : undefined,
       status: "planned"
@@ -269,6 +270,7 @@ export class CasesService extends AbstractCasesService {
     filters?: {
       caseId?: string;
       assigneeId?: string;
+      assignedTeamId?: string;
       startDate?: string;
       endDate?: string;
       status?: string;
@@ -277,6 +279,7 @@ export class CasesService extends AbstractCasesService {
     const query: Record<string, unknown> = { organizationId };
     if (filters?.caseId) query.caseId = filters.caseId;
     if (filters?.assigneeId) query.assigneeId = filters.assigneeId;
+    if (filters?.assignedTeamId) query.assignedTeamId = filters.assignedTeamId;
     if (filters?.status) query.status = filters.status;
     if (filters?.startDate || filters?.endDate) {
       const dateFilter: Record<string, unknown> = {};
@@ -315,6 +318,7 @@ export class CasesService extends AbstractCasesService {
     if (body.description !== undefined) update.description = body.description;
     if (body.status !== undefined) update.status = body.status;
     if (body.assigneeId !== undefined) update.assigneeId = body.assigneeId;
+    if (body.assignedTeamId !== undefined) update.assignedTeamId = body.assignedTeamId;
     if (body.scheduledStart !== undefined) {
       update.scheduledStart = body.scheduledStart ? new Date(body.scheduledStart) : null;
     }
@@ -528,6 +532,8 @@ export class CasesService extends AbstractCasesService {
       status: doc.status,
       assigneeId: doc.assigneeId,
       assigneeName: doc.assigneeName,
+      assignedTeamId: doc.assignedTeamId,
+      assignedTeamName: doc.assignedTeamName,
       scheduledStart: doc.scheduledStart?.toISOString(),
       scheduledEnd: doc.scheduledEnd?.toISOString(),
       notes: doc.notes,
