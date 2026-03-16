@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useMemo, useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as api from "@/lib/cases.api";
 import type { InterventionResponse } from "@syncora/shared";
@@ -90,9 +91,11 @@ function statusClasses(status: string): string {
 function UnscheduledPanel({
   onDragStart,
   onDropToUnschedule,
+  onClickIntervention,
 }: {
   onDragStart: (e: React.DragEvent, intervention: InterventionResponse) => void;
   onDropToUnschedule: (interventionId: string) => void;
+  onClickIntervention: (intervention: InterventionResponse) => void;
 }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [collapsed, setCollapsed] = useState(false);
@@ -277,7 +280,21 @@ function UnscheduledPanel({
                 </svg>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-slate-800 truncate">{intervention.title}</p>
+                <div className="flex items-center justify-between gap-1">
+                  <p className="text-xs font-medium text-slate-800 truncate">{intervention.title}</p>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onClickIntervention(intervention);
+                    }}
+                    className="flex-shrink-0 p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-slate-100 transition"
+                    title="Voir la fiche"
+                  >
+                    <svg className="w-3.5 h-3.5 text-slate-400 hover:text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                    </svg>
+                  </button>
+                </div>
                 {intervention.caseTitle && (
                   <p className="text-[10px] text-slate-500 truncate mt-0.5">{intervention.caseTitle}</p>
                 )}
@@ -319,6 +336,7 @@ function UnscheduledPanel({
 // ────────────────────────────────────────────────────────────────────────────
 
 export function CalendarPage() {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [view, setView] = useState<ViewMode>("week");
   const [referenceDate, setReferenceDate] = useState(new Date());
@@ -330,6 +348,7 @@ export function CalendarPage() {
     id: string;
     deltaHours: number;
   } | null>(null);
+  const justResizedRef = useRef(false);
 
   const weekDays = useMemo(() => getWeekDays(referenceDate), [referenceDate]);
   const monthWeeks = useMemo(
@@ -473,6 +492,16 @@ export function CalendarPage() {
     e.dataTransfer.dropEffect = "move";
   }, []);
 
+  // ── Navigate to intervention detail ──
+
+  const navigateToIntervention = useCallback(
+    (intervention: InterventionResponse) => {
+      if (justResizedRef.current) return;
+      router.push(`/cases/${intervention.caseId}#intervention-${intervention.id}`);
+    },
+    [router],
+  );
+
   // ── Resize (week view) ──
 
   const getCardHeight = useCallback(
@@ -510,6 +539,11 @@ export function CalendarPage() {
       const onMouseUp = () => {
         window.removeEventListener("mousemove", onMouseMove);
         window.removeEventListener("mouseup", onMouseUp);
+
+        justResizedRef.current = true;
+        requestAnimationFrame(() => {
+          justResizedRef.current = false;
+        });
 
         if (currentDelta !== 0 && intervention.scheduledStart) {
           const start = new Date(intervention.scheduledStart);
@@ -692,10 +726,13 @@ export function CalendarPage() {
                                 onDragStart={(e) =>
                                   handleDragStart(e, intervention)
                                 }
+                                onClick={() =>
+                                  navigateToIntervention(intervention)
+                                }
                                 className={`absolute rounded px-1.5 py-0.5 text-[10px] select-none overflow-hidden ${
                                   isResizing
                                     ? "ring-2 ring-brand-500 shadow-md z-30 cursor-ns-resize"
-                                    : "cursor-grab active:cursor-grabbing z-10 hover:shadow-sm"
+                                    : "cursor-grab active:cursor-grabbing z-10 hover:shadow-sm hover:brightness-95"
                                 } ${statusClasses(intervention.status)}`}
                                 style={{
                                   top: 2 + idx * 2,
@@ -703,7 +740,7 @@ export function CalendarPage() {
                                   right: 2,
                                   height: cardHeight,
                                 }}
-                                title={`${intervention.title}${intervention.caseTitle ? ` (${intervention.caseTitle})` : ""}`}
+                                title={`${intervention.title}${intervention.caseTitle ? ` (${intervention.caseTitle})` : ""} — Cliquer pour voir la fiche`}
                               >
                                 <span className="leading-tight">
                                   {intervention.title}
@@ -795,13 +832,16 @@ export function CalendarPage() {
                                     onDragStart={(e) =>
                                       handleDragStart(e, intervention)
                                     }
-                                    className="flex items-center gap-1 cursor-grab active:cursor-grabbing"
-                                    title={`${intervention.title}${intervention.caseTitle ? ` (${intervention.caseTitle})` : ""}`}
+                                    onClick={() =>
+                                      navigateToIntervention(intervention)
+                                    }
+                                    className="flex items-center gap-1 cursor-grab active:cursor-grabbing hover:text-brand-600 transition-colors"
+                                    title={`${intervention.title}${intervention.caseTitle ? ` (${intervention.caseTitle})` : ""} — Cliquer pour voir la fiche`}
                                   >
                                     <div
                                       className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${STATUS_DOT[intervention.status] ?? "bg-slate-400"}`}
                                     />
-                                    <span className="text-[10px] text-slate-700 truncate">
+                                    <span className="text-[10px] text-slate-700 truncate hover:text-brand-600">
                                       {intervention.title}
                                     </span>
                                   </div>
@@ -843,6 +883,7 @@ export function CalendarPage() {
         <UnscheduledPanel
           onDragStart={handleDragStart}
           onDropToUnschedule={handleDropToUnschedule}
+          onClickIntervention={navigateToIntervention}
         />
       </div>
     </div>
