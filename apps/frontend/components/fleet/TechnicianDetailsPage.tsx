@@ -16,7 +16,7 @@ import { useRouter } from "next/navigation";
 
 const STATUS_COLORS: Record<string, string> = {
   actif: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  inactif: "bg-slate-100 text-slate-500 border-slate-200"
+  inactif: "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700"
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -144,7 +144,7 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-500">
+      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 text-sm text-slate-500 dark:text-slate-400">
         Chargement...
       </div>
     );
@@ -153,8 +153,8 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
   if (!technician) {
     return (
       <div className="space-y-3">
-        <p className="text-slate-700">Technicien introuvable.</p>
-        <Link href="/fleet/technicians" className="text-brand-600 hover:underline">
+        <p className="text-slate-700 dark:text-slate-200">Technicien introuvable.</p>
+        <Link href="/fleet/technicians" className="text-brand-600 dark:text-brand-400 hover:underline">
           Retour à la liste
         </Link>
       </div>
@@ -168,7 +168,7 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
           <h1 className="text-xl sm:text-2xl font-semibold mb-1">
             {technician.firstName} {technician.lastName}
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             Fiche technicien
             {technician.speciality ? ` — ${technician.speciality}` : ""}
           </p>
@@ -177,7 +177,7 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
           <button
             type="button"
             onClick={() => setIsEditing((p) => !p)}
-            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
           >
             {isEditing ? "Annuler" : "Modifier"}
           </button>
@@ -190,7 +190,7 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
           </button>
           <Link
             href="/fleet/technicians"
-            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
           >
             Retour
           </Link>
@@ -204,34 +204,34 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
       )}
 
       {!isEditing ? (
-        <section className="rounded-xl border border-slate-200 bg-white p-4">
+        <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
           <h2 className="font-semibold mb-3">Informations</h2>
           <div className="grid gap-3 md:grid-cols-2 text-sm">
             <div>
-              <span className="text-slate-400">Prénom</span>
+              <span className="text-slate-400 dark:text-slate-500">Prénom</span>
               <p>{technician.firstName}</p>
             </div>
             <div>
-              <span className="text-slate-400">Nom</span>
+              <span className="text-slate-400 dark:text-slate-500">Nom</span>
               <p>{technician.lastName}</p>
             </div>
             <div>
-              <span className="text-slate-400">Email</span>
+              <span className="text-slate-400 dark:text-slate-500">Email</span>
               <p>{technician.email || "—"}</p>
             </div>
             <div>
-              <span className="text-slate-400">Téléphone</span>
+              <span className="text-slate-400 dark:text-slate-500">Téléphone</span>
               <p>{technician.phone || "—"}</p>
             </div>
             <div>
-              <span className="text-slate-400">Spécialité</span>
+              <span className="text-slate-400 dark:text-slate-500">Spécialité</span>
               <p>{technician.speciality || "—"}</p>
             </div>
             <div>
-              <span className="text-slate-400">Statut</span>
+              <span className="text-slate-400 dark:text-slate-500">Statut</span>
               <p>
                 <span
-                  className={`inline-flex rounded border px-2 py-0.5 text-xs ${STATUS_COLORS[technician.status] ?? "bg-slate-50 text-slate-700 border-slate-200"}`}
+                  className={`inline-flex rounded border px-2 py-0.5 text-xs ${STATUS_COLORS[technician.status] ?? "bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700"}`}
                 >
                   {STATUS_LABELS[technician.status] ?? technician.status}
                 </span>
@@ -240,36 +240,36 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
           </div>
         </section>
       ) : (
-        <section className="rounded-xl border border-slate-200 bg-white p-4 space-y-4">
+        <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 space-y-4">
           <h2 className="font-semibold">Modifier le technicien</h2>
           <div className="grid gap-3 md:grid-cols-2">
             <div>
-              <label className="block text-sm text-slate-500 mb-1">Prénom</label>
-              <input type="text" value={editFirstName} onChange={(e) => setEditFirstName(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900" />
+              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Prénom</label>
+              <input type="text" value={editFirstName} onChange={(e) => setEditFirstName(e.target.value)} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100" />
             </div>
             <div>
-              <label className="block text-sm text-slate-500 mb-1">Nom</label>
-              <input type="text" value={editLastName} onChange={(e) => setEditLastName(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900" />
-            </div>
-          </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            <div>
-              <label className="block text-sm text-slate-500 mb-1">Email</label>
-              <input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900" />
-            </div>
-            <div>
-              <label className="block text-sm text-slate-500 mb-1">Téléphone</label>
-              <input type="tel" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900" />
+              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Nom</label>
+              <input type="text" value={editLastName} onChange={(e) => setEditLastName(e.target.value)} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100" />
             </div>
           </div>
           <div className="grid gap-3 md:grid-cols-2">
             <div>
-              <label className="block text-sm text-slate-500 mb-1">Spécialité</label>
-              <input type="text" value={editSpeciality} onChange={(e) => setEditSpeciality(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900" />
+              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Email</label>
+              <input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100" />
             </div>
             <div>
-              <label className="block text-sm text-slate-500 mb-1">Statut</label>
-              <select value={editStatus} onChange={(e) => setEditStatus(e.target.value as TechnicianStatus)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900">
+              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Téléphone</label>
+              <input type="tel" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100" />
+            </div>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            <div>
+              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Spécialité</label>
+              <input type="text" value={editSpeciality} onChange={(e) => setEditSpeciality(e.target.value)} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100" />
+            </div>
+            <div>
+              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Statut</label>
+              <select value={editStatus} onChange={(e) => setEditStatus(e.target.value as TechnicianStatus)} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100">
                 {TECHNICIAN_STATUSES.map((s) => (
                   <option key={s} value={s}>{s === "actif" ? "Actif" : "Inactif"}</option>
                 ))}
@@ -289,29 +289,29 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
         </section>
       )}
 
-      <section className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
+      <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 space-y-3">
         <h2 className="font-semibold">Équipes</h2>
         {memberTeams.length === 0 ? (
-          <p className="text-sm text-slate-500">Ce technicien n&apos;est membre d&apos;aucune équipe.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Ce technicien n&apos;est membre d&apos;aucune équipe.</p>
         ) : (
           <div className="space-y-2">
             {memberTeams.map((team) => (
               <Link
                 key={team.id}
                 href={`/fleet/teams/${team.id}`}
-                className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm hover:bg-slate-100 transition"
+                className="flex items-center justify-between rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-3 text-sm hover:bg-slate-100 dark:bg-slate-800 transition"
               >
                 <div>
-                  <span className="font-medium text-brand-600">{team.name}</span>
+                  <span className="font-medium text-brand-600 dark:text-brand-400">{team.name}</span>
                   {team.agenceName && (
-                    <span className="ml-2 text-slate-500">({team.agenceName})</span>
+                    <span className="ml-2 text-slate-500 dark:text-slate-400">({team.agenceName})</span>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-400">
+                  <span className="text-xs text-slate-400 dark:text-slate-500">
                     {team.technicianIds.length} membre{team.technicianIds.length !== 1 ? "s" : ""}
                   </span>
-                  <span className="text-xs text-slate-400">
+                  <span className="text-xs text-slate-400 dark:text-slate-500">
                     {TEAM_STATUS_LABELS[team.status] ?? team.status}
                   </span>
                 </div>
@@ -321,7 +321,7 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
         )}
       </section>
 
-      <section className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
+      <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 space-y-3">
         <h2 className="font-semibold">Compte utilisateur</h2>
         {technician.userId ? (
           <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
@@ -329,7 +329,7 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
           </div>
         ) : (
           <>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               Ce technicien n&apos;a pas encore de compte utilisateur.
             </p>
             {!showCreateAccount ? (
@@ -341,8 +341,8 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
                 Créer un compte utilisateur
               </button>
             ) : (
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
-                <p className="text-sm font-medium text-slate-700">
+              <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-4 space-y-3">
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
                   Créer un compte pour {technician.firstName} {technician.lastName}
                 </p>
                 {!technician.email && (
@@ -352,16 +352,16 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
                 )}
                 <div className="grid gap-3 md:grid-cols-2">
                   <div>
-                    <label className="block text-sm text-slate-500 mb-1">Email</label>
+                    <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Email</label>
                     <input
                       type="email"
                       value={technician.email ?? ""}
                       disabled
-                      className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-slate-500"
+                      className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-slate-500 dark:text-slate-400"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-slate-500 mb-1">
+                    <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">
                       Mot de passe <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -369,7 +369,7 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
                       placeholder="Mot de passe initial"
                       value={accountPassword}
                       onChange={(e) => setAccountPassword(e.target.value)}
-                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900"
+                      className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
                     />
                   </div>
                 </div>
@@ -388,7 +388,7 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
                       setShowCreateAccount(false);
                       setAccountPassword("");
                     }}
-                    className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                    className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
                   >
                     Annuler
                   </button>

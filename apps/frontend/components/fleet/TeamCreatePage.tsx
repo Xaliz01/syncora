@@ -71,7 +71,7 @@ export function TeamCreatePage() {
     <div className="space-y-6 max-w-2xl">
       <div>
         <h1 className="text-xl sm:text-2xl font-semibold">Créer une équipe</h1>
-        <p className="text-sm text-slate-500 mt-1">
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
           Définissez le nom de l&apos;équipe, rattachez-la à une agence et sélectionnez ses membres.
         </p>
       </div>
@@ -82,11 +82,11 @@ export function TeamCreatePage() {
         </div>
       )}
 
-      <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
+      <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 sm:p-5">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
                 Nom de l&apos;équipe <span className="text-red-500">*</span>
               </label>
               <input
@@ -95,15 +95,15 @@ export function TeamCreatePage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Statut</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Statut</label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as TeamStatus)}
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:outline-none"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:outline-none"
               >
                 {TEAM_STATUSES.map((s) => (
                   <option key={s} value={s}>
@@ -115,11 +115,11 @@ export function TeamCreatePage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Agence</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Agence</label>
             <select
               value={agenceId}
               onChange={(e) => setAgenceId(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:outline-none"
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:outline-none"
             >
               <option value="">Aucune agence</option>
               {agences.map((a) => (
@@ -133,11 +133,11 @@ export function TeamCreatePage() {
 
           {!loading && (
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
                 Membres de l&apos;équipe
               </label>
               {technicians.length === 0 ? (
-                <p className="text-sm text-slate-400">Aucun technicien disponible.</p>
+                <p className="text-sm text-slate-400 dark:text-slate-500">Aucun technicien disponible.</p>
               ) : (
                 <div className="grid gap-2 sm:grid-cols-2">
                   {technicians.map((tech) => (
@@ -146,7 +146,7 @@ export function TeamCreatePage() {
                       className={`flex items-center gap-2 rounded-lg border p-3 text-sm cursor-pointer transition ${
                         selectedTechnicianIds.includes(tech.id)
                           ? "border-brand-500 bg-brand-50"
-                          : "border-slate-200 hover:bg-slate-50"
+                          : "border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
                       }`}
                     >
                       <input
@@ -159,7 +159,7 @@ export function TeamCreatePage() {
                         {tech.firstName} {tech.lastName}
                       </span>
                       {tech.speciality && (
-                        <span className="text-slate-400 text-xs">({tech.speciality})</span>
+                        <span className="text-slate-400 dark:text-slate-500 text-xs">({tech.speciality})</span>
                       )}
                     </label>
                   ))}
@@ -179,7 +179,7 @@ export function TeamCreatePage() {
             <button
               type="button"
               onClick={() => router.push("/fleet/teams")}
-              className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 transition"
+              className="rounded-lg border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
             >
               Annuler
             </button>

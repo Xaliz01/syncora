@@ -10,13 +10,13 @@ export function OrganizationSwitcher() {
   }
 
   return (
-    <div className="px-3 pt-3 pb-2 border-b border-slate-100">
+    <div className="px-3 pt-3 pb-2 border-b border-slate-100 dark:border-slate-800">
       <label htmlFor="syncora-org-switcher" className="sr-only">
         Organisation active
       </label>
       <select
         id="syncora-org-switcher"
-        className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-60"
+        className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 dark:bg-slate-800 px-2.5 py-2 text-sm text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-60"
         value={sessionOrganizationId}
         disabled={isLoading || organizations.length === 0}
         onChange={(e) => selectOrganization(e.target.value)}
@@ -30,7 +30,7 @@ export function OrganizationSwitcher() {
           ))}
       </select>
       {organizations.length > 1 && (
-        <p className="mt-1.5 text-[11px] text-slate-500 px-0.5">
+        <p className="mt-1.5 text-[11px] text-slate-500 dark:text-slate-400 px-0.5">
           Bientôt : changement d’espace sans se reconnecter.
         </p>
       )}

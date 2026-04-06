@@ -75,13 +75,13 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
   });
 
   if (isLoading) {
-    return <div className="text-sm text-slate-500">Chargement…</div>;
+    return <div className="text-sm text-slate-500 dark:text-slate-400">Chargement…</div>;
   }
 
   if (isError || !c) {
     return (
       <div className="space-y-4">
-        <Link href="/customers" className="text-sm font-medium text-brand-600 hover:text-brand-500">
+        <Link href="/customers" className="text-sm font-medium text-brand-600 dark:text-brand-400 hover:text-brand-500">
           &larr; Clients
         </Link>
         <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
@@ -89,7 +89,7 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
           <button
             type="button"
             onClick={() => refetch()}
-            className="ml-3 rounded-lg border border-red-300 bg-white px-3 py-1 text-xs font-medium text-red-800 hover:bg-red-50"
+            className="ml-3 rounded-lg border border-red-300 bg-white dark:bg-slate-900 px-3 py-1 text-xs font-medium text-red-800 hover:bg-red-50"
           >
             Réessayer
           </button>
@@ -117,7 +117,7 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link href="/customers" className="text-sm font-medium text-brand-600 hover:text-brand-500">
+        <Link href="/customers" className="text-sm font-medium text-brand-600 dark:text-brand-400 hover:text-brand-500">
           &larr; Clients
         </Link>
         <div className="flex flex-wrap items-center gap-2">
@@ -128,7 +128,7 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
                 setMutationError("");
                 setIsEditing(true);
               }}
-              className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 transition hover:bg-slate-50"
+              className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 transition hover:bg-slate-50 dark:hover:bg-slate-800"
             >
               Modifier
             </button>
@@ -151,8 +151,8 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
       )}
 
       {isEditing ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-          <h2 className="mb-4 text-lg font-semibold text-slate-900">Modifier le client</h2>
+        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/20 sm:p-6">
+          <h2 className="mb-4 text-lg font-semibold text-slate-900 dark:text-slate-100">Modifier le client</h2>
           <CustomerEditForm
             customer={c}
             isPending={updateMutation.isPending}
@@ -170,19 +170,19 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
       ) : (
         <>
           <div>
-            <h1 className="text-xl font-semibold text-slate-900 sm:text-2xl">{c.displayName}</h1>
-            <p className="mt-1 text-sm text-slate-600">{CUSTOMER_KIND_LABELS[c.kind]}</p>
+            <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100 sm:text-2xl">{c.displayName}</h1>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{CUSTOMER_KIND_LABELS[c.kind]}</p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:col-span-2">
-              <h2 className="text-sm font-semibold text-slate-800">Coordonnées</h2>
+            <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/20 sm:col-span-2">
+              <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Coordonnées</h2>
               <dl className="mt-3 space-y-2 text-sm">
                 {c.email && (
                   <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
-                    <dt className="text-slate-500 sm:w-32">E-mail</dt>
+                    <dt className="text-slate-500 dark:text-slate-400 sm:w-32">E-mail</dt>
                     <dd>
-                      <a href={`mailto:${c.email}`} className="text-brand-600 hover:text-brand-500">
+                      <a href={`mailto:${c.email}`} className="text-brand-600 dark:text-brand-400 hover:text-brand-500">
                         {c.email}
                       </a>
                     </dd>
@@ -190,9 +190,9 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
                 )}
                 {c.phone && (
                   <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
-                    <dt className="text-slate-500 sm:w-32">Téléphone</dt>
+                    <dt className="text-slate-500 dark:text-slate-400 sm:w-32">Téléphone</dt>
                     <dd>
-                      <a href={`tel:${c.phone}`} className="text-slate-800">
+                      <a href={`tel:${c.phone}`} className="text-slate-800 dark:text-slate-100">
                         {c.phone}
                       </a>
                     </dd>
@@ -200,16 +200,16 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
                 )}
                 {c.mobile && (
                   <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
-                    <dt className="text-slate-500 sm:w-32">Mobile</dt>
+                    <dt className="text-slate-500 dark:text-slate-400 sm:w-32">Mobile</dt>
                     <dd>
-                      <a href={`tel:${c.mobile}`} className="text-slate-800">
+                      <a href={`tel:${c.mobile}`} className="text-slate-800 dark:text-slate-100">
                         {c.mobile}
                       </a>
                     </dd>
                   </div>
                 )}
                 {!c.email && !c.phone && !c.mobile && (
-                  <p className="text-slate-500">Aucune coordonnée renseignée.</p>
+                  <p className="text-slate-500 dark:text-slate-400">Aucune coordonnée renseignée.</p>
                 )}
               </dl>
             </div>
@@ -217,27 +217,27 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
             {(c.kind === "individual" && (c.firstName || c.lastName)) ||
             (c.kind === "company" && c.companyName) ||
             c.legalIdentifier ? (
-              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:col-span-2">
-                <h2 className="text-sm font-semibold text-slate-800">Identité</h2>
+              <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/20 sm:col-span-2">
+                <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Identité</h2>
                 <dl className="mt-3 space-y-2 text-sm">
                   {c.kind === "individual" && (c.firstName || c.lastName) && (
                     <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
-                      <dt className="text-slate-500 sm:w-32">Nom complet</dt>
-                      <dd className="text-slate-800">
+                      <dt className="text-slate-500 dark:text-slate-400 sm:w-32">Nom complet</dt>
+                      <dd className="text-slate-800 dark:text-slate-100">
                         {[c.firstName, c.lastName].filter(Boolean).join(" ")}
                       </dd>
                     </div>
                   )}
                   {c.kind === "company" && c.companyName && (
                     <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
-                      <dt className="text-slate-500 sm:w-32">Raison sociale</dt>
-                      <dd className="text-slate-800">{c.companyName}</dd>
+                      <dt className="text-slate-500 dark:text-slate-400 sm:w-32">Raison sociale</dt>
+                      <dd className="text-slate-800 dark:text-slate-100">{c.companyName}</dd>
                     </div>
                   )}
                   {c.legalIdentifier && (
                     <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
-                      <dt className="text-slate-500 sm:w-32">Identifiant légal</dt>
-                      <dd className="text-slate-800">{c.legalIdentifier}</dd>
+                      <dt className="text-slate-500 dark:text-slate-400 sm:w-32">Identifiant légal</dt>
+                      <dd className="text-slate-800 dark:text-slate-100">{c.legalIdentifier}</dd>
                     </div>
                   )}
                 </dl>
@@ -245,9 +245,9 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
             ) : null}
 
             {c.address && (
-              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:col-span-2">
-                <h2 className="text-sm font-semibold text-slate-800">Adresse</h2>
-                <address className="mt-3 text-sm not-italic text-slate-700">
+              <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/20 sm:col-span-2">
+                <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Adresse</h2>
+                <address className="mt-3 text-sm not-italic text-slate-700 dark:text-slate-200">
                   {c.address.line1}
                   <br />
                   {c.address.line2 ? (
@@ -264,14 +264,14 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
             )}
 
             {c.notes && (
-              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:col-span-2">
-                <h2 className="text-sm font-semibold text-slate-800">Notes</h2>
-                <p className="mt-3 whitespace-pre-wrap text-sm text-slate-700">{c.notes}</p>
+              <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/20 sm:col-span-2">
+                <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Notes</h2>
+                <p className="mt-3 whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-200">{c.notes}</p>
               </div>
             )}
 
             {(created || updated) && (
-              <div className="text-xs text-slate-500 sm:col-span-2">
+              <div className="text-xs text-slate-500 dark:text-slate-400 sm:col-span-2">
                 {created && <span>Créé le {created}</span>}
                 {created && updated && <span className="mx-2">·</span>}
                 {updated && <span>Mis à jour le {updated}</span>}

@@ -88,11 +88,11 @@ function OrganizationSubscriptionSectionInner() {
       : subscription?.status ?? "—";
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <h2 className="text-sm font-semibold text-slate-800 mb-1">Abonnement</h2>
-      <p className="text-xs text-slate-500 mb-4">{subscription?.planLabel ?? "9,99 € / mois, sans engagement"}</p>
+    <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/20">
+      <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-1">Abonnement</h2>
+      <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">{subscription?.planLabel ?? "9,99 € / mois, sans engagement"}</p>
 
-      {isLoading && <p className="text-sm text-slate-500">Chargement du statut…</p>}
+      {isLoading && <p className="text-sm text-slate-500 dark:text-slate-400">Chargement du statut…</p>}
 
       {error && (
         <div className="rounded-lg bg-red-50 border border-red-200 text-red-800 text-sm p-3">
@@ -110,23 +110,23 @@ function OrganizationSubscriptionSectionInner() {
 
           <dl className="grid gap-3 text-sm sm:grid-cols-2">
             <div>
-              <dt className="text-slate-500">Statut</dt>
-              <dd className="font-medium text-slate-900 mt-0.5">{statusLabel}</dd>
+              <dt className="text-slate-500 dark:text-slate-400">Statut</dt>
+              <dd className="font-medium text-slate-900 dark:text-slate-100 mt-0.5">{statusLabel}</dd>
             </div>
             <div>
-              <dt className="text-slate-500">Accès application</dt>
+              <dt className="text-slate-500 dark:text-slate-400">Accès application</dt>
               <dd className="font-medium mt-0.5">
                 {subscription.hasAccess ? (
                   <span className="text-emerald-700">Oui</span>
                 ) : (
-                  <span className="text-slate-600">Non</span>
+                  <span className="text-slate-600 dark:text-slate-300">Non</span>
                 )}
               </dd>
             </div>
             {subscription.trialEndsAt && (
               <div className="sm:col-span-2">
-                <dt className="text-slate-500">Fin de l’essai</dt>
-                <dd className="font-medium text-slate-900 mt-0.5">
+                <dt className="text-slate-500 dark:text-slate-400">Fin de l’essai</dt>
+                <dd className="font-medium text-slate-900 dark:text-slate-100 mt-0.5">
                   {new Date(subscription.trialEndsAt).toLocaleString("fr-FR", {
                     dateStyle: "long",
                     timeStyle: "short"
@@ -136,8 +136,8 @@ function OrganizationSubscriptionSectionInner() {
             )}
             {subscription.currentPeriodEnd && subscription.status !== "none" && (
               <div className="sm:col-span-2">
-                <dt className="text-slate-500">Fin de période en cours</dt>
-                <dd className="font-medium text-slate-900 mt-0.5">
+                <dt className="text-slate-500 dark:text-slate-400">Fin de période en cours</dt>
+                <dd className="font-medium text-slate-900 dark:text-slate-100 mt-0.5">
                   {new Date(subscription.currentPeriodEnd).toLocaleString("fr-FR", {
                     dateStyle: "long",
                     timeStyle: "short"
@@ -153,7 +153,7 @@ function OrganizationSubscriptionSectionInner() {
           </dl>
 
           {canManageBilling && (
-            <div className="flex flex-wrap gap-3 mt-6 pt-4 border-t border-slate-100">
+            <div className="flex flex-wrap gap-3 mt-6 pt-4 border-t border-slate-100 dark:border-slate-800">
               {(subscription.status === "none" ||
                 subscription.status === "incomplete" ||
                 subscription.status === "incomplete_expired") && (
@@ -173,7 +173,7 @@ function OrganizationSubscriptionSectionInner() {
                   type="button"
                   onClick={() => portalMutation.mutate()}
                   disabled={portalMutation.isPending}
-                  className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition"
+                  className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 transition"
                 >
                   Facturation, moyen de paiement et résiliation
                 </button>
@@ -182,7 +182,7 @@ function OrganizationSubscriptionSectionInner() {
           )}
 
           {!canManageBilling && (
-            <p className="text-xs text-slate-500 mt-4 pt-4 border-t border-slate-100">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
               Seuls les utilisateurs autorisés à gérer la facturation peuvent lancer le paiement ou ouvrir le portail Stripe.
             </p>
           )}
@@ -196,8 +196,8 @@ export function OrganizationSubscriptionSection() {
   return (
     <Suspense
       fallback={
-        <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm text-slate-500">Chargement de l’abonnement…</p>
+        <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/20">
+          <p className="text-sm text-slate-500 dark:text-slate-400">Chargement de l’abonnement…</p>
         </section>
       }
     >

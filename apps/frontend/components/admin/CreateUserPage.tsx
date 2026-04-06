@@ -93,7 +93,7 @@ export function CreateUserPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-xl sm:text-2xl font-semibold">Inviter un utilisateur</h1>
-        <p className="text-sm text-slate-500 mt-1">
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
           Invitez un utilisateur dans votre organisation et pré-configurez ses droits.
         </p>
       </div>
@@ -104,9 +104,9 @@ export function CreateUserPage() {
         </div>
       )}
 
-      <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
+      <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 sm:p-5">
         {loading ? (
-          <p className="text-sm text-slate-500">Chargement...</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Chargement...</p>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-2">
@@ -116,14 +116,14 @@ export function CreateUserPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
               />
               <input
                 type="text"
                 placeholder="Nom (optionnel)"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
               />
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -137,7 +137,7 @@ export function CreateUserPage() {
                     setSelectedPermissions([]);
                   }
                 }}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:outline-none"
+                className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:outline-none"
               >
                 <option value="member">Membre</option>
                 <option value="admin">Administrateur</option>
@@ -152,7 +152,7 @@ export function CreateUserPage() {
                   setSelectedPermissions(profilePermissions);
                 }}
                 disabled={adminRoleSelected}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:outline-none"
+                className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:outline-none"
               >
                 <option value="">Aucun profil</option>
                 {profiles.map((profile) => (
@@ -170,7 +170,7 @@ export function CreateUserPage() {
             )}
             <div className={`${adminRoleSelected ? "opacity-60" : ""}`}>
               <div>
-                <p className="text-sm font-medium text-slate-700 mb-2">Permissions</p>
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">Permissions</p>
                 <div className="grid gap-1 sm:grid-cols-2">
                   {catalog.map((permission) => (
                     <label key={permission} className="flex items-center gap-2 text-sm">
@@ -183,8 +183,8 @@ export function CreateUserPage() {
                         }
                       />
                       <span>
-                        <span className="block text-slate-700">{getPermissionLabel(permission)}</span>
-                        <span className="block font-mono text-xs text-slate-400">{permission}</span>
+                        <span className="block text-slate-700 dark:text-slate-200">{getPermissionLabel(permission)}</span>
+                        <span className="block font-mono text-xs text-slate-400 dark:text-slate-500">{permission}</span>
                       </span>
                     </label>
                   ))}

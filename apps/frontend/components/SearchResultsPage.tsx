@@ -54,7 +54,7 @@ const TYPE_COLORS: Record<string, string> = {
   vehicle: "bg-emerald-50 text-emerald-600",
   technician: "bg-amber-50 text-amber-600",
   article: "bg-rose-50 text-rose-600",
-  user: "bg-slate-100 text-slate-600"
+  user: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
 };
 
 const TYPE_ORDER = ["case", "intervention", "vehicle", "technician", "article", "user"];
@@ -63,20 +63,20 @@ function ResultCard({ item }: { item: SearchResultItem }) {
   return (
     <Link
       href={item.url}
-      className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-4 hover:border-brand-300 hover:shadow-sm transition"
+      className="flex items-start gap-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 hover:border-brand-300 hover:shadow-sm dark:shadow-slate-950/20 transition"
     >
       <span
-        className={`mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${TYPE_COLORS[item.type] ?? "bg-slate-100 text-slate-600"}`}
+        className={`mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${TYPE_COLORS[item.type] ?? "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"}`}
       >
         {TYPE_ICONS[item.type]}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-slate-900 truncate">{item.title}</p>
+        <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">{item.title}</p>
         {item.subtitle && (
-          <p className="mt-0.5 text-xs text-slate-500 truncate">{item.subtitle}</p>
+          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400 truncate">{item.subtitle}</p>
         )}
         <span
-          className={`mt-1.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${TYPE_COLORS[item.type] ?? "bg-slate-100 text-slate-600"}`}
+          className={`mt-1.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${TYPE_COLORS[item.type] ?? "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"}`}
         >
           {TYPE_LABELS[item.type] ?? item.type}
         </span>
@@ -106,7 +106,7 @@ export function SearchResultsPage() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <h1 className="text-xl font-semibold text-slate-900 mb-6">Recherche globale</h1>
+      <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-6">Recherche globale</h1>
 
       <form
         onSubmit={(e) => {
@@ -121,7 +121,7 @@ export function SearchResultsPage() {
       >
         <div className="relative">
           <svg
-            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400"
+            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 dark:text-slate-500"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -138,7 +138,7 @@ export function SearchResultsPage() {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder="Rechercher par mot-clé…"
-            className="w-full rounded-lg border border-slate-300 bg-white py-2.5 pl-11 pr-4 text-sm text-slate-700 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition"
+            className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 py-2.5 pl-11 pr-4 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition"
             autoFocus
           />
         </div>
@@ -154,7 +154,7 @@ export function SearchResultsPage() {
                 className={`rounded-full px-3 py-1 text-xs font-medium transition ${
                   activeFilter === null
                     ? "bg-brand-600 text-white"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200"
                 }`}
               >
                 Tout ({data.results.length})
@@ -167,7 +167,7 @@ export function SearchResultsPage() {
                   className={`rounded-full px-3 py-1 text-xs font-medium transition ${
                     activeFilter === type
                       ? "bg-brand-600 text-white"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200"
                   }`}
                 >
                   {TYPE_LABELS[type]} ({data.counts[type]})
@@ -177,7 +177,7 @@ export function SearchResultsPage() {
           )}
 
           {filteredResults.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-slate-300 bg-white p-12 text-center">
+            <div className="rounded-lg border border-dashed border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 p-12 text-center">
               <svg
                 className="mx-auto h-10 w-10 text-slate-300"
                 fill="none"
@@ -191,10 +191,10 @@ export function SearchResultsPage() {
                   d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
                 />
               </svg>
-              <p className="mt-3 text-sm font-medium text-slate-600">
+              <p className="mt-3 text-sm font-medium text-slate-600 dark:text-slate-300">
                 Aucun résultat pour &laquo;&nbsp;{queryFromUrl}&nbsp;&raquo;
               </p>
-              <p className="mt-1 text-xs text-slate-400">
+              <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
                 Essayez un autre mot-clé ou vérifiez l&apos;orthographe.
               </p>
             </div>
@@ -210,8 +210,8 @@ export function SearchResultsPage() {
 
       {isLoading && (
         <div className="flex items-center justify-center py-16">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-brand-600" />
-          <span className="ml-3 text-sm text-slate-500">Recherche en cours…</span>
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 dark:border-slate-700 border-t-brand-600" />
+          <span className="ml-3 text-sm text-slate-500 dark:text-slate-400">Recherche en cours…</span>
         </div>
       )}
 
@@ -222,7 +222,7 @@ export function SearchResultsPage() {
       )}
 
       {!queryFromUrl && (
-        <div className="rounded-lg border border-dashed border-slate-300 bg-white p-12 text-center">
+        <div className="rounded-lg border border-dashed border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 p-12 text-center">
           <svg
             className="mx-auto h-10 w-10 text-slate-300"
             fill="none"
@@ -236,10 +236,10 @@ export function SearchResultsPage() {
               d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
             />
           </svg>
-          <p className="mt-3 text-sm font-medium text-slate-600">
+          <p className="mt-3 text-sm font-medium text-slate-600 dark:text-slate-300">
             Saisissez un mot-clé pour lancer une recherche
           </p>
-          <p className="mt-1 text-xs text-slate-400">
+          <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
             La recherche couvre les dossiers, interventions, véhicules, techniciens, articles et utilisateurs.
           </p>
         </div>

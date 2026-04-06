@@ -6,19 +6,22 @@ import { AuthProvider } from "@/components/auth/AuthContext";
 import { OrganizationProvider } from "@/lib/organization";
 import { ConfirmProvider } from "@/components/ui/ConfirmDialog";
 import { ToastProvider } from "@/components/ui/ToastProvider";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <ToastProvider>
-        <ConfirmProvider>
-          <AuthProvider>
-            <OrganizationProvider>{children}</OrganizationProvider>
-          </AuthProvider>
-        </ConfirmProvider>
-      </ToastProvider>
-    </QueryClientProvider>
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <ToastProvider>
+          <ConfirmProvider>
+            <AuthProvider>
+              <OrganizationProvider>{children}</OrganizationProvider>
+            </AuthProvider>
+          </ConfirmProvider>
+        </ToastProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }

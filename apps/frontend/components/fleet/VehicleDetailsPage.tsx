@@ -180,7 +180,7 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-500">
+      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 text-sm text-slate-500 dark:text-slate-400">
         Chargement...
       </div>
     );
@@ -189,8 +189,8 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
   if (!vehicle) {
     return (
       <div className="space-y-3">
-        <p className="text-slate-700">Véhicule introuvable.</p>
-        <Link href="/fleet/vehicles" className="text-brand-600 hover:underline">
+        <p className="text-slate-700 dark:text-slate-200">Véhicule introuvable.</p>
+        <Link href="/fleet/vehicles" className="text-brand-600 dark:text-brand-400 hover:underline">
           Retour à la liste
         </Link>
       </div>
@@ -204,7 +204,7 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
           <h1 className="text-xl sm:text-2xl font-semibold mb-1">
             {vehicle.registrationNumber}
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             {TYPE_LABELS[vehicle.type] ?? vehicle.type}
             {vehicle.brand ? ` — ${vehicle.brand}` : ""}
             {vehicle.model ? ` ${vehicle.model}` : ""}
@@ -214,7 +214,7 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
           <button
             type="button"
             onClick={() => setIsEditing((p) => !p)}
-            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
           >
             {isEditing ? "Annuler" : "Modifier"}
           </button>
@@ -227,7 +227,7 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
           </button>
           <Link
             href="/fleet/vehicles"
-            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
           >
             Retour
           </Link>
@@ -241,46 +241,46 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
       )}
 
       {!isEditing ? (
-        <section className="rounded-xl border border-slate-200 bg-white p-4">
+        <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
           <h2 className="font-semibold mb-3">Informations du véhicule</h2>
           <div className="grid gap-3 md:grid-cols-2 text-sm">
             <div>
-              <span className="text-slate-400">Immatriculation</span>
+              <span className="text-slate-400 dark:text-slate-500">Immatriculation</span>
               <p className="font-medium">{vehicle.registrationNumber}</p>
             </div>
             <div>
-              <span className="text-slate-400">Type</span>
+              <span className="text-slate-400 dark:text-slate-500">Type</span>
               <p>{TYPE_LABELS[vehicle.type] ?? vehicle.type}</p>
             </div>
             <div>
-              <span className="text-slate-400">Marque</span>
+              <span className="text-slate-400 dark:text-slate-500">Marque</span>
               <p>{vehicle.brand || "—"}</p>
             </div>
             <div>
-              <span className="text-slate-400">Modèle</span>
+              <span className="text-slate-400 dark:text-slate-500">Modèle</span>
               <p>{vehicle.model || "—"}</p>
             </div>
             <div>
-              <span className="text-slate-400">Année</span>
+              <span className="text-slate-400 dark:text-slate-500">Année</span>
               <p>{vehicle.year ?? "—"}</p>
             </div>
             <div>
-              <span className="text-slate-400">Couleur</span>
+              <span className="text-slate-400 dark:text-slate-500">Couleur</span>
               <p>{vehicle.color || "—"}</p>
             </div>
             <div>
-              <span className="text-slate-400">VIN</span>
+              <span className="text-slate-400 dark:text-slate-500">VIN</span>
               <p className="font-mono text-xs">{vehicle.vin || "—"}</p>
             </div>
             <div>
-              <span className="text-slate-400">Kilométrage</span>
+              <span className="text-slate-400 dark:text-slate-500">Kilométrage</span>
               <p>{vehicle.mileage != null ? `${vehicle.mileage.toLocaleString("fr-FR")} km` : "—"}</p>
             </div>
             <div>
-              <span className="text-slate-400">Statut</span>
+              <span className="text-slate-400 dark:text-slate-500">Statut</span>
               <p>
                 <span
-                  className={`inline-flex rounded border px-2 py-0.5 text-xs ${STATUS_COLORS[vehicle.status] ?? "bg-slate-50 text-slate-700 border-slate-200"}`}
+                  className={`inline-flex rounded border px-2 py-0.5 text-xs ${STATUS_COLORS[vehicle.status] ?? "bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700"}`}
                 >
                   {STATUS_LABELS[vehicle.status] ?? vehicle.status}
                 </span>
@@ -289,16 +289,16 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
           </div>
         </section>
       ) : (
-        <section className="rounded-xl border border-slate-200 bg-white p-4 space-y-4">
+        <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 space-y-4">
           <h2 className="font-semibold">Modifier le véhicule</h2>
           <div className="grid gap-3 md:grid-cols-2">
             <div>
-              <label className="block text-sm text-slate-500 mb-1">Immatriculation</label>
-              <input type="text" value={editReg} onChange={(e) => setEditReg(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900" />
+              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Immatriculation</label>
+              <input type="text" value={editReg} onChange={(e) => setEditReg(e.target.value)} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100" />
             </div>
             <div>
-              <label className="block text-sm text-slate-500 mb-1">Type</label>
-              <select value={editType} onChange={(e) => setEditType(e.target.value as VehicleType)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900">
+              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Type</label>
+              <select value={editType} onChange={(e) => setEditType(e.target.value as VehicleType)} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100">
                 {VEHICLE_TYPES.map((t) => (
                   <option key={t} value={t}>{TYPE_LABELS[t] ?? t}</option>
                 ))}
@@ -307,36 +307,36 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
           </div>
           <div className="grid gap-3 md:grid-cols-2">
             <div>
-              <label className="block text-sm text-slate-500 mb-1">Marque</label>
-              <input type="text" value={editBrand} onChange={(e) => setEditBrand(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900" />
+              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Marque</label>
+              <input type="text" value={editBrand} onChange={(e) => setEditBrand(e.target.value)} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100" />
             </div>
             <div>
-              <label className="block text-sm text-slate-500 mb-1">Modèle</label>
-              <input type="text" value={editModel} onChange={(e) => setEditModel(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900" />
+              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Modèle</label>
+              <input type="text" value={editModel} onChange={(e) => setEditModel(e.target.value)} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100" />
             </div>
           </div>
           <div className="grid gap-3 md:grid-cols-3">
             <div>
-              <label className="block text-sm text-slate-500 mb-1">Année</label>
-              <input type="number" value={editYear} onChange={(e) => setEditYear(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900" />
+              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Année</label>
+              <input type="number" value={editYear} onChange={(e) => setEditYear(e.target.value)} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100" />
             </div>
             <div>
-              <label className="block text-sm text-slate-500 mb-1">Couleur</label>
-              <input type="text" value={editColor} onChange={(e) => setEditColor(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900" />
+              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Couleur</label>
+              <input type="text" value={editColor} onChange={(e) => setEditColor(e.target.value)} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100" />
             </div>
             <div>
-              <label className="block text-sm text-slate-500 mb-1">Kilométrage</label>
-              <input type="number" value={editMileage} onChange={(e) => setEditMileage(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900" />
+              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Kilométrage</label>
+              <input type="number" value={editMileage} onChange={(e) => setEditMileage(e.target.value)} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100" />
             </div>
           </div>
           <div className="grid gap-3 md:grid-cols-2">
             <div>
-              <label className="block text-sm text-slate-500 mb-1">VIN</label>
-              <input type="text" value={editVin} onChange={(e) => setEditVin(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900" />
+              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">VIN</label>
+              <input type="text" value={editVin} onChange={(e) => setEditVin(e.target.value)} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100" />
             </div>
             <div>
-              <label className="block text-sm text-slate-500 mb-1">Statut</label>
-              <select value={editStatus} onChange={(e) => setEditStatus(e.target.value as VehicleStatus)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900">
+              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Statut</label>
+              <select value={editStatus} onChange={(e) => setEditStatus(e.target.value as VehicleStatus)} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100">
                 {VEHICLE_STATUSES.map((s) => (
                   <option key={s} value={s}>{STATUS_LABELS[s] ?? s}</option>
                 ))}
@@ -356,18 +356,18 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
         </section>
       )}
 
-      <section className="rounded-xl border border-slate-200 bg-white p-4 space-y-4">
+      <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 space-y-4">
         <h2 className="font-semibold">Équipe affectée</h2>
         {assignedTeam ? (
           <div className="flex items-center justify-between">
             <div>
               <Link
                 href={`/fleet/teams/${assignedTeam.id}`}
-                className="font-medium text-brand-600 hover:text-brand-500 hover:underline"
+                className="font-medium text-brand-600 dark:text-brand-400 hover:text-brand-500 hover:underline"
               >
                 {assignedTeam.name}
               </Link>
-              <span className="ml-2 text-sm text-slate-500">
+              <span className="ml-2 text-sm text-slate-500 dark:text-slate-400">
                 ({assignedTeam.technicianIds.length} membre{assignedTeam.technicianIds.length !== 1 ? "s" : ""})
               </span>
             </div>
@@ -383,11 +383,11 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
         ) : (
           <div className="flex items-end gap-3">
             <div className="flex-1">
-              <label className="block text-sm text-slate-500 mb-1">Affecter une équipe</label>
+              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Affecter une équipe</label>
               <select
                 value={selectedTeamId}
                 onChange={(e) => setSelectedTeamId(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
               >
                 <option value="">Sélectionner une équipe</option>
                 {teams.map((team) => (

@@ -24,7 +24,7 @@ const STATUS_LABELS: Record<CaseStatus, string> = {
 };
 
 const STATUS_COLORS: Record<CaseStatus, string> = {
-  draft: "bg-slate-100 text-slate-600 border-slate-200",
+  draft: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700",
   open: "bg-blue-50 text-blue-700 border-blue-200",
   in_progress: "bg-amber-50 text-amber-700 border-amber-200",
   waiting: "bg-purple-50 text-purple-700 border-purple-200",
@@ -286,7 +286,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   }, [caseData, usersData?.users]);
 
   if (isLoading || !caseData) {
-    return <div className="text-sm text-slate-500">Chargement…</div>;
+    return <div className="text-sm text-slate-500 dark:text-slate-400">Chargement…</div>;
   }
 
   const allowedTransitions = STATUS_TRANSITIONS[caseData.status] ?? [];
@@ -317,7 +317,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
     <div className="space-y-6">
       <div className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <Link href="/cases" className="text-sm text-brand-600 hover:text-brand-500 font-medium">
+          <Link href="/cases" className="text-sm text-brand-600 dark:text-brand-400 hover:text-brand-500 font-medium">
             &larr; Dossiers
           </Link>
           <div className="flex flex-wrap items-center gap-2">
@@ -326,7 +326,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                 <button
                   type="button"
                   onClick={() => setIsEditing(false)}
-                  className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition"
+                  className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
                 >
                   Annuler
                 </button>
@@ -343,7 +343,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
               <button
                 type="button"
                 onClick={startEditing}
-                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition"
+                className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
               >
                 Modifier
               </button>
@@ -383,15 +383,15 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                 </p>
               </div>
 
-              <p className="text-sm text-slate-600">
-                <span className="text-slate-500">Dossier concerné :</span>{" "}
-                <span className="font-medium text-slate-800">{caseData.title}</span>
+              <p className="text-sm text-slate-600 dark:text-slate-300">
+                <span className="text-slate-500 dark:text-slate-400">Dossier concerné :</span>{" "}
+                <span className="font-medium text-slate-800 dark:text-slate-100">{caseData.title}</span>
               </p>
 
-              <div className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm space-y-6">
+              <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 sm:p-6 shadow-sm dark:shadow-slate-950/20 space-y-6">
                 <div>
-                  <h2 className="text-sm font-semibold text-slate-800">Informations à mettre à jour</h2>
-                  <p className="mt-1 text-xs text-slate-500">
+                  <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Informations à mettre à jour</h2>
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                     Titre, description, priorité, échéance et personnes assignées. Pensez à enregistrer vos
                     changements.
                   </p>
@@ -400,7 +400,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 xl:gap-10">
                   <div className="space-y-5 min-w-0">
                     <div>
-                      <label htmlFor="case-edit-title" className="block text-sm font-medium text-slate-700 mb-1">
+                      <label htmlFor="case-edit-title" className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
                         Titre du dossier
                       </label>
                       <input
@@ -408,13 +408,13 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                         type="text"
                         value={editTitle}
                         onChange={(e) => setEditTitle(e.target.value)}
-                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                        className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                         placeholder="Ex. Rénovation immeuble rue des Lilas"
                       />
                     </div>
 
                     <div className="flex flex-col flex-1 min-h-0">
-                      <label htmlFor="case-edit-desc" className="block text-sm font-medium text-slate-700 mb-1">
+                      <label htmlFor="case-edit-desc" className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
                         Description
                       </label>
                       <textarea
@@ -422,7 +422,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                         value={editDesc}
                         onChange={(e) => setEditDesc(e.target.value)}
                         rows={8}
-                        className="w-full min-h-[12rem] rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 xl:min-h-[14rem]"
+                        className="w-full min-h-[12rem] rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 xl:min-h-[14rem]"
                         placeholder="Contexte, objectifs, contraintes…"
                       />
                     </div>
@@ -431,14 +431,14 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                   <div className="space-y-5 min-w-0">
                     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-4">
                       <div>
-                        <label htmlFor="case-edit-priority" className="block text-sm font-medium text-slate-700 mb-1">
+                        <label htmlFor="case-edit-priority" className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
                           Priorité
                         </label>
                         <select
                           id="case-edit-priority"
                           value={editPriority}
                           onChange={(e) => setEditPriority(e.target.value as CasePriority)}
-                          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                          className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                         >
                           <option value="low">Basse</option>
                           <option value="medium">Moyenne</option>
@@ -447,7 +447,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                         </select>
                       </div>
                       <div>
-                        <label htmlFor="case-edit-due" className="block text-sm font-medium text-slate-700 mb-1">
+                        <label htmlFor="case-edit-due" className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
                           Date d&apos;échéance
                         </label>
                         <input
@@ -455,15 +455,15 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                           type="date"
                           value={editDueDate}
                           onChange={(e) => setEditDueDate(e.target.value)}
-                          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                          className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                         />
-                        <p className="mt-1 text-xs text-slate-500">Laisser vide si aucune échéance fixée.</p>
+                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Laisser vide si aucune échéance fixée.</p>
                       </div>
                     </div>
 
                     <div>
-                      <span className="block text-sm font-medium text-slate-700 mb-1.5">Personnes assignées</span>
-                      <p className="text-xs text-slate-500 mb-2">
+                      <span className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5">Personnes assignées</span>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
                         Recherchez un membre de l&apos;organisation pour l&apos;ajouter ou retirez un tag.
                       </p>
                       <CaseAssigneesTagsInput
@@ -484,7 +484,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4">
+                <div className="flex flex-wrap gap-2 border-t border-slate-100 dark:border-slate-800 pt-4">
                   <button
                     type="button"
                     onClick={handleEditSubmit}
@@ -496,7 +496,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                   <button
                     type="button"
                     onClick={() => setIsEditing(false)}
-                    className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 transition"
+                    className="rounded-lg border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
                   >
                     Annuler
                   </button>
@@ -514,7 +514,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                   caseData.priority === "urgent" ? "bg-red-50 text-red-600" :
                   caseData.priority === "high" ? "bg-orange-50 text-orange-600" :
                   caseData.priority === "medium" ? "bg-blue-50 text-blue-600" :
-                  "bg-slate-100 text-slate-500"
+                  "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
                 }`}>
                   {PRIORITY_LABELS[caseData.priority]}
                 </span>
@@ -525,25 +525,25 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                 )}
               </div>
               {caseData.description && (
-                <p className="mt-1 text-sm text-slate-500">{caseData.description}</p>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{caseData.description}</p>
               )}
               {(caseData.customer || caseData.customerId) && (
-                <div className="mt-3 rounded-lg border border-slate-100 bg-slate-50/80 p-3">
-                  <div className="text-xs font-medium uppercase tracking-wide text-slate-500">Client</div>
+                <div className="mt-3 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/80 p-3">
+                  <div className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Client</div>
                   {caseData.customer ? (
                     <>
-                      <div className="mt-1 text-sm font-semibold text-slate-800">{caseData.customer.displayName}</div>
-                      <div className="text-xs text-slate-500">
+                      <div className="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">{caseData.customer.displayName}</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">
                         {CUSTOMER_KIND_LABELS[caseData.customer.kind] ?? caseData.customer.kind}
                       </div>
                     </>
                   ) : (
-                    <div className="mt-1 text-sm text-slate-600">Référence client enregistrée</div>
+                    <div className="mt-1 text-sm text-slate-600 dark:text-slate-300">Référence client enregistrée</div>
                   )}
                 </div>
               )}
               <div className="mt-3 space-y-1.5">
-                <span className="text-sm text-slate-500">Assignés</span>
+                <span className="text-sm text-slate-500 dark:text-slate-400">Assignés</span>
                 <CaseAssigneesTagsInput
                   options={assigneePickerOptions}
                   value={caseData.assignees.map((a) => a.userId)}
@@ -552,14 +552,14 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                   placeholder="Rechercher un membre à assigner…"
                 />
               </div>
-              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
+              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
                 {caseData.dueDate && (
                   <span>Échéance : {new Date(caseData.dueDate).toLocaleDateString("fr-FR")}</span>
                 )}
                 {caseData.tags.length > 0 && (
                   <span className="flex gap-1">
                     {caseData.tags.map((t) => (
-                      <span key={t} className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px]">{t}</span>
+                      <span key={t} className="rounded bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-[10px]">{t}</span>
                     ))}
                   </span>
                 )}
@@ -571,12 +571,12 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
 
       {!isEditing && (
       <>
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20">
         <div className="flex items-center justify-between mb-3">
-          <div className="text-sm font-medium text-slate-700">Progression</div>
-          <div className="text-sm font-semibold text-slate-800">{caseData.progress}%</div>
+          <div className="text-sm font-medium text-slate-700 dark:text-slate-200">Progression</div>
+          <div className="text-sm font-semibold text-slate-800 dark:text-slate-100">{caseData.progress}%</div>
         </div>
-        <div className="w-full h-2 rounded-full bg-slate-100">
+        <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800">
           <div
             className={`h-full rounded-full transition-all ${
               caseData.progress === 100 ? "bg-green-500" : "bg-brand-600"
@@ -586,13 +586,13 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
         </div>
         {allowedTransitions.length > 0 && (
           <div className="mt-3 flex gap-2 flex-wrap">
-            <span className="text-xs text-slate-500 self-center">Changer le statut :</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 self-center">Changer le statut :</span>
             {allowedTransitions.map((s) => (
               <button
                 key={s}
                 onClick={() => statusMutation.mutate(s)}
                 disabled={statusMutation.isPending}
-                className={`rounded-lg border px-3 py-1 text-xs font-medium transition hover:shadow-sm ${STATUS_COLORS[s]}`}
+                className={`rounded-lg border px-3 py-1 text-xs font-medium transition hover:shadow-sm dark:shadow-slate-950/20 ${STATUS_COLORS[s]}`}
               >
                 {STATUS_LABELS[s]}
               </button>
@@ -603,27 +603,27 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
 
       {caseData.steps.length > 0 && (
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-slate-800">Étapes & Tâches</h2>
+          <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Étapes & Tâches</h2>
           {[...caseData.steps].sort((a, b) => a.order - b.order).map((step) => {
             const doneTodos = step.todos.filter((t) => t.status === "done" || t.status === "skipped").length;
             const totalTodos = step.todos.length;
             const stepProgress = totalTodos > 0 ? Math.round((doneTodos / totalTodos) * 100) : 0;
 
             return (
-              <div key={step.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div key={step.id} className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-600/10 text-xs font-semibold text-brand-600">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-600/10 text-xs font-semibold text-brand-600 dark:text-brand-400">
                       {step.order + 1}
                     </span>
-                    <h3 className="font-semibold text-slate-700">{step.name}</h3>
+                    <h3 className="font-semibold text-slate-700 dark:text-slate-200">{step.name}</h3>
                   </div>
-                  <span className="text-xs text-slate-500">
+                  <span className="text-xs text-slate-500 dark:text-slate-400">
                     {doneTodos}/{totalTodos} — {stepProgress}%
                   </span>
                 </div>
                 {step.description && (
-                  <p className="text-xs text-slate-500 mb-2 ml-8">{step.description}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 ml-8">{step.description}</p>
                 )}
                 <div className="ml-8 space-y-1.5">
                   {step.todos.map((todo) => (
@@ -642,8 +642,8 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                           todo.status === "done"
                             ? "bg-green-500 border-green-500 text-white"
                             : todo.status === "skipped"
-                            ? "bg-slate-300 border-slate-300 text-white"
-                            : "border-slate-300 hover:border-brand-500"
+                            ? "bg-slate-300 border-slate-300 dark:border-slate-600 text-white"
+                            : "border-slate-300 dark:border-slate-600 hover:border-brand-500"
                         }`}
                       >
                         {todo.status === "done" && (
@@ -655,10 +655,10 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                       <span
                         className={`text-sm ${
                           todo.status === "done"
-                            ? "text-slate-400 line-through"
+                            ? "text-slate-400 dark:text-slate-500 line-through"
                             : todo.status === "skipped"
-                            ? "text-slate-400 line-through"
-                            : "text-slate-700"
+                            ? "text-slate-400 dark:text-slate-500 line-through"
+                            : "text-slate-700 dark:text-slate-200"
                         }`}
                       >
                         {todo.label}
@@ -669,13 +669,13 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                           onClick={() =>
                             todoMutation.mutate({ stepId: step.id, todoId: todo.id, status: "skipped" })
                           }
-                          className="text-[10px] text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100 transition"
+                          className="text-[10px] text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-300 opacity-0 group-hover:opacity-100 transition"
                         >
                           ignorer
                         </button>
                       )}
                       {todo.completedAt && (
-                        <span className="text-[10px] text-slate-400">
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500">
                           {new Date(todo.completedAt).toLocaleDateString("fr-FR")}
                         </span>
                       )}
@@ -690,12 +690,12 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
 
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <h2 className="text-lg font-semibold text-slate-800">
+          <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
             Interventions ({interventions?.length ?? 0})
           </h2>
           <button
             onClick={() => setShowNewIntervention(!showNewIntervention)}
-            className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 transition self-start"
+            className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:bg-slate-800 transition self-start"
           >
             {showNewIntervention ? "Annuler" : "+ Planifier une intervention"}
           </button>
@@ -708,26 +708,26 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
         )}
 
         {showNewIntervention && (
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm space-y-3">
+          <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20 space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <input
                 type="text"
                 value={newIntTitle}
                 onChange={(e) => setNewIntTitle(e.target.value)}
                 placeholder="Titre de l'intervention"
-                className="sm:col-span-2 rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
+                className="sm:col-span-2 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
               />
               <textarea
                 value={newIntDesc}
                 onChange={(e) => setNewIntDesc(e.target.value)}
                 placeholder="Description (optionnelle)"
                 rows={2}
-                className="sm:col-span-2 rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
+                className="sm:col-span-2 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
               />
               <select
                 value={newIntTeamId}
                 onChange={(e) => setNewIntTeamId(e.target.value)}
-                className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
               >
                 <option value="">Équipe (aucune)</option>
                 {teamsData?.map((t) => (
@@ -737,7 +737,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
               <select
                 value={newIntAssignee}
                 onChange={(e) => setNewIntAssignee(e.target.value)}
-                className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
               >
                 <option value="">Assignée à (personne)</option>
                 {usersData?.users.map((u) => (
@@ -745,21 +745,21 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                 ))}
               </select>
               <div>
-                <label className="text-xs text-slate-500">Début</label>
+                <label className="text-xs text-slate-500 dark:text-slate-400">Début</label>
                 <input
                   type="datetime-local"
                   value={newIntStart}
                   onChange={(e) => setNewIntStart(e.target.value)}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
                 />
               </div>
               <div>
-                <label className="text-xs text-slate-500">Fin</label>
+                <label className="text-xs text-slate-500 dark:text-slate-400">Fin</label>
                 <input
                   type="datetime-local"
                   value={newIntEnd}
                   onChange={(e) => setNewIntEnd(e.target.value)}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
                 />
               </div>
             </div>
@@ -791,11 +791,11 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
               return (
                 <div
                   key={intervention.id}
-                  className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
+                  className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 shadow-sm dark:shadow-slate-950/20"
                 >
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center gap-2">
-                    <h4 className="font-medium text-sm text-slate-800">{intervention.title}</h4>
+                    <h4 className="font-medium text-sm text-slate-800 dark:text-slate-100">{intervention.title}</h4>
                     <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${
                       INTERVENTION_STATUS_COLORS[intervention.status] ?? ""
                     }`}>
@@ -831,7 +831,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                     )}
                   </div>
                 </div>
-                <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
                   {intervention.assignedTeamName && (
                     <span className="rounded bg-indigo-50 border border-indigo-200 text-indigo-700 px-1.5 py-0.5 text-xs">
                       {intervention.assignedTeamName}
@@ -858,19 +858,19 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                   )}
                 </div>
                 {intervention.description && (
-                  <p className="mt-1 text-xs text-slate-400">{intervention.description}</p>
+                  <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">{intervention.description}</p>
                 )}
 
                 {usedArticles.length > 0 && (
-                  <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-2">
-                    <div className="text-[11px] font-semibold text-slate-700 mb-1">
+                  <div className="mt-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-2">
+                    <div className="text-[11px] font-semibold text-slate-700 dark:text-slate-200 mb-1">
                       Articles liés à l&apos;intervention
                     </div>
                     <div className="space-y-1">
                       {usedArticles.map((item) => (
                         <div
                           key={item.articleId}
-                          className="flex flex-wrap items-center justify-between text-[11px] text-slate-600 gap-1"
+                          className="flex flex-wrap items-center justify-between text-[11px] text-slate-600 dark:text-slate-300 gap-1"
                         >
                           <span>
                             {item.articleName}
@@ -886,8 +886,8 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                   </div>
                 )}
 
-                <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-2">
-                  <div className="mb-1 text-[11px] font-semibold text-slate-700">
+                <div className="mt-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-2">
+                  <div className="mb-1 text-[11px] font-semibold text-slate-700 dark:text-slate-200">
                     Mouvement de stock sur cette intervention
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
@@ -904,7 +904,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                           }
                         }))
                       }
-                      className="rounded border border-slate-200 px-2 py-1 text-xs"
+                      className="rounded border border-slate-200 dark:border-slate-700 px-2 py-1 text-xs"
                     >
                       <option value="">Article</option>
                       {(articles ?? []).map((article) => (
@@ -926,7 +926,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                           }
                         }))
                       }
-                      className="rounded border border-slate-200 px-2 py-1 text-xs"
+                      className="rounded border border-slate-200 dark:border-slate-700 px-2 py-1 text-xs"
                     >
                       <option value="out">Consommation (-)</option>
                       <option value="in">Retour (+)</option>
@@ -947,7 +947,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                           }
                         }))
                       }
-                      className="rounded border border-slate-200 px-2 py-1 text-xs"
+                      className="rounded border border-slate-200 dark:border-slate-700 px-2 py-1 text-xs"
                       placeholder="Quantité"
                     />
                     <input
@@ -963,7 +963,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                           }
                         }))
                       }
-                      className="rounded border border-slate-200 px-2 py-1 text-xs"
+                      className="rounded border border-slate-200 dark:border-slate-700 px-2 py-1 text-xs"
                       placeholder="Note (optionnelle)"
                     />
                   </div>
@@ -1004,7 +1004,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
           </div>
         ) : (
           !showNewIntervention && (
-            <div className="text-sm text-slate-500">
+            <div className="text-sm text-slate-500 dark:text-slate-400">
               Aucune intervention planifiée pour ce dossier.
             </div>
           )

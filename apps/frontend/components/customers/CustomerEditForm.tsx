@@ -95,9 +95,9 @@ export function CustomerEditForm({ customer, onSubmit, onCancel, isPending, erro
     }
   };
 
-  const labelCls = "mb-1 block text-sm font-medium text-slate-700";
+  const labelCls = "mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200";
   const inputCls =
-    "w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500";
+    "w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500";
 
   const showError = localError || error;
 
@@ -118,7 +118,7 @@ export function CustomerEditForm({ customer, onSubmit, onCancel, isPending, erro
               className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition ${
                 kind === k
                   ? "border-brand-500 bg-brand-50 text-brand-800"
-                  : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                  : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
               }`}
             >
               {CUSTOMER_KIND_LABELS[k]}
@@ -178,8 +178,8 @@ export function CustomerEditForm({ customer, onSubmit, onCancel, isPending, erro
         />
       </div>
 
-      <details className="rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2">
-        <summary className="cursor-pointer text-sm font-medium text-slate-700">Adresse postale (optionnel)</summary>
+      <details className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80 px-3 py-2">
+        <summary className="cursor-pointer text-sm font-medium text-slate-700 dark:text-slate-200">Adresse postale (optionnel)</summary>
         <div className="mt-3 space-y-2">
           <input placeholder="Ligne 1" value={addrLine1} onChange={(e) => setAddrLine1(e.target.value)} className={inputCls} />
           <input placeholder="Ligne 2" value={addrLine2} onChange={(e) => setAddrLine2(e.target.value)} className={inputCls} />
@@ -213,7 +213,7 @@ export function CustomerEditForm({ customer, onSubmit, onCancel, isPending, erro
           type="button"
           onClick={onCancel}
           disabled={isPending}
-          className="rounded-lg border border-slate-200 px-5 py-2 text-sm text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+          className="rounded-lg border border-slate-200 dark:border-slate-700 px-5 py-2 text-sm text-slate-600 dark:text-slate-300 transition hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50"
         >
           Annuler
         </button>

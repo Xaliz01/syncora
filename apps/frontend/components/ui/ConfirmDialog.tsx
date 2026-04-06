@@ -73,12 +73,12 @@ function ConfirmDialogPanel({
         role="dialog"
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"
-        className="relative w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl ring-1 ring-slate-900/5"
+        className="relative w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl ring-1 ring-slate-900/5"
       >
         <div className={danger ? "flex gap-4 p-6" : "p-6"}>
           {danger && (
             <div
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-red-50 dark:bg-red-950/50 text-red-600 dark:text-red-400"
               aria-hidden
             >
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
@@ -91,17 +91,17 @@ function ConfirmDialogPanel({
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <h2 id="confirm-dialog-title" className="text-lg font-semibold tracking-tight text-slate-900">
+            <h2 id="confirm-dialog-title" className="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">
               {title}
             </h2>
             {description ? (
-              <div className="mt-2 text-sm leading-relaxed text-slate-600">{description}</div>
+              <div className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{description}</div>
             ) : null}
             <div className="mt-6 flex flex-wrap items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={onCancel}
-                className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:ring-offset-2"
+                className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-sm dark:shadow-slate-950/20 hover:bg-slate-50 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-slate-600 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
               >
                 {cancelLabel}
               </button>
@@ -111,8 +111,8 @@ function ConfirmDialogPanel({
                 onClick={onConfirm}
                 className={
                   danger
-                    ? "rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-                    : "rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+                    ? "rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm dark:shadow-slate-950/20 hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                    : "rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm dark:shadow-slate-950/20 hover:bg-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
                 }
               >
                 {confirmLabel}

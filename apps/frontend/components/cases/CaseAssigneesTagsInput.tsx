@@ -69,8 +69,8 @@ export function CaseAssigneesTagsInput({
   return (
     <div ref={rootRef} className={`relative ${className}`}>
       <div
-        className={`flex flex-wrap items-center gap-1.5 min-h-[42px] rounded-lg border border-slate-200 bg-white px-2 py-1.5 transition ${
-          disabled ? "bg-slate-50 opacity-80" : "focus-within:border-brand-500 focus-within:ring-1 focus-within:ring-brand-500"
+        className={`flex flex-wrap items-center gap-1.5 min-h-[42px] rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1.5 transition ${
+          disabled ? "bg-slate-50 dark:bg-slate-950 opacity-80" : "focus-within:border-brand-500 focus-within:ring-1 focus-within:ring-brand-500"
         }`}
         onClick={() => !disabled && inputRef.current?.focus()}
       >
@@ -89,7 +89,7 @@ export function CaseAssigneesTagsInput({
                     e.stopPropagation();
                     remove(id);
                   }}
-                  className="shrink-0 rounded p-0.5 text-brand-700 hover:bg-brand-100 focus:outline-none focus:ring-1 focus:ring-brand-400"
+                  className="shrink-0 rounded p-0.5 text-brand-700 dark:text-brand-400 hover:bg-brand-100 focus:outline-none focus:ring-1 focus:ring-brand-400"
                   aria-label={`Retirer ${label}`}
                 >
                   ×
@@ -116,17 +116,17 @@ export function CaseAssigneesTagsInput({
               }
             }}
             placeholder={value.length === 0 ? placeholder : "Ajouter…"}
-            className="flex-1 min-w-[8rem] border-0 bg-transparent py-1 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-0"
+            className="flex-1 min-w-[8rem] border-0 bg-transparent py-1 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 dark:text-slate-400 focus:outline-none focus:ring-0"
           />
         )}
       </div>
       {!disabled && open && suggestions.length > 0 && (
-        <div className="absolute z-20 mt-1 max-h-48 w-full overflow-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+        <div className="absolute z-20 mt-1 max-h-48 w-full overflow-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 py-1 shadow-lg">
           {suggestions.map((o) => (
             <button
               key={o.id}
               type="button"
-              className="flex w-full items-center px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+              className="flex w-full items-center px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => add(o.id)}
             >
@@ -136,7 +136,7 @@ export function CaseAssigneesTagsInput({
         </div>
       )}
       {!disabled && open && query.trim() && suggestions.length === 0 && (
-        <p className="absolute z-20 mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500 shadow-lg">
+        <p className="absolute z-20 mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs text-slate-500 dark:text-slate-400 shadow-lg">
           Aucun membre ne correspond.
         </p>
       )}

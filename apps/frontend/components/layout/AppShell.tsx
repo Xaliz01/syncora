@@ -7,6 +7,7 @@ import { useAuth } from "@/components/auth/AuthContext";
 import { hasActiveSubscriptionAccess } from "@/lib/subscription-access";
 import { OrganizationSwitcher } from "@/components/organization/OrganizationSwitcher";
 import { hasPermission } from "@/lib/auth-permissions";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 interface MenuLink {
   label: string;
@@ -53,8 +54,8 @@ function NavLink({
       onClick={onClick}
       className={`block rounded-md px-3 py-2 text-sm transition ${
         isActive
-          ? "bg-brand-600/10 text-brand-600 font-medium"
-          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+          ? "bg-brand-600/10 text-brand-600 dark:text-brand-400 font-medium"
+          : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100"
       }`}
     >
       {label}
@@ -75,7 +76,7 @@ function SidebarContent({
     <nav className="space-y-5 px-3 py-4">
       {menuSections.map((section) => (
         <section key={section.label}>
-          <h2 className="mb-1.5 px-3 text-[11px] uppercase tracking-wider font-semibold text-slate-400">
+          <h2 className="mb-1.5 px-3 text-[11px] uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-500">
             {section.label}
           </h2>
           <div className="space-y-0.5">
@@ -170,14 +171,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900">
-      <header className="sticky top-0 z-30 w-full border-b border-slate-200 bg-white/95 backdrop-blur">
+    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+      <header className="sticky top-0 z-30 w-full border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur">
         <div className="flex items-center justify-between px-4 py-3 lg:px-6">
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => setMobileMenuOpen((prev) => !prev)}
-              className="lg:hidden -ml-1 rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+              className="lg:hidden -ml-1 rounded-md p-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200"
               aria-label="Menu"
             >
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -194,7 +195,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </span>
               <div className="hidden sm:block">
                 <div className="font-semibold text-sm leading-tight">Syncora</div>
-                <div className="text-[11px] text-slate-500 leading-tight">CRM des opérations terrain</div>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+                  CRM des opérations terrain
+                </div>
               </div>
             </Link>
           </div>
@@ -208,7 +211,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               className="relative hidden sm:block"
             >
               <svg
-                className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400"
+                className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -225,19 +228,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Rechercher…"
-                className="w-48 lg:w-64 rounded-md border border-slate-200 bg-slate-50 py-1.5 pl-8 pr-3 text-sm text-slate-700 placeholder:text-slate-400 focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-brand-500 transition"
+                className="w-48 lg:w-64 rounded-md border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 py-1.5 pl-8 pr-3 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-brand-500 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-brand-500 transition"
               />
             </form>
-            <div className="hidden sm:flex items-center gap-2 text-sm text-slate-600">
+            <div className="hidden sm:flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
               <span className="font-medium">{user?.name ?? user?.email}</span>
-              <span className="rounded-full bg-brand-600/10 px-2 py-0.5 text-xs font-medium text-brand-600">
+              <span className="rounded-full bg-brand-600/10 px-2 py-0.5 text-xs font-medium text-brand-600 dark:text-brand-400">
                 {user?.role === "admin" ? "Administrateur" : "Membre"}
               </span>
             </div>
+            <ThemeToggle />
             <button
               type="button"
               onClick={logout}
-              className="rounded-md border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition"
+              className="rounded-md border border-slate-200 dark:border-slate-600 px-3 py-1.5 text-xs font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition"
             >
               Déconnexion
             </button>
@@ -247,7 +251,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <div className="flex flex-1">
         {/* Desktop sidebar */}
-        <aside className="hidden lg:flex lg:flex-col lg:w-[260px] lg:flex-shrink-0 border-r border-slate-200 bg-white sticky top-[57px] h-[calc(100vh-57px)] overflow-y-auto">
+        <aside className="hidden lg:flex lg:flex-col lg:w-[260px] lg:flex-shrink-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-[57px] h-[calc(100vh-57px)] overflow-y-auto">
           <OrganizationSwitcher />
           <SidebarContent menuSections={menuSections} pathname={pathname} />
         </aside>
@@ -259,14 +263,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               className="absolute inset-0 bg-slate-900/30 backdrop-blur-sm"
               onClick={() => setMobileMenuOpen(false)}
             />
-            <aside className="absolute top-0 left-0 bottom-0 w-[280px] bg-white shadow-xl overflow-y-auto">
-              <div className="flex items-center gap-2.5 border-b border-slate-200 px-4 py-3">
+            <aside className="absolute top-0 left-0 bottom-0 w-[280px] bg-white dark:bg-slate-900 shadow-xl overflow-y-auto border-r border-slate-200 dark:border-slate-800">
+              <div className="flex items-center gap-2.5 border-b border-slate-200 dark:border-slate-800 px-4 py-3">
                 <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white font-semibold text-sm">
                   S
                 </span>
                 <div>
                   <div className="font-semibold text-sm leading-tight">Syncora</div>
-                  <div className="text-[11px] text-slate-500 leading-tight">Espace organisation</div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">Espace organisation</div>
                 </div>
               </div>
               <OrganizationSwitcher />

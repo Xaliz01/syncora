@@ -17,7 +17,7 @@ import { useRouter } from "next/navigation";
 
 const STATUS_COLORS: Record<string, string> = {
   active: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  inactive: "bg-slate-100 text-slate-500 border-slate-200"
+  inactive: "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700"
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -136,7 +136,7 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-500">
+      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 text-sm text-slate-500 dark:text-slate-400">
         Chargement...
       </div>
     );
@@ -145,8 +145,8 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
   if (!team) {
     return (
       <div className="space-y-3">
-        <p className="text-slate-700">Équipe introuvable.</p>
-        <Link href="/fleet/teams" className="text-brand-600 hover:underline">
+        <p className="text-slate-700 dark:text-slate-200">Équipe introuvable.</p>
+        <Link href="/fleet/teams" className="text-brand-600 dark:text-brand-400 hover:underline">
           Retour à la liste
         </Link>
       </div>
@@ -166,7 +166,7 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-semibold mb-1">{team.name}</h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             Fiche équipe
             {agence ? ` — ${agence.name}` : ""}
           </p>
@@ -175,7 +175,7 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
           <button
             type="button"
             onClick={() => setIsEditing((p) => !p)}
-            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
           >
             {isEditing ? "Annuler" : "Modifier"}
           </button>
@@ -188,7 +188,7 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
           </button>
           <Link
             href="/fleet/teams"
-            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
           >
             Retour
           </Link>
@@ -202,52 +202,52 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
       )}
 
       {!isEditing ? (
-        <section className="rounded-xl border border-slate-200 bg-white p-4">
+        <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
           <h2 className="font-semibold mb-3">Informations</h2>
           <div className="grid gap-3 md:grid-cols-2 text-sm">
             <div>
-              <span className="text-slate-400">Nom</span>
+              <span className="text-slate-400 dark:text-slate-500">Nom</span>
               <p className="font-medium">{team.name}</p>
             </div>
             <div>
-              <span className="text-slate-400">Agence</span>
+              <span className="text-slate-400 dark:text-slate-500">Agence</span>
               <p>{agence ? agence.name : "—"}</p>
             </div>
             <div>
-              <span className="text-slate-400">Statut</span>
+              <span className="text-slate-400 dark:text-slate-500">Statut</span>
               <p>
                 <span
-                  className={`inline-flex rounded border px-2 py-0.5 text-xs ${STATUS_COLORS[team.status] ?? "bg-slate-50 text-slate-700 border-slate-200"}`}
+                  className={`inline-flex rounded border px-2 py-0.5 text-xs ${STATUS_COLORS[team.status] ?? "bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700"}`}
                 >
                   {STATUS_LABELS[team.status] ?? team.status}
                 </span>
               </p>
             </div>
             <div>
-              <span className="text-slate-400">Nombre de membres</span>
+              <span className="text-slate-400 dark:text-slate-500">Nombre de membres</span>
               <p>{team.technicianIds.length}</p>
             </div>
           </div>
         </section>
       ) : (
-        <section className="rounded-xl border border-slate-200 bg-white p-4 space-y-4">
+        <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 space-y-4">
           <h2 className="font-semibold">Modifier l&apos;équipe</h2>
           <div className="grid gap-3 md:grid-cols-2">
             <div>
-              <label className="block text-sm text-slate-500 mb-1">Nom</label>
+              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Nom</label>
               <input
                 type="text"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
               />
             </div>
             <div>
-              <label className="block text-sm text-slate-500 mb-1">Statut</label>
+              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Statut</label>
               <select
                 value={editStatus}
                 onChange={(e) => setEditStatus(e.target.value as TeamStatus)}
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
               >
                 {TEAM_STATUSES.map((s) => (
                   <option key={s} value={s}>
@@ -258,11 +258,11 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
             </div>
           </div>
           <div>
-            <label className="block text-sm text-slate-500 mb-1">Agence</label>
+            <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Agence</label>
             <select
               value={editAgenceId}
               onChange={(e) => setEditAgenceId(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900"
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
             >
               <option value="">Aucune agence</option>
               {agences.map((a) => (
@@ -286,26 +286,26 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
         </section>
       )}
 
-      <section className="rounded-xl border border-slate-200 bg-white p-4 space-y-4">
+      <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 space-y-4">
         <h2 className="font-semibold">Membres de l&apos;équipe</h2>
         {memberTechnicians.length === 0 ? (
-          <p className="text-sm text-slate-500">Aucun membre dans cette équipe.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Aucun membre dans cette équipe.</p>
         ) : (
           <div className="space-y-2">
             {memberTechnicians.map((tech) => (
               <div
                 key={tech.id}
-                className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm"
+                className="flex items-center justify-between rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-3 text-sm"
               >
                 <Link
                   href={`/fleet/technicians/${tech.id}`}
-                  className="font-medium text-brand-600 hover:underline"
+                  className="font-medium text-brand-600 dark:text-brand-400 hover:underline"
                 >
                   {tech.firstName} {tech.lastName}
                 </Link>
                 <div className="flex items-center gap-3">
                   {tech.speciality && (
-                    <span className="text-slate-400 text-xs">({tech.speciality})</span>
+                    <span className="text-slate-400 dark:text-slate-500 text-xs">({tech.speciality})</span>
                   )}
                   <button
                     type="button"
@@ -324,13 +324,13 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
         {availableTechnicians.length > 0 && (
           <div className="flex items-end gap-3">
             <div className="flex-1">
-              <label className="block text-sm text-slate-500 mb-1">
+              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">
                 Ajouter un technicien
               </label>
               <select
                 value={addTechnicianId}
                 onChange={(e) => setAddTechnicianId(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
               >
                 <option value="">Sélectionner un technicien</option>
                 {availableTechnicians.map((tech) => (
@@ -353,27 +353,27 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
         )}
       </section>
 
-      <section className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
+      <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 space-y-3">
         <h2 className="font-semibold">Véhicules affectés</h2>
         {vehicles.length === 0 ? (
-          <p className="text-sm text-slate-500">Aucun véhicule affecté à cette équipe.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Aucun véhicule affecté à cette équipe.</p>
         ) : (
           <div className="space-y-2">
             {vehicles.map((vehicle) => (
               <Link
                 key={vehicle.id}
                 href={`/fleet/vehicles/${vehicle.id}`}
-                className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm hover:bg-slate-100 transition"
+                className="flex items-center justify-between rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-3 text-sm hover:bg-slate-100 dark:bg-slate-800 transition"
               >
                 <div>
-                  <span className="font-medium text-brand-600">
+                  <span className="font-medium text-brand-600 dark:text-brand-400">
                     {vehicle.registrationNumber}
                   </span>
-                  <span className="ml-2 text-slate-500">
+                  <span className="ml-2 text-slate-500 dark:text-slate-400">
                     {[vehicle.brand, vehicle.model].filter(Boolean).join(" ") || vehicle.type}
                   </span>
                 </div>
-                <span className="text-xs text-slate-400">{vehicle.status}</span>
+                <span className="text-xs text-slate-400 dark:text-slate-500">{vehicle.status}</span>
               </Link>
             ))}
           </div>

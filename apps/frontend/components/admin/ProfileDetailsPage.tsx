@@ -89,19 +89,19 @@ export function ProfileDetailsPage({ profileId }: { profileId: string }) {
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-semibold mb-1">Fiche profil</h1>
-          <p className="text-sm text-slate-500 mt-1">Consultez ce profil de permissions.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Consultez ce profil de permissions.</p>
         </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => setIsEditing((previous) => !previous)}
-            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
           >
             {isEditing ? "Annuler" : "Modifier"}
           </button>
           <Link
             href="/settings/profiles"
-            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
           >
             Retour aux profils
           </Link>
@@ -114,33 +114,33 @@ export function ProfileDetailsPage({ profileId }: { profileId: string }) {
         </div>
       )}
 
-      <section className="rounded-xl border border-slate-200 bg-white p-4">
+      <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
         {loading ? (
-          <p className="text-sm text-slate-500">Chargement...</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Chargement...</p>
         ) : (
           <div className="space-y-4">
             {!isEditing ? (
               <>
                 <div className="grid gap-3 md:grid-cols-2 text-sm">
                   <div>
-                    <span className="text-slate-400">Nom</span>
-                    <p className="text-slate-700">{name}</p>
+                    <span className="text-slate-400 dark:text-slate-500">Nom</span>
+                    <p className="text-slate-700 dark:text-slate-200">{name}</p>
                   </div>
                   <div>
-                    <span className="text-slate-400">Description</span>
-                    <p className="text-slate-700">{description || "—"}</p>
+                    <span className="text-slate-400 dark:text-slate-500">Description</span>
+                    <p className="text-slate-700 dark:text-slate-200">{description || "—"}</p>
                   </div>
                 </div>
                 <div>
-                  <span className="text-sm text-slate-400">Permissions</span>
+                  <span className="text-sm text-slate-400 dark:text-slate-500">Permissions</span>
                   <div className="mt-2 grid gap-2 md:grid-cols-2">
                     {permissions.map((permission) => (
-                      <div key={permission} className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
-                        <div className="text-slate-700">{getPermissionLabel(permission)}</div>
-                        <div className="text-xs text-slate-400 font-mono">{permission}</div>
+                      <div key={permission} className="rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2">
+                        <div className="text-slate-700 dark:text-slate-200">{getPermissionLabel(permission)}</div>
+                        <div className="text-xs text-slate-400 dark:text-slate-500 font-mono">{permission}</div>
                       </div>
                     ))}
-                    {permissions.length === 0 && <p className="text-slate-500 text-sm">Aucune permission.</p>}
+                    {permissions.length === 0 && <p className="text-slate-500 dark:text-slate-400 text-sm">Aucune permission.</p>}
                   </div>
                 </div>
               </>
@@ -152,14 +152,14 @@ export function ProfileDetailsPage({ profileId }: { profileId: string }) {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
-                    className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900"
+                    className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
                   />
                   <input
                     type="text"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Description (optionnel)"
-                    className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900"
+                    className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
                   />
                 </div>
                 <div className="grid gap-2 md:grid-cols-2">
@@ -174,8 +174,8 @@ export function ProfileDetailsPage({ profileId }: { profileId: string }) {
                         }
                       />
                       <span>
-                        <span className="block text-slate-700">{getPermissionLabel(permission)}</span>
-                        <span className="block text-xs text-slate-400 font-mono">{permission}</span>
+                        <span className="block text-slate-700 dark:text-slate-200">{getPermissionLabel(permission)}</span>
+                        <span className="block text-xs text-slate-400 dark:text-slate-500 font-mono">{permission}</span>
                       </span>
                     </label>
                   ))}

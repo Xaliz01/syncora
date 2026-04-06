@@ -1,15 +1,35 @@
 "use client";
 
-import React from "react";
+import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as api from "@/lib/cases.api";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import {
+  filterListItems,
+  ListCellDefault,
+  ListCellMuted,
+  ListCellPrimary,
+  ListEmptyState,
+  ListLoadingState,
+  ListNoResults,
+  ListPageHeader,
+  ListPageRoot,
+  ListPrimaryAction,
+  ListRow,
+  ListSearchField,
+  ListTableShell,
+  ListToolbar
+} from "@/components/ui/list-page";
+
+const GRID = "md:grid-cols-[1.2fr_2fr_0.9fr_auto]";
 
 export function TemplatesListPage() {
   const queryClient = useQueryClient();
   const confirm = useConfirm();
-  const { data: templates, isLoading } = useQuery({
+  const [search, setSearch] = useState("");
+
+  const { data: templates = [], isLoading } = useQuery({
     queryKey: ["case-templates"],
     queryFn: () => api.listTemplates()
   });
@@ -19,80 +39,99 @@ export function TemplatesListPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["case-templates"] })
   });
 
+  const filtered = useMemo(
+    () =>
+      filterListItems(templates, search, (t) => [
+        t.name,
+        t.description,
+        String(t.steps.length),
+        String(t.steps.reduce((acc, s) => acc + s.todos.length, 0))
+      ]),
+    [templates, search]
+  );
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-semibold">Modèles de dossier</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Configurez des modèles avec étapes et tâches pour créer rapidement des dossiers typés.
-          </p>
-        </div>
-        <Link
-          href="/settings/case-templates/new"
-          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition self-start flex-shrink-0"
-        >
-          Nouveau modèle
-        </Link>
-      </div>
+    <ListPageRoot>
+      <ListPageHeader
+        title="Modèles de dossier"
+        description="Configurez des modèles avec étapes et tâches pour créer rapidement des dossiers typés."
+        action={<ListPrimaryAction href="/settings/case-templates/new">Nouveau modèle</ListPrimaryAction>}
+      />
+
+      <ListToolbar>
+        <ListSearchField value={search} onChange={setSearch} placeholder="Filtrer par nom ou description…" />
+      </ListToolbar>
 
       {isLoading ? (
-        <div className="text-sm text-slate-500">Chargement…</div>
-      ) : !templates?.length ? (
-        <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
-          <p className="text-slate-600 mb-2">Aucun modèle de dossier</p>
-          <p className="text-sm text-slate-500">
-            Créez votre premier modèle pour standardiser la gestion de vos dossiers.
-          </p>
-        </div>
+        <ListLoadingState />
+      ) : templates.length === 0 ? (
+        <ListEmptyState
+          message="Aucun modèle de dossier."
+          action={
+            <Link href="/settings/case-templates/new" className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium">
+              Créer un modèle
+            </Link>
+          }
+        />
+      ) : filtered.length === 0 ? (
+        <ListNoResults />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {templates.map((template) => (
-            <div
-              key={template.id}
-              className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition"
-            >
-              <Link href={`/settings/case-templates/${template.id}`} className="block">
-                <h3 className="font-semibold text-slate-800">{template.name}</h3>
-                {template.description && (
-                  <p className="mt-1 text-sm text-slate-500 line-clamp-2">{template.description}</p>
-                )}
-                <div className="mt-3 flex items-center gap-3 text-xs text-slate-400">
-                  <span>{template.steps.length} étape{template.steps.length !== 1 ? "s" : ""}</span>
-                  <span>
-                    {template.steps.reduce((acc, s) => acc + s.todos.length, 0)} tâche
-                    {template.steps.reduce((acc, s) => acc + s.todos.length, 0) !== 1 ? "s" : ""}
-                  </span>
+        <ListTableShell
+          gridTemplateClass={GRID}
+          headerCells={
+            <>
+              <span>Nom</span>
+              <span>Description</span>
+              <span>Structure</span>
+              <span className="text-right md:text-left">Actions</span>
+            </>
+          }
+        >
+          {filtered.map((template) => {
+            const todoCount = template.steps.reduce((acc, s) => acc + s.todos.length, 0);
+            return (
+              <ListRow key={template.id} gridTemplateClass={GRID}>
+                <ListCellPrimary>
+                  <Link href={`/settings/case-templates/${template.id}`} className="hover:underline">
+                    {template.name}
+                  </Link>
+                </ListCellPrimary>
+                <ListCellMuted className="line-clamp-2 md:line-clamp-2">
+                  {template.description || "—"}
+                </ListCellMuted>
+                <ListCellDefault>
+                  {template.steps.length} étape{template.steps.length !== 1 ? "s" : ""} · {todoCount} tâche
+                  {todoCount !== 1 ? "s" : ""}
+                </ListCellDefault>
+                <div className="flex flex-wrap gap-2 justify-end md:justify-start">
+                  <Link
+                    href={`/settings/case-templates/${template.id}`}
+                    className="text-xs text-brand-600 dark:text-brand-400 hover:text-brand-500 font-medium"
+                  >
+                    Modifier
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const ok = await confirm({
+                        title: "Supprimer ce modèle ?",
+                        description:
+                          "Les dossiers déjà créés à partir de ce modèle ne sont pas supprimés, mais le modèle ne sera plus disponible pour les nouveaux dossiers.",
+                        confirmLabel: "Supprimer le modèle",
+                        variant: "danger"
+                      });
+                      if (ok) deleteMutation.mutate(template.id);
+                    }}
+                    className="text-xs text-red-500 hover:text-red-600"
+                  >
+                    Supprimer
+                  </button>
                 </div>
-              </Link>
-              <div className="mt-3 flex gap-2 border-t border-slate-100 pt-3">
-                <Link
-                  href={`/settings/case-templates/${template.id}`}
-                  className="text-xs text-brand-600 hover:text-brand-500 font-medium"
-                >
-                  Modifier
-                </Link>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    const ok = await confirm({
-                      title: "Supprimer ce modèle ?",
-                      description:
-                        "Les dossiers déjà créés à partir de ce modèle ne sont pas supprimés, mais le modèle ne sera plus disponible pour les nouveaux dossiers.",
-                      confirmLabel: "Supprimer le modèle",
-                      variant: "danger"
-                    });
-                    if (ok) deleteMutation.mutate(template.id);
-                  }}
-                  className="text-xs text-red-500 hover:text-red-600"
-                >
-                  Supprimer
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+              </ListRow>
+            );
+          })}
+        </ListTableShell>
       )}
-    </div>
+    </ListPageRoot>
   );
 }

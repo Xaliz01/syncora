@@ -13,8 +13,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr" className="bg-slate-100 text-slate-900">
-      <body>
+    <html lang="fr" suppressHydrationWarning>
+      <body className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased dark:bg-slate-950 dark:text-slate-100">
         <Providers>{children}</Providers>
       </body>
     </html>

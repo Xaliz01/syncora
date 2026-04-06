@@ -150,7 +150,7 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
         <h1 className="text-xl sm:text-2xl font-semibold">
           {isEdit ? "Modifier le modèle" : "Nouveau modèle de dossier"}
         </h1>
-        <p className="text-sm text-slate-500 mt-1">
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
           Définissez les étapes et tâches qui seront automatiquement créées pour chaque dossier basé sur ce modèle.
         </p>
       </div>
@@ -162,28 +162,28 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="space-y-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/20">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
               Nom du modèle
             </label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
               placeholder="Ex: Dossier CEED, Audit énergétique…"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
               Description
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
               placeholder="Description optionnelle du modèle…"
             />
           </div>
@@ -191,11 +191,11 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
 
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <h2 className="text-lg font-semibold text-slate-800">Étapes</h2>
+            <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Étapes</h2>
             <button
               type="button"
               onClick={addStep}
-              className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 transition self-start"
+              className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:bg-slate-800 transition self-start"
             >
               + Ajouter une étape
             </button>
@@ -204,19 +204,19 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
           {steps.map((step, stepIdx) => (
             <div
               key={stepIdx}
-              className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm space-y-3"
+              className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20 space-y-3"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 space-y-2">
                   <div className="flex items-center gap-2">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-600/10 text-xs font-semibold text-brand-600">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-600/10 text-xs font-semibold text-brand-600 dark:text-brand-400">
                       {stepIdx + 1}
                     </span>
                     <input
                       type="text"
                       value={step.name}
                       onChange={(e) => updateStep(stepIdx, "name", e.target.value)}
-                      className="flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                      className="flex-1 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                       placeholder="Nom de l'étape"
                     />
                   </div>
@@ -224,7 +224,7 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
                     type="text"
                     value={step.description}
                     onChange={(e) => updateStep(stepIdx, "description", e.target.value)}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-xs focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                    className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-xs focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                     placeholder="Description de l'étape (optionnel)"
                   />
                 </div>
@@ -240,15 +240,15 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
               </div>
 
               <div className="ml-8 space-y-2">
-                <div className="text-xs font-medium text-slate-500">Tâches :</div>
+                <div className="text-xs font-medium text-slate-500 dark:text-slate-400">Tâches :</div>
                 {step.todos.map((todo, todoIdx) => (
                   <div key={todoIdx} className="flex items-center gap-2">
-                    <div className="h-3 w-3 rounded border border-slate-300 flex-shrink-0" />
+                    <div className="h-3 w-3 rounded border border-slate-300 dark:border-slate-600 flex-shrink-0" />
                     <input
                       type="text"
                       value={todo.label}
                       onChange={(e) => updateTodo(stepIdx, todoIdx, "label", e.target.value)}
-                      className="flex-1 rounded border border-slate-200 px-2 py-1 text-xs focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                      className="flex-1 rounded border border-slate-200 dark:border-slate-700 px-2 py-1 text-xs focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                       placeholder="Libellé de la tâche"
                     />
                     {step.todos.length > 1 && (
@@ -265,7 +265,7 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
                 <button
                   type="button"
                   onClick={() => addTodo(stepIdx)}
-                  className="text-xs text-brand-600 hover:text-brand-500 font-medium"
+                  className="text-xs text-brand-600 dark:text-brand-400 hover:text-brand-500 font-medium"
                 >
                   + Ajouter une tâche
                 </button>
@@ -285,7 +285,7 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
           <button
             type="button"
             onClick={() => router.push("/settings/case-templates")}
-            className="rounded-lg border border-slate-200 px-5 py-2 text-sm text-slate-600 hover:bg-slate-50 transition"
+            className="rounded-lg border border-slate-200 dark:border-slate-700 px-5 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
           >
             Annuler
           </button>

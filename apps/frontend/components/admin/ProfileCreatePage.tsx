@@ -65,13 +65,13 @@ export function ProfileCreatePage() {
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-semibold">Créer un profil</h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             Définissez un nouveau profil de permissions pour l&apos;organisation.
           </p>
         </div>
         <Link
           href="/settings/profiles"
-          className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 transition self-start flex-shrink-0"
+          className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition self-start flex-shrink-0"
         >
           Retour aux profils
         </Link>
@@ -83,9 +83,9 @@ export function ProfileCreatePage() {
         </div>
       )}
 
-      <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
+      <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 sm:p-5">
         {loading ? (
-          <p className="text-sm text-slate-500">Chargement...</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Chargement...</p>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-2">
@@ -95,14 +95,14 @@ export function ProfileCreatePage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
               />
               <input
                 type="text"
                 placeholder="Description (optionnel)"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
               />
             </div>
 
@@ -118,8 +118,8 @@ export function ProfileCreatePage() {
                     }
                   />
                   <span>
-                    <span className="block text-slate-700">{getPermissionLabel(permission)}</span>
-                    <span className="block text-xs text-slate-400 font-mono">{permission}</span>
+                    <span className="block text-slate-700 dark:text-slate-200">{getPermissionLabel(permission)}</span>
+                    <span className="block text-xs text-slate-400 dark:text-slate-500 font-mono">{permission}</span>
                   </span>
                 </label>
               ))}

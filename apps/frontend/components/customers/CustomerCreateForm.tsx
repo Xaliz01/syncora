@@ -37,10 +37,10 @@ export function CustomerCreateForm({
   const [addrCity, setAddrCity] = useState("");
   const [addrCountry, setAddrCountry] = useState("FR");
 
-  const labelCls = compact ? "mb-0.5 block text-xs font-medium text-slate-600" : "mb-1 block text-sm font-medium text-slate-700";
+  const labelCls = compact ? "mb-0.5 block text-xs font-medium text-slate-600 dark:text-slate-300" : "mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200";
   const inputCls = compact
-    ? "w-full rounded-md border border-slate-200 px-2 py-1.5 text-sm"
-    : "w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500";
+    ? "w-full rounded-md border border-slate-200 dark:border-slate-700 px-2 py-1.5 text-sm"
+    : "w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500";
 
   const resetForm = () => {
     setNewKind("individual");
@@ -118,14 +118,14 @@ export function CustomerCreateForm({
     `rounded-lg border px-3 py-1.5 font-medium transition ${
       newKind === k
         ? "border-brand-500 bg-brand-50 text-brand-800"
-        : "border-slate-200 text-slate-600 hover:bg-slate-50"
+        : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
     } ${compact ? "text-xs" : "text-sm"}`;
 
   const formInner = (
     <>
       {compact && (
         <div className="flex items-center justify-between gap-2">
-          <span className="text-sm font-medium text-slate-800">Nouveau client</span>
+          <span className="text-sm font-medium text-slate-800 dark:text-slate-100">Nouveau client</span>
           {onCancel && (
             <button
               type="button"
@@ -133,7 +133,7 @@ export function CustomerCreateForm({
                 resetForm();
                 onCancel();
               }}
-              className="text-xs text-brand-600 hover:text-brand-500"
+              className="text-xs text-brand-600 dark:text-brand-400 hover:text-brand-500"
             >
               Retour à la liste
             </button>
@@ -207,11 +207,11 @@ export function CustomerCreateForm({
       <details
         className={
           compact
-            ? "rounded-md border border-slate-100 bg-slate-50/80 px-2 py-2"
-            : "rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2"
+            ? "rounded-md border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/80 px-2 py-2"
+            : "rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80 px-3 py-2"
         }
       >
-        <summary className={`cursor-pointer font-medium text-slate-700 ${compact ? "text-xs" : "text-sm"}`}>
+        <summary className={`cursor-pointer font-medium text-slate-700 dark:text-slate-200 ${compact ? "text-xs" : "text-sm"}`}>
           Adresse postale (optionnel)
         </summary>
         <div className="mt-2 space-y-2">
@@ -274,7 +274,7 @@ export function CustomerCreateForm({
                 resetForm();
                 onCancel();
               }}
-              className="rounded-lg border border-slate-200 px-5 py-2 text-sm text-slate-600 transition hover:bg-slate-50"
+              className="rounded-lg border border-slate-200 dark:border-slate-700 px-5 py-2 text-sm text-slate-600 dark:text-slate-300 transition hover:bg-slate-50 dark:hover:bg-slate-800"
             >
               Annuler
             </button>

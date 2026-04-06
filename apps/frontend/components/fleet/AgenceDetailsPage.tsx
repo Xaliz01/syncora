@@ -85,7 +85,7 @@ export function AgenceDetailsPage({ agenceId }: { agenceId: string }) {
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-500">
+      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 text-sm text-slate-500 dark:text-slate-400">
         Chargement...
       </div>
     );
@@ -94,8 +94,8 @@ export function AgenceDetailsPage({ agenceId }: { agenceId: string }) {
   if (!agence) {
     return (
       <div className="space-y-3">
-        <p className="text-slate-700">Agence introuvable.</p>
-        <Link href="/fleet/agences" className="text-brand-600 hover:underline">
+        <p className="text-slate-700 dark:text-slate-200">Agence introuvable.</p>
+        <Link href="/fleet/agences" className="text-brand-600 dark:text-brand-400 hover:underline">
           Retour à la liste
         </Link>
       </div>
@@ -107,7 +107,7 @@ export function AgenceDetailsPage({ agenceId }: { agenceId: string }) {
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-semibold mb-1">{agence.name}</h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             Fiche agence
             {agence.city ? ` — ${agence.city}` : ""}
           </p>
@@ -116,7 +116,7 @@ export function AgenceDetailsPage({ agenceId }: { agenceId: string }) {
           <button
             type="button"
             onClick={() => setIsEditing((p) => !p)}
-            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
           >
             {isEditing ? "Annuler" : "Modifier"}
           </button>
@@ -129,7 +129,7 @@ export function AgenceDetailsPage({ agenceId }: { agenceId: string }) {
           </button>
           <Link
             href="/fleet/agences"
-            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
           >
             Retour
           </Link>
@@ -143,80 +143,80 @@ export function AgenceDetailsPage({ agenceId }: { agenceId: string }) {
       )}
 
       {!isEditing ? (
-        <section className="rounded-xl border border-slate-200 bg-white p-4">
+        <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
           <h2 className="font-semibold mb-3">Informations</h2>
           <div className="grid gap-3 md:grid-cols-2 text-sm">
             <div>
-              <span className="text-slate-400">Nom</span>
+              <span className="text-slate-400 dark:text-slate-500">Nom</span>
               <p className="font-medium">{agence.name}</p>
             </div>
             <div>
-              <span className="text-slate-400">Adresse</span>
+              <span className="text-slate-400 dark:text-slate-500">Adresse</span>
               <p>{agence.address || "—"}</p>
             </div>
             <div>
-              <span className="text-slate-400">Ville</span>
+              <span className="text-slate-400 dark:text-slate-500">Ville</span>
               <p>{agence.city || "—"}</p>
             </div>
             <div>
-              <span className="text-slate-400">Code postal</span>
+              <span className="text-slate-400 dark:text-slate-500">Code postal</span>
               <p>{agence.postalCode || "—"}</p>
             </div>
             <div>
-              <span className="text-slate-400">Téléphone</span>
+              <span className="text-slate-400 dark:text-slate-500">Téléphone</span>
               <p>{agence.phone || "—"}</p>
             </div>
           </div>
         </section>
       ) : (
-        <section className="rounded-xl border border-slate-200 bg-white p-4 space-y-4">
+        <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 space-y-4">
           <h2 className="font-semibold">Modifier l&apos;agence</h2>
           <div className="grid gap-3 md:grid-cols-2">
             <div>
-              <label className="block text-sm text-slate-500 mb-1">Nom</label>
+              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Nom</label>
               <input
                 type="text"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
               />
             </div>
             <div>
-              <label className="block text-sm text-slate-500 mb-1">Téléphone</label>
+              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Téléphone</label>
               <input
                 type="tel"
                 value={editPhone}
                 onChange={(e) => setEditPhone(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
               />
             </div>
           </div>
           <div>
-            <label className="block text-sm text-slate-500 mb-1">Adresse</label>
+            <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Adresse</label>
             <input
               type="text"
               value={editAddress}
               onChange={(e) => setEditAddress(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900"
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
             />
           </div>
           <div className="grid gap-3 md:grid-cols-2">
             <div>
-              <label className="block text-sm text-slate-500 mb-1">Ville</label>
+              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Ville</label>
               <input
                 type="text"
                 value={editCity}
                 onChange={(e) => setEditCity(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
               />
             </div>
             <div>
-              <label className="block text-sm text-slate-500 mb-1">Code postal</label>
+              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Code postal</label>
               <input
                 type="text"
                 value={editPostalCode}
                 onChange={(e) => setEditPostalCode(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
               />
             </div>
           </div>
@@ -233,20 +233,20 @@ export function AgenceDetailsPage({ agenceId }: { agenceId: string }) {
         </section>
       )}
 
-      <section className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
+      <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 space-y-3">
         <h2 className="font-semibold">Équipes rattachées</h2>
         {teams.length === 0 ? (
-          <p className="text-sm text-slate-500">Aucune équipe rattachée à cette agence.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Aucune équipe rattachée à cette agence.</p>
         ) : (
           <div className="space-y-2">
             {teams.map((team) => (
               <Link
                 key={team.id}
                 href={`/fleet/teams/${team.id}`}
-                className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm hover:bg-slate-100 transition"
+                className="flex items-center justify-between rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-3 text-sm hover:bg-slate-100 dark:bg-slate-800 transition"
               >
-                <span className="font-medium text-brand-600">{team.name}</span>
-                <span className="text-xs text-slate-400">
+                <span className="font-medium text-brand-600 dark:text-brand-400">{team.name}</span>
+                <span className="text-xs text-slate-400 dark:text-slate-500">
                   {team.technicianIds.length} membre{team.technicianIds.length !== 1 ? "s" : ""}
                 </span>
               </Link>

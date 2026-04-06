@@ -99,7 +99,7 @@ export function UserDetailsPage({ userId }: { userId: string }) {
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-500">
+      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 text-sm text-slate-500 dark:text-slate-400">
         Chargement de la fiche utilisateur...
       </div>
     );
@@ -108,8 +108,8 @@ export function UserDetailsPage({ userId }: { userId: string }) {
   if (!user) {
     return (
       <div className="space-y-3">
-        <p className="text-slate-700">Utilisateur introuvable.</p>
-        <Link href="/users" className="text-brand-600 hover:underline">
+        <p className="text-slate-700 dark:text-slate-200">Utilisateur introuvable.</p>
+        <Link href="/users" className="text-brand-600 dark:text-brand-400 hover:underline">
           Retour à la liste
         </Link>
       </div>
@@ -121,8 +121,8 @@ export function UserDetailsPage({ userId }: { userId: string }) {
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-semibold mb-1">Fiche utilisateur</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Détail de <span className="font-medium text-slate-700">{user.email}</span>.
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            Détail de <span className="font-medium text-slate-700 dark:text-slate-200">{user.email}</span>.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -130,14 +130,14 @@ export function UserDetailsPage({ userId }: { userId: string }) {
             <button
               type="button"
               onClick={() => setIsEditing((previous) => !previous)}
-              className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+              className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
             >
               {isEditing ? "Annuler" : "Modifier"}
             </button>
           )}
           <Link
             href="/users"
-            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
           >
             Retour à la liste
           </Link>
@@ -150,37 +150,37 @@ export function UserDetailsPage({ userId }: { userId: string }) {
         </div>
       )}
 
-      <section className="rounded-xl border border-slate-200 bg-white p-4">
+      <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
         <div className="grid gap-2 md:grid-cols-2 text-sm">
           <div>
-            <span className="text-slate-400">Nom</span>
+            <span className="text-slate-400 dark:text-slate-500">Nom</span>
             <p>{user.name ?? "—"}</p>
           </div>
           <div>
-            <span className="text-slate-400">Email</span>
+            <span className="text-slate-400 dark:text-slate-500">Email</span>
             <p>{user.email}</p>
           </div>
           <div>
-            <span className="text-slate-400">Rôle</span>
+            <span className="text-slate-400 dark:text-slate-500">Rôle</span>
             <p>{ROLE_LABELS[user.role] ?? user.role}</p>
           </div>
           <div>
-            <span className="text-slate-400">Statut</span>
+            <span className="text-slate-400 dark:text-slate-500">Statut</span>
             <p>{USER_STATUS_LABELS[user.status] ?? user.status}</p>
           </div>
         </div>
       </section>
 
-      <section className="rounded-xl border border-slate-200 bg-white p-4">
+      <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
         <h2 className="font-semibold mb-2">Permissions actuelles</h2>
         <div className="flex flex-wrap gap-2">
           {user.permissions.map((permission) => (
             <div
               key={permission}
-              className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1 text-xs"
+              className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-1 text-xs"
             >
-              <div className="text-slate-800">{getPermissionLabel(permission)}</div>
-              <div className="text-slate-500 font-mono">{permission}</div>
+              <div className="text-slate-800 dark:text-slate-100">{getPermissionLabel(permission)}</div>
+              <div className="text-slate-500 dark:text-slate-400 font-mono">{permission}</div>
             </div>
           ))}
         </div>
@@ -192,26 +192,26 @@ export function UserDetailsPage({ userId }: { userId: string }) {
           pas être modifiés.
         </section>
       ) : (
-        <section className="rounded-xl border border-slate-200 bg-white p-4 space-y-4">
+        <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 space-y-4">
           <h2 className="font-semibold">Affectation</h2>
 
           {!isEditing ? (
             <div className="space-y-3 text-sm">
               <div>
-                <span className="text-slate-400">Profil</span>
-                <p className="text-slate-700">{selectedProfileName}</p>
+                <span className="text-slate-400 dark:text-slate-500">Profil</span>
+                <p className="text-slate-700 dark:text-slate-200">{selectedProfileName}</p>
               </div>
               <div>
-                <span className="text-slate-400">Permissions ciblées</span>
+                <span className="text-slate-400 dark:text-slate-500">Permissions ciblées</span>
                 <div className="mt-2 grid gap-2 md:grid-cols-2">
                   {selectedPermissions.map((permission) => (
-                    <div key={permission} className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
-                      <div className="text-slate-700">{getPermissionLabel(permission)}</div>
-                      <div className="text-xs text-slate-400 font-mono">{permission}</div>
+                    <div key={permission} className="rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2">
+                      <div className="text-slate-700 dark:text-slate-200">{getPermissionLabel(permission)}</div>
+                      <div className="text-xs text-slate-400 dark:text-slate-500 font-mono">{permission}</div>
                     </div>
                   ))}
                   {selectedPermissions.length === 0 && (
-                    <p className="text-slate-500">Aucune permission ciblée.</p>
+                    <p className="text-slate-500 dark:text-slate-400">Aucune permission ciblée.</p>
                   )}
                 </div>
               </div>
@@ -219,7 +219,7 @@ export function UserDetailsPage({ userId }: { userId: string }) {
           ) : (
             <>
               <div>
-                <label className="block text-sm text-slate-500 mb-1">Profil affecté</label>
+                <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Profil affecté</label>
                 <select
                   value={profileId}
                   onChange={(e) => {
@@ -229,7 +229,7 @@ export function UserDetailsPage({ userId }: { userId: string }) {
                       profiles.find((profile) => profile.id === nextProfileId)?.permissions ?? [];
                     setSelectedPermissions(profilePermissions);
                   }}
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900"
+                  className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
                 >
                   <option value="">Aucun profil</option>
                   {profiles.map((profile) => (
@@ -238,13 +238,13 @@ export function UserDetailsPage({ userId }: { userId: string }) {
                     </option>
                   ))}
                 </select>
-                <p className="mt-1 text-xs text-slate-400">
+                <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
                   Profil sélectionné : {selectedProfileName}
                 </p>
               </div>
 
               <div>
-                <p className="text-sm font-medium text-slate-700 mb-2">Permissions</p>
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">Permissions</p>
                 <div className="grid gap-2 md:grid-cols-2">
                   {catalog.map((permission) => (
                     <label key={permission} className="flex items-start gap-2 text-sm">
@@ -257,8 +257,8 @@ export function UserDetailsPage({ userId }: { userId: string }) {
                         }
                       />
                       <span>
-                        <span className="block text-slate-700">{getPermissionLabel(permission)}</span>
-                        <span className="block text-xs text-slate-400 font-mono">{permission}</span>
+                        <span className="block text-slate-700 dark:text-slate-200">{getPermissionLabel(permission)}</span>
+                        <span className="block text-xs text-slate-400 dark:text-slate-500 font-mono">{permission}</span>
                       </span>
                     </label>
                   ))}
