@@ -9,6 +9,8 @@ import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
 import type {
   AuthUser,
+  CaseAssignee,
+  CaseCustomerRef,
   CreateCaseBody,
   CreateCaseTemplateBody,
   CreateInterventionBody,
@@ -16,12 +18,15 @@ import type {
   CaseResponse,
   CaseSummaryResponse,
   CaseTemplateResponse,
+  CustomerResponse,
   InterventionResponse,
   UpdateCaseBody,
   UpdateCaseTemplateBody,
   UpdateInterventionBody,
-  UpdateTodoBody
+  UpdateTodoBody,
+  UserResponse
 } from "@syncora/shared";
+import { AbstractCustomersGatewayService } from "./ports/customers.service.port";
 import {
   AbstractCasesGatewayService,
   type CreateCaseForOrgBody,
@@ -35,10 +40,14 @@ import {
 
 const CASES_URL =
   process.env.CASES_SERVICE_URL ?? "http://localhost:3004";
+const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
 
 @Injectable()
 export class CasesGatewayService extends AbstractCasesGatewayService {
-  constructor(private readonly httpService: HttpService) {
+  constructor(
+    private readonly httpService: HttpService,
+    private readonly customersGateway: AbstractCustomersGatewayService
+  ) {
     super();
   }
 
@@ -93,21 +102,33 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
   // ── Cases ──
 
   async createCase(user: AuthUser, body: CreateCaseForOrgBody) {
-    return this.callCasesService<CaseResponse>({
+    const { assigneeIds, customerId, ...rest } = body;
+    if (customerId?.trim()) {
+      await this.customersGateway.getCustomer(user, customerId.trim());
+    }
+    let assignees: CaseAssignee[] | undefined;
+    if (assigneeIds !== undefined) {
+      assignees = await this.resolveCaseAssigneesForWrite(user.organizationId, assigneeIds);
+    }
+
+    const created = await this.callCasesService<CaseResponse>({
       method: "post",
       path: "/cases",
       body: {
         organizationId: user.organizationId,
-        ...body
+        ...rest,
+        ...(customerId?.trim() ? { customerId: customerId.trim() } : {}),
+        ...(assignees !== undefined ? { assignees } : {})
       } as CreateCaseBody
     });
+    return this.enrichCaseResponse(user, created);
   }
 
   async listCases(
     user: AuthUser,
     filters?: { status?: string; assigneeId?: string; priority?: string; search?: string }
   ) {
-    return this.callCasesService<CaseSummaryResponse[]>({
+    const rows = await this.callCasesService<CaseSummaryResponse[]>({
       method: "get",
       path: "/cases",
       query: {
@@ -115,25 +136,44 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
         ...filters
       }
     });
+    return this.enrichCaseSummaries(user, rows);
   }
 
   async getCase(user: AuthUser, caseId: string) {
-    return this.callCasesService<CaseResponse>({
+    const row = await this.callCasesService<CaseResponse>({
       method: "get",
       path: `/cases/${caseId}`,
       query: { organizationId: user.organizationId }
     });
+    return this.enrichCaseResponse(user, row);
   }
 
   async updateCase(user: AuthUser, caseId: string, body: UpdateCaseForOrgBody) {
-    return this.callCasesService<CaseResponse>({
+    if (
+      body.customerId !== undefined &&
+      body.customerId !== null &&
+      body.customerId.trim()
+    ) {
+      await this.customersGateway.getCustomer(user, body.customerId.trim());
+    }
+    const casesBody = {
+      organizationId: user.organizationId,
+      ...body
+    } as UpdateCaseBody;
+
+    if (Object.prototype.hasOwnProperty.call(body, "assigneeIds")) {
+      casesBody.assignees = await this.resolveCaseAssigneesForWrite(
+        user.organizationId,
+        body.assigneeIds ?? []
+      );
+    }
+
+    const updated = await this.callCasesService<CaseResponse>({
       method: "patch",
       path: `/cases/${caseId}`,
-      body: {
-        organizationId: user.organizationId,
-        ...body
-      } as UpdateCaseBody
+      body: casesBody
     });
+    return this.enrichCaseResponse(user, updated);
   }
 
   async deleteCase(user: AuthUser, caseId: string) {
@@ -145,7 +185,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
   }
 
   async updateTodo(user: AuthUser, caseId: string, body: UpdateTodoForOrgBody) {
-    return this.callCasesService<CaseResponse>({
+    const row = await this.callCasesService<CaseResponse>({
       method: "put",
       path: `/cases/${caseId}/todos`,
       body: {
@@ -153,6 +193,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
         ...body
       } as UpdateTodoBody
     });
+    return this.enrichCaseResponse(user, row);
   }
 
   // ── Interventions ──
@@ -176,6 +217,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       startDate?: string;
       endDate?: string;
       status?: string;
+      unscheduled?: string;
     }
   ) {
     return this.callCasesService<InterventionResponse[]>({
@@ -218,7 +260,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
   // ── Dashboard ──
 
   async getDashboard(user: AuthUser) {
-    return this.callCasesService<CaseDashboardResponse>({
+    const dash = await this.callCasesService<CaseDashboardResponse>({
       method: "get",
       path: "/dashboard",
       query: {
@@ -226,6 +268,81 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
         userId: user.id
       }
     });
+    const [assignedCases, overdueCases] = await Promise.all([
+      this.enrichCaseSummaries(user, dash.assignedCases),
+      this.enrichCaseSummaries(user, dash.overdueCases)
+    ]);
+    return { ...dash, assignedCases, overdueCases };
+  }
+
+  private toCaseCustomerRef(c: CustomerResponse): CaseCustomerRef {
+    return { id: c.id, displayName: c.displayName, kind: c.kind };
+  }
+
+  private async enrichCaseSummaries(
+    user: AuthUser,
+    rows: CaseSummaryResponse[]
+  ): Promise<CaseSummaryResponse[]> {
+    const ids = [...new Set(rows.map((r) => r.customerId).filter(Boolean))] as string[];
+    if (ids.length === 0) return rows;
+    const customers = await this.customersGateway.listCustomersByIds(user, ids);
+    const map = new Map(customers.map((c) => [c.id, c]));
+    return rows.map((r) => {
+      const c = r.customerId ? map.get(r.customerId) : undefined;
+      return { ...r, customer: c ? this.toCaseCustomerRef(c) : undefined };
+    });
+  }
+
+  private async enrichCaseResponse(user: AuthUser, row: CaseResponse): Promise<CaseResponse> {
+    if (!row.customerId) return { ...row, customer: undefined };
+    try {
+      const c = await this.customersGateway.getCustomer(user, row.customerId);
+      return { ...row, customer: this.toCaseCustomerRef(c) };
+    } catch {
+      return { ...row, customer: undefined };
+    }
+  }
+
+  private async resolveCaseAssigneesForWrite(
+    organizationId: string,
+    assigneeIds: string[]
+  ): Promise<CaseAssignee[]> {
+    const ids = [...new Set(assigneeIds.map((id) => id.trim()).filter(Boolean))];
+    const assignees: CaseAssignee[] = [];
+    for (const id of ids) {
+      const user = await this.callUsersService<UserResponse>({
+        method: "get",
+        path: `/users/${id}`
+      });
+      if (user.organizationId !== organizationId) {
+        throw new ForbiddenException(
+          "Un utilisateur assigné n'appartient pas à cette organisation"
+        );
+      }
+      assignees.push({ userId: id, name: user.name?.trim() || user.email });
+    }
+    return assignees;
+  }
+
+  private async callUsersService<T>(params: {
+    method: "get" | "post" | "patch" | "put" | "delete";
+    path: string;
+    body?: unknown;
+    query?: Record<string, unknown>;
+  }): Promise<T> {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.request<T>({
+          method: params.method,
+          url: `${USERS_URL}${params.path}`,
+          data: params.body,
+          params: params.query
+        })
+      );
+      return response.data;
+    } catch (err: unknown) {
+      this.rethrowAsHttpException(err);
+    }
   }
 
   private async callCasesService<T>(params: {

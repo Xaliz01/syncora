@@ -6,12 +6,13 @@ import {
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import type { VehicleDocument } from "../persistence/vehicle.schema";
-import type {
-  CreateVehicleBody,
-  UpdateVehicleBody,
-  VehicleResponse,
-  VehicleStatus,
-  VehicleType
+import {
+  activeDocumentFilter,
+  type CreateVehicleBody,
+  type UpdateVehicleBody,
+  type VehicleResponse,
+  type VehicleStatus,
+  type VehicleType
 } from "@syncora/shared";
 import { AbstractFleetService } from "./ports/fleet.service.port";
 
@@ -28,7 +29,8 @@ export class FleetService extends AbstractFleetService {
     const existing = await this.vehicleModel
       .findOne({
         organizationId: body.organizationId,
-        registrationNumber: body.registrationNumber
+        registrationNumber: body.registrationNumber,
+        ...activeDocumentFilter
       })
       .exec();
     if (existing) {
@@ -54,8 +56,10 @@ export class FleetService extends AbstractFleetService {
     vehicleId: string,
     body: UpdateVehicleBody
   ): Promise<VehicleResponse> {
-    const doc = await this.vehicleModel.findById(vehicleId).exec();
-    if (!doc || doc.organizationId !== organizationId) {
+    const doc = await this.vehicleModel
+      .findOne({ _id: vehicleId, organizationId, ...activeDocumentFilter })
+      .exec();
+    if (!doc) {
       throw new NotFoundException("Véhicule introuvable");
     }
     if (body.registrationNumber && body.registrationNumber !== doc.registrationNumber) {
@@ -63,7 +67,8 @@ export class FleetService extends AbstractFleetService {
         .findOne({
           organizationId,
           registrationNumber: body.registrationNumber,
-          _id: { $ne: vehicleId }
+          _id: { $ne: vehicleId },
+          ...activeDocumentFilter
         })
         .exec();
       if (dup) {
@@ -84,8 +89,10 @@ export class FleetService extends AbstractFleetService {
   }
 
   async getVehicle(organizationId: string, vehicleId: string): Promise<VehicleResponse> {
-    const doc = await this.vehicleModel.findById(vehicleId).exec();
-    if (!doc || doc.organizationId !== organizationId) {
+    const doc = await this.vehicleModel
+      .findOne({ _id: vehicleId, organizationId, ...activeDocumentFilter })
+      .exec();
+    if (!doc) {
       throw new NotFoundException("Véhicule introuvable");
     }
     return this.toVehicleResponse(doc);
@@ -93,18 +100,22 @@ export class FleetService extends AbstractFleetService {
 
   async listVehicles(organizationId: string): Promise<VehicleResponse[]> {
     const docs = await this.vehicleModel
-      .find({ organizationId })
+      .find({ organizationId, ...activeDocumentFilter })
       .sort({ createdAt: -1 })
       .exec();
     return docs.map((doc) => this.toVehicleResponse(doc));
   }
 
   async deleteVehicle(organizationId: string, vehicleId: string): Promise<{ deleted: true }> {
-    const doc = await this.vehicleModel.findById(vehicleId).exec();
-    if (!doc || doc.organizationId !== organizationId) {
+    const result = await this.vehicleModel
+      .updateOne(
+        { _id: vehicleId, organizationId, ...activeDocumentFilter },
+        { $set: { deletedAt: new Date() } }
+      )
+      .exec();
+    if (!result.matchedCount) {
       throw new NotFoundException("Véhicule introuvable");
     }
-    await doc.deleteOne();
     return { deleted: true };
   }
 
@@ -113,8 +124,10 @@ export class FleetService extends AbstractFleetService {
     vehicleId: string,
     teamId: string
   ): Promise<VehicleResponse> {
-    const vehicle = await this.vehicleModel.findById(vehicleId).exec();
-    if (!vehicle || vehicle.organizationId !== organizationId) {
+    const vehicle = await this.vehicleModel
+      .findOne({ _id: vehicleId, organizationId, ...activeDocumentFilter })
+      .exec();
+    if (!vehicle) {
       throw new NotFoundException("Véhicule introuvable");
     }
     vehicle.assignedTeamId = teamId;
@@ -126,8 +139,10 @@ export class FleetService extends AbstractFleetService {
     organizationId: string,
     vehicleId: string
   ): Promise<VehicleResponse> {
-    const vehicle = await this.vehicleModel.findById(vehicleId).exec();
-    if (!vehicle || vehicle.organizationId !== organizationId) {
+    const vehicle = await this.vehicleModel
+      .findOne({ _id: vehicleId, organizationId, ...activeDocumentFilter })
+      .exec();
+    if (!vehicle) {
       throw new NotFoundException("Véhicule introuvable");
     }
     vehicle.assignedTeamId = undefined;

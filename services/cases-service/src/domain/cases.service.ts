@@ -1,23 +1,21 @@
-import {
-  ConflictException,
-  Injectable,
-  NotFoundException
-} from "@nestjs/common";
+import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model, Types } from "mongoose";
-import type {
-  CreateCaseBody,
-  CreateCaseTemplateBody,
-  CreateInterventionBody,
-  CaseDashboardResponse,
-  CaseResponse,
-  CaseSummaryResponse,
-  CaseTemplateResponse,
-  InterventionResponse,
-  UpdateCaseBody,
-  UpdateCaseTemplateBody,
-  UpdateInterventionBody,
-  UpdateTodoBody
+import {
+  activeDocumentFilter,
+  type CaseAssignee,
+  type CaseResponse,
+  type CaseSummaryResponse,
+  type CreateCaseBody,
+  type CreateCaseTemplateBody,
+  type CreateInterventionBody,
+  type CaseDashboardResponse,
+  type CaseTemplateResponse,
+  type InterventionResponse,
+  type UpdateCaseBody,
+  type UpdateCaseTemplateBody,
+  type UpdateInterventionBody,
+  type UpdateTodoBody
 } from "@syncora/shared";
 import type { CaseTemplateDocument } from "../persistence/case-template.schema";
 import type { CaseDocument } from "../persistence/case.schema";
@@ -63,14 +61,16 @@ export class CasesService extends AbstractCasesService {
 
   async listTemplates(organizationId: string): Promise<CaseTemplateResponse[]> {
     const docs = await this.templateModel
-      .find({ organizationId })
+      .find({ organizationId, ...activeDocumentFilter })
       .sort({ createdAt: 1 })
       .exec();
     return docs.map((d) => this.toTemplateResponse(d));
   }
 
   async getTemplate(id: string, organizationId: string): Promise<CaseTemplateResponse> {
-    const doc = await this.templateModel.findOne({ _id: id, organizationId }).exec();
+    const doc = await this.templateModel
+      .findOne({ _id: id, organizationId, ...activeDocumentFilter })
+      .exec();
     if (!doc) throw new NotFoundException("Template not found");
     return this.toTemplateResponse(doc);
   }
@@ -90,7 +90,7 @@ export class CasesService extends AbstractCasesService {
     try {
       const doc = await this.templateModel
         .findOneAndUpdate(
-          { _id: id, organizationId: body.organizationId },
+          { _id: id, organizationId: body.organizationId, ...activeDocumentFilter },
           { $set: update },
           { new: true }
         )
@@ -106,8 +106,13 @@ export class CasesService extends AbstractCasesService {
   }
 
   async deleteTemplate(id: string, organizationId: string): Promise<{ deleted: true }> {
-    const result = await this.templateModel.deleteOne({ _id: id, organizationId }).exec();
-    if (!result.deletedCount) throw new NotFoundException("Template not found");
+    const result = await this.templateModel
+      .updateOne(
+        { _id: id, organizationId, ...activeDocumentFilter },
+        { $set: { deletedAt: new Date() } }
+      )
+      .exec();
+    if (!result.matchedCount) throw new NotFoundException("Template not found");
     return { deleted: true };
   }
 
@@ -118,7 +123,11 @@ export class CasesService extends AbstractCasesService {
 
     if (body.templateId) {
       const template = await this.templateModel
-        .findOne({ _id: body.templateId, organizationId: body.organizationId })
+        .findOne({
+          _id: body.templateId,
+          organizationId: body.organizationId,
+          ...activeDocumentFilter
+        })
         .exec();
       if (!template) throw new NotFoundException("Case template not found");
       steps = template.steps.map((s) => ({
@@ -138,10 +147,11 @@ export class CasesService extends AbstractCasesService {
     const doc = await this.caseModel.create({
       organizationId: body.organizationId,
       templateId: body.templateId,
+      customerId: body.customerId?.trim() || undefined,
       title: body.title,
       description: body.description,
       priority: body.priority ?? "medium",
-      assigneeId: body.assigneeId,
+      assignees: body.assignees ?? [],
       dueDate: body.dueDate ? new Date(body.dueDate) : undefined,
       tags: body.tags ?? [],
       steps,
@@ -160,9 +170,14 @@ export class CasesService extends AbstractCasesService {
       search?: string;
     }
   ): Promise<CaseSummaryResponse[]> {
-    const query: Record<string, unknown> = { organizationId };
+    const query: Record<string, unknown> = { organizationId, ...activeDocumentFilter };
     if (filters?.status) query.status = filters.status;
-    if (filters?.assigneeId) query.assigneeId = filters.assigneeId;
+    if (filters?.assigneeId) {
+      query.$or = [
+        { assignees: { $elemMatch: { userId: filters.assigneeId } } },
+        { assigneeId: filters.assigneeId }
+      ];
+    }
     if (filters?.priority) query.priority = filters.priority;
     if (filters?.search) {
       query.title = { $regex: filters.search, $options: "i" };
@@ -177,25 +192,36 @@ export class CasesService extends AbstractCasesService {
   }
 
   async getCase(id: string, organizationId: string): Promise<CaseResponse> {
-    const doc = await this.caseModel.findOne({ _id: id, organizationId }).exec();
+    const doc = await this.caseModel
+      .findOne({ _id: id, organizationId, ...activeDocumentFilter })
+      .exec();
     if (!doc) throw new NotFoundException("Case not found");
     return this.toCaseResponse(doc);
   }
 
   async updateCase(id: string, body: UpdateCaseBody): Promise<CaseResponse> {
-    const update: Record<string, unknown> = {};
-    if (body.title !== undefined) update.title = body.title;
-    if (body.description !== undefined) update.description = body.description;
-    if (body.status !== undefined) update.status = body.status;
-    if (body.priority !== undefined) update.priority = body.priority;
-    if (body.assigneeId !== undefined) update.assigneeId = body.assigneeId;
-    if (body.dueDate !== undefined) update.dueDate = body.dueDate ? new Date(body.dueDate) : null;
-    if (body.tags !== undefined) update.tags = body.tags;
+    const setUpdate: Record<string, unknown> = {};
+    if (body.title !== undefined) setUpdate.title = body.title;
+    if (body.description !== undefined) setUpdate.description = body.description;
+    if (body.status !== undefined) setUpdate.status = body.status;
+    if (body.priority !== undefined) setUpdate.priority = body.priority;
+    if (body.assignees !== undefined) setUpdate.assignees = body.assignees;
+    if (body.dueDate !== undefined) setUpdate.dueDate = body.dueDate ? new Date(body.dueDate) : null;
+    if (body.tags !== undefined) setUpdate.tags = body.tags;
+    if (body.customerId !== undefined) {
+      setUpdate.customerId =
+        body.customerId === null ? null : body.customerId.trim() || undefined;
+    }
+
+    const mongoUpdate: Record<string, unknown> = { $set: setUpdate };
+    if (body.assignees !== undefined) {
+      mongoUpdate.$unset = { assigneeId: "", assigneeName: "" };
+    }
 
     const doc = await this.caseModel
       .findOneAndUpdate(
-        { _id: id, organizationId: body.organizationId },
-        { $set: update },
+        { _id: id, organizationId: body.organizationId, ...activeDocumentFilter },
+        mongoUpdate,
         { new: true }
       )
       .exec();
@@ -204,15 +230,26 @@ export class CasesService extends AbstractCasesService {
   }
 
   async deleteCase(id: string, organizationId: string): Promise<{ deleted: true }> {
-    const result = await this.caseModel.deleteOne({ _id: id, organizationId }).exec();
-    if (!result.deletedCount) throw new NotFoundException("Case not found");
-    await this.interventionModel.deleteMany({ caseId: id, organizationId }).exec();
+    const now = new Date();
+    const result = await this.caseModel
+      .updateOne(
+        { _id: id, organizationId, ...activeDocumentFilter },
+        { $set: { deletedAt: now } }
+      )
+      .exec();
+    if (!result.matchedCount) throw new NotFoundException("Case not found");
+    await this.interventionModel
+      .updateMany(
+        { caseId: id, organizationId, ...activeDocumentFilter },
+        { $set: { deletedAt: now } }
+      )
+      .exec();
     return { deleted: true };
   }
 
   async updateTodo(caseId: string, body: UpdateTodoBody): Promise<CaseResponse> {
     const doc = await this.caseModel
-      .findOne({ _id: caseId, organizationId: body.organizationId })
+      .findOne({ _id: caseId, organizationId: body.organizationId, ...activeDocumentFilter })
       .exec();
     if (!doc) throw new NotFoundException("Case not found");
 
@@ -241,7 +278,11 @@ export class CasesService extends AbstractCasesService {
 
   async createIntervention(body: CreateInterventionBody): Promise<InterventionResponse> {
     const caseDoc = await this.caseModel
-      .findOne({ _id: body.caseId, organizationId: body.organizationId })
+      .findOne({
+        _id: body.caseId,
+        organizationId: body.organizationId,
+        ...activeDocumentFilter
+      })
       .exec();
     if (!caseDoc) throw new NotFoundException("Case not found");
 
@@ -258,7 +299,7 @@ export class CasesService extends AbstractCasesService {
     });
 
     await this.caseModel.updateOne(
-      { _id: body.caseId },
+      { _id: body.caseId, ...activeDocumentFilter },
       { $inc: { interventionCount: 1 } }
     );
 
@@ -274,14 +315,17 @@ export class CasesService extends AbstractCasesService {
       startDate?: string;
       endDate?: string;
       status?: string;
+      unscheduled?: boolean;
     }
   ): Promise<InterventionResponse[]> {
-    const query: Record<string, unknown> = { organizationId };
+    const query: Record<string, unknown> = { organizationId, ...activeDocumentFilter };
     if (filters?.caseId) query.caseId = filters.caseId;
     if (filters?.assigneeId) query.assigneeId = filters.assigneeId;
     if (filters?.assignedTeamId) query.assignedTeamId = filters.assignedTeamId;
     if (filters?.status) query.status = filters.status;
-    if (filters?.startDate || filters?.endDate) {
+    if (filters?.unscheduled) {
+      query.$or = [{ scheduledStart: null }, { scheduledStart: { $exists: false } }];
+    } else if (filters?.startDate || filters?.endDate) {
       const dateFilter: Record<string, unknown> = {};
       if (filters?.startDate) dateFilter.$gte = new Date(filters.startDate);
       if (filters?.endDate) dateFilter.$lte = new Date(filters.endDate);
@@ -295,7 +339,7 @@ export class CasesService extends AbstractCasesService {
 
     const caseIds = [...new Set(docs.map((d) => d.caseId))];
     const cases = await this.caseModel
-      .find({ _id: { $in: caseIds } })
+      .find({ _id: { $in: caseIds }, ...activeDocumentFilter })
       .select("_id title")
       .exec();
     const caseMap = new Map(cases.map((c) => [c._id.toString(), c.title]));
@@ -306,9 +350,14 @@ export class CasesService extends AbstractCasesService {
   }
 
   async getIntervention(id: string, organizationId: string): Promise<InterventionResponse> {
-    const doc = await this.interventionModel.findOne({ _id: id, organizationId }).exec();
+    const doc = await this.interventionModel
+      .findOne({ _id: id, organizationId, ...activeDocumentFilter })
+      .exec();
     if (!doc) throw new NotFoundException("Intervention not found");
-    const caseDoc = await this.caseModel.findById(doc.caseId).select("title").exec();
+    const caseDoc = await this.caseModel
+      .findOne({ _id: doc.caseId, ...activeDocumentFilter })
+      .select("title")
+      .exec();
     return this.toInterventionResponse(doc, caseDoc?.title);
   }
 
@@ -329,22 +378,28 @@ export class CasesService extends AbstractCasesService {
 
     const doc = await this.interventionModel
       .findOneAndUpdate(
-        { _id: id, organizationId: body.organizationId },
+        { _id: id, organizationId: body.organizationId, ...activeDocumentFilter },
         { $set: update },
         { new: true }
       )
       .exec();
     if (!doc) throw new NotFoundException("Intervention not found");
-    const caseDoc = await this.caseModel.findById(doc.caseId).select("title").exec();
+    const caseDoc = await this.caseModel
+      .findOne({ _id: doc.caseId, ...activeDocumentFilter })
+      .select("title")
+      .exec();
     return this.toInterventionResponse(doc, caseDoc?.title);
   }
 
   async deleteIntervention(id: string, organizationId: string): Promise<{ deleted: true }> {
-    const doc = await this.interventionModel.findOne({ _id: id, organizationId }).exec();
+    const doc = await this.interventionModel
+      .findOne({ _id: id, organizationId, ...activeDocumentFilter })
+      .exec();
     if (!doc) throw new NotFoundException("Intervention not found");
-    await doc.deleteOne();
+    const now = new Date();
+    await this.interventionModel.updateOne({ _id: id }, { $set: { deletedAt: now } });
     await this.caseModel.updateOne(
-      { _id: doc.caseId },
+      { _id: doc.caseId, ...activeDocumentFilter },
       { $inc: { interventionCount: -1 } }
     );
     return { deleted: true };
@@ -358,18 +413,22 @@ export class CasesService extends AbstractCasesService {
     startOfWeek.setDate(now.getDate() - now.getDay() + 1);
     startOfWeek.setHours(0, 0, 0, 0);
 
+    const assignedToUser = {
+      organizationId,
+      ...activeDocumentFilter,
+      status: { $nin: ["completed", "cancelled"] },
+      $or: [
+        { assignees: { $elemMatch: { userId } } },
+        { assigneeId: userId }
+      ]
+    };
+
     const [assignedCases, upcomingInterventions, completedThisWeek] = await Promise.all([
-      this.caseModel
-        .find({
-          organizationId,
-          assigneeId: userId,
-          status: { $nin: ["completed", "cancelled"] }
-        })
-        .sort({ priority: -1, dueDate: 1 })
-        .exec(),
+      this.caseModel.find(assignedToUser).sort({ priority: -1, dueDate: 1 }).exec(),
       this.interventionModel
         .find({
           organizationId,
+          ...activeDocumentFilter,
           $or: [{ assigneeId: userId }, { assigneeId: { $exists: false } }],
           scheduledStart: { $gte: now },
           status: { $ne: "cancelled" }
@@ -379,9 +438,13 @@ export class CasesService extends AbstractCasesService {
         .exec(),
       this.caseModel.countDocuments({
         organizationId,
-        assigneeId: userId,
+        ...activeDocumentFilter,
         status: "completed",
-        updatedAt: { $gte: startOfWeek }
+        updatedAt: { $gte: startOfWeek },
+        $or: [
+          { assignees: { $elemMatch: { userId } } },
+          { assigneeId: userId }
+        ]
       })
     ]);
 
@@ -391,7 +454,7 @@ export class CasesService extends AbstractCasesService {
 
     const caseIds = [...new Set(upcomingInterventions.map((i) => i.caseId))];
     const cases = await this.caseModel
-      .find({ _id: { $in: caseIds } })
+      .find({ _id: { $in: caseIds }, ...activeDocumentFilter })
       .select("_id title")
       .exec();
     const caseMap = new Map(cases.map((c) => [c._id.toString(), c.title]));
@@ -465,17 +528,33 @@ export class CasesService extends AbstractCasesService {
     };
   }
 
+  private resolveAssignees(doc: CaseDocument): CaseAssignee[] {
+    const list = doc.assignees ?? [];
+    if (list.length > 0) {
+      return list.map((a) => ({ userId: a.userId, name: a.name }));
+    }
+    if (doc.assigneeId) {
+      return [
+        {
+          userId: doc.assigneeId,
+          name: doc.assigneeName?.trim() || doc.assigneeId
+        }
+      ];
+    }
+    return [];
+  }
+
   private toCaseResponse(doc: CaseDocument): CaseResponse {
     return {
       id: doc._id.toString(),
       organizationId: doc.organizationId,
       templateId: doc.templateId,
+      customerId: doc.customerId,
       title: doc.title,
       description: doc.description,
       status: doc.status,
       priority: doc.priority,
-      assigneeId: doc.assigneeId,
-      assigneeName: doc.assigneeName,
+      assignees: this.resolveAssignees(doc),
       dueDate: doc.dueDate?.toISOString(),
       tags: doc.tags ?? [],
       steps: (doc.steps ?? []).map((s) => ({
@@ -503,11 +582,11 @@ export class CasesService extends AbstractCasesService {
     return {
       id: doc._id.toString(),
       organizationId: doc.organizationId,
+      customerId: doc.customerId,
       title: doc.title,
       status: doc.status,
       priority: doc.priority,
-      assigneeId: doc.assigneeId,
-      assigneeName: doc.assigneeName,
+      assignees: this.resolveAssignees(doc),
       dueDate: doc.dueDate?.toISOString(),
       tags: doc.tags ?? [],
       progress: this.computeProgress(doc),

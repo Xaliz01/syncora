@@ -1,6 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getModelToken } from "@nestjs/mongoose";
 import { NotFoundException, BadRequestException } from "@nestjs/common";
+import { activeDocumentFilter } from "@syncora/shared";
 import { TechniciansService } from "../technicians.service";
 
 describe("TechniciansService", () => {
@@ -8,8 +9,8 @@ describe("TechniciansService", () => {
   let mockTechnicianModel: {
     create: jest.Mock;
     findOne: jest.Mock;
-    findById: jest.Mock;
     find: jest.Mock;
+    updateOne: jest.Mock;
   };
 
   const mockTechnicianDoc = (overrides: Record<string, unknown> = {}) => ({
@@ -26,7 +27,6 @@ describe("TechniciansService", () => {
       key === "createdAt" ? new Date("2025-01-01") : key === "updatedAt" ? new Date("2025-01-02") : undefined
     ),
     save: jest.fn().mockResolvedValue(undefined),
-    deleteOne: jest.fn().mockResolvedValue({ deletedCount: 1 }),
     ...overrides
   });
 
@@ -39,8 +39,10 @@ describe("TechniciansService", () => {
     mockTechnicianModel = {
       create: jest.fn(),
       findOne: jest.fn().mockReturnValue({ exec: execMock }),
-      findById: jest.fn().mockReturnValue({ exec: execMock }),
-      find: jest.fn().mockReturnValue(findChain)
+      find: jest.fn().mockReturnValue(findChain),
+      updateOne: jest.fn().mockReturnValue({
+        exec: jest.fn().mockResolvedValue({ matchedCount: 1, modifiedCount: 1 })
+      })
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -97,18 +99,22 @@ describe("TechniciansService", () => {
   describe("getTechnician", () => {
     it("should return technician when found and org matches", async () => {
       const doc = mockTechnicianDoc({ organizationId: "org-1" });
-      mockTechnicianModel.findById.mockReturnValue({
+      mockTechnicianModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(doc)
       });
 
       const result = await service.getTechnician("org-1", "tech-123");
 
-      expect(mockTechnicianModel.findById).toHaveBeenCalledWith("tech-123");
+      expect(mockTechnicianModel.findOne).toHaveBeenCalledWith({
+        _id: "tech-123",
+        organizationId: "org-1",
+        ...activeDocumentFilter
+      });
       expect(result.id).toBe("tech-123");
     });
 
     it("should throw NotFoundException when technician not found", async () => {
-      mockTechnicianModel.findById.mockReturnValue({
+      mockTechnicianModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(null)
       });
 
@@ -116,9 +122,8 @@ describe("TechniciansService", () => {
     });
 
     it("should throw NotFoundException when org does not match", async () => {
-      const doc = mockTechnicianDoc({ organizationId: "other-org" });
-      mockTechnicianModel.findById.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(doc)
+      mockTechnicianModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null)
       });
 
       await expect(service.getTechnician("org-1", "tech-123")).rejects.toThrow(NotFoundException);
@@ -137,29 +142,29 @@ describe("TechniciansService", () => {
 
       const result = await service.listTechnicians("org-1");
 
-      expect(mockTechnicianModel.find).toHaveBeenCalledWith({ organizationId: "org-1" });
+      expect(mockTechnicianModel.find).toHaveBeenCalledWith({
+        organizationId: "org-1",
+        ...activeDocumentFilter
+      });
       expect(mockTechnicianModel.find().sort).toHaveBeenCalledWith({ createdAt: -1 });
       expect(result).toHaveLength(2);
     });
   });
 
   describe("deleteTechnician", () => {
-    it("should delete technician when found and org matches", async () => {
-      const doc = mockTechnicianDoc({ organizationId: "org-1" });
-      mockTechnicianModel.findById.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(doc)
-      });
-
+    it("should soft-delete technician when found and org matches", async () => {
       const result = await service.deleteTechnician("org-1", "tech-123");
 
-      expect(mockTechnicianModel.findById).toHaveBeenCalledWith("tech-123");
-      expect(doc.deleteOne).toHaveBeenCalled();
+      expect(mockTechnicianModel.updateOne).toHaveBeenCalledWith(
+        { _id: "tech-123", organizationId: "org-1", ...activeDocumentFilter },
+        { $set: { deletedAt: expect.any(Date) } }
+      );
       expect(result).toEqual({ deleted: true });
     });
 
     it("should throw NotFoundException when technician not found", async () => {
-      mockTechnicianModel.findById.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(null)
+      mockTechnicianModel.updateOne.mockReturnValueOnce({
+        exec: jest.fn().mockResolvedValue({ matchedCount: 0, modifiedCount: 0 })
       });
 
       await expect(service.deleteTechnician("org-1", "non-existent")).rejects.toThrow(
@@ -168,9 +173,8 @@ describe("TechniciansService", () => {
     });
 
     it("should throw NotFoundException when org does not match", async () => {
-      const doc = mockTechnicianDoc({ organizationId: "other-org" });
-      mockTechnicianModel.findById.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(doc)
+      mockTechnicianModel.updateOne.mockReturnValueOnce({
+        exec: jest.fn().mockResolvedValue({ matchedCount: 0, modifiedCount: 0 })
       });
 
       await expect(service.deleteTechnician("org-1", "tech-123")).rejects.toThrow(NotFoundException);
@@ -180,7 +184,7 @@ describe("TechniciansService", () => {
   describe("linkUserToTechnician", () => {
     it("should link user when technician has no userId", async () => {
       const doc = mockTechnicianDoc({ userId: undefined });
-      mockTechnicianModel.findById.mockReturnValue({
+      mockTechnicianModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(doc)
       });
 
@@ -193,7 +197,7 @@ describe("TechniciansService", () => {
 
     it("should throw BadRequestException when technician already has userId", async () => {
       const doc = mockTechnicianDoc({ userId: "existing-user" });
-      mockTechnicianModel.findById.mockReturnValue({
+      mockTechnicianModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(doc)
       });
 
@@ -204,7 +208,7 @@ describe("TechniciansService", () => {
     });
 
     it("should throw NotFoundException when technician not found", async () => {
-      mockTechnicianModel.findById.mockReturnValue({
+      mockTechnicianModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(null)
       });
 

@@ -138,8 +138,14 @@ export function CasesListPage() {
                   </div>
 
                   <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
-                    {c.assigneeName && (
-                      <span>Assigné à : {c.assigneeName}</span>
+                    {c.customer?.displayName && (
+                      <span className="font-medium text-slate-600">Client : {c.customer.displayName}</span>
+                    )}
+                    {c.assignees.length > 0 && (
+                      <span>
+                        Assigné{c.assignees.length > 1 ? "s" : ""} :{" "}
+                        {c.assignees.map((a) => a.name).join(", ")}
+                      </span>
                     )}
                     {c.dueDate && (
                       <span>

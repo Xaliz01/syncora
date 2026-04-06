@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "@/lib/cases.api";
 import { listOrganizationUsers } from "@/lib/admin.api";
+import { CaseAssigneesTagsInput } from "@/components/cases/CaseAssigneesTagsInput";
+import { CaseCustomerPicker } from "@/components/cases/CaseCustomerPicker";
 import type { CasePriority } from "@syncora/shared";
 
 export function CaseCreatePage() {
@@ -25,9 +27,10 @@ export function CaseCreatePage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<CasePriority>("medium");
-  const [assigneeId, setAssigneeId] = useState("");
+  const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
   const [dueDate, setDueDate] = useState("");
   const [tagsInput, setTagsInput] = useState("");
+  const [customerId, setCustomerId] = useState("");
   const [error, setError] = useState("");
 
   const createMutation = useMutation({
@@ -41,6 +44,15 @@ export function CaseCreatePage() {
 
   const selectedTemplate = templates?.find((t) => t.id === templateId);
 
+  const assigneeOptions = useMemo(
+    () =>
+      (usersData?.users ?? []).map((u) => ({
+        id: u.id,
+        label: u.name?.trim() || u.email
+      })),
+    [usersData?.users]
+  );
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -53,17 +65,18 @@ export function CaseCreatePage() {
       title: title.trim(),
       description: description.trim() || undefined,
       priority,
-      assigneeId: assigneeId || undefined,
+      assigneeIds: assigneeIds.length > 0 ? assigneeIds : undefined,
       dueDate: dueDate || undefined,
       tags: tagsInput
         .split(",")
         .map((t) => t.trim())
-        .filter(Boolean)
+        .filter(Boolean),
+      customerId: customerId.trim() || undefined
     });
   };
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-6">
       <div>
         <h1 className="text-xl sm:text-2xl font-semibold">Nouveau dossier</h1>
         <p className="text-sm text-slate-500 mt-1">
@@ -153,20 +166,32 @@ export function CaseCreatePage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Assigné à</label>
-            <select
-              value={assigneeId}
-              onChange={(e) => setAssigneeId(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
-            >
-              <option value="">Non assigné</option>
-              {usersData?.users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name ?? u.email}
-                </option>
-              ))}
-            </select>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Assignés (optionnel)
+            </label>
+            <p className="text-xs text-slate-500 mb-2">
+              Saisissez un nom ou un e-mail pour ajouter des membres sous forme de tags.
+            </p>
+            {assigneeOptions.length > 0 ? (
+              <CaseAssigneesTagsInput
+                options={assigneeOptions}
+                value={assigneeIds}
+                onChange={setAssigneeIds}
+                placeholder="Rechercher un membre à assigner…"
+              />
+            ) : (
+              <p className="text-xs text-slate-500 rounded-lg border border-dashed border-slate-200 px-3 py-2">
+                Aucun utilisateur dans l&apos;organisation.
+              </p>
+            )}
           </div>
+
+          <CaseCustomerPicker
+            idPrefix="case-create-customer"
+            value={customerId}
+            onChange={setCustomerId}
+            disabled={createMutation.isPending}
+          />
 
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">

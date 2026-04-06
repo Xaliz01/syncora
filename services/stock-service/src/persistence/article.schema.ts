@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document, Types } from "mongoose";
 
-@Schema({ timestamps: true, _id: true })
+@Schema({ timestamps: true, _id: true, collection: "articles" })
 export class ArticleDocument extends Document {
   declare _id: Types.ObjectId;
 
@@ -34,9 +34,15 @@ export class ArticleDocument extends Document {
 
   @Prop()
   lastMovementAt?: Date;
+
+  @Prop({ type: Date })
+  deletedAt?: Date | null;
 }
 
 export const ArticleSchema = SchemaFactory.createForClass(ArticleDocument);
-ArticleSchema.index({ organizationId: 1, reference: 1 }, { unique: true });
+ArticleSchema.index(
+  { organizationId: 1, reference: 1 },
+  { unique: true, partialFilterExpression: { deletedAt: null } }
+);
 ArticleSchema.index({ organizationId: 1, name: 1 });
 ArticleSchema.index({ organizationId: 1, stockQuantity: 1 });

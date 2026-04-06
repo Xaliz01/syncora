@@ -9,3 +9,8 @@ export interface OrganizationResponse {
   name: string;
   createdAt?: string;
 }
+
+/** Organisations accessibles pour la session en cours (JWT). Évoluera vers plusieurs entrées par utilisateur. */
+export interface UserOrganizationsListResponse {
+  organizations: OrganizationResponse[];
+}

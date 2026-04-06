@@ -1,8 +1,17 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getModelToken } from "@nestjs/mongoose";
 import { ConflictException, NotFoundException } from "@nestjs/common";
+import { activeDocumentFilter } from "@syncora/shared";
 import { CasesService } from "../cases.service";
 import { AbstractCasesService } from "../ports/cases.service.port";
+
+const updateChain = (result: Record<string, unknown> = { matchedCount: 1, modifiedCount: 1 }) => {
+  const p = Promise.resolve(result);
+  return {
+    exec: jest.fn().mockImplementation(() => p),
+    then: (fn?: (v: unknown) => unknown) => p.then(fn)
+  };
+};
 
 describe("CasesService", () => {
   let service: CasesService;
@@ -11,7 +20,7 @@ describe("CasesService", () => {
     find: jest.Mock;
     findOne: jest.Mock;
     findOneAndUpdate: jest.Mock;
-    deleteOne: jest.Mock;
+    updateOne: jest.Mock;
   };
   let mockCaseModel: {
     create: jest.Mock;
@@ -19,7 +28,6 @@ describe("CasesService", () => {
     findOne: jest.Mock;
     findOneAndUpdate: jest.Mock;
     findById: jest.Mock;
-    deleteOne: jest.Mock;
     updateOne: jest.Mock;
     countDocuments: jest.Mock;
   };
@@ -27,8 +35,8 @@ describe("CasesService", () => {
     create: jest.Mock;
     find: jest.Mock;
     findOne: jest.Mock;
-    deleteOne: jest.Mock;
-    deleteMany: jest.Mock;
+    updateOne: jest.Mock;
+    updateMany: jest.Mock;
   };
 
   const mockTemplateDoc = (overrides: Record<string, unknown> = {}) => ({
@@ -69,7 +77,6 @@ describe("CasesService", () => {
       key === "createdAt" ? new Date("2025-01-01") : key === "updatedAt" ? new Date("2025-01-02") : undefined
     ),
     save: jest.fn().mockResolvedValue(undefined),
-    deleteOne: jest.fn().mockResolvedValue({ deletedCount: 1 }),
     ...overrides
   });
 
@@ -86,7 +93,7 @@ describe("CasesService", () => {
       find: jest.fn().mockReturnValue(findChain),
       findOne: jest.fn().mockReturnValue({ exec: execMock }),
       findOneAndUpdate: jest.fn().mockReturnValue({ exec: execMock }),
-      deleteOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue({ deletedCount: 1 }) })
+      updateOne: jest.fn().mockImplementation(() => updateChain())
     };
 
     mockCaseModel = {
@@ -95,8 +102,7 @@ describe("CasesService", () => {
       findOne: jest.fn().mockReturnValue({ exec: execMock }),
       findOneAndUpdate: jest.fn().mockReturnValue({ exec: execMock }),
       findById: jest.fn().mockReturnValue({ exec: execMock }),
-      deleteOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue({ deletedCount: 1 }) }),
-      updateOne: jest.fn().mockResolvedValue({ modifiedCount: 1 }),
+      updateOne: jest.fn().mockImplementation(() => updateChain()),
       countDocuments: jest.fn().mockResolvedValue(0)
     };
 
@@ -104,8 +110,8 @@ describe("CasesService", () => {
       create: jest.fn(),
       find: jest.fn().mockReturnValue(findChain),
       findOne: jest.fn().mockReturnValue({ exec: execMock }),
-      deleteOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(undefined) }),
-      deleteMany: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue({ deletedCount: 0 }) })
+      updateOne: jest.fn().mockImplementation(() => updateChain()),
+      updateMany: jest.fn().mockImplementation(() => updateChain({ modifiedCount: 2 }))
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -167,7 +173,10 @@ describe("CasesService", () => {
 
       const result = await service.listTemplates("org-1");
 
-      expect(mockTemplateModel.find).toHaveBeenCalledWith({ organizationId: "org-1" });
+      expect(mockTemplateModel.find).toHaveBeenCalledWith({
+        organizationId: "org-1",
+        ...activeDocumentFilter
+      });
       expect(result).toHaveLength(2);
     });
   });
@@ -181,7 +190,11 @@ describe("CasesService", () => {
 
       const result = await service.getTemplate("tpl-123", "org-1");
 
-      expect(mockTemplateModel.findOne).toHaveBeenCalledWith({ _id: "tpl-123", organizationId: "org-1" });
+      expect(mockTemplateModel.findOne).toHaveBeenCalledWith({
+        _id: "tpl-123",
+        organizationId: "org-1",
+        ...activeDocumentFilter
+      });
       expect(result.id).toBe("tpl-123");
     });
 
@@ -195,21 +208,18 @@ describe("CasesService", () => {
   });
 
   describe("deleteTemplate", () => {
-    it("should delete template when found", async () => {
-      mockTemplateModel.deleteOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue({ deletedCount: 1 })
-      });
-
+    it("should soft-delete template when found", async () => {
       const result = await service.deleteTemplate("tpl-123", "org-1");
 
-      expect(mockTemplateModel.deleteOne).toHaveBeenCalledWith({ _id: "tpl-123", organizationId: "org-1" });
+      expect(mockTemplateModel.updateOne).toHaveBeenCalledWith(
+        { _id: "tpl-123", organizationId: "org-1", ...activeDocumentFilter },
+        { $set: { deletedAt: expect.any(Date) } }
+      );
       expect(result).toEqual({ deleted: true });
     });
 
     it("should throw NotFoundException when template not found", async () => {
-      mockTemplateModel.deleteOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue({ deletedCount: 0 })
-      });
+      mockTemplateModel.updateOne.mockImplementationOnce(() => updateChain({ matchedCount: 0, modifiedCount: 0 }));
 
       await expect(service.deleteTemplate("non-existent", "org-1")).rejects.toThrow(NotFoundException);
     });
@@ -252,7 +262,11 @@ describe("CasesService", () => {
 
       const result = await service.createCase(body);
 
-      expect(mockTemplateModel.findOne).toHaveBeenCalledWith({ _id: "tpl-123", organizationId: "org-1" });
+      expect(mockTemplateModel.findOne).toHaveBeenCalledWith({
+        _id: "tpl-123",
+        organizationId: "org-1",
+        ...activeDocumentFilter
+      });
       expect(mockCaseModel.create).toHaveBeenCalled();
       expect(result.id).toBe("case-123");
     });
@@ -270,8 +284,12 @@ describe("CasesService", () => {
       expect(mockCaseModel.find).toHaveBeenCalledWith(
         expect.objectContaining({
           organizationId: "org-1",
+          ...activeDocumentFilter,
           status: "draft",
-          assigneeId: "user-1"
+          $or: [
+            { assignees: { $elemMatch: { userId: "user-1" } } },
+            { assigneeId: "user-1" }
+          ]
         })
       );
       expect(result).toHaveLength(1);
@@ -287,7 +305,11 @@ describe("CasesService", () => {
 
       const result = await service.getCase("case-123", "org-1");
 
-      expect(mockCaseModel.findOne).toHaveBeenCalledWith({ _id: "case-123", organizationId: "org-1" });
+      expect(mockCaseModel.findOne).toHaveBeenCalledWith({
+        _id: "case-123",
+        organizationId: "org-1",
+        ...activeDocumentFilter
+      });
       expect(result.id).toBe("case-123");
     });
 
@@ -301,25 +323,22 @@ describe("CasesService", () => {
   });
 
   describe("deleteCase", () => {
-    it("should delete case and interventions", async () => {
-      mockCaseModel.deleteOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue({ deletedCount: 1 })
-      });
-      mockInterventionModel.deleteMany.mockReturnValue({
-        exec: jest.fn().mockResolvedValue({ deletedCount: 2 })
-      });
-
+    it("should soft-delete case and interventions", async () => {
       const result = await service.deleteCase("case-123", "org-1");
 
-      expect(mockCaseModel.deleteOne).toHaveBeenCalledWith({ _id: "case-123", organizationId: "org-1" });
-      expect(mockInterventionModel.deleteMany).toHaveBeenCalledWith({ caseId: "case-123", organizationId: "org-1" });
+      expect(mockCaseModel.updateOne).toHaveBeenCalledWith(
+        { _id: "case-123", organizationId: "org-1", ...activeDocumentFilter },
+        { $set: { deletedAt: expect.any(Date) } }
+      );
+      expect(mockInterventionModel.updateMany).toHaveBeenCalledWith(
+        { caseId: "case-123", organizationId: "org-1", ...activeDocumentFilter },
+        { $set: { deletedAt: expect.any(Date) } }
+      );
       expect(result).toEqual({ deleted: true });
     });
 
     it("should throw NotFoundException when case not found", async () => {
-      mockCaseModel.deleteOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue({ deletedCount: 0 })
-      });
+      mockCaseModel.updateOne.mockImplementationOnce(() => updateChain({ matchedCount: 0, modifiedCount: 0 }));
 
       await expect(service.deleteCase("non-existent", "org-1")).rejects.toThrow(NotFoundException);
     });
@@ -343,10 +362,14 @@ describe("CasesService", () => {
 
       const result = await service.createIntervention(body);
 
-      expect(mockCaseModel.findOne).toHaveBeenCalledWith({ _id: "case-123", organizationId: "org-1" });
+      expect(mockCaseModel.findOne).toHaveBeenCalledWith({
+        _id: "case-123",
+        organizationId: "org-1",
+        ...activeDocumentFilter
+      });
       expect(mockInterventionModel.create).toHaveBeenCalled();
       expect(mockCaseModel.updateOne).toHaveBeenCalledWith(
-        { _id: "case-123" },
+        { _id: "case-123", ...activeDocumentFilter },
         { $inc: { interventionCount: 1 } }
       );
       expect(result.id).toBe("int-123");
@@ -370,7 +393,7 @@ describe("CasesService", () => {
   });
 
   describe("deleteIntervention", () => {
-    it("should delete intervention and decrement case count", async () => {
+    it("should soft-delete intervention and decrement case count", async () => {
       const doc = mockInterventionDoc({ caseId: "case-123" });
       mockInterventionModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(doc)
@@ -378,9 +401,12 @@ describe("CasesService", () => {
 
       const result = await service.deleteIntervention("int-123", "org-1");
 
-      expect(doc.deleteOne).toHaveBeenCalled();
+      expect(mockInterventionModel.updateOne).toHaveBeenCalledWith(
+        { _id: "int-123" },
+        { $set: { deletedAt: expect.any(Date) } }
+      );
       expect(mockCaseModel.updateOne).toHaveBeenCalledWith(
-        { _id: "case-123" },
+        { _id: "case-123", ...activeDocumentFilter },
         { $inc: { interventionCount: -1 } }
       );
       expect(result).toEqual({ deleted: true });

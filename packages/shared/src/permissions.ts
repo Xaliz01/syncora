@@ -1,19 +1,34 @@
 /** Contrats API permissions-service (profils, invitations, affectations) */
 
-export const AVAILABLE_PERMISSION_CODES = [
+/** Droits configurables via profils et affectations (hors abonnement). */
+export const ASSIGNABLE_PERMISSION_CODES = [
   "users.read",
   "users.invite",
   "users.assign_profile",
   "users.manage_permissions",
-  "permission_profiles.read",
-  "permission_profiles.create",
-  "permission_profiles.update",
-  "permission_profiles.delete",
+  "profiles.read",
+  "profiles.create",
+  "profiles.update",
+  "profiles.delete",
   "cases.read",
   "cases.create",
   "cases.update",
   "cases.delete",
   "cases.assign",
+  "customers.read",
+  "customers.create",
+  "customers.update",
+  "customers.delete",
+  "fleet.vehicles.read",
+  "fleet.vehicles.create",
+  "fleet.vehicles.update",
+  "fleet.vehicles.delete",
+  "fleet.vehicles.assign",
+  "fleet.technicians.read",
+  "fleet.technicians.create",
+  "fleet.technicians.update",
+  "fleet.technicians.delete",
+  "fleet.technicians.create_user",
   "case_templates.read",
   "case_templates.create",
   "case_templates.update",
@@ -45,7 +60,16 @@ export const AVAILABLE_PERMISSION_CODES = [
   "stock.movements.read",
   "stock.movements.create",
   "stock.interventions.read",
-  "stock.interventions.create"
+  "stock.interventions.create",
+  "subscriptions.manage_billing"
+] as const;
+
+export type AssignablePermissionCode = (typeof ASSIGNABLE_PERMISSION_CODES)[number];
+
+/** Inclut les droits dérivés du contexte (ex. abonnement actif). */
+export const AVAILABLE_PERMISSION_CODES = [
+  ...ASSIGNABLE_PERMISSION_CODES,
+  "subscription.active"
 ] as const;
 
 export type PermissionCode = (typeof AVAILABLE_PERMISSION_CODES)[number];

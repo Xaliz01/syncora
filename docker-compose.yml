@@ -1,3 +1,9 @@
+# Datadog Agent (profil « datadog ») : traces APM et DogStatsD vers ton org Datadog.
+# Démarrage : docker compose --profile datadog up -d --wait
+# Ou : npm run backend:datadog
+# Prérequis : DD_API_KEY (env ou fichier .env à la racine). EU : DD_SITE=datadoghq.eu
+# Les services Node sur la machine hôte ciblent 127.0.0.1:8126 par défaut (dd-trace).
+
 services:
   mongodb:
     image: mongo:7
@@ -12,6 +18,32 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+
+  datadog-agent:
+    profiles: ["datadog"]
+    image: gcr.io/datadoghq/agent:7
+    container_name: syncora-datadog-agent
+    environment:
+      DD_API_KEY: ${DD_API_KEY:-}
+      DD_SITE: ${DD_SITE:-datadoghq.com}
+      DD_HOSTNAME: syncora-local
+      DD_APM_ENABLED: "true"
+      DD_APM_NON_LOCAL_TRAFFIC: "true"
+      DD_DOGSTATSD_NON_LOCAL_TRAFFIC: "true"
+      DD_LOGS_ENABLED: "false"
+      DD_PROCESS_AGENT_ENABLED: "false"
+      DD_CONTAINER_EXCLUDE: "name:syncora-datadog-agent"
+    ports:
+      - "127.0.0.1:8126:8126"
+      - "127.0.0.1:8125:8125/udp"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    healthcheck:
+      test: ["CMD", "agent", "health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 45s
 
 volumes:
   syncora-mongodb-data:

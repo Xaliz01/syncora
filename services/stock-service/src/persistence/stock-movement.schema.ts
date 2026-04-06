@@ -2,7 +2,7 @@ import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document, Types } from "mongoose";
 import type { StockMovementType } from "@syncora/shared";
 
-@Schema({ timestamps: true, _id: true })
+@Schema({ timestamps: true, _id: true, collection: "stock_movements" })
 export class StockMovementDocument extends Document {
   declare _id: Types.ObjectId;
 

@@ -12,9 +12,10 @@ export interface CreateCaseForOrgBody {
   title: string;
   description?: string;
   priority?: string;
-  assigneeId?: string;
+  assigneeIds?: string[];
   dueDate?: string;
   tags?: string[];
+  customerId?: string;
 }
 
 export interface UpdateCaseForOrgBody {
@@ -22,9 +23,10 @@ export interface UpdateCaseForOrgBody {
   description?: string;
   status?: string;
   priority?: string;
-  assigneeId?: string | null;
+  assigneeIds?: string[];
   dueDate?: string | null;
   tags?: string[];
+  customerId?: string | null;
 }
 
 export interface CreateTemplateForOrgBody {
@@ -115,6 +117,7 @@ export abstract class AbstractCasesGatewayService {
       startDate?: string;
       endDate?: string;
       status?: string;
+      unscheduled?: string;
     }
   ): Promise<InterventionResponse[]>;
   abstract getIntervention(

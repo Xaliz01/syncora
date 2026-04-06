@@ -7,27 +7,28 @@ import {
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import { randomUUID } from "crypto";
-import type {
-  AssignUserPermissionsBody,
-  CreateInvitationBody,
-  CreatePermissionProfileBody,
-  EffectivePermissionsResponse,
-  InvitationResponse,
-  PermissionCode,
-  PermissionProfileResponse,
-  ResolveEffectivePermissionsBody,
-  UpdatePermissionProfileBody,
-  UserPermissionAssignmentResponse
+import {
+  ASSIGNABLE_PERMISSION_CODES,
+  activeDocumentFilter,
+  type AssignUserPermissionsBody,
+  type CreateInvitationBody,
+  type CreatePermissionProfileBody,
+  type EffectivePermissionsResponse,
+  type InvitationResponse,
+  type PermissionCode,
+  type PermissionProfileResponse,
+  type ResolveEffectivePermissionsBody,
+  type UpdatePermissionProfileBody,
+  type UserPermissionAssignmentResponse,
+  type UserRole
 } from "@syncora/shared";
-import { AVAILABLE_PERMISSION_CODES } from "@syncora/shared";
-import type { UserRole } from "@syncora/shared";
 import type { PermissionProfileDocument } from "../persistence/permission-profile.schema";
 import type { UserPermissionAssignmentDocument } from "../persistence/user-permission-assignment.schema";
 import type { InvitationDocument } from "../persistence/invitation.schema";
 import { AbstractPermissionsService } from "./ports/permissions.service.port";
 
 const ROLE_DEFAULT_PERMISSIONS: Record<UserRole, PermissionCode[]> = {
-  admin: [...AVAILABLE_PERMISSION_CODES],
+  admin: [...ASSIGNABLE_PERMISSION_CODES],
   member: []
 };
 
@@ -64,7 +65,7 @@ export class PermissionsService extends AbstractPermissionsService {
 
   async listProfiles(organizationId: string): Promise<PermissionProfileResponse[]> {
     const docs = await this.permissionProfileModel
-      .find({ organizationId })
+      .find({ organizationId, ...activeDocumentFilter })
       .sort({ createdAt: 1 })
       .exec();
     return docs.map((doc) => this.toProfileResponse(doc));
@@ -74,7 +75,9 @@ export class PermissionsService extends AbstractPermissionsService {
     id: string,
     organizationId: string
   ): Promise<PermissionProfileResponse> {
-    const doc = await this.permissionProfileModel.findOne({ _id: id, organizationId }).exec();
+    const doc = await this.permissionProfileModel
+      .findOne({ _id: id, organizationId, ...activeDocumentFilter })
+      .exec();
     if (!doc) throw new NotFoundException("Profile not found");
     return this.toProfileResponse(doc);
   }
@@ -96,7 +99,7 @@ export class PermissionsService extends AbstractPermissionsService {
     try {
       const doc = await this.permissionProfileModel
         .findOneAndUpdate(
-          { _id: id, organizationId: body.organizationId },
+          { _id: id, organizationId: body.organizationId, ...activeDocumentFilter },
           { $set: update },
           { new: true }
         )
@@ -113,9 +116,12 @@ export class PermissionsService extends AbstractPermissionsService {
 
   async deleteProfile(id: string, organizationId: string): Promise<{ deleted: true }> {
     const result = await this.permissionProfileModel
-      .deleteOne({ _id: id, organizationId })
+      .updateOne(
+        { _id: id, organizationId, ...activeDocumentFilter },
+        { $set: { deletedAt: new Date() } }
+      )
       .exec();
-    if (!result.deletedCount) throw new NotFoundException("Profile not found");
+    if (!result.matchedCount) throw new NotFoundException("Profile not found");
     await this.userAssignmentModel.updateMany(
       { organizationId, profileId: id },
       { $unset: { profileId: 1 } }
@@ -136,7 +142,11 @@ export class PermissionsService extends AbstractPermissionsService {
     let profilePermissions: PermissionCode[] = [];
     if (profileId) {
       const profile = await this.permissionProfileModel
-        .findOne({ _id: profileId, organizationId: body.organizationId })
+        .findOne({
+          _id: profileId,
+          organizationId: body.organizationId,
+          ...activeDocumentFilter
+        })
         .exec();
       if (!profile) {
         throw new NotFoundException("Profile not found in this organization");
@@ -188,7 +198,7 @@ export class PermissionsService extends AbstractPermissionsService {
   ): Promise<EffectivePermissionsResponse> {
     // Admin users always keep the full permission set for their organization.
     if (body.role === "admin") {
-      return { permissions: [...AVAILABLE_PERMISSION_CODES] };
+      return { permissions: [...ASSIGNABLE_PERMISSION_CODES] };
     }
     const defaultPermissions = ROLE_DEFAULT_PERMISSIONS[body.role] ?? [];
     const assignment = await this.userAssignmentModel
@@ -214,7 +224,11 @@ export class PermissionsService extends AbstractPermissionsService {
     const profileId = body.profileId;
     if (profileId) {
       const profile = await this.permissionProfileModel
-        .findOne({ _id: profileId, organizationId: body.organizationId })
+        .findOne({
+          _id: profileId,
+          organizationId: body.organizationId,
+          ...activeDocumentFilter
+        })
         .exec();
       if (!profile) throw new NotFoundException("Profile not found in this organization");
     }
@@ -278,14 +292,14 @@ export class PermissionsService extends AbstractPermissionsService {
   ): Promise<PermissionCode[]> {
     if (!profileId) return [];
     const profile = await this.permissionProfileModel
-      .findOne({ _id: profileId, organizationId })
+      .findOne({ _id: profileId, organizationId, ...activeDocumentFilter })
       .exec();
     if (!profile) return [];
     return this.normalizePermissions(profile.permissions as PermissionCode[]);
   }
 
   private normalizePermissions(permissions: PermissionCode[]): PermissionCode[] {
-    const knownPermissions = new Set<PermissionCode>(AVAILABLE_PERMISSION_CODES);
+    const knownPermissions = new Set<PermissionCode>(ASSIGNABLE_PERMISSION_CODES);
     const invalid = permissions.filter((permission) => !knownPermissions.has(permission));
     if (invalid.length > 0) {
       throw new BadRequestException(`Unknown permissions: ${invalid.join(", ")}`);

@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthContext";
+import { postAuthHomePath } from "@/lib/subscription-access";
 
 export function LoginPage() {
   const [email, setEmail] = useState("");
@@ -18,8 +19,8 @@ export function LoginPage() {
     setError(null);
     setLoading(true);
     try {
-      await login(email, password);
-      router.replace("/");
+      const user = await login(email, password);
+      router.replace(postAuthHomePath(user));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Connexion impossible");
     } finally {

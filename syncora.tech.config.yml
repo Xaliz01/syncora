@@ -46,6 +46,9 @@ tech:
       env_vars:
         - "LOG_LEVEL (niveau Winston: error, warn, info, debug)"
         - "DD_SERVICE, DD_ENV, DD_VERSION (Datadog)"
+        - "STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_PRICE_ID (abonnements ; webhook → subscriptions-service :3008/webhooks/stripe)"
+        - "SUBSCRIPTIONS_SERVICE_URL (gateway → microservice abonnements)"
+        - "CUSTOMERS_SERVICE_URL (gateway → microservice clients, défaut localhost:3009 ; Mongo syncora-customers)"
     ci_cd:
       provider: GitHub Actions
       pipeline:

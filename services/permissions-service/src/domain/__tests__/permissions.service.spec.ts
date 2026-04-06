@@ -3,7 +3,7 @@ import { getModelToken } from "@nestjs/mongoose";
 import { ConflictException, NotFoundException, BadRequestException } from "@nestjs/common";
 import { PermissionsService } from "../permissions.service";
 import { AbstractPermissionsService } from "../ports/permissions.service.port";
-import { AVAILABLE_PERMISSION_CODES } from "@syncora/shared";
+import { ASSIGNABLE_PERMISSION_CODES, activeDocumentFilter } from "@syncora/shared";
 
 describe("PermissionsService", () => {
   let service: PermissionsService;
@@ -64,7 +64,7 @@ describe("PermissionsService", () => {
       find: jest.fn(),
       findOne: jest.fn(),
       findOneAndUpdate: jest.fn(),
-      deleteOne: jest.fn()
+      updateOne: jest.fn()
     };
     mockUserAssignmentModel = {
       findOne: jest.fn(),
@@ -174,7 +174,10 @@ describe("PermissionsService", () => {
 
       const result = await service.listProfiles("org-1");
 
-      expect(mockPermissionProfileModel.find).toHaveBeenCalledWith({ organizationId: "org-1" });
+      expect(mockPermissionProfileModel.find).toHaveBeenCalledWith({
+        organizationId: "org-1",
+        ...activeDocumentFilter
+      });
       expect(result).toHaveLength(2);
     });
   });
@@ -188,7 +191,8 @@ describe("PermissionsService", () => {
 
       expect(mockPermissionProfileModel.findOne).toHaveBeenCalledWith({
         _id: "profile-123",
-        organizationId: "org-1"
+        organizationId: "org-1",
+        ...activeDocumentFilter
       });
       expect(result.id).toBe("profile-123");
     });
@@ -206,25 +210,25 @@ describe("PermissionsService", () => {
   });
 
   describe("deleteProfile", () => {
-    it("should delete profile and return { deleted: true }", async () => {
-      mockPermissionProfileModel.deleteOne.mockReturnValue(
-        createExecMock({ deletedCount: 1 })
+    it("should soft-delete profile and return { deleted: true }", async () => {
+      mockPermissionProfileModel.updateOne.mockReturnValue(
+        createExecMock({ matchedCount: 1, modifiedCount: 1 })
       );
 
       const result = await service.deleteProfile("profile-123", "org-1");
 
-      expect(mockPermissionProfileModel.deleteOne).toHaveBeenCalledWith({
-        _id: "profile-123",
-        organizationId: "org-1"
-      });
+      expect(mockPermissionProfileModel.updateOne).toHaveBeenCalledWith(
+        { _id: "profile-123", organizationId: "org-1", ...activeDocumentFilter },
+        { $set: { deletedAt: expect.any(Date) } }
+      );
       expect(mockUserAssignmentModel.updateMany).toHaveBeenCalled();
       expect(mockInvitationModel.updateMany).toHaveBeenCalled();
       expect(result).toEqual({ deleted: true });
     });
 
     it("should throw NotFoundException when profile not found", async () => {
-      mockPermissionProfileModel.deleteOne.mockReturnValue(
-        createExecMock({ deletedCount: 0 })
+      mockPermissionProfileModel.updateOne.mockReturnValue(
+        createExecMock({ matchedCount: 0, modifiedCount: 0 })
       );
 
       await expect(service.deleteProfile("non-existent", "org-1")).rejects.toThrow(
@@ -321,7 +325,7 @@ describe("PermissionsService", () => {
         role: "admin"
       });
 
-      expect(result.permissions).toEqual([...AVAILABLE_PERMISSION_CODES]);
+      expect(result.permissions).toEqual([...ASSIGNABLE_PERMISSION_CODES]);
       expect(mockUserAssignmentModel.findOne).not.toHaveBeenCalled();
     });
 

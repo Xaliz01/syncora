@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthContext";
+import { postAuthHomePath } from "@/lib/subscription-access";
 
 export function AcceptInvitationPage() {
   const searchParams = useSearchParams();
@@ -21,12 +22,12 @@ export function AcceptInvitationPage() {
     setError(null);
     setLoading(true);
     try {
-      await acceptInvitation({
+      const user = await acceptInvitation({
         invitationToken,
         password,
         name: name.trim() || undefined
       });
-      router.replace("/");
+      router.replace(postAuthHomePath(user));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Acceptation de l'invitation impossible");
     } finally {

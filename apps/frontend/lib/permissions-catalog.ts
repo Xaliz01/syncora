@@ -7,6 +7,12 @@ export interface PermissionMetadata {
 }
 
 export const PERMISSION_METADATA: Record<PermissionCode, PermissionMetadata> = {
+  "subscription.active": {
+    code: "subscription.active",
+    label: "Abonnement actif",
+    description:
+      "Accès à l’application lorsque l’organisation a un essai ou un abonnement valide. Ce droit est accordé automatiquement par le système, pas via les profils."
+  },
   "users.read": {
     code: "users.read",
     label: "Voir les utilisateurs",
@@ -27,23 +33,23 @@ export const PERMISSION_METADATA: Record<PermissionCode, PermissionMetadata> = {
     label: "Gérer les permissions utilisateurs",
     description: "Ajouter/retirer des permissions spécifiques à un utilisateur."
   },
-  "permission_profiles.read": {
-    code: "permission_profiles.read",
+  "profiles.read": {
+    code: "profiles.read",
     label: "Voir les profils",
     description: "Consulter les profils de permissions de l'organisation."
   },
-  "permission_profiles.create": {
-    code: "permission_profiles.create",
+  "profiles.create": {
+    code: "profiles.create",
     label: "Créer des profils",
     description: "Créer de nouveaux profils de permissions."
   },
-  "permission_profiles.update": {
-    code: "permission_profiles.update",
+  "profiles.update": {
+    code: "profiles.update",
     label: "Modifier les profils",
     description: "Mettre à jour les profils de permissions existants."
   },
-  "permission_profiles.delete": {
-    code: "permission_profiles.delete",
+  "profiles.delete": {
+    code: "profiles.delete",
     label: "Supprimer des profils",
     description: "Supprimer des profils de permissions."
   },
@@ -71,6 +77,81 @@ export const PERMISSION_METADATA: Record<PermissionCode, PermissionMetadata> = {
     code: "cases.assign",
     label: "Assigner des dossiers",
     description: "Assigner ou réassigner des dossiers à des utilisateurs."
+  },
+  "customers.read": {
+    code: "customers.read",
+    label: "Voir les clients",
+    description: "Consulter la liste et la fiche des clients de l'organisation."
+  },
+  "customers.create": {
+    code: "customers.create",
+    label: "Créer des clients",
+    description: "Créer de nouveaux clients (personnes physiques ou morales)."
+  },
+  "customers.update": {
+    code: "customers.update",
+    label: "Modifier les clients",
+    description: "Mettre à jour les fiches clients existantes."
+  },
+  "customers.delete": {
+    code: "customers.delete",
+    label: "Supprimer des clients",
+    description: "Archiver des clients (suppression logique) : ils disparaissent des listes mais l’historique des dossiers reste cohérent."
+  },
+  "fleet.vehicles.read": {
+    code: "fleet.vehicles.read",
+    label: "Voir les véhicules",
+    description: "Consulter la flotte et le détail d’un véhicule."
+  },
+  "fleet.vehicles.create": {
+    code: "fleet.vehicles.create",
+    label: "Créer des véhicules",
+    description: "Ajouter un véhicule à la flotte."
+  },
+  "fleet.vehicles.update": {
+    code: "fleet.vehicles.update",
+    label: "Modifier les véhicules",
+    description: "Mettre à jour les informations d’un véhicule."
+  },
+  "fleet.vehicles.delete": {
+    code: "fleet.vehicles.delete",
+    label: "Supprimer des véhicules",
+    description: "Retirer un véhicule de la flotte."
+  },
+  "fleet.vehicles.assign": {
+    code: "fleet.vehicles.assign",
+    label: "Affecter des techniciens aux véhicules",
+    description: "Assigner ou retirer un technicien sur un véhicule."
+  },
+  "fleet.technicians.read": {
+    code: "fleet.technicians.read",
+    label: "Voir les techniciens",
+    description: "Consulter la liste et la fiche des techniciens."
+  },
+  "fleet.technicians.create": {
+    code: "fleet.technicians.create",
+    label: "Créer des techniciens",
+    description: "Ajouter un technicien."
+  },
+  "fleet.technicians.update": {
+    code: "fleet.technicians.update",
+    label: "Modifier les techniciens",
+    description: "Mettre à jour un technicien."
+  },
+  "fleet.technicians.delete": {
+    code: "fleet.technicians.delete",
+    label: "Supprimer des techniciens",
+    description: "Supprimer un technicien."
+  },
+  "fleet.technicians.create_user": {
+    code: "fleet.technicians.create_user",
+    label: "Créer un compte utilisateur pour un technicien",
+    description: "Créer un accès Syncora associé à un technicien."
+  },
+  "subscriptions.manage_billing": {
+    code: "subscriptions.manage_billing",
+    label: "Gérer la facturation (abonnement)",
+    description: "Lancer le paiement Stripe, ouvrir le portail client (carte, factures, résiliation)."
   },
   "case_templates.read": {
     code: "case_templates.read",

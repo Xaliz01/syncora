@@ -3,6 +3,7 @@ import { StockController } from "../stock.controller";
 import { AbstractStockGatewayService } from "../../../domain/ports/stock.service.port";
 import { JwtAuthGuard } from "../../../infrastructure/jwt-auth.guard";
 import { RequirePermissionGuard } from "../../../infrastructure/require-permission.guard";
+import { SubscriptionAccessGuard } from "../../../infrastructure/subscription-access.guard";
 import type { AuthUser } from "@syncora/shared";
 
 describe("StockController", () => {
@@ -42,6 +43,8 @@ describe("StockController", () => {
       ]
     })
       .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(SubscriptionAccessGuard)
       .useValue({ canActivate: () => true })
       .overrideGuard(RequirePermissionGuard)
       .useValue({ canActivate: () => true })

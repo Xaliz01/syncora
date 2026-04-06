@@ -11,6 +11,7 @@ import {
 } from "@nestjs/common";
 import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
 import { RequirePermissionGuard, RequirePermissions } from "../../infrastructure/require-permission.guard";
+import { SubscriptionAccessGuard } from "../../infrastructure/subscription-access.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
 import type { AuthUser } from "@syncora/shared";
 import { AbstractStockGatewayService } from "../../domain/ports/stock.service.port";
@@ -22,7 +23,7 @@ import type {
 } from "../../domain/ports/stock.service.port";
 
 @Controller("stock")
-@UseGuards(JwtAuthGuard, RequirePermissionGuard)
+@UseGuards(JwtAuthGuard, SubscriptionAccessGuard, RequirePermissionGuard)
 export class StockController {
   constructor(private readonly stockService: AbstractStockGatewayService) {}
 

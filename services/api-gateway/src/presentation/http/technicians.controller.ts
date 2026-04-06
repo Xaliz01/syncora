@@ -11,6 +11,7 @@ import {
 import { AbstractTechniciansGatewayService } from "../../domain/ports/technicians.service.port";
 import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
 import { RequirePermissionGuard, RequirePermissions } from "../../infrastructure/require-permission.guard";
+import { SubscriptionAccessGuard } from "../../infrastructure/subscription-access.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
 import type { AuthUser } from "@syncora/shared";
 import type {
@@ -31,11 +32,12 @@ interface CreateTechnicianPayload {
 }
 
 @Controller("fleet/technicians")
-@UseGuards(JwtAuthGuard, RequirePermissionGuard)
+@UseGuards(JwtAuthGuard, SubscriptionAccessGuard, RequirePermissionGuard)
 export class TechniciansController {
   constructor(private readonly techniciansService: AbstractTechniciansGatewayService) {}
 
   @Post()
+  @RequirePermissions("fleet.technicians.create")
   @RequirePermissions("technicians.create")
   async createTechnician(
     @CurrentUser() user: AuthUser,
@@ -45,12 +47,14 @@ export class TechniciansController {
   }
 
   @Get()
+  @RequirePermissions("fleet.technicians.read")
   @RequirePermissions("technicians.read")
   async listTechnicians(@CurrentUser() user: AuthUser) {
     return this.techniciansService.listTechnicians(user);
   }
 
   @Get(":technicianId")
+  @RequirePermissions("fleet.technicians.read")
   @RequirePermissions("technicians.read")
   async getTechnician(
     @CurrentUser() user: AuthUser,
@@ -60,6 +64,7 @@ export class TechniciansController {
   }
 
   @Patch(":technicianId")
+  @RequirePermissions("fleet.technicians.update")
   @RequirePermissions("technicians.update")
   async updateTechnician(
     @CurrentUser() user: AuthUser,
@@ -70,6 +75,7 @@ export class TechniciansController {
   }
 
   @Delete(":technicianId")
+  @RequirePermissions("fleet.technicians.delete")
   @RequirePermissions("technicians.delete")
   async deleteTechnician(
     @CurrentUser() user: AuthUser,
@@ -79,6 +85,7 @@ export class TechniciansController {
   }
 
   @Post(":technicianId/create-account")
+  @RequirePermissions("fleet.technicians.create_user")
   @RequirePermissions("technicians.update")
   async createTechnicianAccount(
     @CurrentUser() user: AuthUser,

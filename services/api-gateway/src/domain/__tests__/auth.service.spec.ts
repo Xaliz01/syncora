@@ -6,6 +6,7 @@ import { of, throwError } from "rxjs";
 import type { AxiosResponse } from "axios";
 import { AuthService } from "../auth.service";
 import { AbstractAuthService } from "../ports/auth.service.port";
+import { AbstractSubscriptionsGatewayService } from "../ports/subscriptions.service.port";
 
 describe("AuthService", () => {
   let service: AuthService;
@@ -41,6 +42,18 @@ describe("AuthService", () => {
     permissions: ["cases:read", "cases:write"]
   };
 
+  const mockSubscriptionsGateway = {
+    getCurrentSubscription: jest.fn().mockResolvedValue({
+      organizationId: "org-123",
+      status: "none",
+      hasAccess: false,
+      trialEndsAt: null,
+      currentPeriodEnd: null,
+      cancelAtPeriodEnd: false,
+      planLabel: "9,99 € / mois"
+    })
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: [
@@ -51,7 +64,8 @@ describe("AuthService", () => {
         })
       ],
       providers: [
-        { provide: AbstractAuthService, useClass: AuthService }
+        { provide: AbstractAuthService, useClass: AuthService },
+        { provide: AbstractSubscriptionsGatewayService, useValue: mockSubscriptionsGateway }
       ]
     }).compile();
 

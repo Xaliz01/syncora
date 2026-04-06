@@ -11,9 +11,20 @@ import { AgencesModule } from "./agences.module";
 import { CasesModule } from "./cases.module";
 import { StockModule } from "./stock.module";
 import { SearchModule } from "./search.module";
+import { SubscriptionsModule } from "./subscriptions.module";
+import { OrganizationsModule } from "./organizations.module";
 
 @Module({
-  imports: [AuthModule, AdminModule, FleetModule, TechniciansModule, TeamsModule, AgencesModule, CasesModule, StockModule, SearchModule],
+  imports: [
+    AuthModule,
+    OrganizationsModule,
+    AdminModule,
+    FleetModule,
+    TechniciansModule, TeamsModule, AgencesModule,
+    CasesModule,
+    StockModule, SearchModule,
+    SubscriptionsModule
+  ],
   controllers: [AppController],
   providers: [{ provide: AbstractAppService, useClass: AppService }]
 })

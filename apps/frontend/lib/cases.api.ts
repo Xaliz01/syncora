@@ -5,39 +5,14 @@ import type {
   CaseTemplateResponse,
   InterventionResponse
 } from "@syncora/shared";
-import { getToken } from "./auth.api";
-
-const API_BASE =
-  (typeof process !== "undefined" && process.env.NEXT_PUBLIC_API_URL) ||
-  "http://localhost:3000/api";
-
-type ApiMethod = "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
+import { apiRequestJson, type ApiMethod } from "./api-client";
 
 async function casesRequest<TResponse>(
   method: ApiMethod,
   path: string,
   body?: unknown
 ): Promise<TResponse> {
-  const token = getToken();
-  if (!token) throw new Error("Session expirée");
-
-  const response = await fetch(`${API_BASE}${path}`, {
-    method,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`
-    },
-    body: typeof body === "undefined" ? undefined : JSON.stringify(body)
-  });
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    const message = (err as { message?: string | string[] }).message;
-    if (Array.isArray(message)) throw new Error(message.join(", "));
-    throw new Error(message ?? "Erreur API");
-  }
-
-  return response.json() as Promise<TResponse>;
+  return apiRequestJson<TResponse>(method, path, typeof body === "undefined" ? {} : { body });
 }
 
 // ── Templates ──
@@ -80,9 +55,10 @@ export interface CreateCasePayload {
   title: string;
   description?: string;
   priority?: string;
-  assigneeId?: string;
+  assigneeIds?: string[];
   dueDate?: string;
   tags?: string[];
+  customerId?: string;
 }
 
 export interface UpdateCasePayload {
@@ -90,9 +66,10 @@ export interface UpdateCasePayload {
   description?: string;
   status?: string;
   priority?: string;
-  assigneeId?: string | null;
+  assigneeIds?: string[];
   dueDate?: string | null;
   tags?: string[];
+  customerId?: string | null;
 }
 
 export function listCases(filters?: {
@@ -162,6 +139,8 @@ export function listInterventions(filters?: {
   startDate?: string;
   endDate?: string;
   status?: string;
+  /** "true" = interventions sans scheduledStart */
+  unscheduled?: string;
 }) {
   const params = new URLSearchParams();
   if (filters?.caseId) params.set("caseId", filters.caseId);
@@ -169,6 +148,7 @@ export function listInterventions(filters?: {
   if (filters?.startDate) params.set("startDate", filters.startDate);
   if (filters?.endDate) params.set("endDate", filters.endDate);
   if (filters?.status) params.set("status", filters.status);
+  if (filters?.unscheduled) params.set("unscheduled", filters.unscheduled);
   const qs = params.toString();
   return casesRequest<InterventionResponse[]>(
     "GET",

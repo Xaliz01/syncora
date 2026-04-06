@@ -12,13 +12,7 @@ import type {
   UpdateTeamBody,
   UpdateAgenceBody
 } from "@syncora/shared";
-import { getToken } from "./auth.api";
-
-const API_BASE =
-  (typeof process !== "undefined" && process.env.NEXT_PUBLIC_API_URL) ||
-  "http://localhost:3000/api";
-
-type ApiMethod = "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
+import { apiRequestJson, type ApiMethod } from "./api-client";
 
 export interface CreateVehiclePayload {
   type: VehicleType;
@@ -48,26 +42,7 @@ async function fleetRequest<TResponse>(
   path: string,
   body?: unknown
 ): Promise<TResponse> {
-  const token = getToken();
-  if (!token) throw new Error("Session expirée");
-
-  const response = await fetch(`${API_BASE}${path}`, {
-    method,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`
-    },
-    body: typeof body === "undefined" ? undefined : JSON.stringify(body)
-  });
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    const message = (err as { message?: string | string[] }).message;
-    if (Array.isArray(message)) throw new Error(message.join(", "));
-    throw new Error(message ?? "Erreur API");
-  }
-
-  return response.json() as Promise<TResponse>;
+  return apiRequestJson<TResponse>(method, path, typeof body === "undefined" ? {} : { body });
 }
 
 // ─── Vehicles ───

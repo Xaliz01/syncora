@@ -1,5 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getModelToken } from "@nestjs/mongoose";
+import { activeDocumentFilter } from "@syncora/shared";
 import { OrganizationsService } from "../organizations.service";
 import { AbstractOrganizationsService } from "../ports/organizations.service.port";
 
@@ -7,7 +8,7 @@ describe("OrganizationsService", () => {
   let service: OrganizationsService;
   let mockOrganizationModel: {
     create: jest.Mock;
-    findById: jest.Mock;
+    findOne: jest.Mock;
   };
 
   const mockDoc = (overrides: Record<string, unknown> = {}) => ({
@@ -21,7 +22,7 @@ describe("OrganizationsService", () => {
     const execMock = jest.fn();
     mockOrganizationModel = {
       create: jest.fn(),
-      findById: jest.fn().mockReturnValue({ exec: execMock })
+      findOne: jest.fn().mockReturnValue({ exec: execMock })
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -60,13 +61,16 @@ describe("OrganizationsService", () => {
   describe("findById", () => {
     it("should return organization when found", async () => {
       const doc = mockDoc({ name: "Found Org" });
-      mockOrganizationModel.findById.mockReturnValue({
+      mockOrganizationModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(doc)
       });
 
       const result = await service.findById("org-123");
 
-      expect(mockOrganizationModel.findById).toHaveBeenCalledWith("org-123");
+      expect(mockOrganizationModel.findOne).toHaveBeenCalledWith({
+        _id: "org-123",
+        ...activeDocumentFilter
+      });
       expect(result).toEqual({
         id: "org-123",
         name: "Found Org",
@@ -75,7 +79,7 @@ describe("OrganizationsService", () => {
     });
 
     it("should return null when organization is not found", async () => {
-      mockOrganizationModel.findById.mockReturnValue({
+      mockOrganizationModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(null)
       });
 

@@ -1,6 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { JwtModule } from "@nestjs/jwt";
-import type { AuthResponse } from "@syncora/shared";
+import type { AuthResponse, JwtPayload } from "@syncora/shared";
 import { AuthController } from "../auth.controller";
 import { AbstractAuthService } from "../../../domain/ports/auth.service.port";
 import { JwtAuthGuard } from "../../../infrastructure/jwt-auth.guard";
@@ -26,7 +26,8 @@ describe("AuthController", () => {
     mockAuthService = {
       register: jest.fn(),
       login: jest.fn(),
-      acceptInvitation: jest.fn()
+      acceptInvitation: jest.fn(),
+      getSessionUser: jest.fn()
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -85,6 +86,26 @@ describe("AuthController", () => {
 
       expect(mockAuthService.login).toHaveBeenCalledWith(body);
       expect(result).toEqual(mockAuthResponse);
+    });
+  });
+
+  describe("me", () => {
+    it("should call authService.getSessionUser with JWT payload", async () => {
+      const jwtPayload: JwtPayload = {
+        sub: "user-123",
+        organizationId: "org-123",
+        role: "admin",
+        status: "active",
+        permissions: [],
+        email: "admin@example.com",
+        name: "Admin User"
+      };
+      mockAuthService.getSessionUser.mockResolvedValue(mockAuthResponse.user);
+
+      const result = await controller.me({ user: jwtPayload } as never);
+
+      expect(mockAuthService.getSessionUser).toHaveBeenCalledWith(jwtPayload);
+      expect(result).toEqual(mockAuthResponse.user);
     });
   });
 

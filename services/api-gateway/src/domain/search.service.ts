@@ -47,24 +47,50 @@ export class SearchGatewayService extends AbstractSearchService {
     const results: SearchResultItem[] = [];
 
     for (const c of this.settled(cases)) {
-      if (this.matches(normalizedQuery, c.title, c.assigneeName, c.status, ...(c.tags ?? []))) {
+      const assigneeNames = c.assignees?.map((a) => a.name).filter(Boolean) ?? [];
+      const assigneesText = assigneeNames.join(" ");
+      if (
+        this.matches(
+          normalizedQuery,
+          c.title,
+          assigneesText,
+          c.customer?.displayName,
+          c.status,
+          ...(c.tags ?? [])
+        )
+      ) {
+        const assigneePart = assigneeNames.length ? ` · ${assigneeNames.join(", ")}` : "";
         results.push({
           id: c.id,
           type: "case",
           title: c.title,
-          subtitle: `${this.caseStatusLabel(c.status)} · ${this.casePriorityLabel(c.priority)}${c.assigneeName ? ` · ${c.assigneeName}` : ""}`,
+          subtitle: `${this.caseStatusLabel(c.status)} · ${this.casePriorityLabel(c.priority)}${assigneePart}`,
           url: `/cases/${c.id}`
         });
       }
     }
 
     for (const i of this.settled(interventions)) {
-      if (this.matches(normalizedQuery, i.title, i.description, i.assigneeName, i.caseTitle, i.status)) {
+      if (
+        this.matches(
+          normalizedQuery,
+          i.title,
+          i.description,
+          i.assigneeName,
+          i.assignedTeamName,
+          i.caseTitle,
+          i.status
+        )
+      ) {
+        const who =
+          [i.assigneeName, i.assignedTeamName ? `Équipe : ${i.assignedTeamName}` : undefined]
+            .filter(Boolean)
+            .join(" · ") || "";
         results.push({
           id: i.id,
           type: "intervention",
           title: i.title,
-          subtitle: `${this.interventionStatusLabel(i.status)}${i.caseTitle ? ` · Dossier : ${i.caseTitle}` : ""}${i.assigneeName ? ` · ${i.assigneeName}` : ""}`,
+          subtitle: `${this.interventionStatusLabel(i.status)}${i.caseTitle ? ` · Dossier : ${i.caseTitle}` : ""}${who ? ` · ${who}` : ""}`,
           url: `/cases/${i.caseId}`
         });
       }

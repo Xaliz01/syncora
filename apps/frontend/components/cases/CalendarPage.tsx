@@ -60,6 +60,274 @@ const STATUS_DOT: Record<string, string> = {
   cancelled: "bg-red-400"
 };
 
+const STATUS_LABEL: Record<string, string> = {
+  planned: "Planifiée",
+  in_progress: "En cours",
+  completed: "Terminée",
+  cancelled: "Annulée",
+};
+
+/** Libellé dans le panneau sans créneau : éviter « Planifiée » (statut métier planned ≠ calendrier). */
+function unscheduledPanelStatusLabel(status: string): string {
+  if (status === "planned") return "À planifier";
+  return STATUS_LABEL[status] ?? status;
+}
+
+function unscheduledPanelStatusStyle(status: string): string {
+  if (status === "planned") {
+    return "bg-slate-100 text-slate-700 border border-slate-200";
+  }
+  if (status === "in_progress") {
+    return "bg-amber-50 text-amber-700";
+  }
+  if (status === "completed") {
+    return "bg-green-50 text-green-700";
+  }
+  if (status === "cancelled") {
+    return "bg-red-50 text-red-700";
+  }
+  return "bg-slate-50 text-slate-600";
+}
+
+function unscheduledPanelStatusDot(status: string): string {
+  if (status === "planned") return "bg-slate-400";
+  return STATUS_DOT[status] ?? "bg-slate-400";
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Unscheduled Panel
+// ────────────────────────────────────────────────────────────────────────────
+
+function UnscheduledPanel({
+  onDragStart,
+  onDropToUnschedule,
+}: {
+  onDragStart: (e: React.DragEvent, intervention: InterventionResponse) => void;
+  onDropToUnschedule: (interventionId: string) => void;
+}) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [collapsed, setCollapsed] = useState(false);
+  const [dropHover, setDropHover] = useState(false);
+  const dragCounterRef = useRef(0);
+
+  const { data: unscheduledInterventions, isLoading } = useQuery({
+    queryKey: ["unscheduled-interventions"],
+    queryFn: () => api.listInterventions({ unscheduled: "true" }),
+  });
+
+  const filtered = useMemo(() => {
+    if (!unscheduledInterventions) return [];
+    if (!searchTerm.trim()) return unscheduledInterventions;
+    const lower = searchTerm.toLowerCase();
+    return unscheduledInterventions.filter(
+      (i) =>
+        i.title.toLowerCase().includes(lower) ||
+        (i.caseTitle && i.caseTitle.toLowerCase().includes(lower)),
+    );
+  }, [unscheduledInterventions, searchTerm]);
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    dragCounterRef.current++;
+    setDropHover(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    dragCounterRef.current--;
+    if (dragCounterRef.current <= 0) {
+      dragCounterRef.current = 0;
+      setDropHover(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    dragCounterRef.current = 0;
+    setDropHover(false);
+    const interventionId = e.dataTransfer.getData("text/plain");
+    if (interventionId) {
+      onDropToUnschedule(interventionId);
+    }
+  };
+
+  // Collapsed state – still acts as a drop zone
+  if (collapsed) {
+    return (
+      <div
+        className={`flex-shrink-0 flex flex-col items-center gap-2 rounded-xl border-2 border-dashed p-2 transition-colors ${
+          dropHover
+            ? "border-brand-600 bg-brand-50"
+            : "border-slate-200 bg-white"
+        }`}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+      >
+        <button
+          onClick={() => setCollapsed(false)}
+          className="flex items-center justify-center w-10 h-10 rounded-xl border border-slate-200 bg-white shadow-sm hover:bg-slate-50 transition"
+          title="Afficher les interventions non planifiées"
+        >
+          <svg className="w-5 h-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+        {dropHover && (
+          <span className="text-[10px] text-brand-600 font-medium whitespace-nowrap">Déplanifier</span>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`flex-shrink-0 w-72 xl:w-80 rounded-xl border-2 shadow-sm flex flex-col max-h-[calc(100vh-220px)] transition-colors ${
+        dropHover
+          ? "border-brand-600 bg-brand-50/30"
+          : "border-slate-200 bg-white"
+      }`}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between px-3 py-2.5 border-b border-slate-200">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center justify-center w-6 h-6 rounded-md bg-brand-600/10">
+            <svg className="w-3.5 h-3.5 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 className="text-xs font-semibold text-slate-700">Non planifiées</h3>
+          {unscheduledInterventions && (
+            <span className="text-[10px] font-medium text-slate-400 bg-slate-100 rounded-full px-1.5 py-0.5">
+              {unscheduledInterventions.length}
+            </span>
+          )}
+        </div>
+        <button
+          onClick={() => setCollapsed(true)}
+          className="p-1 rounded hover:bg-slate-100 transition"
+          title="Réduire le panneau"
+        >
+          <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Search */}
+      <div className="px-3 py-2 border-b border-slate-100">
+        <div className="relative">
+          <svg
+            className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400"
+            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Rechercher..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-7 pr-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-600 focus:border-brand-600"
+          />
+        </div>
+      </div>
+
+      {/* Drop overlay feedback */}
+      {dropHover && (
+        <div className="px-3 py-3 flex items-center justify-center gap-2 border-b border-brand-200 bg-brand-50">
+          <svg className="w-4 h-4 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 13.5L12 21m0 0l-7.5-7.5M12 21V3" />
+          </svg>
+          <span className="text-xs font-medium text-brand-600">
+            Déposez ici pour déplanifier
+          </span>
+        </div>
+      )}
+
+      {/* List */}
+      <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
+        {isLoading && (
+          <div className="flex items-center justify-center py-8">
+            <div className="w-5 h-5 border-2 border-slate-200 border-t-brand-600 rounded-full animate-spin" />
+          </div>
+        )}
+
+        {!isLoading && filtered.length === 0 && !dropHover && (
+          <div className="text-center py-8">
+            <svg className="w-8 h-8 text-slate-300 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-xs text-slate-400">
+              {searchTerm ? "Aucun résultat" : "Toutes les interventions sont planifiées"}
+            </p>
+          </div>
+        )}
+
+        {filtered.map((intervention) => (
+          <div
+            key={intervention.id}
+            draggable
+            onDragStart={(e) => onDragStart(e, intervention)}
+            className="group rounded-lg border border-slate-200 bg-white p-2.5 cursor-grab active:cursor-grabbing hover:border-brand-300 hover:shadow-sm transition-all"
+          >
+            <div className="flex items-start gap-2">
+              <div className="mt-1 flex-shrink-0">
+                <svg className="w-3.5 h-3.5 text-slate-400 group-hover:text-brand-500 transition" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-slate-800 truncate">{intervention.title}</p>
+                {intervention.caseTitle && (
+                  <p className="text-[10px] text-slate-500 truncate mt-0.5">{intervention.caseTitle}</p>
+                )}
+                <div className="flex items-center gap-1.5 mt-1.5">
+                  <span
+                    className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full ${unscheduledPanelStatusStyle(intervention.status)}`}
+                  >
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full ${unscheduledPanelStatusDot(intervention.status)}`}
+                    />
+                    {unscheduledPanelStatusLabel(intervention.status)}
+                  </span>
+                  {(intervention.assigneeName || intervention.assignedTeamName) && (
+                    <span className="text-[10px] text-slate-400 truncate">
+                      {intervention.assigneeName ??
+                        (intervention.assignedTeamName ? `Équipe : ${intervention.assignedTeamName}` : "")}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Footer */}
+      <div className="px-3 py-2 border-t border-slate-100">
+        <p className="text-[10px] text-slate-400 text-center">
+          Glissez depuis/vers le calendrier pour planifier/déplanifier
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Calendar Page
+// ────────────────────────────────────────────────────────────────────────────
+
 export function CalendarPage() {
   const queryClient = useQueryClient();
   const [view, setView] = useState<ViewMode>("week");
@@ -104,6 +372,7 @@ export function CalendarPage() {
       api.updateIntervention(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["calendar-interventions"] });
+      queryClient.invalidateQueries({ queryKey: ["unscheduled-interventions"] });
     }
   });
 
@@ -128,9 +397,11 @@ export function CalendarPage() {
   const handleDragStart = (e: React.DragEvent, intervention: InterventionResponse) => {
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/plain", intervention.id);
+    const fallback = new Date();
+    fallback.setHours(9, 0, 0, 0);
     dragRef.current = {
       intervention,
-      originDate: new Date(intervention.scheduledStart!)
+      originDate: intervention.scheduledStart ? new Date(intervention.scheduledStart) : fallback
     };
   };
 
@@ -150,6 +421,8 @@ export function CalendarPage() {
     if (intervention.scheduledStart && intervention.scheduledEnd) {
       const duration = new Date(intervention.scheduledEnd).getTime() - new Date(intervention.scheduledStart).getTime();
       newEnd = new Date(newStart.getTime() + duration).toISOString();
+    } else {
+      newEnd = new Date(newStart.getTime() + 60 * 60 * 1000).toISOString();
     }
 
     updateMutation.mutate({
@@ -160,6 +433,14 @@ export function CalendarPage() {
       }
     });
 
+    dragRef.current = null;
+  };
+
+  const handleDropToUnschedule = (interventionId: string) => {
+    updateMutation.mutate({
+      id: interventionId,
+      payload: { scheduledStart: null, scheduledEnd: null }
+    });
     dragRef.current = null;
   };
 
@@ -237,6 +518,8 @@ export function CalendarPage() {
         <div className="text-sm font-semibold text-slate-700">{headerText}</div>
       </div>
 
+      <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-start">
+        <div className="flex-1 min-w-0 w-full space-y-4">
       {view === "week" ? (
         <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-auto">
           <div className="grid grid-cols-[60px_repeat(7,1fr)] min-w-[800px]">
@@ -366,6 +649,9 @@ export function CalendarPage() {
         <span className="flex items-center gap-1">
           <span className="h-2 w-2 rounded-full bg-green-500" /> Terminée
         </span>
+      </div>
+        </div>
+        <UnscheduledPanel onDragStart={handleDragStart} onDropToUnschedule={handleDropToUnschedule} />
       </div>
     </div>
   );

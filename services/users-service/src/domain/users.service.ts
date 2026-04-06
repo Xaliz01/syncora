@@ -8,12 +8,13 @@ import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import * as bcrypt from "bcrypt";
 import type { UserDocument } from "../persistence/user.schema";
-import type {
-  ActivateInvitedUserBody,
-  CreateInvitedUserBody,
-  CreateUserBody,
-  UserResponse,
-  ValidateCredentialsResponse
+import {
+  activeDocumentFilter,
+  type ActivateInvitedUserBody,
+  type CreateInvitedUserBody,
+  type CreateUserBody,
+  type UserResponse,
+  type ValidateCredentialsResponse
 } from "@syncora/shared";
 import { AbstractUsersService } from "./ports/users.service.port";
 
@@ -29,7 +30,9 @@ export class UsersService extends AbstractUsersService {
   }
 
   async create(body: CreateUserBody): Promise<UserResponse> {
-    const existing = await this.userModel.findOne({ email: body.email }).exec();
+    const existing = await this.userModel
+      .findOne({ email: body.email, ...activeDocumentFilter })
+      .exec();
     if (existing) {
       throw new ConflictException("User with this email already exists");
     }
@@ -46,7 +49,9 @@ export class UsersService extends AbstractUsersService {
   }
 
   async invite(body: CreateInvitedUserBody): Promise<UserResponse> {
-    const existing = await this.userModel.findOne({ email: body.email }).exec();
+    const existing = await this.userModel
+      .findOne({ email: body.email, ...activeDocumentFilter })
+      .exec();
     if (existing) {
       throw new ConflictException("User with this email already exists");
     }
@@ -62,7 +67,7 @@ export class UsersService extends AbstractUsersService {
   }
 
   async activateInvitedUser(id: string, body: ActivateInvitedUserBody): Promise<UserResponse> {
-    const doc = await this.userModel.findById(id).exec();
+    const doc = await this.userModel.findOne({ _id: id, ...activeDocumentFilter }).exec();
     if (!doc) throw new NotFoundException("User not found");
     if (doc.status !== "invited") {
       throw new BadRequestException("User is not in invited status");
@@ -75,13 +80,16 @@ export class UsersService extends AbstractUsersService {
   }
 
   async findById(id: string): Promise<UserResponse | null> {
-    const doc = await this.userModel.findById(id).exec();
+    const doc = await this.userModel.findOne({ _id: id, ...activeDocumentFilter }).exec();
     if (!doc) return null;
     return this.toResponse(doc);
   }
 
   async listByOrganization(organizationId: string): Promise<UserResponse[]> {
-    const docs = await this.userModel.find({ organizationId }).sort({ createdAt: 1 }).exec();
+    const docs = await this.userModel
+      .find({ organizationId, ...activeDocumentFilter })
+      .sort({ createdAt: 1 })
+      .exec();
     return docs.map((doc) => this.toResponse(doc));
   }
 
@@ -89,7 +97,7 @@ export class UsersService extends AbstractUsersService {
     email: string,
     password: string
   ): Promise<ValidateCredentialsResponse | null> {
-    const doc = await this.userModel.findOne({ email }).exec();
+    const doc = await this.userModel.findOne({ email, ...activeDocumentFilter }).exec();
     if (!doc) return null;
     if (doc.status !== "active") return null;
     if (!doc.passwordHash) return null;

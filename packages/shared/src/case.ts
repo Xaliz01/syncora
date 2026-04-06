@@ -1,5 +1,7 @@
 /** API contracts for cases-service (templates, cases, interventions) */
 
+import type { CustomerKind } from "./customer";
+
 // ── Statuses ──
 
 export type CaseStatus =
@@ -59,6 +61,18 @@ export interface CaseTemplateResponse {
 
 // ── Case ──
 
+export interface CaseAssignee {
+  userId: string;
+  name: string;
+}
+
+/** Client rattaché au dossier (aperçu) */
+export interface CaseCustomerRef {
+  id: string;
+  displayName: string;
+  kind: CustomerKind;
+}
+
 export interface CaseTodoItem {
   id: string;
   label: string;
@@ -82,9 +96,11 @@ export interface CreateCaseBody {
   title: string;
   description?: string;
   priority?: CasePriority;
-  assigneeId?: string;
+  /** Resolved by api-gateway from user ids */
+  assignees?: CaseAssignee[];
   dueDate?: string;
   tags?: string[];
+  customerId?: string;
 }
 
 export interface UpdateCaseBody {
@@ -93,21 +109,23 @@ export interface UpdateCaseBody {
   description?: string;
   status?: CaseStatus;
   priority?: CasePriority;
-  assigneeId?: string | null;
+  assignees?: CaseAssignee[];
   dueDate?: string | null;
   tags?: string[];
+  customerId?: string | null;
 }
 
 export interface CaseResponse {
   id: string;
   organizationId: string;
   templateId?: string;
+  customerId?: string;
+  customer?: CaseCustomerRef;
   title: string;
   description?: string;
   status: CaseStatus;
   priority: CasePriority;
-  assigneeId?: string;
-  assigneeName?: string;
+  assignees: CaseAssignee[];
   dueDate?: string;
   tags: string[];
   steps: CaseStep[];
@@ -120,11 +138,12 @@ export interface CaseResponse {
 export interface CaseSummaryResponse {
   id: string;
   organizationId: string;
+  customerId?: string;
+  customer?: CaseCustomerRef;
   title: string;
   status: CaseStatus;
   priority: CasePriority;
-  assigneeId?: string;
-  assigneeName?: string;
+  assignees: CaseAssignee[];
   dueDate?: string;
   tags: string[];
   progress: number;

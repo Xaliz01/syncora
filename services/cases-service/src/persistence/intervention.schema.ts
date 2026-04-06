@@ -2,7 +2,7 @@ import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document, Types } from "mongoose";
 import type { InterventionStatus } from "@syncora/shared";
 
-@Schema({ timestamps: true, _id: true })
+@Schema({ timestamps: true, _id: true, collection: "interventions" })
 export class InterventionDocument extends Document {
   declare _id: Types.ObjectId;
 
@@ -41,6 +41,9 @@ export class InterventionDocument extends Document {
 
   @Prop()
   notes?: string;
+
+  @Prop({ type: Date })
+  deletedAt?: Date | null;
 }
 
 export const InterventionSchema = SchemaFactory.createForClass(InterventionDocument);

@@ -10,6 +10,7 @@ import type {
 
 const TECHNICIAN_STATUSES: TechnicianStatus[] = ["actif", "inactif"];
 import * as fleetApi from "@/lib/fleet.api";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useRouter } from "next/navigation";
 
@@ -31,6 +32,7 @@ const TEAM_STATUS_LABELS: Record<string, string> = {
 export function TechnicianDetailsPage({ technicianId }: { technicianId: string }) {
   const router = useRouter();
   const { showToast } = useToast();
+  const confirm = useConfirm();
   const [technician, setTechnician] = useState<TechnicianResponse | null>(null);
   const [memberTeams, setMemberTeams] = useState<TeamResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -101,7 +103,15 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
   };
 
   const handleDelete = async () => {
-    if (!technician || !confirm("Supprimer ce technicien ?")) return;
+    if (!technician) return;
+    const ok = await confirm({
+      title: "Supprimer ce technicien ?",
+      description:
+        "La fiche et les informations de ce profil seront supprimées définitivement. Cette action ne peut pas être annulée.",
+      confirmLabel: "Supprimer",
+      variant: "danger"
+    });
+    if (!ok) return;
     try {
       await fleetApi.deleteTechnician(technician.id);
       showToast("Technicien supprimé.");

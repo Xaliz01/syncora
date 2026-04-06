@@ -1,17 +1,29 @@
 "use client";
 
 import React from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "./AuthContext";
+import {
+  hasActiveSubscriptionAccess,
+  isOrganizationSubscriptionRoute
+} from "@/lib/subscription-access";
 
 export function RequireAuth({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isReady } = useAuth();
+  const { isAuthenticated, isReady, user } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   React.useEffect(() => {
     if (!isReady) return;
     if (!isAuthenticated) router.replace("/login");
   }, [isReady, isAuthenticated, router]);
+
+  React.useEffect(() => {
+    if (!isReady || !isAuthenticated || !user) return;
+    if (hasActiveSubscriptionAccess(user)) return;
+    if (isOrganizationSubscriptionRoute(pathname)) return;
+    router.replace("/organization");
+  }, [isReady, isAuthenticated, user, pathname, router]);
 
   if (!isReady) {
     return (

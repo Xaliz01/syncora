@@ -6,11 +6,12 @@ import {
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import type { TechnicianDocument } from "../persistence/technician.schema";
-import type {
-  CreateTechnicianBody,
-  UpdateTechnicianBody,
-  TechnicianResponse,
-  TechnicianStatus
+import {
+  activeDocumentFilter,
+  type CreateTechnicianBody,
+  type UpdateTechnicianBody,
+  type TechnicianResponse,
+  type TechnicianStatus
 } from "@syncora/shared";
 import { AbstractTechniciansService } from "./ports/technicians.service.port";
 
@@ -41,8 +42,10 @@ export class TechniciansService extends AbstractTechniciansService {
     technicianId: string,
     body: UpdateTechnicianBody
   ): Promise<TechnicianResponse> {
-    const doc = await this.technicianModel.findById(technicianId).exec();
-    if (!doc || doc.organizationId !== organizationId) {
+    const doc = await this.technicianModel
+      .findOne({ _id: technicianId, organizationId, ...activeDocumentFilter })
+      .exec();
+    if (!doc) {
       throw new NotFoundException("Technicien introuvable");
     }
     if (body.firstName !== undefined) doc.firstName = body.firstName;
@@ -56,8 +59,10 @@ export class TechniciansService extends AbstractTechniciansService {
   }
 
   async getTechnician(organizationId: string, technicianId: string): Promise<TechnicianResponse> {
-    const doc = await this.technicianModel.findById(technicianId).exec();
-    if (!doc || doc.organizationId !== organizationId) {
+    const doc = await this.technicianModel
+      .findOne({ _id: technicianId, organizationId, ...activeDocumentFilter })
+      .exec();
+    if (!doc) {
       throw new NotFoundException("Technicien introuvable");
     }
     return this.toTechnicianResponse(doc);
@@ -65,7 +70,7 @@ export class TechniciansService extends AbstractTechniciansService {
 
   async listTechnicians(organizationId: string): Promise<TechnicianResponse[]> {
     const docs = await this.technicianModel
-      .find({ organizationId })
+      .find({ organizationId, ...activeDocumentFilter })
       .sort({ createdAt: -1 })
       .exec();
     return docs.map((doc) => this.toTechnicianResponse(doc));
@@ -75,11 +80,15 @@ export class TechniciansService extends AbstractTechniciansService {
     organizationId: string,
     technicianId: string
   ): Promise<{ deleted: true }> {
-    const doc = await this.technicianModel.findById(technicianId).exec();
-    if (!doc || doc.organizationId !== organizationId) {
+    const result = await this.technicianModel
+      .updateOne(
+        { _id: technicianId, organizationId, ...activeDocumentFilter },
+        { $set: { deletedAt: new Date() } }
+      )
+      .exec();
+    if (!result.matchedCount) {
       throw new NotFoundException("Technicien introuvable");
     }
-    await doc.deleteOne();
     return { deleted: true };
   }
 
@@ -88,8 +97,10 @@ export class TechniciansService extends AbstractTechniciansService {
     technicianId: string,
     userId: string
   ): Promise<TechnicianResponse> {
-    const doc = await this.technicianModel.findById(technicianId).exec();
-    if (!doc || doc.organizationId !== organizationId) {
+    const doc = await this.technicianModel
+      .findOne({ _id: technicianId, organizationId, ...activeDocumentFilter })
+      .exec();
+    if (!doc) {
       throw new NotFoundException("Technicien introuvable");
     }
     if (doc.userId) {

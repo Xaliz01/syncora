@@ -19,7 +19,7 @@ import type {
   UserPermissionAssignmentResponse,
   UserResponse
 } from "@syncora/shared";
-import { AVAILABLE_PERMISSION_CODES } from "@syncora/shared";
+import { ASSIGNABLE_PERMISSION_CODES, AVAILABLE_PERMISSION_CODES } from "@syncora/shared";
 import {
   AbstractAdminService,
   type InviteOrganizationUserBody,
@@ -75,7 +75,7 @@ export class AdminService extends AbstractAdminService {
             userId: invitedUser.id,
             extraPermissions: [],
             revokedPermissions: [],
-            effectivePermissions: [...AVAILABLE_PERMISSION_CODES]
+            effectivePermissions: [...ASSIGNABLE_PERMISSION_CODES]
           }
         : await this.callPermissionsService<UserPermissionAssignmentResponse>({
             method: "put",

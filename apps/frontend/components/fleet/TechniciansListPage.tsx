@@ -43,7 +43,7 @@ export function TechniciansListPage() {
         <div>
           <h1 className="text-xl sm:text-2xl font-semibold">Techniciens</h1>
           <p className="text-sm text-slate-500 mt-1">
-            Liste des techniciens de l&apos;organisation.
+            Profils terrain et comptes utilisateur associés.
           </p>
         </div>
         <Link

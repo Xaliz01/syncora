@@ -47,7 +47,19 @@ export class CaseStepSubDoc {
 export const CaseStepSubDocSchema =
   SchemaFactory.createForClass(CaseStepSubDoc);
 
-@Schema({ timestamps: true, _id: true })
+@Schema({ _id: false })
+export class CaseAssigneeSubDoc {
+  @Prop({ required: true })
+  userId!: string;
+
+  @Prop({ required: true })
+  name!: string;
+}
+
+export const CaseAssigneeSubDocSchema =
+  SchemaFactory.createForClass(CaseAssigneeSubDoc);
+
+@Schema({ timestamps: true, _id: true, collection: "cases" })
 export class CaseDocument extends Document {
   declare _id: Types.ObjectId;
 
@@ -56,6 +68,9 @@ export class CaseDocument extends Document {
 
   @Prop()
   templateId?: string;
+
+  @Prop()
+  customerId?: string;
 
   @Prop({ required: true })
   title!: string;
@@ -75,6 +90,9 @@ export class CaseDocument extends Document {
   @Prop()
   assigneeName?: string;
 
+  @Prop({ type: [CaseAssigneeSubDocSchema], default: [] })
+  assignees!: CaseAssigneeSubDoc[];
+
   @Prop()
   dueDate?: Date;
 
@@ -86,9 +104,13 @@ export class CaseDocument extends Document {
 
   @Prop({ default: 0 })
   interventionCount!: number;
+
+  @Prop({ type: Date })
+  deletedAt?: Date | null;
 }
 
 export const CaseSchema = SchemaFactory.createForClass(CaseDocument);
 CaseSchema.index({ organizationId: 1, status: 1 });
 CaseSchema.index({ organizationId: 1, assigneeId: 1 });
+CaseSchema.index({ organizationId: 1, "assignees.userId": 1 });
 CaseSchema.index({ organizationId: 1, dueDate: 1 });

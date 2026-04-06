@@ -1,0 +1,288 @@
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException
+} from "@nestjs/common";
+import { InjectModel } from "@nestjs/mongoose";
+import { Model } from "mongoose";
+import Stripe from "stripe";
+import type {
+  CreateBillingPortalResponse,
+  CreateCheckoutSessionResponse,
+  OrganizationSubscriptionResponse,
+  OrganizationSubscriptionStatus
+} from "@syncora/shared";
+import type { OrganizationSubscriptionDocument } from "../persistence/organization-subscription.schema";
+import type { ProcessedStripeEventDocument } from "../persistence/processed-stripe-event.schema";
+
+const DEFAULT_TRIAL_DAYS = 15;
+const PLAN_LABEL = "9,99 € / mois, sans engagement";
+
+function getStripe(): Stripe {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) {
+    throw new InternalServerErrorException("STRIPE_SECRET_KEY is not configured");
+  }
+  return new Stripe(key, { typescript: true });
+}
+
+function mapStripeStatus(stripeStatus: string | undefined): OrganizationSubscriptionStatus {
+  switch (stripeStatus) {
+    case "trialing":
+    case "active":
+    case "past_due":
+    case "canceled":
+    case "unpaid":
+    case "incomplete":
+    case "incomplete_expired":
+      return stripeStatus;
+    default:
+      return "none";
+  }
+}
+
+function computeHasAccess(
+  status: OrganizationSubscriptionStatus,
+  currentPeriodEnd?: Date
+): boolean {
+  const now = Date.now();
+  if (status === "trialing" || status === "active" || status === "past_due") {
+    return true;
+  }
+  if (status === "canceled" && currentPeriodEnd && currentPeriodEnd.getTime() > now) {
+    return true;
+  }
+  return false;
+}
+
+@Injectable()
+export class SubscriptionsService {
+  constructor(
+    @InjectModel("OrganizationSubscription")
+    private readonly subscriptionModel: Model<OrganizationSubscriptionDocument>,
+    @InjectModel("ProcessedStripeEvent")
+    private readonly processedEventModel: Model<ProcessedStripeEventDocument>
+  ) {}
+
+  private toResponse(doc: OrganizationSubscriptionDocument): OrganizationSubscriptionResponse {
+    const status = mapStripeStatus(doc.stripeStatus);
+    const trialEndsAt = doc.trialEndsAt ?? null;
+    const currentPeriodEnd = doc.currentPeriodEnd ?? null;
+    return {
+      organizationId: doc.organizationId,
+      status,
+      hasAccess: computeHasAccess(status, doc.currentPeriodEnd),
+      trialEndsAt: trialEndsAt ? trialEndsAt.toISOString() : null,
+      currentPeriodEnd: currentPeriodEnd ? currentPeriodEnd.toISOString() : null,
+      cancelAtPeriodEnd: doc.cancelAtPeriodEnd ?? false,
+      planLabel: PLAN_LABEL
+    };
+  }
+
+  async getByOrganization(organizationId: string): Promise<OrganizationSubscriptionResponse> {
+    const doc = await this.subscriptionModel.findOne({ organizationId }).exec();
+    if (!doc) {
+      return {
+        organizationId,
+        status: "none",
+        hasAccess: false,
+        trialEndsAt: null,
+        currentPeriodEnd: null,
+        cancelAtPeriodEnd: false,
+        planLabel: PLAN_LABEL
+      };
+    }
+    return this.toResponse(doc);
+  }
+
+  async createCheckoutSession(params: {
+    organizationId: string;
+    customerEmail?: string;
+    successUrl: string;
+    cancelUrl: string;
+  }): Promise<CreateCheckoutSessionResponse> {
+    const priceId = process.env.STRIPE_PRICE_ID ?? 'price_1TJBxC159m6jcNWDEmpIfyrE';
+    if (!priceId?.trim()) {
+      throw new BadRequestException(
+        "STRIPE_PRICE_ID is missing: create a recurring EUR price (9,99 €/month) in Stripe and set its ID."
+      );
+    }
+
+    const trialDays = Number(process.env.STRIPE_TRIAL_DAYS ?? DEFAULT_TRIAL_DAYS);
+    if (!Number.isFinite(trialDays) || trialDays < 0) {
+      throw new InternalServerErrorException("Invalid STRIPE_TRIAL_DAYS");
+    }
+
+    const stripe = getStripe();
+    const existing = await this.subscriptionModel.findOne({ organizationId: params.organizationId }).exec();
+
+    const sessionParams: Stripe.Checkout.SessionCreateParams = {
+      mode: "subscription",
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: params.successUrl,
+      cancel_url: params.cancelUrl,
+      client_reference_id: params.organizationId,
+      metadata: { organizationId: params.organizationId },
+      subscription_data: {
+        trial_period_days: trialDays,
+        metadata: { organizationId: params.organizationId }
+      },
+      allow_promotion_codes: true
+    };
+
+    if (existing?.stripeCustomerId) {
+      sessionParams.customer = existing.stripeCustomerId;
+    } else if (params.customerEmail?.trim()) {
+      sessionParams.customer_email = params.customerEmail.trim();
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
+    if (!session.url) {
+      throw new InternalServerErrorException("Stripe Checkout session has no URL");
+    }
+    return { url: session.url };
+  }
+
+  async createBillingPortalSession(params: {
+    organizationId: string;
+    returnUrl: string;
+  }): Promise<CreateBillingPortalResponse> {
+    const doc = await this.subscriptionModel.findOne({ organizationId: params.organizationId }).exec();
+    if (!doc?.stripeCustomerId) {
+      throw new NotFoundException("No Stripe customer for this organization; complete checkout first.");
+    }
+    const stripe = getStripe();
+    const session = await stripe.billingPortal.sessions.create({
+      customer: doc.stripeCustomerId,
+      return_url: params.returnUrl
+    });
+    return { url: session.url };
+  }
+
+  async handleStripeWebhook(rawBody: Buffer, signature: string | undefined): Promise<{ received: boolean }> {
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    if (!webhookSecret?.trim()) {
+      throw new InternalServerErrorException("STRIPE_WEBHOOK_SECRET is not configured");
+    }
+    if (!signature) {
+      throw new BadRequestException("Missing Stripe-Signature header");
+    }
+
+    const stripe = getStripe();
+    let event: Stripe.Event;
+    try {
+      event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Invalid payload";
+      throw new BadRequestException(`Webhook signature verification failed: ${msg}`);
+    }
+
+    const already = await this.processedEventModel.findOne({ eventId: event.id }).exec();
+    if (already) {
+      return { received: true };
+    }
+
+    try {
+      switch (event.type) {
+        case "checkout.session.completed":
+          await this.onCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
+          break;
+        case "customer.subscription.created":
+        case "customer.subscription.updated":
+          await this.onSubscriptionUpsert(event.data.object as Stripe.Subscription);
+          break;
+        case "customer.subscription.deleted":
+          await this.onSubscriptionDeleted(event.data.object as Stripe.Subscription);
+          break;
+        default:
+          break;
+      }
+      try {
+        await this.processedEventModel.create({ eventId: event.id });
+      } catch (createErr: unknown) {
+        if ((createErr as { code?: number })?.code !== 11000) {
+          throw createErr;
+        }
+      }
+    } catch (err: unknown) {
+      throw new InternalServerErrorException(
+        err instanceof Error ? err.message : "Webhook handler error"
+      );
+    }
+
+    return { received: true };
+  }
+
+  private async onCheckoutSessionCompleted(session: Stripe.Checkout.Session): Promise<void> {
+    const organizationId =
+      session.metadata?.organizationId ?? session.client_reference_id ?? undefined;
+    if (!organizationId || session.mode !== "subscription") {
+      return;
+    }
+    const customerId = typeof session.customer === "string" ? session.customer : session.customer?.id;
+    const subscriptionId =
+      typeof session.subscription === "string" ? session.subscription : session.subscription?.id;
+    if (!customerId || !subscriptionId) {
+      return;
+    }
+    const stripe = getStripe();
+    const sub = await stripe.subscriptions.retrieve(subscriptionId);
+    await this.persistSubscription(organizationId, customerId, sub);
+  }
+
+  private async onSubscriptionUpsert(sub: Stripe.Subscription): Promise<void> {
+    const organizationId = sub.metadata?.organizationId;
+    if (!organizationId) {
+      return;
+    }
+    const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer.id;
+    await this.persistSubscription(organizationId, customerId, sub);
+  }
+
+  private async onSubscriptionDeleted(sub: Stripe.Subscription): Promise<void> {
+    const organizationId = sub.metadata?.organizationId;
+    if (!organizationId) {
+      return;
+    }
+    await this.subscriptionModel
+      .findOneAndUpdate(
+        { organizationId },
+        {
+          stripeStatus: "canceled",
+          stripeSubscriptionId: sub.id,
+          trialEndsAt: sub.trial_end ? new Date(sub.trial_end * 1000) : undefined,
+          currentPeriodEnd: sub.current_period_end
+            ? new Date(sub.current_period_end * 1000)
+            : undefined,
+          cancelAtPeriodEnd: false
+        },
+        { upsert: true, new: true }
+      )
+      .exec();
+  }
+
+  private async persistSubscription(
+    organizationId: string,
+    stripeCustomerId: string,
+    sub: Stripe.Subscription
+  ): Promise<void> {
+    await this.subscriptionModel
+      .findOneAndUpdate(
+        { organizationId },
+        {
+          organizationId,
+          stripeCustomerId,
+          stripeSubscriptionId: sub.id,
+          stripeStatus: sub.status,
+          trialEndsAt: sub.trial_end ? new Date(sub.trial_end * 1000) : undefined,
+          currentPeriodEnd: sub.current_period_end
+            ? new Date(sub.current_period_end * 1000)
+            : undefined,
+          cancelAtPeriodEnd: sub.cancel_at_period_end ?? false
+        },
+        { upsert: true, new: true }
+      )
+      .exec();
+  }
+}

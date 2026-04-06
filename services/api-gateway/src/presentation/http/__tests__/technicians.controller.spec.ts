@@ -2,7 +2,8 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { TechniciansController } from "../technicians.controller";
 import { AbstractTechniciansGatewayService } from "../../../domain/ports/technicians.service.port";
 import { JwtAuthGuard } from "../../../infrastructure/jwt-auth.guard";
-import { AdminRoleGuard } from "../../../infrastructure/admin-role.guard";
+import { RequirePermissionGuard } from "../../../infrastructure/require-permission.guard";
+import { SubscriptionAccessGuard } from "../../../infrastructure/subscription-access.guard";
 import type { AuthUser } from "@syncora/shared";
 
 describe("TechniciansController", () => {
@@ -40,7 +41,9 @@ describe("TechniciansController", () => {
     })
       .overrideGuard(JwtAuthGuard)
       .useValue({ canActivate: () => true })
-      .overrideGuard(AdminRoleGuard)
+      .overrideGuard(SubscriptionAccessGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(RequirePermissionGuard)
       .useValue({ canActivate: () => true })
       .compile();
 

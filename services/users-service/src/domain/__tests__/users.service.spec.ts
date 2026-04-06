@@ -2,6 +2,7 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { getModelToken } from "@nestjs/mongoose";
 import { ConflictException, NotFoundException, BadRequestException } from "@nestjs/common";
 import * as bcrypt from "bcrypt";
+import { activeDocumentFilter } from "@syncora/shared";
 import { UsersService } from "../users.service";
 import { AbstractUsersService } from "../ports/users.service.port";
 
@@ -15,7 +16,6 @@ describe("UsersService", () => {
   let mockUserModel: {
     create: jest.Mock;
     findOne: jest.Mock;
-    findById: jest.Mock;
     find: jest.Mock;
   };
 
@@ -42,7 +42,6 @@ describe("UsersService", () => {
     mockUserModel = {
       create: jest.fn(),
       findOne: jest.fn().mockReturnValue({ exec: execMock }),
-      findById: jest.fn().mockReturnValue({ exec: execMock }),
       find: jest.fn().mockReturnValue({ sort: sortMock })
     };
 
@@ -78,7 +77,10 @@ describe("UsersService", () => {
       };
       const result = await service.create(body);
 
-      expect(mockUserModel.findOne).toHaveBeenCalledWith({ email: "new@example.com" });
+      expect(mockUserModel.findOne).toHaveBeenCalledWith({
+        email: "new@example.com",
+        ...activeDocumentFilter
+      });
       expect(bcrypt.hash).toHaveBeenCalledWith("secret123", 10);
       expect(mockUserModel.create).toHaveBeenCalledWith({
         organizationId: "org-1",
@@ -137,7 +139,10 @@ describe("UsersService", () => {
       };
       const result = await service.invite(body);
 
-      expect(mockUserModel.findOne).toHaveBeenCalledWith({ email: "invited@example.com" });
+      expect(mockUserModel.findOne).toHaveBeenCalledWith({
+        email: "invited@example.com",
+        ...activeDocumentFilter
+      });
       expect(mockUserModel.create).toHaveBeenCalledWith({
         organizationId: "org-1",
         email: "invited@example.com",
@@ -183,7 +188,7 @@ describe("UsersService", () => {
   describe("activateInvitedUser", () => {
     it("should activate invited user with hashed password", async () => {
       const doc = mockDoc({ status: "invited" });
-      mockUserModel.findById.mockReturnValue({
+      mockUserModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(doc)
       });
 
@@ -201,7 +206,7 @@ describe("UsersService", () => {
     });
 
     it("should throw NotFoundException when user not found", async () => {
-      mockUserModel.findById.mockReturnValue({
+      mockUserModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(null)
       });
 
@@ -215,7 +220,7 @@ describe("UsersService", () => {
 
     it("should throw BadRequestException when user is not invited", async () => {
       const doc = mockDoc({ status: "active" });
-      mockUserModel.findById.mockReturnValue({
+      mockUserModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(doc)
       });
 
@@ -231,13 +236,16 @@ describe("UsersService", () => {
   describe("findById", () => {
     it("should return user when found", async () => {
       const doc = mockDoc();
-      mockUserModel.findById.mockReturnValue({
+      mockUserModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(doc)
       });
 
       const result = await service.findById("user-123");
 
-      expect(mockUserModel.findById).toHaveBeenCalledWith("user-123");
+      expect(mockUserModel.findOne).toHaveBeenCalledWith({
+        _id: "user-123",
+        ...activeDocumentFilter
+      });
       expect(result).toMatchObject({
         id: "user-123",
         email: "user@example.com",
@@ -246,7 +254,7 @@ describe("UsersService", () => {
     });
 
     it("should return null when user not found", async () => {
-      mockUserModel.findById.mockReturnValue({
+      mockUserModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(null)
       });
 
@@ -266,7 +274,10 @@ describe("UsersService", () => {
 
       const result = await service.listByOrganization("org-1");
 
-      expect(mockUserModel.find).toHaveBeenCalledWith({ organizationId: "org-1" });
+      expect(mockUserModel.find).toHaveBeenCalledWith({
+        organizationId: "org-1",
+        ...activeDocumentFilter
+      });
       expect(sortMock).toHaveBeenCalledWith({ createdAt: 1 });
       expect(result).toHaveLength(2);
     });
@@ -282,7 +293,10 @@ describe("UsersService", () => {
 
       const result = await service.validateCredentials("user@example.com", "password");
 
-      expect(mockUserModel.findOne).toHaveBeenCalledWith({ email: "user@example.com" });
+      expect(mockUserModel.findOne).toHaveBeenCalledWith({
+        email: "user@example.com",
+        ...activeDocumentFilter
+      });
       expect(bcrypt.compare).toHaveBeenCalledWith("password", "hashed");
       expect(result).toEqual({
         id: "user-123",

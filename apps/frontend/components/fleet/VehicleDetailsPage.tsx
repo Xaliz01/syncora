@@ -14,6 +14,7 @@ const VEHICLE_TYPES: VehicleType[] = [
 ];
 const VEHICLE_STATUSES: VehicleStatus[] = ["actif", "maintenance", "hors_service"];
 import * as fleetApi from "@/lib/fleet.api";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useRouter } from "next/navigation";
 
@@ -42,6 +43,7 @@ const STATUS_COLORS: Record<string, string> = {
 export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
   const router = useRouter();
   const { showToast } = useToast();
+  const confirm = useConfirm();
   const [vehicle, setVehicle] = useState<VehicleResponse | null>(null);
   const [teams, setTeams] = useState<TeamResponse[]>([]);
   const [assignedTeam, setAssignedTeam] = useState<TeamResponse | null>(null);
@@ -159,7 +161,14 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
   };
 
   const handleDelete = async () => {
-    if (!vehicle || !confirm("Supprimer ce véhicule ?")) return;
+    if (!vehicle) return;
+    const ok = await confirm({
+      title: "Supprimer ce véhicule ?",
+      description: "La fiche véhicule et l’historique d’affectation seront supprimés.",
+      confirmLabel: "Supprimer",
+      variant: "danger"
+    });
+    if (!ok) return;
     try {
       await fleetApi.deleteVehicle(vehicle.id);
       showToast("Véhicule supprimé.");

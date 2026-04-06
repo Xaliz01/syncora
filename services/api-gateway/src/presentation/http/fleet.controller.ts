@@ -12,6 +12,7 @@ import {
 import { AbstractFleetGatewayService } from "../../domain/ports/fleet.service.port";
 import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
 import { RequirePermissionGuard, RequirePermissions } from "../../infrastructure/require-permission.guard";
+import { SubscriptionAccessGuard } from "../../infrastructure/subscription-access.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
 import type { AuthUser } from "@syncora/shared";
 import type {
@@ -34,11 +35,12 @@ interface CreateVehiclePayload {
 }
 
 @Controller("fleet")
-@UseGuards(JwtAuthGuard, RequirePermissionGuard)
+@UseGuards(JwtAuthGuard, SubscriptionAccessGuard, RequirePermissionGuard)
 export class FleetController {
   constructor(private readonly fleetService: AbstractFleetGatewayService) {}
 
   @Post("vehicles")
+  @RequirePermissions("fleet.vehicles.create")
   @RequirePermissions("vehicles.create")
   async createVehicle(
     @CurrentUser() user: AuthUser,
@@ -48,12 +50,14 @@ export class FleetController {
   }
 
   @Get("vehicles")
+  @RequirePermissions("fleet.vehicles.read")
   @RequirePermissions("vehicles.read")
   async listVehicles(@CurrentUser() user: AuthUser) {
     return this.fleetService.listVehicles(user);
   }
 
   @Get("vehicles/:vehicleId")
+  @RequirePermissions("fleet.vehicles.read")
   @RequirePermissions("vehicles.read")
   async getVehicle(
     @CurrentUser() user: AuthUser,
@@ -63,6 +67,7 @@ export class FleetController {
   }
 
   @Patch("vehicles/:vehicleId")
+  @RequirePermissions("fleet.vehicles.update")
   @RequirePermissions("vehicles.update")
   async updateVehicle(
     @CurrentUser() user: AuthUser,
@@ -73,6 +78,7 @@ export class FleetController {
   }
 
   @Delete("vehicles/:vehicleId")
+  @RequirePermissions("fleet.vehicles.delete")
   @RequirePermissions("vehicles.delete")
   async deleteVehicle(
     @CurrentUser() user: AuthUser,
@@ -83,6 +89,7 @@ export class FleetController {
 
   @Put("vehicles/:vehicleId/assign-team")
   @RequirePermissions("vehicles.update")
+  @RequirePermissions("fleet.vehicles.assign")
   async assignTeam(
     @CurrentUser() user: AuthUser,
     @Param("vehicleId") vehicleId: string,
@@ -93,6 +100,7 @@ export class FleetController {
 
   @Delete("vehicles/:vehicleId/assign-team")
   @RequirePermissions("vehicles.update")
+  @RequirePermissions("fleet.vehicles.assign")
   async unassignTeam(
     @CurrentUser() user: AuthUser,
     @Param("vehicleId") vehicleId: string

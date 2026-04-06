@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthContext";
+import { postAuthHomePath } from "@/lib/subscription-access";
 
 export function RegisterPage() {
   const [organizationName, setOrganizationName] = useState("");
@@ -20,13 +21,13 @@ export function RegisterPage() {
     setError(null);
     setLoading(true);
     try {
-      await register({
+      const user = await register({
         organizationName,
         adminEmail,
         adminPassword,
         adminName: adminName.trim() || undefined
       });
-      router.replace("/");
+      router.replace(postAuthHomePath(user));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Création de compte impossible");
     } finally {

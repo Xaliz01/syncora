@@ -127,7 +127,8 @@ export class CasesController {
     @Query("assigneeId") assigneeId?: string,
     @Query("startDate") startDate?: string,
     @Query("endDate") endDate?: string,
-    @Query("status") status?: string
+    @Query("status") status?: string,
+    @Query("unscheduled") unscheduled?: string
   ) {
     this.ensureOrganizationId(organizationId);
     return this.casesService.listInterventions(organizationId, {
@@ -135,7 +136,8 @@ export class CasesController {
       assigneeId,
       startDate,
       endDate,
-      status
+      status,
+      unscheduled: unscheduled === "true"
     });
   }
 

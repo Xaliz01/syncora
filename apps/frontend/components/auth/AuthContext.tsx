@@ -11,18 +11,20 @@ interface AuthState {
 }
 
 interface AuthContextValue extends AuthState {
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<AuthUser>;
   register: (payload: {
     organizationName: string;
     adminEmail: string;
     adminPassword: string;
     adminName?: string;
-  }) => Promise<void>;
+  }) => Promise<AuthUser>;
   acceptInvitation: (payload: {
     invitationToken: string;
     password: string;
     name?: string;
-  }) => Promise<void>;
+  }) => Promise<AuthUser>;
+  /** Recharge l’utilisateur depuis /auth/me (ex. après activation d’un abonnement). */
+  refreshSession: () => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -32,14 +34,14 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>({
     user: null,
-    token: authApi.getToken(),
+    token: null,
     isReady: false
   });
 
   useEffect(() => {
     const token = authApi.getToken();
     if (!token) {
-      setState((s) => ({ ...s, isReady: true }));
+      setState({ user: null, token: null, isReady: true });
       return;
     }
     authApi
@@ -56,10 +58,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setState({ user, token: accessToken, isReady: true });
   }, []);
 
+  const refreshSession = useCallback(async () => {
+    const token = authApi.getToken();
+    if (!token) return;
+    try {
+      const user = await authApi.getMe();
+      setState((prev) => ({ ...prev, user }));
+    } catch {
+      authApi.clearToken();
+      setState({ user: null, token: null, isReady: true });
+    }
+  }, []);
+
   const login = useCallback(
     async (email: string, password: string) => {
       const { accessToken, user } = await authApi.login(email, password);
       persistAuth(accessToken, user);
+      return user;
     },
     [persistAuth]
   );
@@ -73,6 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }) => {
       const { accessToken, user } = await authApi.register(payload);
       persistAuth(accessToken, user);
+      return user;
     },
     [persistAuth]
   );
@@ -81,6 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async (payload: { invitationToken: string; password: string; name?: string }) => {
       const { accessToken, user } = await authApi.acceptInvitation(payload);
       persistAuth(accessToken, user);
+      return user;
     },
     [persistAuth]
   );
@@ -93,14 +110,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<AuthContextValue>(
     () => ({
       ...state,
-      isReady: state.isReady || true,
       isAuthenticated: !!state.token && !!state.user,
       login,
       register,
       acceptInvitation,
+      refreshSession,
       logout
     }),
-    [state, login, register, acceptInvitation, logout]
+    [state, login, register, acceptInvitation, refreshSession, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

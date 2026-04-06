@@ -22,11 +22,12 @@ import type {
 } from "../../domain/ports/cases.service.port";
 import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
 import { RequirePermissionGuard, RequirePermissions } from "../../infrastructure/require-permission.guard";
+import { SubscriptionAccessGuard } from "../../infrastructure/subscription-access.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
 import type { AuthUser } from "@syncora/shared";
 
 @Controller("cases")
-@UseGuards(JwtAuthGuard, RequirePermissionGuard)
+@UseGuards(JwtAuthGuard, SubscriptionAccessGuard, RequirePermissionGuard)
 export class CasesController {
   constructor(private readonly casesService: AbstractCasesGatewayService) {}
 
@@ -149,14 +150,16 @@ export class CasesController {
     @Query("assigneeId") assigneeId?: string,
     @Query("startDate") startDate?: string,
     @Query("endDate") endDate?: string,
-    @Query("status") status?: string
+    @Query("status") status?: string,
+    @Query("unscheduled") unscheduled?: string
   ) {
     return this.casesService.listInterventions(user, {
       caseId,
       assigneeId,
       startDate,
       endDate,
-      status
+      status,
+      unscheduled
     });
   }
 

@@ -1,6 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getModelToken } from "@nestjs/mongoose";
 import { BadRequestException, ConflictException, NotFoundException } from "@nestjs/common";
+import { activeDocumentFilter } from "@syncora/shared";
 import { StockService } from "../stock.service";
 
 describe("StockService", () => {
@@ -215,6 +216,7 @@ describe("StockService", () => {
       expect(mockArticleModel.find).toHaveBeenCalledWith(
         expect.objectContaining({
           organizationId: "org-1",
+          ...activeDocumentFilter,
           isActive: true,
           $or: [
             { name: { $regex: "test", $options: "i" } },
@@ -238,7 +240,11 @@ describe("StockService", () => {
 
       const result = await service.getArticle("article-123", "org-1");
 
-      expect(mockArticleModel.findOne).toHaveBeenCalledWith({ _id: "article-123", organizationId: "org-1" });
+      expect(mockArticleModel.findOne).toHaveBeenCalledWith({
+        _id: "article-123",
+        organizationId: "org-1",
+        ...activeDocumentFilter
+      });
       expect(result.id).toBe("article-123");
       expect(result.name).toBe("Article A");
     });
@@ -275,7 +281,8 @@ describe("StockService", () => {
 
       expect(mockArticleModel.findOne).toHaveBeenCalledWith({
         _id: "article-123",
-        organizationId: "org-1"
+        organizationId: "org-1",
+        ...activeDocumentFilter
       });
       expect(doc.name).toBe("Updated Article");
       expect(doc.reorderPoint).toBe(10);
@@ -304,7 +311,7 @@ describe("StockService", () => {
   });
 
   describe("deleteArticle", () => {
-    it("should soft-delete article (set isActive: false)", async () => {
+    it("should soft-delete article (set isActive: false and deletedAt)", async () => {
       const doc = mockArticleDoc({ isActive: false });
       mockArticleModel.findOneAndUpdate.mockReturnValue({
         exec: jest.fn().mockResolvedValue(doc)
@@ -313,8 +320,8 @@ describe("StockService", () => {
       const result = await service.deleteArticle("article-123", "org-1");
 
       expect(mockArticleModel.findOneAndUpdate).toHaveBeenCalledWith(
-        { _id: "article-123", organizationId: "org-1" },
-        { $set: { isActive: false } },
+        { _id: "article-123", organizationId: "org-1", ...activeDocumentFilter },
+        { $set: { isActive: false, deletedAt: expect.any(Date) } },
         { new: true }
       );
       expect(result).toEqual({ deleted: true });
@@ -359,7 +366,8 @@ describe("StockService", () => {
         expect.objectContaining({
           _id: "article-123",
           organizationId: "org-1",
-          isActive: true
+          isActive: true,
+          ...activeDocumentFilter
         }),
         expect.objectContaining({ $inc: { stockQuantity: 10 } }),
         { new: false }
@@ -404,6 +412,7 @@ describe("StockService", () => {
           _id: "article-123",
           organizationId: "org-1",
           isActive: true,
+          ...activeDocumentFilter,
           stockQuantity: { $gte: 5 }
         }),
         expect.objectContaining({ $inc: { stockQuantity: -5 } }),

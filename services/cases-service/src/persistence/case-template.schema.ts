@@ -31,7 +31,7 @@ export class TemplateStepSubDoc {
 export const TemplateStepSubDocSchema =
   SchemaFactory.createForClass(TemplateStepSubDoc);
 
-@Schema({ timestamps: true, _id: true })
+@Schema({ timestamps: true, _id: true, collection: "case_templates" })
 export class CaseTemplateDocument extends Document {
   declare _id: Types.ObjectId;
 
@@ -46,8 +46,14 @@ export class CaseTemplateDocument extends Document {
 
   @Prop({ type: [TemplateStepSubDocSchema], default: [] })
   steps!: TemplateStepSubDoc[];
+
+  @Prop({ type: Date })
+  deletedAt?: Date | null;
 }
 
 export const CaseTemplateSchema =
   SchemaFactory.createForClass(CaseTemplateDocument);
-CaseTemplateSchema.index({ organizationId: 1, name: 1 }, { unique: true });
+CaseTemplateSchema.index(
+  { organizationId: 1, name: 1 },
+  { unique: true, partialFilterExpression: { deletedAt: null } }
+);

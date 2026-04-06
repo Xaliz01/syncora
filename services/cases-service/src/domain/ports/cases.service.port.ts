@@ -46,6 +46,8 @@ export abstract class AbstractCasesService {
       startDate?: string;
       endDate?: string;
       status?: string;
+      /** Sans créneau horaire (scheduledStart absent ou null) */
+      unscheduled?: boolean;
     }
   ): Promise<InterventionResponse[]>;
   abstract getIntervention(id: string, organizationId: string): Promise<InterventionResponse>;

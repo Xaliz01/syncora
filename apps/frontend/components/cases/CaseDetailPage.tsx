@@ -8,6 +8,10 @@ import * as api from "@/lib/cases.api";
 import * as fleetApi from "@/lib/fleet.api";
 import * as stockApi from "@/lib/stock.api";
 import { listOrganizationUsers } from "@/lib/admin.api";
+import { CaseAssigneesTagsInput } from "@/components/cases/CaseAssigneesTagsInput";
+import { CaseCustomerPicker } from "@/components/cases/CaseCustomerPicker";
+import { CUSTOMER_KIND_LABELS } from "@/components/customers/customer-kind-labels";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import type { CasePriority, CaseStatus, TodoItemStatus } from "@syncora/shared";
 
 const STATUS_LABELS: Record<CaseStatus, string> = {
@@ -61,6 +65,7 @@ const INTERVENTION_STATUS_COLORS: Record<string, string> = {
 export function CaseDetailPage({ caseId }: { caseId: string }) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const confirm = useConfirm();
 
   const { data: caseData, isLoading } = useQuery({
     queryKey: ["case", caseId],
@@ -103,8 +108,9 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   const [editTitle, setEditTitle] = useState("");
   const [editDesc, setEditDesc] = useState("");
   const [editPriority, setEditPriority] = useState<CasePriority>("medium");
-  const [editAssignee, setEditAssignee] = useState("");
+  const [editAssigneeIds, setEditAssigneeIds] = useState<string[]>([]);
   const [editDueDate, setEditDueDate] = useState("");
+  const [editCustomerId, setEditCustomerId] = useState("");
   const [interventionError, setInterventionError] = useState("");
   const [usageDrafts, setUsageDrafts] = useState<
     Record<
@@ -267,6 +273,18 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
     return map;
   }, [articles, stockMovements]);
 
+  const assigneePickerOptions = useMemo(() => {
+    if (!caseData) return [] as { id: string; label: string }[];
+    const map = new Map<string, string>();
+    for (const u of usersData?.users ?? []) {
+      map.set(u.id, u.name?.trim() || u.email);
+    }
+    for (const a of caseData.assignees) {
+      if (!map.has(a.userId)) map.set(a.userId, a.name);
+    }
+    return [...map.entries()].map(([id, label]) => ({ id, label }));
+  }, [caseData, usersData?.users]);
+
   if (isLoading || !caseData) {
     return <div className="text-sm text-slate-500">Chargement…</div>;
   }
@@ -278,8 +296,9 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
     setEditTitle(caseData.title);
     setEditDesc(caseData.description ?? "");
     setEditPriority(caseData.priority);
-    setEditAssignee(caseData.assigneeId ?? "");
+    setEditAssigneeIds(caseData.assignees.map((a) => a.userId));
     setEditDueDate(caseData.dueDate ? caseData.dueDate.split("T")[0] : "");
+    setEditCustomerId(caseData.customerId ?? "");
     setIsEditing(true);
   };
 
@@ -288,77 +307,200 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
       title: editTitle,
       description: editDesc || undefined,
       priority: editPriority,
-      assigneeId: editAssignee || null,
-      dueDate: editDueDate || null
+      assigneeIds: editAssigneeIds,
+      dueDate: editDueDate || null,
+      customerId: editCustomerId.trim() ? editCustomerId.trim() : null
     });
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <Link href="/cases" className="text-sm text-brand-600 hover:text-brand-500 font-medium">
-              &larr; Dossiers
-            </Link>
-          </div>
-
-          {isEditing ? (
-            <div className="space-y-3 max-w-xl">
-              <input
-                type="text"
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-lg font-semibold focus:border-brand-500 focus:outline-none"
-              />
-              <textarea
-                value={editDesc}
-                onChange={(e) => setEditDesc(e.target.value)}
-                rows={2}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
-              />
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <select
-                  value={editPriority}
-                  onChange={(e) => setEditPriority(e.target.value as CasePriority)}
-                  className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                >
-                  <option value="low">Basse</option>
-                  <option value="medium">Moyenne</option>
-                  <option value="high">Haute</option>
-                  <option value="urgent">Urgente</option>
-                </select>
-                <select
-                  value={editAssignee}
-                  onChange={(e) => setEditAssignee(e.target.value)}
-                  className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                >
-                  <option value="">Non assigné</option>
-                  {usersData?.users.map((u) => (
-                    <option key={u.id} value={u.id}>{u.name ?? u.email}</option>
-                  ))}
-                </select>
-                <input
-                  type="date"
-                  value={editDueDate}
-                  onChange={(e) => setEditDueDate(e.target.value)}
-                  className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                />
-              </div>
-              <div className="flex flex-wrap gap-2">
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Link href="/cases" className="text-sm text-brand-600 hover:text-brand-500 font-medium">
+            &larr; Dossiers
+          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            {isEditing ? (
+              <>
                 <button
-                  onClick={handleEditSubmit}
-                  disabled={updateMutation.isPending}
-                  className="rounded-lg bg-brand-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
-                >
-                  Enregistrer
-                </button>
-                <button
+                  type="button"
                   onClick={() => setIsEditing(false)}
-                  className="rounded-lg border border-slate-200 px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50 transition"
+                  className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition"
                 >
                   Annuler
                 </button>
+                <button
+                  type="button"
+                  onClick={handleEditSubmit}
+                  disabled={updateMutation.isPending}
+                  className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
+                >
+                  {updateMutation.isPending ? "…" : "Enregistrer"}
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={startEditing}
+                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition"
+              >
+                Modifier
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={async () => {
+                const ok = await confirm({
+                  title: "Supprimer ce dossier ?",
+                  description:
+                    "Toutes les interventions liées seront supprimées définitivement. Cette action ne peut pas être annulée.",
+                  confirmLabel: "Supprimer le dossier",
+                  variant: "danger"
+                });
+                if (ok) deleteMutation.mutate();
+              }}
+              className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition"
+            >
+              Supprimer
+            </button>
+          </div>
+        </div>
+
+        <div className="min-w-0">
+          {isEditing ? (
+            <div className="space-y-4 w-full">
+              <div className="rounded-lg border border-amber-200 bg-amber-50/60 px-3 py-2.5 text-sm text-amber-950">
+                <div className="flex flex-wrap items-center gap-2 font-medium text-amber-900">
+                  <span className="rounded-md bg-amber-100 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide">
+                    Édition
+                  </span>
+                  <span>Modification des informations du dossier</span>
+                </div>
+                <p className="mt-1.5 text-xs text-amber-900/80 leading-relaxed">
+                  Le <strong>statut</strong> ne se modifie pas ici : une fois revenu sur la fiche (après
+                  enregistrement ou annulation), utilisez la section <strong>Progression</strong>.
+                </p>
+              </div>
+
+              <p className="text-sm text-slate-600">
+                <span className="text-slate-500">Dossier concerné :</span>{" "}
+                <span className="font-medium text-slate-800">{caseData.title}</span>
+              </p>
+
+              <div className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm space-y-6">
+                <div>
+                  <h2 className="text-sm font-semibold text-slate-800">Informations à mettre à jour</h2>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Titre, description, priorité, échéance et personnes assignées. Pensez à enregistrer vos
+                    changements.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 xl:gap-10">
+                  <div className="space-y-5 min-w-0">
+                    <div>
+                      <label htmlFor="case-edit-title" className="block text-sm font-medium text-slate-700 mb-1">
+                        Titre du dossier
+                      </label>
+                      <input
+                        id="case-edit-title"
+                        type="text"
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                        placeholder="Ex. Rénovation immeuble rue des Lilas"
+                      />
+                    </div>
+
+                    <div className="flex flex-col flex-1 min-h-0">
+                      <label htmlFor="case-edit-desc" className="block text-sm font-medium text-slate-700 mb-1">
+                        Description
+                      </label>
+                      <textarea
+                        id="case-edit-desc"
+                        value={editDesc}
+                        onChange={(e) => setEditDesc(e.target.value)}
+                        rows={8}
+                        className="w-full min-h-[12rem] rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 xl:min-h-[14rem]"
+                        placeholder="Contexte, objectifs, contraintes…"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-5 min-w-0">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-4">
+                      <div>
+                        <label htmlFor="case-edit-priority" className="block text-sm font-medium text-slate-700 mb-1">
+                          Priorité
+                        </label>
+                        <select
+                          id="case-edit-priority"
+                          value={editPriority}
+                          onChange={(e) => setEditPriority(e.target.value as CasePriority)}
+                          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                        >
+                          <option value="low">Basse</option>
+                          <option value="medium">Moyenne</option>
+                          <option value="high">Haute</option>
+                          <option value="urgent">Urgente</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label htmlFor="case-edit-due" className="block text-sm font-medium text-slate-700 mb-1">
+                          Date d&apos;échéance
+                        </label>
+                        <input
+                          id="case-edit-due"
+                          type="date"
+                          value={editDueDate}
+                          onChange={(e) => setEditDueDate(e.target.value)}
+                          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                        />
+                        <p className="mt-1 text-xs text-slate-500">Laisser vide si aucune échéance fixée.</p>
+                      </div>
+                    </div>
+
+                    <div>
+                      <span className="block text-sm font-medium text-slate-700 mb-1.5">Personnes assignées</span>
+                      <p className="text-xs text-slate-500 mb-2">
+                        Recherchez un membre de l&apos;organisation pour l&apos;ajouter ou retirez un tag.
+                      </p>
+                      <CaseAssigneesTagsInput
+                        options={assigneePickerOptions}
+                        value={editAssigneeIds}
+                        onChange={setEditAssigneeIds}
+                        placeholder="Rechercher un membre à assigner…"
+                      />
+                    </div>
+
+                    <CaseCustomerPicker
+                      idPrefix="case-edit-customer"
+                      value={editCustomerId}
+                      initialDisplayName={caseData.customer?.displayName}
+                      onChange={setEditCustomerId}
+                      disabled={updateMutation.isPending}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4">
+                  <button
+                    type="button"
+                    onClick={handleEditSubmit}
+                    disabled={updateMutation.isPending}
+                    className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
+                  >
+                    {updateMutation.isPending ? "Enregistrement…" : "Enregistrer les modifications"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditing(false)}
+                    className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 transition"
+                  >
+                    Annuler
+                  </button>
+                </div>
               </div>
             </div>
           ) : (
@@ -385,8 +527,32 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
               {caseData.description && (
                 <p className="mt-1 text-sm text-slate-500">{caseData.description}</p>
               )}
+              {(caseData.customer || caseData.customerId) && (
+                <div className="mt-3 rounded-lg border border-slate-100 bg-slate-50/80 p-3">
+                  <div className="text-xs font-medium uppercase tracking-wide text-slate-500">Client</div>
+                  {caseData.customer ? (
+                    <>
+                      <div className="mt-1 text-sm font-semibold text-slate-800">{caseData.customer.displayName}</div>
+                      <div className="text-xs text-slate-500">
+                        {CUSTOMER_KIND_LABELS[caseData.customer.kind] ?? caseData.customer.kind}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="mt-1 text-sm text-slate-600">Référence client enregistrée</div>
+                  )}
+                </div>
+              )}
+              <div className="mt-3 space-y-1.5">
+                <span className="text-sm text-slate-500">Assignés</span>
+                <CaseAssigneesTagsInput
+                  options={assigneePickerOptions}
+                  value={caseData.assignees.map((a) => a.userId)}
+                  onChange={(ids) => updateMutation.mutate({ assigneeIds: ids })}
+                  disabled={updateMutation.isPending}
+                  placeholder="Rechercher un membre à assigner…"
+                />
+              </div>
               <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
-                {caseData.assigneeName && <span>Assigné à : {caseData.assigneeName}</span>}
                 {caseData.dueDate && (
                   <span>Échéance : {new Date(caseData.dueDate).toLocaleDateString("fr-FR")}</span>
                 )}
@@ -401,26 +567,10 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
             </>
           )}
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {!isEditing && (
-            <button
-              onClick={startEditing}
-              className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50 transition"
-            >
-              Modifier
-            </button>
-          )}
-          <button
-            onClick={() => {
-              if (confirm("Supprimer ce dossier et toutes ses interventions ?")) deleteMutation.mutate();
-            }}
-            className="rounded-lg border border-red-200 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 transition"
-          >
-            Supprimer
-          </button>
-        </div>
       </div>
 
+      {!isEditing && (
+      <>
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex items-center justify-between mb-3">
           <div className="text-sm font-medium text-slate-700">Progression</div>
@@ -860,6 +1010,8 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
           )
         )}
       </div>
+      </>
+      )}
     </div>
   );
 }

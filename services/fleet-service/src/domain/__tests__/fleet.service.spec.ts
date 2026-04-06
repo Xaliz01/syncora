@@ -1,6 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getModelToken } from "@nestjs/mongoose";
 import { ConflictException, NotFoundException } from "@nestjs/common";
+import { activeDocumentFilter } from "@syncora/shared";
 import { FleetService } from "../fleet.service";
 
 describe("FleetService", () => {
@@ -8,9 +9,9 @@ describe("FleetService", () => {
   let mockVehicleModel: {
     create: jest.Mock;
     findOne: jest.Mock;
-    findById: jest.Mock;
     find: jest.Mock;
     updateMany: jest.Mock;
+    updateOne: jest.Mock;
   };
 
   const mockVehicleDoc = (overrides: Record<string, unknown> = {}) => ({
@@ -29,7 +30,6 @@ describe("FleetService", () => {
       key === "createdAt" ? new Date("2025-01-01") : key === "updatedAt" ? new Date("2025-01-02") : undefined
     ),
     save: jest.fn().mockResolvedValue(undefined),
-    deleteOne: jest.fn().mockResolvedValue({ deletedCount: 1 }),
     ...overrides
   });
 
@@ -42,9 +42,11 @@ describe("FleetService", () => {
     mockVehicleModel = {
       create: jest.fn(),
       findOne: jest.fn().mockReturnValue({ exec: execMock }),
-      findById: jest.fn().mockReturnValue({ exec: execMock }),
       find: jest.fn().mockReturnValue(findChain),
-      updateMany: jest.fn().mockResolvedValue({ modifiedCount: 0 })
+      updateMany: jest.fn().mockResolvedValue({ modifiedCount: 0 }),
+      updateOne: jest.fn().mockReturnValue({
+        exec: jest.fn().mockResolvedValue({ matchedCount: 1, modifiedCount: 1 })
+      })
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -83,7 +85,8 @@ describe("FleetService", () => {
 
       expect(mockVehicleModel.findOne).toHaveBeenCalledWith({
         organizationId: "org-1",
-        registrationNumber: "AB-123-CD"
+        registrationNumber: "AB-123-CD",
+        ...activeDocumentFilter
       });
       expect(mockVehicleModel.create).toHaveBeenCalled();
       expect(result.id).toBe("vehicle-123");
@@ -112,18 +115,22 @@ describe("FleetService", () => {
   describe("getVehicle", () => {
     it("should return vehicle when found and org matches", async () => {
       const doc = mockVehicleDoc({ organizationId: "org-1" });
-      mockVehicleModel.findById.mockReturnValue({
+      mockVehicleModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(doc)
       });
 
       const result = await service.getVehicle("org-1", "vehicle-123");
 
-      expect(mockVehicleModel.findById).toHaveBeenCalledWith("vehicle-123");
+      expect(mockVehicleModel.findOne).toHaveBeenCalledWith({
+        _id: "vehicle-123",
+        organizationId: "org-1",
+        ...activeDocumentFilter
+      });
       expect(result.id).toBe("vehicle-123");
     });
 
     it("should throw NotFoundException when vehicle not found", async () => {
-      mockVehicleModel.findById.mockReturnValue({
+      mockVehicleModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(null)
       });
 
@@ -131,9 +138,8 @@ describe("FleetService", () => {
     });
 
     it("should throw NotFoundException when org does not match", async () => {
-      const doc = mockVehicleDoc({ organizationId: "other-org" });
-      mockVehicleModel.findById.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(doc)
+      mockVehicleModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null)
       });
 
       await expect(service.getVehicle("org-1", "vehicle-123")).rejects.toThrow(NotFoundException);
@@ -152,29 +158,29 @@ describe("FleetService", () => {
 
       const result = await service.listVehicles("org-1");
 
-      expect(mockVehicleModel.find).toHaveBeenCalledWith({ organizationId: "org-1" });
+      expect(mockVehicleModel.find).toHaveBeenCalledWith({
+        organizationId: "org-1",
+        ...activeDocumentFilter
+      });
       expect(mockVehicleModel.find().sort).toHaveBeenCalledWith({ createdAt: -1 });
       expect(result).toHaveLength(2);
     });
   });
 
   describe("deleteVehicle", () => {
-    it("should delete vehicle when found and org matches", async () => {
-      const doc = mockVehicleDoc({ organizationId: "org-1" });
-      mockVehicleModel.findById.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(doc)
-      });
-
+    it("should soft-delete vehicle when found and org matches", async () => {
       const result = await service.deleteVehicle("org-1", "vehicle-123");
 
-      expect(mockVehicleModel.findById).toHaveBeenCalledWith("vehicle-123");
-      expect(doc.deleteOne).toHaveBeenCalled();
+      expect(mockVehicleModel.updateOne).toHaveBeenCalledWith(
+        { _id: "vehicle-123", organizationId: "org-1", ...activeDocumentFilter },
+        { $set: { deletedAt: expect.any(Date) } }
+      );
       expect(result).toEqual({ deleted: true });
     });
 
     it("should throw NotFoundException when vehicle not found", async () => {
-      mockVehicleModel.findById.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(null)
+      mockVehicleModel.updateOne.mockReturnValueOnce({
+        exec: jest.fn().mockResolvedValue({ matchedCount: 0, modifiedCount: 0 })
       });
 
       await expect(service.deleteVehicle("org-1", "non-existent")).rejects.toThrow(
@@ -183,9 +189,8 @@ describe("FleetService", () => {
     });
 
     it("should throw NotFoundException when org does not match", async () => {
-      const doc = mockVehicleDoc({ organizationId: "other-org" });
-      mockVehicleModel.findById.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(doc)
+      mockVehicleModel.updateOne.mockReturnValueOnce({
+        exec: jest.fn().mockResolvedValue({ matchedCount: 0, modifiedCount: 0 })
       });
 
       await expect(service.deleteVehicle("org-1", "vehicle-123")).rejects.toThrow(

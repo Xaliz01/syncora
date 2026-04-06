@@ -13,10 +13,12 @@ import type {
   InvitationResponse,
   OrganizationResponse,
   UserResponse,
-  ValidateCredentialsResponse
+  ValidateCredentialsResponse,
+  PermissionCode
 } from "@syncora/shared";
-import { AVAILABLE_PERMISSION_CODES } from "@syncora/shared";
+import { ASSIGNABLE_PERMISSION_CODES } from "@syncora/shared";
 import { AbstractAuthService } from "./ports/auth.service.port";
+import { AbstractSubscriptionsGatewayService } from "./ports/subscriptions.service.port";
 
 const ORGANIZATIONS_URL =
   process.env.ORGANIZATIONS_SERVICE_URL ?? "http://localhost:3001";
@@ -28,9 +30,27 @@ const PERMISSIONS_URL =
 export class AuthService extends AbstractAuthService {
   constructor(
     private readonly httpService: HttpService,
-    private readonly jwtService: JwtService
+    private readonly jwtService: JwtService,
+    private readonly subscriptionsGateway: AbstractSubscriptionsGatewayService
   ) {
     super();
+  }
+
+  async getSessionUser(jwt: JwtPayload): Promise<AuthUser> {
+    const permissions = await this.mergePermissionsWithSubscription(
+      jwt.organizationId,
+      jwt.sub,
+      jwt.role
+    );
+    return {
+      id: jwt.sub,
+      email: jwt.email,
+      organizationId: jwt.organizationId,
+      role: jwt.role,
+      status: jwt.status,
+      permissions,
+      name: jwt.name
+    };
   }
 
   async register(body: RegisterBody): Promise<AuthResponse> {
@@ -66,7 +86,7 @@ export class AuthService extends AbstractAuthService {
       throw err;
     }
 
-    const permissions = await this.resolveEffectivePermissions(
+    const permissions = await this.mergePermissionsWithSubscription(
       user.organizationId,
       user.id,
       user.role
@@ -109,7 +129,7 @@ export class AuthService extends AbstractAuthService {
       throw err;
     }
 
-    const permissions = await this.resolveEffectivePermissions(
+    const permissions = await this.mergePermissionsWithSubscription(
       user.organizationId,
       user.id,
       user.role
@@ -181,7 +201,7 @@ export class AuthService extends AbstractAuthService {
       throw err;
     }
 
-    const permissions = await this.resolveEffectivePermissions(
+    const permissions = await this.mergePermissionsWithSubscription(
       user.organizationId,
       user.id,
       user.role
@@ -208,6 +228,29 @@ export class AuthService extends AbstractAuthService {
     return { accessToken, user: authUser };
   }
 
+  private async mergePermissionsWithSubscription(
+    organizationId: string,
+    userId: string,
+    role: "admin" | "member"
+  ): Promise<PermissionCode[]> {
+    const basePerms = await this.resolveEffectivePermissions(organizationId, userId, role);
+    const minimalUser: AuthUser = {
+      id: userId,
+      email: "",
+      organizationId,
+      role,
+      status: "active",
+      permissions: basePerms
+    };
+    try {
+      const sub = await this.subscriptionsGateway.getCurrentSubscription(minimalUser);
+      if (!sub.hasAccess) return [];
+      return [...new Set([...basePerms, "subscription.active" as PermissionCode])];
+    } catch {
+      return [];
+    }
+  }
+
   private async resolveEffectivePermissions(
     organizationId: string,
     userId: string,
@@ -223,7 +266,7 @@ export class AuthService extends AbstractAuthService {
       );
       return res.data.permissions;
     } catch {
-      return role === "admin" ? [...AVAILABLE_PERMISSION_CODES] : [];
+      return role === "admin" ? [...ASSIGNABLE_PERMISSION_CODES] : [];
     }
   }
 }

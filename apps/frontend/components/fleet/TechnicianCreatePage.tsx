@@ -53,7 +53,7 @@ export function TechnicianCreatePage() {
   };
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-6">
       <div>
         <h1 className="text-xl sm:text-2xl font-semibold">Ajouter un technicien</h1>
         <p className="text-sm text-slate-500 mt-1">

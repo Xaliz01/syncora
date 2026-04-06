@@ -86,6 +86,9 @@ export function DashboardPage() {
                 >
                   <div className="min-w-0 flex-1">
                     <div className="text-sm font-medium text-slate-800 truncate">{c.title}</div>
+                    {c.customer?.displayName && (
+                      <div className="text-xs text-slate-600 truncate">Client : {c.customer.displayName}</div>
+                    )}
                     <div className="text-xs text-red-600">
                       Échéance : {c.dueDate ? new Date(c.dueDate).toLocaleDateString("fr-FR") : "—"}
                     </div>
@@ -128,6 +131,9 @@ export function DashboardPage() {
                         {STATUS_LABELS[c.status]}
                       </span>
                     </div>
+                    {c.customer?.displayName && (
+                      <div className="text-xs text-slate-500 truncate">Client : {c.customer.displayName}</div>
+                    )}
                     {c.nextTodo && (
                       <div className="text-xs text-amber-600 mt-0.5 truncate">
                         A faire : {c.nextTodo}

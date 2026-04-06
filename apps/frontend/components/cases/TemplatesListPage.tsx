@@ -4,9 +4,11 @@ import React from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as api from "@/lib/cases.api";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 export function TemplatesListPage() {
   const queryClient = useQueryClient();
+  const confirm = useConfirm();
   const { data: templates, isLoading } = useQuery({
     queryKey: ["case-templates"],
     queryFn: () => api.listTemplates()
@@ -72,8 +74,15 @@ export function TemplatesListPage() {
                 </Link>
                 <button
                   type="button"
-                  onClick={() => {
-                    if (confirm("Supprimer ce modèle ?")) deleteMutation.mutate(template.id);
+                  onClick={async () => {
+                    const ok = await confirm({
+                      title: "Supprimer ce modèle ?",
+                      description:
+                        "Les dossiers déjà créés à partir de ce modèle ne sont pas supprimés, mais le modèle ne sera plus disponible pour les nouveaux dossiers.",
+                      confirmLabel: "Supprimer le modèle",
+                      variant: "danger"
+                    });
+                    if (ok) deleteMutation.mutate(template.id);
                   }}
                   className="text-xs text-red-500 hover:text-red-600"
                 >

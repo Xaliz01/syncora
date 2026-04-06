@@ -6,16 +6,17 @@ import {
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
-import type {
-  AddInterventionArticleUsageBody,
-  ArticleResponse,
-  CreateArticleBody,
-  CreateArticleMovementBody,
-  InterventionArticleUsageResponse,
-  StockMovementResponse,
-  StockMovementType,
-  StockStatus,
-  UpdateArticleBody
+import {
+  activeDocumentFilter,
+  type AddInterventionArticleUsageBody,
+  type ArticleResponse,
+  type CreateArticleBody,
+  type CreateArticleMovementBody,
+  type InterventionArticleUsageResponse,
+  type StockMovementResponse,
+  type StockMovementType,
+  type StockStatus,
+  type UpdateArticleBody
 } from "@syncora/shared";
 import type { ArticleDocument } from "../persistence/article.schema";
 import type { StockMovementDocument } from "../persistence/stock-movement.schema";
@@ -90,7 +91,7 @@ export class StockService extends AbstractStockService {
     organizationId: string,
     filters?: { search?: string; lowStockOnly?: boolean; activeOnly?: boolean }
   ): Promise<ArticleResponse[]> {
-    const query: Record<string, unknown> = { organizationId };
+    const query: Record<string, unknown> = { organizationId, ...activeDocumentFilter };
     const activeOnly = filters?.activeOnly ?? true;
     if (activeOnly) query.isActive = true;
     if (filters?.search) {
@@ -108,13 +109,17 @@ export class StockService extends AbstractStockService {
   }
 
   async getArticle(id: string, organizationId: string): Promise<ArticleResponse> {
-    const doc = await this.articleModel.findOne({ _id: id, organizationId }).exec();
+    const doc = await this.articleModel
+      .findOne({ _id: id, organizationId, ...activeDocumentFilter })
+      .exec();
     if (!doc) throw new NotFoundException("Article not found");
     return this.toArticleResponse(doc);
   }
 
   async updateArticle(id: string, body: UpdateArticleBody): Promise<ArticleResponse> {
-    const doc = await this.articleModel.findOne({ _id: id, organizationId: body.organizationId }).exec();
+    const doc = await this.articleModel
+      .findOne({ _id: id, organizationId: body.organizationId, ...activeDocumentFilter })
+      .exec();
     if (!doc) throw new NotFoundException("Article not found");
 
     if (body.name !== undefined) {
@@ -161,7 +166,11 @@ export class StockService extends AbstractStockService {
 
   async deleteArticle(id: string, organizationId: string): Promise<{ deleted: true }> {
     const doc = await this.articleModel
-      .findOneAndUpdate({ _id: id, organizationId }, { $set: { isActive: false } }, { new: true })
+      .findOneAndUpdate(
+        { _id: id, organizationId, ...activeDocumentFilter },
+        { $set: { isActive: false, deletedAt: new Date() } },
+        { new: true }
+      )
       .exec();
     if (!doc) throw new NotFoundException("Article not found");
     return { deleted: true };
@@ -370,7 +379,8 @@ export class StockService extends AbstractStockService {
     const baseFilter = {
       _id: params.articleId,
       organizationId: params.organizationId,
-      isActive: true
+      isActive: true,
+      ...activeDocumentFilter
     };
 
     let previousDoc: ArticleDocument | null = null;

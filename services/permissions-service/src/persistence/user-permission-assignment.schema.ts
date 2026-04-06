@@ -2,7 +2,7 @@ import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document } from "mongoose";
 import type { PermissionCode } from "@syncora/shared";
 
-@Schema({ timestamps: true, _id: true })
+@Schema({ timestamps: true, _id: true, collection: "user_permission_assignments" })
 export class UserPermissionAssignmentDocument extends Document {
   @Prop({ required: true })
   organizationId!: string;

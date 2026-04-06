@@ -145,7 +145,7 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
   const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6">
       <div>
         <h1 className="text-xl sm:text-2xl font-semibold">
           {isEdit ? "Modifier le modèle" : "Nouveau modèle de dossier"}

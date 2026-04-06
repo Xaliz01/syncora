@@ -4,6 +4,9 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { useAuth } from "@/components/auth/AuthContext";
+import { hasActiveSubscriptionAccess } from "@/lib/subscription-access";
+import { OrganizationSwitcher } from "@/components/organization/OrganizationSwitcher";
+import { hasPermission } from "@/lib/auth-permissions";
 
 interface MenuLink {
   label: string;
@@ -22,6 +25,12 @@ function isLinkActive(currentPath: string, href: string): boolean {
   }
   if (href === "/cases") {
     return currentPath === "/cases" || (currentPath.startsWith("/cases/") && !currentPath.startsWith("/cases/calendar"));
+  }
+  if (href === "/customers") {
+    return currentPath === "/customers" || currentPath.startsWith("/customers/");
+  }
+  if (href === "/organization") {
+    return currentPath === "/organization" || currentPath.startsWith("/organization/");
   }
   return currentPath === href || currentPath.startsWith(`${href}/`);
 }
@@ -92,43 +101,72 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const subscriptionOk = hasActiveSubscriptionAccess(user);
 
-  const menuSections: MenuSection[] = [
-    { label: "Général", links: [{ label: "Tableau de bord", href: "/" }] },
-    {
-      label: "Dossiers",
-      links: [
-        { label: "Tous les dossiers", href: "/cases" },
-        { label: "Calendrier", href: "/cases/calendar" },
-        { label: "Mouvements de stock", href: "/stock" }
+  const menuSections: MenuSection[] = subscriptionOk
+    ? [
+        {
+          label: "Général",
+          links: [
+            { label: "Tableau de bord", href: "/" },
+            ...(user ? [{ label: "Mon organisation", href: "/organization" }] : [])
+          ]
+        },
+        {
+          label: "Dossiers",
+          links: [
+            { label: "Tous les dossiers", href: "/cases" },
+            { label: "Clients", href: "/customers" },
+            { label: "Calendrier", href: "/cases/calendar" },
+            { label: "Mouvements de stock", href: "/stock" }
+          ]
+        }
       ]
+    : [
+        {
+          label: "Abonnement",
+          links: user ? [{ label: "Mon organisation et abonnement", href: "/organization" }] : []
+        }
+      ];
+  if (subscriptionOk && user) {
+    const fleetLinks: MenuLink[] = [];
+    if (hasPermission(user, "teams.read")) {
+      fleetLinks.push({ label: "Équipes", href: "/fleet/teams" });
     }
-  ];
-  if (user?.role === "admin") {
-    menuSections.push(
-      {
-        label: "Gestion de la flotte",
-        links: [
-          { label: "Équipes", href: "/fleet/teams" },
-          { label: "Techniciens", href: "/fleet/technicians" },
-          { label: "Véhicules", href: "/fleet/vehicles" },
-          { label: "Agences", href: "/fleet/agences" }
-        ]
-      },
-      {
+    if (hasPermission(user, "fleet.technicians.read")) {
+      fleetLinks.push({ label: "Techniciens", href: "/fleet/technicians" });
+    }
+    if (hasPermission(user, "fleet.vehicles.read")) {
+      fleetLinks.push({ label: "Véhicules", href: "/fleet/vehicles" });
+    }
+    if (hasPermission(user, "agences.read")) {
+      fleetLinks.push({ label: "Agences", href: "/fleet/agences" });
+    }
+    if (fleetLinks.length > 0) {
+      menuSections.push({ label: "Gestion", links: fleetLinks });
+    }
+
+    if (hasPermission(user, "users.read")) {
+      menuSections.push({
         label: "Utilisateurs",
         links: [{ label: "Gérer les utilisateurs", href: "/users" }]
-      },
-      {
-        label: "Paramètres",
-        links: [
-          { label: "Catalogue articles", href: "/settings/stock/articles" },
-          { label: "Modèles de dossier", href: "/settings/case-templates" },
-          { label: "Permissions", href: "/settings/permissions" },
-          { label: "Profils", href: "/settings/profiles" }
-        ]
-      }
-    );
+      });
+    }
+
+    const settingsLinks: MenuLink[] = [];
+    if (hasPermission(user, "stock.articles.read")) {
+      settingsLinks.push({ label: "Catalogue articles", href: "/settings/stock/articles" });
+    }
+    if (hasPermission(user, "case_templates.read")) {
+      settingsLinks.push({ label: "Modèles de dossier", href: "/settings/case-templates" });
+    }
+    if (hasPermission(user, "profiles.read")) {
+      settingsLinks.push({ label: "Permissions", href: "/settings/permissions" });
+      settingsLinks.push({ label: "Profils", href: "/settings/profiles" });
+    }
+    if (settingsLinks.length > 0) {
+      menuSections.push({ label: "Paramètres", links: settingsLinks });
+    }
   }
 
   return (
@@ -210,6 +248,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="flex flex-1">
         {/* Desktop sidebar */}
         <aside className="hidden lg:flex lg:flex-col lg:w-[260px] lg:flex-shrink-0 border-r border-slate-200 bg-white sticky top-[57px] h-[calc(100vh-57px)] overflow-y-auto">
+          <OrganizationSwitcher />
           <SidebarContent menuSections={menuSections} pathname={pathname} />
         </aside>
 
@@ -230,6 +269,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   <div className="text-[11px] text-slate-500 leading-tight">Espace organisation</div>
                 </div>
               </div>
+              <OrganizationSwitcher />
               <SidebarContent
                 menuSections={menuSections}
                 pathname={pathname}
@@ -240,7 +280,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         )}
 
         <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8">
-          {children}
+          <div className="mx-auto w-full max-w-screen-2xl">{children}</div>
         </main>
       </div>
     </div>
