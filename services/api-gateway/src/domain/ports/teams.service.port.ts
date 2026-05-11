@@ -13,6 +13,7 @@ export abstract class AbstractTeamsGatewayService {
       agenceId?: string;
       technicianIds?: string[];
       status?: TeamStatus;
+      calendarColor?: string;
     }
   ): Promise<TeamResponse>;
   abstract listTeams(currentUser: AuthUser): Promise<TeamResponse[]>;

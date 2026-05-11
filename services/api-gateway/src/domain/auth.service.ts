@@ -1,4 +1,10 @@
-import { Injectable, UnauthorizedException, ConflictException } from "@nestjs/common";
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+  BadRequestException,
+  ForbiddenException
+} from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
@@ -11,10 +17,13 @@ import type {
   JwtPayload,
   EffectivePermissionsResponse,
   InvitationResponse,
+  OrganizationMembershipResponse,
   OrganizationResponse,
   UserResponse,
   ValidateCredentialsResponse,
-  PermissionCode
+  PermissionCode,
+  CreateOrganizationBody,
+  SwitchOrganizationBody
 } from "@syncora/shared";
 import { ASSIGNABLE_PERMISSION_CODES } from "@syncora/shared";
 import { AbstractAuthService } from "./ports/auth.service.port";
@@ -126,6 +135,154 @@ export class AuthService extends AbstractAuthService {
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } })?.response?.status;
       if (status === 401) throw new UnauthorizedException("Email ou mot de passe incorrect");
+      throw err;
+    }
+
+    const permissions = await this.mergePermissionsWithSubscription(
+      user.organizationId,
+      user.id,
+      user.role
+    );
+    const authUser: AuthUser = {
+      id: user.id,
+      email: user.email,
+      organizationId: user.organizationId,
+      role: user.role,
+      status: user.status,
+      permissions,
+      name: user.name
+    };
+    const payload: JwtPayload = {
+      sub: user.id,
+      organizationId: user.organizationId,
+      role: user.role,
+      status: user.status,
+      permissions,
+      email: user.email,
+      name: user.name
+    };
+    const accessToken = this.jwtService.sign(payload);
+    return { accessToken, user: authUser };
+  }
+
+  async createOrganization(body: CreateOrganizationBody, jwt: JwtPayload): Promise<AuthResponse> {
+    if (!body.name?.trim()) {
+      throw new BadRequestException("Le nom de l’organisation est requis");
+    }
+
+    let org: OrganizationResponse;
+    try {
+      const res = await firstValueFrom(
+        this.httpService.post<OrganizationResponse>(`${ORGANIZATIONS_URL}/organizations`, {
+          name: body.name.trim()
+        })
+      );
+      org = res.data;
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 409) throw new ConflictException("Ce nom d'organisation est déjà utilisé");
+      throw err;
+    }
+
+    try {
+      await firstValueFrom(
+        this.httpService.post<OrganizationMembershipResponse>(
+          `${USERS_URL}/users/${jwt.sub}/organization-memberships`,
+          {
+            organizationId: org.id,
+            role: "admin",
+            membershipStatus: "active"
+          }
+        )
+      );
+    } catch (err: unknown) {
+      throw err;
+    }
+
+    let user: UserResponse;
+    try {
+      const res = await firstValueFrom(
+        this.httpService.patch<UserResponse>(`${USERS_URL}/users/${jwt.sub}`, {
+          organizationId: org.id,
+          role: "admin"
+        })
+      );
+      user = res.data;
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 404) throw new UnauthorizedException("Utilisateur introuvable");
+      throw err;
+    }
+
+    const permissions = await this.mergePermissionsWithSubscription(
+      user.organizationId,
+      user.id,
+      user.role
+    );
+    const authUser: AuthUser = {
+      id: user.id,
+      email: user.email,
+      organizationId: user.organizationId,
+      role: user.role,
+      status: user.status,
+      permissions,
+      name: user.name
+    };
+    const payload: JwtPayload = {
+      sub: user.id,
+      organizationId: user.organizationId,
+      role: user.role,
+      status: user.status,
+      permissions,
+      email: user.email,
+      name: user.name
+    };
+    const accessToken = this.jwtService.sign(payload);
+    return { accessToken, user: authUser };
+  }
+
+  async switchOrganization(body: SwitchOrganizationBody, jwt: JwtPayload): Promise<AuthResponse> {
+    const targetId = body.organizationId?.trim();
+    if (!targetId) {
+      throw new BadRequestException("organizationId est requis");
+    }
+    if (targetId === jwt.organizationId) {
+      throw new BadRequestException("Vous êtes déjà sur cette organisation.");
+    }
+
+    let memberships: OrganizationMembershipResponse[];
+    try {
+      const res = await firstValueFrom(
+        this.httpService.get<OrganizationMembershipResponse[]>(
+          `${USERS_URL}/users/${jwt.sub}/organization-memberships`
+        )
+      );
+      memberships = res.data;
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 404) throw new UnauthorizedException("Utilisateur introuvable");
+      throw err;
+    }
+
+    const targetMembership = memberships.find(
+      (m) => m.organizationId === targetId && m.membershipStatus === "active"
+    );
+    if (!targetMembership) {
+      throw new ForbiddenException("Organisation non accessible pour ce compte.");
+    }
+
+    let user: UserResponse;
+    try {
+      const res = await firstValueFrom(
+        this.httpService.patch<UserResponse>(`${USERS_URL}/users/${jwt.sub}`, {
+          organizationId: targetId,
+          role: targetMembership.role
+        })
+      );
+      user = res.data;
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 404) throw new UnauthorizedException("Utilisateur introuvable");
       throw err;
     }
 

@@ -1,9 +1,17 @@
 "use client";
 
+import Link from "next/link";
 import React, { useCallback, useMemo, useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as api from "@/lib/cases.api";
-import type { InterventionResponse } from "@syncora/shared";
+import * as fleetApi from "@/lib/fleet.api";
+import {
+  getTeamCalendarCardAppearance,
+  getTeamCalendarCardClasses,
+  normalizeCalendarColorHex,
+  teamLegendSwatchStyle
+} from "@/lib/team-calendar-colors";
+import type { InterventionResponse, TeamResponse } from "@syncora/shared";
 
 type ViewMode = "week" | "month";
 
@@ -101,9 +109,11 @@ function unscheduledPanelStatusDot(status: string): string {
 function UnscheduledPanel({
   onDragStart,
   onDropToUnschedule,
+  teamsById
 }: {
   onDragStart: (e: React.DragEvent, intervention: InterventionResponse) => void;
   onDropToUnschedule: (interventionId: string) => void;
+  teamsById: Map<string, TeamResponse>;
 }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [collapsed, setCollapsed] = useState(false);
@@ -274,23 +284,31 @@ function UnscheduledPanel({
           </div>
         )}
 
-        {filtered.map((intervention) => (
-          <div
+        {filtered.map((intervention) => {
+          const appearance = getTeamCalendarCardAppearance(
+            intervention.assignedTeamId,
+            intervention.assignedTeamId ? teamsById.get(intervention.assignedTeamId)?.calendarColor : undefined
+          );
+          return (
+          <Link
             key={intervention.id}
+            href={`/cases/${intervention.caseId}`}
             draggable
             onDragStart={(e) => onDragStart(e, intervention)}
-            className="group rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2.5 cursor-grab active:cursor-grabbing hover:border-brand-300 hover:shadow-sm dark:shadow-slate-950/20 transition-all"
+            title={`Ouvrir le dossier${intervention.caseTitle ? ` « ${intervention.caseTitle} »` : ""}`}
+            className={`group block rounded-lg p-2.5 cursor-grab active:cursor-grabbing hover:shadow-md transition-all no-underline text-left ${appearance.className}`}
+            style={appearance.style}
           >
             <div className="flex items-start gap-2">
-              <div className="mt-1 flex-shrink-0">
-                <svg className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 group-hover:text-brand-500 transition" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <div className="mt-1 flex-shrink-0 opacity-70">
+                <svg className="w-3.5 h-3.5 transition group-hover:opacity-100" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5" />
                 </svg>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-slate-800 dark:text-slate-100 truncate">{intervention.title}</p>
+                <p className="text-xs font-medium truncate text-inherit">{intervention.title}</p>
                 {intervention.caseTitle && (
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5">{intervention.caseTitle}</p>
+                  <p className="text-[10px] truncate mt-0.5 opacity-85">{intervention.caseTitle}</p>
                 )}
                 <div className="flex items-center gap-1.5 mt-1.5">
                   <span
@@ -310,14 +328,15 @@ function UnscheduledPanel({
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          </Link>
+          );
+        })}
       </div>
 
       {/* Footer */}
       <div className="px-3 py-2 border-t border-slate-100 dark:border-slate-800">
         <p className="text-[10px] text-slate-400 dark:text-slate-500 text-center">
-          Glissez depuis/vers le calendrier pour planifier/déplanifier
+          Clic pour ouvrir le dossier · glissez depuis/vers le calendrier pour planifier/déplanifier
         </p>
       </div>
     </div>
@@ -366,6 +385,21 @@ export function CalendarPage() {
         endDate: rangeEnd.toISOString()
       })
   });
+
+  const { data: teams } = useQuery({
+    queryKey: ["fleet-teams"],
+    queryFn: () => fleetApi.listTeams()
+  });
+
+  const teamsById = useMemo(
+    () => new Map((teams ?? []).map((t) => [t.id, t])),
+    [teams]
+  );
+
+  const teamsSorted = useMemo(
+    () => [...(teams ?? [])].sort((a, b) => a.name.localeCompare(b.name, "fr")),
+    [teams]
+  );
 
   const updateMutation = useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: api.UpdateInterventionPayload }) =>
@@ -469,7 +503,8 @@ export function CalendarPage() {
         <div>
           <h1 className="text-xl sm:text-2xl font-semibold">Calendrier</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Planifiez et déplacez vos interventions par glisser-déposer.
+            Couleur de carte = équipe assignée à l&apos;intervention. Cliquez pour ouvrir le dossier, glissez-déposez pour
+            planifier.
           </p>
         </div>
         <div className="flex items-center gap-2 self-start">
@@ -558,23 +593,33 @@ export function CalendarPage() {
                       onDragOver={handleDragOver}
                       onDrop={(e) => handleDrop(e, day, hour)}
                     >
-                      {dayInterventions.map((intervention) => (
-                        <div
+                      {dayInterventions.map((intervention) => {
+                        const appearance = getTeamCalendarCardAppearance(
+                          intervention.assignedTeamId,
+                          intervention.assignedTeamId
+                            ? teamsById.get(intervention.assignedTeamId)?.calendarColor
+                            : undefined
+                        );
+                        return (
+                        <Link
                           key={intervention.id}
+                          href={`/cases/${intervention.caseId}`}
                           draggable
                           onDragStart={(e) => handleDragStart(e, intervention)}
-                          className={`rounded px-1.5 py-0.5 text-[10px] cursor-grab active:cursor-grabbing mb-0.5 truncate ${
-                            intervention.status === "completed"
-                              ? "bg-green-100 text-green-800 border border-green-200"
-                              : intervention.status === "in_progress"
-                              ? "bg-amber-100 text-amber-800 border border-amber-200"
-                              : "bg-blue-100 text-blue-800 border border-blue-200"
-                          }`}
-                          title={`${intervention.title}${intervention.caseTitle ? ` (${intervention.caseTitle})` : ""}`}
+                          className={`block rounded px-1.5 py-0.5 text-[10px] cursor-grab active:cursor-grabbing mb-0.5 no-underline ${appearance.className}`}
+                          style={appearance.style}
+                          title={`Ouvrir le dossier — ${intervention.title}${intervention.caseTitle ? ` (${intervention.caseTitle})` : ""}${intervention.assignedTeamName ? ` · ${intervention.assignedTeamName}` : ""}`}
                         >
-                          {intervention.title}
-                        </div>
-                      ))}
+                          <span className="flex items-center gap-1 min-w-0">
+                            <span
+                              className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ring-1 ring-white/50 dark:ring-black/20 ${STATUS_DOT[intervention.status] ?? "bg-slate-400"}`}
+                              aria-hidden
+                            />
+                            <span className="truncate text-inherit">{intervention.title}</span>
+                          </span>
+                        </Link>
+                        );
+                      })}
                     </div>
                   );
                 })}
@@ -609,20 +654,31 @@ export function CalendarPage() {
                           {day.getDate()}
                         </div>
                         <div className="space-y-0.5">
-                          {dayInterventions.slice(0, 3).map((intervention) => (
-                            <div
+                          {dayInterventions.slice(0, 3).map((intervention) => {
+                            const appearance = getTeamCalendarCardAppearance(
+                              intervention.assignedTeamId,
+                              intervention.assignedTeamId
+                                ? teamsById.get(intervention.assignedTeamId)?.calendarColor
+                                : undefined
+                            );
+                            return (
+                            <Link
                               key={intervention.id}
+                              href={`/cases/${intervention.caseId}`}
                               draggable
                               onDragStart={(e) => handleDragStart(e, intervention)}
-                              className="flex items-center gap-1 cursor-grab active:cursor-grabbing"
-                              title={`${intervention.title}${intervention.caseTitle ? ` (${intervention.caseTitle})` : ""}`}
+                              className={`flex items-center gap-1 cursor-grab active:cursor-grabbing rounded px-0.5 py-0.5 -mx-0.5 no-underline min-w-0 ${appearance.className}`}
+                              style={appearance.style}
+                              title={`Ouvrir le dossier — ${intervention.title}${intervention.caseTitle ? ` (${intervention.caseTitle})` : ""}${intervention.assignedTeamName ? ` · ${intervention.assignedTeamName}` : ""}`}
                             >
-                              <div className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${STATUS_DOT[intervention.status] ?? "bg-slate-400"}`} />
-                              <span className="text-[10px] text-slate-700 dark:text-slate-200 truncate">
-                                {intervention.title}
-                              </span>
-                            </div>
-                          ))}
+                              <span
+                                className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ring-1 ring-white/50 dark:ring-black/20 ${STATUS_DOT[intervention.status] ?? "bg-slate-400"}`}
+                                aria-hidden
+                              />
+                              <span className="text-[10px] truncate text-inherit">{intervention.title}</span>
+                            </Link>
+                            );
+                          })}
                           {dayInterventions.length > 3 && (
                             <div className="text-[10px] text-slate-400 dark:text-slate-500">
                               +{dayInterventions.length - 3} autre{dayInterventions.length - 3 > 1 ? "s" : ""}
@@ -639,19 +695,67 @@ export function CalendarPage() {
         </div>
       )}
 
-      <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
-        <span className="flex items-center gap-1">
-          <span className="h-2 w-2 rounded-full bg-blue-500" /> Planifiée
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="h-2 w-2 rounded-full bg-amber-500" /> En cours
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="h-2 w-2 rounded-full bg-green-500" /> Terminée
-        </span>
+      <div className="flex flex-col gap-3 text-xs text-slate-500 dark:text-slate-400">
+        <p>
+          <span className="font-medium text-slate-600 dark:text-slate-300">Couleur des cartes</span> — selon
+          l&apos;équipe assignée à l&apos;intervention. Sans équipe : gris. Couleur personnalisable sur la fiche de chaque
+          équipe (Flotte).
+        </p>
+
+        {teamsSorted.length > 0 && (
+          <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/50 px-3 py-2.5">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-2">
+              Légende équipes
+            </p>
+            <ul className="flex flex-wrap gap-x-4 gap-y-2">
+              {teamsSorted.map((t) => (
+                <li key={t.id} className="flex items-center gap-2 min-w-0 max-w-[220px]">
+                  {t.calendarColor && normalizeCalendarColorHex(t.calendarColor) ? (
+                    <span
+                      className="team-cal-legend-swatch h-3.5 w-3.5 rounded shrink-0"
+                      style={teamLegendSwatchStyle(t.calendarColor)}
+                      aria-hidden
+                    />
+                  ) : (
+                    <span
+                      className={`inline-block h-3.5 w-3.5 rounded shrink-0 ${getTeamCalendarCardClasses(t.id)}`}
+                      aria-hidden
+                    />
+                  )}
+                  <span className="truncate text-slate-700 dark:text-slate-200" title={t.name}>
+                    {t.name}
+                  </span>
+                  {!t.calendarColor && (
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 shrink-0">(auto)</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+          <span className="font-medium text-slate-600 dark:text-slate-300 mr-1">Statut (point)</span>
+          <span className="flex items-center gap-1">
+            <span className="h-2 w-2 rounded-full bg-blue-500" /> Planifiée
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="h-2 w-2 rounded-full bg-amber-500" /> En cours
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="h-2 w-2 rounded-full bg-green-500" /> Terminée
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="h-2 w-2 rounded-full bg-red-400" /> Annulée
+          </span>
+        </div>
       </div>
         </div>
-        <UnscheduledPanel onDragStart={handleDragStart} onDropToUnschedule={handleDropToUnschedule} />
+        <UnscheduledPanel
+          onDragStart={handleDragStart}
+          onDropToUnschedule={handleDropToUnschedule}
+          teamsById={teamsById}
+        />
       </div>
     </div>
   );

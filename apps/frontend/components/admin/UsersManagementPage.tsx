@@ -5,17 +5,11 @@ import React, { useCallback, useEffect, useState } from "react";
 import type { InvitationResponse } from "@syncora/shared";
 import * as adminApi from "@/lib/admin.api";
 import type { ManagedOrganizationUser } from "@/lib/admin.api";
+import { getOrganizationUserStatusLabel } from "@/lib/organization-user-status";
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Administrateur",
   member: "Membre"
-};
-
-const USER_STATUS_LABELS: Record<string, string> = {
-  active: "Actif",
-  pending: "En attente",
-  inactive: "Inactif",
-  suspended: "Suspendu"
 };
 
 const INVITATION_STATUS_LABELS: Record<string, string> = {
@@ -107,7 +101,7 @@ export function UsersManagementPage() {
                 {ROLE_LABELS[user.role] ?? user.role}
               </span>
               <span className="inline-flex w-fit rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-0.5 text-xs text-slate-700 dark:text-slate-200">
-                {USER_STATUS_LABELS[user.status] ?? user.status}
+                {getOrganizationUserStatusLabel(user)}
               </span>
             </div>
           ))}

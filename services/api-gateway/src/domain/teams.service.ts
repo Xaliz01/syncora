@@ -31,6 +31,7 @@ export class TeamsGatewayService extends AbstractTeamsGatewayService {
       agenceId?: string;
       technicianIds?: string[];
       status?: TeamStatus;
+      calendarColor?: string;
     }
   ): Promise<TeamResponse> {
     return this.call<TeamResponse>({

@@ -12,8 +12,11 @@ describe("UsersController", () => {
       create: jest.fn(),
       invite: jest.fn(),
       activateInvitedUser: jest.fn(),
+      patch: jest.fn(),
       findById: jest.fn(),
       listByOrganization: jest.fn(),
+      listOrganizationMemberships: jest.fn(),
+      addOrganizationMembership: jest.fn(),
       validateCredentials: jest.fn()
     };
 
@@ -75,7 +78,7 @@ describe("UsersController", () => {
         email: "invited@example.com",
         name: "Invited",
         role: "member" as const,
-        status: "invited" as const,
+        status: "active" as const,
         createdAt: "2025-01-01T00:00:00.000Z"
       };
       mockUsersService.invite.mockResolvedValue(expected);

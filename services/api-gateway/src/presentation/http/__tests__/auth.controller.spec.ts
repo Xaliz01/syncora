@@ -27,6 +27,8 @@ describe("AuthController", () => {
       register: jest.fn(),
       login: jest.fn(),
       acceptInvitation: jest.fn(),
+      createOrganization: jest.fn(),
+      switchOrganization: jest.fn(),
       getSessionUser: jest.fn()
     };
 

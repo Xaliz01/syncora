@@ -108,6 +108,7 @@ export interface CreateTeamPayload {
   agenceId?: string;
   technicianIds?: string[];
   status?: TeamStatus;
+  calendarColor?: string;
 }
 
 export function listTeams() {
@@ -164,6 +165,33 @@ export function listAgences() {
 
 export function getAgence(agenceId: string) {
   return fleetRequest<AgenceResponse>("GET", `/fleet/agences/${agenceId}`);
+}
+
+/**
+ * Liste les agences puis complète par `getAgence` pour chaque `agenceId` d’équipe manquant
+ * (ex. liste vide sans droit `agences.read` historique, ou agences hors liste).
+ */
+export async function resolveAgencesForTeams(teams: TeamResponse[]): Promise<AgenceResponse[]> {
+  const byId = new Map<string, AgenceResponse>();
+  try {
+    const listed = await listAgences();
+    for (const a of listed) {
+      byId.set(a.id, a);
+    }
+  } catch {
+    /* lecture liste impossible — on tente les agences référencées par les équipes */
+  }
+  const ids = [...new Set(teams.map((t) => t.agenceId).filter(Boolean))] as string[];
+  for (const id of ids) {
+    if (byId.has(id)) continue;
+    try {
+      const a = await getAgence(id);
+      byId.set(id, a);
+    } catch {
+      /* ignore */
+    }
+  }
+  return [...byId.values()];
 }
 
 export function createAgence(payload: CreateAgencePayload) {

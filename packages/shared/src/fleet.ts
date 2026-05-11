@@ -112,6 +112,8 @@ export interface CreateTeamBody {
   agenceId?: string;
   technicianIds?: string[];
   status?: TeamStatus;
+  /** Couleur calendrier (#RRGGBB), optionnelle */
+  calendarColor?: string;
 }
 
 export interface UpdateTeamBody {
@@ -119,6 +121,8 @@ export interface UpdateTeamBody {
   agenceId?: string | null;
   technicianIds?: string[];
   status?: TeamStatus;
+  /** Couleur calendrier (#RRGGBB). `null` pour revenir à la couleur automatique */
+  calendarColor?: string | null;
 }
 
 export interface TeamResponse {
@@ -129,6 +133,8 @@ export interface TeamResponse {
   agenceName?: string;
   technicianIds: string[];
   status: TeamStatus;
+  /** Hex #RRGGBB pour les cartes du calendrier ; absent = palette automatique */
+  calendarColor?: string;
   createdAt?: string;
   updatedAt?: string;
 }

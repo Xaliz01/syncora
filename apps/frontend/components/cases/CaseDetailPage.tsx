@@ -6,10 +6,12 @@ import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "@/lib/cases.api";
 import * as fleetApi from "@/lib/fleet.api";
+import * as customersApi from "@/lib/customers.api";
 import * as stockApi from "@/lib/stock.api";
 import { listOrganizationUsers } from "@/lib/admin.api";
 import { CaseAssigneesTagsInput } from "@/components/cases/CaseAssigneesTagsInput";
 import { CaseCustomerPicker } from "@/components/cases/CaseCustomerPicker";
+import { InterventionTeamOptimizer } from "@/components/cases/InterventionTeamOptimizer";
 import { CUSTOMER_KIND_LABELS } from "@/components/customers/customer-kind-labels";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import type { CasePriority, CaseStatus, TodoItemStatus } from "@syncora/shared";
@@ -66,6 +68,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const confirm = useConfirm();
+  const [showNewIntervention, setShowNewIntervention] = useState(false);
 
   const { data: caseData, isLoading } = useQuery({
     queryKey: ["case", caseId],
@@ -87,6 +90,19 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
     queryFn: () => fleetApi.listTeams()
   });
 
+  const { data: agencesData, isLoading: agencesRoutingLoading, isError: agencesRoutingError } =
+    useQuery({
+      queryKey: [
+        "fleet-agences-for-routing",
+        (teamsData ?? [])
+          .map((t) => `${t.id}:${t.agenceId ?? ""}`)
+          .sort()
+          .join("|")
+      ],
+      queryFn: () => fleetApi.resolveAgencesForTeams(teamsData ?? []),
+      enabled: !!teamsData?.length && showNewIntervention
+    });
+
   const { data: articles } = useQuery({
     queryKey: ["articles", "intervention-usage"],
     queryFn: () => stockApi.listArticles({ activeOnly: true })
@@ -97,13 +113,18 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
     queryFn: () => stockApi.listArticleMovements({ caseId, limit: 200 })
   });
 
-  const [showNewIntervention, setShowNewIntervention] = useState(false);
   const [newIntTitle, setNewIntTitle] = useState("");
   const [newIntDesc, setNewIntDesc] = useState("");
   const [newIntAssignee, setNewIntAssignee] = useState("");
   const [newIntTeamId, setNewIntTeamId] = useState("");
   const [newIntStart, setNewIntStart] = useState("");
   const [newIntEnd, setNewIntEnd] = useState("");
+  const plannerCustomerId = caseData?.customerId;
+  const { data: plannerCustomer, isLoading: plannerCustomerLoading } = useQuery({
+    queryKey: ["customer", plannerCustomerId],
+    queryFn: () => customersApi.getCustomer(plannerCustomerId!),
+    enabled: !!plannerCustomerId && showNewIntervention
+  });
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editDesc, setEditDesc] = useState("");
@@ -744,6 +765,25 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                   <option key={u.id} value={u.id}>{u.name ?? u.email}</option>
                 ))}
               </select>
+              {plannerCustomerLoading && plannerCustomerId ? (
+                <div className="sm:col-span-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 p-4 animate-pulse">
+                  <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-48 mb-3" />
+                  <div className="h-24 bg-slate-100 dark:bg-slate-800 rounded-xl" />
+                </div>
+              ) : (
+                <div className="sm:col-span-2">
+                  <InterventionTeamOptimizer
+                    teams={teamsData ?? []}
+                    agences={agencesData ?? []}
+                    agencesLoading={agencesRoutingLoading}
+                    agencesError={agencesRoutingError}
+                    customerLinked={Boolean(plannerCustomerId)}
+                    customerAddress={plannerCustomer?.address}
+                    selectedTeamId={newIntTeamId}
+                    onSelectTeam={setNewIntTeamId}
+                  />
+                </div>
+              )}
               <div>
                 <label className="text-xs text-slate-500 dark:text-slate-400">Début</label>
                 <input

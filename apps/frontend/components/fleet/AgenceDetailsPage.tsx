@@ -3,6 +3,7 @@
 import Link from "next/link";
 import React, { useCallback, useEffect, useState } from "react";
 import type { AgenceResponse, TeamResponse } from "@syncora/shared";
+import { PostalAddressFields } from "@/components/address/PostalAddressFields";
 import * as fleetApi from "@/lib/fleet.api";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useRouter } from "next/navigation";
@@ -191,34 +192,24 @@ export function AgenceDetailsPage({ agenceId }: { agenceId: string }) {
               />
             </div>
           </div>
-          <div>
-            <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Adresse</label>
-            <input
-              type="text"
-              value={editAddress}
-              onChange={(e) => setEditAddress(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
+          <div className="md:col-span-2">
+            <PostalAddressFields
+              legend="Adresse du site (Base Adresse Nationale)"
+              line1={editAddress}
+              line2=""
+              postalCode={editPostalCode}
+              city={editCity}
+              country="FR"
+              onLine1Change={setEditAddress}
+              onLine2Change={() => {}}
+              onPostalChange={setEditPostalCode}
+              onCityChange={setEditCity}
+              onCountryChange={() => {}}
+              showLine2={false}
+              showCountry={false}
+              labelCls="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200"
+              inputCls="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
             />
-          </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            <div>
-              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Ville</label>
-              <input
-                type="text"
-                value={editCity}
-                onChange={(e) => setEditCity(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Code postal</label>
-              <input
-                type="text"
-                value={editPostalCode}
-                onChange={(e) => setEditPostalCode(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
-              />
-            </div>
           </div>
           <div className="flex justify-end">
             <button

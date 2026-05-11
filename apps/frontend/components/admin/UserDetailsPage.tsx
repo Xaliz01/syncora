@@ -7,17 +7,11 @@ import * as adminApi from "@/lib/admin.api";
 import { getPermissionLabel } from "@/lib/permissions-catalog";
 import type { ManagedOrganizationUser } from "@/lib/admin.api";
 import { useToast } from "@/components/ui/ToastProvider";
+import { getOrganizationUserStatusLabel } from "@/lib/organization-user-status";
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Administrateur",
   member: "Membre"
-};
-
-const USER_STATUS_LABELS: Record<string, string> = {
-  active: "Actif",
-  pending: "En attente",
-  inactive: "Inactif",
-  suspended: "Suspendu"
 };
 
 function togglePermission(list: PermissionCode[], permission: PermissionCode): PermissionCode[] {
@@ -166,7 +160,7 @@ export function UserDetailsPage({ userId }: { userId: string }) {
           </div>
           <div>
             <span className="text-slate-400 dark:text-slate-500">Statut</span>
-            <p>{USER_STATUS_LABELS[user.status] ?? user.status}</p>
+            <p>{getOrganizationUserStatusLabel(user)}</p>
           </div>
         </div>
       </section>

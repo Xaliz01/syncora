@@ -16,7 +16,16 @@ describe("UsersService", () => {
   let mockUserModel: {
     create: jest.Mock;
     findOne: jest.Mock;
+    findOneAndUpdate: jest.Mock;
     find: jest.Mock;
+    collection: { findOne: jest.Mock; updateOne: jest.Mock };
+  };
+  let mockMembershipModel: {
+    findOneAndUpdate: jest.Mock;
+    find: jest.Mock;
+    findOne: jest.Mock;
+    countDocuments: jest.Mock;
+    updateMany: jest.Mock;
   };
 
   const mockDoc = (overrides: Record<string, unknown> = {}) => ({
@@ -32,6 +41,20 @@ describe("UsersService", () => {
     ...overrides
   });
 
+  const mockMemDoc = (overrides: Record<string, unknown> = {}) => ({
+    _id: { toString: () => "mem-1" },
+    userId: "user-123",
+    organizationId: "org-1",
+    role: "member",
+    membershipStatus: "active",
+    get: jest.fn((key: string) => {
+      if (key === "createdAt") return new Date("2025-01-01");
+      if (key === "updatedAt") return new Date("2025-01-01");
+      return undefined;
+    }),
+    ...overrides
+  });
+
   beforeEach(async () => {
     jest.clearAllMocks();
     (bcrypt.hash as jest.Mock).mockResolvedValue("hashed");
@@ -42,16 +65,35 @@ describe("UsersService", () => {
     mockUserModel = {
       create: jest.fn(),
       findOne: jest.fn().mockReturnValue({ exec: execMock }),
-      find: jest.fn().mockReturnValue({ sort: sortMock })
+      findOneAndUpdate: jest.fn().mockReturnValue({ exec: execMock }),
+      find: jest.fn().mockReturnValue({ sort: sortMock }),
+      collection: {
+        findOne: jest.fn(),
+        updateOne: jest.fn().mockResolvedValue(undefined)
+      }
+    };
+
+    mockMembershipModel = {
+      findOneAndUpdate: jest.fn().mockResolvedValue(mockMemDoc()),
+      find: jest.fn().mockReturnValue({
+        sort: jest.fn().mockReturnValue({
+          exec: jest.fn().mockResolvedValue([])
+        })
+      }),
+      findOne: jest.fn().mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockMemDoc({ role: "member" }))
+      }),
+      countDocuments: jest.fn().mockReturnValue({
+        exec: jest.fn().mockResolvedValue(1)
+      }),
+      updateMany: jest.fn().mockResolvedValue({ modifiedCount: 1 })
     };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         { provide: AbstractUsersService, useClass: UsersService },
-        {
-          provide: getModelToken("User"),
-          useValue: mockUserModel
-        }
+        { provide: getModelToken("User"), useValue: mockUserModel },
+        { provide: getModelToken("OrganizationMembership"), useValue: mockMembershipModel }
       ]
     }).compile();
 
@@ -63,7 +105,7 @@ describe("UsersService", () => {
   });
 
   describe("create", () => {
-    it("should create a user with hashed password", async () => {
+    it("should create a user with hashed password and membership", async () => {
       mockUserModel.findOne.mockReturnValue({ exec: jest.fn().mockResolvedValue(null) });
       const doc = mockDoc({ email: "new@example.com", name: "New User" });
       mockUserModel.create.mockResolvedValue(doc);
@@ -90,6 +132,7 @@ describe("UsersService", () => {
         role: "member",
         status: "active"
       });
+      expect(mockMembershipModel.findOneAndUpdate).toHaveBeenCalled();
       expect(result).toMatchObject({
         id: "user-123",
         organizationId: "org-1",
@@ -113,21 +156,58 @@ describe("UsersService", () => {
           role: "member"
         })
       ).rejects.toThrow(ConflictException);
-      await expect(
-        service.create({
-          organizationId: "org-1",
-          email: "existing@example.com",
-          password: "secret",
-          role: "member"
-        })
-      ).rejects.toThrow("User with this email already exists");
+    });
+  });
+
+  describe("patch", () => {
+    it("should update organizationId", async () => {
+      const execMock = jest.fn().mockResolvedValue(mockDoc({ organizationId: "org-new" }));
+      mockUserModel.findOneAndUpdate.mockReturnValue({ exec: execMock });
+
+      const result = await service.patch("user-123", { organizationId: "org-new" });
+
+      expect(mockUserModel.findOneAndUpdate).toHaveBeenCalledWith(
+        { _id: "user-123", ...activeDocumentFilter },
+        { $set: { organizationId: "org-new" } },
+        { new: true }
+      );
+      expect(result.organizationId).toBe("org-new");
+    });
+
+    it("should update organizationId and role together", async () => {
+      const execMock = jest.fn().mockResolvedValue(mockDoc({ organizationId: "org-new", role: "admin" }));
+      mockUserModel.findOneAndUpdate.mockReturnValue({ exec: execMock });
+
+      await service.patch("user-123", { organizationId: "org-new", role: "admin" });
+
+      expect(mockUserModel.findOneAndUpdate).toHaveBeenCalledWith(
+        { _id: "user-123", ...activeDocumentFilter },
+        { $set: { organizationId: "org-new", role: "admin" } },
+        { new: true }
+      );
+    });
+
+    it("should throw BadRequestException when organizationId is missing", async () => {
+      await expect(service.patch("user-123", {})).rejects.toThrow(BadRequestException);
+    });
+
+    it("should throw NotFoundException when user does not exist", async () => {
+      const execMock = jest.fn().mockResolvedValue(null);
+      mockUserModel.findOneAndUpdate.mockReturnValue({ exec: execMock });
+
+      await expect(service.patch("user-123", { organizationId: "org-x" })).rejects.toThrow(NotFoundException);
     });
   });
 
   describe("invite", () => {
-    it("should create invited user with status invited", async () => {
+    it("should create user active without password and membership invited", async () => {
       mockUserModel.findOne.mockReturnValue({ exec: jest.fn().mockResolvedValue(null) });
-      const doc = mockDoc({ status: "invited" });
+      const doc = mockDoc({
+        status: "active",
+        passwordHash: undefined,
+        email: "invited@example.com",
+        name: "Invited User"
+      });
       mockUserModel.create.mockResolvedValue(doc);
 
       const body = {
@@ -139,97 +219,49 @@ describe("UsersService", () => {
       };
       const result = await service.invite(body);
 
-      expect(mockUserModel.findOne).toHaveBeenCalledWith({
-        email: "invited@example.com",
-        ...activeDocumentFilter
-      });
-      expect(mockUserModel.create).toHaveBeenCalledWith({
-        organizationId: "org-1",
-        email: "invited@example.com",
-        name: "Invited User",
-        role: "member",
-        status: "invited",
-        invitedByUserId: "admin-1"
-      });
-      expect(result.status).toBe("invited");
-    });
-
-    it("should use default role member when not provided", async () => {
-      mockUserModel.findOne.mockReturnValue({ exec: jest.fn().mockResolvedValue(null) });
-      const doc = mockDoc({ status: "invited", role: "member" });
-      mockUserModel.create.mockResolvedValue(doc);
-
-      await service.invite({
-        organizationId: "org-1",
-        email: "invited@example.com",
-        invitedByUserId: "admin-1"
-      });
-
-      expect(mockUserModel.create).toHaveBeenCalledWith(
-        expect.objectContaining({ role: "member" })
-      );
-    });
-
-    it("should throw ConflictException when email already exists", async () => {
-      mockUserModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(mockDoc())
-      });
-
-      await expect(
-        service.invite({
-          organizationId: "org-1",
-          email: "existing@example.com",
-          invitedByUserId: "admin-1"
-        })
-      ).rejects.toThrow(ConflictException);
+      expect(mockMembershipModel.findOneAndUpdate).toHaveBeenCalled();
+      expect(result.status).toBe("active");
     });
   });
 
   describe("activateInvitedUser", () => {
-    it("should activate invited user with hashed password", async () => {
-      const doc = mockDoc({ status: "invited" });
+    it("should set password and activate membership when pending invite exists", async () => {
+      const doc = mockDoc({
+        passwordHash: undefined,
+        save: jest.fn().mockImplementation(function (this: typeof doc) {
+          return Promise.resolve(this);
+        })
+      });
       mockUserModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(doc)
       });
-
-      const result = await service.activateInvitedUser("user-123", {
-        password: "newpassword",
-        name: "Updated Name"
+      mockMembershipModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockMemDoc({ membershipStatus: "invited" }))
       });
 
-      expect(bcrypt.hash).toHaveBeenCalledWith("newpassword", 10);
-      expect(doc.passwordHash).toBe("hashed");
-      expect(doc.status).toBe("active");
-      expect(doc.name).toBe("Updated Name");
+      const result = await service.activateInvitedUser("user-123", {
+        password: "new-password",
+        name: "Activated"
+      });
+
+      expect(bcrypt.hash).toHaveBeenCalledWith("new-password", expect.any(Number));
       expect(doc.save).toHaveBeenCalled();
-      expect(result).toMatchObject({ id: "user-123", status: "active" });
+      expect(mockMembershipModel.updateMany).toHaveBeenCalled();
+      expect(result.status).toBe("active");
     });
 
-    it("should throw NotFoundException when user not found", async () => {
+    it("should throw when no pending membership invitation", async () => {
+      const doc = mockDoc({ passwordHash: undefined });
       mockUserModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc)
+      });
+      mockMembershipModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(null)
       });
 
       await expect(
-        service.activateInvitedUser("non-existent", { password: "secret" })
-      ).rejects.toThrow(NotFoundException);
-      await expect(
-        service.activateInvitedUser("non-existent", { password: "secret" })
-      ).rejects.toThrow("User not found");
-    });
-
-    it("should throw BadRequestException when user is not invited", async () => {
-      const doc = mockDoc({ status: "active" });
-      mockUserModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(doc)
-      });
-
-      await expect(
-        service.activateInvitedUser("user-123", { password: "secret" })
+        service.activateInvitedUser("user-123", { password: "x" })
       ).rejects.toThrow(BadRequestException);
-      await expect(
-        service.activateInvitedUser("user-123", { password: "secret" })
-      ).rejects.toThrow("User is not in invited status");
     });
   });
 
@@ -265,21 +297,26 @@ describe("UsersService", () => {
   });
 
   describe("listByOrganization", () => {
-    it("should return users sorted by createdAt", async () => {
-      const docs = [mockDoc({ _id: { toString: () => "u1" } }), mockDoc({ _id: { toString: () => "u2" } })];
-      const sortMock = jest.fn().mockReturnValue({
-        exec: jest.fn().mockResolvedValue(docs)
+    it("should return users with roles from memberships", async () => {
+      const mRows = [
+        { userId: "user-123", organizationId: "org-1", role: "admin", membershipStatus: "active" }
+      ];
+      mockMembershipModel.find.mockReturnValue({
+        sort: jest.fn().mockReturnValue({
+          exec: jest.fn().mockResolvedValue(mRows)
+        })
       });
-      mockUserModel.find.mockReturnValue({ sort: sortMock });
+      const udoc = mockDoc({ role: "member", _id: { toString: () => "user-123" } });
+      mockUserModel.find.mockReturnValue({
+        exec: jest.fn().mockResolvedValue([udoc])
+      });
 
       const result = await service.listByOrganization("org-1");
 
-      expect(mockUserModel.find).toHaveBeenCalledWith({
-        organizationId: "org-1",
-        ...activeDocumentFilter
-      });
-      expect(sortMock).toHaveBeenCalledWith({ createdAt: 1 });
-      expect(result).toHaveLength(2);
+      expect(mockMembershipModel.find).toHaveBeenCalledWith({ organizationId: "org-1", deletedAt: null });
+      expect(result).toHaveLength(1);
+      expect(result[0].role).toBe("admin");
+      expect(result[0].organizationMembershipStatus).toBe("active");
     });
   });
 
@@ -293,16 +330,11 @@ describe("UsersService", () => {
 
       const result = await service.validateCredentials("user@example.com", "password");
 
-      expect(mockUserModel.findOne).toHaveBeenCalledWith({
-        email: "user@example.com",
-        ...activeDocumentFilter
-      });
       expect(bcrypt.compare).toHaveBeenCalledWith("password", "hashed");
-      expect(result).toEqual({
+      expect(result).toMatchObject({
         id: "user-123",
         organizationId: "org-1",
         email: "user@example.com",
-        name: "Test User",
         role: "member",
         status: "active"
       });
@@ -318,28 +350,6 @@ describe("UsersService", () => {
       expect(result).toBeNull();
     });
 
-    it("should return null when user status is not active", async () => {
-      const doc = mockDoc({ status: "invited" });
-      mockUserModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(doc)
-      });
-
-      const result = await service.validateCredentials("user@example.com", "password");
-
-      expect(result).toBeNull();
-    });
-
-    it("should return null when password hash is missing", async () => {
-      const doc = mockDoc({ passwordHash: undefined });
-      mockUserModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(doc)
-      });
-
-      const result = await service.validateCredentials("user@example.com", "password");
-
-      expect(result).toBeNull();
-    });
-
     it("should return null when password does not match", async () => {
       const doc = mockDoc({ passwordHash: "hashed" });
       mockUserModel.findOne.mockReturnValue({
@@ -348,6 +358,21 @@ describe("UsersService", () => {
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
       const result = await service.validateCredentials("user@example.com", "wrongpassword");
+
+      expect(result).toBeNull();
+    });
+
+    it("should return null when membership for active org is still invited", async () => {
+      const doc = mockDoc({ passwordHash: "hashed" });
+      mockUserModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc)
+      });
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      mockMembershipModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockMemDoc({ membershipStatus: "invited" }))
+      });
+
+      const result = await service.validateCredentials("user@example.com", "password");
 
       expect(result).toBeNull();
     });

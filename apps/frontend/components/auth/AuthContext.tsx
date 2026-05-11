@@ -25,6 +25,10 @@ interface AuthContextValue extends AuthState {
   }) => Promise<AuthUser>;
   /** Recharge l’utilisateur depuis /auth/me (ex. après activation d’un abonnement). */
   refreshSession: () => Promise<void>;
+  /** Crée une nouvelle organisation et positionne la session dessus (nouveau JWT). */
+  createOrganization: (payload: { name: string }) => Promise<AuthUser>;
+  /** Bascule vers une autre organisation déjà liée au compte (nouveau JWT). */
+  switchOrganization: (organizationId: string) => Promise<AuthUser>;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -69,6 +73,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setState({ user: null, token: null, isReady: true });
     }
   }, []);
+
+  const createOrganization = useCallback(
+    async (payload: { name: string }) => {
+      const { accessToken, user } = await authApi.createOrganization(payload);
+      persistAuth(accessToken, user);
+      return user;
+    },
+    [persistAuth]
+  );
+
+  const switchOrganization = useCallback(
+    async (organizationId: string) => {
+      const { accessToken, user } = await authApi.switchOrganization({ organizationId });
+      persistAuth(accessToken, user);
+      return user;
+    },
+    [persistAuth]
+  );
 
   const login = useCallback(
     async (email: string, password: string) => {
@@ -115,9 +137,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       register,
       acceptInvitation,
       refreshSession,
+      createOrganization,
+      switchOrganization,
       logout
     }),
-    [state, login, register, acceptInvitation, refreshSession, logout]
+    [state, login, register, acceptInvitation, refreshSession, createOrganization, switchOrganization, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

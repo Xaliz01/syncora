@@ -1,6 +1,6 @@
-import { Body, Controller, Get, Param, Post, NotFoundException } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Post, NotFoundException } from "@nestjs/common";
 import { AbstractOrganizationsService } from "../../domain/ports/organizations.service.port";
-import type { CreateOrganizationBody } from "@syncora/shared";
+import type { CreateOrganizationBody, UpdateOrganizationBody } from "@syncora/shared";
 
 @Controller("organizations")
 export class OrganizationsController {
@@ -14,6 +14,13 @@ export class OrganizationsController {
   @Get(":id")
   async findById(@Param("id") id: string) {
     const org = await this.organizationsService.findById(id);
+    if (!org) throw new NotFoundException("Organization not found");
+    return org;
+  }
+
+  @Patch(":id")
+  async update(@Param("id") id: string, @Body() body: UpdateOrganizationBody) {
+    const org = await this.organizationsService.update(id, body);
     if (!org) throw new NotFoundException("Organization not found");
     return org;
   }

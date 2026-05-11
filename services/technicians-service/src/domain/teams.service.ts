@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException
@@ -33,7 +34,10 @@ export class TeamsService extends AbstractTeamsService {
         name: body.name,
         agenceId: body.agenceId,
         technicianIds: body.technicianIds ?? [],
-        status: body.status ?? "active"
+        status: body.status ?? "active",
+        calendarColor: body.calendarColor?.trim()
+          ? this.validateCalendarColor(body.calendarColor)
+          : undefined
       });
       return this.toResponse(doc);
     } catch (err: unknown) {
@@ -57,6 +61,13 @@ export class TeamsService extends AbstractTeamsService {
     if (body.agenceId !== undefined) doc.agenceId = body.agenceId ?? undefined;
     if (body.technicianIds !== undefined) doc.technicianIds = body.technicianIds;
     if (body.status !== undefined) doc.status = body.status;
+    if (body.calendarColor !== undefined) {
+      if (body.calendarColor === null || body.calendarColor.trim() === "") {
+        doc.calendarColor = undefined;
+      } else {
+        doc.calendarColor = this.validateCalendarColor(body.calendarColor);
+      }
+    }
     try {
       await doc.save();
     } catch (err: unknown) {
@@ -144,8 +155,26 @@ export class TeamsService extends AbstractTeamsService {
       agenceName,
       technicianIds: doc.technicianIds,
       status: doc.status as TeamStatus,
+      calendarColor: doc.calendarColor,
       createdAt: doc.get("createdAt")?.toISOString(),
       updatedAt: doc.get("updatedAt")?.toISOString()
     };
+  }
+
+  /** Accepte #RGB ou #RRGGBB ; normalise en #RRGGBB majuscules */
+  private validateCalendarColor(raw: string): string {
+    const t = raw.trim();
+    const short = /^#?([0-9a-fA-F]{3})$/.exec(t);
+    if (short) {
+      const [r, g, b] = short[1].split("").map((c) => c + c);
+      return `#${r}${g}${b}`.toUpperCase();
+    }
+    const full = /^#?([0-9a-fA-F]{6})$/.exec(t);
+    if (full) {
+      return `#${full[1]}`.toUpperCase();
+    }
+    throw new BadRequestException(
+      "calendarColor doit être une couleur hexadécimale (#RGB ou #RRGGBB)"
+    );
   }
 }

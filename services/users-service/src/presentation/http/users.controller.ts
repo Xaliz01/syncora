@@ -5,6 +5,7 @@ import {
   Get,
   NotFoundException,
   Param,
+  Patch,
   Post,
   Query,
   UnauthorizedException
@@ -13,7 +14,9 @@ import { AbstractUsersService } from "../../domain/ports/users.service.port";
 import type {
   ActivateInvitedUserBody,
   CreateInvitedUserBody,
+  CreateOrganizationMembershipBody,
   CreateUserBody,
+  PatchUserBody,
   ValidateCredentialsBody,
   ValidateCredentialsResponse
 } from "@syncora/shared";
@@ -32,19 +35,15 @@ export class UsersController {
     return this.usersService.invite(body);
   }
 
-  @Post(":id/activate")
-  async activateInvitedUser(
-    @Param("id") id: string,
-    @Body() body: ActivateInvitedUserBody
-  ) {
-    return this.usersService.activateInvitedUser(id, body);
-  }
-
-  @Get(":id")
-  async findById(@Param("id") id: string) {
-    const user = await this.usersService.findById(id);
-    if (!user) throw new NotFoundException("User not found");
-    return user;
+  @Post("validate-credentials")
+  async validateCredentials(
+    @Body() body: ValidateCredentialsBody
+  ): Promise<ValidateCredentialsResponse> {
+    const result = await this.usersService.validateCredentials(body.email, body.password);
+    if (!result) {
+      throw new UnauthorizedException("Invalid email or password");
+    }
+    return result;
   }
 
   @Get()
@@ -55,17 +54,36 @@ export class UsersController {
     return this.usersService.listByOrganization(organizationId);
   }
 
-  @Post("validate-credentials")
-  async validateCredentials(
-    @Body() body: ValidateCredentialsBody
-  ): Promise<ValidateCredentialsResponse> {
-    const result = await this.usersService.validateCredentials(
-      body.email,
-      body.password
-    );
-    if (!result) {
-      throw new UnauthorizedException("Invalid email or password");
-    }
-    return result;
+  @Get(":userId/organization-memberships")
+  listOrganizationMemberships(@Param("userId") userId: string) {
+    return this.usersService.listOrganizationMemberships(userId);
+  }
+
+  @Post(":userId/organization-memberships")
+  addOrganizationMembership(
+    @Param("userId") userId: string,
+    @Body() body: CreateOrganizationMembershipBody
+  ) {
+    return this.usersService.addOrganizationMembership(userId, body);
+  }
+
+  @Post(":id/activate")
+  async activateInvitedUser(
+    @Param("id") id: string,
+    @Body() body: ActivateInvitedUserBody
+  ) {
+    return this.usersService.activateInvitedUser(id, body);
+  }
+
+  @Patch(":id")
+  async patch(@Param("id") id: string, @Body() body: PatchUserBody) {
+    return this.usersService.patch(id, body);
+  }
+
+  @Get(":id")
+  async findById(@Param("id") id: string) {
+    const user = await this.usersService.findById(id);
+    if (!user) throw new NotFoundException("User not found");
+    return user;
   }
 }

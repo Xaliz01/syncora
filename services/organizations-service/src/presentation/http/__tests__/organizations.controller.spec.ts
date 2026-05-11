@@ -10,7 +10,8 @@ describe("OrganizationsController", () => {
   beforeEach(async () => {
     mockOrganizationsService = {
       create: jest.fn(),
-      findById: jest.fn()
+      findById: jest.fn(),
+      update: jest.fn()
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -67,6 +68,34 @@ describe("OrganizationsController", () => {
 
       await expect(controller.findById("non-existent")).rejects.toThrow(NotFoundException);
       await expect(controller.findById("non-existent")).rejects.toThrow("Organization not found");
+    });
+  });
+
+  describe("update", () => {
+    it("should return organization when update succeeds", async () => {
+      const payload = { city: "Lyon", phone: "0102030405" };
+      const updated = {
+        id: "org-123",
+        name: "Test Org",
+        city: "Lyon",
+        phone: "0102030405",
+        createdAt: "2025-01-01T00:00:00.000Z"
+      };
+      mockOrganizationsService.update.mockResolvedValue(updated);
+
+      const result = await controller.update("org-123", payload);
+
+      expect(mockOrganizationsService.update).toHaveBeenCalledWith("org-123", payload);
+      expect(result).toEqual(updated);
+    });
+
+    it("should throw NotFoundException when update target does not exist", async () => {
+      mockOrganizationsService.update.mockResolvedValue(null);
+
+      await expect(controller.update("missing", { city: "Paris" })).rejects.toThrow(NotFoundException);
+      await expect(controller.update("missing", { city: "Paris" })).rejects.toThrow(
+        "Organization not found"
+      );
     });
   });
 });

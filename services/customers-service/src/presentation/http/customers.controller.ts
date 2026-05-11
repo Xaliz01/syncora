@@ -9,8 +9,8 @@ import {
   Post,
   Query
 } from "@nestjs/common";
-import { AbstractCustomersService } from "../../domain/ports/customers.service.port";
 import type { CreateCustomerBody, UpdateCustomerBody } from "@syncora/shared";
+import { AbstractCustomersService } from "../../domain/ports/customers.service.port";
 
 @Controller("customers")
 export class CustomersController {

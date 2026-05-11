@@ -115,7 +115,11 @@ export class SubscriptionsService {
     }
 
     const stripe = getStripe();
-    const existing = await this.subscriptionModel.findOne({ organizationId: params.organizationId }).exec();
+    const stripeCustomerId = await this.resolveStripeCustomerIdForCheckout(
+      stripe,
+      params.organizationId,
+      params.customerEmail
+    );
 
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
       mode: "subscription",
@@ -131,8 +135,8 @@ export class SubscriptionsService {
       allow_promotion_codes: true
     };
 
-    if (existing?.stripeCustomerId) {
-      sessionParams.customer = existing.stripeCustomerId;
+    if (stripeCustomerId) {
+      sessionParams.customer = stripeCustomerId;
     } else if (params.customerEmail?.trim()) {
       sessionParams.customer_email = params.customerEmail.trim();
     }
@@ -214,6 +218,57 @@ export class SubscriptionsService {
     return { received: true };
   }
 
+  /**
+   * Priorité : 1) `stripeCustomerId` persisté pour l’org (validé chez Stripe), 2) client Stripe
+   * avec `metadata.organizationId`, 3) client le plus récent sur l’e-mail (évite les doublons checkout).
+   */
+  private async resolveStripeCustomerIdForCheckout(
+    stripe: Stripe,
+    organizationId: string,
+    customerEmail: string | undefined
+  ): Promise<string | undefined> {
+    const doc = await this.subscriptionModel
+      .findOne({ organizationId })
+      .select("stripeCustomerId")
+      .lean()
+      .exec();
+    const stored = doc?.stripeCustomerId?.trim();
+    if (stored) {
+      let dropStored = false;
+      try {
+        const c = await stripe.customers.retrieve(stored);
+        if (typeof c !== "string" && !("deleted" in c && c.deleted)) {
+          return stored;
+        }
+        dropStored = typeof c !== "string" && "deleted" in c && c.deleted === true;
+      } catch (err: unknown) {
+        if (this.isStripeCustomerMissingError(err)) {
+          dropStored = true;
+        }
+      }
+      if (dropStored) {
+        await this.subscriptionModel
+          .updateOne({ organizationId }, { $unset: { stripeCustomerId: "" } })
+          .exec();
+      }
+    }
+
+    const email = customerEmail?.trim();
+    if (!email) {
+      return undefined;
+    }
+    const { data } = await stripe.customers.list({ email, limit: 25 });
+    const withOrgMeta = data.find((c) => c.metadata?.organizationId === organizationId);
+    if (withOrgMeta) {
+      return withOrgMeta.id;
+    }
+    return data[0]?.id;
+  }
+
+  private isStripeCustomerMissingError(err: unknown): boolean {
+    return err instanceof Stripe.errors.StripeInvalidRequestError && err.code === "resource_missing";
+  }
+
   private async onCheckoutSessionCompleted(session: Stripe.Checkout.Session): Promise<void> {
     const organizationId =
       session.metadata?.organizationId ?? session.client_reference_id ?? undefined;
@@ -284,5 +339,21 @@ export class SubscriptionsService {
         { upsert: true, new: true }
       )
       .exec();
+
+    const stripe = getStripe();
+    try {
+      const c = await stripe.customers.retrieve(stripeCustomerId);
+      if (typeof c === "string" || ("deleted" in c && c.deleted)) {
+        return;
+      }
+      if (c.metadata?.organizationId === organizationId) {
+        return;
+      }
+      await stripe.customers.update(stripeCustomerId, {
+        metadata: { ...(c.metadata ?? {}), organizationId }
+      });
+    } catch {
+      /* best-effort : ne pas faire échouer le webhook */
+    }
   }
 }

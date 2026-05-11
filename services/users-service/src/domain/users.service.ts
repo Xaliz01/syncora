@@ -5,14 +5,19 @@ import {
   BadRequestException
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
-import { Model } from "mongoose";
+import type { Model } from "mongoose";
+import { Types } from "mongoose";
 import * as bcrypt from "bcrypt";
 import type { UserDocument } from "../persistence/user.schema";
+import type { OrganizationMembershipDocument } from "../persistence/organization-membership.schema";
 import {
   activeDocumentFilter,
   type ActivateInvitedUserBody,
   type CreateInvitedUserBody,
+  type CreateOrganizationMembershipBody,
   type CreateUserBody,
+  type OrganizationMembershipResponse,
+  type PatchUserBody,
   type UserResponse,
   type ValidateCredentialsResponse
 } from "@syncora/shared";
@@ -23,8 +28,9 @@ const SALT_ROUNDS = 10;
 @Injectable()
 export class UsersService extends AbstractUsersService {
   constructor(
-    @InjectModel("User")
-    private readonly userModel: Model<UserDocument>
+    @InjectModel("User") private readonly userModel: Model<UserDocument>,
+    @InjectModel("OrganizationMembership")
+    private readonly membershipModel: Model<OrganizationMembershipDocument>
   ) {
     super();
   }
@@ -45,6 +51,19 @@ export class UsersService extends AbstractUsersService {
       role: body.role,
       status: "active"
     });
+    const uid = doc._id.toString();
+    await this.membershipModel.findOneAndUpdate(
+      { userId: uid, organizationId: body.organizationId },
+      {
+        $set: {
+          role: body.role,
+          membershipStatus: "active",
+          deletedAt: null
+        },
+        $setOnInsert: { userId: uid, organizationId: body.organizationId }
+      },
+      { upsert: true, new: true }
+    );
     return this.toResponse(doc);
   }
 
@@ -60,37 +79,144 @@ export class UsersService extends AbstractUsersService {
       email: body.email,
       name: body.name,
       role: body.role ?? "member",
-      status: "invited",
+      status: "active",
       invitedByUserId: body.invitedByUserId
     });
+    const uid = doc._id.toString();
+    await this.membershipModel.findOneAndUpdate(
+      { userId: uid, organizationId: body.organizationId },
+      {
+        $set: {
+          role: body.role ?? "member",
+          membershipStatus: "invited",
+          deletedAt: null
+        },
+        $setOnInsert: { userId: uid, organizationId: body.organizationId }
+      },
+      { upsert: true, new: true }
+    );
     return this.toResponse(doc);
   }
 
   async activateInvitedUser(id: string, body: ActivateInvitedUserBody): Promise<UserResponse> {
     const doc = await this.userModel.findOne({ _id: id, ...activeDocumentFilter }).exec();
     if (!doc) throw new NotFoundException("User not found");
-    if (doc.status !== "invited") {
-      throw new BadRequestException("User is not in invited status");
+
+    const uid = doc._id.toString();
+    await this.ensureMembershipsBackfill(doc);
+
+    const pending = await this.membershipModel
+      .findOne({
+        userId: uid,
+        organizationId: doc.organizationId,
+        membershipStatus: "invited",
+        deletedAt: null
+      })
+      .exec();
+    if (!pending) {
+      throw new BadRequestException(
+        "Aucune invitation en attente pour cette organisation (statut géré via organization_memberships)."
+      );
     }
+
     doc.passwordHash = await bcrypt.hash(body.password, SALT_ROUNDS);
-    doc.status = "active";
     if (body.name) doc.name = body.name;
     await doc.save();
+
+    await this.membershipModel.updateMany(
+      { userId: uid, organizationId: doc.organizationId, deletedAt: null },
+      { $set: { membershipStatus: "active" } }
+    );
+
+    return this.toResponse(doc);
+  }
+
+  async patch(id: string, body: PatchUserBody): Promise<UserResponse> {
+    if (body.organizationId === undefined) {
+      throw new BadRequestException("organizationId is required");
+    }
+    const set: Record<string, unknown> = { organizationId: body.organizationId };
+    if (body.role !== undefined) {
+      set.role = body.role;
+    }
+    const doc = await this.userModel
+      .findOneAndUpdate({ _id: id, ...activeDocumentFilter }, { $set: set }, { new: true })
+      .exec();
+    if (!doc) throw new NotFoundException("User not found");
     return this.toResponse(doc);
   }
 
   async findById(id: string): Promise<UserResponse | null> {
     const doc = await this.userModel.findOne({ _id: id, ...activeDocumentFilter }).exec();
     if (!doc) return null;
+    await this.ensureMembershipsBackfill(doc);
     return this.toResponse(doc);
   }
 
   async listByOrganization(organizationId: string): Promise<UserResponse[]> {
-    const docs = await this.userModel
-      .find({ organizationId, ...activeDocumentFilter })
+    const memberships = await this.membershipModel
+      .find({ organizationId, deletedAt: null })
       .sort({ createdAt: 1 })
       .exec();
-    return docs.map((doc) => this.toResponse(doc));
+
+    const userIds = memberships.map((m) => m.userId);
+    if (userIds.length === 0) return [];
+
+    const users = await this.userModel
+      .find({ _id: { $in: userIds }, ...activeDocumentFilter })
+      .exec();
+
+    const byId = new Map(users.map((u) => [u._id.toString(), u]));
+
+    const out: UserResponse[] = [];
+    for (const m of memberships) {
+      const u = byId.get(m.userId);
+      if (!u) continue;
+      const base = this.toResponse(u);
+      out.push({
+        ...base,
+        role: m.role as UserResponse["role"],
+        organizationMembershipStatus: m.membershipStatus as UserResponse["organizationMembershipStatus"]
+      });
+    }
+    return out;
+  }
+
+  async listOrganizationMemberships(userId: string): Promise<OrganizationMembershipResponse[]> {
+    await this.ensureMembershipsBackfillByUserId(userId);
+    const rows = await this.membershipModel
+      .find({ userId, deletedAt: null })
+      .sort({ createdAt: 1 })
+      .exec();
+    return rows.map((r) => this.membershipToResponse(r));
+  }
+
+  async addOrganizationMembership(
+    userId: string,
+    body: CreateOrganizationMembershipBody
+  ): Promise<OrganizationMembershipResponse> {
+    if (!body.organizationId?.trim()) {
+      throw new BadRequestException("organizationId is required");
+    }
+    const user = await this.userModel.findOne({ _id: userId, ...activeDocumentFilter }).exec();
+    if (!user) throw new NotFoundException("User not found");
+
+    const doc = await this.membershipModel.findOneAndUpdate(
+      { userId, organizationId: body.organizationId.trim() },
+      {
+        $set: {
+          role: body.role,
+          membershipStatus: body.membershipStatus ?? "active",
+          deletedAt: null
+        },
+        $setOnInsert: { userId, organizationId: body.organizationId.trim() }
+      },
+      { upsert: true, new: true }
+    );
+    if (!doc) {
+      throw new BadRequestException("Impossible de créer le rattachement organisation.");
+    }
+    return this.membershipToResponse(doc);
   }
 
   async validateCredentials(
@@ -99,18 +225,94 @@ export class UsersService extends AbstractUsersService {
   ): Promise<ValidateCredentialsResponse | null> {
     const doc = await this.userModel.findOne({ email, ...activeDocumentFilter }).exec();
     if (!doc) return null;
-    if (doc.status !== "active") return null;
     if (!doc.passwordHash) return null;
     const ok = await bcrypt.compare(password, doc.passwordHash);
     if (!ok) return null;
+
+    await this.ensureMembershipsBackfill(doc);
+
+    const uid = doc._id.toString();
+    const m = await this.membershipModel
+      .findOne({
+        userId: uid,
+        organizationId: doc.organizationId,
+        deletedAt: null
+      })
+      .exec();
+    if (m?.membershipStatus === "invited") {
+      return null;
+    }
+
+    const role = (m?.role ?? doc.role) as ValidateCredentialsResponse["role"];
+
     return {
-      id: doc._id.toString(),
+      id: uid,
       organizationId: doc.organizationId,
       email: doc.email,
       name: doc.name,
-      role: doc.role as ValidateCredentialsResponse["role"],
+      role,
       status: doc.status
     };
+  }
+
+  private membershipToResponse(doc: OrganizationMembershipDocument): OrganizationMembershipResponse {
+    return {
+      id: doc._id.toString(),
+      userId: doc.userId,
+      organizationId: doc.organizationId,
+      role: doc.role as OrganizationMembershipResponse["role"],
+      membershipStatus: doc.membershipStatus as OrganizationMembershipResponse["membershipStatus"],
+      createdAt: doc.get("createdAt")?.toISOString(),
+      updatedAt: doc.get("updatedAt")?.toISOString()
+    };
+  }
+
+  /** Migre les anciens champs (linkedOrganizationIds, ou absence de lignes) vers organization_memberships. */
+  private async ensureMembershipsBackfillByUserId(userId: string): Promise<void> {
+    const doc = await this.userModel.findOne({ _id: userId, ...activeDocumentFilter }).exec();
+    if (doc) await this.ensureMembershipsBackfill(doc);
+  }
+
+  private async ensureMembershipsBackfill(doc: UserDocument): Promise<void> {
+    const uid = doc._id.toString();
+    const count = await this.membershipModel.countDocuments({ userId: uid, deletedAt: null }).exec();
+    if (count > 0) return;
+
+    const raw = await this.userModel.collection.findOne({ _id: new Types.ObjectId(uid) });
+    const legacyLinked = (raw?.linkedOrganizationIds as string[] | undefined)?.filter(Boolean) ?? [];
+
+    await this.membershipModel.findOneAndUpdate(
+      { userId: uid, organizationId: doc.organizationId },
+      {
+        $set: {
+          role: doc.role,
+          membershipStatus: doc.status === "invited" ? "invited" : "active",
+          deletedAt: null
+        },
+        $setOnInsert: { userId: uid, organizationId: doc.organizationId }
+      },
+      { upsert: true, new: true }
+    );
+
+    for (const oid of legacyLinked) {
+      if (oid === doc.organizationId) continue;
+      await this.membershipModel.findOneAndUpdate(
+        { userId: uid, organizationId: oid },
+        {
+          $set: {
+            role: doc.role,
+            membershipStatus: "active",
+            deletedAt: null
+          },
+          $setOnInsert: { userId: uid, organizationId: oid }
+        },
+        { upsert: true, new: true }
+      );
+    }
+
+    if (legacyLinked.length > 0) {
+      await this.userModel.collection.updateOne({ _id: doc._id }, { $unset: { linkedOrganizationIds: "" } });
+    }
   }
 
   private toResponse(doc: UserDocument): UserResponse {

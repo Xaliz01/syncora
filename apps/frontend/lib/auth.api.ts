@@ -45,6 +45,28 @@ export async function acceptInvitation(payload: {
   );
 }
 
+export async function createOrganization(payload: { name: string }) {
+  return apiRequestJson<{ accessToken: string; user: import("@syncora/shared").AuthUser }>(
+    "POST",
+    "/auth/create-organization",
+    {
+      body: payload,
+      fallbackError: "Impossible de créer l’organisation"
+    }
+  );
+}
+
+export async function switchOrganization(payload: { organizationId: string }) {
+  return apiRequestJson<{ accessToken: string; user: import("@syncora/shared").AuthUser }>(
+    "POST",
+    "/auth/switch-organization",
+    {
+      body: payload,
+      fallbackError: "Impossible de changer d’organisation"
+    }
+  );
+}
+
 export function setToken(token: string) {
   if (typeof window !== "undefined") localStorage.setItem("syncora_access_token", token);
 }

@@ -8,7 +8,9 @@ import type {
   RegisterBody,
   LoginBody,
   AuthResponse,
-  JwtPayload
+  JwtPayload,
+  CreateOrganizationBody,
+  SwitchOrganizationBody
 } from "@syncora/shared";
 
 @Controller("auth")
@@ -28,6 +30,24 @@ export class AuthController {
   @Post("accept-invitation")
   async acceptInvitation(@Body() body: AcceptInvitationBody): Promise<AuthResponse> {
     return this.authService.acceptInvitation(body);
+  }
+
+  @Post("create-organization")
+  @UseGuards(JwtAuthGuard)
+  async createOrganization(
+    @Body() body: CreateOrganizationBody,
+    @Req() req: Request & { user: JwtPayload }
+  ): Promise<AuthResponse> {
+    return this.authService.createOrganization(body, req.user);
+  }
+
+  @Post("switch-organization")
+  @UseGuards(JwtAuthGuard)
+  async switchOrganization(
+    @Body() body: SwitchOrganizationBody,
+    @Req() req: Request & { user: JwtPayload }
+  ): Promise<AuthResponse> {
+    return this.authService.switchOrganization(body, req.user);
   }
 
   @Get("me")

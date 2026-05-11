@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import React, { useCallback, useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import type {
   TeamResponse,
   TechnicianResponse,
@@ -12,6 +13,7 @@ import type {
 
 const TEAM_STATUSES: TeamStatus[] = ["active", "inactive"];
 import * as fleetApi from "@/lib/fleet.api";
+import { normalizeCalendarColorHex } from "@/lib/team-calendar-colors";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useRouter } from "next/navigation";
 
@@ -27,6 +29,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 export function TeamDetailsPage({ teamId }: { teamId: string }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { showToast } = useToast();
   const [team, setTeam] = useState<TeamResponse | null>(null);
   const [technicians, setTechnicians] = useState<TechnicianResponse[]>([]);
@@ -40,6 +43,8 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
   const [editName, setEditName] = useState("");
   const [editAgenceId, setEditAgenceId] = useState("");
   const [editStatus, setEditStatus] = useState<TeamStatus>("active");
+  /** Vide = couleur automatique sur le calendrier */
+  const [editCalendarColor, setEditCalendarColor] = useState("");
 
   const [addTechnicianId, setAddTechnicianId] = useState("");
 
@@ -61,6 +66,7 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
       setEditName(teamData.name);
       setEditAgenceId(teamData.agenceId ?? "");
       setEditStatus(teamData.status);
+      setEditCalendarColor(teamData.calendarColor ?? "");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur de chargement");
     } finally {
@@ -80,10 +86,12 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
       await fleetApi.updateTeam(team.id, {
         name: editName.trim(),
         agenceId: editAgenceId || null,
-        status: editStatus
+        status: editStatus,
+        calendarColor: editCalendarColor.trim() ? editCalendarColor.trim() : null
       });
       showToast("Équipe mise à jour.");
       setIsEditing(false);
+      void queryClient.invalidateQueries({ queryKey: ["fleet-teams"] });
       await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Impossible de sauvegarder");
@@ -227,6 +235,30 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
               <span className="text-slate-400 dark:text-slate-500">Nombre de membres</span>
               <p>{team.technicianIds.length}</p>
             </div>
+            <div className="md:col-span-2">
+              <span className="text-slate-400 dark:text-slate-500">Couleur au calendrier</span>
+              <div className="mt-1 flex items-center gap-2 flex-wrap">
+                {team.calendarColor && normalizeCalendarColorHex(team.calendarColor) ? (
+                  <>
+                    <span
+                      className="team-cal-legend-swatch h-6 w-10 rounded border shrink-0"
+                      style={
+                        {
+                          "--team-cal-border": normalizeCalendarColorHex(team.calendarColor) ?? team.calendarColor
+                        } as React.CSSProperties
+                      }
+                    />
+                    <code className="text-xs text-slate-600 dark:text-slate-300">
+                      {normalizeCalendarColorHex(team.calendarColor)}
+                    </code>
+                  </>
+                ) : (
+                  <p className="text-sm text-slate-600 dark:text-slate-300">
+                    Automatique (couleur dérivée de l&apos;équipe sur le calendrier)
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
         </section>
       ) : (
@@ -273,6 +305,39 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
               ))}
             </select>
           </div>
+
+          <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 p-3 space-y-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
+              Couleur au calendrier
+            </label>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Utilisée pour les interventions assignées à cette équipe. Laissez vide pour une couleur automatique.
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <input
+                type="color"
+                aria-label="Choix de la couleur"
+                className="h-10 w-14 cursor-pointer rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900"
+                value={normalizeCalendarColorHex(editCalendarColor) ?? "#94a3b8"}
+                onChange={(e) => setEditCalendarColor(e.target.value)}
+              />
+              <input
+                type="text"
+                placeholder="#RRGGBB"
+                value={editCalendarColor}
+                onChange={(e) => setEditCalendarColor(e.target.value)}
+                className="flex-1 min-w-[120px] rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-mono text-slate-900 dark:text-slate-100"
+              />
+              <button
+                type="button"
+                onClick={() => setEditCalendarColor("")}
+                className="rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                Automatique
+              </button>
+            </div>
+          </div>
+
           <div className="flex justify-end">
             <button
               type="button"

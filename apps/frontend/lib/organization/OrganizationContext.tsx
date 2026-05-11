@@ -1,11 +1,16 @@
 "use client";
 
-import React, { createContext, useCallback, useContext, useMemo } from "react";
+import React, { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { OrganizationResponse } from "@syncora/shared";
 import { useAuth } from "@/components/auth/AuthContext";
+import { OrganizationSwitchOverlay } from "@/components/organization/OrganizationSwitchOverlay";
 import { useToast } from "@/components/ui/ToastProvider";
 import * as organizationsApi from "@/lib/organizations.api";
+
+/** Durée minimale d’affichage de l’overlay pour une transition lisible (ms). */
+const ORG_SWITCH_OVERLAY_MIN_MS = 520;
 
 export interface OrganizationContextValue {
   organizations: OrganizationResponse[];
@@ -13,17 +18,25 @@ export interface OrganizationContextValue {
   sessionOrganizationId: string;
   activeOrganization: OrganizationResponse | undefined;
   isLoading: boolean;
+  /** Bascule d’organisation en cours (overlay plein écran). */
+  isSwitchingOrganization: boolean;
   refetchOrganizations: () => void;
-  /** Sélection d’une autre entrée : affiche un message tant que le backend multi-org / switch n’est pas branché. */
-  selectOrganization: (organizationId: string) => void;
+  /** Bascule vers une autre organisation (JWT mis à jour). */
+  selectOrganization: (organizationId: string) => Promise<void>;
 }
 
 const OrganizationContext = createContext<OrganizationContextValue | null>(null);
 
 export function OrganizationProvider({ children }: { children: React.ReactNode }) {
-  const { user, isAuthenticated, isReady } = useAuth();
+  const router = useRouter();
+  const { user, isAuthenticated, isReady, switchOrganization } = useAuth();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
+  const switchingRef = useRef(false);
+  const [switchOverlay, setSwitchOverlay] = useState<{ active: boolean; label: string | null }>({
+    active: false,
+    label: null
+  });
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["organizations", "mine", user?.organizationId],
@@ -48,13 +61,39 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
   );
 
   const selectOrganization = useCallback(
-    (organizationId: string) => {
+    async (organizationId: string) => {
       if (organizationId === sessionOrganizationId) return;
-      showToast(
-        "La bascule entre organisations sera disponible lorsque votre compte sera lié à plusieurs espaces."
-      );
+      if (switchingRef.current) return;
+
+      switchingRef.current = true;
+      const targetLabel =
+        organizations.find((o) => o.id === organizationId)?.name ?? null;
+      setSwitchOverlay({ active: true, label: targetLabel });
+      const startedAt = Date.now();
+
+      try {
+        await switchOrganization(organizationId);
+        /**
+         * Les queryKeys ne sont pas toutes préfixées par org : sans ça, le cache garde
+         * dossiers, interventions, clients, etc. de l’organisation précédente alors que
+         * le JWT est déjà le bon (stocké dans localStorage au moment du switch).
+         */
+        await queryClient.cancelQueries();
+        queryClient.clear();
+        router.replace("/");
+      } catch (e) {
+        showToast(e instanceof Error ? e.message : "Bascule impossible.", "error");
+      } finally {
+        const elapsed = Date.now() - startedAt;
+        const remaining = Math.max(0, ORG_SWITCH_OVERLAY_MIN_MS - elapsed);
+        if (remaining > 0) {
+          await new Promise((resolve) => setTimeout(resolve, remaining));
+        }
+        setSwitchOverlay({ active: false, label: null });
+        switchingRef.current = false;
+      }
     },
-    [sessionOrganizationId, showToast]
+    [organizations, sessionOrganizationId, switchOrganization, showToast, queryClient, router]
   );
 
   const refetchOrganizations = useCallback(() => {
@@ -68,6 +107,7 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
       sessionOrganizationId,
       activeOrganization,
       isLoading,
+      isSwitchingOrganization: switchOverlay.active,
       refetchOrganizations,
       selectOrganization
     }),
@@ -76,12 +116,21 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
       sessionOrganizationId,
       activeOrganization,
       isLoading,
+      switchOverlay.active,
       refetchOrganizations,
       selectOrganization
     ]
   );
 
-  return <OrganizationContext.Provider value={value}>{children}</OrganizationContext.Provider>;
+  return (
+    <OrganizationContext.Provider value={value}>
+      {children}
+      <OrganizationSwitchOverlay
+        visible={switchOverlay.active}
+        organizationName={switchOverlay.label}
+      />
+    </OrganizationContext.Provider>
+  );
 }
 
 export function useOrganization() {

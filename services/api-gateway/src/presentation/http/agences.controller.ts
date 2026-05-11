@@ -10,7 +10,11 @@ import {
 } from "@nestjs/common";
 import { AbstractAgencesGatewayService } from "../../domain/ports/agences.service.port";
 import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
-import { RequirePermissionGuard, RequirePermissions } from "../../infrastructure/require-permission.guard";
+import {
+  RequireAnyPermissions,
+  RequirePermissionGuard,
+  RequirePermissions
+} from "../../infrastructure/require-permission.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
 import type { AuthUser, UpdateAgenceBody } from "@syncora/shared";
 
@@ -37,13 +41,13 @@ export class AgencesGatewayController {
   }
 
   @Get()
-  @RequirePermissions("agences.read")
+  @RequireAnyPermissions("agences.read", "teams.read")
   async listAgences(@CurrentUser() user: AuthUser) {
     return this.agencesService.listAgences(user);
   }
 
   @Get(":agenceId")
-  @RequirePermissions("agences.read")
+  @RequireAnyPermissions("agences.read", "teams.read")
   async getAgence(
     @CurrentUser() user: AuthUser,
     @Param("agenceId") agenceId: string

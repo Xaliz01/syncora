@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
+import { PostalAddressFields } from "@/components/address/PostalAddressFields";
 import * as fleetApi from "@/lib/fleet.api";
 import { useToast } from "@/components/ui/ToastProvider";
 
@@ -68,39 +69,23 @@ export function AgenceCreatePage() {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Adresse</label>
-            <input
-              type="text"
-              placeholder="12 rue de la Paix"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-            />
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Ville</label>
-              <input
-                type="text"
-                placeholder="Paris"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Code postal</label>
-              <input
-                type="text"
-                placeholder="75001"
-                value={postalCode}
-                onChange={(e) => setPostalCode(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-              />
-            </div>
-          </div>
+          <PostalAddressFields
+            legend="Adresse du site (Base Adresse Nationale)"
+            line1={address}
+            line2=""
+            postalCode={postalCode}
+            city={city}
+            country="FR"
+            onLine1Change={setAddress}
+            onLine2Change={() => {}}
+            onPostalChange={setPostalCode}
+            onCityChange={setCity}
+            onCountryChange={() => {}}
+            showLine2={false}
+            showCountry={false}
+            labelCls="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200"
+            inputCls="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+          />
 
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Téléphone</label>

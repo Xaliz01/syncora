@@ -15,6 +15,7 @@ import type {
   CreatePermissionProfileBody,
   EffectivePermissionsResponse,
   InvitationResponse,
+  OrganizationMembershipResponse,
   UpdatePermissionProfileBody,
   UserPermissionAssignmentResponse,
   UserResponse
@@ -157,7 +158,11 @@ export class AdminService extends AbstractAdminService {
       throw new ForbiddenException("Impossible d'accéder à un utilisateur d'une autre organisation");
     }
 
-    const [assignment, effectivePermissions] = await Promise.all([
+    const [memberships, assignment, effectivePermissions] = await Promise.all([
+      this.callUsersService<OrganizationMembershipResponse[]>({
+        method: "get",
+        path: `/users/${userId}/organization-memberships`
+      }),
       this.callPermissionsService<UserPermissionAssignmentResponse>({
         method: "get",
         path: `/assignments/${user.id}`,
@@ -174,9 +179,14 @@ export class AdminService extends AbstractAdminService {
       })
     ]);
 
+    const membershipForOrg = memberships.find(
+      (row) => row.organizationId === currentUser.organizationId
+    );
+
     return {
       user: {
         ...user,
+        organizationMembershipStatus: membershipForOrg?.membershipStatus,
         permissions: effectivePermissions.permissions,
         permissionAssignment: assignment
       }

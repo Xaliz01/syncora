@@ -21,6 +21,7 @@ interface CreateTeamPayload {
   agenceId?: string;
   technicianIds?: string[];
   status?: TeamStatus;
+  calendarColor?: string;
 }
 
 @Controller("fleet/teams")

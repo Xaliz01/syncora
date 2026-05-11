@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useState } from "react";
 import type { TeamStatus, TechnicianResponse, AgenceResponse } from "@syncora/shared";
 import * as fleetApi from "@/lib/fleet.api";
+import { normalizeCalendarColorHex } from "@/lib/team-calendar-colors";
 import { useToast } from "@/components/ui/ToastProvider";
 
 const TEAM_STATUSES: TeamStatus[] = ["active", "inactive"];
@@ -15,6 +16,7 @@ export function TeamCreatePage() {
   const [agenceId, setAgenceId] = useState("");
   const [selectedTechnicianIds, setSelectedTechnicianIds] = useState<string[]>([]);
   const [status, setStatus] = useState<TeamStatus>("active");
+  const [calendarColor, setCalendarColor] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -56,7 +58,8 @@ export function TeamCreatePage() {
         name: name.trim(),
         agenceId: agenceId || undefined,
         technicianIds: selectedTechnicianIds,
-        status
+        status,
+        calendarColor: calendarColor.trim() || undefined
       });
       showToast("Équipe créée avec succès.");
       router.push("/fleet/teams");
@@ -129,6 +132,38 @@ export function TeamCreatePage() {
                 </option>
               ))}
             </select>
+          </div>
+
+          <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 p-4 space-y-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
+              Couleur au calendrier (optionnel)
+            </label>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Affichée sur les interventions assignées à cette équipe. Vide = couleur automatique.
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <input
+                type="color"
+                aria-label="Couleur calendrier"
+                className="h-10 w-14 cursor-pointer rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900"
+                value={normalizeCalendarColorHex(calendarColor) ?? "#94a3b8"}
+                onChange={(e) => setCalendarColor(e.target.value)}
+              />
+              <input
+                type="text"
+                placeholder="#RRGGBB"
+                value={calendarColor}
+                onChange={(e) => setCalendarColor(e.target.value)}
+                className="flex-1 min-w-[120px] rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-mono"
+              />
+              <button
+                type="button"
+                onClick={() => setCalendarColor("")}
+                className="rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                Automatique
+              </button>
+            </div>
           </div>
 
           {!loading && (

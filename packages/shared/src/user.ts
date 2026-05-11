@@ -18,7 +18,10 @@ export interface UserResponse {
   email: string;
   name?: string;
   role: UserRole;
+  /** Statut « compte » (actif / legacy invité). Préférer `organizationMembershipStatus` pour le rattachement à l’org. */
   status: UserStatus;
+  /** Présent lorsque la réponse est liée à une organisation (liste admin, fiche) : état d’invitation sur cette org. */
+  organizationMembershipStatus?: "active" | "invited";
   createdAt?: string;
 }
 
@@ -33,6 +36,13 @@ export interface CreateInvitedUserBody {
 export interface ActivateInvitedUserBody {
   password: string;
   name?: string;
+}
+
+/** Mise à jour partielle côté serveur (ex. gateway → users-service). */
+export interface PatchUserBody {
+  organizationId?: string;
+  /** Rôle dans l’organisation active (aligné sur la ligne de jointure lors d’un switch). */
+  role?: UserRole;
 }
 
 export interface ValidateCredentialsBody {

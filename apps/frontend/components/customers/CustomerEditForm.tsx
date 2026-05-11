@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import type { CustomerKind, CustomerResponse } from "@syncora/shared";
 import type { UpdateCustomerPayload } from "@/lib/customers.api";
+import { PostalAddressFields } from "@/components/address/PostalAddressFields";
 import { CUSTOMER_KIND_LABELS } from "./customer-kind-labels";
 
 type Props = {
@@ -180,23 +181,21 @@ export function CustomerEditForm({ customer, onSubmit, onCancel, isPending, erro
 
       <details className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80 px-3 py-2">
         <summary className="cursor-pointer text-sm font-medium text-slate-700 dark:text-slate-200">Adresse postale (optionnel)</summary>
-        <div className="mt-3 space-y-2">
-          <input placeholder="Ligne 1" value={addrLine1} onChange={(e) => setAddrLine1(e.target.value)} className={inputCls} />
-          <input placeholder="Ligne 2" value={addrLine2} onChange={(e) => setAddrLine2(e.target.value)} className={inputCls} />
-          <div className="grid grid-cols-2 gap-2">
-            <input
-              placeholder="Code postal"
-              value={addrPostal}
-              onChange={(e) => setAddrPostal(e.target.value)}
-              className={inputCls}
-            />
-            <input placeholder="Ville" value={addrCity} onChange={(e) => setAddrCity(e.target.value)} className={inputCls} />
-          </div>
-          <input
-            placeholder="Pays (code ISO, ex. FR)"
-            value={addrCountry}
-            onChange={(e) => setAddrCountry(e.target.value)}
-            className={inputCls}
+        <div className="mt-3">
+          <PostalAddressFields
+            legend="Saisie guidée par la Base Adresse Nationale (France)."
+            line1={addrLine1}
+            line2={addrLine2}
+            postalCode={addrPostal}
+            city={addrCity}
+            country={addrCountry}
+            onLine1Change={setAddrLine1}
+            onLine2Change={setAddrLine2}
+            onPostalChange={setAddrPostal}
+            onCityChange={setAddrCity}
+            onCountryChange={setAddrCountry}
+            labelCls={labelCls}
+            inputCls={inputCls}
           />
         </div>
       </details>

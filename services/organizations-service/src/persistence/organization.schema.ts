@@ -6,6 +6,27 @@ export class OrganizationDocument extends Document {
   @Prop({ required: true })
   name!: string;
 
+  @Prop()
+  email?: string;
+
+  @Prop()
+  phone?: string;
+
+  @Prop()
+  addressLine1?: string;
+
+  @Prop()
+  addressLine2?: string;
+
+  @Prop()
+  postalCode?: string;
+
+  @Prop()
+  city?: string;
+
+  @Prop()
+  country?: string;
+
   @Prop({ type: Date })
   deletedAt?: Date | null;
 }
