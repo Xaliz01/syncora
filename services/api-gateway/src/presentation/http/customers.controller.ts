@@ -18,6 +18,7 @@ import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
 import { RequirePermissionGuard, RequirePermissions } from "../../infrastructure/require-permission.guard";
 import { SubscriptionAccessGuard } from "../../infrastructure/subscription-access.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
+import { NotifyEntity } from "../../infrastructure/notify-entity.decorator";
 import type { AuthUser } from "@syncora/shared";
 
 @Controller("customers")
@@ -27,6 +28,7 @@ export class CustomersController {
 
   @Post()
   @RequirePermissions("customers.create")
+  @NotifyEntity({ type: "customer", labelField: "displayName" })
   async createCustomer(
     @CurrentUser() user: AuthUser,
     @Body() body: CreateCustomerForOrgBody
@@ -51,6 +53,7 @@ export class CustomersController {
 
   @Patch(":customerId")
   @RequirePermissions("customers.update")
+  @NotifyEntity({ type: "customer", labelField: "displayName" })
   async updateCustomer(
     @CurrentUser() user: AuthUser,
     @Param("customerId") customerId: string,
@@ -61,6 +64,7 @@ export class CustomersController {
 
   @Delete(":customerId")
   @RequirePermissions("customers.delete")
+  @NotifyEntity({ type: "customer", idParam: "customerId" })
   async deleteCustomer(
     @CurrentUser() user: AuthUser,
     @Param("customerId") customerId: string

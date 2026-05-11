@@ -14,6 +14,7 @@ import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
 import { RequirePermissionGuard, RequirePermissions } from "../../infrastructure/require-permission.guard";
 import { SubscriptionAccessGuard } from "../../infrastructure/subscription-access.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
+import { NotifyEntity } from "../../infrastructure/notify-entity.decorator";
 import type { AuthUser } from "@syncora/shared";
 import type {
   AssignTeamToVehicleBody,
@@ -42,6 +43,7 @@ export class FleetController {
   @Post("vehicles")
   @RequirePermissions("fleet.vehicles.create")
   @RequirePermissions("vehicles.create")
+  @NotifyEntity({ type: "vehicle", labelField: "registrationNumber" })
   async createVehicle(
     @CurrentUser() user: AuthUser,
     @Body() body: CreateVehiclePayload
@@ -69,6 +71,7 @@ export class FleetController {
   @Patch("vehicles/:vehicleId")
   @RequirePermissions("fleet.vehicles.update")
   @RequirePermissions("vehicles.update")
+  @NotifyEntity({ type: "vehicle", labelField: "registrationNumber" })
   async updateVehicle(
     @CurrentUser() user: AuthUser,
     @Param("vehicleId") vehicleId: string,
@@ -80,6 +83,7 @@ export class FleetController {
   @Delete("vehicles/:vehicleId")
   @RequirePermissions("fleet.vehicles.delete")
   @RequirePermissions("vehicles.delete")
+  @NotifyEntity({ type: "vehicle", idParam: "vehicleId" })
   async deleteVehicle(
     @CurrentUser() user: AuthUser,
     @Param("vehicleId") vehicleId: string
@@ -90,6 +94,7 @@ export class FleetController {
   @Put("vehicles/:vehicleId/assign-team")
   @RequirePermissions("vehicles.update")
   @RequirePermissions("fleet.vehicles.assign")
+  @NotifyEntity({ type: "vehicle", labelField: "registrationNumber", action: "updated" })
   async assignTeam(
     @CurrentUser() user: AuthUser,
     @Param("vehicleId") vehicleId: string,
@@ -101,6 +106,7 @@ export class FleetController {
   @Delete("vehicles/:vehicleId/assign-team")
   @RequirePermissions("vehicles.update")
   @RequirePermissions("fleet.vehicles.assign")
+  @NotifyEntity({ type: "vehicle", idParam: "vehicleId", action: "updated" })
   async unassignTeam(
     @CurrentUser() user: AuthUser,
     @Param("vehicleId") vehicleId: string

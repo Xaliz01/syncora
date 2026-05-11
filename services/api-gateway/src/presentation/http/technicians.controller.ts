@@ -13,6 +13,7 @@ import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
 import { RequirePermissionGuard, RequirePermissions } from "../../infrastructure/require-permission.guard";
 import { SubscriptionAccessGuard } from "../../infrastructure/subscription-access.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
+import { NotifyEntity } from "../../infrastructure/notify-entity.decorator";
 import type { AuthUser } from "@syncora/shared";
 import type {
   CreateTechnicianUserAccountBody,
@@ -39,6 +40,7 @@ export class TechniciansController {
   @Post()
   @RequirePermissions("fleet.technicians.create")
   @RequirePermissions("technicians.create")
+  @NotifyEntity({ type: "technician", labelField: "firstName" })
   async createTechnician(
     @CurrentUser() user: AuthUser,
     @Body() body: CreateTechnicianPayload
@@ -66,6 +68,7 @@ export class TechniciansController {
   @Patch(":technicianId")
   @RequirePermissions("fleet.technicians.update")
   @RequirePermissions("technicians.update")
+  @NotifyEntity({ type: "technician", labelField: "firstName" })
   async updateTechnician(
     @CurrentUser() user: AuthUser,
     @Param("technicianId") technicianId: string,
@@ -77,6 +80,7 @@ export class TechniciansController {
   @Delete(":technicianId")
   @RequirePermissions("fleet.technicians.delete")
   @RequirePermissions("technicians.delete")
+  @NotifyEntity({ type: "technician", idParam: "technicianId" })
   async deleteTechnician(
     @CurrentUser() user: AuthUser,
     @Param("technicianId") technicianId: string

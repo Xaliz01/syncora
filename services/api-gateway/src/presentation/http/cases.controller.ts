@@ -24,6 +24,7 @@ import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
 import { RequirePermissionGuard, RequirePermissions } from "../../infrastructure/require-permission.guard";
 import { SubscriptionAccessGuard } from "../../infrastructure/subscription-access.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
+import { NotifyEntity } from "../../infrastructure/notify-entity.decorator";
 import type { AuthUser } from "@syncora/shared";
 
 @Controller("cases")
@@ -33,6 +34,7 @@ export class CasesController {
 
   @Post("templates")
   @RequirePermissions("case_templates.create")
+  @NotifyEntity({ type: "case_template", labelField: "name" })
   async createTemplate(
     @CurrentUser() user: AuthUser,
     @Body() body: CreateTemplateForOrgBody
@@ -57,6 +59,7 @@ export class CasesController {
 
   @Patch("templates/:templateId")
   @RequirePermissions("case_templates.update")
+  @NotifyEntity({ type: "case_template", labelField: "name" })
   async updateTemplate(
     @CurrentUser() user: AuthUser,
     @Param("templateId") templateId: string,
@@ -67,6 +70,7 @@ export class CasesController {
 
   @Delete("templates/:templateId")
   @RequirePermissions("case_templates.delete")
+  @NotifyEntity({ type: "case_template", idParam: "templateId" })
   async deleteTemplate(
     @CurrentUser() user: AuthUser,
     @Param("templateId") templateId: string
@@ -76,6 +80,7 @@ export class CasesController {
 
   @Post("items")
   @RequirePermissions("cases.create")
+  @NotifyEntity({ type: "case", labelField: "title" })
   async createCase(
     @CurrentUser() user: AuthUser,
     @Body() body: CreateCaseForOrgBody
@@ -106,6 +111,7 @@ export class CasesController {
 
   @Patch("items/:caseId")
   @RequirePermissions("cases.update")
+  @NotifyEntity({ type: "case", labelField: "title" })
   async updateCase(
     @CurrentUser() user: AuthUser,
     @Param("caseId") caseId: string,
@@ -116,6 +122,7 @@ export class CasesController {
 
   @Delete("items/:caseId")
   @RequirePermissions("cases.delete")
+  @NotifyEntity({ type: "case", idParam: "caseId" })
   async deleteCase(
     @CurrentUser() user: AuthUser,
     @Param("caseId") caseId: string
@@ -125,6 +132,7 @@ export class CasesController {
 
   @Put("items/:caseId/todos")
   @RequirePermissions("cases.update")
+  @NotifyEntity({ type: "case", labelField: "title", action: "updated" })
   async updateTodo(
     @CurrentUser() user: AuthUser,
     @Param("caseId") caseId: string,
@@ -135,6 +143,7 @@ export class CasesController {
 
   @Post("interventions")
   @RequirePermissions("interventions.create")
+  @NotifyEntity({ type: "intervention", labelField: "title" })
   async createIntervention(
     @CurrentUser() user: AuthUser,
     @Body() body: CreateInterventionForOrgBody
@@ -174,6 +183,7 @@ export class CasesController {
 
   @Patch("interventions/:interventionId")
   @RequirePermissions("interventions.update")
+  @NotifyEntity({ type: "intervention", labelField: "title" })
   async updateIntervention(
     @CurrentUser() user: AuthUser,
     @Param("interventionId") interventionId: string,
@@ -184,6 +194,7 @@ export class CasesController {
 
   @Delete("interventions/:interventionId")
   @RequirePermissions("interventions.delete")
+  @NotifyEntity({ type: "intervention", idParam: "interventionId" })
   async deleteIntervention(
     @CurrentUser() user: AuthUser,
     @Param("interventionId") interventionId: string

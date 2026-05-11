@@ -8,6 +8,7 @@ import { hasActiveSubscriptionAccess } from "@/lib/subscription-access";
 import { OrganizationSwitcher } from "@/components/organization/OrganizationSwitcher";
 import { hasPermission } from "@/lib/auth-permissions";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 interface MenuLink {
   label: string;
@@ -231,6 +232,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 className="w-48 lg:w-64 rounded-md border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 py-1.5 pl-8 pr-3 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-brand-500 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-brand-500 transition"
               />
             </form>
+            <NotificationBell />
             <div className="hidden sm:flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
               <span className="font-medium">Bonjour, {user?.name ?? user?.email}</span>
               <span className="rounded-full bg-brand-600/10 px-2 py-0.5 text-xs font-medium text-brand-600 dark:text-brand-400">

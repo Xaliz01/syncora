@@ -16,6 +16,7 @@ import {
   RequirePermissions
 } from "../../infrastructure/require-permission.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
+import { NotifyEntity } from "../../infrastructure/notify-entity.decorator";
 import type { AuthUser, UpdateAgenceBody } from "@syncora/shared";
 
 interface CreateAgencePayload {
@@ -33,6 +34,7 @@ export class AgencesGatewayController {
 
   @Post()
   @RequirePermissions("agences.create")
+  @NotifyEntity({ type: "agence", labelField: "name" })
   async createAgence(
     @CurrentUser() user: AuthUser,
     @Body() body: CreateAgencePayload
@@ -57,6 +59,7 @@ export class AgencesGatewayController {
 
   @Patch(":agenceId")
   @RequirePermissions("agences.update")
+  @NotifyEntity({ type: "agence", labelField: "name" })
   async updateAgence(
     @CurrentUser() user: AuthUser,
     @Param("agenceId") agenceId: string,
@@ -67,6 +70,7 @@ export class AgencesGatewayController {
 
   @Delete(":agenceId")
   @RequirePermissions("agences.delete")
+  @NotifyEntity({ type: "agence", idParam: "agenceId" })
   async deleteAgence(
     @CurrentUser() user: AuthUser,
     @Param("agenceId") agenceId: string
