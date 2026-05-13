@@ -13,6 +13,7 @@ import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
 import { RequirePermissionGuard, RequirePermissions } from "../../infrastructure/require-permission.guard";
 import { SubscriptionAccessGuard } from "../../infrastructure/subscription-access.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
+import { NotifyEntity } from "../../infrastructure/notify-entity.decorator";
 import type { AuthUser } from "@syncora/shared";
 import { AbstractStockGatewayService } from "../../domain/ports/stock.service.port";
 import type {
@@ -29,6 +30,7 @@ export class StockController {
 
   @Post("articles")
   @RequirePermissions("stock.articles.create")
+  @NotifyEntity({ type: "article", labelField: "name" })
   async createArticle(
     @CurrentUser() user: AuthUser,
     @Body() body: CreateArticleForOrgBody
@@ -62,6 +64,7 @@ export class StockController {
 
   @Patch("articles/:articleId")
   @RequirePermissions("stock.articles.update")
+  @NotifyEntity({ type: "article", labelField: "name" })
   async updateArticle(
     @CurrentUser() user: AuthUser,
     @Param("articleId") articleId: string,
@@ -72,6 +75,7 @@ export class StockController {
 
   @Delete("articles/:articleId")
   @RequirePermissions("stock.articles.delete")
+  @NotifyEntity({ type: "article", idParam: "articleId" })
   async deleteArticle(
     @CurrentUser() user: AuthUser,
     @Param("articleId") articleId: string
@@ -81,6 +85,7 @@ export class StockController {
 
   @Post("movements")
   @RequirePermissions("stock.movements.create")
+  @NotifyEntity({ type: "stock_movement", labelField: "articleName" })
   async createArticleMovement(
     @CurrentUser() user: AuthUser,
     @Body() body: CreateArticleMovementForOrgBody
@@ -107,6 +112,7 @@ export class StockController {
 
   @Post("interventions/:interventionId/articles")
   @RequirePermissions("stock.interventions.create")
+  @NotifyEntity({ type: "stock_movement", labelField: "articleName" })
   async addInterventionArticleUsage(
     @CurrentUser() user: AuthUser,
     @Param("interventionId") interventionId: string,

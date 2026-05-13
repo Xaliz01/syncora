@@ -13,6 +13,7 @@ import { AbstractTeamsGatewayService } from "../../domain/ports/teams.service.po
 import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
 import { RequirePermissionGuard, RequirePermissions } from "../../infrastructure/require-permission.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
+import { NotifyEntity } from "../../infrastructure/notify-entity.decorator";
 import type { AuthUser } from "@syncora/shared";
 import type { UpdateTeamBody, TeamStatus } from "@syncora/shared";
 
@@ -31,6 +32,7 @@ export class TeamsGatewayController {
 
   @Post()
   @RequirePermissions("teams.create")
+  @NotifyEntity({ type: "team", labelField: "name" })
   async createTeam(
     @CurrentUser() user: AuthUser,
     @Body() body: CreateTeamPayload
@@ -55,6 +57,7 @@ export class TeamsGatewayController {
 
   @Patch(":teamId")
   @RequirePermissions("teams.update")
+  @NotifyEntity({ type: "team", labelField: "name" })
   async updateTeam(
     @CurrentUser() user: AuthUser,
     @Param("teamId") teamId: string,
@@ -65,6 +68,7 @@ export class TeamsGatewayController {
 
   @Delete(":teamId")
   @RequirePermissions("teams.delete")
+  @NotifyEntity({ type: "team", idParam: "teamId" })
   async deleteTeam(
     @CurrentUser() user: AuthUser,
     @Param("teamId") teamId: string
@@ -74,6 +78,7 @@ export class TeamsGatewayController {
 
   @Put(":teamId/members/:technicianId")
   @RequirePermissions("teams.update")
+  @NotifyEntity({ type: "team", labelField: "name", action: "updated" })
   async addMember(
     @CurrentUser() user: AuthUser,
     @Param("teamId") teamId: string,
@@ -84,6 +89,7 @@ export class TeamsGatewayController {
 
   @Delete(":teamId/members/:technicianId")
   @RequirePermissions("teams.update")
+  @NotifyEntity({ type: "team", idParam: "teamId", action: "updated" })
   async removeMember(
     @CurrentUser() user: AuthUser,
     @Param("teamId") teamId: string,

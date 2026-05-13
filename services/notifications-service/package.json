@@ -1,5 +1,5 @@
 {
-  "name": "@syncora/api-gateway",
+  "name": "@syncora/notifications-service",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -12,26 +12,20 @@
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",
-    "@nestjs/config": "^4.0.0",
     "@nestjs/core": "^11.0.0",
-    "@nestjs/jwt": "^11.0.0",
+    "@nestjs/mongoose": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
-    "@nestjs/swagger": "^11.2.1",
-    "@nestjs/axios": "^4.0.0",
-    "@nestjs/event-emitter": "^3.0.0",
-    "axios": "^1.6.0",
     "@syncora/shared": "0.1.0",
     "dd-trace": "^5.0.0",
+    "mongoose": "^8.0.0",
     "reflect-metadata": "^0.2.0",
-    "rxjs": "^7.8.0",
-    "swagger-ui-express": "^5.0.1"
+    "rxjs": "^7.8.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.0",
     "@nestjs/testing": "^11.0.0",
     "@types/express": "^5.0.0",
     "@types/jest": "^29.5.0",
-    "@types/supertest": "^2.0.16",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
     "eslint": "^8.57.0",
@@ -45,4 +39,3 @@
     "typescript": "^5.6.0"
   }
 }
-

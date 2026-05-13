@@ -21,6 +21,7 @@ import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
 import { RequirePermissionGuard, RequirePermissions } from "../../infrastructure/require-permission.guard";
 import { SubscriptionAccessGuard } from "../../infrastructure/subscription-access.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
+import { NotifyEntity } from "../../infrastructure/notify-entity.decorator";
 import type { AuthUser } from "@syncora/shared";
 
 @Controller("admin")
@@ -36,6 +37,7 @@ export class AdminController {
 
   @Post("users/invite")
   @RequirePermissions("users.invite")
+  @NotifyEntity({ type: "user", action: "created" })
   async inviteUser(
     @CurrentUser() user: AuthUser,
     @Body() body: InviteOrganizationUserBody
@@ -67,6 +69,7 @@ export class AdminController {
 
   @Post("permission-profiles")
   @RequirePermissions("profiles.create")
+  @NotifyEntity({ type: "permission_profile", labelField: "name" })
   async createPermissionProfile(
     @CurrentUser() user: AuthUser,
     @Body() body: CreatePermissionProfileForOrgBody
@@ -91,6 +94,7 @@ export class AdminController {
 
   @Patch("permission-profiles/:profileId")
   @RequirePermissions("profiles.update")
+  @NotifyEntity({ type: "permission_profile", labelField: "name" })
   async updatePermissionProfile(
     @CurrentUser() user: AuthUser,
     @Param("profileId") profileId: string,
@@ -101,6 +105,7 @@ export class AdminController {
 
   @Delete("permission-profiles/:profileId")
   @RequirePermissions("profiles.delete")
+  @NotifyEntity({ type: "permission_profile", idParam: "profileId" })
   async deletePermissionProfile(
     @CurrentUser() user: AuthUser,
     @Param("profileId") profileId: string
