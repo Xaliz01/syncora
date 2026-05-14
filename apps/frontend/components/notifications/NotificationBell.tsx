@@ -153,11 +153,11 @@ export function NotificationBell() {
         ref={buttonRef}
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="relative inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+        className="relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
         title="Notifications"
         aria-label="Notifications"
       >
-        <svg className="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -165,7 +165,13 @@ export function NotificationBell() {
           />
         </svg>
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 inline-flex h-4.5 min-w-[18px] items-center justify-center rounded-full bg-brand-600 px-1 text-[10px] font-bold text-white leading-none">
+          <span
+            className={
+              unreadCount > 99
+                ? "pointer-events-none absolute -right-0.5 -top-0.5 z-10 inline-flex h-5 min-w-[1.625rem] items-center justify-center whitespace-nowrap rounded-full bg-brand-600 px-1 text-[9px] font-semibold tabular-nums leading-tight text-white shadow-sm ring-2 ring-white dark:ring-slate-800"
+                : "pointer-events-none absolute -right-0.5 -top-0.5 z-10 inline-flex h-5 min-w-5 items-center justify-center whitespace-nowrap rounded-full bg-brand-600 px-1.5 text-[11px] font-semibold tabular-nums leading-none text-white shadow-sm ring-2 ring-white dark:ring-slate-800"
+            }
+          >
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}

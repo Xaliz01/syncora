@@ -20,7 +20,7 @@ import type {
   UserPermissionAssignmentResponse,
   UserResponse
 } from "@syncora/shared";
-import { ASSIGNABLE_PERMISSION_CODES, AVAILABLE_PERMISSION_CODES } from "@syncora/shared";
+import { ASSIGNABLE_PERMISSION_CODES } from "@syncora/shared";
 import {
   AbstractAdminService,
   type InviteOrganizationUserBody,
@@ -41,7 +41,8 @@ export class AdminService extends AbstractAdminService {
 
   getPermissionsCatalog() {
     return {
-      availablePermissions: [...AVAILABLE_PERMISSION_CODES]
+      /** Droits configurables (profils, invitations) — hors indicateurs système comme `subscription.active`. */
+      availablePermissions: [...ASSIGNABLE_PERMISSION_CODES]
     };
   }
 

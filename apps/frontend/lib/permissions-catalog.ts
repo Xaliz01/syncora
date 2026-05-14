@@ -150,7 +150,7 @@ export const PERMISSION_METADATA: Record<PermissionCode, PermissionMetadata> = {
   },
   "subscriptions.manage_billing": {
     code: "subscriptions.manage_billing",
-    label: "Gérer la facturation (abonnement)",
+    label: "Gérer l'abonnement",
     description: "Lancer le paiement Stripe, ouvrir le portail client (carte, factures, résiliation)."
   },
   "case_templates.read": {
