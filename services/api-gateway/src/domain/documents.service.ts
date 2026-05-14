@@ -10,7 +10,7 @@ import FormData from "form-data";
 import type { AuthUser, DocumentEntityType, DocumentResponse } from "@syncora/shared";
 import { AbstractDocumentsGatewayService } from "./ports/documents.service.port";
 
-const DOCUMENT_URL = process.env.DOCUMENT_SERVICE_URL ?? "http://localhost:3011";
+const DOCUMENTS_URL = process.env.DOCUMENTS_SERVICE_URL ?? "http://localhost:3011";
 
 @Injectable()
 export class DocumentsGatewayService extends AbstractDocumentsGatewayService {
@@ -39,7 +39,7 @@ export class DocumentsGatewayService extends AbstractDocumentsGatewayService {
 
     const response = await firstValueFrom(
       this.httpService.post<DocumentResponse>(
-        `${DOCUMENT_URL}/documents/upload?${queryParams.toString()}`,
+        `${DOCUMENTS_URL}/documents/upload?${queryParams.toString()}`,
         form,
         { headers: form.getHeaders(), maxContentLength: 50 * 1024 * 1024 }
       )
@@ -53,7 +53,7 @@ export class DocumentsGatewayService extends AbstractDocumentsGatewayService {
     entityId: string
   ): Promise<DocumentResponse[]> {
     const response = await firstValueFrom(
-      this.httpService.get<DocumentResponse[]>(`${DOCUMENT_URL}/documents`, {
+      this.httpService.get<DocumentResponse[]>(`${DOCUMENTS_URL}/documents`, {
         params: {
           organizationId: currentUser.organizationId,
           entityType,
@@ -68,7 +68,7 @@ export class DocumentsGatewayService extends AbstractDocumentsGatewayService {
     try {
       const response = await firstValueFrom(
         this.httpService.get<{ url: string }>(
-          `${DOCUMENT_URL}/documents/${documentId}/download-url`,
+          `${DOCUMENTS_URL}/documents/${documentId}/download-url`,
           { params: { organizationId: currentUser.organizationId } }
         )
       );
@@ -82,7 +82,7 @@ export class DocumentsGatewayService extends AbstractDocumentsGatewayService {
     try {
       const response = await firstValueFrom(
         this.httpService.delete<{ deleted: true }>(
-          `${DOCUMENT_URL}/documents/${documentId}`,
+          `${DOCUMENTS_URL}/documents/${documentId}`,
           { params: { organizationId: currentUser.organizationId } }
         )
       );
