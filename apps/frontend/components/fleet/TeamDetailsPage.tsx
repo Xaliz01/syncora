@@ -16,6 +16,7 @@ import * as fleetApi from "@/lib/fleet.api";
 import { normalizeCalendarColorHex } from "@/lib/team-calendar-colors";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useRouter } from "next/navigation";
+import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
 
 const STATUS_COLORS: Record<string, string> = {
   active: "bg-emerald-50 text-emerald-700 border-emerald-200",
@@ -444,6 +445,8 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
           </div>
         )}
       </section>
+
+      <DocumentUploadZone entityType="team" entityId={teamId} />
     </div>
   );
 }

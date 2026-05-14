@@ -9,6 +9,7 @@ import * as fleetApi from "@/lib/fleet.api";
 import * as customersApi from "@/lib/customers.api";
 import * as stockApi from "@/lib/stock.api";
 import { listOrganizationUsers } from "@/lib/admin.api";
+import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
 import { CaseAssigneesTagsInput } from "@/components/cases/CaseAssigneesTagsInput";
 import { CaseCustomerPicker } from "@/components/cases/CaseCustomerPicker";
 import { InterventionTeamOptimizer } from "@/components/cases/InterventionTeamOptimizer";
@@ -1052,6 +1053,8 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
       </div>
       </>
       )}
+
+      <DocumentUploadZone entityType="case" entityId={caseId} />
     </div>
   );
 }

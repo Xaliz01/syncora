@@ -11,6 +11,7 @@ import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/ToastProvider";
 import { CustomerEditForm } from "./CustomerEditForm";
 import { CUSTOMER_KIND_LABELS } from "./customer-kind-labels";
+import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
 
 function hasPermission(
   role: string | undefined,
@@ -280,6 +281,8 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
           </div>
         </>
       )}
+
+      <DocumentUploadZone entityType="customer" entityId={customerId} />
     </div>
   );
 }
