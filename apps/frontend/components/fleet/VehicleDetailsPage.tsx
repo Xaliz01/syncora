@@ -17,6 +17,7 @@ const VEHICLE_STATUSES: VehicleStatus[] = ["actif", "maintenance", "hors_service
 import * as fleetApi from "@/lib/fleet.api";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/ToastProvider";
+import { usePermissions } from "@/lib/hooks/usePermissions";
 import { useRouter } from "next/navigation";
 import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
 
@@ -46,6 +47,7 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
   const router = useRouter();
   const { showToast } = useToast();
   const confirm = useConfirm();
+  const { can } = usePermissions();
   const [vehicle, setVehicle] = useState<VehicleResponse | null>(null);
   const [teams, setTeams] = useState<TeamResponse[]>([]);
   const [assignedTeam, setAssignedTeam] = useState<TeamResponse | null>(null);
@@ -211,20 +213,24 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setIsEditing((p) => !p)}
-            className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
-          >
-            {isEditing ? "Annuler" : "Modifier"}
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleDelete()}
-            className="rounded-lg border border-red-300 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
-          >
-            Supprimer
-          </button>
+          {can("fleet.vehicles.update") && (
+            <button
+              type="button"
+              onClick={() => setIsEditing((p) => !p)}
+              className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+            >
+              {isEditing ? "Annuler" : "Modifier"}
+            </button>
+          )}
+          {can("fleet.vehicles.delete") && (
+            <button
+              type="button"
+              onClick={() => void handleDelete()}
+              className="rounded-lg border border-red-300 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
+            >
+              Supprimer
+            </button>
+          )}
           <Link
             href="/fleet/vehicles"
             className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
@@ -433,16 +439,18 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
                 {assignedTeam.technicianIds.length !== 1 ? "s" : ""})
               </span>
             </div>
-            <button
-              type="button"
-              onClick={() => void handleUnassignTeam()}
-              disabled={saving}
-              className="rounded-lg border border-red-300 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
-            >
-              Désaffecter
-            </button>
+            {can("fleet.vehicles.assign") && (
+              <button
+                type="button"
+                onClick={() => void handleUnassignTeam()}
+                disabled={saving}
+                className="rounded-lg border border-red-300 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
+              >
+                Désaffecter
+              </button>
+            )}
           </div>
-        ) : (
+        ) : can("fleet.vehicles.assign") ? (
           <div className="flex items-end gap-3">
             <div className="flex-1">
               <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">
@@ -471,6 +479,8 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
               Affecter
             </button>
           </div>
+        ) : (
+          <p className="text-sm text-slate-500 dark:text-slate-400">Aucune équipe affectée.</p>
         )}
       </section>
 

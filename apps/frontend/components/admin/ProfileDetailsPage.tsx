@@ -7,6 +7,7 @@ import type { PermissionCode } from "@syncora/shared";
 import * as adminApi from "@/lib/admin.api";
 import { getPermissionLabel } from "@/lib/permissions-catalog";
 import { useToast } from "@/components/ui/ToastProvider";
+import { usePermissions } from "@/lib/hooks/usePermissions";
 
 function togglePermission(list: PermissionCode[], permission: PermissionCode): PermissionCode[] {
   if (list.includes(permission)) return list.filter((item) => item !== permission);
@@ -16,6 +17,7 @@ function togglePermission(list: PermissionCode[], permission: PermissionCode): P
 export function ProfileDetailsPage({ profileId }: { profileId: string }) {
   const router = useRouter();
   const { showToast } = useToast();
+  const { can } = usePermissions();
   const [catalog, setCatalog] = useState<PermissionCode[]>([]);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -94,13 +96,15 @@ export function ProfileDetailsPage({ profileId }: { profileId: string }) {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setIsEditing((previous) => !previous)}
-            className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
-          >
-            {isEditing ? "Annuler" : "Modifier"}
-          </button>
+          {can("profiles.update") && (
+            <button
+              type="button"
+              onClick={() => setIsEditing((previous) => !previous)}
+              className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+            >
+              {isEditing ? "Annuler" : "Modifier"}
+            </button>
+          )}
           <Link
             href="/settings/profiles"
             className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
@@ -205,14 +209,16 @@ export function ProfileDetailsPage({ profileId }: { profileId: string }) {
                   >
                     {saving ? "Enregistrement..." : "Enregistrer"}
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => void handleDelete()}
-                    disabled={deleting}
-                    className="rounded-lg border border-red-300 px-4 py-2 text-red-700 hover:bg-red-50 disabled:opacity-50"
-                  >
-                    {deleting ? "Suppression..." : "Supprimer le profil"}
-                  </button>
+                  {can("profiles.delete") && (
+                    <button
+                      type="button"
+                      onClick={() => void handleDelete()}
+                      disabled={deleting}
+                      className="rounded-lg border border-red-300 px-4 py-2 text-red-700 hover:bg-red-50 disabled:opacity-50"
+                    >
+                      {deleting ? "Suppression..." : "Supprimer le profil"}
+                    </button>
+                  )}
                 </div>
               </form>
             )}

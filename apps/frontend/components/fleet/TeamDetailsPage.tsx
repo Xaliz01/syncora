@@ -15,6 +15,7 @@ const TEAM_STATUSES: TeamStatus[] = ["active", "inactive"];
 import * as fleetApi from "@/lib/fleet.api";
 import { normalizeCalendarColorHex } from "@/lib/team-calendar-colors";
 import { useToast } from "@/components/ui/ToastProvider";
+import { usePermissions } from "@/lib/hooks/usePermissions";
 import { useRouter } from "next/navigation";
 import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
 
@@ -33,6 +34,7 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
+  const { can } = usePermissions();
   const [team, setTeam] = useState<TeamResponse | null>(null);
   const [technicians, setTechnicians] = useState<TechnicianResponse[]>([]);
   const [agences, setAgences] = useState<AgenceResponse[]>([]);
@@ -178,20 +180,24 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setIsEditing((p) => !p)}
-            className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
-          >
-            {isEditing ? "Annuler" : "Modifier"}
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleDelete()}
-            className="rounded-lg border border-red-300 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
-          >
-            Supprimer
-          </button>
+          {can("teams.update") && (
+            <button
+              type="button"
+              onClick={() => setIsEditing((p) => !p)}
+              className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+            >
+              {isEditing ? "Annuler" : "Modifier"}
+            </button>
+          )}
+          {can("teams.delete") && (
+            <button
+              type="button"
+              onClick={() => void handleDelete()}
+              className="rounded-lg border border-red-300 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
+            >
+              Supprimer
+            </button>
+          )}
           <Link
             href="/fleet/teams"
             className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
@@ -378,21 +384,23 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
                       ({tech.speciality})
                     </span>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => void handleRemoveMember(tech.id)}
-                    disabled={saving}
-                    className="rounded border border-red-300 px-2 py-1 text-xs text-red-600 hover:bg-red-50 disabled:opacity-50"
-                  >
-                    Retirer
-                  </button>
+                  {can("teams.update") && (
+                    <button
+                      type="button"
+                      onClick={() => void handleRemoveMember(tech.id)}
+                      disabled={saving}
+                      className="rounded border border-red-300 px-2 py-1 text-xs text-red-600 hover:bg-red-50 disabled:opacity-50"
+                    >
+                      Retirer
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         )}
 
-        {availableTechnicians.length > 0 && (
+        {can("teams.update") && availableTechnicians.length > 0 && (
           <div className="flex items-end gap-3">
             <div className="flex-1">
               <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">

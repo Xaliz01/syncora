@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "@/lib/stock.api";
+import { usePermissions } from "@/lib/hooks/usePermissions";
 
 type StockPageMode = "catalog" | "movements" | "full";
 
@@ -13,8 +14,9 @@ const MOVEMENT_TYPE_LABELS: Record<string, string> = {
 };
 
 export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
-  const showCatalogActions = mode !== "movements";
-  const showMovementActions = mode !== "catalog";
+  const { can } = usePermissions();
+  const showCatalogActions = mode !== "movements" && can("stock.articles.create");
+  const showMovementActions = mode !== "catalog" && can("stock.movements.create");
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [lowStockOnly, setLowStockOnly] = useState(false);
@@ -482,7 +484,7 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
                             Réassort
                           </button>
                         )}
-                        {showCatalogActions && article.isActive && (
+                        {showCatalogActions && article.isActive && can("stock.articles.delete") && (
                           <button
                             onClick={() => deactivateMutation.mutate(article.id)}
                             disabled={deactivateMutation.isPending}

@@ -15,6 +15,7 @@ import { CaseCustomerPicker } from "@/components/cases/CaseCustomerPicker";
 import { InterventionTeamOptimizer } from "@/components/cases/InterventionTeamOptimizer";
 import { CUSTOMER_KIND_LABELS } from "@/components/customers/customer-kind-labels";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { usePermissions } from "@/lib/hooks/usePermissions";
 import type { CasePriority, CaseStatus, TodoItemStatus } from "@syncora/shared";
 
 const STATUS_LABELS: Record<CaseStatus, string> = {
@@ -70,6 +71,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const confirm = useConfirm();
+  const { can } = usePermissions();
   const [showNewIntervention, setShowNewIntervention] = useState(false);
 
   const { data: caseData, isLoading } = useQuery({
@@ -372,7 +374,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                   {updateMutation.isPending ? "…" : "Enregistrer"}
                 </button>
               </>
-            ) : (
+            ) : can("cases.update") ? (
               <button
                 type="button"
                 onClick={startEditing}
@@ -380,23 +382,25 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
               >
                 Modifier
               </button>
+            ) : null}
+            {can("cases.delete") && (
+              <button
+                type="button"
+                onClick={async () => {
+                  const ok = await confirm({
+                    title: "Supprimer ce dossier ?",
+                    description:
+                      "Toutes les interventions liées seront supprimées définitivement. Cette action ne peut pas être annulée.",
+                    confirmLabel: "Supprimer le dossier",
+                    variant: "danger",
+                  });
+                  if (ok) deleteMutation.mutate();
+                }}
+                className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition"
+              >
+                Supprimer
+              </button>
             )}
-            <button
-              type="button"
-              onClick={async () => {
-                const ok = await confirm({
-                  title: "Supprimer ce dossier ?",
-                  description:
-                    "Toutes les interventions liées seront supprimées définitivement. Cette action ne peut pas être annulée.",
-                  confirmLabel: "Supprimer le dossier",
-                  variant: "danger",
-                });
-                if (ok) deleteMutation.mutate();
-              }}
-              className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition"
-            >
-              Supprimer
-            </button>
           </div>
         </div>
 
@@ -663,7 +667,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                 style={{ width: `${caseData.progress}%` }}
               />
             </div>
-            {allowedTransitions.length > 0 && (
+            {can("cases.update") && allowedTransitions.length > 0 && (
               <div className="mt-3 flex gap-2 flex-wrap">
                 <span className="text-xs text-slate-500 dark:text-slate-400 self-center">
                   Changer le statut :
@@ -803,12 +807,14 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
               <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
                 Interventions ({interventions?.length ?? 0})
               </h2>
-              <button
-                onClick={() => setShowNewIntervention(!showNewIntervention)}
-                className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:bg-slate-800 transition self-start"
-              >
-                {showNewIntervention ? "Annuler" : "+ Planifier une intervention"}
-              </button>
+          {can("interventions.create") && (
+                <button
+                  onClick={() => setShowNewIntervention(!showNewIntervention)}
+                  className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:bg-slate-800 transition self-start"
+                >
+                  {showNewIntervention ? "Annuler" : "+ Planifier une intervention"}
+                </button>
+          )}
             </div>
 
             {interventionError && (

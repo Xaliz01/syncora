@@ -6,6 +6,7 @@ import type { InvitationResponse } from "@syncora/shared";
 import * as adminApi from "@/lib/admin.api";
 import type { ManagedOrganizationUser } from "@/lib/admin.api";
 import { getOrganizationUserStatusLabel } from "@/lib/organization-user-status";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Administrateur",
@@ -55,12 +56,14 @@ export function UsersManagementPage() {
             Liste des utilisateurs de l&apos;organisation. Cliquez sur un nom pour ouvrir sa fiche.
           </p>
         </div>
-        <Link
-          href="/users/new"
-          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition self-start flex-shrink-0"
-        >
-          Inviter un utilisateur
-        </Link>
+        <PermissionGate permission="users.invite">
+          <Link
+            href="/users/new"
+            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition self-start flex-shrink-0"
+          >
+            Inviter un utilisateur
+          </Link>
+        </PermissionGate>
       </div>
 
       {error && (

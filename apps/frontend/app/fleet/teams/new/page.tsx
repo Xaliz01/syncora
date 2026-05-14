@@ -1,18 +1,18 @@
 "use client";
 
 import { RequireAuth } from "@/components/auth/RequireAuth";
-import { RequireAdmin } from "@/components/auth/RequireAdmin";
+import { RequirePermission } from "@/components/auth/RequirePermission";
 import { TeamCreatePage } from "@/components/fleet/TeamCreatePage";
 import { AppShell } from "@/components/layout/AppShell";
 
 export default function NewTeamPage() {
   return (
     <RequireAuth>
-      <RequireAdmin>
+      <RequirePermission permission="teams.create">
         <AppShell>
           <TeamCreatePage />
         </AppShell>
-      </RequireAdmin>
+      </RequirePermission>
     </RequireAuth>
   );
 }

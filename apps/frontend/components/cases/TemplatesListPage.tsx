@@ -21,6 +21,7 @@ import {
   ListTableShell,
   ListToolbar,
 } from "@/components/ui/list-page";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 
 const GRID = "md:grid-cols-[1.2fr_2fr_0.9fr_auto]";
 
@@ -56,7 +57,7 @@ export function TemplatesListPage() {
         title="Modèles de dossier"
         description="Configurez des modèles avec étapes et tâches pour créer rapidement des dossiers typés."
         action={
-          <ListPrimaryAction href="/settings/case-templates/new">Nouveau modèle</ListPrimaryAction>
+          <PermissionGate permission="case_templates.create"><ListPrimaryAction href="/settings/case-templates/new">Nouveau modèle</ListPrimaryAction></PermissionGate>
         }
       />
 
@@ -74,12 +75,14 @@ export function TemplatesListPage() {
         <ListEmptyState
           message="Aucun modèle de dossier."
           action={
-            <Link
+            <PermissionGate permission="case_templates.create">
+              <Link
               href="/settings/case-templates/new"
               className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium"
             >
-              Créer un modèle
-            </Link>
+                Créer un modèle
+              </Link>
+            </PermissionGate>
           }
         />
       ) : filtered.length === 0 ? (
@@ -117,28 +120,32 @@ export function TemplatesListPage() {
                   {todoCount !== 1 ? "s" : ""}
                 </ListCellDefault>
                 <div className="flex flex-wrap gap-2 justify-end md:justify-start">
-                  <Link
-                    href={`/settings/case-templates/${template.id}`}
-                    className="text-xs text-brand-600 dark:text-brand-400 hover:text-brand-500 font-medium"
-                  >
-                    Modifier
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      const ok = await confirm({
-                        title: "Supprimer ce modèle ?",
-                        description:
-                          "Les dossiers déjà créés à partir de ce modèle ne sont pas supprimés, mais le modèle ne sera plus disponible pour les nouveaux dossiers.",
-                        confirmLabel: "Supprimer le modèle",
-                        variant: "danger",
-                      });
-                      if (ok) deleteMutation.mutate(template.id);
-                    }}
-                    className="text-xs text-red-500 hover:text-red-600"
-                  >
-                    Supprimer
-                  </button>
+                  <PermissionGate permission="case_templates.update">
+                    <Link
+                      href={`/settings/case-templates/${template.id}`}
+                      className="text-xs text-brand-600 dark:text-brand-400 hover:text-brand-500 font-medium"
+                    >
+                      Modifier
+                    </Link>
+                  </PermissionGate>
+                  <PermissionGate permission="case_templates.delete">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const ok = await confirm({
+                          title: "Supprimer ce modèle ?",
+                          description:
+                            "Les dossiers déjà créés à partir de ce modèle ne sont pas supprimés, mais le modèle ne sera plus disponible pour les nouveaux dossiers.",
+                          confirmLabel: "Supprimer le modèle",
+                          variant: "danger",
+                        });
+                        if (ok) deleteMutation.mutate(template.id);
+                      }}
+                      className="text-xs text-red-500 hover:text-red-600"
+                    >
+                      Supprimer
+                    </button>
+                  </PermissionGate>
                 </div>
               </ListRow>
             );

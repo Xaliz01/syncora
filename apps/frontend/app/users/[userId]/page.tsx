@@ -1,21 +1,24 @@
+"use client";
+
+import { use } from "react";
 import { RequireAuth } from "@/components/auth/RequireAuth";
-import { RequireAdmin } from "@/components/auth/RequireAdmin";
+import { RequirePermission } from "@/components/auth/RequirePermission";
 import { UserDetailsPage } from "@/components/admin/UserDetailsPage";
 import { AppShell } from "@/components/layout/AppShell";
 
-export default async function UserDetailsRoute({
+export default function UserDetailsRoute({
   params,
 }: {
   params: Promise<{ userId: string }>;
 }) {
-  const { userId } = await params;
+  const { userId } = use(params);
   return (
     <RequireAuth>
-      <RequireAdmin>
+      <RequirePermission permission="users.read">
         <AppShell>
           <UserDetailsPage userId={userId} />
         </AppShell>
-      </RequireAdmin>
+      </RequirePermission>
     </RequireAuth>
   );
 }

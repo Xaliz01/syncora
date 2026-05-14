@@ -6,11 +6,13 @@ import type { AgenceResponse, TeamResponse } from "@syncora/shared";
 import { PostalAddressFields } from "@/components/address/PostalAddressFields";
 import * as fleetApi from "@/lib/fleet.api";
 import { useToast } from "@/components/ui/ToastProvider";
+import { usePermissions } from "@/lib/hooks/usePermissions";
 import { useRouter } from "next/navigation";
 
 export function AgenceDetailsPage({ agenceId }: { agenceId: string }) {
   const router = useRouter();
   const { showToast } = useToast();
+  const { can } = usePermissions();
   const [agence, setAgence] = useState<AgenceResponse | null>(null);
   const [teams, setTeams] = useState<TeamResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -114,20 +116,24 @@ export function AgenceDetailsPage({ agenceId }: { agenceId: string }) {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setIsEditing((p) => !p)}
-            className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
-          >
-            {isEditing ? "Annuler" : "Modifier"}
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleDelete()}
-            className="rounded-lg border border-red-300 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
-          >
-            Supprimer
-          </button>
+          {can("agences.update") && (
+            <button
+              type="button"
+              onClick={() => setIsEditing((p) => !p)}
+              className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+            >
+              {isEditing ? "Annuler" : "Modifier"}
+            </button>
+          )}
+          {can("agences.delete") && (
+            <button
+              type="button"
+              onClick={() => void handleDelete()}
+              className="rounded-lg border border-red-300 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
+            >
+              Supprimer
+            </button>
+          )}
           <Link
             href="/fleet/agences"
             className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"

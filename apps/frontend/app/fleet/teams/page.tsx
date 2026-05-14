@@ -1,18 +1,18 @@
 "use client";
 
 import { RequireAuth } from "@/components/auth/RequireAuth";
-import { RequireAdmin } from "@/components/auth/RequireAdmin";
+import { RequirePermission } from "@/components/auth/RequirePermission";
 import { TeamsListPage } from "@/components/fleet/TeamsListPage";
 import { AppShell } from "@/components/layout/AppShell";
 
 export default function TeamsPage() {
   return (
     <RequireAuth>
-      <RequireAdmin>
+      <RequirePermission permission="teams.read">
         <AppShell>
           <TeamsListPage />
         </AppShell>
-      </RequireAdmin>
+      </RequirePermission>
     </RequireAuth>
   );
 }

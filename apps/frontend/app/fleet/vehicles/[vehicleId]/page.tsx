@@ -1,21 +1,24 @@
+"use client";
+
+import { use } from "react";
 import { RequireAuth } from "@/components/auth/RequireAuth";
-import { RequireAdmin } from "@/components/auth/RequireAdmin";
+import { RequirePermission } from "@/components/auth/RequirePermission";
 import { VehicleDetailsPage } from "@/components/fleet/VehicleDetailsPage";
 import { AppShell } from "@/components/layout/AppShell";
 
-export default async function VehicleDetailsRoute({
+export default function VehicleDetailsRoute({
   params,
 }: {
   params: Promise<{ vehicleId: string }>;
 }) {
-  const { vehicleId } = await params;
+  const { vehicleId } = use(params);
   return (
     <RequireAuth>
-      <RequireAdmin>
+      <RequirePermission permission="fleet.vehicles.read">
         <AppShell>
           <VehicleDetailsPage vehicleId={vehicleId} />
         </AppShell>
-      </RequireAdmin>
+      </RequirePermission>
     </RequireAuth>
   );
 }

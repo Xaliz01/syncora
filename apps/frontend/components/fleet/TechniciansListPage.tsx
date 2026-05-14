@@ -22,6 +22,7 @@ import {
   ListTableShell,
   ListToolbar,
 } from "@/components/ui/list-page";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 
 const STATUS_COLORS: Record<string, string> = {
   actif: "bg-emerald-50 text-emerald-700 border-emerald-200",
@@ -78,7 +79,7 @@ export function TechniciansListPage() {
         title="Techniciens"
         description="Profils terrain et comptes utilisateur associés."
         action={
-          <ListPrimaryAction href="/fleet/technicians/new">Ajouter un technicien</ListPrimaryAction>
+          <PermissionGate permission="fleet.technicians.create"><ListPrimaryAction href="/fleet/technicians/new">Ajouter un technicien</ListPrimaryAction></PermissionGate>
         }
       />
 
@@ -98,12 +99,14 @@ export function TechniciansListPage() {
         <ListEmptyState
           message="Aucun technicien enregistré."
           action={
-            <Link
+            <PermissionGate permission="fleet.technicians.create">
+              <Link
               href="/fleet/technicians/new"
               className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium"
             >
-              Ajouter votre premier technicien
-            </Link>
+                Ajouter votre premier technicien
+              </Link>
+            </PermissionGate>
           }
         />
       ) : filtered.length === 0 ? (
