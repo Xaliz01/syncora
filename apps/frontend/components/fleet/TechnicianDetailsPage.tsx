@@ -13,6 +13,7 @@ import * as fleetApi from "@/lib/fleet.api";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useRouter } from "next/navigation";
+import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
 
 const STATUS_COLORS: Record<string, string> = {
   actif: "bg-emerald-50 text-emerald-700 border-emerald-200",
@@ -398,6 +399,8 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
           </>
         )}
       </section>
+
+      <DocumentUploadZone entityType="technician" entityId={technicianId} />
     </div>
   );
 }

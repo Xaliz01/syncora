@@ -17,6 +17,7 @@ import * as fleetApi from "@/lib/fleet.api";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useRouter } from "next/navigation";
+import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
 
 const TYPE_LABELS: Record<string, string> = {
   camion: "Camion",
@@ -409,6 +410,8 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
           </div>
         )}
       </section>
+
+      <DocumentUploadZone entityType="vehicle" entityId={vehicleId} />
     </div>
   );
 }

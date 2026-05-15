@@ -17,6 +17,7 @@ import { SearchModule } from "./search.module";
 import { SubscriptionsModule } from "./subscriptions.module";
 import { OrganizationsModule } from "./organizations.module";
 import { NotificationsModule } from "./notifications.module";
+import { DocumentsModule } from "./documents.module";
 
 @Module({
   imports: [
@@ -29,7 +30,8 @@ import { NotificationsModule } from "./notifications.module";
     CasesModule,
     StockModule, SearchModule,
     SubscriptionsModule,
-    NotificationsModule
+    NotificationsModule,
+    DocumentsModule
   ],
   controllers: [AppController],
   providers: [

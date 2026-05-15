@@ -16,5 +16,6 @@ export * from "./subscription";
 export * from "./logger";
 export * from "./nest-logger.adapter";
 export * from "./notification";
+export * from "./document";
 export * from "./soft-delete";
 

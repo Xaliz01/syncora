@@ -47,3 +47,4 @@ services:
 
 volumes:
   syncora-mongodb-data:
+  syncora-documents:

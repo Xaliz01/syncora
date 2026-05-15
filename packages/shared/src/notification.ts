@@ -13,7 +13,8 @@ export type NotificationEntityType =
   | "stock_movement"
   | "organization"
   | "user"
-  | "permission_profile";
+  | "permission_profile"
+  | "document";
 
 export type NotificationAction = "created" | "updated" | "deleted";
 
