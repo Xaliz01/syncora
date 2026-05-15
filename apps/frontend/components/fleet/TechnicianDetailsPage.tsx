@@ -8,6 +8,7 @@ const TECHNICIAN_STATUSES: TechnicianStatus[] = ["actif", "inactif"];
 import * as fleetApi from "@/lib/fleet.api";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/ToastProvider";
+import { usePermissions } from "@/lib/hooks/usePermissions";
 import { useRouter } from "next/navigation";
 import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
 
@@ -31,6 +32,7 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
   const router = useRouter();
   const { showToast } = useToast();
   const confirm = useConfirm();
+  const { can } = usePermissions();
   const [technician, setTechnician] = useState<TechnicianResponse | null>(null);
   const [memberTeams, setMemberTeams] = useState<TeamResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -175,20 +177,24 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setIsEditing((p) => !p)}
-            className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
-          >
-            {isEditing ? "Annuler" : "Modifier"}
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleDelete()}
-            className="rounded-lg border border-red-300 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
-          >
-            Supprimer
-          </button>
+          {can("fleet.technicians.update") && (
+            <button
+              type="button"
+              onClick={() => setIsEditing((p) => !p)}
+              className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+            >
+              {isEditing ? "Annuler" : "Modifier"}
+            </button>
+          )}
+          {can("fleet.technicians.delete") && (
+            <button
+              type="button"
+              onClick={() => void handleDelete()}
+              className="rounded-lg border border-red-300 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
+            >
+              Supprimer
+            </button>
+          )}
           <Link
             href="/fleet/technicians"
             className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
@@ -380,13 +386,15 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
               Ce technicien n&apos;a pas encore de compte utilisateur.
             </p>
             {!showCreateAccount ? (
-              <button
-                type="button"
-                onClick={() => setShowCreateAccount(true)}
-                className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500"
-              >
-                Créer un compte utilisateur
-              </button>
+              can("fleet.technicians.create_user") ? (
+                <button
+                  type="button"
+                  onClick={() => setShowCreateAccount(true)}
+                  className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500"
+                >
+                  Créer un compte utilisateur
+                </button>
+              ) : null
             ) : (
               <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-4 space-y-3">
                 <p className="text-sm font-medium text-slate-700 dark:text-slate-200">

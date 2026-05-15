@@ -1,21 +1,20 @@
+"use client";
+
+import { use } from "react";
 import { RequireAuth } from "@/components/auth/RequireAuth";
-import { RequireAdmin } from "@/components/auth/RequireAdmin";
+import { RequirePermission } from "@/components/auth/RequirePermission";
 import { AgenceDetailsPage } from "@/components/fleet/AgenceDetailsPage";
 import { AppShell } from "@/components/layout/AppShell";
 
-export default async function AgenceDetailsRoute({
-  params,
-}: {
-  params: Promise<{ agenceId: string }>;
-}) {
-  const { agenceId } = await params;
+export default function AgenceDetailsRoute({ params }: { params: Promise<{ agenceId: string }> }) {
+  const { agenceId } = use(params);
   return (
     <RequireAuth>
-      <RequireAdmin>
+      <RequirePermission permission="agences.read">
         <AppShell>
           <AgenceDetailsPage agenceId={agenceId} />
         </AppShell>
-      </RequireAdmin>
+      </RequirePermission>
     </RequireAuth>
   );
 }

@@ -7,6 +7,7 @@ import * as adminApi from "@/lib/admin.api";
 import { getPermissionLabel } from "@/lib/permissions-catalog";
 import type { ManagedOrganizationUser } from "@/lib/admin.api";
 import { useToast } from "@/components/ui/ToastProvider";
+import { usePermissions } from "@/lib/hooks/usePermissions";
 import { getOrganizationUserStatusLabel } from "@/lib/organization-user-status";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -21,6 +22,7 @@ function togglePermission(list: PermissionCode[], permission: PermissionCode): P
 
 export function UserDetailsPage({ userId }: { userId: string }) {
   const { showToast } = useToast();
+  const { can } = usePermissions();
   const [catalog, setCatalog] = useState<PermissionCode[]>([]);
   const [profiles, setProfiles] = useState<PermissionProfileResponse[]>([]);
   const [user, setUser] = useState<ManagedOrganizationUser | null>(null);
@@ -121,7 +123,7 @@ export function UserDetailsPage({ userId }: { userId: string }) {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {!isOrganizationAdmin && (
+          {!isOrganizationAdmin && can("users.manage_permissions") && (
             <button
               type="button"
               onClick={() => setIsEditing((previous) => !previous)}

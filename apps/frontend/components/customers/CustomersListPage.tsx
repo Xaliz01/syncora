@@ -22,6 +22,7 @@ import {
   ListTableShell,
   ListToolbar,
 } from "@/components/ui/list-page";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 
 const GRID = "md:grid-cols-[1.2fr_0.7fr_1.1fr]";
 
@@ -59,7 +60,11 @@ export function CustomersListPage() {
       <ListPageHeader
         title="Clients"
         description="Personnes physiques et morales réutilisables pour vos dossiers."
-        action={<ListPrimaryAction href="/customers/new">Nouveau client</ListPrimaryAction>}
+        action={
+          <PermissionGate permission="customers.create">
+            <ListPrimaryAction href="/customers/new">Nouveau client</ListPrimaryAction>
+          </PermissionGate>
+        }
       />
 
       <ListToolbar>

@@ -1,18 +1,18 @@
 "use client";
 
 import { RequireAuth } from "@/components/auth/RequireAuth";
-import { RequireAdmin } from "@/components/auth/RequireAdmin";
+import { RequirePermission } from "@/components/auth/RequirePermission";
 import { TechnicianCreatePage } from "@/components/fleet/TechnicianCreatePage";
 import { AppShell } from "@/components/layout/AppShell";
 
 export default function NewTechnicianPage() {
   return (
     <RequireAuth>
-      <RequireAdmin>
+      <RequirePermission permission="fleet.technicians.create">
         <AppShell>
           <TechnicianCreatePage />
         </AppShell>
-      </RequireAdmin>
+      </RequirePermission>
     </RequireAuth>
   );
 }

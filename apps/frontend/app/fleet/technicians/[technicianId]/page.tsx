@@ -1,21 +1,24 @@
+"use client";
+
+import { use } from "react";
 import { RequireAuth } from "@/components/auth/RequireAuth";
-import { RequireAdmin } from "@/components/auth/RequireAdmin";
+import { RequirePermission } from "@/components/auth/RequirePermission";
 import { TechnicianDetailsPage } from "@/components/fleet/TechnicianDetailsPage";
 import { AppShell } from "@/components/layout/AppShell";
 
-export default async function TechnicianDetailsRoute({
+export default function TechnicianDetailsRoute({
   params,
 }: {
   params: Promise<{ technicianId: string }>;
 }) {
-  const { technicianId } = await params;
+  const { technicianId } = use(params);
   return (
     <RequireAuth>
-      <RequireAdmin>
+      <RequirePermission permission="fleet.technicians.read">
         <AppShell>
           <TechnicianDetailsPage technicianId={technicianId} />
         </AppShell>
-      </RequireAdmin>
+      </RequirePermission>
     </RequireAuth>
   );
 }

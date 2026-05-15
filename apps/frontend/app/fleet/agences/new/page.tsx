@@ -1,18 +1,18 @@
 "use client";
 
 import { RequireAuth } from "@/components/auth/RequireAuth";
-import { RequireAdmin } from "@/components/auth/RequireAdmin";
+import { RequirePermission } from "@/components/auth/RequirePermission";
 import { AgenceCreatePage } from "@/components/fleet/AgenceCreatePage";
 import { AppShell } from "@/components/layout/AppShell";
 
 export default function NewAgencePage() {
   return (
     <RequireAuth>
-      <RequireAdmin>
+      <RequirePermission permission="agences.create">
         <AppShell>
           <AgenceCreatePage />
         </AppShell>
-      </RequireAdmin>
+      </RequirePermission>
     </RequireAuth>
   );
 }

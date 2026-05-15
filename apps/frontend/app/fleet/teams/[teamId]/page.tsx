@@ -1,21 +1,20 @@
+"use client";
+
+import { use } from "react";
 import { RequireAuth } from "@/components/auth/RequireAuth";
-import { RequireAdmin } from "@/components/auth/RequireAdmin";
+import { RequirePermission } from "@/components/auth/RequirePermission";
 import { TeamDetailsPage } from "@/components/fleet/TeamDetailsPage";
 import { AppShell } from "@/components/layout/AppShell";
 
-export default async function TeamDetailsRoute({
-  params,
-}: {
-  params: Promise<{ teamId: string }>;
-}) {
-  const { teamId } = await params;
+export default function TeamDetailsRoute({ params }: { params: Promise<{ teamId: string }> }) {
+  const { teamId } = use(params);
   return (
     <RequireAuth>
-      <RequireAdmin>
+      <RequirePermission permission="teams.read">
         <AppShell>
           <TeamDetailsPage teamId={teamId} />
         </AppShell>
-      </RequireAdmin>
+      </RequirePermission>
     </RequireAuth>
   );
 }

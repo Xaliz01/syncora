@@ -120,10 +120,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {
           label: "Dossiers",
           links: [
-            { label: "Tous les dossiers", href: "/cases" },
-            { label: "Clients", href: "/customers" },
-            { label: "Calendrier", href: "/cases/calendar" },
-            { label: "Mouvements de stock", href: "/stock" },
+            ...(hasPermission(user, "cases.read")
+              ? [{ label: "Tous les dossiers", href: "/cases" }]
+              : []),
+            ...(hasPermission(user, "customers.read")
+              ? [{ label: "Clients", href: "/customers" }]
+              : []),
+            ...(hasPermission(user, "cases.read")
+              ? [{ label: "Calendrier", href: "/cases/calendar" }]
+              : []),
+            ...(hasPermission(user, "stock.movements.read")
+              ? [{ label: "Mouvements de stock", href: "/stock" }]
+              : []),
           ],
         },
       ]
@@ -173,6 +181,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       menuSections.push({ label: "Paramètres", links: settingsLinks });
     }
   }
+
+  const visibleSections = menuSections.filter((s) => s.links.length > 0);
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
@@ -264,7 +274,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {/* Desktop sidebar */}
         <aside className="hidden lg:flex lg:flex-col lg:w-[260px] lg:flex-shrink-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-[57px] h-[calc(100vh-57px)] overflow-y-auto">
           <OrganizationSwitcher />
-          <SidebarContent menuSections={menuSections} pathname={pathname} />
+          <SidebarContent menuSections={visibleSections} pathname={pathname} />
         </aside>
 
         {/* Mobile sidebar overlay */}
@@ -288,7 +298,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </div>
               <OrganizationSwitcher />
               <SidebarContent
-                menuSections={menuSections}
+                menuSections={visibleSections}
                 pathname={pathname}
                 onNavigate={() => setMobileMenuOpen(false)}
               />

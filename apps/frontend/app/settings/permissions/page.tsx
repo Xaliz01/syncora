@@ -1,18 +1,18 @@
 "use client";
 
 import { RequireAuth } from "@/components/auth/RequireAuth";
-import { RequireAdmin } from "@/components/auth/RequireAdmin";
+import { RequirePermission } from "@/components/auth/RequirePermission";
 import { PermissionsSettingsPage } from "@/components/admin/PermissionsSettingsPage";
 import { AppShell } from "@/components/layout/AppShell";
 
 export default function SettingsPermissionsPage() {
   return (
     <RequireAuth>
-      <RequireAdmin>
+      <RequirePermission permission="profiles.read">
         <AppShell>
           <PermissionsSettingsPage />
         </AppShell>
-      </RequireAdmin>
+      </RequirePermission>
     </RequireAuth>
   );
 }

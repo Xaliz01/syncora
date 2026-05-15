@@ -22,6 +22,7 @@ import {
   ListTableShell,
   ListToolbar,
 } from "@/components/ui/list-page";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 
 const STATUS_COLORS: Record<string, string> = {
   active: "bg-emerald-50 text-emerald-700 border-emerald-200",
@@ -75,7 +76,11 @@ export function TeamsListPage() {
       <ListPageHeader
         title="Équipes"
         description="Gérez les équipes de techniciens de votre organisation."
-        action={<ListPrimaryAction href="/fleet/teams/new">Créer une équipe</ListPrimaryAction>}
+        action={
+          <PermissionGate permission="teams.create">
+            <ListPrimaryAction href="/fleet/teams/new">Créer une équipe</ListPrimaryAction>
+          </PermissionGate>
+        }
       />
 
       {error ? <ListPageError message={error} onRetry={() => void loadData()} /> : null}
@@ -94,12 +99,14 @@ export function TeamsListPage() {
         <ListEmptyState
           message="Aucune équipe enregistrée."
           action={
-            <Link
-              href="/fleet/teams/new"
-              className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium"
-            >
-              Créer votre première équipe
-            </Link>
+            <PermissionGate permission="teams.create">
+              <Link
+                href="/fleet/teams/new"
+                className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium"
+              >
+                Créer votre première équipe
+              </Link>
+            </PermissionGate>
           }
         />
       ) : filtered.length === 0 ? (

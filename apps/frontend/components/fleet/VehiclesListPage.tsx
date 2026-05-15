@@ -21,6 +21,7 @@ import {
   ListTableShell,
   ListToolbar,
 } from "@/components/ui/list-page";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 
 const STATUS_COLORS: Record<string, string> = {
   actif: "bg-emerald-50 text-emerald-700 border-emerald-200",
@@ -78,7 +79,9 @@ export function VehiclesListPage() {
         title="Véhicules"
         description="Flotte de véhicules de l'organisation. Cliquez sur un véhicule pour voir sa fiche."
         action={
-          <ListPrimaryAction href="/fleet/vehicles/new">Ajouter un véhicule</ListPrimaryAction>
+          <PermissionGate permission="fleet.vehicles.create">
+            <ListPrimaryAction href="/fleet/vehicles/new">Ajouter un véhicule</ListPrimaryAction>
+          </PermissionGate>
         }
       />
 
@@ -98,12 +101,14 @@ export function VehiclesListPage() {
         <ListEmptyState
           message="Aucun véhicule enregistré."
           action={
-            <Link
-              href="/fleet/vehicles/new"
-              className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium"
-            >
-              Ajouter votre premier véhicule
-            </Link>
+            <PermissionGate permission="fleet.vehicles.create">
+              <Link
+                href="/fleet/vehicles/new"
+                className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium"
+              >
+                Ajouter votre premier véhicule
+              </Link>
+            </PermissionGate>
           }
         />
       ) : filtered.length === 0 ? (

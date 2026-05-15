@@ -4,6 +4,7 @@ import Link from "next/link";
 import React, { useCallback, useEffect, useState } from "react";
 import type { PermissionProfileResponse } from "@syncora/shared";
 import * as adminApi from "@/lib/admin.api";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 
 export function ProfilesSettingsPage() {
   const [profiles, setProfiles] = useState<PermissionProfileResponse[]>([]);
@@ -36,12 +37,14 @@ export function ProfilesSettingsPage() {
             Liste des profils de permissions. Ouvrez un profil pour voir son détail.
           </p>
         </div>
-        <Link
-          href="/settings/profiles/new"
-          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition self-start flex-shrink-0"
-        >
-          Créer un profil
-        </Link>
+        <PermissionGate permission="profiles.create">
+          <Link
+            href="/settings/profiles/new"
+            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition self-start flex-shrink-0"
+          >
+            Créer un profil
+          </Link>
+        </PermissionGate>
       </div>
 
       {error && (

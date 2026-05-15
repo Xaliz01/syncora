@@ -21,6 +21,7 @@ import {
   ListTableShell,
   ListToolbar,
 } from "@/components/ui/list-page";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 
 const STATUS_LABELS: Record<CaseStatus, string> = {
   draft: "Brouillon",
@@ -79,7 +80,11 @@ export function CasesListPage() {
       <ListPageHeader
         title="Dossiers"
         description="Gérez le cycle de vie complet de vos dossiers."
-        action={<ListPrimaryAction href="/cases/new">Nouveau dossier</ListPrimaryAction>}
+        action={
+          <PermissionGate permission="cases.create">
+            <ListPrimaryAction href="/cases/new">Nouveau dossier</ListPrimaryAction>
+          </PermissionGate>
+        }
       />
 
       <ListToolbar>
@@ -122,12 +127,14 @@ export function CasesListPage() {
         <ListEmptyState
           message="Aucun dossier pour le moment."
           action={
-            <Link
-              href="/cases/new"
-              className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium"
-            >
-              Créer un dossier
-            </Link>
+            <PermissionGate permission="cases.create">
+              <Link
+                href="/cases/new"
+                className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium"
+              >
+                Créer un dossier
+              </Link>
+            </PermissionGate>
           }
         />
       ) : (

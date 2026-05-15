@@ -20,6 +20,7 @@ import {
   ListTableShell,
   ListToolbar,
 } from "@/components/ui/list-page";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 
 const GRID = "md:grid-cols-[1.5fr_1fr_0.8fr_0.8fr]";
 
@@ -57,7 +58,11 @@ export function AgencesListPage() {
       <ListPageHeader
         title="Agences"
         description="Gérez les agences (sites, bases) de votre organisation."
-        action={<ListPrimaryAction href="/fleet/agences/new">Ajouter une agence</ListPrimaryAction>}
+        action={
+          <PermissionGate permission="agences.create">
+            <ListPrimaryAction href="/fleet/agences/new">Ajouter une agence</ListPrimaryAction>
+          </PermissionGate>
+        }
       />
 
       {error ? <ListPageError message={error} onRetry={() => void loadData()} /> : null}
@@ -76,12 +81,14 @@ export function AgencesListPage() {
         <ListEmptyState
           message="Aucune agence enregistrée."
           action={
-            <Link
-              href="/fleet/agences/new"
-              className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium"
-            >
-              Ajouter votre première agence
-            </Link>
+            <PermissionGate permission="agences.create">
+              <Link
+                href="/fleet/agences/new"
+                className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium"
+              >
+                Ajouter votre première agence
+              </Link>
+            </PermissionGate>
           }
         />
       ) : filtered.length === 0 ? (

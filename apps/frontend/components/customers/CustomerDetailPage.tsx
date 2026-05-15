@@ -4,23 +4,13 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { PermissionCode } from "@syncora/shared";
 import * as customersApi from "@/lib/customers.api";
-import { useAuth } from "@/components/auth/AuthContext";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/ToastProvider";
+import { usePermissions } from "@/lib/hooks/usePermissions";
 import { CustomerEditForm } from "./CustomerEditForm";
 import { CUSTOMER_KIND_LABELS } from "./customer-kind-labels";
 import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
-
-function hasPermission(
-  role: string | undefined,
-  permissions: PermissionCode[] | undefined,
-  code: PermissionCode,
-): boolean {
-  if (role === "admin") return true;
-  return permissions?.includes(code) ?? false;
-}
 
 function formatDate(iso?: string) {
   if (!iso) return null;
@@ -37,14 +27,14 @@ function formatDate(iso?: string) {
 export function CustomerDetailPage({ customerId }: { customerId: string }) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { can } = usePermissions();
   const confirm = useConfirm();
   const { showToast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [mutationError, setMutationError] = useState("");
 
-  const canUpdate = hasPermission(user?.role, user?.permissions, "customers.update");
-  const canDelete = hasPermission(user?.role, user?.permissions, "customers.delete");
+  const canUpdate = can("customers.update");
+  const canDelete = can("customers.delete");
 
   const {
     data: c,
