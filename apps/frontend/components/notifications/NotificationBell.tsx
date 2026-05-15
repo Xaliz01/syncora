@@ -20,7 +20,8 @@ const ENTITY_TYPE_LABELS: Record<NotificationEntityType, string> = {
   stock_movement: "Mouvement de stock",
   organization: "Organisation",
   user: "Utilisateur",
-  permission_profile: "Profil de permission"
+  permission_profile: "Profil de permission",
+  document: "Document"
 };
 
 const ACTION_LABELS: Record<NotificationAction, string> = {

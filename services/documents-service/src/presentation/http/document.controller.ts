@@ -88,7 +88,7 @@ export class DocumentController {
     return { url };
   }
 
-  @Get("download/:key(*)")
+  @Get("download/:key")
   async downloadLocal(
     @Param("key") key: string,
     @Res() res: Response

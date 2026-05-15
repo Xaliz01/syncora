@@ -37,6 +37,10 @@ function getFileIcon(mimeType: string): string {
   return "📎";
 }
 
+function isImage(mimeType: string): boolean {
+  return mimeType.startsWith("image/");
+}
+
 interface Props {
   entityType: DocumentEntityType;
   entityId: string;
@@ -48,6 +52,8 @@ export function DocumentUploadZone({ entityType, entityId }: Props) {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
+  const [previewDoc, setPreviewDoc] = useState<DocumentResponse | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadDocuments = useCallback(async () => {
@@ -56,6 +62,17 @@ export function DocumentUploadZone({ entityType, entityId }: Props) {
       const docs = await documentsApi.listDocuments(entityType, entityId);
       setDocuments(docs);
       setError(null);
+
+      const imageDocs = docs.filter((d) => isImage(d.mimeType));
+      const urls: Record<string, string> = {};
+      await Promise.all(
+        imageDocs.map(async (doc) => {
+          try {
+            urls[doc.id] = await documentsApi.getDocumentDownloadUrl(doc.id);
+          } catch { /* ignore preview failures */ }
+        })
+      );
+      setPreviewUrls(urls);
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -205,7 +222,21 @@ export function DocumentUploadZone({ entityType, entityId }: Props) {
               key={doc.id}
               className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
             >
-              <span className="text-xl flex-shrink-0">{getFileIcon(doc.mimeType)}</span>
+              {isImage(doc.mimeType) && previewUrls[doc.id] ? (
+                <button
+                  onClick={() => setPreviewDoc(doc)}
+                  className="flex-shrink-0 rounded overflow-hidden border border-slate-200 dark:border-slate-700 hover:ring-2 hover:ring-blue-400 transition-all"
+                  title="Aperçu"
+                >
+                  <img
+                    src={previewUrls[doc.id]}
+                    alt={doc.originalName}
+                    className="w-12 h-12 object-cover"
+                  />
+                </button>
+              ) : (
+                <span className="text-xl flex-shrink-0">{getFileIcon(doc.mimeType)}</span>
+              )}
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
                   {doc.originalName}
@@ -215,6 +246,18 @@ export function DocumentUploadZone({ entityType, entityId }: Props) {
                 </p>
               </div>
               <div className="flex items-center gap-1 flex-shrink-0">
+                {isImage(doc.mimeType) && previewUrls[doc.id] && (
+                  <button
+                    onClick={() => setPreviewDoc(doc)}
+                    className="p-1.5 rounded-md text-slate-500 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors"
+                    title="Aperçu"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  </button>
+                )}
                 <button
                   onClick={() => handleDownload(doc)}
                   className="p-1.5 rounded-md text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
@@ -241,6 +284,36 @@ export function DocumentUploadZone({ entityType, entityId }: Props) {
         <p className="mt-4 text-sm text-slate-400 dark:text-slate-500 text-center">
           Aucun document déposé
         </p>
+      )}
+
+      {/* Image preview modal */}
+      {previewDoc && previewUrls[previewDoc.id] && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+          onClick={() => setPreviewDoc(null)}
+        >
+          <div
+            className="relative max-w-4xl max-h-[90vh] mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setPreviewDoc(null)}
+              className="absolute -top-3 -right-3 z-10 w-8 h-8 rounded-full bg-white dark:bg-slate-800 shadow-lg flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-red-500 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <img
+              src={previewUrls[previewDoc.id]}
+              alt={previewDoc.originalName}
+              className="max-w-full max-h-[85vh] rounded-lg shadow-2xl object-contain bg-white dark:bg-slate-900"
+            />
+            <p className="mt-2 text-center text-sm text-white/80">
+              {previewDoc.originalName} • {formatFileSize(previewDoc.size)}
+            </p>
+          </div>
+        </div>
       )}
     </div>
   );

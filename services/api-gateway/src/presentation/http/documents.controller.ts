@@ -15,6 +15,7 @@ import { AbstractDocumentsGatewayService } from "../../domain/ports/documents.se
 import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
 import { SubscriptionAccessGuard } from "../../infrastructure/subscription-access.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
+import { NotifyEntity } from "../../infrastructure/notify-entity.decorator";
 
 @Controller("documents")
 @UseGuards(JwtAuthGuard, SubscriptionAccessGuard)
@@ -23,6 +24,7 @@ export class DocumentsController {
 
   @Post("upload/:entityType/:entityId")
   @UseInterceptors(FileInterceptor("file", { limits: { fileSize: 50 * 1024 * 1024 } }))
+  @NotifyEntity({ type: "document", labelField: "originalName" })
   async upload(
     @CurrentUser() user: AuthUser,
     @Param("entityType") entityType: DocumentEntityType,
@@ -50,6 +52,7 @@ export class DocumentsController {
   }
 
   @Delete(":documentId")
+  @NotifyEntity({ type: "document", idParam: "documentId" })
   async deleteDocument(
     @CurrentUser() user: AuthUser,
     @Param("documentId") documentId: string
