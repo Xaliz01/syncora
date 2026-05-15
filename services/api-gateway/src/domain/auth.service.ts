@@ -182,20 +182,16 @@ export class AuthService extends AbstractAuthService {
       throw err;
     }
 
-    try {
-      await firstValueFrom(
-        this.httpService.post<OrganizationMembershipResponse>(
-          `${USERS_URL}/users/${jwt.sub}/organization-memberships`,
-          {
-            organizationId: org.id,
-            role: "admin",
-            membershipStatus: "active",
-          },
-        ),
-      );
-    } catch (err: unknown) {
-      throw err;
-    }
+    await firstValueFrom(
+      this.httpService.post<OrganizationMembershipResponse>(
+        `${USERS_URL}/users/${jwt.sub}/organization-memberships`,
+        {
+          organizationId: org.id,
+          role: "admin",
+          membershipStatus: "active",
+        },
+      ),
+    );
 
     let user: UserResponse;
     try {

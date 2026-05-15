@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import type { DocumentEntityType, DocumentResponse } from "@syncora/shared";
 import * as documentsApi from "@/lib/documents.api";
@@ -246,7 +247,14 @@ export function DocumentUploadZone({ entityType, entityId }: Props) {
                   title="Aperçu"
                 >
                   {isImage(doc.mimeType) ? (
-                    <img src={previewUrls[doc.id]} alt="" className="w-12 h-12 object-cover" />
+                    <Image
+                      src={previewUrls[doc.id]}
+                      alt=""
+                      width={48}
+                      height={48}
+                      unoptimized
+                      className="h-12 w-12 object-cover"
+                    />
                   ) : (
                     <span className="flex w-12 h-12 items-center justify-center bg-red-50 dark:bg-red-950/40 text-[10px] font-bold tracking-wide text-red-600 dark:text-red-400">
                       PDF
@@ -355,11 +363,15 @@ export function DocumentUploadZone({ entityType, entityId }: Props) {
                 className="h-[85vh] w-full rounded-lg border-0 bg-white shadow-2xl"
               />
             ) : (
-              <img
-                src={previewUrls[previewDoc.id]}
-                alt=""
-                className="max-w-full max-h-[85vh] rounded-lg shadow-2xl object-contain bg-white dark:bg-slate-900"
-              />
+              <div className="relative h-[85vh] w-full">
+                <Image
+                  src={previewUrls[previewDoc.id]}
+                  alt={previewDoc.originalName}
+                  fill
+                  unoptimized
+                  className="rounded-lg bg-white object-contain shadow-2xl dark:bg-slate-900"
+                />
+              </div>
             )}
             <p className="mt-2 text-center text-sm text-white/80">
               {previewDoc.originalName} • {formatFileSize(previewDoc.size)}
