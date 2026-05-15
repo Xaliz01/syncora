@@ -11,7 +11,7 @@ export interface UploadParams {
   buffer: Buffer;
 }
 
-export abstract class AbstractDocumentService {
+export abstract class AbstractDocumentsService {
   abstract upload(params: UploadParams): Promise<DocumentResponse>;
   abstract listByEntity(
     organizationId: string,

@@ -1,9 +1,9 @@
 import { Module } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
-import { DocumentController } from "../presentation/http/document.controller";
+import { DocumentsController } from "../presentation/http/documents.controller";
 import { DocumentSchema } from "../persistence/document.schema";
-import { AbstractDocumentService } from "../domain/ports/document.service.port";
-import { DocumentService } from "../domain/document.service";
+import { AbstractDocumentsService } from "../domain/ports/documents.service.port";
+import { DocumentsService } from "../domain/documents.service";
 import { AbstractStorageProvider } from "../infrastructure/storage.port";
 import { LocalStorageProvider } from "../infrastructure/local-storage.provider";
 import { S3StorageProvider } from "../infrastructure/s3-storage.provider";
@@ -19,13 +19,13 @@ const isProduction = process.env.STORAGE_PROVIDER === "s3";
       { name: "DocumentRecord", schema: DocumentSchema }
     ])
   ],
-  controllers: [DocumentController],
+  controllers: [DocumentsController],
   providers: [
     {
       provide: AbstractStorageProvider,
       useClass: isProduction ? S3StorageProvider : LocalStorageProvider
     },
-    { provide: AbstractDocumentService, useClass: DocumentService }
+    { provide: AbstractDocumentsService, useClass: DocumentsService }
   ]
 })
 export class AppModule {}

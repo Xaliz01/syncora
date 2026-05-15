@@ -41,6 +41,14 @@ function isImage(mimeType: string): boolean {
   return mimeType.startsWith("image/");
 }
 
+function isPdf(mimeType: string): boolean {
+  return mimeType === "application/pdf";
+}
+
+function isPreviewable(mimeType: string): boolean {
+  return isImage(mimeType) || isPdf(mimeType);
+}
+
 interface Props {
   entityType: DocumentEntityType;
   entityId: string;
@@ -63,16 +71,21 @@ export function DocumentUploadZone({ entityType, entityId }: Props) {
       setDocuments(docs);
       setError(null);
 
-      const imageDocs = docs.filter((d) => isImage(d.mimeType));
+      const previewableDocs = docs.filter((d) => isPreviewable(d.mimeType));
       const urls: Record<string, string> = {};
       await Promise.all(
-        imageDocs.map(async (doc) => {
+        previewableDocs.map(async (doc) => {
           try {
-            urls[doc.id] = await documentsApi.getDocumentDownloadUrl(doc.id);
+            urls[doc.id] = await documentsApi.fetchDocumentPreviewUrl(doc.id);
           } catch { /* ignore preview failures */ }
         })
       );
-      setPreviewUrls(urls);
+      setPreviewUrls((prev) => {
+        Object.values(prev).forEach((u) => {
+          if (u.startsWith("blob:")) URL.revokeObjectURL(u);
+        });
+        return urls;
+      });
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -83,6 +96,14 @@ export function DocumentUploadZone({ entityType, entityId }: Props) {
   useEffect(() => {
     loadDocuments();
   }, [loadDocuments]);
+
+  useEffect(() => {
+    return () => {
+      Object.values(previewUrls).forEach((u) => {
+        if (u.startsWith("blob:")) URL.revokeObjectURL(u);
+      });
+    };
+  }, [previewUrls]);
 
   const handleUpload = async (files: FileList | File[]) => {
     setUploading(true);
@@ -126,8 +147,7 @@ export function DocumentUploadZone({ entityType, entityId }: Props) {
 
   const handleDownload = async (doc: DocumentResponse) => {
     try {
-      const url = await documentsApi.getDocumentDownloadUrl(doc.id);
-      window.open(url, "_blank");
+      await documentsApi.openDocumentDownload(doc.id, doc.originalName);
     } catch (err) {
       setError((err as Error).message);
     }
@@ -222,17 +242,23 @@ export function DocumentUploadZone({ entityType, entityId }: Props) {
               key={doc.id}
               className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
             >
-              {isImage(doc.mimeType) && previewUrls[doc.id] ? (
+              {isPreviewable(doc.mimeType) && previewUrls[doc.id] ? (
                 <button
                   onClick={() => setPreviewDoc(doc)}
                   className="flex-shrink-0 rounded overflow-hidden border border-slate-200 dark:border-slate-700 hover:ring-2 hover:ring-blue-400 transition-all"
                   title="Aperçu"
                 >
-                  <img
-                    src={previewUrls[doc.id]}
-                    alt={doc.originalName}
-                    className="w-12 h-12 object-cover"
-                  />
+                  {isImage(doc.mimeType) ? (
+                    <img
+                      src={previewUrls[doc.id]}
+                      alt=""
+                      className="w-12 h-12 object-cover"
+                    />
+                  ) : (
+                    <span className="flex w-12 h-12 items-center justify-center bg-red-50 dark:bg-red-950/40 text-[10px] font-bold tracking-wide text-red-600 dark:text-red-400">
+                      PDF
+                    </span>
+                  )}
                 </button>
               ) : (
                 <span className="text-xl flex-shrink-0">{getFileIcon(doc.mimeType)}</span>
@@ -246,7 +272,7 @@ export function DocumentUploadZone({ entityType, entityId }: Props) {
                 </p>
               </div>
               <div className="flex items-center gap-1 flex-shrink-0">
-                {isImage(doc.mimeType) && previewUrls[doc.id] && (
+                {isPreviewable(doc.mimeType) && previewUrls[doc.id] && (
                   <button
                     onClick={() => setPreviewDoc(doc)}
                     className="p-1.5 rounded-md text-slate-500 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors"
@@ -286,14 +312,14 @@ export function DocumentUploadZone({ entityType, entityId }: Props) {
         </p>
       )}
 
-      {/* Image preview modal */}
+      {/* Aperçu image / PDF */}
       {previewDoc && previewUrls[previewDoc.id] && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
           onClick={() => setPreviewDoc(null)}
         >
           <div
-            className="relative max-w-4xl max-h-[90vh] mx-4"
+            className={`relative mx-4 w-full ${isPdf(previewDoc.mimeType) ? "max-w-5xl" : "max-w-4xl"} max-h-[90vh]`}
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -304,11 +330,19 @@ export function DocumentUploadZone({ entityType, entityId }: Props) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
-            <img
-              src={previewUrls[previewDoc.id]}
-              alt={previewDoc.originalName}
-              className="max-w-full max-h-[85vh] rounded-lg shadow-2xl object-contain bg-white dark:bg-slate-900"
-            />
+            {isPdf(previewDoc.mimeType) ? (
+              <iframe
+                src={previewUrls[previewDoc.id]}
+                title={previewDoc.originalName}
+                className="h-[85vh] w-full rounded-lg border-0 bg-white shadow-2xl"
+              />
+            ) : (
+              <img
+                src={previewUrls[previewDoc.id]}
+                alt=""
+                className="max-w-full max-h-[85vh] rounded-lg shadow-2xl object-contain bg-white dark:bg-slate-900"
+              />
+            )}
             <p className="mt-2 text-center text-sm text-white/80">
               {previewDoc.originalName} • {formatFileSize(previewDoc.size)}
             </p>

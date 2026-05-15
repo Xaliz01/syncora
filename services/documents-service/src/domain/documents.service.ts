@@ -6,10 +6,10 @@ import type { DocumentResponse, DocumentEntityType } from "@syncora/shared";
 import { activeDocumentFilter } from "@syncora/shared";
 import type { DocumentRecord } from "../persistence/document.schema";
 import { AbstractStorageProvider } from "../infrastructure/storage.port";
-import { AbstractDocumentService, UploadParams } from "./ports/document.service.port";
+import { AbstractDocumentsService, UploadParams } from "./ports/documents.service.port";
 
 @Injectable()
-export class DocumentService extends AbstractDocumentService {
+export class DocumentsService extends AbstractDocumentsService {
   constructor(
     @InjectModel("DocumentRecord")
     private readonly documentModel: Model<DocumentRecord>,

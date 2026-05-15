@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  NotFoundException,
   Param,
   Post,
   Query,
@@ -15,7 +16,7 @@ import type { Response } from "express";
 import * as fs from "fs";
 import * as path from "path";
 import type { DocumentEntityType } from "@syncora/shared";
-import { AbstractDocumentService } from "../../domain/ports/document.service.port";
+import { AbstractDocumentsService } from "../../domain/ports/documents.service.port";
 import { LocalStorageProvider } from "../../infrastructure/local-storage.provider";
 import { AbstractStorageProvider } from "../../infrastructure/storage.port";
 
@@ -24,9 +25,9 @@ const VALID_ENTITY_TYPES: DocumentEntityType[] = [
 ];
 
 @Controller("documents")
-export class DocumentController {
+export class DocumentsController {
   constructor(
-    private readonly documentService: AbstractDocumentService,
+    private readonly documentsService: AbstractDocumentsService,
     private readonly storage: AbstractStorageProvider
   ) {}
 
@@ -47,7 +48,7 @@ export class DocumentController {
     if (!entityId) throw new BadRequestException("entityId requis");
     if (!uploadedBy) throw new BadRequestException("uploadedBy requis");
 
-    return this.documentService.upload({
+    return this.documentsService.upload({
       organizationId,
       entityType: entityType as DocumentEntityType,
       entityId,
@@ -57,6 +58,35 @@ export class DocumentController {
       size: file.size,
       buffer: file.buffer
     });
+  }
+
+  /** Segment fixe avant les routes paramétrées `:id/…`. */
+  @Get("download/:key")
+  async downloadLocal(
+    @Param("key") key: string,
+    @Res() res: Response
+  ) {
+    if (!(this.storage instanceof LocalStorageProvider)) {
+      throw new BadRequestException("Direct download only available in local storage mode");
+    }
+    const storageKey = decodeURIComponent(key);
+    const filePath = (this.storage as LocalStorageProvider).getAbsolutePath(storageKey);
+    if (!fs.existsSync(filePath)) {
+      throw new NotFoundException("Fichier introuvable");
+    }
+    const ext = path.extname(filePath).toLowerCase();
+    const mimeByExt: Record<string, string> = {
+      ".jpg": "image/jpeg",
+      ".jpeg": "image/jpeg",
+      ".png": "image/png",
+      ".gif": "image/gif",
+      ".webp": "image/webp",
+      ".pdf": "application/pdf"
+    };
+    const contentType = mimeByExt[ext];
+    if (contentType) res.setHeader("Content-Type", contentType);
+    res.setHeader("Content-Disposition", `inline; filename="${path.basename(filePath)}"`);
+    res.sendFile(filePath);
   }
 
   @Get()
@@ -71,7 +101,7 @@ export class DocumentController {
     }
     if (!entityId) throw new BadRequestException("entityId requis");
 
-    return this.documentService.listByEntity(
+    return this.documentsService.listByEntity(
       organizationId,
       entityType as DocumentEntityType,
       entityId
@@ -84,24 +114,8 @@ export class DocumentController {
     @Query("organizationId") organizationId: string
   ) {
     if (!organizationId) throw new BadRequestException("organizationId requis");
-    const url = await this.documentService.getDownloadUrl(organizationId, id);
+    const url = await this.documentsService.getDownloadUrl(organizationId, id);
     return { url };
-  }
-
-  @Get("download/:key")
-  async downloadLocal(
-    @Param("key") key: string,
-    @Res() res: Response
-  ) {
-    if (!(this.storage instanceof LocalStorageProvider)) {
-      throw new BadRequestException("Direct download only available in local storage mode");
-    }
-    const filePath = (this.storage as LocalStorageProvider).getAbsolutePath(decodeURIComponent(key));
-    if (!fs.existsSync(filePath)) {
-      throw new BadRequestException("Fichier introuvable");
-    }
-    res.setHeader("Content-Disposition", `attachment; filename="${path.basename(filePath)}"`);
-    res.sendFile(filePath);
   }
 
   @Delete(":id")
@@ -110,6 +124,6 @@ export class DocumentController {
     @Query("organizationId") organizationId: string
   ) {
     if (!organizationId) throw new BadRequestException("organizationId requis");
-    return this.documentService.deleteDocument(organizationId, id);
+    return this.documentsService.deleteDocument(organizationId, id);
   }
 }
