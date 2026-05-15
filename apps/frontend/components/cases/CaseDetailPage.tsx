@@ -807,14 +807,14 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
               <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
                 Interventions ({interventions?.length ?? 0})
               </h2>
-          {can("interventions.create") && (
+              {can("interventions.create") && (
                 <button
                   onClick={() => setShowNewIntervention(!showNewIntervention)}
                   className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:bg-slate-800 transition self-start"
                 >
                   {showNewIntervention ? "Annuler" : "+ Planifier une intervention"}
                 </button>
-          )}
+              )}
             </div>
 
             {interventionError && (

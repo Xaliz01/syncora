@@ -6,11 +6,7 @@ import { RequirePermission } from "@/components/auth/RequirePermission";
 import { TeamDetailsPage } from "@/components/fleet/TeamDetailsPage";
 import { AppShell } from "@/components/layout/AppShell";
 
-export default function TeamDetailsRoute({
-  params,
-}: {
-  params: Promise<{ teamId: string }>;
-}) {
+export default function TeamDetailsRoute({ params }: { params: Promise<{ teamId: string }> }) {
   const { teamId } = use(params);
   return (
     <RequireAuth>

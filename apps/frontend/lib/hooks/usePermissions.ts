@@ -14,15 +14,9 @@ import { hasPermission, hasAnyPermission } from "@/lib/auth-permissions";
 export function usePermissions() {
   const { user } = useAuth();
 
-  const can = useCallback(
-    (code: PermissionCode) => hasPermission(user, code),
-    [user]
-  );
+  const can = useCallback((code: PermissionCode) => hasPermission(user, code), [user]);
 
-  const canAny = useCallback(
-    (codes: PermissionCode[]) => hasAnyPermission(user, codes),
-    [user]
-  );
+  const canAny = useCallback((codes: PermissionCode[]) => hasAnyPermission(user, codes), [user]);
 
   const canAll = useCallback(
     (codes: PermissionCode[]) => {
@@ -31,7 +25,7 @@ export function usePermissions() {
       const set = new Set(user.permissions ?? []);
       return codes.every((c) => set.has(c));
     },
-    [user]
+    [user],
   );
 
   return { can, canAny, canAll, user } as const;

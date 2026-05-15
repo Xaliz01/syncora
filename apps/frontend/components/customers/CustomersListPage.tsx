@@ -60,7 +60,11 @@ export function CustomersListPage() {
       <ListPageHeader
         title="Clients"
         description="Personnes physiques et morales réutilisables pour vos dossiers."
-        action={<PermissionGate permission="customers.create"><ListPrimaryAction href="/customers/new">Nouveau client</ListPrimaryAction></PermissionGate>}
+        action={
+          <PermissionGate permission="customers.create">
+            <ListPrimaryAction href="/customers/new">Nouveau client</ListPrimaryAction>
+          </PermissionGate>
+        }
       />
 
       <ListToolbar>

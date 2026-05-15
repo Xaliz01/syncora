@@ -9,9 +9,7 @@ export default defineConfig({
   workers: isHeaded ? 1 : undefined,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
-  reporter: process.env.CI
-    ? [["github"], ["list"]]
-    : [["html", { open: "never" }], ["list"]],
+  reporter: process.env.CI ? [["github"], ["list"]] : [["html", { open: "never" }], ["list"]],
   use: {
     baseURL: "http://localhost:5173",
     headless: !isHeaded,

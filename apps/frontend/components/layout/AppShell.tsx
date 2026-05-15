@@ -120,10 +120,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {
           label: "Dossiers",
           links: [
-            ...(hasPermission(user, "cases.read") ? [{ label: "Tous les dossiers", href: "/cases" }] : []),
-            ...(hasPermission(user, "customers.read") ? [{ label: "Clients", href: "/customers" }] : []),
-            ...(hasPermission(user, "cases.read") ? [{ label: "Calendrier", href: "/cases/calendar" }] : []),
-            ...(hasPermission(user, "stock.movements.read") ? [{ label: "Mouvements de stock", href: "/stock" }] : []),
+            ...(hasPermission(user, "cases.read")
+              ? [{ label: "Tous les dossiers", href: "/cases" }]
+              : []),
+            ...(hasPermission(user, "customers.read")
+              ? [{ label: "Clients", href: "/customers" }]
+              : []),
+            ...(hasPermission(user, "cases.read")
+              ? [{ label: "Calendrier", href: "/cases/calendar" }]
+              : []),
+            ...(hasPermission(user, "stock.movements.read")
+              ? [{ label: "Mouvements de stock", href: "/stock" }]
+              : []),
           ],
         },
       ]

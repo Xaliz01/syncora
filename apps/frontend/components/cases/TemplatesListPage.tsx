@@ -57,7 +57,11 @@ export function TemplatesListPage() {
         title="Modèles de dossier"
         description="Configurez des modèles avec étapes et tâches pour créer rapidement des dossiers typés."
         action={
-          <PermissionGate permission="case_templates.create"><ListPrimaryAction href="/settings/case-templates/new">Nouveau modèle</ListPrimaryAction></PermissionGate>
+          <PermissionGate permission="case_templates.create">
+            <ListPrimaryAction href="/settings/case-templates/new">
+              Nouveau modèle
+            </ListPrimaryAction>
+          </PermissionGate>
         }
       />
 
@@ -77,9 +81,9 @@ export function TemplatesListPage() {
           action={
             <PermissionGate permission="case_templates.create">
               <Link
-              href="/settings/case-templates/new"
-              className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium"
-            >
+                href="/settings/case-templates/new"
+                className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium"
+              >
                 Créer un modèle
               </Link>
             </PermissionGate>

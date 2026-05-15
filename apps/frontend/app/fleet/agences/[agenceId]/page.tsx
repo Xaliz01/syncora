@@ -6,11 +6,7 @@ import { RequirePermission } from "@/components/auth/RequirePermission";
 import { AgenceDetailsPage } from "@/components/fleet/AgenceDetailsPage";
 import { AppShell } from "@/components/layout/AppShell";
 
-export default function AgenceDetailsRoute({
-  params,
-}: {
-  params: Promise<{ agenceId: string }>;
-}) {
+export default function AgenceDetailsRoute({ params }: { params: Promise<{ agenceId: string }> }) {
   const { agenceId } = use(params);
   return (
     <RequireAuth>

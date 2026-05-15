@@ -79,7 +79,9 @@ export function VehiclesListPage() {
         title="Véhicules"
         description="Flotte de véhicules de l'organisation. Cliquez sur un véhicule pour voir sa fiche."
         action={
-          <PermissionGate permission="fleet.vehicles.create"><ListPrimaryAction href="/fleet/vehicles/new">Ajouter un véhicule</ListPrimaryAction></PermissionGate>
+          <PermissionGate permission="fleet.vehicles.create">
+            <ListPrimaryAction href="/fleet/vehicles/new">Ajouter un véhicule</ListPrimaryAction>
+          </PermissionGate>
         }
       />
 
@@ -101,9 +103,9 @@ export function VehiclesListPage() {
           action={
             <PermissionGate permission="fleet.vehicles.create">
               <Link
-              href="/fleet/vehicles/new"
-              className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium"
-            >
+                href="/fleet/vehicles/new"
+                className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium"
+              >
                 Ajouter votre premier véhicule
               </Link>
             </PermissionGate>

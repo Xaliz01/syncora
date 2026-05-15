@@ -58,7 +58,11 @@ export function AgencesListPage() {
       <ListPageHeader
         title="Agences"
         description="Gérez les agences (sites, bases) de votre organisation."
-        action={<PermissionGate permission="agences.create"><ListPrimaryAction href="/fleet/agences/new">Ajouter une agence</ListPrimaryAction></PermissionGate>}
+        action={
+          <PermissionGate permission="agences.create">
+            <ListPrimaryAction href="/fleet/agences/new">Ajouter une agence</ListPrimaryAction>
+          </PermissionGate>
+        }
       />
 
       {error ? <ListPageError message={error} onRetry={() => void loadData()} /> : null}
@@ -79,9 +83,9 @@ export function AgencesListPage() {
           action={
             <PermissionGate permission="agences.create">
               <Link
-              href="/fleet/agences/new"
-              className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium"
-            >
+                href="/fleet/agences/new"
+                className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium"
+              >
                 Ajouter votre première agence
               </Link>
             </PermissionGate>

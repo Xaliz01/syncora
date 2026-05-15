@@ -79,7 +79,11 @@ export function TechniciansListPage() {
         title="Techniciens"
         description="Profils terrain et comptes utilisateur associés."
         action={
-          <PermissionGate permission="fleet.technicians.create"><ListPrimaryAction href="/fleet/technicians/new">Ajouter un technicien</ListPrimaryAction></PermissionGate>
+          <PermissionGate permission="fleet.technicians.create">
+            <ListPrimaryAction href="/fleet/technicians/new">
+              Ajouter un technicien
+            </ListPrimaryAction>
+          </PermissionGate>
         }
       />
 
@@ -101,9 +105,9 @@ export function TechniciansListPage() {
           action={
             <PermissionGate permission="fleet.technicians.create">
               <Link
-              href="/fleet/technicians/new"
-              className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium"
-            >
+                href="/fleet/technicians/new"
+                className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium"
+              >
                 Ajouter votre premier technicien
               </Link>
             </PermissionGate>

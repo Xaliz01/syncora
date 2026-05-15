@@ -76,7 +76,11 @@ export function TeamsListPage() {
       <ListPageHeader
         title="Équipes"
         description="Gérez les équipes de techniciens de votre organisation."
-        action={<PermissionGate permission="teams.create"><ListPrimaryAction href="/fleet/teams/new">Créer une équipe</ListPrimaryAction></PermissionGate>}
+        action={
+          <PermissionGate permission="teams.create">
+            <ListPrimaryAction href="/fleet/teams/new">Créer une équipe</ListPrimaryAction>
+          </PermissionGate>
+        }
       />
 
       {error ? <ListPageError message={error} onRetry={() => void loadData()} /> : null}
@@ -97,9 +101,9 @@ export function TeamsListPage() {
           action={
             <PermissionGate permission="teams.create">
               <Link
-              href="/fleet/teams/new"
-              className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium"
-            >
+                href="/fleet/teams/new"
+                className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium"
+              >
                 Créer votre première équipe
               </Link>
             </PermissionGate>
