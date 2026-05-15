@@ -57,8 +57,15 @@ describe("FleetController", () => {
 
   describe("createVehicle", () => {
     it("should call fleetService.createVehicle with user and body", async () => {
-      const body = { type: "camionnette" as const, registrationNumber: "AB-123-CD", brand: "Renault" };
-      mockFleetService.createVehicle.mockResolvedValue({ id: "v-1", registrationNumber: "AB-123-CD" } as never);
+      const body = {
+        type: "camionnette" as const,
+        registrationNumber: "AB-123-CD",
+        brand: "Renault",
+      };
+      mockFleetService.createVehicle.mockResolvedValue({
+        id: "v-1",
+        registrationNumber: "AB-123-CD",
+      } as never);
 
       const result = await controller.createVehicle(mockUser, body);
 
@@ -115,7 +122,10 @@ describe("FleetController", () => {
   describe("assignTeam", () => {
     it("should call fleetService.assignTeamToVehicle with user, vehicleId and body", async () => {
       const body = { teamId: "team-1" };
-      mockFleetService.assignTeamToVehicle.mockResolvedValue({ id: "v-1", assignedTeamId: "team-1" } as never);
+      mockFleetService.assignTeamToVehicle.mockResolvedValue({
+        id: "v-1",
+        assignedTeamId: "team-1",
+      } as never);
 
       const result = await controller.assignTeam(mockUser, "v-1", body);
 
@@ -126,7 +136,10 @@ describe("FleetController", () => {
 
   describe("unassignTeam", () => {
     it("should call fleetService.unassignTeamFromVehicle with user and vehicleId", async () => {
-      mockFleetService.unassignTeamFromVehicle.mockResolvedValue({ id: "v-1", assignedTeamId: null } as never);
+      mockFleetService.unassignTeamFromVehicle.mockResolvedValue({
+        id: "v-1",
+        assignedTeamId: null,
+      } as never);
 
       const result = await controller.unassignTeam(mockUser, "v-1");
 

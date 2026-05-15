@@ -61,9 +61,7 @@ describe("TeamsController", () => {
     });
 
     it("should throw BadRequestException when organizationId is missing", async () => {
-      await expect(controller.listTeams(undefined as never)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(controller.listTeams(undefined as never)).rejects.toThrow(BadRequestException);
       expect(mockTeamsService.listTeams).not.toHaveBeenCalled();
     });
   });

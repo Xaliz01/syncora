@@ -68,7 +68,10 @@ describe("CasesController", () => {
   describe("createTemplate", () => {
     it("should call casesService.createTemplate with user and body", async () => {
       const body = { name: "Template A", steps: [] };
-      mockCasesService.createTemplate.mockResolvedValue({ id: "tpl-1", name: "Template A" } as never);
+      mockCasesService.createTemplate.mockResolvedValue({
+        id: "tpl-1",
+        name: "Template A",
+      } as never);
 
       const result = await controller.createTemplate(mockUser, body);
 
@@ -102,7 +105,10 @@ describe("CasesController", () => {
   describe("updateTemplate", () => {
     it("should call casesService.updateTemplate with user, templateId and body", async () => {
       const body = { name: "Updated Template" };
-      mockCasesService.updateTemplate.mockResolvedValue({ id: "tpl-1", name: "Updated Template" } as never);
+      mockCasesService.updateTemplate.mockResolvedValue({
+        id: "tpl-1",
+        name: "Updated Template",
+      } as never);
 
       const result = await controller.updateTemplate(mockUser, "tpl-1", body);
 
@@ -138,7 +144,13 @@ describe("CasesController", () => {
     it("should call casesService.listCases with user and filters", async () => {
       mockCasesService.listCases.mockResolvedValue([{ id: "case-1" }] as never);
 
-      const result = await controller.listCases(mockUser, "open", "assignee-1", "high", "search-term");
+      const result = await controller.listCases(
+        mockUser,
+        "open",
+        "assignee-1",
+        "high",
+        "search-term",
+      );
 
       expect(mockCasesService.listCases).toHaveBeenCalledWith(mockUser, {
         status: "open",
@@ -178,7 +190,10 @@ describe("CasesController", () => {
   describe("updateCase", () => {
     it("should call casesService.updateCase with user, caseId and body", async () => {
       const body = { title: "Updated Case" };
-      mockCasesService.updateCase.mockResolvedValue({ id: "case-1", title: "Updated Case" } as never);
+      mockCasesService.updateCase.mockResolvedValue({
+        id: "case-1",
+        title: "Updated Case",
+      } as never);
 
       const result = await controller.updateCase(mockUser, "case-1", body);
 
@@ -213,7 +228,10 @@ describe("CasesController", () => {
   describe("createIntervention", () => {
     it("should call casesService.createIntervention with user and body", async () => {
       const body = { caseId: "case-1", title: "Intervention A" };
-      mockCasesService.createIntervention.mockResolvedValue({ id: "int-1", title: "Intervention A" } as never);
+      mockCasesService.createIntervention.mockResolvedValue({
+        id: "int-1",
+        title: "Intervention A",
+      } as never);
 
       const result = await controller.createIntervention(mockUser, body);
 
@@ -278,7 +296,10 @@ describe("CasesController", () => {
   describe("updateIntervention", () => {
     it("should call casesService.updateIntervention with user, interventionId and body", async () => {
       const body = { title: "Updated Intervention" };
-      mockCasesService.updateIntervention.mockResolvedValue({ id: "int-1", title: "Updated Intervention" } as never);
+      mockCasesService.updateIntervention.mockResolvedValue({
+        id: "int-1",
+        title: "Updated Intervention",
+      } as never);
 
       const result = await controller.updateIntervention(mockUser, "int-1", body);
 

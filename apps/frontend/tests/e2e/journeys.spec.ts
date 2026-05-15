@@ -178,9 +178,7 @@ test.describe("Parcours inter-pages publiques complet", () => {
 
     await page.getByRole("link", { name: /Activer votre compte invité/ }).click();
     await expect(page).toHaveURL(/\/accept-invitation/);
-    await expect(
-      page.getByRole("heading", { name: "Rejoindre l'organisation" }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Rejoindre l'organisation" })).toBeVisible();
 
     await page.goBack();
     await expect(page).toHaveURL(/\/login/);

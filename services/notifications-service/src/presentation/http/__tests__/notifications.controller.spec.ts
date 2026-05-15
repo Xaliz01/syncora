@@ -51,7 +51,10 @@ describe("NotificationsController", () => {
 
       const result = await controller.createForOrganization(body);
 
-      expect(mockNotificationsService.createForOrganization).toHaveBeenCalledWith(body, body.userIds);
+      expect(mockNotificationsService.createForOrganization).toHaveBeenCalledWith(
+        body,
+        body.userIds,
+      );
       expect(result).toHaveLength(1);
     });
 
@@ -106,14 +109,14 @@ describe("NotificationsController", () => {
     });
 
     it("should throw BadRequestException without userId or organizationId", async () => {
-      await expect(
-        controller.listForUser(undefined as never, "org-1"),
-      ).rejects.toThrow(BadRequestException);
+      await expect(controller.listForUser(undefined as never, "org-1")).rejects.toThrow(
+        BadRequestException,
+      );
       expect(mockNotificationsService.listForUser).not.toHaveBeenCalled();
 
-      await expect(
-        controller.listForUser("user-1", undefined as never),
-      ).rejects.toThrow(BadRequestException);
+      await expect(controller.listForUser("user-1", undefined as never)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it("should parse limit string to number", async () => {
@@ -139,9 +142,9 @@ describe("NotificationsController", () => {
     });
 
     it("should throw BadRequestException without userId", async () => {
-      await expect(
-        controller.markAsRead("notif-1", undefined as never),
-      ).rejects.toThrow(BadRequestException);
+      await expect(controller.markAsRead("notif-1", undefined as never)).rejects.toThrow(
+        BadRequestException,
+      );
       expect(mockNotificationsService.markAsRead).not.toHaveBeenCalled();
     });
   });
@@ -157,14 +160,14 @@ describe("NotificationsController", () => {
     });
 
     it("should throw BadRequestException without params", async () => {
-      await expect(
-        controller.markAllAsRead(undefined as never, "org-1"),
-      ).rejects.toThrow(BadRequestException);
+      await expect(controller.markAllAsRead(undefined as never, "org-1")).rejects.toThrow(
+        BadRequestException,
+      );
       expect(mockNotificationsService.markAllAsRead).not.toHaveBeenCalled();
 
-      await expect(
-        controller.markAllAsRead("user-1", undefined as never),
-      ).rejects.toThrow(BadRequestException);
+      await expect(controller.markAllAsRead("user-1", undefined as never)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -179,14 +182,14 @@ describe("NotificationsController", () => {
     });
 
     it("should throw BadRequestException without params", async () => {
-      await expect(
-        controller.getUnreadCount(undefined as never, "org-1"),
-      ).rejects.toThrow(BadRequestException);
+      await expect(controller.getUnreadCount(undefined as never, "org-1")).rejects.toThrow(
+        BadRequestException,
+      );
       expect(mockNotificationsService.getUnreadCount).not.toHaveBeenCalled();
 
-      await expect(
-        controller.getUnreadCount("user-1", undefined as never),
-      ).rejects.toThrow(BadRequestException);
+      await expect(controller.getUnreadCount("user-1", undefined as never)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 });

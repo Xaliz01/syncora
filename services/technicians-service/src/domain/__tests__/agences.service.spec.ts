@@ -43,10 +43,7 @@ describe("AgencesService", () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        AgencesService,
-        { provide: getModelToken("Agence"), useValue: mockAgenceModel },
-      ],
+      providers: [AgencesService, { provide: getModelToken("Agence"), useValue: mockAgenceModel }],
     }).compile();
 
     service = module.get<AgencesService>(AgencesService);
@@ -118,9 +115,9 @@ describe("AgencesService", () => {
         exec: jest.fn().mockResolvedValue(null),
       });
 
-      await expect(
-        service.updateAgence("org-1", "non-existent", { name: "Test" }),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.updateAgence("org-1", "non-existent", { name: "Test" })).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it("should throw NotFoundException when org mismatch", async () => {
@@ -129,9 +126,9 @@ describe("AgencesService", () => {
         exec: jest.fn().mockResolvedValue(doc),
       });
 
-      await expect(
-        service.updateAgence("org-1", "agence-123", { name: "Test" }),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.updateAgence("org-1", "agence-123", { name: "Test" })).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

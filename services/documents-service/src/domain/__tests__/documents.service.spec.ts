@@ -25,9 +25,7 @@ describe("DocumentsService", () => {
     size: 1024,
     storageKey: "org-1/case/entity-1/uuid-file.pdf",
     uploadedBy: "user-1",
-    get: jest.fn((key: string) =>
-      key === "createdAt" ? new Date("2025-01-01") : undefined,
-    ),
+    get: jest.fn((key: string) => (key === "createdAt" ? new Date("2025-01-01") : undefined)),
     save: jest.fn().mockResolvedValue(undefined),
     deletedAt: null as Date | null,
     ...overrides,

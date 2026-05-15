@@ -65,7 +65,11 @@ describe("SubscriptionsController", () => {
 
   describe("createCheckoutSession", () => {
     it("should call subscriptionsService.createCheckoutSession with user and body", () => {
-      const body = { planId: "pro", successUrl: "https://example.com/success", cancelUrl: "https://example.com/cancel" };
+      const body = {
+        planId: "pro",
+        successUrl: "https://example.com/success",
+        cancelUrl: "https://example.com/cancel",
+      };
       const expected = { sessionUrl: "https://checkout.stripe.com/session-1" };
       mockSubscriptionsService.createCheckoutSession.mockResolvedValue(expected as never);
 
@@ -84,7 +88,10 @@ describe("SubscriptionsController", () => {
 
       const result = controller.createBillingPortal(mockUser, body);
 
-      expect(mockSubscriptionsService.createBillingPortalSession).toHaveBeenCalledWith(mockUser, body);
+      expect(mockSubscriptionsService.createBillingPortalSession).toHaveBeenCalledWith(
+        mockUser,
+        body,
+      );
       expect(result).resolves.toEqual(expected);
     });
   });

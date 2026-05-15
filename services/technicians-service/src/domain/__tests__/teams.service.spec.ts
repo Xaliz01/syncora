@@ -173,9 +173,9 @@ describe("TeamsService", () => {
         exec: jest.fn().mockResolvedValue(null),
       });
 
-      await expect(
-        service.updateTeam("org-1", "non-existent", { name: "Test" }),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.updateTeam("org-1", "non-existent", { name: "Test" })).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

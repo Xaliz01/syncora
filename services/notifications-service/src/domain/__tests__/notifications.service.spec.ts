@@ -33,9 +33,7 @@ describe("NotificationsService", () => {
     entityLabel: "Entity Label",
     action: "created",
     read: false,
-    get: jest.fn((key: string) =>
-      key === "createdAt" ? new Date("2025-01-01") : undefined,
-    ),
+    get: jest.fn((key: string) => (key === "createdAt" ? new Date("2025-01-01") : undefined)),
     ...overrides,
   });
 
@@ -167,17 +165,13 @@ describe("NotificationsService", () => {
         exec: jest.fn().mockResolvedValue(null),
       });
 
-      await expect(service.markAsRead("non-existent", "user-1")).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.markAsRead("non-existent", "user-1")).rejects.toThrow(NotFoundException);
     });
   });
 
   describe("markAllAsRead", () => {
     it("should update all unread notifications", async () => {
-      mockNotificationModel.updateMany.mockImplementation(() =>
-        updateChain({ modifiedCount: 5 }),
-      );
+      mockNotificationModel.updateMany.mockImplementation(() => updateChain({ modifiedCount: 5 }));
 
       const result = await service.markAllAsRead("user-1", "org-1");
 

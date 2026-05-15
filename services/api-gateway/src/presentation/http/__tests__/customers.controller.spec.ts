@@ -57,7 +57,10 @@ describe("CustomersController", () => {
   describe("createCustomer", () => {
     it("should call customersService.createCustomer with user and body", async () => {
       const body = { kind: "individual" as const, firstName: "John", lastName: "Doe" };
-      mockCustomersService.createCustomer.mockResolvedValue({ id: "cust-1", kind: "individual" } as never);
+      mockCustomersService.createCustomer.mockResolvedValue({
+        id: "cust-1",
+        kind: "individual",
+      } as never);
 
       const result = await controller.createCustomer(mockUser, body);
 
@@ -81,7 +84,9 @@ describe("CustomersController", () => {
 
       const result = await controller.listCustomers(mockUser);
 
-      expect(mockCustomersService.listCustomers).toHaveBeenCalledWith(mockUser, { search: undefined });
+      expect(mockCustomersService.listCustomers).toHaveBeenCalledWith(mockUser, {
+        search: undefined,
+      });
       expect(result).toEqual([]);
     });
   });
@@ -100,7 +105,10 @@ describe("CustomersController", () => {
   describe("updateCustomer", () => {
     it("should call customersService.updateCustomer with user, customerId and body", async () => {
       const body = { firstName: "Jane" };
-      mockCustomersService.updateCustomer.mockResolvedValue({ id: "cust-1", firstName: "Jane" } as never);
+      mockCustomersService.updateCustomer.mockResolvedValue({
+        id: "cust-1",
+        firstName: "Jane",
+      } as never);
 
       const result = await controller.updateCustomer(mockUser, "cust-1", body);
 

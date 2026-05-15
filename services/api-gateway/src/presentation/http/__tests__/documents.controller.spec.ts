@@ -59,11 +59,19 @@ describe("DocumentsController", () => {
       const entityType = "case" as DocumentEntityType;
       const entityId = "case-1";
       const file = { originalname: "report.pdf", size: 1024 } as Express.Multer.File;
-      mockDocumentsService.upload.mockResolvedValue({ id: "doc-1", originalName: "report.pdf" } as never);
+      mockDocumentsService.upload.mockResolvedValue({
+        id: "doc-1",
+        originalName: "report.pdf",
+      } as never);
 
       const result = await controller.upload(mockUser, entityType, entityId, file);
 
-      expect(mockDocumentsService.upload).toHaveBeenCalledWith(mockUser, entityType, entityId, file);
+      expect(mockDocumentsService.upload).toHaveBeenCalledWith(
+        mockUser,
+        entityType,
+        entityId,
+        file,
+      );
       expect(result).toEqual({ id: "doc-1", originalName: "report.pdf" });
     });
   });
@@ -75,13 +83,19 @@ describe("DocumentsController", () => {
 
       await controller.downloadFile(mockUser, "files/report.pdf", mockRes);
 
-      expect(mockDocumentsService.downloadFile).toHaveBeenCalledWith(mockUser, "files/report.pdf", mockRes);
+      expect(mockDocumentsService.downloadFile).toHaveBeenCalledWith(
+        mockUser,
+        "files/report.pdf",
+        mockRes,
+      );
     });
   });
 
   describe("getDownloadUrl", () => {
     it("should call documentsService.getDownloadUrl with user and documentId", async () => {
-      mockDocumentsService.getDownloadUrl.mockResolvedValue({ url: "https://s3.example.com/doc-1" });
+      mockDocumentsService.getDownloadUrl.mockResolvedValue({
+        url: "https://s3.example.com/doc-1",
+      });
 
       const result = await controller.getDownloadUrl(mockUser, "doc-1");
 
@@ -108,7 +122,11 @@ describe("DocumentsController", () => {
 
       const result = await controller.listByEntity(mockUser, entityType, "case-1");
 
-      expect(mockDocumentsService.listByEntity).toHaveBeenCalledWith(mockUser, entityType, "case-1");
+      expect(mockDocumentsService.listByEntity).toHaveBeenCalledWith(
+        mockUser,
+        entityType,
+        "case-1",
+      );
       expect(result).toEqual([{ id: "doc-1" }]);
     });
   });

@@ -107,7 +107,11 @@ describe("AdminController", () => {
 
   describe("assignUserPermissions", () => {
     it("should call adminService.assignUserPermissions with user, userId and body", async () => {
-      const body = { profileId: "profile-1", extraPermissions: [] as never[], revokedPermissions: [] as never[] };
+      const body = {
+        profileId: "profile-1",
+        extraPermissions: [] as never[],
+        revokedPermissions: [] as never[],
+      };
       mockAdminService.assignUserPermissions.mockResolvedValue({ success: true } as never);
 
       const result = await controller.assignUserPermissions(mockUser, "u-1", body);
@@ -154,11 +158,18 @@ describe("AdminController", () => {
   describe("updatePermissionProfile", () => {
     it("should call adminService.updatePermissionProfile with user, profileId and body", async () => {
       const body = { name: "Updated Manager" };
-      mockAdminService.updatePermissionProfile.mockResolvedValue({ id: "profile-1", name: "Updated Manager" } as never);
+      mockAdminService.updatePermissionProfile.mockResolvedValue({
+        id: "profile-1",
+        name: "Updated Manager",
+      } as never);
 
       const result = await controller.updatePermissionProfile(mockUser, "profile-1", body);
 
-      expect(mockAdminService.updatePermissionProfile).toHaveBeenCalledWith(mockUser, "profile-1", body);
+      expect(mockAdminService.updatePermissionProfile).toHaveBeenCalledWith(
+        mockUser,
+        "profile-1",
+        body,
+      );
       expect(result).toEqual({ id: "profile-1", name: "Updated Manager" });
     });
   });

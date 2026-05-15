@@ -55,8 +55,16 @@ describe("AgencesGatewayController", () => {
 
   describe("createAgence", () => {
     it("should call agencesService.createAgence with user and body", async () => {
-      const body = { name: "Agence Paris", address: "10 rue de Paris", city: "Paris", postalCode: "75001" };
-      mockAgencesService.createAgence.mockResolvedValue({ id: "agence-1", name: "Agence Paris" } as never);
+      const body = {
+        name: "Agence Paris",
+        address: "10 rue de Paris",
+        city: "Paris",
+        postalCode: "75001",
+      };
+      mockAgencesService.createAgence.mockResolvedValue({
+        id: "agence-1",
+        name: "Agence Paris",
+      } as never);
 
       const result = await controller.createAgence(mockUser, body);
 
@@ -67,7 +75,9 @@ describe("AgencesGatewayController", () => {
 
   describe("listAgences", () => {
     it("should call agencesService.listAgences with user", async () => {
-      mockAgencesService.listAgences.mockResolvedValue([{ id: "agence-1", name: "Agence Paris" }] as never);
+      mockAgencesService.listAgences.mockResolvedValue([
+        { id: "agence-1", name: "Agence Paris" },
+      ] as never);
 
       const result = await controller.listAgences(mockUser);
 
@@ -78,7 +88,10 @@ describe("AgencesGatewayController", () => {
 
   describe("getAgence", () => {
     it("should call agencesService.getAgence with user and agenceId", async () => {
-      mockAgencesService.getAgence.mockResolvedValue({ id: "agence-1", name: "Agence Paris" } as never);
+      mockAgencesService.getAgence.mockResolvedValue({
+        id: "agence-1",
+        name: "Agence Paris",
+      } as never);
 
       const result = await controller.getAgence(mockUser, "agence-1");
 
@@ -90,7 +103,10 @@ describe("AgencesGatewayController", () => {
   describe("updateAgence", () => {
     it("should call agencesService.updateAgence with user, agenceId and body", async () => {
       const body = { name: "Agence Lyon" };
-      mockAgencesService.updateAgence.mockResolvedValue({ id: "agence-1", name: "Agence Lyon" } as never);
+      mockAgencesService.updateAgence.mockResolvedValue({
+        id: "agence-1",
+        name: "Agence Lyon",
+      } as never);
 
       const result = await controller.updateAgence(mockUser, "agence-1", body);
 

@@ -59,9 +59,7 @@ describe("AgencesController", () => {
     });
 
     it("should throw BadRequestException when organizationId is missing", async () => {
-      await expect(controller.listAgences(undefined as never)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(controller.listAgences(undefined as never)).rejects.toThrow(BadRequestException);
       expect(mockAgencesService.listAgences).not.toHaveBeenCalled();
     });
   });

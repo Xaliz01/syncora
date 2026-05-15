@@ -162,9 +162,7 @@ describe("CustomersService", () => {
         expect.objectContaining({
           organizationId: "org-1",
           ...activeDocumentFilter,
-          $or: expect.arrayContaining([
-            { companyName: { $regex: "acme", $options: "i" } },
-          ]),
+          $or: expect.arrayContaining([{ companyName: { $regex: "acme", $options: "i" } }]),
         }),
       );
       expect(result).toHaveLength(1);
@@ -250,9 +248,7 @@ describe("CustomersService", () => {
         companyName: "Acme Updated",
       };
 
-      await expect(service.updateCustomer("non-existent", body)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.updateCustomer("non-existent", body)).rejects.toThrow(NotFoundException);
     });
   });
 

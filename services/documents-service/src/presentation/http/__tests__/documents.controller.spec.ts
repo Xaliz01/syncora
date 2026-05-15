@@ -103,9 +103,9 @@ describe("DocumentsController", () => {
     });
 
     it("should throw BadRequestException without organizationId", async () => {
-      await expect(
-        controller.listByEntity(undefined as never, "case", "entity-1"),
-      ).rejects.toThrow(BadRequestException);
+      await expect(controller.listByEntity(undefined as never, "case", "entity-1")).rejects.toThrow(
+        BadRequestException,
+      );
       expect(mockDocumentsService.listByEntity).not.toHaveBeenCalled();
     });
 

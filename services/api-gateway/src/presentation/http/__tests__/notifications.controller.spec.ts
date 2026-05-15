@@ -54,7 +54,10 @@ describe("NotificationsController", () => {
 
   describe("list", () => {
     it("should call notificationsService.listForCurrentUser with user and parsed limit", async () => {
-      mockNotificationsService.listForCurrentUser.mockResolvedValue({ items: [], total: 0 } as never);
+      mockNotificationsService.listForCurrentUser.mockResolvedValue({
+        items: [],
+        total: 0,
+      } as never);
 
       const result = await controller.list(mockUser, "20");
 
@@ -63,7 +66,10 @@ describe("NotificationsController", () => {
     });
 
     it("should call notificationsService.listForCurrentUser with undefined when no limit", async () => {
-      mockNotificationsService.listForCurrentUser.mockResolvedValue({ items: [], total: 0 } as never);
+      mockNotificationsService.listForCurrentUser.mockResolvedValue({
+        items: [],
+        total: 0,
+      } as never);
 
       const result = await controller.list(mockUser, undefined);
 

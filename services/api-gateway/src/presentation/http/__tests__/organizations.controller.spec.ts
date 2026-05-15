@@ -54,7 +54,9 @@ describe("OrganizationsController", () => {
 
   describe("listMine", () => {
     it("should call organizationsService.listMine with user", () => {
-      mockOrganizationsService.listMine.mockResolvedValue({ organizations: [{ id: "org-1" }] } as never);
+      mockOrganizationsService.listMine.mockResolvedValue({
+        organizations: [{ id: "org-1" }],
+      } as never);
 
       const result = controller.listMine(mockUser);
 
@@ -83,7 +85,10 @@ describe("OrganizationsController", () => {
   describe("updateMine", () => {
     it("should call organizationsService.updateMine with user and body", async () => {
       const body = { name: "Updated Org" };
-      mockOrganizationsService.updateMine.mockResolvedValue({ id: "org-1", name: "Updated Org" } as never);
+      mockOrganizationsService.updateMine.mockResolvedValue({
+        id: "org-1",
+        name: "Updated Org",
+      } as never);
 
       const result = await controller.updateMine(mockUser, body);
 

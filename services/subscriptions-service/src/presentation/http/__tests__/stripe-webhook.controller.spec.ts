@@ -41,10 +41,7 @@ describe("StripeWebhookController", () => {
 
       const result = await controller.handleStripe(req, signature);
 
-      expect(mockSubscriptionsService.handleStripeWebhook).toHaveBeenCalledWith(
-        rawBody,
-        signature,
-      );
+      expect(mockSubscriptionsService.handleStripeWebhook).toHaveBeenCalledWith(rawBody, signature);
       expect(result).toEqual({ received: true });
     });
 
