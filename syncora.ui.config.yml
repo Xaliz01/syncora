@@ -15,13 +15,13 @@ ui:
 
   colors:
     background:
-      base: "#020617"         # slate-950
-      surface: "#020617"      # utilisé avec opacité pour les cartes
+      base: "#020617" # slate-950
+      surface: "#020617" # utilisé avec opacité pour les cartes
     border:
-      subtle: "#1e293b"       # slate-800
+      subtle: "#1e293b" # slate-800
     text:
-      primary: "#e2e8f0"      # slate-200
-      muted: "#94a3b8"        # slate-400
+      primary: "#e2e8f0" # slate-200
+      muted: "#94a3b8" # slate-400
     brand:
       500: "#4f46e5"
       600: "#4338ca"
@@ -63,4 +63,3 @@ ui:
       - key: "stocks_fleet"
         title: "Stocks & flotte"
         description: "Pilotez vos stocks, entrepôts et camions avec une vision temps réel."
-

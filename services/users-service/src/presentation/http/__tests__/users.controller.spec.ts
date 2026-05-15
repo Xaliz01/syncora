@@ -17,7 +17,7 @@ describe("UsersController", () => {
       listByOrganization: jest.fn(),
       listOrganizationMemberships: jest.fn(),
       addOrganizationMembership: jest.fn(),
-      validateCredentials: jest.fn()
+      validateCredentials: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -25,9 +25,9 @@ describe("UsersController", () => {
       providers: [
         {
           provide: AbstractUsersService,
-          useValue: mockUsersService
-        }
-      ]
+          useValue: mockUsersService,
+        },
+      ],
     }).compile();
 
     controller = module.get<UsersController>(UsersController);
@@ -44,7 +44,7 @@ describe("UsersController", () => {
         email: "user@example.com",
         password: "secret",
         name: "User",
-        role: "member" as const
+        role: "member" as const,
       };
       const expected = {
         id: "user-123",
@@ -53,7 +53,7 @@ describe("UsersController", () => {
         name: "User",
         role: "member" as const,
         status: "active" as const,
-        createdAt: "2025-01-01T00:00:00.000Z"
+        createdAt: "2025-01-01T00:00:00.000Z",
       };
       mockUsersService.create.mockResolvedValue(expected);
 
@@ -70,7 +70,7 @@ describe("UsersController", () => {
         organizationId: "org-1",
         email: "invited@example.com",
         name: "Invited",
-        invitedByUserId: "admin-1"
+        invitedByUserId: "admin-1",
       };
       const expected = {
         id: "user-456",
@@ -79,7 +79,7 @@ describe("UsersController", () => {
         name: "Invited",
         role: "member" as const,
         status: "active" as const,
-        createdAt: "2025-01-01T00:00:00.000Z"
+        createdAt: "2025-01-01T00:00:00.000Z",
       };
       mockUsersService.invite.mockResolvedValue(expected);
 
@@ -100,7 +100,7 @@ describe("UsersController", () => {
         name: "Activated User",
         role: "member" as const,
         status: "active" as const,
-        createdAt: "2025-01-01T00:00:00.000Z"
+        createdAt: "2025-01-01T00:00:00.000Z",
       };
       mockUsersService.activateInvitedUser.mockResolvedValue(expected);
 
@@ -120,7 +120,7 @@ describe("UsersController", () => {
         name: "User",
         role: "member" as const,
         status: "active" as const,
-        createdAt: "2025-01-01T00:00:00.000Z"
+        createdAt: "2025-01-01T00:00:00.000Z",
       };
       mockUsersService.findById.mockResolvedValue(user);
 
@@ -147,8 +147,8 @@ describe("UsersController", () => {
           email: "u1@example.com",
           role: "member" as const,
           status: "active" as const,
-          createdAt: "2025-01-01T00:00:00.000Z"
-        }
+          createdAt: "2025-01-01T00:00:00.000Z",
+        },
       ];
       mockUsersService.listByOrganization.mockResolvedValue(users);
 
@@ -161,7 +161,7 @@ describe("UsersController", () => {
     it("should throw BadRequestException when organizationId is missing", async () => {
       await expect(controller.listByOrganization("")).rejects.toThrow(BadRequestException);
       await expect(controller.listByOrganization("")).rejects.toThrow(
-        "organizationId query param is required"
+        "organizationId query param is required",
       );
     });
   });
@@ -174,18 +174,18 @@ describe("UsersController", () => {
         email: "user@example.com",
         name: "User",
         role: "member" as const,
-        status: "active" as const
+        status: "active" as const,
       };
       mockUsersService.validateCredentials.mockResolvedValue(response);
 
       const result = await controller.validateCredentials({
         email: "user@example.com",
-        password: "secret"
+        password: "secret",
       });
 
       expect(mockUsersService.validateCredentials).toHaveBeenCalledWith(
         "user@example.com",
-        "secret"
+        "secret",
       );
       expect(result).toEqual(response);
     });
@@ -194,10 +194,10 @@ describe("UsersController", () => {
       mockUsersService.validateCredentials.mockResolvedValue(null);
 
       await expect(
-        controller.validateCredentials({ email: "user@example.com", password: "wrong" })
+        controller.validateCredentials({ email: "user@example.com", password: "wrong" }),
       ).rejects.toThrow(UnauthorizedException);
       await expect(
-        controller.validateCredentials({ email: "user@example.com", password: "wrong" })
+        controller.validateCredentials({ email: "user@example.com", password: "wrong" }),
       ).rejects.toThrow("Invalid email or password");
     });
   });

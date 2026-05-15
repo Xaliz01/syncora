@@ -1,9 +1,6 @@
 import { BadRequestException, Body, Controller, Get, Post, Query } from "@nestjs/common";
 import { SubscriptionsService } from "../../domain/subscriptions.service";
-import type {
-  CreateBillingPortalBody,
-  CreateCheckoutSessionBody
-} from "@syncora/shared";
+import type { CreateBillingPortalBody, CreateCheckoutSessionBody } from "@syncora/shared";
 
 @Controller("subscriptions")
 export class SubscriptionsController {
@@ -25,7 +22,7 @@ export class SubscriptionsController {
       organizationId: body.organizationId,
       customerEmail: body.customerEmail,
       successUrl: body.successUrl.trim(),
-      cancelUrl: body.cancelUrl.trim()
+      cancelUrl: body.cancelUrl.trim(),
     });
   }
 
@@ -37,7 +34,7 @@ export class SubscriptionsController {
     }
     return this.subscriptionsService.createBillingPortalSession({
       organizationId: body.organizationId,
-      returnUrl: body.returnUrl.trim()
+      returnUrl: body.returnUrl.trim(),
     });
   }
 

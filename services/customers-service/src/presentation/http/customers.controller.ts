@@ -7,7 +7,7 @@ import {
   Param,
   Patch,
   Post,
-  Query
+  Query,
 } from "@nestjs/common";
 import type { CreateCustomerBody, UpdateCustomerBody } from "@syncora/shared";
 import { AbstractCustomersService } from "../../domain/ports/customers.service.port";
@@ -25,7 +25,7 @@ export class CustomersController {
   async listCustomers(
     @Query("organizationId") organizationId: string,
     @Query("search") search?: string,
-    @Query("ids") idsCsv?: string
+    @Query("ids") idsCsv?: string,
   ) {
     this.ensureOrganizationId(organizationId);
     const ids = idsCsv
@@ -36,15 +36,12 @@ export class CustomersController {
       : undefined;
     return this.customersService.listCustomers(organizationId, {
       search,
-      ids: ids?.length ? ids : undefined
+      ids: ids?.length ? ids : undefined,
     });
   }
 
   @Get(":id")
-  async getCustomer(
-    @Param("id") id: string,
-    @Query("organizationId") organizationId: string
-  ) {
+  async getCustomer(@Param("id") id: string, @Query("organizationId") organizationId: string) {
     this.ensureOrganizationId(organizationId);
     return this.customersService.getCustomer(id, organizationId);
   }
@@ -55,10 +52,7 @@ export class CustomersController {
   }
 
   @Delete(":id")
-  async deleteCustomer(
-    @Param("id") id: string,
-    @Query("organizationId") organizationId: string
-  ) {
+  async deleteCustomer(@Param("id") id: string, @Query("organizationId") organizationId: string) {
     this.ensureOrganizationId(organizationId);
     return this.customersService.deleteCustomer(id, organizationId);
   }

@@ -3,7 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
-  NotFoundException
+  NotFoundException,
 } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
@@ -18,7 +18,7 @@ import type {
   OrganizationMembershipResponse,
   UpdatePermissionProfileBody,
   UserPermissionAssignmentResponse,
-  UserResponse
+  UserResponse,
 } from "@syncora/shared";
 import { ASSIGNABLE_PERMISSION_CODES } from "@syncora/shared";
 import {
@@ -26,12 +26,11 @@ import {
   type InviteOrganizationUserBody,
   type UpdateUserPermissionsBody,
   type CreatePermissionProfileForOrgBody,
-  type UpdatePermissionProfileForOrgBody
+  type UpdatePermissionProfileForOrgBody,
 } from "./ports/admin.service.port";
 
 const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
-const PERMISSIONS_URL =
-  process.env.PERMISSIONS_SERVICE_URL ?? "http://localhost:3003";
+const PERMISSIONS_URL = process.env.PERMISSIONS_SERVICE_URL ?? "http://localhost:3003";
 
 @Injectable()
 export class AdminService extends AbstractAdminService {
@@ -42,7 +41,7 @@ export class AdminService extends AbstractAdminService {
   getPermissionsCatalog() {
     return {
       /** Droits configurables (profils, invitations) — hors indicateurs système comme `subscription.active`. */
-      availablePermissions: [...ASSIGNABLE_PERMISSION_CODES]
+      availablePermissions: [...ASSIGNABLE_PERMISSION_CODES],
     };
   }
 
@@ -50,10 +49,12 @@ export class AdminService extends AbstractAdminService {
     const invitedRole = body.role ?? "member";
     if (
       invitedRole === "admin" &&
-      (body.profileId || (body.extraPermissions?.length ?? 0) > 0 || (body.revokedPermissions?.length ?? 0) > 0)
+      (body.profileId ||
+        (body.extraPermissions?.length ?? 0) > 0 ||
+        (body.revokedPermissions?.length ?? 0) > 0)
     ) {
       throw new BadRequestException(
-        "Les administrateurs d'organisation ont tous les droits ; les profils et permissions personnalisées ne sont pas autorisés"
+        "Les administrateurs d'organisation ont tous les droits ; les profils et permissions personnalisées ne sont pas autorisés",
       );
     }
 
@@ -62,12 +63,12 @@ export class AdminService extends AbstractAdminService {
       email: body.email,
       name: body.name,
       role: invitedRole,
-      invitedByUserId: currentUser.id
+      invitedByUserId: currentUser.id,
     };
     const invitedUser = await this.callUsersService<UserResponse>({
       method: "post",
       path: "/users/invite",
-      body: createInvitedUserBody
+      body: createInvitedUserBody,
     });
 
     const assignment =
@@ -77,7 +78,7 @@ export class AdminService extends AbstractAdminService {
             userId: invitedUser.id,
             extraPermissions: [],
             revokedPermissions: [],
-            effectivePermissions: [...ASSIGNABLE_PERMISSION_CODES]
+            effectivePermissions: [...ASSIGNABLE_PERMISSION_CODES],
           }
         : await this.callPermissionsService<UserPermissionAssignmentResponse>({
             method: "put",
@@ -87,8 +88,8 @@ export class AdminService extends AbstractAdminService {
               userId: invitedUser.id,
               profileId: body.profileId ?? null,
               extraPermissions: body.extraPermissions ?? [],
-              revokedPermissions: body.revokedPermissions ?? []
-            } satisfies AssignUserPermissionsBody
+              revokedPermissions: body.revokedPermissions ?? [],
+            } satisfies AssignUserPermissionsBody,
           });
 
     const invitation = await this.callPermissionsService<InvitationResponse>({
@@ -101,15 +102,15 @@ export class AdminService extends AbstractAdminService {
         invitedName: invitedUser.name,
         invitedByUserId: currentUser.id,
         profileId: invitedUser.role === "admin" ? undefined : body.profileId,
-        extraPermissions: invitedUser.role === "admin" ? [] : body.extraPermissions ?? [],
-        revokedPermissions: invitedUser.role === "admin" ? [] : body.revokedPermissions ?? []
-      } satisfies CreateInvitationBody
+        extraPermissions: invitedUser.role === "admin" ? [] : (body.extraPermissions ?? []),
+        revokedPermissions: invitedUser.role === "admin" ? [] : (body.revokedPermissions ?? []),
+      } satisfies CreateInvitationBody,
     });
 
     return {
       invitedUser,
       assignment,
-      invitation
+      invitation,
     };
   }
 
@@ -117,7 +118,7 @@ export class AdminService extends AbstractAdminService {
     const users = await this.callUsersService<UserResponse[]>({
       method: "get",
       path: "/users",
-      query: { organizationId: currentUser.organizationId }
+      query: { organizationId: currentUser.organizationId },
     });
 
     const enrichedUsers = await Promise.all(
@@ -126,7 +127,7 @@ export class AdminService extends AbstractAdminService {
           this.callPermissionsService<UserPermissionAssignmentResponse>({
             method: "get",
             path: `/assignments/${user.id}`,
-            query: { organizationId: currentUser.organizationId }
+            query: { organizationId: currentUser.organizationId },
           }),
           this.callPermissionsService<EffectivePermissionsResponse>({
             method: "post",
@@ -134,40 +135,42 @@ export class AdminService extends AbstractAdminService {
             body: {
               organizationId: currentUser.organizationId,
               userId: user.id,
-              role: user.role
-            }
-          })
+              role: user.role,
+            },
+          }),
         ]);
         return {
           ...user,
           permissions: effectivePermissions.permissions,
-          permissionAssignment: assignment
+          permissionAssignment: assignment,
         };
-      })
+      }),
     );
     return {
-      users: enrichedUsers
+      users: enrichedUsers,
     };
   }
 
   async getOrganizationUser(currentUser: AuthUser, userId: string) {
     const user = await this.callUsersService<UserResponse>({
       method: "get",
-      path: `/users/${userId}`
+      path: `/users/${userId}`,
     });
     if (user.organizationId !== currentUser.organizationId) {
-      throw new ForbiddenException("Impossible d'accéder à un utilisateur d'une autre organisation");
+      throw new ForbiddenException(
+        "Impossible d'accéder à un utilisateur d'une autre organisation",
+      );
     }
 
     const [memberships, assignment, effectivePermissions] = await Promise.all([
       this.callUsersService<OrganizationMembershipResponse[]>({
         method: "get",
-        path: `/users/${userId}/organization-memberships`
+        path: `/users/${userId}/organization-memberships`,
       }),
       this.callPermissionsService<UserPermissionAssignmentResponse>({
         method: "get",
         path: `/assignments/${user.id}`,
-        query: { organizationId: currentUser.organizationId }
+        query: { organizationId: currentUser.organizationId },
       }),
       this.callPermissionsService<EffectivePermissionsResponse>({
         method: "post",
@@ -175,13 +178,13 @@ export class AdminService extends AbstractAdminService {
         body: {
           organizationId: currentUser.organizationId,
           userId: user.id,
-          role: user.role
-        }
-      })
+          role: user.role,
+        },
+      }),
     ]);
 
     const membershipForOrg = memberships.find(
-      (row) => row.organizationId === currentUser.organizationId
+      (row) => row.organizationId === currentUser.organizationId,
     );
 
     return {
@@ -189,26 +192,26 @@ export class AdminService extends AbstractAdminService {
         ...user,
         organizationMembershipStatus: membershipForOrg?.membershipStatus,
         permissions: effectivePermissions.permissions,
-        permissionAssignment: assignment
-      }
+        permissionAssignment: assignment,
+      },
     };
   }
 
   async assignUserPermissions(
     currentUser: AuthUser,
     userId: string,
-    body: UpdateUserPermissionsBody
+    body: UpdateUserPermissionsBody,
   ) {
     const targetUser = await this.callUsersService<UserResponse>({
       method: "get",
-      path: `/users/${userId}`
+      path: `/users/${userId}`,
     });
     if (targetUser.organizationId !== currentUser.organizationId) {
       throw new ForbiddenException("Impossible de gérer un utilisateur d'une autre organisation");
     }
     if (targetUser.role === "admin") {
       throw new BadRequestException(
-        "Les administrateurs d'organisation ont tous les droits et ne peuvent pas avoir de profils/permissions personnalisés"
+        "Les administrateurs d'organisation ont tous les droits et ne peuvent pas avoir de profils/permissions personnalisés",
       );
     }
 
@@ -220,8 +223,8 @@ export class AdminService extends AbstractAdminService {
         userId,
         profileId: body.profileId ?? null,
         extraPermissions: body.extraPermissions ?? [],
-        revokedPermissions: body.revokedPermissions ?? []
-      } satisfies AssignUserPermissionsBody
+        revokedPermissions: body.revokedPermissions ?? [],
+      } satisfies AssignUserPermissionsBody,
     });
 
     const effectivePermissions = await this.callPermissionsService<EffectivePermissionsResponse>({
@@ -230,22 +233,19 @@ export class AdminService extends AbstractAdminService {
       body: {
         organizationId: currentUser.organizationId,
         userId,
-        role: targetUser.role
-      }
+        role: targetUser.role,
+      },
     });
 
     return {
       userId,
       role: targetUser.role,
       assignment,
-      effectivePermissions: effectivePermissions.permissions
+      effectivePermissions: effectivePermissions.permissions,
     };
   }
 
-  async createPermissionProfile(
-    currentUser: AuthUser,
-    body: CreatePermissionProfileForOrgBody
-  ) {
+  async createPermissionProfile(currentUser: AuthUser, body: CreatePermissionProfileForOrgBody) {
     return this.callPermissionsService({
       method: "post",
       path: "/profiles",
@@ -253,8 +253,8 @@ export class AdminService extends AbstractAdminService {
         organizationId: currentUser.organizationId,
         name: body.name,
         description: body.description,
-        permissions: body.permissions
-      } satisfies CreatePermissionProfileBody
+        permissions: body.permissions,
+      } satisfies CreatePermissionProfileBody,
     });
   }
 
@@ -262,7 +262,7 @@ export class AdminService extends AbstractAdminService {
     return this.callPermissionsService({
       method: "get",
       path: "/profiles",
-      query: { organizationId: currentUser.organizationId }
+      query: { organizationId: currentUser.organizationId },
     });
   }
 
@@ -270,22 +270,22 @@ export class AdminService extends AbstractAdminService {
     return this.callPermissionsService({
       method: "get",
       path: `/profiles/${profileId}`,
-      query: { organizationId: currentUser.organizationId }
+      query: { organizationId: currentUser.organizationId },
     });
   }
 
   async updatePermissionProfile(
     currentUser: AuthUser,
     profileId: string,
-    body: UpdatePermissionProfileForOrgBody
+    body: UpdatePermissionProfileForOrgBody,
   ) {
     return this.callPermissionsService({
       method: "patch",
       path: `/profiles/${profileId}`,
       body: {
         organizationId: currentUser.organizationId,
-        ...body
-      } satisfies UpdatePermissionProfileBody
+        ...body,
+      } satisfies UpdatePermissionProfileBody,
     });
   }
 
@@ -293,18 +293,15 @@ export class AdminService extends AbstractAdminService {
     return this.callPermissionsService({
       method: "delete",
       path: `/profiles/${profileId}`,
-      query: { organizationId: currentUser.organizationId }
+      query: { organizationId: currentUser.organizationId },
     });
   }
 
-  async listInvitations(
-    currentUser: AuthUser,
-    status?: "pending" | "accepted" | "cancelled"
-  ) {
+  async listInvitations(currentUser: AuthUser, status?: "pending" | "accepted" | "cancelled") {
     return this.callPermissionsService({
       method: "get",
       path: "/invitations",
-      query: { organizationId: currentUser.organizationId, status }
+      query: { organizationId: currentUser.organizationId, status },
     });
   }
 
@@ -320,8 +317,8 @@ export class AdminService extends AbstractAdminService {
           method: params.method,
           url: `${USERS_URL}${params.path}`,
           data: params.body,
-          params: params.query
-        })
+          params: params.query,
+        }),
       );
       return response.data;
     } catch (err: unknown) {
@@ -341,8 +338,8 @@ export class AdminService extends AbstractAdminService {
           method: params.method,
           url: `${PERMISSIONS_URL}${params.path}`,
           data: params.body,
-          params: params.query
-        })
+          params: params.query,
+        }),
       );
       return response.data;
     } catch (err: unknown) {
@@ -353,8 +350,8 @@ export class AdminService extends AbstractAdminService {
   private rethrowAsHttpException(err: unknown): never {
     const status = (err as { response?: { status?: number } })?.response?.status;
     const message =
-      (err as { response?: { data?: { message?: string | string[] } } })?.response?.data
-        ?.message ?? "Downstream service error";
+      (err as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message ??
+      "Downstream service error";
 
     if (status === 400) throw new BadRequestException(message);
     if (status === 403) throw new ForbiddenException(message);

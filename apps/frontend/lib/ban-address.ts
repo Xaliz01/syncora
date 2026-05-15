@@ -36,7 +36,7 @@ export function banFeatureToPostalAddress(feature: BanFeature): PostalAddress {
     line2: undefined,
     postalCode: (p.postcode ?? "").trim(),
     city: (p.city ?? "").trim(),
-    country: "FR"
+    country: "FR",
   };
 }
 

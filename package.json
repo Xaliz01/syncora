@@ -9,8 +9,13 @@
     "packages/*"
   ],
   "scripts": {
+    "format:check": "prettier --check \"**/*.{ts,tsx,json,md,yml,yaml}\"",
+    "format:check:changed": "node scripts/prettier-check-changed.mjs",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md,yml,yaml}\"",
     "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run build:shared && node scripts/typecheck-all.mjs",
     "test": "npm run test --workspaces --if-present",
+    "test:e2e": "npm run e2e -w @syncora/frontend",
     "build": "npm run build --workspaces --if-present",
     "build:shared": "npm run build --workspace @syncora/shared --if-present",
     "e2e": "npm run e2e --workspace @syncora/frontend --if-present",
@@ -23,10 +28,10 @@
   },
   "devDependencies": {
     "concurrently": "^9.0.0",
+    "prettier": "^3.0.0",
     "wait-on": "^8.0.0"
   },
   "engines": {
     "node": ">=20.0.0"
   }
 }
-

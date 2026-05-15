@@ -1,15 +1,11 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException
-} from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import {
   activeDocumentFilter,
   type CreateCustomerBody,
   type CustomerResponse,
-  type UpdateCustomerBody
+  type UpdateCustomerBody,
 } from "@syncora/shared";
 import type { CustomerDocument } from "../persistence/customer.schema";
 import { AbstractCustomersService } from "./ports/customers.service.port";
@@ -18,7 +14,7 @@ import { AbstractCustomersService } from "./ports/customers.service.port";
 export class CustomersService extends AbstractCustomersService {
   constructor(
     @InjectModel("Customer")
-    private readonly customerModel: Model<CustomerDocument>
+    private readonly customerModel: Model<CustomerDocument>,
   ) {
     super();
   }
@@ -41,17 +37,17 @@ export class CustomersService extends AbstractCustomersService {
             line2: body.address.line2?.trim() || undefined,
             postalCode: body.address.postalCode.trim(),
             city: body.address.city.trim(),
-            country: (body.address.country ?? "FR").trim() || "FR"
+            country: (body.address.country ?? "FR").trim() || "FR",
           }
         : undefined,
-      notes: body.notes?.trim() || undefined
+      notes: body.notes?.trim() || undefined,
     });
     return this.toCustomerResponse(doc);
   }
 
   async listCustomers(
     organizationId: string,
-    filters?: { search?: string; ids?: string[] }
+    filters?: { search?: string; ids?: string[] },
   ): Promise<CustomerResponse[]> {
     const query: Record<string, unknown> = { organizationId, ...activeDocumentFilter };
 
@@ -71,7 +67,7 @@ export class CustomersService extends AbstractCustomersService {
         { email: { $regex: q, $options: "i" } },
         { phone: { $regex: q, $options: "i" } },
         { mobile: { $regex: q, $options: "i" } },
-        { legalIdentifier: { $regex: q, $options: "i" } }
+        { legalIdentifier: { $regex: q, $options: "i" } },
       ];
     }
 
@@ -101,10 +97,14 @@ export class CustomersService extends AbstractCustomersService {
       setUpdate.legalIdentifier =
         body.legalIdentifier === null ? null : body.legalIdentifier.trim() || null;
     }
-    if (body.email !== undefined) setUpdate.email = body.email === null ? null : body.email.trim() || null;
-    if (body.phone !== undefined) setUpdate.phone = body.phone === null ? null : body.phone.trim() || null;
-    if (body.mobile !== undefined) setUpdate.mobile = body.mobile === null ? null : body.mobile.trim() || null;
-    if (body.notes !== undefined) setUpdate.notes = body.notes === null ? null : body.notes.trim() || null;
+    if (body.email !== undefined)
+      setUpdate.email = body.email === null ? null : body.email.trim() || null;
+    if (body.phone !== undefined)
+      setUpdate.phone = body.phone === null ? null : body.phone.trim() || null;
+    if (body.mobile !== undefined)
+      setUpdate.mobile = body.mobile === null ? null : body.mobile.trim() || null;
+    if (body.notes !== undefined)
+      setUpdate.notes = body.notes === null ? null : body.notes.trim() || null;
     if (body.address !== undefined) {
       setUpdate.address =
         body.address === null
@@ -114,7 +114,7 @@ export class CustomersService extends AbstractCustomersService {
               line2: body.address.line2?.trim() || undefined,
               postalCode: body.address.postalCode.trim(),
               city: body.address.city.trim(),
-              country: (body.address.country ?? "FR").trim() || "FR"
+              country: (body.address.country ?? "FR").trim() || "FR",
             };
     }
 
@@ -122,7 +122,7 @@ export class CustomersService extends AbstractCustomersService {
       .findOneAndUpdate(
         { _id: id, organizationId: body.organizationId, ...activeDocumentFilter },
         { $set: setUpdate },
-        { new: true }
+        { new: true },
       )
       .exec();
     if (!doc) throw new NotFoundException("Client introuvable");
@@ -136,7 +136,7 @@ export class CustomersService extends AbstractCustomersService {
       .findOneAndUpdate(
         { _id: id, organizationId, ...activeDocumentFilter },
         { $set: { deletedAt: new Date() } },
-        { new: true }
+        { new: true },
       )
       .exec();
     if (!res) throw new NotFoundException("Client introuvable");
@@ -151,7 +151,7 @@ export class CustomersService extends AbstractCustomersService {
     } else if (body.kind === "individual") {
       if (!body.firstName?.trim() && !body.lastName?.trim()) {
         throw new BadRequestException(
-          "Le prénom ou le nom est obligatoire pour une personne physique"
+          "Le prénom ou le nom est obligatoire pour une personne physique",
         );
       }
     }
@@ -169,7 +169,7 @@ export class CustomersService extends AbstractCustomersService {
     }
     if (doc.kind === "individual" && !doc.firstName?.trim() && !doc.lastName?.trim()) {
       throw new BadRequestException(
-        "Le prénom ou le nom est obligatoire pour une personne physique"
+        "Le prénom ou le nom est obligatoire pour une personne physique",
       );
     }
   }
@@ -178,9 +178,7 @@ export class CustomersService extends AbstractCustomersService {
     if (doc.kind === "company") {
       return doc.companyName?.trim() || "Société";
     }
-    const parts = [doc.firstName, doc.lastName]
-      .filter((p) => p?.trim())
-      .map((p) => p!.trim());
+    const parts = [doc.firstName, doc.lastName].filter((p) => p?.trim()).map((p) => p!.trim());
     return parts.length > 0 ? parts.join(" ") : "Client";
   }
 
@@ -203,12 +201,12 @@ export class CustomersService extends AbstractCustomersService {
             line2: doc.address.line2,
             postalCode: doc.address.postalCode,
             city: doc.address.city,
-            country: doc.address.country ?? "FR"
+            country: doc.address.country ?? "FR",
           }
         : undefined,
       notes: doc.notes,
       createdAt: doc.get("createdAt")?.toISOString(),
-      updatedAt: doc.get("updatedAt")?.toISOString()
+      updatedAt: doc.get("updatedAt")?.toISOString(),
     };
   }
 }

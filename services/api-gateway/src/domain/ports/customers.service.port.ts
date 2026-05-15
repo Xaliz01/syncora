@@ -1,9 +1,4 @@
-import type {
-  AuthUser,
-  CustomerResponse,
-  CustomerKind,
-  PostalAddress
-} from "@syncora/shared";
+import type { AuthUser, CustomerResponse, CustomerKind, PostalAddress } from "@syncora/shared";
 
 export interface CreateCustomerForOrgBody {
   kind: CustomerKind;
@@ -34,18 +29,18 @@ export interface UpdateCustomerForOrgBody {
 export abstract class AbstractCustomersGatewayService {
   abstract createCustomer(
     user: AuthUser,
-    body: CreateCustomerForOrgBody
+    body: CreateCustomerForOrgBody,
   ): Promise<CustomerResponse>;
   abstract listCustomers(
     user: AuthUser,
-    filters?: { search?: string; ids?: string }
+    filters?: { search?: string; ids?: string },
   ): Promise<CustomerResponse[]>;
   abstract listCustomersByIds(user: AuthUser, ids: string[]): Promise<CustomerResponse[]>;
   abstract getCustomer(user: AuthUser, customerId: string): Promise<CustomerResponse>;
   abstract updateCustomer(
     user: AuthUser,
     customerId: string,
-    body: UpdateCustomerForOrgBody
+    body: UpdateCustomerForOrgBody,
   ): Promise<CustomerResponse>;
   abstract deleteCustomer(user: AuthUser, customerId: string): Promise<{ deleted: true }>;
 }

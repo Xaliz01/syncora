@@ -3,7 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
-  NotFoundException
+  NotFoundException,
 } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
@@ -15,14 +15,14 @@ import type {
   CreateArticleMovementBody,
   InterventionArticleUsageResponse,
   StockMovementResponse,
-  UpdateArticleBody
+  UpdateArticleBody,
 } from "@syncora/shared";
 import {
   AbstractStockGatewayService,
   type AddInterventionArticleUsageForOrgBody,
   type CreateArticleForOrgBody,
   type UpdateArticleForOrgBody,
-  type CreateArticleMovementForOrgBody
+  type CreateArticleMovementForOrgBody,
 } from "./ports/stock.service.port";
 
 const STOCK_URL = process.env.STOCK_SERVICE_URL ?? "http://localhost:3007";
@@ -39,22 +39,22 @@ export class StockGatewayService extends AbstractStockGatewayService {
       path: "/articles",
       body: {
         organizationId: user.organizationId,
-        ...body
-      } as CreateArticleBody
+        ...body,
+      } as CreateArticleBody,
     });
   }
 
   async listArticles(
     user: AuthUser,
-    filters?: { search?: string; lowStockOnly?: boolean; activeOnly?: boolean }
+    filters?: { search?: string; lowStockOnly?: boolean; activeOnly?: boolean },
   ) {
     return this.callStockService<ArticleResponse[]>({
       method: "get",
       path: "/articles",
       query: {
         organizationId: user.organizationId,
-        ...filters
-      }
+        ...filters,
+      },
     });
   }
 
@@ -62,7 +62,7 @@ export class StockGatewayService extends AbstractStockGatewayService {
     return this.callStockService<ArticleResponse>({
       method: "get",
       path: `/articles/${articleId}`,
-      query: { organizationId: user.organizationId }
+      query: { organizationId: user.organizationId },
     });
   }
 
@@ -72,8 +72,8 @@ export class StockGatewayService extends AbstractStockGatewayService {
       path: `/articles/${articleId}`,
       body: {
         organizationId: user.organizationId,
-        ...body
-      } as UpdateArticleBody
+        ...body,
+      } as UpdateArticleBody,
     });
   }
 
@@ -81,7 +81,7 @@ export class StockGatewayService extends AbstractStockGatewayService {
     return this.callStockService<{ deleted: true }>({
       method: "delete",
       path: `/articles/${articleId}`,
-      query: { organizationId: user.organizationId }
+      query: { organizationId: user.organizationId },
     });
   }
 
@@ -93,29 +93,29 @@ export class StockGatewayService extends AbstractStockGatewayService {
         organizationId: user.organizationId,
         actorUserId: user.id,
         actorUserName: user.name,
-        ...body
-      } as CreateArticleMovementBody
+        ...body,
+      } as CreateArticleMovementBody,
     });
   }
 
   async listArticleMovements(
     user: AuthUser,
-    filters?: { articleId?: string; interventionId?: string; caseId?: string; limit?: number }
+    filters?: { articleId?: string; interventionId?: string; caseId?: string; limit?: number },
   ) {
     return this.callStockService<StockMovementResponse[]>({
       method: "get",
       path: "/movements",
       query: {
         organizationId: user.organizationId,
-        ...filters
-      }
+        ...filters,
+      },
     });
   }
 
   async addInterventionArticleUsage(
     user: AuthUser,
     interventionId: string,
-    body: AddInterventionArticleUsageForOrgBody
+    body: AddInterventionArticleUsageForOrgBody,
   ) {
     return this.callStockService<StockMovementResponse>({
       method: "post",
@@ -124,8 +124,8 @@ export class StockGatewayService extends AbstractStockGatewayService {
         organizationId: user.organizationId,
         actorUserId: user.id,
         actorUserName: user.name,
-        ...body
-      } as AddInterventionArticleUsageBody
+        ...body,
+      } as AddInterventionArticleUsageBody,
     });
   }
 
@@ -133,7 +133,7 @@ export class StockGatewayService extends AbstractStockGatewayService {
     return this.callStockService<InterventionArticleUsageResponse[]>({
       method: "get",
       path: `/interventions/${interventionId}/usage`,
-      query: { organizationId: user.organizationId }
+      query: { organizationId: user.organizationId },
     });
   }
 
@@ -149,8 +149,8 @@ export class StockGatewayService extends AbstractStockGatewayService {
           method: params.method,
           url: `${STOCK_URL}${params.path}`,
           data: params.body,
-          params: params.query
-        })
+          params: params.query,
+        }),
       );
       return response.data;
     } catch (err: unknown) {
@@ -161,8 +161,8 @@ export class StockGatewayService extends AbstractStockGatewayService {
   private rethrowAsHttpException(err: unknown): never {
     const status = (err as { response?: { status?: number } })?.response?.status;
     const message =
-      (err as { response?: { data?: { message?: string | string[] } } })?.response?.data
-        ?.message ?? "Downstream service error";
+      (err as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message ??
+      "Downstream service error";
 
     if (status === 400) throw new BadRequestException(message);
     if (status === 403) throw new ForbiddenException(message);

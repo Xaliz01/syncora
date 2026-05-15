@@ -2,7 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
-  NotFoundException
+  NotFoundException,
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
@@ -20,7 +20,7 @@ import {
   type ResolveEffectivePermissionsBody,
   type UpdatePermissionProfileBody,
   type UserPermissionAssignmentResponse,
-  type UserRole
+  type UserRole,
 } from "@syncora/shared";
 import type { PermissionProfileDocument } from "../persistence/permission-profile.schema";
 import type { UserPermissionAssignmentDocument } from "../persistence/user-permission-assignment.schema";
@@ -29,7 +29,7 @@ import { AbstractPermissionsService } from "./ports/permissions.service.port";
 
 const ROLE_DEFAULT_PERMISSIONS: Record<UserRole, PermissionCode[]> = {
   admin: [...ASSIGNABLE_PERMISSION_CODES],
-  member: []
+  member: [],
 };
 
 @Injectable()
@@ -40,7 +40,7 @@ export class PermissionsService extends AbstractPermissionsService {
     @InjectModel("UserPermissionAssignment")
     private readonly userAssignmentModel: Model<UserPermissionAssignmentDocument>,
     @InjectModel("Invitation")
-    private readonly invitationModel: Model<InvitationDocument>
+    private readonly invitationModel: Model<InvitationDocument>,
   ) {
     super();
   }
@@ -52,7 +52,7 @@ export class PermissionsService extends AbstractPermissionsService {
         organizationId: body.organizationId,
         name: body.name,
         description: body.description,
-        permissions
+        permissions,
       });
       return this.toProfileResponse(doc);
     } catch (err: unknown) {
@@ -71,10 +71,7 @@ export class PermissionsService extends AbstractPermissionsService {
     return docs.map((doc) => this.toProfileResponse(doc));
   }
 
-  async findProfileById(
-    id: string,
-    organizationId: string
-  ): Promise<PermissionProfileResponse> {
+  async findProfileById(id: string, organizationId: string): Promise<PermissionProfileResponse> {
     const doc = await this.permissionProfileModel
       .findOne({ _id: id, organizationId, ...activeDocumentFilter })
       .exec();
@@ -84,7 +81,7 @@ export class PermissionsService extends AbstractPermissionsService {
 
   async updateProfile(
     id: string,
-    body: UpdatePermissionProfileBody
+    body: UpdatePermissionProfileBody,
   ): Promise<PermissionProfileResponse> {
     const update: Partial<{
       name: string;
@@ -101,7 +98,7 @@ export class PermissionsService extends AbstractPermissionsService {
         .findOneAndUpdate(
           { _id: id, organizationId: body.organizationId, ...activeDocumentFilter },
           { $set: update },
-          { new: true }
+          { new: true },
         )
         .exec();
       if (!doc) throw new NotFoundException("Profile not found");
@@ -118,23 +115,23 @@ export class PermissionsService extends AbstractPermissionsService {
     const result = await this.permissionProfileModel
       .updateOne(
         { _id: id, organizationId, ...activeDocumentFilter },
-        { $set: { deletedAt: new Date() } }
+        { $set: { deletedAt: new Date() } },
       )
       .exec();
     if (!result.matchedCount) throw new NotFoundException("Profile not found");
     await this.userAssignmentModel.updateMany(
       { organizationId, profileId: id },
-      { $unset: { profileId: 1 } }
+      { $unset: { profileId: 1 } },
     );
     await this.invitationModel.updateMany(
       { organizationId, profileId: id, status: "pending" },
-      { $unset: { profileId: 1 } }
+      { $unset: { profileId: 1 } },
     );
     return { deleted: true };
   }
 
   async assignUserPermissions(
-    body: AssignUserPermissionsBody
+    body: AssignUserPermissionsBody,
   ): Promise<UserPermissionAssignmentResponse> {
     const extraPermissions = this.normalizePermissions(body.extraPermissions ?? []);
     const revokedPermissions = this.normalizePermissions(body.revokedPermissions ?? []);
@@ -145,7 +142,7 @@ export class PermissionsService extends AbstractPermissionsService {
         .findOne({
           _id: profileId,
           organizationId: body.organizationId,
-          ...activeDocumentFilter
+          ...activeDocumentFilter,
         })
         .exec();
       if (!profile) {
@@ -161,10 +158,10 @@ export class PermissionsService extends AbstractPermissionsService {
           $set: {
             profileId,
             extraPermissions,
-            revokedPermissions
-          }
+            revokedPermissions,
+          },
         },
-        { upsert: true, new: true, setDefaultsOnInsert: true }
+        { upsert: true, new: true, setDefaultsOnInsert: true },
       )
       .exec();
     return this.toAssignmentResponse(doc, profilePermissions);
@@ -172,29 +169,27 @@ export class PermissionsService extends AbstractPermissionsService {
 
   async getUserAssignment(
     organizationId: string,
-    userId: string
+    userId: string,
   ): Promise<UserPermissionAssignmentResponse> {
-    const assignment = await this.userAssignmentModel
-      .findOne({ organizationId, userId })
-      .exec();
+    const assignment = await this.userAssignmentModel.findOne({ organizationId, userId }).exec();
     if (!assignment) {
       return {
         organizationId,
         userId,
         extraPermissions: [],
         revokedPermissions: [],
-        effectivePermissions: []
+        effectivePermissions: [],
       };
     }
     const profilePermissions = await this.getProfilePermissions(
       organizationId,
-      assignment.profileId
+      assignment.profileId,
     );
     return this.toAssignmentResponse(assignment, profilePermissions);
   }
 
   async resolveEffectivePermissions(
-    body: ResolveEffectivePermissionsBody
+    body: ResolveEffectivePermissionsBody,
   ): Promise<EffectivePermissionsResponse> {
     // Admin users always keep the full permission set for their organization.
     if (body.role === "admin") {
@@ -210,12 +205,15 @@ export class PermissionsService extends AbstractPermissionsService {
 
     const profilePermissions = await this.getProfilePermissions(
       body.organizationId,
-      assignment.profileId
+      assignment.profileId,
     );
     const merged = this.mergePermissions(defaultPermissions, profilePermissions);
-    const plusExtra = this.mergePermissions(merged, assignment.extraPermissions as PermissionCode[]);
+    const plusExtra = this.mergePermissions(
+      merged,
+      assignment.extraPermissions as PermissionCode[],
+    );
     const permissions = plusExtra.filter(
-      (permission) => !(assignment.revokedPermissions as PermissionCode[]).includes(permission)
+      (permission) => !(assignment.revokedPermissions as PermissionCode[]).includes(permission),
     );
     return { permissions: this.normalizePermissions(permissions) };
   }
@@ -227,7 +225,7 @@ export class PermissionsService extends AbstractPermissionsService {
         .findOne({
           _id: profileId,
           organizationId: body.organizationId,
-          ...activeDocumentFilter
+          ...activeDocumentFilter,
         })
         .exec();
       if (!profile) throw new NotFoundException("Profile not found in this organization");
@@ -245,7 +243,7 @@ export class PermissionsService extends AbstractPermissionsService {
         extraPermissions,
         revokedPermissions,
         invitationToken: randomUUID(),
-        status: "pending"
+        status: "pending",
       });
       return this.toInvitationResponse(doc);
     } catch (err: unknown) {
@@ -258,10 +256,10 @@ export class PermissionsService extends AbstractPermissionsService {
 
   async listInvitations(
     organizationId: string,
-    status?: "pending" | "accepted" | "cancelled"
+    status?: "pending" | "accepted" | "cancelled",
   ): Promise<InvitationResponse[]> {
     const query: { organizationId: string; status?: "pending" | "accepted" | "cancelled" } = {
-      organizationId
+      organizationId,
     };
     if (status) query.status = status;
     const docs = await this.invitationModel.find(query).sort({ createdAt: -1 }).exec();
@@ -288,7 +286,7 @@ export class PermissionsService extends AbstractPermissionsService {
 
   private async getProfilePermissions(
     organizationId: string,
-    profileId?: string
+    profileId?: string,
   ): Promise<PermissionCode[]> {
     if (!profileId) return [];
     const profile = await this.permissionProfileModel
@@ -307,10 +305,7 @@ export class PermissionsService extends AbstractPermissionsService {
     return [...new Set(permissions)];
   }
 
-  private mergePermissions(
-    first: PermissionCode[],
-    second: PermissionCode[]
-  ): PermissionCode[] {
+  private mergePermissions(first: PermissionCode[], second: PermissionCode[]): PermissionCode[] {
     return [...new Set([...first, ...second])];
   }
 
@@ -322,18 +317,20 @@ export class PermissionsService extends AbstractPermissionsService {
       description: doc.description,
       permissions: this.normalizePermissions(doc.permissions as PermissionCode[]),
       createdAt: doc.get("createdAt")?.toISOString(),
-      updatedAt: doc.get("updatedAt")?.toISOString()
+      updatedAt: doc.get("updatedAt")?.toISOString(),
     };
   }
 
   private toAssignmentResponse(
     doc: UserPermissionAssignmentDocument,
-    profilePermissions: PermissionCode[]
+    profilePermissions: PermissionCode[],
   ): UserPermissionAssignmentResponse {
     const extraPermissions = this.normalizePermissions(doc.extraPermissions as PermissionCode[]);
-    const revokedPermissions = this.normalizePermissions(doc.revokedPermissions as PermissionCode[]);
+    const revokedPermissions = this.normalizePermissions(
+      doc.revokedPermissions as PermissionCode[],
+    );
     const effectivePermissions = this.mergePermissions(profilePermissions, extraPermissions).filter(
-      (permission) => !revokedPermissions.includes(permission)
+      (permission) => !revokedPermissions.includes(permission),
     );
     return {
       organizationId: doc.organizationId,
@@ -342,7 +339,7 @@ export class PermissionsService extends AbstractPermissionsService {
       extraPermissions,
       revokedPermissions,
       effectivePermissions: this.normalizePermissions(effectivePermissions),
-      updatedAt: doc.get("updatedAt")?.toISOString()
+      updatedAt: doc.get("updatedAt")?.toISOString(),
     };
   }
 
@@ -360,7 +357,7 @@ export class PermissionsService extends AbstractPermissionsService {
       extraPermissions: this.normalizePermissions(doc.extraPermissions as PermissionCode[]),
       revokedPermissions: this.normalizePermissions(doc.revokedPermissions as PermissionCode[]),
       createdAt: doc.get("createdAt")?.toISOString(),
-      acceptedAt: doc.acceptedAt?.toISOString()
+      acceptedAt: doc.acceptedAt?.toISOString(),
     };
   }
 

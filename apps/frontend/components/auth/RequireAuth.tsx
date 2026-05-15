@@ -3,7 +3,10 @@
 import React from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "./AuthContext";
-import { hasActiveSubscriptionAccess, isOrganizationSubscriptionRoute } from "@/lib/subscription-access";
+import {
+  hasActiveSubscriptionAccess,
+  isOrganizationSubscriptionRoute,
+} from "@/lib/subscription-access";
 import { SubscriptionGateScreen } from "@/components/subscription/SubscriptionGateScreen";
 
 export function RequireAuth({ children }: { children: React.ReactNode }) {

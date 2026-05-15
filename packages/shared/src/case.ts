@@ -4,19 +4,9 @@ import type { CustomerKind } from "./customer";
 
 // ── Statuses ──
 
-export type CaseStatus =
-  | "draft"
-  | "open"
-  | "in_progress"
-  | "waiting"
-  | "completed"
-  | "cancelled";
+export type CaseStatus = "draft" | "open" | "in_progress" | "waiting" | "completed" | "cancelled";
 
-export type InterventionStatus =
-  | "planned"
-  | "in_progress"
-  | "completed"
-  | "cancelled";
+export type InterventionStatus = "planned" | "in_progress" | "completed" | "cancelled";
 
 export type TodoItemStatus = "pending" | "done" | "skipped";
 export type CasePriority = "low" | "medium" | "high" | "urgent";

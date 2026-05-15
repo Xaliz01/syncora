@@ -58,4 +58,3 @@ tech:
         - Tests e2e
         - Build & push images Docker conditionnel (par brique modifiée)
         - Déploiement AWS ECS
-

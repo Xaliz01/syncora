@@ -1,9 +1,4 @@
-import type {
-  AuthUser,
-  TeamResponse,
-  UpdateTeamBody,
-  TeamStatus
-} from "@syncora/shared";
+import type { AuthUser, TeamResponse, UpdateTeamBody, TeamStatus } from "@syncora/shared";
 
 export abstract class AbstractTeamsGatewayService {
   abstract createTeam(
@@ -14,30 +9,24 @@ export abstract class AbstractTeamsGatewayService {
       technicianIds?: string[];
       status?: TeamStatus;
       calendarColor?: string;
-    }
+    },
   ): Promise<TeamResponse>;
   abstract listTeams(currentUser: AuthUser): Promise<TeamResponse[]>;
-  abstract getTeam(
-    currentUser: AuthUser,
-    teamId: string
-  ): Promise<TeamResponse>;
+  abstract getTeam(currentUser: AuthUser, teamId: string): Promise<TeamResponse>;
   abstract updateTeam(
     currentUser: AuthUser,
     teamId: string,
-    body: UpdateTeamBody
+    body: UpdateTeamBody,
   ): Promise<TeamResponse>;
-  abstract deleteTeam(
-    currentUser: AuthUser,
-    teamId: string
-  ): Promise<{ deleted: true }>;
+  abstract deleteTeam(currentUser: AuthUser, teamId: string): Promise<{ deleted: true }>;
   abstract addMember(
     currentUser: AuthUser,
     teamId: string,
-    technicianId: string
+    technicianId: string,
   ): Promise<TeamResponse>;
   abstract removeMember(
     currentUser: AuthUser,
     teamId: string,
-    technicianId: string
+    technicianId: string,
   ): Promise<TeamResponse>;
 }

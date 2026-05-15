@@ -7,35 +7,32 @@ import type {
   PermissionProfileResponse,
   ResolveEffectivePermissionsBody,
   UpdatePermissionProfileBody,
-  UserPermissionAssignmentResponse
+  UserPermissionAssignmentResponse,
 } from "@syncora/shared";
 
 export abstract class AbstractPermissionsService {
   abstract createProfile(body: CreatePermissionProfileBody): Promise<PermissionProfileResponse>;
   abstract listProfiles(organizationId: string): Promise<PermissionProfileResponse[]>;
-  abstract findProfileById(
-    id: string,
-    organizationId: string
-  ): Promise<PermissionProfileResponse>;
+  abstract findProfileById(id: string, organizationId: string): Promise<PermissionProfileResponse>;
   abstract updateProfile(
     id: string,
-    body: UpdatePermissionProfileBody
+    body: UpdatePermissionProfileBody,
   ): Promise<PermissionProfileResponse>;
   abstract deleteProfile(id: string, organizationId: string): Promise<{ deleted: true }>;
   abstract assignUserPermissions(
-    body: AssignUserPermissionsBody
+    body: AssignUserPermissionsBody,
   ): Promise<UserPermissionAssignmentResponse>;
   abstract getUserAssignment(
     organizationId: string,
-    userId: string
+    userId: string,
   ): Promise<UserPermissionAssignmentResponse>;
   abstract resolveEffectivePermissions(
-    body: ResolveEffectivePermissionsBody
+    body: ResolveEffectivePermissionsBody,
   ): Promise<EffectivePermissionsResponse>;
   abstract createInvitation(body: CreateInvitationBody): Promise<InvitationResponse>;
   abstract listInvitations(
     organizationId: string,
-    status?: "pending" | "accepted" | "cancelled"
+    status?: "pending" | "accepted" | "cancelled",
   ): Promise<InvitationResponse[]>;
   abstract resolveInvitation(invitationToken: string): Promise<InvitationResponse>;
   abstract acceptInvitation(invitationToken: string): Promise<InvitationResponse>;

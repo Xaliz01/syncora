@@ -15,7 +15,7 @@ import {
   type UpdateCaseBody,
   type UpdateCaseTemplateBody,
   type UpdateInterventionBody,
-  type UpdateTodoBody
+  type UpdateTodoBody,
 } from "@syncora/shared";
 import type { CaseTemplateDocument } from "../persistence/case-template.schema";
 import type { CaseDocument } from "../persistence/case.schema";
@@ -30,7 +30,7 @@ export class CasesService extends AbstractCasesService {
     @InjectModel("Case")
     private readonly caseModel: Model<CaseDocument>,
     @InjectModel("Intervention")
-    private readonly interventionModel: Model<InterventionDocument>
+    private readonly interventionModel: Model<InterventionDocument>,
   ) {
     super();
   }
@@ -47,8 +47,8 @@ export class CasesService extends AbstractCasesService {
           name: s.name,
           description: s.description,
           order: s.order ?? i,
-          todos: s.todos ?? []
-        }))
+          todos: s.todos ?? [],
+        })),
       });
       return this.toTemplateResponse(doc);
     } catch (err: unknown) {
@@ -84,7 +84,7 @@ export class CasesService extends AbstractCasesService {
         name: s.name,
         description: s.description,
         order: s.order ?? i,
-        todos: s.todos ?? []
+        todos: s.todos ?? [],
       }));
     }
     try {
@@ -92,7 +92,7 @@ export class CasesService extends AbstractCasesService {
         .findOneAndUpdate(
           { _id: id, organizationId: body.organizationId, ...activeDocumentFilter },
           { $set: update },
-          { new: true }
+          { new: true },
         )
         .exec();
       if (!doc) throw new NotFoundException("Template not found");
@@ -109,7 +109,7 @@ export class CasesService extends AbstractCasesService {
     const result = await this.templateModel
       .updateOne(
         { _id: id, organizationId, ...activeDocumentFilter },
-        { $set: { deletedAt: new Date() } }
+        { $set: { deletedAt: new Date() } },
       )
       .exec();
     if (!result.matchedCount) throw new NotFoundException("Template not found");
@@ -126,7 +126,7 @@ export class CasesService extends AbstractCasesService {
         .findOne({
           _id: body.templateId,
           organizationId: body.organizationId,
-          ...activeDocumentFilter
+          ...activeDocumentFilter,
         })
         .exec();
       if (!template) throw new NotFoundException("Case template not found");
@@ -139,8 +139,8 @@ export class CasesService extends AbstractCasesService {
           id: new Types.ObjectId().toHexString(),
           label: t.label,
           description: t.description,
-          status: "pending" as const
-        }))
+          status: "pending" as const,
+        })),
       }));
     }
 
@@ -155,7 +155,7 @@ export class CasesService extends AbstractCasesService {
       dueDate: body.dueDate ? new Date(body.dueDate) : undefined,
       tags: body.tags ?? [],
       steps,
-      status: "draft"
+      status: "draft",
     });
 
     return this.toCaseResponse(doc);
@@ -168,14 +168,14 @@ export class CasesService extends AbstractCasesService {
       assigneeId?: string;
       priority?: string;
       search?: string;
-    }
+    },
   ): Promise<CaseSummaryResponse[]> {
     const query: Record<string, unknown> = { organizationId, ...activeDocumentFilter };
     if (filters?.status) query.status = filters.status;
     if (filters?.assigneeId) {
       query.$or = [
         { assignees: { $elemMatch: { userId: filters.assigneeId } } },
-        { assigneeId: filters.assigneeId }
+        { assigneeId: filters.assigneeId },
       ];
     }
     if (filters?.priority) query.priority = filters.priority;
@@ -183,10 +183,7 @@ export class CasesService extends AbstractCasesService {
       query.title = { $regex: filters.search, $options: "i" };
     }
 
-    const docs = await this.caseModel
-      .find(query)
-      .sort({ updatedAt: -1 })
-      .exec();
+    const docs = await this.caseModel.find(query).sort({ updatedAt: -1 }).exec();
 
     return docs.map((d) => this.toCaseSummary(d));
   }
@@ -206,11 +203,11 @@ export class CasesService extends AbstractCasesService {
     if (body.status !== undefined) setUpdate.status = body.status;
     if (body.priority !== undefined) setUpdate.priority = body.priority;
     if (body.assignees !== undefined) setUpdate.assignees = body.assignees;
-    if (body.dueDate !== undefined) setUpdate.dueDate = body.dueDate ? new Date(body.dueDate) : null;
+    if (body.dueDate !== undefined)
+      setUpdate.dueDate = body.dueDate ? new Date(body.dueDate) : null;
     if (body.tags !== undefined) setUpdate.tags = body.tags;
     if (body.customerId !== undefined) {
-      setUpdate.customerId =
-        body.customerId === null ? null : body.customerId.trim() || undefined;
+      setUpdate.customerId = body.customerId === null ? null : body.customerId.trim() || undefined;
     }
 
     const mongoUpdate: Record<string, unknown> = { $set: setUpdate };
@@ -222,7 +219,7 @@ export class CasesService extends AbstractCasesService {
       .findOneAndUpdate(
         { _id: id, organizationId: body.organizationId, ...activeDocumentFilter },
         mongoUpdate,
-        { new: true }
+        { new: true },
       )
       .exec();
     if (!doc) throw new NotFoundException("Case not found");
@@ -232,16 +229,13 @@ export class CasesService extends AbstractCasesService {
   async deleteCase(id: string, organizationId: string): Promise<{ deleted: true }> {
     const now = new Date();
     const result = await this.caseModel
-      .updateOne(
-        { _id: id, organizationId, ...activeDocumentFilter },
-        { $set: { deletedAt: now } }
-      )
+      .updateOne({ _id: id, organizationId, ...activeDocumentFilter }, { $set: { deletedAt: now } })
       .exec();
     if (!result.matchedCount) throw new NotFoundException("Case not found");
     await this.interventionModel
       .updateMany(
         { caseId: id, organizationId, ...activeDocumentFilter },
-        { $set: { deletedAt: now } }
+        { $set: { deletedAt: now } },
       )
       .exec();
     return { deleted: true };
@@ -281,7 +275,7 @@ export class CasesService extends AbstractCasesService {
       .findOne({
         _id: body.caseId,
         organizationId: body.organizationId,
-        ...activeDocumentFilter
+        ...activeDocumentFilter,
       })
       .exec();
     if (!caseDoc) throw new NotFoundException("Case not found");
@@ -295,12 +289,12 @@ export class CasesService extends AbstractCasesService {
       assignedTeamId: body.assignedTeamId,
       scheduledStart: body.scheduledStart ? new Date(body.scheduledStart) : undefined,
       scheduledEnd: body.scheduledEnd ? new Date(body.scheduledEnd) : undefined,
-      status: "planned"
+      status: "planned",
     });
 
     await this.caseModel.updateOne(
       { _id: body.caseId, ...activeDocumentFilter },
-      { $inc: { interventionCount: 1 } }
+      { $inc: { interventionCount: 1 } },
     );
 
     return this.toInterventionResponse(doc, caseDoc.title);
@@ -316,7 +310,7 @@ export class CasesService extends AbstractCasesService {
       endDate?: string;
       status?: string;
       unscheduled?: boolean;
-    }
+    },
   ): Promise<InterventionResponse[]> {
     const query: Record<string, unknown> = { organizationId, ...activeDocumentFilter };
     if (filters?.caseId) query.caseId = filters.caseId;
@@ -332,10 +326,7 @@ export class CasesService extends AbstractCasesService {
       query.scheduledStart = dateFilter;
     }
 
-    const docs = await this.interventionModel
-      .find(query)
-      .sort({ scheduledStart: 1 })
-      .exec();
+    const docs = await this.interventionModel.find(query).sort({ scheduledStart: 1 }).exec();
 
     const caseIds = [...new Set(docs.map((d) => d.caseId))];
     const cases = await this.caseModel
@@ -344,9 +335,7 @@ export class CasesService extends AbstractCasesService {
       .exec();
     const caseMap = new Map(cases.map((c) => [c._id.toString(), c.title]));
 
-    return docs.map((d) =>
-      this.toInterventionResponse(d, caseMap.get(d.caseId))
-    );
+    return docs.map((d) => this.toInterventionResponse(d, caseMap.get(d.caseId)));
   }
 
   async getIntervention(id: string, organizationId: string): Promise<InterventionResponse> {
@@ -361,7 +350,10 @@ export class CasesService extends AbstractCasesService {
     return this.toInterventionResponse(doc, caseDoc?.title);
   }
 
-  async updateIntervention(id: string, body: UpdateInterventionBody): Promise<InterventionResponse> {
+  async updateIntervention(
+    id: string,
+    body: UpdateInterventionBody,
+  ): Promise<InterventionResponse> {
     const update: Record<string, unknown> = {};
     if (body.title !== undefined) update.title = body.title;
     if (body.description !== undefined) update.description = body.description;
@@ -380,7 +372,7 @@ export class CasesService extends AbstractCasesService {
       .findOneAndUpdate(
         { _id: id, organizationId: body.organizationId, ...activeDocumentFilter },
         { $set: update },
-        { new: true }
+        { new: true },
       )
       .exec();
     if (!doc) throw new NotFoundException("Intervention not found");
@@ -400,7 +392,7 @@ export class CasesService extends AbstractCasesService {
     await this.interventionModel.updateOne({ _id: id }, { $set: { deletedAt: now } });
     await this.caseModel.updateOne(
       { _id: doc.caseId, ...activeDocumentFilter },
-      { $inc: { interventionCount: -1 } }
+      { $inc: { interventionCount: -1 } },
     );
     return { deleted: true };
   }
@@ -417,10 +409,7 @@ export class CasesService extends AbstractCasesService {
       organizationId,
       ...activeDocumentFilter,
       status: { $nin: ["completed", "cancelled"] },
-      $or: [
-        { assignees: { $elemMatch: { userId } } },
-        { assigneeId: userId }
-      ]
+      $or: [{ assignees: { $elemMatch: { userId } } }, { assigneeId: userId }],
     };
 
     const [assignedCases, upcomingInterventions, completedThisWeek] = await Promise.all([
@@ -431,7 +420,7 @@ export class CasesService extends AbstractCasesService {
           ...activeDocumentFilter,
           $or: [{ assigneeId: userId }, { assigneeId: { $exists: false } }],
           scheduledStart: { $gte: now },
-          status: { $ne: "cancelled" }
+          status: { $ne: "cancelled" },
         })
         .sort({ scheduledStart: 1 })
         .limit(20)
@@ -441,15 +430,12 @@ export class CasesService extends AbstractCasesService {
         ...activeDocumentFilter,
         status: "completed",
         updatedAt: { $gte: startOfWeek },
-        $or: [
-          { assignees: { $elemMatch: { userId } } },
-          { assigneeId: userId }
-        ]
-      })
+        $or: [{ assignees: { $elemMatch: { userId } } }, { assigneeId: userId }],
+      }),
     ]);
 
     const overdueCases = assignedCases.filter(
-      (c) => c.dueDate && c.dueDate < now && c.status !== "completed" && c.status !== "cancelled"
+      (c) => c.dueDate && c.dueDate < now && c.status !== "completed" && c.status !== "cancelled",
     );
 
     const caseIds = [...new Set(upcomingInterventions.map((i) => i.caseId))];
@@ -462,15 +448,15 @@ export class CasesService extends AbstractCasesService {
     return {
       assignedCases: assignedCases.map((c) => this.toCaseSummary(c)),
       upcomingInterventions: upcomingInterventions.map((i) =>
-        this.toInterventionResponse(i, caseMap.get(i.caseId))
+        this.toInterventionResponse(i, caseMap.get(i.caseId)),
       ),
       overdueCases: overdueCases.map((c) => this.toCaseSummary(c)),
       stats: {
         totalAssigned: assignedCases.length,
         inProgress: assignedCases.filter((c) => c.status === "in_progress").length,
         completedThisWeek,
-        overdue: overdueCases.length
-      }
+        overdue: overdueCases.length,
+      },
     };
   }
 
@@ -520,11 +506,11 @@ export class CasesService extends AbstractCasesService {
         order: s.order,
         todos: (s.todos ?? []).map((t) => ({
           label: t.label,
-          description: t.description
-        }))
+          description: t.description,
+        })),
       })),
       createdAt: doc.get("createdAt")?.toISOString(),
-      updatedAt: doc.get("updatedAt")?.toISOString()
+      updatedAt: doc.get("updatedAt")?.toISOString(),
     };
   }
 
@@ -537,8 +523,8 @@ export class CasesService extends AbstractCasesService {
       return [
         {
           userId: doc.assigneeId,
-          name: doc.assigneeName?.trim() || doc.assigneeId
-        }
+          name: doc.assigneeName?.trim() || doc.assigneeId,
+        },
       ];
     }
     return [];
@@ -568,13 +554,13 @@ export class CasesService extends AbstractCasesService {
           description: t.description,
           status: t.status,
           completedAt: t.completedAt?.toISOString(),
-          completedBy: t.completedBy
-        }))
+          completedBy: t.completedBy,
+        })),
       })),
       progress: this.computeProgress(doc),
       interventionCount: doc.interventionCount ?? 0,
       createdAt: doc.get("createdAt")?.toISOString(),
-      updatedAt: doc.get("updatedAt")?.toISOString()
+      updatedAt: doc.get("updatedAt")?.toISOString(),
     };
   }
 
@@ -593,13 +579,13 @@ export class CasesService extends AbstractCasesService {
       interventionCount: doc.interventionCount ?? 0,
       nextTodo: this.getNextTodo(doc),
       createdAt: doc.get("createdAt")?.toISOString(),
-      updatedAt: doc.get("updatedAt")?.toISOString()
+      updatedAt: doc.get("updatedAt")?.toISOString(),
     };
   }
 
   private toInterventionResponse(
     doc: InterventionDocument,
-    caseTitle?: string
+    caseTitle?: string,
   ): InterventionResponse {
     return {
       id: doc._id.toString(),
@@ -617,7 +603,7 @@ export class CasesService extends AbstractCasesService {
       scheduledEnd: doc.scheduledEnd?.toISOString(),
       notes: doc.notes,
       createdAt: doc.get("createdAt")?.toISOString(),
-      updatedAt: doc.get("updatedAt")?.toISOString()
+      updatedAt: doc.get("updatedAt")?.toISOString(),
     };
   }
 

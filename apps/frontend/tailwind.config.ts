@@ -8,12 +8,12 @@ const config: Config = {
       colors: {
         brand: {
           500: "#4f46e5",
-          600: "#4338ca"
-        }
-      }
-    }
+          600: "#4338ca",
+        },
+      },
+    },
   },
-  plugins: []
+  plugins: [],
 };
 
 export default config;

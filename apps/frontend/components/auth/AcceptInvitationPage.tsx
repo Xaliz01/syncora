@@ -25,7 +25,7 @@ export function AcceptInvitationPage() {
       const user = await acceptInvitation({
         invitationToken,
         password,
-        name: name.trim() || undefined
+        name: name.trim() || undefined,
       });
       router.replace(postAuthHomePath(user));
     } catch (err) {
@@ -44,13 +44,17 @@ export function AcceptInvitationPage() {
           </span>
           <div>
             <div className="font-semibold text-lg text-slate-900 dark:text-slate-100">Syncora</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400">Activation de votre invitation</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">
+              Activation de votre invitation
+            </div>
           </div>
         </div>
       </header>
       <main className="flex-1 flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-md">
-          <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-slate-100 mb-2">Rejoindre l&apos;organisation</h1>
+          <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-slate-100 mb-2">
+            Rejoindre l&apos;organisation
+          </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mb-8">
             Finalisez votre invitation en définissant votre mot de passe.
           </p>
@@ -82,7 +86,10 @@ export function AcceptInvitationPage() {
               />
             </div>
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+              <label
+                htmlFor="name"
+                className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1"
+              >
                 Nom (optionnel)
               </label>
               <input
@@ -95,7 +102,10 @@ export function AcceptInvitationPage() {
               />
             </div>
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1"
+              >
                 Mot de passe
               </label>
               <input

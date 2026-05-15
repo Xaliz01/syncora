@@ -2,7 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
-  NotFoundException
+  NotFoundException,
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
@@ -16,7 +16,7 @@ import {
   type StockMovementResponse,
   type StockMovementType,
   type StockStatus,
-  type UpdateArticleBody
+  type UpdateArticleBody,
 } from "@syncora/shared";
 import type { ArticleDocument } from "../persistence/article.schema";
 import type { StockMovementDocument } from "../persistence/stock-movement.schema";
@@ -28,7 +28,7 @@ export class StockService extends AbstractStockService {
     @InjectModel("Article")
     private readonly articleModel: Model<ArticleDocument>,
     @InjectModel("StockMovement")
-    private readonly stockMovementModel: Model<StockMovementDocument>
+    private readonly stockMovementModel: Model<StockMovementDocument>,
   ) {
     super();
   }
@@ -43,7 +43,7 @@ export class StockService extends AbstractStockService {
     const reorderPoint = this.ensureNonNegativeNumber(body.reorderPoint ?? 0, "reorderPoint");
     const targetStock = this.ensureNonNegativeNumber(
       body.targetStock ?? Math.max(initialStock, reorderPoint),
-      "targetStock"
+      "targetStock",
     );
     if (targetStock < reorderPoint) {
       throw new BadRequestException("targetStock must be greater than or equal to reorderPoint");
@@ -61,7 +61,7 @@ export class StockService extends AbstractStockService {
         reorderPoint,
         targetStock,
         isActive: body.isActive ?? true,
-        lastMovementAt: initialStock > 0 ? now : undefined
+        lastMovementAt: initialStock > 0 ? now : undefined,
       });
 
       if (initialStock > 0) {
@@ -74,7 +74,7 @@ export class StockService extends AbstractStockService {
           quantity: initialStock,
           previousStock: 0,
           newStock: initialStock,
-          reason: "initial_stock"
+          reason: "initial_stock",
         });
       }
 
@@ -89,7 +89,7 @@ export class StockService extends AbstractStockService {
 
   async listArticles(
     organizationId: string,
-    filters?: { search?: string; lowStockOnly?: boolean; activeOnly?: boolean }
+    filters?: { search?: string; lowStockOnly?: boolean; activeOnly?: boolean },
   ): Promise<ArticleResponse[]> {
     const query: Record<string, unknown> = { organizationId, ...activeDocumentFilter };
     const activeOnly = filters?.activeOnly ?? true;
@@ -97,7 +97,7 @@ export class StockService extends AbstractStockService {
     if (filters?.search) {
       query.$or = [
         { name: { $regex: filters.search, $options: "i" } },
-        { reference: { $regex: filters.search, $options: "i" } }
+        { reference: { $regex: filters.search, $options: "i" } },
       ];
     }
     if (filters?.lowStockOnly) {
@@ -169,7 +169,7 @@ export class StockService extends AbstractStockService {
       .findOneAndUpdate(
         { _id: id, organizationId, ...activeDocumentFilter },
         { $set: { isActive: false, deletedAt: new Date() } },
-        { new: true }
+        { new: true },
       )
       .exec();
     if (!doc) throw new NotFoundException("Article not found");
@@ -197,14 +197,14 @@ export class StockService extends AbstractStockService {
       caseId: body.caseId,
       actorUserId: body.actorUserId,
       actorUserName: body.actorUserName,
-      at: new Date()
+      at: new Date(),
     });
     return movement;
   }
 
   async addInterventionArticleUsage(
     interventionId: string,
-    body: AddInterventionArticleUsageBody
+    body: AddInterventionArticleUsageBody,
   ): Promise<StockMovementResponse> {
     const movementType = body.movementType ?? "out";
     const quantity = this.ensureStrictlyPositiveNumber(body.quantity, "quantity");
@@ -214,12 +214,12 @@ export class StockService extends AbstractStockService {
     if (movementType === "in") {
       if (!currentUsage || currentUsage.consumedQuantity <= 0) {
         throw new BadRequestException(
-          "Cannot return an article that has not been consumed on this intervention"
+          "Cannot return an article that has not been consumed on this intervention",
         );
       }
       if (currentUsage.returnedQuantity + quantity > currentUsage.consumedQuantity) {
         throw new BadRequestException(
-          "Returned quantity cannot exceed already consumed quantity for this intervention"
+          "Returned quantity cannot exceed already consumed quantity for this intervention",
         );
       }
     }
@@ -235,14 +235,14 @@ export class StockService extends AbstractStockService {
       caseId: body.caseId,
       actorUserId: body.actorUserId,
       actorUserName: body.actorUserName,
-      at: new Date()
+      at: new Date(),
     });
     return movement;
   }
 
   async listArticleMovements(
     organizationId: string,
-    filters?: { articleId?: string; interventionId?: string; caseId?: string; limit?: number }
+    filters?: { articleId?: string; interventionId?: string; caseId?: string; limit?: number },
   ): Promise<StockMovementResponse[]> {
     const query: Record<string, unknown> = { organizationId };
     if (filters?.articleId) query.articleId = filters.articleId;
@@ -250,20 +250,24 @@ export class StockService extends AbstractStockService {
     if (filters?.caseId) query.caseId = filters.caseId;
     const limit = Math.min(Math.max(filters?.limit ?? 50, 1), 200);
 
-    const docs = await this.stockMovementModel.find(query).sort({ createdAt: -1 }).limit(limit).exec();
+    const docs = await this.stockMovementModel
+      .find(query)
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .exec();
     return docs.map((doc) => this.toStockMovementResponse(doc));
   }
 
   async getInterventionUsage(
     organizationId: string,
-    interventionId: string
+    interventionId: string,
   ): Promise<InterventionArticleUsageResponse[]> {
     return [...(await this.getInterventionUsageMap(organizationId, interventionId)).values()];
   }
 
   private async getInterventionUsageMap(
     organizationId: string,
-    interventionId: string
+    interventionId: string,
   ): Promise<Map<string, InterventionArticleUsageResponse>> {
     const docs = await this.stockMovementModel
       .find({ organizationId, interventionId })
@@ -279,7 +283,7 @@ export class StockService extends AbstractStockService {
         consumedQuantity: 0,
         returnedQuantity: 0,
         netQuantity: 0,
-        lastMovementAt: undefined
+        lastMovementAt: undefined,
       };
 
       if (doc.movementType === "out") {
@@ -312,7 +316,7 @@ export class StockService extends AbstractStockService {
       stockStatus,
       suggestedReorderQuantity: Math.max(doc.targetStock - doc.stockQuantity, 0),
       createdAt: doc.get("createdAt")?.toISOString(),
-      updatedAt: doc.get("updatedAt")?.toISOString()
+      updatedAt: doc.get("updatedAt")?.toISOString(),
     };
   }
 
@@ -333,7 +337,7 @@ export class StockService extends AbstractStockService {
       caseId: doc.caseId,
       actorUserId: doc.actorUserId,
       actorUserName: doc.actorUserName,
-      createdAt: doc.get("createdAt")?.toISOString()
+      createdAt: doc.get("createdAt")?.toISOString(),
     };
   }
 
@@ -380,7 +384,7 @@ export class StockService extends AbstractStockService {
       _id: params.articleId,
       organizationId: params.organizationId,
       isActive: true,
-      ...activeDocumentFilter
+      ...activeDocumentFilter,
     };
 
     let previousDoc: ArticleDocument | null = null;
@@ -392,13 +396,13 @@ export class StockService extends AbstractStockService {
         .findOneAndUpdate(
           {
             ...baseFilter,
-            stockQuantity: { $gte: params.quantity }
+            stockQuantity: { $gte: params.quantity },
           },
           {
             $inc: { stockQuantity: -params.quantity },
-            $set: { lastMovementAt: params.at }
+            $set: { lastMovementAt: params.at },
           },
-          { new: false }
+          { new: false },
         )
         .exec();
       if (!previousDoc) {
@@ -411,9 +415,9 @@ export class StockService extends AbstractStockService {
           baseFilter,
           {
             $inc: { stockQuantity: params.quantity },
-            $set: { lastMovementAt: params.at }
+            $set: { lastMovementAt: params.at },
           },
-          { new: false }
+          { new: false },
         )
         .exec();
       if (!previousDoc) {
@@ -425,9 +429,9 @@ export class StockService extends AbstractStockService {
         .findOneAndUpdate(
           baseFilter,
           {
-            $set: { stockQuantity: params.quantity, lastMovementAt: params.at }
+            $set: { stockQuantity: params.quantity, lastMovementAt: params.at },
           },
-          { new: false }
+          { new: false },
         )
         .exec();
       if (!previousDoc) {
@@ -451,11 +455,11 @@ export class StockService extends AbstractStockService {
       interventionId: params.interventionId,
       caseId: params.caseId,
       actorUserId: params.actorUserId,
-      actorUserName: params.actorUserName
+      actorUserName: params.actorUserName,
     });
 
     return {
-      movement: this.toStockMovementResponse(movementDoc)
+      movement: this.toStockMovementResponse(movementDoc),
     };
   }
 

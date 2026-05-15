@@ -16,7 +16,7 @@ function formatDate(iso: string): string {
     month: "2-digit",
     year: "numeric",
     hour: "2-digit",
-    minute: "2-digit"
+    minute: "2-digit",
   });
 }
 
@@ -27,7 +27,7 @@ const FILE_ICONS: Record<string, string> = {
   "audio/": "🎵",
   "text/": "📝",
   "application/zip": "📦",
-  "application/x-rar": "📦"
+  "application/x-rar": "📦",
 };
 
 function getFileIcon(mimeType: string): string {
@@ -77,8 +77,10 @@ export function DocumentUploadZone({ entityType, entityId }: Props) {
         previewableDocs.map(async (doc) => {
           try {
             urls[doc.id] = await documentsApi.fetchDocumentPreviewUrl(doc.id);
-          } catch { /* ignore preview failures */ }
-        })
+          } catch {
+            /* ignore preview failures */
+          }
+        }),
       );
       setPreviewUrls((prev) => {
         Object.values(prev).forEach((u) => {
@@ -165,9 +167,7 @@ export function DocumentUploadZone({ entityType, entityId }: Props) {
 
   return (
     <div className="mt-8 border-t border-slate-200 dark:border-slate-700 pt-6">
-      <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4">
-        Documents
-      </h3>
+      <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4">Documents</h3>
 
       {/* Drop zone */}
       <div
@@ -178,9 +178,10 @@ export function DocumentUploadZone({ entityType, entityId }: Props) {
         className={`
           relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer
           transition-all duration-200
-          ${dragOver
-            ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-            : "border-slate-300 dark:border-slate-600 hover:border-blue-400 hover:bg-slate-50 dark:hover:bg-slate-800/50"
+          ${
+            dragOver
+              ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+              : "border-slate-300 dark:border-slate-600 hover:border-blue-400 hover:bg-slate-50 dark:hover:bg-slate-800/50"
           }
           ${uploading ? "opacity-60 pointer-events-none" : ""}
         `}
@@ -218,17 +219,13 @@ export function DocumentUploadZone({ entityType, entityId }: Props) {
                 </span>{" "}
                 ou glissez-déposez vos fichiers ici
               </p>
-              <p className="text-xs text-slate-400 dark:text-slate-500">
-                Taille maximale : 50 Mo
-              </p>
+              <p className="text-xs text-slate-400 dark:text-slate-500">Taille maximale : 50 Mo</p>
             </>
           )}
         </div>
       </div>
 
-      {error && (
-        <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>
-      )}
+      {error && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       {/* Document list */}
       {loading ? (
@@ -249,11 +246,7 @@ export function DocumentUploadZone({ entityType, entityId }: Props) {
                   title="Aperçu"
                 >
                   {isImage(doc.mimeType) ? (
-                    <img
-                      src={previewUrls[doc.id]}
-                      alt=""
-                      className="w-12 h-12 object-cover"
-                    />
+                    <img src={previewUrls[doc.id]} alt="" className="w-12 h-12 object-cover" />
                   ) : (
                     <span className="flex w-12 h-12 items-center justify-center bg-red-50 dark:bg-red-950/40 text-[10px] font-bold tracking-wide text-red-600 dark:text-red-400">
                       PDF
@@ -279,8 +272,18 @@ export function DocumentUploadZone({ entityType, entityId }: Props) {
                     title="Aperçu"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                      />
                     </svg>
                   </button>
                 )}
@@ -290,7 +293,12 @@ export function DocumentUploadZone({ entityType, entityId }: Props) {
                   title="Télécharger"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
                   </svg>
                 </button>
                 <button
@@ -299,7 +307,12 @@ export function DocumentUploadZone({ entityType, entityId }: Props) {
                   title="Supprimer"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
                   </svg>
                 </button>
               </div>
@@ -327,7 +340,12 @@ export function DocumentUploadZone({ entityType, entityId }: Props) {
               className="absolute -top-3 -right-3 z-10 w-8 h-8 rounded-full bg-white dark:bg-slate-800 shadow-lg flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-red-500 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
             {isPdf(previewDoc.mimeType) ? (

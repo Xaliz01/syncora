@@ -8,11 +8,11 @@ import { CustomerSchema } from "../persistence/customer.schema";
 @Module({
   imports: [
     MongooseModule.forRoot(
-      process.env.MONGODB_URI ?? "mongodb://localhost:27017/syncora-customers"
+      process.env.MONGODB_URI ?? "mongodb://localhost:27017/syncora-customers",
     ),
-    MongooseModule.forFeature([{ name: "Customer", schema: CustomerSchema }])
+    MongooseModule.forFeature([{ name: "Customer", schema: CustomerSchema }]),
   ],
   controllers: [CustomersController],
-  providers: [{ provide: AbstractCustomersService, useClass: CustomersService }]
+  providers: [{ provide: AbstractCustomersService, useClass: CustomersService }],
 })
 export class AppModule {}

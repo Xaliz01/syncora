@@ -8,7 +8,7 @@ import type {
   TechnicianResponse,
   AgenceResponse,
   VehicleResponse,
-  TeamStatus
+  TeamStatus,
 } from "@syncora/shared";
 
 const TEAM_STATUSES: TeamStatus[] = ["active", "inactive"];
@@ -20,12 +20,13 @@ import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
 
 const STATUS_COLORS: Record<string, string> = {
   active: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  inactive: "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700"
+  inactive:
+    "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700",
 };
 
 const STATUS_LABELS: Record<string, string> = {
   active: "Active",
-  inactive: "Inactive"
+  inactive: "Inactive",
 };
 
 export function TeamDetailsPage({ teamId }: { teamId: string }) {
@@ -57,7 +58,7 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
         fleetApi.getTeam(teamId),
         fleetApi.listTechnicians(),
         fleetApi.listAgences(),
-        fleetApi.listVehicles()
+        fleetApi.listVehicles(),
       ]);
       setTeam(teamData);
       setTechnicians(techList);
@@ -88,7 +89,7 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
         name: editName.trim(),
         agenceId: editAgenceId || null,
         status: editStatus,
-        calendarColor: editCalendarColor.trim() ? editCalendarColor.trim() : null
+        calendarColor: editCalendarColor.trim() ? editCalendarColor.trim() : null,
       });
       showToast("Équipe mise à jour.");
       setIsEditing(false);
@@ -162,12 +163,8 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
     );
   }
 
-  const memberTechnicians = technicians.filter((t) =>
-    team.technicianIds.includes(t.id)
-  );
-  const availableTechnicians = technicians.filter(
-    (t) => !team.technicianIds.includes(t.id)
-  );
+  const memberTechnicians = technicians.filter((t) => team.technicianIds.includes(t.id));
+  const availableTechnicians = technicians.filter((t) => !team.technicianIds.includes(t.id));
   const agence = agences.find((a) => a.id === team.agenceId);
 
   return (
@@ -245,7 +242,8 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
                       className="team-cal-legend-swatch h-6 w-10 rounded border shrink-0"
                       style={
                         {
-                          "--team-cal-border": normalizeCalendarColorHex(team.calendarColor) ?? team.calendarColor
+                          "--team-cal-border":
+                            normalizeCalendarColorHex(team.calendarColor) ?? team.calendarColor,
                         } as React.CSSProperties
                       }
                     />
@@ -276,7 +274,9 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
               />
             </div>
             <div>
-              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Statut</label>
+              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">
+                Statut
+              </label>
               <select
                 value={editStatus}
                 onChange={(e) => setEditStatus(e.target.value as TeamStatus)}
@@ -312,7 +312,8 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
               Couleur au calendrier
             </label>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Utilisée pour les interventions assignées à cette équipe. Laissez vide pour une couleur automatique.
+              Utilisée pour les interventions assignées à cette équipe. Laissez vide pour une
+              couleur automatique.
             </p>
             <div className="flex flex-wrap items-center gap-3">
               <input
@@ -355,7 +356,9 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
       <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 space-y-4">
         <h2 className="font-semibold">Membres de l&apos;équipe</h2>
         {memberTechnicians.length === 0 ? (
-          <p className="text-sm text-slate-500 dark:text-slate-400">Aucun membre dans cette équipe.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Aucun membre dans cette équipe.
+          </p>
         ) : (
           <div className="space-y-2">
             {memberTechnicians.map((tech) => (
@@ -371,7 +374,9 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
                 </Link>
                 <div className="flex items-center gap-3">
                   {tech.speciality && (
-                    <span className="text-slate-400 dark:text-slate-500 text-xs">({tech.speciality})</span>
+                    <span className="text-slate-400 dark:text-slate-500 text-xs">
+                      ({tech.speciality})
+                    </span>
                   )}
                   <button
                     type="button"
@@ -422,7 +427,9 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
       <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 space-y-3">
         <h2 className="font-semibold">Véhicules affectés</h2>
         {vehicles.length === 0 ? (
-          <p className="text-sm text-slate-500 dark:text-slate-400">Aucun véhicule affecté à cette équipe.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Aucun véhicule affecté à cette équipe.
+          </p>
         ) : (
           <div className="space-y-2">
             {vehicles.map((vehicle) => (

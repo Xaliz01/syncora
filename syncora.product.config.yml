@@ -32,8 +32,8 @@ product:
   auth_and_permissions:
     model: "Organisation (tenant) + Utilisateurs avec rôle par organisation"
     roles:
-      - admin   # Créateur de l'organisation, peut créer des utilisateurs et affecter des droits
-      - member  # Réservé pour les utilisateurs créés par l'admin (droits à affiner)
+      - admin # Créateur de l'organisation, peut créer des utilisateurs et affecter des droits
+      - member # Réservé pour les utilisateurs créés par l'admin (droits à affiner)
     flows:
       register: "Créer une organisation → Créer un utilisateur admin lié à cette organisation"
       login: "Valider email/mot de passe → Émettre un JWT (sub, organizationId, role, email)"
@@ -42,4 +42,3 @@ product:
       - "Profils de permissions personnalisés par organisation"
       - "Affectation profil + permissions granulaires (ajouts/retraits) par utilisateur"
       - "Permissions effectives exposées par l'auth et via API admin"
-

@@ -44,5 +44,5 @@ export const VehicleSchema = SchemaFactory.createForClass(VehicleDocument);
 
 VehicleSchema.index(
   { organizationId: 1, registrationNumber: 1 },
-  { unique: true, partialFilterExpression: { deletedAt: null } }
+  { unique: true, partialFilterExpression: { deletedAt: null } },
 );

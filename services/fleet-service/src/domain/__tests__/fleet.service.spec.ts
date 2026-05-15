@@ -27,16 +27,20 @@ describe("FleetService", () => {
     mileage: 10000,
     status: "actif",
     get: jest.fn((key: string) =>
-      key === "createdAt" ? new Date("2025-01-01") : key === "updatedAt" ? new Date("2025-01-02") : undefined
+      key === "createdAt"
+        ? new Date("2025-01-01")
+        : key === "updatedAt"
+          ? new Date("2025-01-02")
+          : undefined,
     ),
     save: jest.fn().mockResolvedValue(undefined),
-    ...overrides
+    ...overrides,
   });
 
   beforeEach(async () => {
     const execMock = jest.fn();
     const findChain = {
-      sort: jest.fn().mockReturnValue({ exec: execMock })
+      sort: jest.fn().mockReturnValue({ exec: execMock }),
     };
 
     mockVehicleModel = {
@@ -45,15 +49,12 @@ describe("FleetService", () => {
       find: jest.fn().mockReturnValue(findChain),
       updateMany: jest.fn().mockResolvedValue({ modifiedCount: 0 }),
       updateOne: jest.fn().mockReturnValue({
-        exec: jest.fn().mockResolvedValue({ matchedCount: 1, modifiedCount: 1 })
-      })
+        exec: jest.fn().mockResolvedValue({ matchedCount: 1, modifiedCount: 1 }),
+      }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        FleetService,
-        { provide: getModelToken("Vehicle"), useValue: mockVehicleModel }
-      ]
+      providers: [FleetService, { provide: getModelToken("Vehicle"), useValue: mockVehicleModel }],
     }).compile();
 
     service = module.get<FleetService>(FleetService);
@@ -78,7 +79,7 @@ describe("FleetService", () => {
         year: 2020,
         color: "red",
         vin: "VIN123",
-        mileage: 10000
+        mileage: 10000,
       };
 
       const result = await service.createVehicle(body);
@@ -86,7 +87,7 @@ describe("FleetService", () => {
       expect(mockVehicleModel.findOne).toHaveBeenCalledWith({
         organizationId: "org-1",
         registrationNumber: "AB-123-CD",
-        ...activeDocumentFilter
+        ...activeDocumentFilter,
       });
       expect(mockVehicleModel.create).toHaveBeenCalled();
       expect(result.id).toBe("vehicle-123");
@@ -95,7 +96,7 @@ describe("FleetService", () => {
 
     it("should throw ConflictException when registration number already exists", async () => {
       mockVehicleModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(mockVehicleDoc())
+        exec: jest.fn().mockResolvedValue(mockVehicleDoc()),
       });
 
       const body = {
@@ -104,7 +105,7 @@ describe("FleetService", () => {
         type: "voiture" as const,
         brand: "Brand",
         model: "Model X",
-        year: 2020
+        year: 2020,
       };
 
       await expect(service.createVehicle(body)).rejects.toThrow(ConflictException);
@@ -116,7 +117,7 @@ describe("FleetService", () => {
     it("should return vehicle when found and org matches", async () => {
       const doc = mockVehicleDoc({ organizationId: "org-1" });
       mockVehicleModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(doc)
+        exec: jest.fn().mockResolvedValue(doc),
       });
 
       const result = await service.getVehicle("org-1", "vehicle-123");
@@ -124,14 +125,14 @@ describe("FleetService", () => {
       expect(mockVehicleModel.findOne).toHaveBeenCalledWith({
         _id: "vehicle-123",
         organizationId: "org-1",
-        ...activeDocumentFilter
+        ...activeDocumentFilter,
       });
       expect(result.id).toBe("vehicle-123");
     });
 
     it("should throw NotFoundException when vehicle not found", async () => {
       mockVehicleModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(null)
+        exec: jest.fn().mockResolvedValue(null),
       });
 
       await expect(service.getVehicle("org-1", "non-existent")).rejects.toThrow(NotFoundException);
@@ -139,7 +140,7 @@ describe("FleetService", () => {
 
     it("should throw NotFoundException when org does not match", async () => {
       mockVehicleModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(null)
+        exec: jest.fn().mockResolvedValue(null),
       });
 
       await expect(service.getVehicle("org-1", "vehicle-123")).rejects.toThrow(NotFoundException);
@@ -148,19 +149,16 @@ describe("FleetService", () => {
 
   describe("listVehicles", () => {
     it("should return sorted list for organization", async () => {
-      const docs = [
-        mockVehicleDoc(),
-        mockVehicleDoc({ _id: { toString: () => "vehicle-456" } })
-      ];
+      const docs = [mockVehicleDoc(), mockVehicleDoc({ _id: { toString: () => "vehicle-456" } })];
       mockVehicleModel.find.mockReturnValue({
-        sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(docs) })
+        sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(docs) }),
       });
 
       const result = await service.listVehicles("org-1");
 
       expect(mockVehicleModel.find).toHaveBeenCalledWith({
         organizationId: "org-1",
-        ...activeDocumentFilter
+        ...activeDocumentFilter,
       });
       expect(mockVehicleModel.find().sort).toHaveBeenCalledWith({ createdAt: -1 });
       expect(result).toHaveLength(2);
@@ -173,30 +171,29 @@ describe("FleetService", () => {
 
       expect(mockVehicleModel.updateOne).toHaveBeenCalledWith(
         { _id: "vehicle-123", organizationId: "org-1", ...activeDocumentFilter },
-        { $set: { deletedAt: expect.any(Date) } }
+        { $set: { deletedAt: expect.any(Date) } },
       );
       expect(result).toEqual({ deleted: true });
     });
 
     it("should throw NotFoundException when vehicle not found", async () => {
       mockVehicleModel.updateOne.mockReturnValueOnce({
-        exec: jest.fn().mockResolvedValue({ matchedCount: 0, modifiedCount: 0 })
+        exec: jest.fn().mockResolvedValue({ matchedCount: 0, modifiedCount: 0 }),
       });
 
       await expect(service.deleteVehicle("org-1", "non-existent")).rejects.toThrow(
-        NotFoundException
+        NotFoundException,
       );
     });
 
     it("should throw NotFoundException when org does not match", async () => {
       mockVehicleModel.updateOne.mockReturnValueOnce({
-        exec: jest.fn().mockResolvedValue({ matchedCount: 0, modifiedCount: 0 })
+        exec: jest.fn().mockResolvedValue({ matchedCount: 0, modifiedCount: 0 }),
       });
 
       await expect(service.deleteVehicle("org-1", "vehicle-123")).rejects.toThrow(
-        NotFoundException
+        NotFoundException,
       );
     });
   });
-
 });

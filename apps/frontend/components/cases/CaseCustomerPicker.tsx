@@ -12,7 +12,7 @@ export function CaseCustomerPicker({
   initialDisplayName,
   onChange,
   disabled,
-  idPrefix = "case-customer"
+  idPrefix = "case-customer",
 }: {
   value: string;
   /** Libellé affiché quand le parent connaît déjà le client (ex. fiche dossier) */
@@ -40,14 +40,13 @@ export function CaseCustomerPicker({
     if (initialDisplayName) setDisplayLabel(initialDisplayName);
   }, [value, initialDisplayName]);
 
-  const listEnabled =
-    open && !showCreate && (debounced.length === 0 || debounced.length >= 2);
+  const listEnabled = open && !showCreate && (debounced.length === 0 || debounced.length >= 2);
 
   const { data: list = [], isFetching } = useQuery({
     queryKey: ["customers", "list", debounced],
     queryFn: () => customersApi.listCustomers(debounced || undefined),
     enabled: listEnabled,
-    staleTime: 20_000
+    staleTime: 20_000,
   });
 
   const selectCustomer = (c: CustomerResponse) => {
@@ -66,7 +65,10 @@ export function CaseCustomerPicker({
 
   return (
     <div className="space-y-2">
-      <label htmlFor={`${idPrefix}-trigger`} className="block text-sm font-medium text-slate-700 dark:text-slate-200">
+      <label
+        htmlFor={`${idPrefix}-trigger`}
+        className="block text-sm font-medium text-slate-700 dark:text-slate-200"
+      >
         Client
       </label>
       <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -85,7 +87,13 @@ export function CaseCustomerPicker({
           }}
           className="flex w-full items-center justify-between gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-left text-sm text-slate-800 dark:text-slate-100 hover:border-slate-300 dark:border-slate-600 disabled:opacity-50"
         >
-          <span className={displayLabel ? "text-slate-800 dark:text-slate-100" : "text-slate-400 dark:text-slate-500"}>
+          <span
+            className={
+              displayLabel
+                ? "text-slate-800 dark:text-slate-100"
+                : "text-slate-400 dark:text-slate-500"
+            }
+          >
             {displayLabel || "Choisir un client…"}
           </span>
           <span className="text-xs text-slate-400 dark:text-slate-500">{open ? "▲" : "▼"}</span>
@@ -104,10 +112,16 @@ export function CaseCustomerPicker({
                   className="w-full rounded-md border border-slate-200 dark:border-slate-700 px-2 py-1.5 text-sm focus:border-brand-500 focus:outline-none"
                 />
                 {debounced.length === 1 && (
-                  <p className="mt-2 px-1 text-xs text-slate-500 dark:text-slate-400">Saisissez au moins 2 caractères pour filtrer.</p>
+                  <p className="mt-2 px-1 text-xs text-slate-500 dark:text-slate-400">
+                    Saisissez au moins 2 caractères pour filtrer.
+                  </p>
                 )}
                 <div className="mt-2 max-h-48 overflow-y-auto">
-                  {isFetching && <div className="px-2 py-2 text-xs text-slate-500 dark:text-slate-400">Chargement…</div>}
+                  {isFetching && (
+                    <div className="px-2 py-2 text-xs text-slate-500 dark:text-slate-400">
+                      Chargement…
+                    </div>
+                  )}
                   {!isFetching &&
                     list.map((c) => (
                       <button
@@ -116,7 +130,9 @@ export function CaseCustomerPicker({
                         onClick={() => selectCustomer(c)}
                         className="flex w-full flex-col items-start rounded-md px-2 py-2 text-left text-sm hover:bg-slate-50 dark:hover:bg-slate-800"
                       >
-                        <span className="font-medium text-slate-800 dark:text-slate-100">{c.displayName}</span>
+                        <span className="font-medium text-slate-800 dark:text-slate-100">
+                          {c.displayName}
+                        </span>
                         <span className="text-[11px] text-slate-500 dark:text-slate-400">
                           {CUSTOMER_KIND_LABELS[c.kind]}
                           {c.email ? ` · ${c.email}` : ""}
@@ -124,7 +140,9 @@ export function CaseCustomerPicker({
                       </button>
                     ))}
                   {!isFetching && list.length === 0 && debounced.length !== 1 && (
-                    <p className="px-2 py-2 text-xs text-slate-500 dark:text-slate-400">Aucun client trouvé.</p>
+                    <p className="px-2 py-2 text-xs text-slate-500 dark:text-slate-400">
+                      Aucun client trouvé.
+                    </p>
                   )}
                 </div>
                 <div className="mt-2 flex flex-wrap gap-2 border-t border-slate-100 dark:border-slate-800 pt-2">

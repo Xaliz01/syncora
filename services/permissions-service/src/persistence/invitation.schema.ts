@@ -41,5 +41,5 @@ export class InvitationDocument extends Document {
 export const InvitationSchema = SchemaFactory.createForClass(InvitationDocument);
 InvitationSchema.index(
   { organizationId: 1, invitedEmail: 1, status: 1 },
-  { unique: true, partialFilterExpression: { status: "pending" } }
+  { unique: true, partialFilterExpression: { status: "pending" } },
 );

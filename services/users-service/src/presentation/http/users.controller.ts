@@ -8,7 +8,7 @@ import {
   Patch,
   Post,
   Query,
-  UnauthorizedException
+  UnauthorizedException,
 } from "@nestjs/common";
 import { AbstractUsersService } from "../../domain/ports/users.service.port";
 import type {
@@ -18,7 +18,7 @@ import type {
   CreateUserBody,
   PatchUserBody,
   ValidateCredentialsBody,
-  ValidateCredentialsResponse
+  ValidateCredentialsResponse,
 } from "@syncora/shared";
 
 @Controller("users")
@@ -37,7 +37,7 @@ export class UsersController {
 
   @Post("validate-credentials")
   async validateCredentials(
-    @Body() body: ValidateCredentialsBody
+    @Body() body: ValidateCredentialsBody,
   ): Promise<ValidateCredentialsResponse> {
     const result = await this.usersService.validateCredentials(body.email, body.password);
     if (!result) {
@@ -62,16 +62,13 @@ export class UsersController {
   @Post(":userId/organization-memberships")
   addOrganizationMembership(
     @Param("userId") userId: string,
-    @Body() body: CreateOrganizationMembershipBody
+    @Body() body: CreateOrganizationMembershipBody,
   ) {
     return this.usersService.addOrganizationMembership(userId, body);
   }
 
   @Post(":id/activate")
-  async activateInvitedUser(
-    @Param("id") id: string,
-    @Body() body: ActivateInvitedUserBody
-  ) {
+  async activateInvitedUser(@Param("id") id: string, @Body() body: ActivateInvitedUserBody) {
     return this.usersService.activateInvitedUser(id, body);
   }
 

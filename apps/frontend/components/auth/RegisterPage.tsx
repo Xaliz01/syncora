@@ -26,7 +26,7 @@ export function RegisterPage() {
         organizationName,
         adminEmail,
         adminPassword,
-        adminName: adminName.trim() || undefined
+        adminName: adminName.trim() || undefined,
       });
       router.replace(postAuthHomePath(user));
     } catch (err) {
@@ -45,8 +45,12 @@ export function RegisterPage() {
               S
             </span>
             <div>
-              <div className="font-semibold text-lg text-slate-900 dark:text-slate-100">Syncora</div>
-              <div className="text-xs text-slate-500 dark:text-slate-400">CRM des opérations terrain</div>
+              <div className="font-semibold text-lg text-slate-900 dark:text-slate-100">
+                Syncora
+              </div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">
+                CRM des opérations terrain
+              </div>
             </div>
           </div>
           <ThemeToggle />
@@ -55,10 +59,11 @@ export function RegisterPage() {
 
       <main className="flex-1 flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-md">
-          <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-slate-100 mb-2">Créer votre organisation</h1>
+          <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-slate-100 mb-2">
+            Créer votre organisation
+          </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 max-w-xl">
-            Créez votre organisation et un compte administrateur pour commencer à utiliser
-            Syncora.
+            Créez votre organisation et un compte administrateur pour commencer à utiliser Syncora.
           </p>
 
           <form
@@ -88,7 +93,10 @@ export function RegisterPage() {
               />
             </div>
             <div>
-              <label htmlFor="adminName" className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+              <label
+                htmlFor="adminName"
+                className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1"
+              >
                 Votre nom (optionnel)
               </label>
               <input
@@ -101,7 +109,10 @@ export function RegisterPage() {
               />
             </div>
             <div>
-              <label htmlFor="adminEmail" className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+              <label
+                htmlFor="adminEmail"
+                className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1"
+              >
                 Email administrateur
               </label>
               <input
@@ -133,7 +144,9 @@ export function RegisterPage() {
                 className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                 placeholder="••••••••"
               />
-              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Minimum 8 caractères</p>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                Minimum 8 caractères
+              </p>
             </div>
             <button
               type="submit"
@@ -146,7 +159,10 @@ export function RegisterPage() {
 
           <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-300">
             Déjà un compte ?{" "}
-            <Link href="/login" className="text-brand-600 dark:text-brand-400 hover:text-brand-500 hover:underline font-medium">
+            <Link
+              href="/login"
+              className="text-brand-600 dark:text-brand-400 hover:text-brand-500 hover:underline font-medium"
+            >
               Se connecter
             </Link>
           </p>

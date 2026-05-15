@@ -20,9 +20,8 @@ export class PermissionProfileDocument extends Document {
   deletedAt?: Date | null;
 }
 
-export const PermissionProfileSchema =
-  SchemaFactory.createForClass(PermissionProfileDocument);
+export const PermissionProfileSchema = SchemaFactory.createForClass(PermissionProfileDocument);
 PermissionProfileSchema.index(
   { organizationId: 1, name: 1 },
-  { unique: true, partialFilterExpression: { deletedAt: null } }
+  { unique: true, partialFilterExpression: { deletedAt: null } },
 );

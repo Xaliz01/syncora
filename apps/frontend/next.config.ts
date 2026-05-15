@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  transpilePackages: ["@syncora/shared"]
+  transpilePackages: ["@syncora/shared"],
 };
 
 export default nextConfig;

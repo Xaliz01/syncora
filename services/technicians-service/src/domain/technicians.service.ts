@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException
-} from "@nestjs/common";
+import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import type { TechnicianDocument } from "../persistence/technician.schema";
@@ -11,7 +7,7 @@ import {
   type CreateTechnicianBody,
   type UpdateTechnicianBody,
   type TechnicianResponse,
-  type TechnicianStatus
+  type TechnicianStatus,
 } from "@syncora/shared";
 import { AbstractTechniciansService } from "./ports/technicians.service.port";
 
@@ -19,7 +15,7 @@ import { AbstractTechniciansService } from "./ports/technicians.service.port";
 export class TechniciansService extends AbstractTechniciansService {
   constructor(
     @InjectModel("Technician")
-    private readonly technicianModel: Model<TechnicianDocument>
+    private readonly technicianModel: Model<TechnicianDocument>,
   ) {
     super();
   }
@@ -32,7 +28,7 @@ export class TechniciansService extends AbstractTechniciansService {
       email: body.email,
       phone: body.phone,
       speciality: body.speciality,
-      status: body.status ?? "actif"
+      status: body.status ?? "actif",
     });
     return this.toTechnicianResponse(doc);
   }
@@ -40,7 +36,7 @@ export class TechniciansService extends AbstractTechniciansService {
   async updateTechnician(
     organizationId: string,
     technicianId: string,
-    body: UpdateTechnicianBody
+    body: UpdateTechnicianBody,
   ): Promise<TechnicianResponse> {
     const doc = await this.technicianModel
       .findOne({ _id: technicianId, organizationId, ...activeDocumentFilter })
@@ -76,14 +72,11 @@ export class TechniciansService extends AbstractTechniciansService {
     return docs.map((doc) => this.toTechnicianResponse(doc));
   }
 
-  async deleteTechnician(
-    organizationId: string,
-    technicianId: string
-  ): Promise<{ deleted: true }> {
+  async deleteTechnician(organizationId: string, technicianId: string): Promise<{ deleted: true }> {
     const result = await this.technicianModel
       .updateOne(
         { _id: technicianId, organizationId, ...activeDocumentFilter },
-        { $set: { deletedAt: new Date() } }
+        { $set: { deletedAt: new Date() } },
       )
       .exec();
     if (!result.matchedCount) {
@@ -95,7 +88,7 @@ export class TechniciansService extends AbstractTechniciansService {
   async linkUserToTechnician(
     organizationId: string,
     technicianId: string,
-    userId: string
+    userId: string,
   ): Promise<TechnicianResponse> {
     const doc = await this.technicianModel
       .findOne({ _id: technicianId, organizationId, ...activeDocumentFilter })
@@ -123,7 +116,7 @@ export class TechniciansService extends AbstractTechniciansService {
       status: doc.status as TechnicianStatus,
       userId: doc.userId,
       createdAt: doc.get("createdAt")?.toISOString(),
-      updatedAt: doc.get("updatedAt")?.toISOString()
+      updatedAt: doc.get("updatedAt")?.toISOString(),
     };
   }
 }

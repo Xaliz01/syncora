@@ -10,8 +10,8 @@ describe("AppController", () => {
     mockAppService = {
       getHealth: jest.fn().mockReturnValue({
         status: "ok",
-        service: "api-gateway"
-      })
+        service: "api-gateway",
+      }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -19,9 +19,9 @@ describe("AppController", () => {
       providers: [
         {
           provide: AbstractAppService,
-          useValue: mockAppService
-        }
-      ]
+          useValue: mockAppService,
+        },
+      ],
     }).compile();
 
     controller = module.get<AppController>(AppController);
@@ -38,7 +38,7 @@ describe("AppController", () => {
       expect(mockAppService.getHealth).toHaveBeenCalled();
       expect(result).toEqual({
         status: "ok",
-        service: "api-gateway"
+        service: "api-gateway",
       });
     });
   });

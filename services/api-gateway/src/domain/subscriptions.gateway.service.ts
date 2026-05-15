@@ -5,7 +5,7 @@ import {
   Injectable,
   InternalServerErrorException,
   NotFoundException,
-  ServiceUnavailableException
+  ServiceUnavailableException,
 } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import axios from "axios";
@@ -16,7 +16,7 @@ import type {
   CreateBillingPortalResponse,
   CreateCheckoutSessionGatewayBody,
   CreateCheckoutSessionResponse,
-  OrganizationSubscriptionResponse
+  OrganizationSubscriptionResponse,
 } from "@syncora/shared";
 import { AbstractSubscriptionsGatewayService } from "./ports/subscriptions.service.port";
 
@@ -32,13 +32,13 @@ export class SubscriptionsGatewayService extends AbstractSubscriptionsGatewaySer
     return this.callSubscriptions<OrganizationSubscriptionResponse>({
       method: "get",
       path: "/subscriptions/current",
-      query: { organizationId: user.organizationId }
+      query: { organizationId: user.organizationId },
     });
   }
 
   async createCheckoutSession(
     user: AuthUser,
-    body: CreateCheckoutSessionGatewayBody
+    body: CreateCheckoutSessionGatewayBody,
   ): Promise<CreateCheckoutSessionResponse> {
     return this.callSubscriptions<CreateCheckoutSessionResponse>({
       method: "post",
@@ -47,22 +47,22 @@ export class SubscriptionsGatewayService extends AbstractSubscriptionsGatewaySer
         organizationId: user.organizationId,
         customerEmail: body.customerEmail,
         successUrl: body.successUrl,
-        cancelUrl: body.cancelUrl
-      }
+        cancelUrl: body.cancelUrl,
+      },
     });
   }
 
   async createBillingPortalSession(
     user: AuthUser,
-    body: CreateBillingPortalGatewayBody
+    body: CreateBillingPortalGatewayBody,
   ): Promise<CreateBillingPortalResponse> {
     return this.callSubscriptions<CreateBillingPortalResponse>({
       method: "post",
       path: "/subscriptions/billing-portal",
       body: {
         organizationId: user.organizationId,
-        returnUrl: body.returnUrl
-      }
+        returnUrl: body.returnUrl,
+      },
     });
   }
 
@@ -78,8 +78,8 @@ export class SubscriptionsGatewayService extends AbstractSubscriptionsGatewaySer
           method: params.method,
           url: `${SUBSCRIPTIONS_URL}${params.path}`,
           data: params.body,
-          params: params.query
-        })
+          params: params.query,
+        }),
       );
       return response.data;
     } catch (err: unknown) {
@@ -100,7 +100,7 @@ export class SubscriptionsGatewayService extends AbstractSubscriptionsGatewaySer
           netCode === "ENOTFOUND")
       ) {
         throw new ServiceUnavailableException(
-          `Service subscriptions injoignable (${SUBSCRIPTIONS_URL}). Lancez « npm run start:dev -w @syncora/subscriptions-service » (port 3008) ou définissez SUBSCRIPTIONS_SERVICE_URL.`
+          `Service subscriptions injoignable (${SUBSCRIPTIONS_URL}). Lancez « npm run start:dev -w @syncora/subscriptions-service » (port 3008) ou définissez SUBSCRIPTIONS_SERVICE_URL.`,
         );
       }
 
@@ -145,7 +145,7 @@ export class SubscriptionsGatewayService extends AbstractSubscriptionsGatewaySer
     }
 
     throw new InternalServerErrorException(
-      err instanceof Error ? err.message : "Subscriptions service error"
+      err instanceof Error ? err.message : "Subscriptions service error",
     );
   }
 }

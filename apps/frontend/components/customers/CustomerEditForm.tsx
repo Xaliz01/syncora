@@ -55,7 +55,7 @@ export function CustomerEditForm({ customer, onSubmit, onCancel, isPending, erro
       line2: addrLine2.trim() || undefined,
       postalCode: addrPostal.trim(),
       city: addrCity.trim(),
-      country: addrCountry.trim() || "FR"
+      country: addrCountry.trim() || "FR",
     };
   }, [addrLine1, addrLine2, addrPostal, addrCity, addrCountry]);
 
@@ -77,21 +77,21 @@ export function CustomerEditForm({ customer, onSubmit, onCancel, isPending, erro
       mobile: mobile.trim() || null,
       legalIdentifier: kind === "company" ? legalId.trim() || null : null,
       notes: notes.trim() || null,
-      address: addressPayload
+      address: addressPayload,
     };
     if (kind === "individual") {
       onSubmit({
         ...base,
         firstName: firstName.trim() || null,
         lastName: lastName.trim() || null,
-        companyName: null
+        companyName: null,
       });
     } else {
       onSubmit({
         ...base,
         companyName: companyName.trim() || null,
         firstName: null,
-        lastName: null
+        lastName: null,
       });
     }
   };
@@ -105,7 +105,9 @@ export function CustomerEditForm({ customer, onSubmit, onCancel, isPending, erro
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       {showError && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{showError}</div>
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          {showError}
+        </div>
       )}
 
       <div>
@@ -132,31 +134,52 @@ export function CustomerEditForm({ customer, onSubmit, onCancel, isPending, erro
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <label className={labelCls}>Prénom</label>
-            <input value={firstName} onChange={(e) => setFirstName(e.target.value)} className={inputCls} />
+            <input
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              className={inputCls}
+            />
           </div>
           <div>
             <label className={labelCls}>Nom</label>
-            <input value={lastName} onChange={(e) => setLastName(e.target.value)} className={inputCls} />
+            <input
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              className={inputCls}
+            />
           </div>
         </div>
       ) : (
         <div>
           <label className={labelCls}>Raison sociale</label>
-          <input value={companyName} onChange={(e) => setCompanyName(e.target.value)} className={inputCls} />
+          <input
+            value={companyName}
+            onChange={(e) => setCompanyName(e.target.value)}
+            className={inputCls}
+          />
         </div>
       )}
 
       {kind === "company" && (
         <div>
           <label className={labelCls}>SIRET / identifiant (optionnel)</label>
-          <input value={legalId} onChange={(e) => setLegalId(e.target.value)} className={inputCls} />
+          <input
+            value={legalId}
+            onChange={(e) => setLegalId(e.target.value)}
+            className={inputCls}
+          />
         </div>
       )}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div>
           <label className={labelCls}>E-mail</label>
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} />
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className={inputCls}
+          />
         </div>
         <div>
           <label className={labelCls}>Téléphone</label>
@@ -180,7 +203,9 @@ export function CustomerEditForm({ customer, onSubmit, onCancel, isPending, erro
       </div>
 
       <details className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80 px-3 py-2">
-        <summary className="cursor-pointer text-sm font-medium text-slate-700 dark:text-slate-200">Adresse postale (optionnel)</summary>
+        <summary className="cursor-pointer text-sm font-medium text-slate-700 dark:text-slate-200">
+          Adresse postale (optionnel)
+        </summary>
         <div className="mt-3">
           <PostalAddressFields
             legend="Saisie guidée par la Base Adresse Nationale (France)."

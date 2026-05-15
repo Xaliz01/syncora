@@ -11,7 +11,7 @@ describe("OrganizationsController", () => {
     mockOrganizationsService = {
       create: jest.fn(),
       findById: jest.fn(),
-      update: jest.fn()
+      update: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -19,9 +19,9 @@ describe("OrganizationsController", () => {
       providers: [
         {
           provide: AbstractOrganizationsService,
-          useValue: mockOrganizationsService
-        }
-      ]
+          useValue: mockOrganizationsService,
+        },
+      ],
     }).compile();
 
     controller = module.get<OrganizationsController>(OrganizationsController);
@@ -37,7 +37,7 @@ describe("OrganizationsController", () => {
       const expected = {
         id: "org-123",
         name: "New Organization",
-        createdAt: "2025-01-01T00:00:00.000Z"
+        createdAt: "2025-01-01T00:00:00.000Z",
       };
       mockOrganizationsService.create.mockResolvedValue(expected);
 
@@ -53,7 +53,7 @@ describe("OrganizationsController", () => {
       const org = {
         id: "org-123",
         name: "Test Org",
-        createdAt: "2025-01-01T00:00:00.000Z"
+        createdAt: "2025-01-01T00:00:00.000Z",
       };
       mockOrganizationsService.findById.mockResolvedValue(org);
 
@@ -79,7 +79,7 @@ describe("OrganizationsController", () => {
         name: "Test Org",
         city: "Lyon",
         phone: "0102030405",
-        createdAt: "2025-01-01T00:00:00.000Z"
+        createdAt: "2025-01-01T00:00:00.000Z",
       };
       mockOrganizationsService.update.mockResolvedValue(updated);
 
@@ -92,9 +92,11 @@ describe("OrganizationsController", () => {
     it("should throw NotFoundException when update target does not exist", async () => {
       mockOrganizationsService.update.mockResolvedValue(null);
 
-      await expect(controller.update("missing", { city: "Paris" })).rejects.toThrow(NotFoundException);
       await expect(controller.update("missing", { city: "Paris" })).rejects.toThrow(
-        "Organization not found"
+        NotFoundException,
+      );
+      await expect(controller.update("missing", { city: "Paris" })).rejects.toThrow(
+        "Organization not found",
       );
     });
   });

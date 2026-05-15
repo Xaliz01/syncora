@@ -8,7 +8,7 @@ import {
   Patch,
   Post,
   Put,
-  Query
+  Query,
 } from "@nestjs/common";
 import { AbstractPermissionsService } from "../../domain/ports/permissions.service.port";
 import type {
@@ -16,7 +16,7 @@ import type {
   CreateInvitationBody,
   CreatePermissionProfileBody,
   ResolveEffectivePermissionsBody,
-  UpdatePermissionProfileBody
+  UpdatePermissionProfileBody,
 } from "@syncora/shared";
 
 @Controller()
@@ -35,10 +35,7 @@ export class PermissionsController {
   }
 
   @Get("profiles/:id")
-  async findProfileById(
-    @Param("id") id: string,
-    @Query("organizationId") organizationId: string
-  ) {
+  async findProfileById(@Param("id") id: string, @Query("organizationId") organizationId: string) {
     this.ensureOrganizationId(organizationId);
     return this.permissionsService.findProfileById(id, organizationId);
   }
@@ -49,10 +46,7 @@ export class PermissionsController {
   }
 
   @Delete("profiles/:id")
-  async deleteProfile(
-    @Param("id") id: string,
-    @Query("organizationId") organizationId: string
-  ) {
+  async deleteProfile(@Param("id") id: string, @Query("organizationId") organizationId: string) {
     this.ensureOrganizationId(organizationId);
     return this.permissionsService.deleteProfile(id, organizationId);
   }
@@ -60,7 +54,7 @@ export class PermissionsController {
   @Put("assignments/:userId")
   async assignUserPermissions(
     @Param("userId") userId: string,
-    @Body() body: AssignUserPermissionsBody
+    @Body() body: AssignUserPermissionsBody,
   ) {
     return this.permissionsService.assignUserPermissions({ ...body, userId });
   }
@@ -68,7 +62,7 @@ export class PermissionsController {
   @Get("assignments/:userId")
   async getUserAssignment(
     @Param("userId") userId: string,
-    @Query("organizationId") organizationId: string
+    @Query("organizationId") organizationId: string,
   ) {
     this.ensureOrganizationId(organizationId);
     return this.permissionsService.getUserAssignment(organizationId, userId);
@@ -87,7 +81,7 @@ export class PermissionsController {
   @Get("invitations")
   async listInvitations(
     @Query("organizationId") organizationId: string,
-    @Query("status") status?: "pending" | "accepted" | "cancelled"
+    @Query("status") status?: "pending" | "accepted" | "cancelled",
   ) {
     this.ensureOrganizationId(organizationId);
     return this.permissionsService.listInvitations(organizationId, status);

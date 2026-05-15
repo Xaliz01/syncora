@@ -196,4 +196,3 @@ Le workflow GitHub Actions (`.github/workflows/ci.yml`) :
 - Définir les **microservices métier** (clients, interventions, stocks, flotte, intervenants)
 - Enrichir `@syncora/shared` avec les **DTOs, schémas et contrats d’API**
 - Ajouter la configuration Docker/ECR/ECS concrète (référentiels, services ECS, secrets)
-

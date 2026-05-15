@@ -12,7 +12,7 @@ async function bootstrap() {
   app.setGlobalPrefix("api");
   app.enableCors({
     origin: process.env.CORS_ORIGIN ?? "http://localhost:5173",
-    credentials: true
+    credentials: true,
   });
 
   const swaggerPath = process.env.SWAGGER_PATH ?? "api/docs";
@@ -30,8 +30,8 @@ async function bootstrap() {
     swaggerOptions: {
       persistAuthorization: true,
       tagsSorter: "alpha",
-      operationsSorter: "alpha"
-    }
+      operationsSorter: "alpha",
+    },
   });
 
   const port = process.env.PORT || 3000;

@@ -8,17 +8,20 @@ import {
   Post,
   Put,
   Query,
-  UseGuards
+  UseGuards,
 } from "@nestjs/common";
 import { AbstractAdminService } from "../../domain/ports/admin.service.port";
 import type {
   CreatePermissionProfileForOrgBody,
   InviteOrganizationUserBody,
   UpdatePermissionProfileForOrgBody,
-  UpdateUserPermissionsBody
+  UpdateUserPermissionsBody,
 } from "../../domain/ports/admin.service.port";
 import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
-import { RequirePermissionGuard, RequirePermissions } from "../../infrastructure/require-permission.guard";
+import {
+  RequirePermissionGuard,
+  RequirePermissions,
+} from "../../infrastructure/require-permission.guard";
 import { SubscriptionAccessGuard } from "../../infrastructure/subscription-access.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
 import { NotifyEntity } from "../../infrastructure/notify-entity.decorator";
@@ -38,10 +41,7 @@ export class AdminController {
   @Post("users/invite")
   @RequirePermissions("users.invite")
   @NotifyEntity({ type: "user", action: "created" })
-  async inviteUser(
-    @CurrentUser() user: AuthUser,
-    @Body() body: InviteOrganizationUserBody
-  ) {
+  async inviteUser(@CurrentUser() user: AuthUser, @Body() body: InviteOrganizationUserBody) {
     return this.adminService.inviteUser(user, body);
   }
 
@@ -62,7 +62,7 @@ export class AdminController {
   async assignUserPermissions(
     @CurrentUser() user: AuthUser,
     @Param("userId") userId: string,
-    @Body() body: UpdateUserPermissionsBody
+    @Body() body: UpdateUserPermissionsBody,
   ) {
     return this.adminService.assignUserPermissions(user, userId, body);
   }
@@ -72,7 +72,7 @@ export class AdminController {
   @NotifyEntity({ type: "permission_profile", labelField: "name" })
   async createPermissionProfile(
     @CurrentUser() user: AuthUser,
-    @Body() body: CreatePermissionProfileForOrgBody
+    @Body() body: CreatePermissionProfileForOrgBody,
   ) {
     return this.adminService.createPermissionProfile(user, body);
   }
@@ -85,10 +85,7 @@ export class AdminController {
 
   @Get("permission-profiles/:profileId")
   @RequirePermissions("profiles.read")
-  async getPermissionProfile(
-    @CurrentUser() user: AuthUser,
-    @Param("profileId") profileId: string
-  ) {
+  async getPermissionProfile(@CurrentUser() user: AuthUser, @Param("profileId") profileId: string) {
     return this.adminService.getPermissionProfile(user, profileId);
   }
 
@@ -98,7 +95,7 @@ export class AdminController {
   async updatePermissionProfile(
     @CurrentUser() user: AuthUser,
     @Param("profileId") profileId: string,
-    @Body() body: UpdatePermissionProfileForOrgBody
+    @Body() body: UpdatePermissionProfileForOrgBody,
   ) {
     return this.adminService.updatePermissionProfile(user, profileId, body);
   }
@@ -108,7 +105,7 @@ export class AdminController {
   @NotifyEntity({ type: "permission_profile", idParam: "profileId" })
   async deletePermissionProfile(
     @CurrentUser() user: AuthUser,
-    @Param("profileId") profileId: string
+    @Param("profileId") profileId: string,
   ) {
     return this.adminService.deletePermissionProfile(user, profileId);
   }
@@ -117,7 +114,7 @@ export class AdminController {
   @RequirePermissions("users.invite")
   async listInvitations(
     @CurrentUser() user: AuthUser,
-    @Query("status") status?: "pending" | "accepted" | "cancelled"
+    @Query("status") status?: "pending" | "accepted" | "cancelled",
   ) {
     return this.adminService.listInvitations(user, status);
   }

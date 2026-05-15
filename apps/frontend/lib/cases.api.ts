@@ -3,14 +3,14 @@ import type {
   CaseResponse,
   CaseSummaryResponse,
   CaseTemplateResponse,
-  InterventionResponse
+  InterventionResponse,
 } from "@syncora/shared";
 import { apiRequestJson, type ApiMethod } from "./api-client";
 
 async function casesRequest<TResponse>(
   method: ApiMethod,
   path: string,
-  body?: unknown
+  body?: unknown,
 ): Promise<TResponse> {
   return apiRequestJson<TResponse>(method, path, typeof body === "undefined" ? {} : { body });
 }
@@ -84,10 +84,7 @@ export function listCases(filters?: {
   if (filters?.priority) params.set("priority", filters.priority);
   if (filters?.search) params.set("search", filters.search);
   const qs = params.toString();
-  return casesRequest<CaseSummaryResponse[]>(
-    "GET",
-    `/cases/items${qs ? `?${qs}` : ""}`
-  );
+  return casesRequest<CaseSummaryResponse[]>("GET", `/cases/items${qs ? `?${qs}` : ""}`);
 }
 
 export function getCase(caseId: string) {
@@ -106,7 +103,10 @@ export function deleteCase(caseId: string) {
   return casesRequest<{ deleted: true }>("DELETE", `/cases/items/${caseId}`);
 }
 
-export function updateTodo(caseId: string, payload: { stepId: string; todoId: string; status: string }) {
+export function updateTodo(
+  caseId: string,
+  payload: { stepId: string; todoId: string; status: string },
+) {
   return casesRequest<CaseResponse>("PUT", `/cases/items/${caseId}/todos`, payload);
 }
 
@@ -150,17 +150,11 @@ export function listInterventions(filters?: {
   if (filters?.status) params.set("status", filters.status);
   if (filters?.unscheduled) params.set("unscheduled", filters.unscheduled);
   const qs = params.toString();
-  return casesRequest<InterventionResponse[]>(
-    "GET",
-    `/cases/interventions${qs ? `?${qs}` : ""}`
-  );
+  return casesRequest<InterventionResponse[]>("GET", `/cases/interventions${qs ? `?${qs}` : ""}`);
 }
 
 export function getIntervention(interventionId: string) {
-  return casesRequest<InterventionResponse>(
-    "GET",
-    `/cases/interventions/${interventionId}`
-  );
+  return casesRequest<InterventionResponse>("GET", `/cases/interventions/${interventionId}`);
 }
 
 export function createIntervention(payload: CreateInterventionPayload) {
@@ -171,15 +165,12 @@ export function updateIntervention(interventionId: string, payload: UpdateInterv
   return casesRequest<InterventionResponse>(
     "PATCH",
     `/cases/interventions/${interventionId}`,
-    payload
+    payload,
   );
 }
 
 export function deleteIntervention(interventionId: string) {
-  return casesRequest<{ deleted: true }>(
-    "DELETE",
-    `/cases/interventions/${interventionId}`
-  );
+  return casesRequest<{ deleted: true }>("DELETE", `/cases/interventions/${interventionId}`);
 }
 
 // ── Dashboard ──

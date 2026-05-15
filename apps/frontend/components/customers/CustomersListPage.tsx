@@ -20,7 +20,7 @@ import {
   ListRowLink,
   ListSearchField,
   ListTableShell,
-  ListToolbar
+  ListToolbar,
 } from "@/components/ui/list-page";
 
 const GRID = "md:grid-cols-[1.2fr_0.7fr_1.1fr]";
@@ -28,10 +28,16 @@ const GRID = "md:grid-cols-[1.2fr_0.7fr_1.1fr]";
 export function CustomersListPage() {
   const [search, setSearch] = useState("");
 
-  const { data: rows = [], isLoading, isError, error, refetch } = useQuery({
+  const {
+    data: rows = [],
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: ["customers", "list"],
     queryFn: () => customersApi.listCustomers(),
-    staleTime: 20_000
+    staleTime: 20_000,
   });
 
   const filtered = useMemo(
@@ -43,9 +49,9 @@ export function CustomersListPage() {
         c.phone,
         c.mobile,
         c.companyName,
-        c.legalIdentifier
+        c.legalIdentifier,
       ]),
-    [rows, search]
+    [rows, search],
   );
 
   return (
@@ -92,7 +98,9 @@ export function CustomersListPage() {
             <ListRowLink key={c.id} href={`/customers/${c.id}`} gridTemplateClass={GRID}>
               <ListCellPrimary>{c.displayName}</ListCellPrimary>
               <ListCellDefault>{CUSTOMER_KIND_LABELS[c.kind] ?? c.kind}</ListCellDefault>
-              <ListCellMuted>{[c.email, c.phone ?? c.mobile].filter(Boolean).join(" · ") || "—"}</ListCellMuted>
+              <ListCellMuted>
+                {[c.email, c.phone ?? c.mobile].filter(Boolean).join(" · ") || "—"}
+              </ListCellMuted>
             </ListRowLink>
           ))}
         </ListTableShell>

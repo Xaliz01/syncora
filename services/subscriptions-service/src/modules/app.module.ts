@@ -9,14 +9,14 @@ import { ProcessedStripeEventSchema } from "../persistence/processed-stripe-even
 @Module({
   imports: [
     MongooseModule.forRoot(
-      process.env.MONGODB_URI ?? "mongodb://localhost:27017/syncora-subscriptions"
+      process.env.MONGODB_URI ?? "mongodb://localhost:27017/syncora-subscriptions",
     ),
     MongooseModule.forFeature([
       { name: "OrganizationSubscription", schema: OrganizationSubscriptionSchema },
-      { name: "ProcessedStripeEvent", schema: ProcessedStripeEventSchema }
-    ])
+      { name: "ProcessedStripeEvent", schema: ProcessedStripeEventSchema },
+    ]),
   ],
   controllers: [SubscriptionsController, StripeWebhookController],
-  providers: [SubscriptionsService]
+  providers: [SubscriptionsService],
 })
 export class AppModule {}

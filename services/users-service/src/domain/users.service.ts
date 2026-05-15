@@ -2,7 +2,7 @@ import {
   Injectable,
   ConflictException,
   NotFoundException,
-  BadRequestException
+  BadRequestException,
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import type { Model } from "mongoose";
@@ -19,7 +19,7 @@ import {
   type OrganizationMembershipResponse,
   type PatchUserBody,
   type UserResponse,
-  type ValidateCredentialsResponse
+  type ValidateCredentialsResponse,
 } from "@syncora/shared";
 import { AbstractUsersService } from "./ports/users.service.port";
 
@@ -30,7 +30,7 @@ export class UsersService extends AbstractUsersService {
   constructor(
     @InjectModel("User") private readonly userModel: Model<UserDocument>,
     @InjectModel("OrganizationMembership")
-    private readonly membershipModel: Model<OrganizationMembershipDocument>
+    private readonly membershipModel: Model<OrganizationMembershipDocument>,
   ) {
     super();
   }
@@ -49,7 +49,7 @@ export class UsersService extends AbstractUsersService {
       passwordHash,
       name: body.name,
       role: body.role,
-      status: "active"
+      status: "active",
     });
     const uid = doc._id.toString();
     await this.membershipModel.findOneAndUpdate(
@@ -58,11 +58,11 @@ export class UsersService extends AbstractUsersService {
         $set: {
           role: body.role,
           membershipStatus: "active",
-          deletedAt: null
+          deletedAt: null,
         },
-        $setOnInsert: { userId: uid, organizationId: body.organizationId }
+        $setOnInsert: { userId: uid, organizationId: body.organizationId },
       },
-      { upsert: true, new: true }
+      { upsert: true, new: true },
     );
     return this.toResponse(doc);
   }
@@ -80,7 +80,7 @@ export class UsersService extends AbstractUsersService {
       name: body.name,
       role: body.role ?? "member",
       status: "active",
-      invitedByUserId: body.invitedByUserId
+      invitedByUserId: body.invitedByUserId,
     });
     const uid = doc._id.toString();
     await this.membershipModel.findOneAndUpdate(
@@ -89,11 +89,11 @@ export class UsersService extends AbstractUsersService {
         $set: {
           role: body.role ?? "member",
           membershipStatus: "invited",
-          deletedAt: null
+          deletedAt: null,
         },
-        $setOnInsert: { userId: uid, organizationId: body.organizationId }
+        $setOnInsert: { userId: uid, organizationId: body.organizationId },
       },
-      { upsert: true, new: true }
+      { upsert: true, new: true },
     );
     return this.toResponse(doc);
   }
@@ -110,12 +110,12 @@ export class UsersService extends AbstractUsersService {
         userId: uid,
         organizationId: doc.organizationId,
         membershipStatus: "invited",
-        deletedAt: null
+        deletedAt: null,
       })
       .exec();
     if (!pending) {
       throw new BadRequestException(
-        "Aucune invitation en attente pour cette organisation (statut géré via organization_memberships)."
+        "Aucune invitation en attente pour cette organisation (statut géré via organization_memberships).",
       );
     }
 
@@ -125,7 +125,7 @@ export class UsersService extends AbstractUsersService {
 
     await this.membershipModel.updateMany(
       { userId: uid, organizationId: doc.organizationId, deletedAt: null },
-      { $set: { membershipStatus: "active" } }
+      { $set: { membershipStatus: "active" } },
     );
 
     return this.toResponse(doc);
@@ -176,7 +176,8 @@ export class UsersService extends AbstractUsersService {
       out.push({
         ...base,
         role: m.role as UserResponse["role"],
-        organizationMembershipStatus: m.membershipStatus as UserResponse["organizationMembershipStatus"]
+        organizationMembershipStatus:
+          m.membershipStatus as UserResponse["organizationMembershipStatus"],
       });
     }
     return out;
@@ -193,7 +194,7 @@ export class UsersService extends AbstractUsersService {
 
   async addOrganizationMembership(
     userId: string,
-    body: CreateOrganizationMembershipBody
+    body: CreateOrganizationMembershipBody,
   ): Promise<OrganizationMembershipResponse> {
     if (!body.organizationId?.trim()) {
       throw new BadRequestException("organizationId is required");
@@ -207,11 +208,11 @@ export class UsersService extends AbstractUsersService {
         $set: {
           role: body.role,
           membershipStatus: body.membershipStatus ?? "active",
-          deletedAt: null
+          deletedAt: null,
         },
-        $setOnInsert: { userId, organizationId: body.organizationId.trim() }
+        $setOnInsert: { userId, organizationId: body.organizationId.trim() },
       },
-      { upsert: true, new: true }
+      { upsert: true, new: true },
     );
     if (!doc) {
       throw new BadRequestException("Impossible de créer le rattachement organisation.");
@@ -221,7 +222,7 @@ export class UsersService extends AbstractUsersService {
 
   async validateCredentials(
     email: string,
-    password: string
+    password: string,
   ): Promise<ValidateCredentialsResponse | null> {
     const doc = await this.userModel.findOne({ email, ...activeDocumentFilter }).exec();
     if (!doc) return null;
@@ -236,7 +237,7 @@ export class UsersService extends AbstractUsersService {
       .findOne({
         userId: uid,
         organizationId: doc.organizationId,
-        deletedAt: null
+        deletedAt: null,
       })
       .exec();
     if (m?.membershipStatus === "invited") {
@@ -251,11 +252,13 @@ export class UsersService extends AbstractUsersService {
       email: doc.email,
       name: doc.name,
       role,
-      status: doc.status
+      status: doc.status,
     };
   }
 
-  private membershipToResponse(doc: OrganizationMembershipDocument): OrganizationMembershipResponse {
+  private membershipToResponse(
+    doc: OrganizationMembershipDocument,
+  ): OrganizationMembershipResponse {
     return {
       id: doc._id.toString(),
       userId: doc.userId,
@@ -263,7 +266,7 @@ export class UsersService extends AbstractUsersService {
       role: doc.role as OrganizationMembershipResponse["role"],
       membershipStatus: doc.membershipStatus as OrganizationMembershipResponse["membershipStatus"],
       createdAt: doc.get("createdAt")?.toISOString(),
-      updatedAt: doc.get("updatedAt")?.toISOString()
+      updatedAt: doc.get("updatedAt")?.toISOString(),
     };
   }
 
@@ -275,11 +278,14 @@ export class UsersService extends AbstractUsersService {
 
   private async ensureMembershipsBackfill(doc: UserDocument): Promise<void> {
     const uid = doc._id.toString();
-    const count = await this.membershipModel.countDocuments({ userId: uid, deletedAt: null }).exec();
+    const count = await this.membershipModel
+      .countDocuments({ userId: uid, deletedAt: null })
+      .exec();
     if (count > 0) return;
 
     const raw = await this.userModel.collection.findOne({ _id: new Types.ObjectId(uid) });
-    const legacyLinked = (raw?.linkedOrganizationIds as string[] | undefined)?.filter(Boolean) ?? [];
+    const legacyLinked =
+      (raw?.linkedOrganizationIds as string[] | undefined)?.filter(Boolean) ?? [];
 
     await this.membershipModel.findOneAndUpdate(
       { userId: uid, organizationId: doc.organizationId },
@@ -287,11 +293,11 @@ export class UsersService extends AbstractUsersService {
         $set: {
           role: doc.role,
           membershipStatus: doc.status === "invited" ? "invited" : "active",
-          deletedAt: null
+          deletedAt: null,
         },
-        $setOnInsert: { userId: uid, organizationId: doc.organizationId }
+        $setOnInsert: { userId: uid, organizationId: doc.organizationId },
       },
-      { upsert: true, new: true }
+      { upsert: true, new: true },
     );
 
     for (const oid of legacyLinked) {
@@ -302,16 +308,19 @@ export class UsersService extends AbstractUsersService {
           $set: {
             role: doc.role,
             membershipStatus: "active",
-            deletedAt: null
+            deletedAt: null,
           },
-          $setOnInsert: { userId: uid, organizationId: oid }
+          $setOnInsert: { userId: uid, organizationId: oid },
         },
-        { upsert: true, new: true }
+        { upsert: true, new: true },
       );
     }
 
     if (legacyLinked.length > 0) {
-      await this.userModel.collection.updateOne({ _id: doc._id }, { $unset: { linkedOrganizationIds: "" } });
+      await this.userModel.collection.updateOne(
+        { _id: doc._id },
+        { $unset: { linkedOrganizationIds: "" } },
+      );
     }
   }
 
@@ -323,7 +332,7 @@ export class UsersService extends AbstractUsersService {
       name: doc.name,
       role: doc.role as UserResponse["role"],
       status: doc.status,
-      createdAt: doc.get("createdAt")?.toISOString()
+      createdAt: doc.get("createdAt")?.toISOString(),
     };
   }
 }

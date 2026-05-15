@@ -28,7 +28,7 @@ export function TeamCreatePage() {
     try {
       const [techList, agenceList] = await Promise.all([
         fleetApi.listTechnicians(),
-        fleetApi.listAgences()
+        fleetApi.listAgences(),
       ]);
       setTechnicians(techList);
       setAgences(agenceList);
@@ -45,7 +45,7 @@ export function TeamCreatePage() {
 
   const toggleTechnician = (id: string) => {
     setSelectedTechnicianIds((prev) =>
-      prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id],
     );
   };
 
@@ -59,7 +59,7 @@ export function TeamCreatePage() {
         agenceId: agenceId || undefined,
         technicianIds: selectedTechnicianIds,
         status,
-        calendarColor: calendarColor.trim() || undefined
+        calendarColor: calendarColor.trim() || undefined,
       });
       showToast("Équipe créée avec succès.");
       router.push("/fleet/teams");
@@ -102,7 +102,9 @@ export function TeamCreatePage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Statut</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+                Statut
+              </label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as TeamStatus)}
@@ -118,7 +120,9 @@ export function TeamCreatePage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Agence</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+              Agence
+            </label>
             <select
               value={agenceId}
               onChange={(e) => setAgenceId(e.target.value)}
@@ -172,7 +176,9 @@ export function TeamCreatePage() {
                 Membres de l&apos;équipe
               </label>
               {technicians.length === 0 ? (
-                <p className="text-sm text-slate-400 dark:text-slate-500">Aucun technicien disponible.</p>
+                <p className="text-sm text-slate-400 dark:text-slate-500">
+                  Aucun technicien disponible.
+                </p>
               ) : (
                 <div className="grid gap-2 sm:grid-cols-2">
                   {technicians.map((tech) => (
@@ -194,7 +200,9 @@ export function TeamCreatePage() {
                         {tech.firstName} {tech.lastName}
                       </span>
                       {tech.speciality && (
-                        <span className="text-slate-400 dark:text-slate-500 text-xs">({tech.speciality})</span>
+                        <span className="text-slate-400 dark:text-slate-500 text-xs">
+                          ({tech.speciality})
+                        </span>
                       )}
                     </label>
                   ))}

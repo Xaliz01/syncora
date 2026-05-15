@@ -30,7 +30,7 @@ export function AgenceDetailsPage({ agenceId }: { agenceId: string }) {
     try {
       const [agenceData, teamList] = await Promise.all([
         fleetApi.getAgence(agenceId),
-        fleetApi.listTeams()
+        fleetApi.listTeams(),
       ]);
       setAgence(agenceData);
       setTeams(teamList.filter((t) => t.agenceId === agenceId));
@@ -61,7 +61,7 @@ export function AgenceDetailsPage({ agenceId }: { agenceId: string }) {
         address: editAddress.trim() || undefined,
         city: editCity.trim() || undefined,
         postalCode: editPostalCode.trim() || undefined,
-        phone: editPhone.trim() || undefined
+        phone: editPhone.trim() || undefined,
       });
       showToast("Agence mise à jour.");
       setIsEditing(false);
@@ -183,7 +183,9 @@ export function AgenceDetailsPage({ agenceId }: { agenceId: string }) {
               />
             </div>
             <div>
-              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Téléphone</label>
+              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">
+                Téléphone
+              </label>
               <input
                 type="tel"
                 value={editPhone}
@@ -227,7 +229,9 @@ export function AgenceDetailsPage({ agenceId }: { agenceId: string }) {
       <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 space-y-3">
         <h2 className="font-semibold">Équipes rattachées</h2>
         {teams.length === 0 ? (
-          <p className="text-sm text-slate-500 dark:text-slate-400">Aucune équipe rattachée à cette agence.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Aucune équipe rattachée à cette agence.
+          </p>
         ) : (
           <div className="space-y-2">
             {teams.map((team) => (

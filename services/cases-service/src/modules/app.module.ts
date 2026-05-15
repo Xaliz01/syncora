@@ -9,16 +9,14 @@ import { InterventionSchema } from "../persistence/intervention.schema";
 
 @Module({
   imports: [
-    MongooseModule.forRoot(
-      process.env.MONGODB_URI ?? "mongodb://localhost:27017/syncora-cases"
-    ),
+    MongooseModule.forRoot(process.env.MONGODB_URI ?? "mongodb://localhost:27017/syncora-cases"),
     MongooseModule.forFeature([
       { name: "CaseTemplate", schema: CaseTemplateSchema },
       { name: "Case", schema: CaseSchema },
-      { name: "Intervention", schema: InterventionSchema }
-    ])
+      { name: "Intervention", schema: InterventionSchema },
+    ]),
   ],
   controllers: [CasesController],
-  providers: [{ provide: AbstractCasesService, useClass: CasesService }]
+  providers: [{ provide: AbstractCasesService, useClass: CasesService }],
 })
 export class AppModule {}

@@ -15,7 +15,7 @@ const PALETTE = [
   "bg-teal-100 text-teal-950 border border-teal-300/90 dark:bg-teal-950/55 dark:text-teal-50 dark:border-teal-700",
   "bg-indigo-100 text-indigo-950 border border-indigo-300/90 dark:bg-indigo-950/55 dark:text-indigo-50 dark:border-indigo-700",
   "bg-fuchsia-100 text-fuchsia-950 border border-fuchsia-300/90 dark:bg-fuchsia-950/55 dark:text-fuchsia-50 dark:border-fuchsia-700",
-  "bg-lime-100 text-lime-950 border border-lime-300/90 dark:bg-lime-950/55 dark:text-lime-50 dark:border-lime-700"
+  "bg-lime-100 text-lime-950 border border-lime-300/90 dark:bg-lime-950/55 dark:text-lime-50 dark:border-lime-700",
 ] as const;
 
 function hashTeamId(id: string): number {
@@ -59,18 +59,18 @@ export interface TeamCalendarCardAppearance {
 /** Couleur perso équipe (`calendarColor`) ou palette automatique selon `teamId`. */
 export function getTeamCalendarCardAppearance(
   teamId: string | undefined | null,
-  calendarColor: string | undefined | null
+  calendarColor: string | undefined | null,
 ): TeamCalendarCardAppearance {
   const hex = normalizeCalendarColorHex(calendarColor);
   if (hex) {
     return {
       className: "team-cal-custom",
-      style: { "--team-cal-border": hex } as CSSProperties
+      style: { "--team-cal-border": hex } as CSSProperties,
     };
   }
   return {
     className: getTeamCalendarCardClasses(teamId),
-    style: undefined
+    style: undefined,
   };
 }
 

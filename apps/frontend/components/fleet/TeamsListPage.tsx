@@ -20,17 +20,18 @@ import {
   ListRowLink,
   ListSearchField,
   ListTableShell,
-  ListToolbar
+  ListToolbar,
 } from "@/components/ui/list-page";
 
 const STATUS_COLORS: Record<string, string> = {
   active: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  inactive: "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700"
+  inactive:
+    "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700",
 };
 
 const STATUS_LABELS: Record<string, string> = {
   active: "Active",
-  inactive: "Inactive"
+  inactive: "Inactive",
 };
 
 const GRID = "md:grid-cols-[1.5fr_1fr_0.5fr_0.5fr]";
@@ -64,9 +65,9 @@ export function TeamsListPage() {
         team.name,
         team.agenceName,
         STATUS_LABELS[team.status] ?? team.status,
-        String(team.technicianIds.length)
+        String(team.technicianIds.length),
       ]),
-    [teams, search]
+    [teams, search],
   );
 
   return (
@@ -80,7 +81,11 @@ export function TeamsListPage() {
       {error ? <ListPageError message={error} onRetry={() => void loadData()} /> : null}
 
       <ListToolbar>
-        <ListSearchField value={search} onChange={setSearch} placeholder="Filtrer par nom, agence, statut…" />
+        <ListSearchField
+          value={search}
+          onChange={setSearch}
+          placeholder="Filtrer par nom, agence, statut…"
+        />
       </ListToolbar>
 
       {loading ? (
@@ -89,7 +94,10 @@ export function TeamsListPage() {
         <ListEmptyState
           message="Aucune équipe enregistrée."
           action={
-            <Link href="/fleet/teams/new" className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium">
+            <Link
+              href="/fleet/teams/new"
+              className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium"
+            >
               Créer votre première équipe
             </Link>
           }
@@ -113,7 +121,12 @@ export function TeamsListPage() {
               <ListCellPrimary>{team.name}</ListCellPrimary>
               <ListCellMuted>{team.agenceName || "—"}</ListCellMuted>
               <ListCellDefault>{team.technicianIds.length}</ListCellDefault>
-              <ListBadge className={STATUS_COLORS[team.status] ?? "bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700"}>
+              <ListBadge
+                className={
+                  STATUS_COLORS[team.status] ??
+                  "bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700"
+                }
+              >
                 {STATUS_LABELS[team.status] ?? team.status}
               </ListBadge>
             </ListRowLink>

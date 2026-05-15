@@ -1,9 +1,4 @@
-import {
-  CallHandler,
-  ExecutionContext,
-  Injectable,
-  NestInterceptor
-} from "@nestjs/common";
+import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { tap } from "rxjs";
@@ -24,20 +19,20 @@ const METHOD_ACTION_MAP: Record<string, NotificationAction> = {
   POST: "created",
   PUT: "updated",
   PATCH: "updated",
-  DELETE: "deleted"
+  DELETE: "deleted",
 };
 
 @Injectable()
 export class NotifyInterceptor implements NestInterceptor {
   constructor(
     private readonly reflector: Reflector,
-    private readonly eventEmitter: EventEmitter2
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   intercept(context: ExecutionContext, next: CallHandler) {
     const meta = this.reflector.get<NotifyEntityMetadata | undefined>(
       NOTIFY_ENTITY_KEY,
-      context.getHandler()
+      context.getHandler(),
     );
     if (!meta) return next.handle();
 
@@ -54,7 +49,7 @@ export class NotifyInterceptor implements NestInterceptor {
     return next.handle().pipe(
       tap((responseBody) => {
         const entityId =
-          (responseBody as Record<string, unknown>)?.id as string | undefined ??
+          ((responseBody as Record<string, unknown>)?.id as string | undefined) ??
           (meta.idParam ? request.params[meta.idParam] : undefined);
 
         if (!entityId) return;
@@ -71,11 +66,11 @@ export class NotifyInterceptor implements NestInterceptor {
           entityType: meta.type,
           entityId,
           entityLabel,
-          action
+          action,
         };
 
         this.eventEmitter.emit("syncora.entity.changed", event);
-      })
+      }),
     );
   }
 }

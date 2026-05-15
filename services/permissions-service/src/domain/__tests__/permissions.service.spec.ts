@@ -12,7 +12,7 @@ describe("PermissionsService", () => {
   let mockInvitationModel: Record<string, jest.Mock>;
 
   const createExecMock = (value: unknown) => ({
-    exec: jest.fn().mockResolvedValue(value)
+    exec: jest.fn().mockResolvedValue(value),
   });
 
   const mockProfileDoc = (overrides: Record<string, unknown> = {}) => ({
@@ -26,7 +26,7 @@ describe("PermissionsService", () => {
       if (key === "updatedAt") return new Date("2025-01-02");
       return undefined;
     }),
-    ...overrides
+    ...overrides,
   });
 
   const mockAssignmentDoc = (overrides: Record<string, unknown> = {}) => ({
@@ -37,7 +37,7 @@ describe("PermissionsService", () => {
     extraPermissions: [],
     revokedPermissions: [],
     get: jest.fn((key: string) => (key === "updatedAt" ? new Date("2025-01-02") : undefined)),
-    ...overrides
+    ...overrides,
   });
 
   const mockInvitationDoc = (overrides: Record<string, unknown> = {}) => ({
@@ -55,7 +55,7 @@ describe("PermissionsService", () => {
     acceptedAt: undefined,
     get: jest.fn((key: string) => (key === "createdAt" ? new Date("2025-01-01") : undefined)),
     save: jest.fn().mockResolvedValue(undefined),
-    ...overrides
+    ...overrides,
   });
 
   beforeEach(async () => {
@@ -64,18 +64,18 @@ describe("PermissionsService", () => {
       find: jest.fn(),
       findOne: jest.fn(),
       findOneAndUpdate: jest.fn(),
-      updateOne: jest.fn()
+      updateOne: jest.fn(),
     };
     mockUserAssignmentModel = {
       findOne: jest.fn(),
       findOneAndUpdate: jest.fn(),
-      updateMany: jest.fn().mockResolvedValue({ modifiedCount: 0 })
+      updateMany: jest.fn().mockResolvedValue({ modifiedCount: 0 }),
     };
     mockInvitationModel = {
       create: jest.fn(),
       find: jest.fn(),
       findOne: jest.fn(),
-      updateMany: jest.fn().mockResolvedValue({ modifiedCount: 0 })
+      updateMany: jest.fn().mockResolvedValue({ modifiedCount: 0 }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -84,10 +84,10 @@ describe("PermissionsService", () => {
         { provide: getModelToken("PermissionProfile"), useValue: mockPermissionProfileModel },
         {
           provide: getModelToken("UserPermissionAssignment"),
-          useValue: mockUserAssignmentModel
+          useValue: mockUserAssignmentModel,
         },
-        { provide: getModelToken("Invitation"), useValue: mockInvitationModel }
-      ]
+        { provide: getModelToken("Invitation"), useValue: mockInvitationModel },
+      ],
     }).compile();
 
     service = module.get<PermissionsService>(AbstractPermissionsService);
@@ -100,7 +100,7 @@ describe("PermissionsService", () => {
   describe("createProfile", () => {
     it("should create a profile and return response", async () => {
       const doc = mockProfileDoc({
-        permissions: ["users.read", "cases.read"]
+        permissions: ["users.read", "cases.read"],
       });
       mockPermissionProfileModel.create.mockResolvedValue(doc);
 
@@ -108,7 +108,7 @@ describe("PermissionsService", () => {
         organizationId: "org-1",
         name: "Test Profile",
         description: "A profile",
-        permissions: ["users.read", "cases.read"]
+        permissions: ["users.read", "cases.read"],
       });
 
       expect(mockPermissionProfileModel.create).toHaveBeenCalledWith(
@@ -116,14 +116,14 @@ describe("PermissionsService", () => {
           organizationId: "org-1",
           name: "Test Profile",
           description: "A profile",
-          permissions: ["users.read", "cases.read"]
-        })
+          permissions: ["users.read", "cases.read"],
+        }),
       );
       expect(result).toMatchObject({
         id: "profile-123",
         organizationId: "org-1",
         name: "Test Profile",
-        permissions: expect.arrayContaining(["users.read", "cases.read"])
+        permissions: expect.arrayContaining(["users.read", "cases.read"]),
       });
     });
 
@@ -135,15 +135,15 @@ describe("PermissionsService", () => {
         service.createProfile({
           organizationId: "org-1",
           name: "Duplicate",
-          permissions: ["users.read"]
-        })
+          permissions: ["users.read"],
+        }),
       ).rejects.toThrow(ConflictException);
       await expect(
         service.createProfile({
           organizationId: "org-1",
           name: "Duplicate",
-          permissions: ["users.read"]
-        })
+          permissions: ["users.read"],
+        }),
       ).rejects.toThrow("Profile name already exists in organization");
     });
 
@@ -152,15 +152,15 @@ describe("PermissionsService", () => {
         service.createProfile({
           organizationId: "org-1",
           name: "Bad Profile",
-          permissions: ["users.read", "invalid.permission" as never]
-        })
+          permissions: ["users.read", "invalid.permission" as never],
+        }),
       ).rejects.toThrow(BadRequestException);
       await expect(
         service.createProfile({
           organizationId: "org-1",
           name: "Bad Profile",
-          permissions: ["users.read", "invalid.permission" as never]
-        })
+          permissions: ["users.read", "invalid.permission" as never],
+        }),
       ).rejects.toThrow("Unknown permissions");
     });
   });
@@ -169,14 +169,14 @@ describe("PermissionsService", () => {
     it("should return profiles sorted by createdAt", async () => {
       const docs = [mockProfileDoc(), mockProfileDoc({ _id: { toString: () => "profile-456" } })];
       mockPermissionProfileModel.find.mockReturnValue({
-        sort: jest.fn().mockReturnValue(createExecMock(docs))
+        sort: jest.fn().mockReturnValue(createExecMock(docs)),
       });
 
       const result = await service.listProfiles("org-1");
 
       expect(mockPermissionProfileModel.find).toHaveBeenCalledWith({
         organizationId: "org-1",
-        ...activeDocumentFilter
+        ...activeDocumentFilter,
       });
       expect(result).toHaveLength(2);
     });
@@ -192,7 +192,7 @@ describe("PermissionsService", () => {
       expect(mockPermissionProfileModel.findOne).toHaveBeenCalledWith({
         _id: "profile-123",
         organizationId: "org-1",
-        ...activeDocumentFilter
+        ...activeDocumentFilter,
       });
       expect(result.id).toBe("profile-123");
     });
@@ -201,10 +201,10 @@ describe("PermissionsService", () => {
       mockPermissionProfileModel.findOne.mockReturnValue(createExecMock(null));
 
       await expect(service.findProfileById("non-existent", "org-1")).rejects.toThrow(
-        NotFoundException
+        NotFoundException,
       );
       await expect(service.findProfileById("non-existent", "org-1")).rejects.toThrow(
-        "Profile not found"
+        "Profile not found",
       );
     });
   });
@@ -212,14 +212,14 @@ describe("PermissionsService", () => {
   describe("deleteProfile", () => {
     it("should soft-delete profile and return { deleted: true }", async () => {
       mockPermissionProfileModel.updateOne.mockReturnValue(
-        createExecMock({ matchedCount: 1, modifiedCount: 1 })
+        createExecMock({ matchedCount: 1, modifiedCount: 1 }),
       );
 
       const result = await service.deleteProfile("profile-123", "org-1");
 
       expect(mockPermissionProfileModel.updateOne).toHaveBeenCalledWith(
         { _id: "profile-123", organizationId: "org-1", ...activeDocumentFilter },
-        { $set: { deletedAt: expect.any(Date) } }
+        { $set: { deletedAt: expect.any(Date) } },
       );
       expect(mockUserAssignmentModel.updateMany).toHaveBeenCalled();
       expect(mockInvitationModel.updateMany).toHaveBeenCalled();
@@ -228,11 +228,11 @@ describe("PermissionsService", () => {
 
     it("should throw NotFoundException when profile not found", async () => {
       mockPermissionProfileModel.updateOne.mockReturnValue(
-        createExecMock({ matchedCount: 0, modifiedCount: 0 })
+        createExecMock({ matchedCount: 0, modifiedCount: 0 }),
       );
 
       await expect(service.deleteProfile("non-existent", "org-1")).rejects.toThrow(
-        NotFoundException
+        NotFoundException,
       );
     });
   });
@@ -242,23 +242,21 @@ describe("PermissionsService", () => {
       const profileDoc = mockProfileDoc({ permissions: ["users.read"] });
       const assignmentDoc = mockAssignmentDoc({ profileId: "profile-123" });
       mockPermissionProfileModel.findOne.mockReturnValue(createExecMock(profileDoc));
-      mockUserAssignmentModel.findOneAndUpdate.mockReturnValue(
-        createExecMock(assignmentDoc)
-      );
+      mockUserAssignmentModel.findOneAndUpdate.mockReturnValue(createExecMock(assignmentDoc));
 
       const result = await service.assignUserPermissions({
         organizationId: "org-1",
         userId: "user-1",
         profileId: "profile-123",
         extraPermissions: ["cases.read"],
-        revokedPermissions: []
+        revokedPermissions: [],
       });
 
       expect(mockUserAssignmentModel.findOneAndUpdate).toHaveBeenCalled();
       expect(result).toMatchObject({
         organizationId: "org-1",
         userId: "user-1",
-        profileId: "profile-123"
+        profileId: "profile-123",
       });
     });
 
@@ -269,15 +267,15 @@ describe("PermissionsService", () => {
         service.assignUserPermissions({
           organizationId: "org-1",
           userId: "user-1",
-          profileId: "non-existent"
-        })
+          profileId: "non-existent",
+        }),
       ).rejects.toThrow(NotFoundException);
       await expect(
         service.assignUserPermissions({
           organizationId: "org-1",
           userId: "user-1",
-          profileId: "non-existent"
-        })
+          profileId: "non-existent",
+        }),
       ).rejects.toThrow("Profile not found in this organization");
     });
   });
@@ -293,12 +291,12 @@ describe("PermissionsService", () => {
 
       expect(mockUserAssignmentModel.findOne).toHaveBeenCalledWith({
         organizationId: "org-1",
-        userId: "user-1"
+        userId: "user-1",
       });
       expect(result).toMatchObject({
         organizationId: "org-1",
         userId: "user-1",
-        effectivePermissions: expect.any(Array)
+        effectivePermissions: expect.any(Array),
       });
     });
 
@@ -312,7 +310,7 @@ describe("PermissionsService", () => {
         userId: "user-1",
         extraPermissions: [],
         revokedPermissions: [],
-        effectivePermissions: []
+        effectivePermissions: [],
       });
     });
   });
@@ -322,7 +320,7 @@ describe("PermissionsService", () => {
       const result = await service.resolveEffectivePermissions({
         organizationId: "org-1",
         userId: "user-1",
-        role: "admin"
+        role: "admin",
       });
 
       expect(result.permissions).toEqual([...ASSIGNABLE_PERMISSION_CODES]);
@@ -333,10 +331,10 @@ describe("PermissionsService", () => {
       const assignmentDoc = mockAssignmentDoc({
         profileId: "profile-123",
         extraPermissions: ["cases.create"],
-        revokedPermissions: []
+        revokedPermissions: [],
       });
       const profileDoc = mockProfileDoc({
-        permissions: ["users.read", "cases.read"]
+        permissions: ["users.read", "cases.read"],
       });
       mockUserAssignmentModel.findOne.mockReturnValue(createExecMock(assignmentDoc));
       mockPermissionProfileModel.findOne.mockReturnValue(createExecMock(profileDoc));
@@ -344,15 +342,15 @@ describe("PermissionsService", () => {
       const result = await service.resolveEffectivePermissions({
         organizationId: "org-1",
         userId: "user-1",
-        role: "member"
+        role: "member",
       });
 
       expect(mockUserAssignmentModel.findOne).toHaveBeenCalledWith({
         organizationId: "org-1",
-        userId: "user-1"
+        userId: "user-1",
       });
       expect(result.permissions).toEqual(
-        expect.arrayContaining(["users.read", "cases.read", "cases.create"])
+        expect.arrayContaining(["users.read", "cases.read", "cases.create"]),
       );
     });
 
@@ -360,10 +358,10 @@ describe("PermissionsService", () => {
       const assignmentDoc = mockAssignmentDoc({
         profileId: "profile-123",
         extraPermissions: [],
-        revokedPermissions: ["cases.delete"]
+        revokedPermissions: ["cases.delete"],
       });
       const profileDoc = mockProfileDoc({
-        permissions: ["users.read", "cases.read", "cases.delete"]
+        permissions: ["users.read", "cases.read", "cases.delete"],
       });
       mockUserAssignmentModel.findOne.mockReturnValue(createExecMock(assignmentDoc));
       mockPermissionProfileModel.findOne.mockReturnValue(createExecMock(profileDoc));
@@ -371,7 +369,7 @@ describe("PermissionsService", () => {
       const result = await service.resolveEffectivePermissions({
         organizationId: "org-1",
         userId: "user-1",
-        role: "member"
+        role: "member",
       });
 
       expect(result.permissions).not.toContain("cases.delete");
@@ -384,7 +382,7 @@ describe("PermissionsService", () => {
       const result = await service.resolveEffectivePermissions({
         organizationId: "org-1",
         userId: "user-1",
-        role: "member"
+        role: "member",
       });
 
       expect(result.permissions).toEqual([]);
@@ -401,7 +399,7 @@ describe("PermissionsService", () => {
         invitedUserId: "user-1",
         invitedEmail: "invited@example.com",
         invitedName: "Invited",
-        invitedByUserId: "admin-1"
+        invitedByUserId: "admin-1",
       });
 
       expect(mockInvitationModel.create).toHaveBeenCalledWith(
@@ -411,14 +409,14 @@ describe("PermissionsService", () => {
           invitedEmail: "invited@example.com",
           invitedName: "Invited",
           invitedByUserId: "admin-1",
-          status: "pending"
-        })
+          status: "pending",
+        }),
       );
       expect(result).toMatchObject({
         id: "inv-123",
         organizationId: "org-1",
         invitedEmail: "invited@example.com",
-        status: "pending"
+        status: "pending",
       });
     });
 
@@ -431,8 +429,8 @@ describe("PermissionsService", () => {
           invitedUserId: "user-1",
           invitedEmail: "invited@example.com",
           invitedByUserId: "admin-1",
-          profileId: "non-existent"
-        })
+          profileId: "non-existent",
+        }),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -444,16 +442,16 @@ describe("PermissionsService", () => {
           organizationId: "org-1",
           invitedUserId: "user-1",
           invitedEmail: "invited@example.com",
-          invitedByUserId: "admin-1"
-        })
+          invitedByUserId: "admin-1",
+        }),
       ).rejects.toThrow(ConflictException);
       await expect(
         service.createInvitation({
           organizationId: "org-1",
           invitedUserId: "user-1",
           invitedEmail: "invited@example.com",
-          invitedByUserId: "admin-1"
-        })
+          invitedByUserId: "admin-1",
+        }),
       ).rejects.toThrow("A pending invitation already exists for this email");
     });
   });
@@ -466,12 +464,12 @@ describe("PermissionsService", () => {
       const result = await service.resolveInvitation("token-abc");
 
       expect(mockInvitationModel.findOne).toHaveBeenCalledWith({
-        invitationToken: "token-abc"
+        invitationToken: "token-abc",
       });
       expect(result).toMatchObject({
         id: "inv-123",
         invitationToken: "token-abc",
-        status: "pending"
+        status: "pending",
       });
     });
 
@@ -480,7 +478,7 @@ describe("PermissionsService", () => {
 
       await expect(service.resolveInvitation("invalid-token")).rejects.toThrow(NotFoundException);
       await expect(service.resolveInvitation("invalid-token")).rejects.toThrow(
-        "Invitation not found"
+        "Invitation not found",
       );
     });
 
@@ -490,7 +488,7 @@ describe("PermissionsService", () => {
 
       await expect(service.resolveInvitation("token-abc")).rejects.toThrow(ConflictException);
       await expect(service.resolveInvitation("token-abc")).rejects.toThrow(
-        "Invitation has already been processed"
+        "Invitation has already been processed",
       );
     });
   });
@@ -498,15 +496,13 @@ describe("PermissionsService", () => {
   describe("acceptInvitation", () => {
     it("should accept invitation and return response", async () => {
       const doc = mockInvitationDoc({ status: "pending" });
-      mockInvitationModel.findOne.mockReturnValue(
-        createExecMock(doc)
-      );
+      mockInvitationModel.findOne.mockReturnValue(createExecMock(doc));
 
       const result = await service.acceptInvitation("token-abc");
 
       expect(mockInvitationModel.findOne).toHaveBeenCalledWith({
         invitationToken: "token-abc",
-        status: "pending"
+        status: "pending",
       });
       expect(doc.status).toBe("accepted");
       expect(doc.acceptedAt).toBeDefined();
@@ -519,7 +515,7 @@ describe("PermissionsService", () => {
 
       await expect(service.acceptInvitation("invalid-token")).rejects.toThrow(NotFoundException);
       await expect(service.acceptInvitation("invalid-token")).rejects.toThrow(
-        "Pending invitation not found"
+        "Pending invitation not found",
       );
     });
   });

@@ -9,7 +9,7 @@ type StockPageMode = "catalog" | "movements" | "full";
 const MOVEMENT_TYPE_LABELS: Record<string, string> = {
   in: "Entrée",
   out: "Sortie",
-  adjustment: "Ajustement"
+  adjustment: "Ajustement",
 };
 
 export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
@@ -40,19 +40,19 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
       api.listArticles({
         search: search || undefined,
         lowStockOnly,
-        activeOnly: !showInactive
-      })
+        activeOnly: !showInactive,
+      }),
   });
 
   const { data: recentMovements } = useQuery({
     queryKey: ["article-movements"],
     queryFn: () => api.listArticleMovements({ limit: 20 }),
-    enabled: showMovementActions
+    enabled: showMovementActions,
   });
 
   const lowStockArticles = useMemo(
     () => (articles ?? []).filter((article) => article.stockStatus !== "ok"),
-    [articles]
+    [articles],
   );
 
   const invalidateStockQueries = () => {
@@ -73,7 +73,7 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
       setCreateTargetStock("0");
       setError("");
     },
-    onError: (err: Error) => setError(err.message)
+    onError: (err: Error) => setError(err.message),
   });
 
   const movementMutation = useMutation({
@@ -83,22 +83,24 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
       setMovementNote("");
       setError("");
     },
-    onError: (err: Error) => setError(err.message)
+    onError: (err: Error) => setError(err.message),
   });
 
   const deactivateMutation = useMutation({
     mutationFn: (articleId: string) => api.deleteArticle(articleId),
     onSuccess: invalidateStockQueries,
-    onError: (err: Error) => setError(err.message)
+    onError: (err: Error) => setError(err.message),
   });
 
   const restockToTargetMutation = useMutation({
     mutationFn: (payload: api.CreateArticleMovementPayload) => api.createArticleMovement(payload),
     onSuccess: invalidateStockQueries,
-    onError: (err: Error) => setError(err.message)
+    onError: (err: Error) => setError(err.message),
   });
 
-  const selectedMovementArticle = (articles ?? []).find((article) => article.id === movementArticleId);
+  const selectedMovementArticle = (articles ?? []).find(
+    (article) => article.id === movementArticleId,
+  );
   const pageTitle =
     mode === "catalog"
       ? "Catalogue articles"
@@ -162,11 +164,12 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
                         movementType: "adjustment",
                         quantity: article.targetStock,
                         reason: "restock",
-                        note: "Réapprovisionnement rapide au stock cible"
+                        note: "Réapprovisionnement rapide au stock cible",
                       })
                     }
                     disabled={
-                      restockToTargetMutation.isPending || article.targetStock <= article.stockQuantity
+                      restockToTargetMutation.isPending ||
+                      article.targetStock <= article.stockQuantity
                     }
                     className="rounded-lg border border-amber-300 bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-800 disabled:opacity-50 self-start flex-shrink-0"
                   >
@@ -185,7 +188,9 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
 
       {showCatalogActions && showCreateForm && (
         <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20">
-          <h2 className="mb-3 text-sm font-semibold text-slate-800 dark:text-slate-100">Créer un article</h2>
+          <h2 className="mb-3 text-sm font-semibold text-slate-800 dark:text-slate-100">
+            Créer un article
+          </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
@@ -210,7 +215,9 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Unité de mesure</label>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
+                Unité de mesure
+              </label>
               <input
                 value={createUnit}
                 onChange={(e) => setCreateUnit(e.target.value)}
@@ -219,7 +226,9 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Stock initial</label>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
+                Stock initial
+              </label>
               <input
                 type="number"
                 min="0"
@@ -229,10 +238,14 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
                 placeholder="0"
                 className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
               />
-              <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">Quantité en stock au démarrage</p>
+              <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">
+                Quantité en stock au démarrage
+              </p>
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Seuil d&apos;alerte</label>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
+                Seuil d&apos;alerte
+              </label>
               <input
                 type="number"
                 min="0"
@@ -242,10 +255,14 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
                 placeholder="0"
                 className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
               />
-              <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">Alerte quand le stock passe en dessous</p>
+              <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">
+                Alerte quand le stock passe en dessous
+              </p>
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Stock cible</label>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
+                Stock cible
+              </label>
               <input
                 type="number"
                 min="0"
@@ -255,7 +272,9 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
                 placeholder="0"
                 className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
               />
-              <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">Niveau de stock optimal visé</p>
+              <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">
+                Niveau de stock optimal visé
+              </p>
             </div>
           </div>
           <div className="mt-3">
@@ -271,7 +290,7 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
                   unit: createUnit.trim() || "unité",
                   initialStock: Number(createInitialStock || 0),
                   reorderPoint: Number(createReorderPoint || 0),
-                  targetStock: Number(createTargetStock || 0)
+                  targetStock: Number(createTargetStock || 0),
                 });
               }}
               disabled={createArticleMutation.isPending}
@@ -285,7 +304,9 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
 
       {showMovementActions && (
         <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20 space-y-3">
-          <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Mouvement rapide</h2>
+          <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+            Mouvement rapide
+          </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <select
               value={movementArticleId}
@@ -340,7 +361,7 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
                   articleId: movementArticleId,
                   movementType,
                   quantity,
-                  note: movementNote.trim() || undefined
+                  note: movementNote.trim() || undefined,
                 });
               }}
               disabled={movementMutation.isPending}
@@ -408,9 +429,13 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
                   <tr key={article.id} className="border-b border-slate-100 dark:border-slate-800">
                     <td className="px-2 py-2 font-mono text-xs">{article.reference}</td>
                     <td className="px-2 py-2">
-                      <div className="font-medium text-slate-800 dark:text-slate-100">{article.name}</div>
+                      <div className="font-medium text-slate-800 dark:text-slate-100">
+                        {article.name}
+                      </div>
                       {!article.isActive && (
-                        <div className="text-[11px] text-slate-400 dark:text-slate-500">Inactif</div>
+                        <div className="text-[11px] text-slate-400 dark:text-slate-500">
+                          Inactif
+                        </div>
                       )}
                     </td>
                     <td className="px-2 py-2">
@@ -445,7 +470,7 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
                                 movementType: "adjustment",
                                 quantity: article.targetStock,
                                 reason: "restock",
-                                note: "Réassort au stock cible"
+                                note: "Réassort au stock cible",
                               })
                             }
                             disabled={
@@ -478,9 +503,13 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
 
       {showMovementActions && (
         <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20">
-          <h2 className="mb-3 text-sm font-semibold text-slate-800 dark:text-slate-100">Derniers mouvements</h2>
+          <h2 className="mb-3 text-sm font-semibold text-slate-800 dark:text-slate-100">
+            Derniers mouvements
+          </h2>
           {!recentMovements?.length ? (
-            <div className="text-sm text-slate-500 dark:text-slate-400">Aucun mouvement pour le moment.</div>
+            <div className="text-sm text-slate-500 dark:text-slate-400">
+              Aucun mouvement pour le moment.
+            </div>
           ) : (
             <div className="space-y-2">
               {recentMovements.map((movement) => (
@@ -489,14 +518,16 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
                   className="flex flex-col sm:flex-row sm:items-center sm:justify-between rounded-lg border border-slate-100 dark:border-slate-800 p-2 gap-1"
                 >
                   <div className="text-sm">
-                    <span className="font-medium text-slate-800 dark:text-slate-100">{movement.articleName}</span>
+                    <span className="font-medium text-slate-800 dark:text-slate-100">
+                      {movement.articleName}
+                    </span>
                     <span className="ml-2 text-xs text-slate-500 dark:text-slate-400">
                       ({movement.articleReference ?? "sans ref"})
                     </span>
                   </div>
                   <div className="text-xs text-slate-600 dark:text-slate-300">
-                    {MOVEMENT_TYPE_LABELS[movement.movementType] ?? movement.movementType} {movement.quantity} —{" "}
-                    {movement.previousStock} → {movement.newStock}
+                    {MOVEMENT_TYPE_LABELS[movement.movementType] ?? movement.movementType}{" "}
+                    {movement.quantity} — {movement.previousStock} → {movement.newStock}
                   </div>
                 </div>
               ))}

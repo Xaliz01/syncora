@@ -11,7 +11,7 @@ import { getOrganizationUserStatusLabel } from "@/lib/organization-user-status";
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Administrateur",
-  member: "Membre"
+  member: "Membre",
 };
 
 function togglePermission(list: PermissionCode[], permission: PermissionCode): PermissionCode[] {
@@ -40,7 +40,7 @@ export function UserDetailsPage({ userId }: { userId: string }) {
       const [catalogRes, profilesRes, userRes] = await Promise.all([
         adminApi.getPermissionsCatalog(),
         adminApi.listPermissionProfiles(),
-        adminApi.getOrganizationUser(userId)
+        adminApi.getOrganizationUser(userId),
       ]);
       const currentUser = userRes.user;
       setCatalog(catalogRes.availablePermissions);
@@ -75,11 +75,11 @@ export function UserDetailsPage({ userId }: { userId: string }) {
       await adminApi.updateOrganizationUserPermissions(user.id, {
         profileId: profileId || null,
         extraPermissions: selectedPermissions.filter(
-          (permission) => !profilePermissions.includes(permission)
+          (permission) => !profilePermissions.includes(permission),
         ),
         revokedPermissions: profilePermissions.filter(
-          (permission) => !selectedPermissions.includes(permission)
-        )
+          (permission) => !selectedPermissions.includes(permission),
+        ),
       });
       showToast("Droits utilisateur mis à jour.");
       setIsEditing(false);
@@ -116,7 +116,8 @@ export function UserDetailsPage({ userId }: { userId: string }) {
         <div>
           <h1 className="text-xl sm:text-2xl font-semibold mb-1">Fiche utilisateur</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Détail de <span className="font-medium text-slate-700 dark:text-slate-200">{user.email}</span>.
+            Détail de{" "}
+            <span className="font-medium text-slate-700 dark:text-slate-200">{user.email}</span>.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -173,7 +174,9 @@ export function UserDetailsPage({ userId }: { userId: string }) {
               key={permission}
               className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-1 text-xs"
             >
-              <div className="text-slate-800 dark:text-slate-100">{getPermissionLabel(permission)}</div>
+              <div className="text-slate-800 dark:text-slate-100">
+                {getPermissionLabel(permission)}
+              </div>
               <div className="text-slate-500 dark:text-slate-400 font-mono">{permission}</div>
             </div>
           ))}
@@ -199,9 +202,16 @@ export function UserDetailsPage({ userId }: { userId: string }) {
                 <span className="text-slate-400 dark:text-slate-500">Permissions ciblées</span>
                 <div className="mt-2 grid gap-2 md:grid-cols-2">
                   {selectedPermissions.map((permission) => (
-                    <div key={permission} className="rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2">
-                      <div className="text-slate-700 dark:text-slate-200">{getPermissionLabel(permission)}</div>
-                      <div className="text-xs text-slate-400 dark:text-slate-500 font-mono">{permission}</div>
+                    <div
+                      key={permission}
+                      className="rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2"
+                    >
+                      <div className="text-slate-700 dark:text-slate-200">
+                        {getPermissionLabel(permission)}
+                      </div>
+                      <div className="text-xs text-slate-400 dark:text-slate-500 font-mono">
+                        {permission}
+                      </div>
                     </div>
                   ))}
                   {selectedPermissions.length === 0 && (
@@ -213,7 +223,9 @@ export function UserDetailsPage({ userId }: { userId: string }) {
           ) : (
             <>
               <div>
-                <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Profil affecté</label>
+                <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">
+                  Profil affecté
+                </label>
                 <select
                   value={profileId}
                   onChange={(e) => {
@@ -238,7 +250,9 @@ export function UserDetailsPage({ userId }: { userId: string }) {
               </div>
 
               <div>
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">Permissions</p>
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
+                  Permissions
+                </p>
                 <div className="grid gap-2 md:grid-cols-2">
                   {catalog.map((permission) => (
                     <label key={permission} className="flex items-start gap-2 text-sm">
@@ -247,12 +261,18 @@ export function UserDetailsPage({ userId }: { userId: string }) {
                         className="mt-1"
                         checked={selectedPermissions.includes(permission)}
                         onChange={() =>
-                          setSelectedPermissions((previous) => togglePermission(previous, permission))
+                          setSelectedPermissions((previous) =>
+                            togglePermission(previous, permission),
+                          )
                         }
                       />
                       <span>
-                        <span className="block text-slate-700 dark:text-slate-200">{getPermissionLabel(permission)}</span>
-                        <span className="block text-xs text-slate-400 dark:text-slate-500 font-mono">{permission}</span>
+                        <span className="block text-slate-700 dark:text-slate-200">
+                          {getPermissionLabel(permission)}
+                        </span>
+                        <span className="block text-xs text-slate-400 dark:text-slate-500 font-mono">
+                          {permission}
+                        </span>
                       </span>
                     </label>
                   ))}

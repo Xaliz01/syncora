@@ -46,7 +46,7 @@ export function formatPostalAddress(addr: PostalAddress): string {
     addr.line1,
     addr.line2,
     [addr.postalCode, addr.city].filter(Boolean).join(" "),
-    addr.country && addr.country !== "FR" ? addr.country : ""
+    addr.country && addr.country !== "FR" ? addr.country : "",
   ]
     .filter((p) => p && String(p).trim().length > 0)
     .map((p) => String(p).trim());
@@ -55,7 +55,7 @@ export function formatPostalAddress(addr: PostalAddress): string {
 
 function agenceToQuery(a: AgenceResponse): string {
   const parts = [a.address, [a.postalCode, a.city].filter(Boolean).join(" ")].filter(
-    (p) => p && String(p).trim().length > 0
+    (p) => p && String(p).trim().length > 0,
   );
   return parts.join(", ").trim();
 }
@@ -92,12 +92,12 @@ export interface RankTeamsResult {
 export async function rankTeamsForCustomerSite(
   teams: TeamResponse[],
   agences: AgenceResponse[],
-  customerAddress?: PostalAddress | null
+  customerAddress?: PostalAddress | null,
 ): Promise<RankTeamsResult> {
   const empty: RankTeamsResult = {
     insights: [],
     clientGeocodeOk: false,
-    customerAddressSummary: undefined
+    customerAddressSummary: undefined,
   };
 
   if (!teams.length) return empty;
@@ -106,7 +106,7 @@ export async function rankTeamsForCustomerSite(
   if (!addrStr) {
     return {
       ...empty,
-      customerAddressSummary: undefined
+      customerAddressSummary: undefined,
     };
   }
 
@@ -145,8 +145,7 @@ export async function rankTeamsForCustomerSite(
     }
 
     const driveMinutes = roadKm > 0 && roadKm < 900 ? (roadKm / AVG_SPEED_KMH) * 60 : 0;
-    const fuelLitersOneWay =
-      roadKm > 0 && roadKm < 900 ? roadKm * (LITERS_PER_100KM / 100) : 0;
+    const fuelLitersOneWay = roadKm > 0 && roadKm < 900 ? roadKm * (LITERS_PER_100KM / 100) : 0;
     const co2KgOneWay = fuelLitersOneWay * CO2_KG_PER_LITER_DIESEL;
     const fuelCostEurOneWay = fuelLitersOneWay * ESTIMATED_DIESEL_EUR_PER_LITER;
 
@@ -161,7 +160,7 @@ export async function rankTeamsForCustomerSite(
       fuelCostEurOneWay: Math.round(fuelCostEurOneWay * 100) / 100,
       co2KgOneWay: Math.round(co2KgOneWay * 100) / 100,
       geocodeTeamOk,
-      geocodeClientOk: clientGeocodeOk
+      geocodeClientOk: clientGeocodeOk,
     });
   }
 
@@ -185,12 +184,12 @@ export async function rankTeamsForCustomerSite(
   const insights: TeamRouteInsight[] = scored.map((r, index) => ({
     ...r,
     rank: index + 1,
-    isTopPick: index === 0 && r.geocodeTeamOk && clientGeocodeOk
+    isTopPick: index === 0 && r.geocodeTeamOk && clientGeocodeOk,
   }));
 
   return {
     insights,
     clientGeocodeOk,
-    customerAddressSummary: addrStr
+    customerAddressSummary: addrStr,
   };
 }

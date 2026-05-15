@@ -7,7 +7,7 @@ import React, {
   useEffect,
   useRef,
   useState,
-  type ReactNode
+  type ReactNode,
 } from "react";
 
 export type ConfirmOptions = {
@@ -42,7 +42,7 @@ function ConfirmDialogPanel({
   cancelLabel = "Annuler",
   variant = "default",
   onCancel,
-  onConfirm
+  onConfirm,
 }: DialogPayload & { onCancel: () => void; onConfirm: () => void }) {
   useBodyScrollLock(true);
   const confirmRef = useRef<HTMLButtonElement>(null);
@@ -81,7 +81,13 @@ function ConfirmDialogPanel({
               className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-red-50 dark:bg-red-950/50 text-red-600 dark:text-red-400"
               aria-hidden
             >
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+              <svg
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.75}
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -91,11 +97,16 @@ function ConfirmDialogPanel({
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <h2 id="confirm-dialog-title" className="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">
+            <h2
+              id="confirm-dialog-title"
+              className="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100"
+            >
               {title}
             </h2>
             {description ? (
-              <div className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{description}</div>
+              <div className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                {description}
+              </div>
             ) : null}
             <div className="mt-6 flex flex-wrap items-center justify-end gap-2">
               <button

@@ -3,7 +3,7 @@ import type {
   TechnicianResponse,
   UpdateTechnicianBody,
   CreateTechnicianUserAccountBody,
-  TechnicianStatus
+  TechnicianStatus,
 } from "@syncora/shared";
 
 export abstract class AbstractTechniciansGatewayService {
@@ -18,25 +18,22 @@ export abstract class AbstractTechniciansGatewayService {
       status?: TechnicianStatus;
       createUserAccount?: boolean;
       userAccountPassword?: string;
-    }
+    },
   ): Promise<TechnicianResponse>;
   abstract listTechnicians(currentUser: AuthUser): Promise<TechnicianResponse[]>;
-  abstract getTechnician(
-    currentUser: AuthUser,
-    technicianId: string
-  ): Promise<TechnicianResponse>;
+  abstract getTechnician(currentUser: AuthUser, technicianId: string): Promise<TechnicianResponse>;
   abstract updateTechnician(
     currentUser: AuthUser,
     technicianId: string,
-    body: UpdateTechnicianBody
+    body: UpdateTechnicianBody,
   ): Promise<TechnicianResponse>;
   abstract deleteTechnician(
     currentUser: AuthUser,
-    technicianId: string
+    technicianId: string,
   ): Promise<{ deleted: true }>;
   abstract createTechnicianUserAccount(
     currentUser: AuthUser,
     technicianId: string,
-    body: CreateTechnicianUserAccountBody
+    body: CreateTechnicianUserAccountBody,
   ): Promise<TechnicianResponse>;
 }

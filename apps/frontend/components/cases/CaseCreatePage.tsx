@@ -15,12 +15,12 @@ export function CaseCreatePage() {
 
   const { data: templates } = useQuery({
     queryKey: ["case-templates"],
-    queryFn: () => api.listTemplates()
+    queryFn: () => api.listTemplates(),
   });
 
   const { data: usersData } = useQuery({
     queryKey: ["organization-users"],
-    queryFn: () => listOrganizationUsers()
+    queryFn: () => listOrganizationUsers(),
   });
 
   const [templateId, setTemplateId] = useState("");
@@ -39,7 +39,7 @@ export function CaseCreatePage() {
       queryClient.invalidateQueries({ queryKey: ["cases"] });
       router.push(`/cases/${data.id}`);
     },
-    onError: (err: Error) => setError(err.message)
+    onError: (err: Error) => setError(err.message),
   });
 
   const selectedTemplate = templates?.find((t) => t.id === templateId);
@@ -48,9 +48,9 @@ export function CaseCreatePage() {
     () =>
       (usersData?.users ?? []).map((u) => ({
         id: u.id,
-        label: u.name?.trim() || u.email
+        label: u.name?.trim() || u.email,
       })),
-    [usersData?.users]
+    [usersData?.users],
   );
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -71,7 +71,7 @@ export function CaseCreatePage() {
         .split(",")
         .map((t) => t.trim())
         .filter(Boolean),
-      customerId: customerId.trim() || undefined
+      customerId: customerId.trim() || undefined,
     });
   };
 
@@ -111,7 +111,8 @@ export function CaseCreatePage() {
             {selectedTemplate && (
               <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                 Ce dossier contiendra {selectedTemplate.steps.length} étape(s) et{" "}
-                {selectedTemplate.steps.reduce((a, s) => a + s.todos.length, 0)} tâche(s) prédéfinies.
+                {selectedTemplate.steps.reduce((a, s) => a + s.todos.length, 0)} tâche(s)
+                prédéfinies.
               </div>
             )}
           </div>
@@ -119,7 +120,9 @@ export function CaseCreatePage() {
 
         <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/20 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Titre</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+              Titre
+            </label>
             <input
               type="text"
               value={title}
@@ -130,7 +133,9 @@ export function CaseCreatePage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Description</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+              Description
+            </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -142,7 +147,9 @@ export function CaseCreatePage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Priorité</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+                Priorité
+              </label>
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value as CasePriority)}
@@ -155,7 +162,9 @@ export function CaseCreatePage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Échéance</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+                Échéance
+              </label>
               <input
                 type="date"
                 value={dueDate}

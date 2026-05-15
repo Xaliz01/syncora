@@ -7,17 +7,14 @@ import { NotificationEventListener } from "../domain/notification-event.listener
 import { SubscriptionsModule } from "./subscriptions.module";
 
 @Module({
-  imports: [
-    HttpModule.register({ timeout: 5000, maxRedirects: 0 }),
-    SubscriptionsModule
-  ],
+  imports: [HttpModule.register({ timeout: 5000, maxRedirects: 0 }), SubscriptionsModule],
   controllers: [NotificationsController],
   providers: [
     {
       provide: AbstractNotificationsGatewayService,
-      useClass: NotificationsGatewayService
+      useClass: NotificationsGatewayService,
     },
-    NotificationEventListener
-  ]
+    NotificationEventListener,
+  ],
 })
 export class NotificationsModule {}

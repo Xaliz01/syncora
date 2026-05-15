@@ -2,18 +2,13 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
-  NotFoundException
+  NotFoundException,
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import type { TeamDocument } from "../persistence/team.schema";
 import type { AgenceDocument } from "../persistence/agence.schema";
-import type {
-  CreateTeamBody,
-  UpdateTeamBody,
-  TeamResponse,
-  TeamStatus
-} from "@syncora/shared";
+import type { CreateTeamBody, UpdateTeamBody, TeamResponse, TeamStatus } from "@syncora/shared";
 import { AbstractTeamsService } from "./ports/teams.service.port";
 
 @Injectable()
@@ -22,7 +17,7 @@ export class TeamsService extends AbstractTeamsService {
     @InjectModel("Team")
     private readonly teamModel: Model<TeamDocument>,
     @InjectModel("Agence")
-    private readonly agenceModel: Model<AgenceDocument>
+    private readonly agenceModel: Model<AgenceDocument>,
   ) {
     super();
   }
@@ -37,7 +32,7 @@ export class TeamsService extends AbstractTeamsService {
         status: body.status ?? "active",
         calendarColor: body.calendarColor?.trim()
           ? this.validateCalendarColor(body.calendarColor)
-          : undefined
+          : undefined,
       });
       return this.toResponse(doc);
     } catch (err: unknown) {
@@ -51,7 +46,7 @@ export class TeamsService extends AbstractTeamsService {
   async updateTeam(
     organizationId: string,
     teamId: string,
-    body: UpdateTeamBody
+    body: UpdateTeamBody,
   ): Promise<TeamResponse> {
     const doc = await this.teamModel.findById(teamId).exec();
     if (!doc || doc.organizationId !== organizationId) {
@@ -88,24 +83,21 @@ export class TeamsService extends AbstractTeamsService {
   }
 
   async listTeams(organizationId: string): Promise<TeamResponse[]> {
-    const docs = await this.teamModel
-      .find({ organizationId })
-      .sort({ name: 1 })
-      .exec();
+    const docs = await this.teamModel.find({ organizationId }).sort({ name: 1 }).exec();
 
     const agenceIds = [...new Set(docs.map((d) => d.agenceId).filter(Boolean))] as string[];
     const agences = agenceIds.length
-      ? await this.agenceModel.find({ _id: { $in: agenceIds } }).select("_id name").exec()
+      ? await this.agenceModel
+          .find({ _id: { $in: agenceIds } })
+          .select("_id name")
+          .exec()
       : [];
     const agenceMap = new Map(agences.map((a) => [a._id.toString(), a.name]));
 
     return docs.map((doc) => this.toResponse(doc, agenceMap.get(doc.agenceId ?? "")));
   }
 
-  async deleteTeam(
-    organizationId: string,
-    teamId: string
-  ): Promise<{ deleted: true }> {
+  async deleteTeam(organizationId: string, teamId: string): Promise<{ deleted: true }> {
     const doc = await this.teamModel.findById(teamId).exec();
     if (!doc || doc.organizationId !== organizationId) {
       throw new NotFoundException("Équipe introuvable");
@@ -117,7 +109,7 @@ export class TeamsService extends AbstractTeamsService {
   async addMember(
     organizationId: string,
     teamId: string,
-    technicianId: string
+    technicianId: string,
   ): Promise<TeamResponse> {
     const doc = await this.teamModel.findById(teamId).exec();
     if (!doc || doc.organizationId !== organizationId) {
@@ -133,13 +125,13 @@ export class TeamsService extends AbstractTeamsService {
   async removeMember(
     organizationId: string,
     teamId: string,
-    technicianId: string
+    technicianId: string,
   ): Promise<TeamResponse> {
     const doc = await this.teamModel
       .findOneAndUpdate(
         { _id: teamId, organizationId },
         { $pull: { technicianIds: technicianId } },
-        { new: true }
+        { new: true },
       )
       .exec();
     if (!doc) throw new NotFoundException("Équipe introuvable");
@@ -157,7 +149,7 @@ export class TeamsService extends AbstractTeamsService {
       status: doc.status as TeamStatus,
       calendarColor: doc.calendarColor,
       createdAt: doc.get("createdAt")?.toISOString(),
-      updatedAt: doc.get("updatedAt")?.toISOString()
+      updatedAt: doc.get("updatedAt")?.toISOString(),
     };
   }
 
@@ -174,7 +166,7 @@ export class TeamsService extends AbstractTeamsService {
       return `#${full[1]}`.toUpperCase();
     }
     throw new BadRequestException(
-      "calendarColor doit être une couleur hexadécimale (#RGB ou #RRGGBB)"
+      "calendarColor doit être une couleur hexadécimale (#RGB ou #RRGGBB)",
     );
   }
 }

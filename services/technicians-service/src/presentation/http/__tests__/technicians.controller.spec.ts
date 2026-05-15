@@ -14,7 +14,7 @@ describe("TechniciansController", () => {
       getTechnician: jest.fn(),
       listTechnicians: jest.fn(),
       deleteTechnician: jest.fn(),
-      linkUserToTechnician: jest.fn()
+      linkUserToTechnician: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -22,9 +22,9 @@ describe("TechniciansController", () => {
       providers: [
         {
           provide: AbstractTechniciansService,
-          useValue: mockTechniciansService
-        }
-      ]
+          useValue: mockTechniciansService,
+        },
+      ],
     }).compile();
 
     controller = module.get<TechniciansController>(TechniciansController);
@@ -40,7 +40,7 @@ describe("TechniciansController", () => {
         organizationId: "org-1",
         firstName: "John",
         lastName: "Doe",
-        email: "john@example.com"
+        email: "john@example.com",
       };
       mockTechniciansService.createTechnician.mockResolvedValue({ id: "t1", ...body } as never);
 
@@ -63,7 +63,7 @@ describe("TechniciansController", () => {
 
     it("should throw BadRequestException when organizationId is missing", async () => {
       await expect(controller.listTechnicians(undefined as never)).rejects.toThrow(
-        BadRequestException
+        BadRequestException,
       );
       expect(mockTechniciansService.listTechnicians).not.toHaveBeenCalled();
     });
@@ -81,7 +81,7 @@ describe("TechniciansController", () => {
 
     it("should throw BadRequestException when organizationId is missing", async () => {
       await expect(controller.getTechnician("t1", undefined as never)).rejects.toThrow(
-        BadRequestException
+        BadRequestException,
       );
       expect(mockTechniciansService.getTechnician).not.toHaveBeenCalled();
     });
@@ -99,7 +99,7 @@ describe("TechniciansController", () => {
 
     it("should throw BadRequestException when organizationId is missing", async () => {
       await expect(controller.deleteTechnician("t1", undefined as never)).rejects.toThrow(
-        BadRequestException
+        BadRequestException,
       );
       expect(mockTechniciansService.deleteTechnician).not.toHaveBeenCalled();
     });
@@ -107,21 +107,20 @@ describe("TechniciansController", () => {
 
   describe("linkUserToTechnician", () => {
     it("should call techniciansService.linkUserToTechnician with params", async () => {
-      mockTechniciansService.linkUserToTechnician.mockResolvedValue({ id: "t1", userId: "u1" } as never);
+      mockTechniciansService.linkUserToTechnician.mockResolvedValue({
+        id: "t1",
+        userId: "u1",
+      } as never);
 
       const result = await controller.linkUserToTechnician("t1", "org-1", { userId: "u1" });
 
-      expect(mockTechniciansService.linkUserToTechnician).toHaveBeenCalledWith(
-        "org-1",
-        "t1",
-        "u1"
-      );
+      expect(mockTechniciansService.linkUserToTechnician).toHaveBeenCalledWith("org-1", "t1", "u1");
       expect(result.userId).toBe("u1");
     });
 
     it("should throw BadRequestException when organizationId is missing", async () => {
       await expect(
-        controller.linkUserToTechnician("t1", undefined as never, { userId: "u1" })
+        controller.linkUserToTechnician("t1", undefined as never, { userId: "u1" }),
       ).rejects.toThrow(BadRequestException);
       expect(mockTechniciansService.linkUserToTechnician).not.toHaveBeenCalled();
     });

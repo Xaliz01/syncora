@@ -7,14 +7,14 @@ import {
   Param,
   Patch,
   Post,
-  Query
+  Query,
 } from "@nestjs/common";
 import { AbstractStockService } from "../../domain/ports/stock.service.port";
 import type {
   AddInterventionArticleUsageBody,
   CreateArticleBody,
   CreateArticleMovementBody,
-  UpdateArticleBody
+  UpdateArticleBody,
 } from "@syncora/shared";
 
 @Controller()
@@ -31,21 +31,18 @@ export class StockController {
     @Query("organizationId") organizationId: string,
     @Query("search") search?: string,
     @Query("lowStockOnly") lowStockOnly?: string,
-    @Query("activeOnly") activeOnly?: string
+    @Query("activeOnly") activeOnly?: string,
   ) {
     this.ensureOrganizationId(organizationId);
     return this.stockService.listArticles(organizationId, {
       search,
       lowStockOnly: lowStockOnly === "true",
-      activeOnly: activeOnly === undefined ? true : activeOnly === "true"
+      activeOnly: activeOnly === undefined ? true : activeOnly === "true",
     });
   }
 
   @Get("articles/:id")
-  async getArticle(
-    @Param("id") id: string,
-    @Query("organizationId") organizationId: string
-  ) {
+  async getArticle(@Param("id") id: string, @Query("organizationId") organizationId: string) {
     this.ensureOrganizationId(organizationId);
     return this.stockService.getArticle(id, organizationId);
   }
@@ -56,10 +53,7 @@ export class StockController {
   }
 
   @Delete("articles/:id")
-  async deleteArticle(
-    @Param("id") id: string,
-    @Query("organizationId") organizationId: string
-  ) {
+  async deleteArticle(@Param("id") id: string, @Query("organizationId") organizationId: string) {
     this.ensureOrganizationId(organizationId);
     return this.stockService.deleteArticle(id, organizationId);
   }
@@ -75,21 +69,21 @@ export class StockController {
     @Query("articleId") articleId?: string,
     @Query("interventionId") interventionId?: string,
     @Query("caseId") caseId?: string,
-    @Query("limit") limit?: string
+    @Query("limit") limit?: string,
   ) {
     this.ensureOrganizationId(organizationId);
     return this.stockService.listArticleMovements(organizationId, {
       articleId,
       interventionId,
       caseId,
-      limit: limit ? Number(limit) : undefined
+      limit: limit ? Number(limit) : undefined,
     });
   }
 
   @Post("interventions/:interventionId/articles")
   async addInterventionArticleUsage(
     @Param("interventionId") interventionId: string,
-    @Body() body: AddInterventionArticleUsageBody
+    @Body() body: AddInterventionArticleUsageBody,
   ) {
     return this.stockService.addInterventionArticleUsage(interventionId, body);
   }
@@ -97,7 +91,7 @@ export class StockController {
   @Get("interventions/:interventionId/usage")
   async getInterventionUsage(
     @Param("interventionId") interventionId: string,
-    @Query("organizationId") organizationId: string
+    @Query("organizationId") organizationId: string,
   ) {
     this.ensureOrganizationId(organizationId);
     return this.stockService.getInterventionUsage(organizationId, interventionId);

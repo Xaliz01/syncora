@@ -16,7 +16,7 @@ export abstract class AbstractDocumentsService {
   abstract listByEntity(
     organizationId: string,
     entityType: DocumentEntityType,
-    entityId: string
+    entityId: string,
   ): Promise<DocumentResponse[]>;
   abstract getDownloadUrl(organizationId: string, documentId: string): Promise<string>;
   abstract deleteDocument(organizationId: string, documentId: string): Promise<{ deleted: true }>;

@@ -41,7 +41,7 @@ export function TechnicianCreatePage() {
         speciality: speciality.trim() || undefined,
         status,
         createUserAccount: createAccount,
-        userAccountPassword: createAccount ? password : undefined
+        userAccountPassword: createAccount ? password : undefined,
       });
       showToast("Technicien ajouté avec succès.");
       router.push("/fleet/technicians");
@@ -57,7 +57,8 @@ export function TechnicianCreatePage() {
       <div>
         <h1 className="text-xl sm:text-2xl font-semibold">Ajouter un technicien</h1>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Renseignez les informations du technicien. Vous pouvez aussi lui créer un compte utilisateur.
+          Renseignez les informations du technicien. Vous pouvez aussi lui créer un compte
+          utilisateur.
         </p>
       </div>
 
@@ -100,7 +101,9 @@ export function TechnicianCreatePage() {
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Email</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+                Email
+              </label>
               <input
                 type="email"
                 placeholder="jean.dupont@example.com"
@@ -110,7 +113,9 @@ export function TechnicianCreatePage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Téléphone</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+                Téléphone
+              </label>
               <input
                 type="tel"
                 placeholder="06 12 34 56 78"
@@ -123,7 +128,9 @@ export function TechnicianCreatePage() {
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Spécialité</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+                Spécialité
+              </label>
               <input
                 type="text"
                 placeholder="Électricien, Plombier..."
@@ -133,7 +140,9 @@ export function TechnicianCreatePage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Statut</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+                Statut
+              </label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as TechnicianStatus)}

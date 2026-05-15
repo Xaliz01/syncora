@@ -12,8 +12,8 @@ import { SubscriptionAccessGuard } from "../infrastructure/subscription-access.g
   providers: [
     { provide: AbstractSubscriptionsGatewayService, useClass: SubscriptionsGatewayService },
     RequirePermissionGuard,
-    SubscriptionAccessGuard
+    SubscriptionAccessGuard,
   ],
-  exports: [AbstractSubscriptionsGatewayService, SubscriptionAccessGuard]
+  exports: [AbstractSubscriptionsGatewayService, SubscriptionAccessGuard],
 })
 export class SubscriptionsModule {}

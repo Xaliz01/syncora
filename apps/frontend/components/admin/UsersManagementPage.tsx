@@ -9,14 +9,14 @@ import { getOrganizationUserStatusLabel } from "@/lib/organization-user-status";
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Administrateur",
-  member: "Membre"
+  member: "Membre",
 };
 
 const INVITATION_STATUS_LABELS: Record<string, string> = {
   pending: "En attente",
   accepted: "Acceptée",
   expired: "Expirée",
-  revoked: "Révoquée"
+  revoked: "Révoquée",
 };
 
 export function UsersManagementPage() {
@@ -31,7 +31,7 @@ export function UsersManagementPage() {
     try {
       const [usersRes, invitationsRes] = await Promise.all([
         adminApi.listOrganizationUsers(),
-        adminApi.listInvitations()
+        adminApi.listInvitations(),
       ]);
       setUsers(usersRes.users);
       setInvitations(invitationsRes);
@@ -96,7 +96,9 @@ export function UsersManagementPage() {
               >
                 {user.name ?? user.email}
               </Link>
-              <div className="text-sm text-slate-500 dark:text-slate-400 truncate">{user.email}</div>
+              <div className="text-sm text-slate-500 dark:text-slate-400 truncate">
+                {user.email}
+              </div>
               <span className="inline-flex w-fit rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-0.5 text-xs text-slate-700 dark:text-slate-200">
                 {ROLE_LABELS[user.role] ?? user.role}
               </span>
@@ -128,7 +130,9 @@ export function UsersManagementPage() {
                   </div>
                   <p className="mt-1 text-slate-500 dark:text-slate-400">
                     Token:{" "}
-                    <span className="font-mono text-slate-700 dark:text-slate-200 break-all text-xs">{invitation.invitationToken}</span>
+                    <span className="font-mono text-slate-700 dark:text-slate-200 break-all text-xs">
+                      {invitation.invitationToken}
+                    </span>
                   </p>
                 </article>
               ))}

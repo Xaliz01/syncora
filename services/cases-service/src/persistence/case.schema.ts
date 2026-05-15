@@ -23,8 +23,7 @@ export class CaseTodoItemSubDoc {
   completedBy?: string;
 }
 
-export const CaseTodoItemSubDocSchema =
-  SchemaFactory.createForClass(CaseTodoItemSubDoc);
+export const CaseTodoItemSubDocSchema = SchemaFactory.createForClass(CaseTodoItemSubDoc);
 
 @Schema({ _id: false })
 export class CaseStepSubDoc {
@@ -44,8 +43,7 @@ export class CaseStepSubDoc {
   todos!: CaseTodoItemSubDoc[];
 }
 
-export const CaseStepSubDocSchema =
-  SchemaFactory.createForClass(CaseStepSubDoc);
+export const CaseStepSubDocSchema = SchemaFactory.createForClass(CaseStepSubDoc);
 
 @Schema({ _id: false })
 export class CaseAssigneeSubDoc {
@@ -56,8 +54,7 @@ export class CaseAssigneeSubDoc {
   name!: string;
 }
 
-export const CaseAssigneeSubDocSchema =
-  SchemaFactory.createForClass(CaseAssigneeSubDoc);
+export const CaseAssigneeSubDocSchema = SchemaFactory.createForClass(CaseAssigneeSubDoc);
 
 @Schema({ timestamps: true, _id: true, collection: "cases" })
 export class CaseDocument extends Document {

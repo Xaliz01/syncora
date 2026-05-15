@@ -13,7 +13,7 @@ export class DocumentsService extends AbstractDocumentsService {
   constructor(
     @InjectModel("DocumentRecord")
     private readonly documentModel: Model<DocumentRecord>,
-    private readonly storage: AbstractStorageProvider
+    private readonly storage: AbstractStorageProvider,
   ) {
     super();
   }
@@ -31,7 +31,7 @@ export class DocumentsService extends AbstractDocumentsService {
       mimeType: params.mimeType,
       size: params.size,
       storageKey,
-      uploadedBy: params.uploadedBy
+      uploadedBy: params.uploadedBy,
     });
 
     return this.toResponse(doc);
@@ -40,7 +40,7 @@ export class DocumentsService extends AbstractDocumentsService {
   async listByEntity(
     organizationId: string,
     entityType: DocumentEntityType,
-    entityId: string
+    entityId: string,
   ): Promise<DocumentResponse[]> {
     const docs = await this.documentModel
       .find({ organizationId, entityType, entityId, ...activeDocumentFilter })
@@ -83,7 +83,7 @@ export class DocumentsService extends AbstractDocumentsService {
       size: doc.size,
       storageKey: doc.storageKey,
       uploadedBy: doc.uploadedBy,
-      createdAt: doc.get("createdAt")?.toISOString()
+      createdAt: doc.get("createdAt")?.toISOString(),
     };
   }
 }

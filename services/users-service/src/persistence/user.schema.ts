@@ -29,7 +29,4 @@ export class UserDocument extends Document {
 }
 
 export const UserSchema = SchemaFactory.createForClass(UserDocument);
-UserSchema.index(
-  { email: 1 },
-  { unique: true, partialFilterExpression: { deletedAt: null } }
-);
+UserSchema.index({ email: 1 }, { unique: true, partialFilterExpression: { deletedAt: null } });

@@ -49,7 +49,7 @@ export function ProfileCreatePage() {
       await adminApi.createPermissionProfile({
         name,
         description: description.trim() || undefined,
-        permissions
+        permissions,
       });
       showToast("Profil créé.");
       router.push("/settings/profiles");
@@ -118,8 +118,12 @@ export function ProfileCreatePage() {
                     }
                   />
                   <span>
-                    <span className="block text-slate-700 dark:text-slate-200">{getPermissionLabel(permission)}</span>
-                    <span className="block text-xs text-slate-400 dark:text-slate-500 font-mono">{permission}</span>
+                    <span className="block text-slate-700 dark:text-slate-200">
+                      {getPermissionLabel(permission)}
+                    </span>
+                    <span className="block text-xs text-slate-400 dark:text-slate-500 font-mono">
+                      {permission}
+                    </span>
                   </span>
                 </label>
               ))}

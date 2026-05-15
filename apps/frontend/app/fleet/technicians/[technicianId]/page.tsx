@@ -4,7 +4,7 @@ import { TechnicianDetailsPage } from "@/components/fleet/TechnicianDetailsPage"
 import { AppShell } from "@/components/layout/AppShell";
 
 export default async function TechnicianDetailsRoute({
-  params
+  params,
 }: {
   params: Promise<{ technicianId: string }>;
 }) {

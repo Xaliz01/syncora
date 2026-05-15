@@ -3,14 +3,14 @@ import type {
   CreateBillingPortalResponse,
   CreateCheckoutSessionGatewayBody,
   CreateCheckoutSessionResponse,
-  OrganizationSubscriptionResponse
+  OrganizationSubscriptionResponse,
 } from "@syncora/shared";
 import { apiRequestJson, type ApiMethod } from "./api-client";
 
 async function subscriptionsRequest<TResponse>(
   method: ApiMethod,
   path: string,
-  body?: unknown
+  body?: unknown,
 ): Promise<TResponse> {
   return apiRequestJson<TResponse>(method, path, typeof body === "undefined" ? {} : { body });
 }
@@ -23,7 +23,7 @@ export function createCheckoutSession(payload: CreateCheckoutSessionGatewayBody)
   return subscriptionsRequest<CreateCheckoutSessionResponse>(
     "POST",
     "/subscriptions/checkout-session",
-    payload
+    payload,
   );
 }
 
@@ -31,6 +31,6 @@ export function createBillingPortalSession(payload: CreateBillingPortalGatewayBo
   return subscriptionsRequest<CreateBillingPortalResponse>(
     "POST",
     "/subscriptions/billing-portal",
-    payload
+    payload,
   );
 }

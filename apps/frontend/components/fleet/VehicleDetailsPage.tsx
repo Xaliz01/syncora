@@ -2,15 +2,16 @@
 
 import Link from "next/link";
 import React, { useCallback, useEffect, useState } from "react";
-import type {
-  VehicleResponse,
-  TeamResponse,
-  VehicleType,
-  VehicleStatus
-} from "@syncora/shared";
+import type { VehicleResponse, TeamResponse, VehicleType, VehicleStatus } from "@syncora/shared";
 
 const VEHICLE_TYPES: VehicleType[] = [
-  "camion", "camionnette", "voiture", "utilitaire", "fourgon", "remorque", "autre"
+  "camion",
+  "camionnette",
+  "voiture",
+  "utilitaire",
+  "fourgon",
+  "remorque",
+  "autre",
 ];
 const VEHICLE_STATUSES: VehicleStatus[] = ["actif", "maintenance", "hors_service"];
 import * as fleetApi from "@/lib/fleet.api";
@@ -26,19 +27,19 @@ const TYPE_LABELS: Record<string, string> = {
   utilitaire: "Utilitaire",
   fourgon: "Fourgon",
   remorque: "Remorque",
-  autre: "Autre"
+  autre: "Autre",
 };
 
 const STATUS_LABELS: Record<string, string> = {
   actif: "Actif",
   maintenance: "Maintenance",
-  hors_service: "Hors service"
+  hors_service: "Hors service",
 };
 
 const STATUS_COLORS: Record<string, string> = {
   actif: "bg-emerald-50 text-emerald-700 border-emerald-200",
   maintenance: "bg-amber-50 text-amber-700 border-amber-200",
-  hors_service: "bg-red-50 text-red-700 border-red-200"
+  hors_service: "bg-red-50 text-red-700 border-red-200",
 };
 
 export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
@@ -71,7 +72,7 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
     try {
       const [vehicleData, teamList] = await Promise.all([
         fleetApi.getVehicle(vehicleId),
-        fleetApi.listTeams()
+        fleetApi.listTeams(),
       ]);
       setVehicle(vehicleData);
       setTeams(teamList);
@@ -119,7 +120,7 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
         color: editColor.trim() || undefined,
         vin: editVin.trim() || undefined,
         mileage: editMileage ? parseInt(editMileage, 10) : undefined,
-        status: editStatus
+        status: editStatus,
       });
       showToast("Véhicule mis à jour.");
       setIsEditing(false);
@@ -167,7 +168,7 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
       title: "Supprimer ce véhicule ?",
       description: "La fiche véhicule et l’historique d’affectation seront supprimés.",
       confirmLabel: "Supprimer",
-      variant: "danger"
+      variant: "danger",
     });
     if (!ok) return;
     try {
@@ -202,9 +203,7 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold mb-1">
-            {vehicle.registrationNumber}
-          </h1>
+          <h1 className="text-xl sm:text-2xl font-semibold mb-1">{vehicle.registrationNumber}</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             {TYPE_LABELS[vehicle.type] ?? vehicle.type}
             {vehicle.brand ? ` — ${vehicle.brand}` : ""}
@@ -275,7 +274,9 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
             </div>
             <div>
               <span className="text-slate-400 dark:text-slate-500">Kilométrage</span>
-              <p>{vehicle.mileage != null ? `${vehicle.mileage.toLocaleString("fr-FR")} km` : "—"}</p>
+              <p>
+                {vehicle.mileage != null ? `${vehicle.mileage.toLocaleString("fr-FR")} km` : "—"}
+              </p>
             </div>
             <div>
               <span className="text-slate-400 dark:text-slate-500">Statut</span>
@@ -294,52 +295,111 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
           <h2 className="font-semibold">Modifier le véhicule</h2>
           <div className="grid gap-3 md:grid-cols-2">
             <div>
-              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Immatriculation</label>
-              <input type="text" value={editReg} onChange={(e) => setEditReg(e.target.value)} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100" />
+              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">
+                Immatriculation
+              </label>
+              <input
+                type="text"
+                value={editReg}
+                onChange={(e) => setEditReg(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
+              />
             </div>
             <div>
               <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Type</label>
-              <select value={editType} onChange={(e) => setEditType(e.target.value as VehicleType)} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100">
+              <select
+                value={editType}
+                onChange={(e) => setEditType(e.target.value as VehicleType)}
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
+              >
                 {VEHICLE_TYPES.map((t) => (
-                  <option key={t} value={t}>{TYPE_LABELS[t] ?? t}</option>
+                  <option key={t} value={t}>
+                    {TYPE_LABELS[t] ?? t}
+                  </option>
                 ))}
               </select>
             </div>
           </div>
           <div className="grid gap-3 md:grid-cols-2">
             <div>
-              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Marque</label>
-              <input type="text" value={editBrand} onChange={(e) => setEditBrand(e.target.value)} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100" />
+              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">
+                Marque
+              </label>
+              <input
+                type="text"
+                value={editBrand}
+                onChange={(e) => setEditBrand(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
+              />
             </div>
             <div>
-              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Modèle</label>
-              <input type="text" value={editModel} onChange={(e) => setEditModel(e.target.value)} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100" />
+              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">
+                Modèle
+              </label>
+              <input
+                type="text"
+                value={editModel}
+                onChange={(e) => setEditModel(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
+              />
             </div>
           </div>
           <div className="grid gap-3 md:grid-cols-3">
             <div>
               <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Année</label>
-              <input type="number" value={editYear} onChange={(e) => setEditYear(e.target.value)} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100" />
+              <input
+                type="number"
+                value={editYear}
+                onChange={(e) => setEditYear(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
+              />
             </div>
             <div>
-              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Couleur</label>
-              <input type="text" value={editColor} onChange={(e) => setEditColor(e.target.value)} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100" />
+              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">
+                Couleur
+              </label>
+              <input
+                type="text"
+                value={editColor}
+                onChange={(e) => setEditColor(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
+              />
             </div>
             <div>
-              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Kilométrage</label>
-              <input type="number" value={editMileage} onChange={(e) => setEditMileage(e.target.value)} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100" />
+              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">
+                Kilométrage
+              </label>
+              <input
+                type="number"
+                value={editMileage}
+                onChange={(e) => setEditMileage(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
+              />
             </div>
           </div>
           <div className="grid gap-3 md:grid-cols-2">
             <div>
               <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">VIN</label>
-              <input type="text" value={editVin} onChange={(e) => setEditVin(e.target.value)} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100" />
+              <input
+                type="text"
+                value={editVin}
+                onChange={(e) => setEditVin(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
+              />
             </div>
             <div>
-              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Statut</label>
-              <select value={editStatus} onChange={(e) => setEditStatus(e.target.value as VehicleStatus)} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100">
+              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">
+                Statut
+              </label>
+              <select
+                value={editStatus}
+                onChange={(e) => setEditStatus(e.target.value as VehicleStatus)}
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
+              >
                 {VEHICLE_STATUSES.map((s) => (
-                  <option key={s} value={s}>{STATUS_LABELS[s] ?? s}</option>
+                  <option key={s} value={s}>
+                    {STATUS_LABELS[s] ?? s}
+                  </option>
                 ))}
               </select>
             </div>
@@ -369,7 +429,8 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
                 {assignedTeam.name}
               </Link>
               <span className="ml-2 text-sm text-slate-500 dark:text-slate-400">
-                ({assignedTeam.technicianIds.length} membre{assignedTeam.technicianIds.length !== 1 ? "s" : ""})
+                ({assignedTeam.technicianIds.length} membre
+                {assignedTeam.technicianIds.length !== 1 ? "s" : ""})
               </span>
             </div>
             <button
@@ -384,7 +445,9 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
         ) : (
           <div className="flex items-end gap-3">
             <div className="flex-1">
-              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Affecter une équipe</label>
+              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">
+                Affecter une équipe
+              </label>
               <select
                 value={selectedTeamId}
                 onChange={(e) => setSelectedTeamId(e.target.value)}

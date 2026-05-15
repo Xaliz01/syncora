@@ -8,7 +8,7 @@ import {
   Patch,
   Post,
   Put,
-  Query
+  Query,
 } from "@nestjs/common";
 import { AbstractCasesService } from "../../domain/ports/cases.service.port";
 import type {
@@ -18,7 +18,7 @@ import type {
   UpdateCaseBody,
   UpdateCaseTemplateBody,
   UpdateInterventionBody,
-  UpdateTodoBody
+  UpdateTodoBody,
 } from "@syncora/shared";
 
 @Controller()
@@ -39,10 +39,7 @@ export class CasesController {
   }
 
   @Get("templates/:id")
-  async getTemplate(
-    @Param("id") id: string,
-    @Query("organizationId") organizationId: string
-  ) {
+  async getTemplate(@Param("id") id: string, @Query("organizationId") organizationId: string) {
     this.ensureOrganizationId(organizationId);
     return this.casesService.getTemplate(id, organizationId);
   }
@@ -53,10 +50,7 @@ export class CasesController {
   }
 
   @Delete("templates/:id")
-  async deleteTemplate(
-    @Param("id") id: string,
-    @Query("organizationId") organizationId: string
-  ) {
+  async deleteTemplate(@Param("id") id: string, @Query("organizationId") organizationId: string) {
     this.ensureOrganizationId(organizationId);
     return this.casesService.deleteTemplate(id, organizationId);
   }
@@ -74,22 +68,19 @@ export class CasesController {
     @Query("status") status?: string,
     @Query("assigneeId") assigneeId?: string,
     @Query("priority") priority?: string,
-    @Query("search") search?: string
+    @Query("search") search?: string,
   ) {
     this.ensureOrganizationId(organizationId);
     return this.casesService.listCases(organizationId, {
       status,
       assigneeId,
       priority,
-      search
+      search,
     });
   }
 
   @Get("cases/:id")
-  async getCase(
-    @Param("id") id: string,
-    @Query("organizationId") organizationId: string
-  ) {
+  async getCase(@Param("id") id: string, @Query("organizationId") organizationId: string) {
     this.ensureOrganizationId(organizationId);
     return this.casesService.getCase(id, organizationId);
   }
@@ -100,10 +91,7 @@ export class CasesController {
   }
 
   @Delete("cases/:id")
-  async deleteCase(
-    @Param("id") id: string,
-    @Query("organizationId") organizationId: string
-  ) {
+  async deleteCase(@Param("id") id: string, @Query("organizationId") organizationId: string) {
     this.ensureOrganizationId(organizationId);
     return this.casesService.deleteCase(id, organizationId);
   }
@@ -128,7 +116,7 @@ export class CasesController {
     @Query("startDate") startDate?: string,
     @Query("endDate") endDate?: string,
     @Query("status") status?: string,
-    @Query("unscheduled") unscheduled?: string
+    @Query("unscheduled") unscheduled?: string,
   ) {
     this.ensureOrganizationId(organizationId);
     return this.casesService.listInterventions(organizationId, {
@@ -137,15 +125,12 @@ export class CasesController {
       startDate,
       endDate,
       status,
-      unscheduled: unscheduled === "true"
+      unscheduled: unscheduled === "true",
     });
   }
 
   @Get("interventions/:id")
-  async getIntervention(
-    @Param("id") id: string,
-    @Query("organizationId") organizationId: string
-  ) {
+  async getIntervention(@Param("id") id: string, @Query("organizationId") organizationId: string) {
     this.ensureOrganizationId(organizationId);
     return this.casesService.getIntervention(id, organizationId);
   }
@@ -158,7 +143,7 @@ export class CasesController {
   @Delete("interventions/:id")
   async deleteIntervention(
     @Param("id") id: string,
-    @Query("organizationId") organizationId: string
+    @Query("organizationId") organizationId: string,
   ) {
     this.ensureOrganizationId(organizationId);
     return this.casesService.deleteIntervention(id, organizationId);
@@ -169,7 +154,7 @@ export class CasesController {
   @Get("dashboard")
   async getDashboard(
     @Query("organizationId") organizationId: string,
-    @Query("userId") userId: string
+    @Query("userId") userId: string,
   ) {
     this.ensureOrganizationId(organizationId);
     if (!userId) throw new BadRequestException("userId query param is required");

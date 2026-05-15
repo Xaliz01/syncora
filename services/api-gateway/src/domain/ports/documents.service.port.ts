@@ -6,12 +6,12 @@ export abstract class AbstractDocumentsGatewayService {
     currentUser: AuthUser,
     entityType: DocumentEntityType,
     entityId: string,
-    file: Express.Multer.File
+    file: Express.Multer.File,
   ): Promise<DocumentResponse>;
   abstract listByEntity(
     currentUser: AuthUser,
     entityType: DocumentEntityType,
-    entityId: string
+    entityId: string,
   ): Promise<DocumentResponse[]>;
   abstract getDownloadUrl(currentUser: AuthUser, documentId: string): Promise<{ url: string }>;
   abstract downloadFile(currentUser: AuthUser, encodedKey: string, res: Response): Promise<void>;

@@ -32,7 +32,7 @@ export function ProfileDetailsPage({ profileId }: { profileId: string }) {
     try {
       const [catalogRes, profileRes] = await Promise.all([
         adminApi.getPermissionsCatalog(),
-        adminApi.getPermissionProfile(profileId)
+        adminApi.getPermissionProfile(profileId),
       ]);
       setCatalog(catalogRes.availablePermissions);
       setName(profileRes.name);
@@ -58,7 +58,7 @@ export function ProfileDetailsPage({ profileId }: { profileId: string }) {
       await adminApi.updatePermissionProfile(profileId, {
         name,
         description: description.trim() || undefined,
-        permissions
+        permissions,
       });
       showToast("Profil mis à jour.");
       setIsEditing(false);
@@ -89,7 +89,9 @@ export function ProfileDetailsPage({ profileId }: { profileId: string }) {
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-semibold mb-1">Fiche profil</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Consultez ce profil de permissions.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            Consultez ce profil de permissions.
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -135,12 +137,23 @@ export function ProfileDetailsPage({ profileId }: { profileId: string }) {
                   <span className="text-sm text-slate-400 dark:text-slate-500">Permissions</span>
                   <div className="mt-2 grid gap-2 md:grid-cols-2">
                     {permissions.map((permission) => (
-                      <div key={permission} className="rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2">
-                        <div className="text-slate-700 dark:text-slate-200">{getPermissionLabel(permission)}</div>
-                        <div className="text-xs text-slate-400 dark:text-slate-500 font-mono">{permission}</div>
+                      <div
+                        key={permission}
+                        className="rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2"
+                      >
+                        <div className="text-slate-700 dark:text-slate-200">
+                          {getPermissionLabel(permission)}
+                        </div>
+                        <div className="text-xs text-slate-400 dark:text-slate-500 font-mono">
+                          {permission}
+                        </div>
                       </div>
                     ))}
-                    {permissions.length === 0 && <p className="text-slate-500 dark:text-slate-400 text-sm">Aucune permission.</p>}
+                    {permissions.length === 0 && (
+                      <p className="text-slate-500 dark:text-slate-400 text-sm">
+                        Aucune permission.
+                      </p>
+                    )}
                   </div>
                 </div>
               </>
@@ -174,8 +187,12 @@ export function ProfileDetailsPage({ profileId }: { profileId: string }) {
                         }
                       />
                       <span>
-                        <span className="block text-slate-700 dark:text-slate-200">{getPermissionLabel(permission)}</span>
-                        <span className="block text-xs text-slate-400 dark:text-slate-500 font-mono">{permission}</span>
+                        <span className="block text-slate-700 dark:text-slate-200">
+                          {getPermissionLabel(permission)}
+                        </span>
+                        <span className="block text-xs text-slate-400 dark:text-slate-500 font-mono">
+                          {permission}
+                        </span>
                       </span>
                     </label>
                   ))}

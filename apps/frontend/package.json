@@ -2,13 +2,22 @@
   "name": "@syncora/frontend",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "dev": "next dev -p 5173",
     "build": "next build",
     "start": "next start -p 5173",
     "lint": "eslint \"app/**/*.{ts,tsx}\" \"components/**/*.{ts,tsx}\" \"lib/**/*.ts\"",
     "test": "echo \"No unit tests yet\"",
-    "e2e": "playwright test"
+    "e2e:install": "playwright install chromium",
+    "e2e": "npm run e2e:install && playwright test",
+    "e2e:watch": "PW_HEADED=1 playwright test --headed --workers=1",
+    "e2e:ui": "playwright test --ui",
+    "e2e:headed": "npm run e2e:watch",
+    "e2e:debug": "playwright test --debug --workers=1",
+    "e2e:report": "playwright show-report"
   },
   "dependencies": {
     "@syncora/shared": "0.1.0",

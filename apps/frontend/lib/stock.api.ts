@@ -1,14 +1,14 @@
 import type {
   ArticleResponse,
   InterventionArticleUsageResponse,
-  StockMovementResponse
+  StockMovementResponse,
 } from "@syncora/shared";
 import { apiRequestJson, type ApiMethod } from "./api-client";
 
 async function stockRequest<TResponse>(
   method: ApiMethod,
   path: string,
-  body?: unknown
+  body?: unknown,
 ): Promise<TResponse> {
   return apiRequestJson<TResponse>(method, path, typeof body === "undefined" ? {} : { body });
 }
@@ -106,18 +106,18 @@ export function listArticleMovements(filters?: {
 
 export function addInterventionArticleUsage(
   interventionId: string,
-  payload: AddInterventionArticleUsagePayload
+  payload: AddInterventionArticleUsagePayload,
 ) {
   return stockRequest<StockMovementResponse>(
     "POST",
     `/stock/interventions/${interventionId}/articles`,
-    payload
+    payload,
   );
 }
 
 export function getInterventionUsage(interventionId: string) {
   return stockRequest<InterventionArticleUsageResponse[]>(
     "GET",
-    `/stock/interventions/${interventionId}/usage`
+    `/stock/interventions/${interventionId}/usage`,
   );
 }

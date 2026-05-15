@@ -2,7 +2,7 @@ import type {
   ArticleResponse,
   AuthUser,
   InterventionArticleUsageResponse,
-  StockMovementResponse
+  StockMovementResponse,
 } from "@syncora/shared";
 
 export interface CreateArticleForOrgBody {
@@ -48,30 +48,30 @@ export abstract class AbstractStockGatewayService {
   abstract createArticle(user: AuthUser, body: CreateArticleForOrgBody): Promise<ArticleResponse>;
   abstract listArticles(
     user: AuthUser,
-    filters?: { search?: string; lowStockOnly?: boolean; activeOnly?: boolean }
+    filters?: { search?: string; lowStockOnly?: boolean; activeOnly?: boolean },
   ): Promise<ArticleResponse[]>;
   abstract getArticle(user: AuthUser, articleId: string): Promise<ArticleResponse>;
   abstract updateArticle(
     user: AuthUser,
     articleId: string,
-    body: UpdateArticleForOrgBody
+    body: UpdateArticleForOrgBody,
   ): Promise<ArticleResponse>;
   abstract deleteArticle(user: AuthUser, articleId: string): Promise<{ deleted: true }>;
   abstract createArticleMovement(
     user: AuthUser,
-    body: CreateArticleMovementForOrgBody
+    body: CreateArticleMovementForOrgBody,
   ): Promise<StockMovementResponse>;
   abstract listArticleMovements(
     user: AuthUser,
-    filters?: { articleId?: string; interventionId?: string; caseId?: string; limit?: number }
+    filters?: { articleId?: string; interventionId?: string; caseId?: string; limit?: number },
   ): Promise<StockMovementResponse[]>;
   abstract addInterventionArticleUsage(
     user: AuthUser,
     interventionId: string,
-    body: AddInterventionArticleUsageForOrgBody
+    body: AddInterventionArticleUsageForOrgBody,
   ): Promise<StockMovementResponse>;
   abstract getInterventionUsage(
     user: AuthUser,
-    interventionId: string
+    interventionId: string,
   ): Promise<InterventionArticleUsageResponse[]>;
 }

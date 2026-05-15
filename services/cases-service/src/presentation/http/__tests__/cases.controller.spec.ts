@@ -25,7 +25,7 @@ describe("CasesController", () => {
       getIntervention: jest.fn(),
       updateIntervention: jest.fn(),
       deleteIntervention: jest.fn(),
-      getDashboard: jest.fn()
+      getDashboard: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -33,9 +33,9 @@ describe("CasesController", () => {
       providers: [
         {
           provide: AbstractCasesService,
-          useValue: mockCasesService
-        }
-      ]
+          useValue: mockCasesService,
+        },
+      ],
     }).compile();
 
     controller = module.get<CasesController>(CasesController);
@@ -51,7 +51,7 @@ describe("CasesController", () => {
         organizationId: "org-1",
         name: "Template 1",
         description: "Desc",
-        steps: []
+        steps: [],
       };
       mockCasesService.createTemplate.mockResolvedValue({ id: "tpl-1", ...body } as never);
 
@@ -73,7 +73,9 @@ describe("CasesController", () => {
     });
 
     it("should throw BadRequestException when organizationId is missing", async () => {
-      await expect(controller.listTemplates(undefined as never)).rejects.toThrow(BadRequestException);
+      await expect(controller.listTemplates(undefined as never)).rejects.toThrow(
+        BadRequestException,
+      );
       expect(mockCasesService.listTemplates).not.toHaveBeenCalled();
     });
   });
@@ -83,7 +85,7 @@ describe("CasesController", () => {
       const body = {
         organizationId: "org-1",
         title: "Case 1",
-        description: "Desc"
+        description: "Desc",
       };
       mockCasesService.createCase.mockResolvedValue({ id: "case-1", ...body } as never);
 
@@ -104,14 +106,14 @@ describe("CasesController", () => {
         status: "draft",
         assigneeId: "user-1",
         priority: "high",
-        search: "search"
+        search: "search",
       });
       expect(result).toHaveLength(1);
     });
 
     it("should throw BadRequestException when organizationId is missing", async () => {
       await expect(
-        controller.listCases(undefined as never, undefined, undefined, undefined, undefined)
+        controller.listCases(undefined as never, undefined, undefined, undefined, undefined),
       ).rejects.toThrow(BadRequestException);
       expect(mockCasesService.listCases).not.toHaveBeenCalled();
     });
@@ -129,7 +131,7 @@ describe("CasesController", () => {
 
     it("should throw BadRequestException when organizationId is missing", async () => {
       await expect(controller.getCase("case-1", undefined as never)).rejects.toThrow(
-        BadRequestException
+        BadRequestException,
       );
       expect(mockCasesService.getCase).not.toHaveBeenCalled();
     });
@@ -152,7 +154,7 @@ describe("CasesController", () => {
         organizationId: "org-1",
         caseId: "case-1",
         title: "Intervention 1",
-        description: "Desc"
+        description: "Desc",
       };
       mockCasesService.createIntervention.mockResolvedValue({ id: "int-1", ...body } as never);
 
@@ -169,7 +171,7 @@ describe("CasesController", () => {
         assignedCases: [],
         upcomingInterventions: [],
         overdueCases: [],
-        stats: { totalAssigned: 0, inProgress: 0, completedThisWeek: 0, overdue: 0 }
+        stats: { totalAssigned: 0, inProgress: 0, completedThisWeek: 0, overdue: 0 },
       };
       mockCasesService.getDashboard.mockResolvedValue(dashboard as never);
 
@@ -181,14 +183,14 @@ describe("CasesController", () => {
 
     it("should throw BadRequestException when organizationId is missing", async () => {
       await expect(controller.getDashboard(undefined as never, "user-1")).rejects.toThrow(
-        BadRequestException
+        BadRequestException,
       );
       expect(mockCasesService.getDashboard).not.toHaveBeenCalled();
     });
 
     it("should throw BadRequestException when userId is missing", async () => {
       await expect(controller.getDashboard("org-1", undefined as never)).rejects.toThrow(
-        BadRequestException
+        BadRequestException,
       );
       expect(mockCasesService.getDashboard).not.toHaveBeenCalled();
     });

@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  ConflictException,
-  NotFoundException
-} from "@nestjs/common";
+import { Injectable, ConflictException, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import type { VehicleDocument } from "../persistence/vehicle.schema";
@@ -12,7 +8,7 @@ import {
   type UpdateVehicleBody,
   type VehicleResponse,
   type VehicleStatus,
-  type VehicleType
+  type VehicleType,
 } from "@syncora/shared";
 import { AbstractFleetService } from "./ports/fleet.service.port";
 
@@ -20,7 +16,7 @@ import { AbstractFleetService } from "./ports/fleet.service.port";
 export class FleetService extends AbstractFleetService {
   constructor(
     @InjectModel("Vehicle")
-    private readonly vehicleModel: Model<VehicleDocument>
+    private readonly vehicleModel: Model<VehicleDocument>,
   ) {
     super();
   }
@@ -30,7 +26,7 @@ export class FleetService extends AbstractFleetService {
       .findOne({
         organizationId: body.organizationId,
         registrationNumber: body.registrationNumber,
-        ...activeDocumentFilter
+        ...activeDocumentFilter,
       })
       .exec();
     if (existing) {
@@ -46,7 +42,7 @@ export class FleetService extends AbstractFleetService {
       color: body.color,
       vin: body.vin,
       mileage: body.mileage ?? 0,
-      status: body.status ?? "actif"
+      status: body.status ?? "actif",
     });
     return this.toVehicleResponse(doc);
   }
@@ -54,7 +50,7 @@ export class FleetService extends AbstractFleetService {
   async updateVehicle(
     organizationId: string,
     vehicleId: string,
-    body: UpdateVehicleBody
+    body: UpdateVehicleBody,
   ): Promise<VehicleResponse> {
     const doc = await this.vehicleModel
       .findOne({ _id: vehicleId, organizationId, ...activeDocumentFilter })
@@ -68,7 +64,7 @@ export class FleetService extends AbstractFleetService {
           organizationId,
           registrationNumber: body.registrationNumber,
           _id: { $ne: vehicleId },
-          ...activeDocumentFilter
+          ...activeDocumentFilter,
         })
         .exec();
       if (dup) {
@@ -110,7 +106,7 @@ export class FleetService extends AbstractFleetService {
     const result = await this.vehicleModel
       .updateOne(
         { _id: vehicleId, organizationId, ...activeDocumentFilter },
-        { $set: { deletedAt: new Date() } }
+        { $set: { deletedAt: new Date() } },
       )
       .exec();
     if (!result.matchedCount) {
@@ -122,7 +118,7 @@ export class FleetService extends AbstractFleetService {
   async assignTeam(
     organizationId: string,
     vehicleId: string,
-    teamId: string
+    teamId: string,
   ): Promise<VehicleResponse> {
     const vehicle = await this.vehicleModel
       .findOne({ _id: vehicleId, organizationId, ...activeDocumentFilter })
@@ -135,10 +131,7 @@ export class FleetService extends AbstractFleetService {
     return this.toVehicleResponse(vehicle);
   }
 
-  async unassignTeam(
-    organizationId: string,
-    vehicleId: string
-  ): Promise<VehicleResponse> {
+  async unassignTeam(organizationId: string, vehicleId: string): Promise<VehicleResponse> {
     const vehicle = await this.vehicleModel
       .findOne({ _id: vehicleId, organizationId, ...activeDocumentFilter })
       .exec();
@@ -150,13 +143,10 @@ export class FleetService extends AbstractFleetService {
     return this.toVehicleResponse(vehicle);
   }
 
-  async unassignTeamFromAllVehicles(
-    organizationId: string,
-    teamId: string
-  ): Promise<void> {
+  async unassignTeamFromAllVehicles(organizationId: string, teamId: string): Promise<void> {
     await this.vehicleModel.updateMany(
       { organizationId, assignedTeamId: teamId },
-      { $unset: { assignedTeamId: "" } }
+      { $unset: { assignedTeamId: "" } },
     );
   }
 
@@ -175,7 +165,7 @@ export class FleetService extends AbstractFleetService {
       status: doc.status as VehicleStatus,
       assignedTeamId: doc.assignedTeamId,
       createdAt: doc.get("createdAt")?.toISOString(),
-      updatedAt: doc.get("updatedAt")?.toISOString()
+      updatedAt: doc.get("updatedAt")?.toISOString(),
     };
   }
 }

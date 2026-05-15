@@ -6,7 +6,7 @@ import type {
   OrganizationMembershipResponse,
   PatchUserBody,
   UserResponse,
-  ValidateCredentialsResponse
+  ValidateCredentialsResponse,
 } from "@syncora/shared";
 
 export abstract class AbstractUsersService {
@@ -19,10 +19,10 @@ export abstract class AbstractUsersService {
   abstract listOrganizationMemberships(userId: string): Promise<OrganizationMembershipResponse[]>;
   abstract addOrganizationMembership(
     userId: string,
-    body: CreateOrganizationMembershipBody
+    body: CreateOrganizationMembershipBody,
   ): Promise<OrganizationMembershipResponse>;
   abstract validateCredentials(
     email: string,
-    password: string
+    password: string,
   ): Promise<ValidateCredentialsResponse | null>;
 }

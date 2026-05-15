@@ -5,7 +5,7 @@ import type { OrganizationDocument } from "../persistence/organization.schema";
 import {
   activeDocumentFilter,
   type OrganizationResponse,
-  type UpdateOrganizationBody
+  type UpdateOrganizationBody,
 } from "@syncora/shared";
 import { AbstractOrganizationsService } from "./ports/organizations.service.port";
 
@@ -13,7 +13,7 @@ import { AbstractOrganizationsService } from "./ports/organizations.service.port
 export class OrganizationsService extends AbstractOrganizationsService {
   constructor(
     @InjectModel("Organization")
-    private readonly organizationModel: Model<OrganizationDocument>
+    private readonly organizationModel: Model<OrganizationDocument>,
   ) {
     super();
   }
@@ -30,7 +30,7 @@ export class OrganizationsService extends AbstractOrganizationsService {
       city: doc.city,
       country: doc.country,
       createdAt: doc.get("createdAt")?.toISOString(),
-      updatedAt: doc.get("updatedAt")?.toISOString()
+      updatedAt: doc.get("updatedAt")?.toISOString(),
     };
   }
 

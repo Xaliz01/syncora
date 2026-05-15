@@ -13,19 +13,17 @@ const isProduction = process.env.STORAGE_PROVIDER === "s3";
 @Module({
   imports: [
     MongooseModule.forRoot(
-      process.env.MONGODB_URI ?? "mongodb://localhost:27017/syncora-documents"
+      process.env.MONGODB_URI ?? "mongodb://localhost:27017/syncora-documents",
     ),
-    MongooseModule.forFeature([
-      { name: "DocumentRecord", schema: DocumentSchema }
-    ])
+    MongooseModule.forFeature([{ name: "DocumentRecord", schema: DocumentSchema }]),
   ],
   controllers: [DocumentsController],
   providers: [
     {
       provide: AbstractStorageProvider,
-      useClass: isProduction ? S3StorageProvider : LocalStorageProvider
+      useClass: isProduction ? S3StorageProvider : LocalStorageProvider,
     },
-    { provide: AbstractDocumentsService, useClass: DocumentsService }
-  ]
+    { provide: AbstractDocumentsService, useClass: DocumentsService },
+  ],
 })
 export class AppModule {}

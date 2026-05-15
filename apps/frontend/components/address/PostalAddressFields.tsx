@@ -2,11 +2,7 @@
 
 import React, { useEffect, useId, useRef, useState } from "react";
 import type { PostalAddress } from "@syncora/shared";
-import {
-  banFeatureToPostalAddress,
-  searchBanAddresses,
-  type BanFeature
-} from "@/lib/ban-address";
+import { banFeatureToPostalAddress, searchBanAddresses, type BanFeature } from "@/lib/ban-address";
 
 function useDebouncedValue<T>(value: T, ms: number): T {
   const [v, setV] = useState(value);
@@ -61,7 +57,7 @@ export function PostalAddressFields({
   inputCls: inputClsProp,
   legend,
   idPrefix,
-  structuredReadOnly = true
+  structuredReadOnly = true,
 }: PostalAddressFieldsProps) {
   const uid = useId();
   const baseId = idPrefix ?? uid.replace(/:/g, "");
@@ -146,7 +142,13 @@ export function PostalAddressFields({
   return (
     <div className="space-y-3">
       {legend && (
-        <p className={compact ? "text-xs font-medium text-slate-600 dark:text-slate-300" : "text-sm font-medium text-slate-700 dark:text-slate-200"}>
+        <p
+          className={
+            compact
+              ? "text-xs font-medium text-slate-600 dark:text-slate-300"
+              : "text-sm font-medium text-slate-700 dark:text-slate-200"
+          }
+        >
           {legend}
         </p>
       )}
@@ -176,7 +178,9 @@ export function PostalAddressFields({
           aria-expanded={listOpen && suggestions.length > 0}
         />
         {searchLoading && (
-          <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">Recherche dans la Base Adresse Nationale…</p>
+          <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+            Recherche dans la Base Adresse Nationale…
+          </p>
         )}
         {listOpen && suggestions.length > 0 && (
           <ul
@@ -237,21 +241,22 @@ export function PostalAddressFields({
         !banAligned &&
         structuredReadOnly && (
           <p className="text-[11px] text-slate-600 dark:text-slate-400 rounded-md bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 px-2 py-1.5">
-            Pour modifier rue, code postal ou ville : lancez une nouvelle recherche ou activez la saisie manuelle.
+            Pour modifier rue, code postal ou ville : lancez une nouvelle recherche ou activez la
+            saisie manuelle.
           </p>
         )}
 
       {banAligned && !manualMode && structuredReadOnly && (
         <p className="text-[11px] text-emerald-700 dark:text-emerald-400 rounded-md bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/50 px-2 py-1.5">
-          Rue, code postal, ville et pays sont issus de la Base Adresse Nationale (lecture seule). Complétez éventuellement
-          le complément d’adresse ci‑dessous.
+          Rue, code postal, ville et pays sont issus de la Base Adresse Nationale (lecture seule).
+          Complétez éventuellement le complément d’adresse ci‑dessous.
         </p>
       )}
 
       {manualMode && structuredReadOnly && (
         <p className="text-[11px] text-amber-800 dark:text-amber-200 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 px-2 py-1.5">
-          Saisie manuelle : vérifiez la cohérence du libellé ; pour une adresse française, privilégiez la recherche
-          ci‑dessus.
+          Saisie manuelle : vérifiez la cohérence du libellé ; pour une adresse française,
+          privilégiez la recherche ci‑dessus.
         </p>
       )}
 

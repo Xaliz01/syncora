@@ -17,7 +17,7 @@ describe("AuthService", () => {
   const mockOrgResponse = {
     id: "org-123",
     name: "Test Org",
-    createdAt: "2025-01-01T00:00:00.000Z"
+    createdAt: "2025-01-01T00:00:00.000Z",
   };
 
   const mockUserResponse = {
@@ -26,7 +26,7 @@ describe("AuthService", () => {
     email: "admin@example.com",
     name: "Admin User",
     role: "admin",
-    status: "active"
+    status: "active",
   };
 
   const mockValidateCredentialsResponse = {
@@ -35,11 +35,11 @@ describe("AuthService", () => {
     email: "admin@example.com",
     name: "Admin User",
     role: "admin",
-    status: "active"
+    status: "active",
   };
 
   const mockPermissionsResponse = {
-    permissions: ["cases:read", "cases:write"]
+    permissions: ["cases:read", "cases:write"],
   };
 
   const mockSubscriptionsGateway = {
@@ -50,8 +50,8 @@ describe("AuthService", () => {
       trialEndsAt: null,
       currentPeriodEnd: null,
       cancelAtPeriodEnd: false,
-      planLabel: "9,99 € / mois"
-    })
+      planLabel: "9,99 € / mois",
+    }),
   };
 
   beforeEach(async () => {
@@ -60,13 +60,13 @@ describe("AuthService", () => {
         HttpModule.register({ timeout: 5000 }),
         JwtModule.register({
           secret: "test-secret",
-          signOptions: { expiresIn: "7d" }
-        })
+          signOptions: { expiresIn: "7d" },
+        }),
       ],
       providers: [
         { provide: AbstractAuthService, useClass: AuthService },
-        { provide: AbstractSubscriptionsGatewayService, useValue: mockSubscriptionsGateway }
-      ]
+        { provide: AbstractSubscriptionsGatewayService, useValue: mockSubscriptionsGateway },
+      ],
     }).compile();
 
     service = module.get<AbstractAuthService>(AbstractAuthService) as AuthService;
@@ -90,7 +90,11 @@ describe("AuthService", () => {
         if (url.includes("/organizations")) {
           response = { data: mockOrgResponse, status: 201, statusText: "Created" } as AxiosResponse;
         } else if (url.includes("/users") && !url.includes("validate-credentials")) {
-          response = { data: mockUserResponse, status: 201, statusText: "Created" } as AxiosResponse;
+          response = {
+            data: mockUserResponse,
+            status: 201,
+            statusText: "Created",
+          } as AxiosResponse;
         } else if (url.includes("/permissions/effective")) {
           response = { data: mockPermissionsResponse, status: 200 } as AxiosResponse;
         } else {
@@ -103,7 +107,7 @@ describe("AuthService", () => {
         organizationName: "Test Org",
         adminEmail: "admin@example.com",
         adminPassword: "secret123",
-        adminName: "Admin User"
+        adminName: "Admin User",
       };
 
       const result = await service.register(body);
@@ -132,7 +136,7 @@ describe("AuthService", () => {
 
       const body = {
         email: "admin@example.com",
-        password: "secret123"
+        password: "secret123",
       };
 
       const result = await service.login(body);
@@ -147,7 +151,7 @@ describe("AuthService", () => {
       jest.spyOn(httpService, "post").mockImplementation((url: string) => {
         if (url.includes("validate-credentials")) {
           return throwError(() => ({
-            response: { status: 401 }
+            response: { status: 401 },
           }));
         }
         return of({ data: {}, status: 200 } as AxiosResponse);
@@ -155,7 +159,7 @@ describe("AuthService", () => {
 
       const body = {
         email: "wrong@example.com",
-        password: "wrongpassword"
+        password: "wrongpassword",
       };
 
       await expect(service.login(body)).rejects.toThrow(UnauthorizedException);

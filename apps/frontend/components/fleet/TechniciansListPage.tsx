@@ -20,17 +20,18 @@ import {
   ListRowLink,
   ListSearchField,
   ListTableShell,
-  ListToolbar
+  ListToolbar,
 } from "@/components/ui/list-page";
 
 const STATUS_COLORS: Record<string, string> = {
   actif: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  inactif: "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700"
+  inactif:
+    "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700",
 };
 
 const STATUS_LABELS: Record<string, string> = {
   actif: "Actif",
-  inactif: "Inactif"
+  inactif: "Inactif",
 };
 
 const GRID = "md:grid-cols-[1.2fr_1fr_0.8fr_0.5fr]";
@@ -66,9 +67,9 @@ export function TechniciansListPage() {
         `${tech.firstName} ${tech.lastName}`,
         tech.email,
         tech.speciality,
-        STATUS_LABELS[tech.status] ?? tech.status
+        STATUS_LABELS[tech.status] ?? tech.status,
       ]),
-    [technicians, search]
+    [technicians, search],
   );
 
   return (
@@ -76,13 +77,19 @@ export function TechniciansListPage() {
       <ListPageHeader
         title="Techniciens"
         description="Profils terrain et comptes utilisateur associés."
-        action={<ListPrimaryAction href="/fleet/technicians/new">Ajouter un technicien</ListPrimaryAction>}
+        action={
+          <ListPrimaryAction href="/fleet/technicians/new">Ajouter un technicien</ListPrimaryAction>
+        }
       />
 
       {error ? <ListPageError message={error} onRetry={() => void loadData()} /> : null}
 
       <ListToolbar>
-        <ListSearchField value={search} onChange={setSearch} placeholder="Filtrer par nom, email, spécialité…" />
+        <ListSearchField
+          value={search}
+          onChange={setSearch}
+          placeholder="Filtrer par nom, email, spécialité…"
+        />
       </ListToolbar>
 
       {loading ? (
@@ -91,7 +98,10 @@ export function TechniciansListPage() {
         <ListEmptyState
           message="Aucun technicien enregistré."
           action={
-            <Link href="/fleet/technicians/new" className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium">
+            <Link
+              href="/fleet/technicians/new"
+              className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium"
+            >
               Ajouter votre premier technicien
             </Link>
           }
@@ -111,13 +121,22 @@ export function TechniciansListPage() {
           }
         >
           {filtered.map((tech) => (
-            <ListRowLink key={tech.id} href={`/fleet/technicians/${tech.id}`} gridTemplateClass={GRID}>
+            <ListRowLink
+              key={tech.id}
+              href={`/fleet/technicians/${tech.id}`}
+              gridTemplateClass={GRID}
+            >
               <ListCellPrimary>
                 {tech.firstName} {tech.lastName}
               </ListCellPrimary>
               <ListCellMuted>{tech.email || "—"}</ListCellMuted>
               <ListCellDefault>{tech.speciality || "—"}</ListCellDefault>
-              <ListBadge className={STATUS_COLORS[tech.status] ?? "bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700"}>
+              <ListBadge
+                className={
+                  STATUS_COLORS[tech.status] ??
+                  "bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700"
+                }
+              >
                 {STATUS_LABELS[tech.status] ?? tech.status}
               </ListBadge>
             </ListRowLink>

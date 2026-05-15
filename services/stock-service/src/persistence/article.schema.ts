@@ -42,7 +42,7 @@ export class ArticleDocument extends Document {
 export const ArticleSchema = SchemaFactory.createForClass(ArticleDocument);
 ArticleSchema.index(
   { organizationId: 1, reference: 1 },
-  { unique: true, partialFilterExpression: { deletedAt: null } }
+  { unique: true, partialFilterExpression: { deletedAt: null } },
 );
 ArticleSchema.index({ organizationId: 1, name: 1 });
 ArticleSchema.index({ organizationId: 1, stockQuantity: 1 });

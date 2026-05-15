@@ -7,8 +7,8 @@ export async function login(email: string, password: string) {
     {
       body: { email, password },
       bearer: false,
-      fallbackError: "Connexion impossible"
-    }
+      fallbackError: "Connexion impossible",
+    },
   );
 }
 
@@ -24,8 +24,8 @@ export async function register(payload: {
     {
       body: payload,
       bearer: false,
-      fallbackError: "Création de compte impossible"
-    }
+      fallbackError: "Création de compte impossible",
+    },
   );
 }
 
@@ -40,8 +40,8 @@ export async function acceptInvitation(payload: {
     {
       body: payload,
       bearer: false,
-      fallbackError: "Acceptation impossible"
-    }
+      fallbackError: "Acceptation impossible",
+    },
   );
 }
 
@@ -51,8 +51,8 @@ export async function createOrganization(payload: { name: string }) {
     "/auth/create-organization",
     {
       body: payload,
-      fallbackError: "Impossible de créer l’organisation"
-    }
+      fallbackError: "Impossible de créer l’organisation",
+    },
   );
 }
 
@@ -62,8 +62,8 @@ export async function switchOrganization(payload: { organizationId: string }) {
     "/auth/switch-organization",
     {
       body: payload,
-      fallbackError: "Impossible de changer d’organisation"
-    }
+      fallbackError: "Impossible de changer d’organisation",
+    },
   );
 }
 
@@ -78,7 +78,7 @@ export function clearToken() {
 export async function getMe(): Promise<import("@syncora/shared").AuthUser> {
   return apiRequestJson<import("@syncora/shared").AuthUser>("GET", "/auth/me", {
     noTokenMessage: "Session non authentifiée",
-    fallbackError: "Session expirée"
+    fallbackError: "Session expirée",
   });
 }
 

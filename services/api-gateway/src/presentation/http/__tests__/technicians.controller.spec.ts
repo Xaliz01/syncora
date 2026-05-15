@@ -17,7 +17,7 @@ describe("TechniciansController", () => {
     role: "admin",
     status: "active",
     permissions: [],
-    name: "Admin User"
+    name: "Admin User",
   };
 
   beforeEach(async () => {
@@ -27,7 +27,7 @@ describe("TechniciansController", () => {
       getTechnician: jest.fn(),
       updateTechnician: jest.fn(),
       deleteTechnician: jest.fn(),
-      createTechnicianUserAccount: jest.fn()
+      createTechnicianUserAccount: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -35,9 +35,9 @@ describe("TechniciansController", () => {
       providers: [
         {
           provide: AbstractTechniciansGatewayService,
-          useValue: mockTechniciansService
-        }
-      ]
+          useValue: mockTechniciansService,
+        },
+      ],
     })
       .overrideGuard(JwtAuthGuard)
       .useValue({ canActivate: () => true })
@@ -61,7 +61,7 @@ describe("TechniciansController", () => {
         lastName: "Doe",
         email: "john@example.com",
         phone: "+33123456789",
-        speciality: "mechanic"
+        speciality: "mechanic",
       };
       mockTechniciansService.createTechnician.mockResolvedValue({
         id: "tech-1",
@@ -75,7 +75,7 @@ describe("TechniciansController", () => {
         userId: undefined,
         assignedVehicleIds: [],
         createdAt: "2025-01-01T00:00:00.000Z",
-        updatedAt: "2025-01-02T00:00:00.000Z"
+        updatedAt: "2025-01-02T00:00:00.000Z",
       } as never);
 
       const result = await controller.createTechnician(mockUser, body);
@@ -101,8 +101,8 @@ describe("TechniciansController", () => {
           userId: undefined,
           assignedVehicleIds: [],
           createdAt: "2025-01-01T00:00:00.000Z",
-          updatedAt: "2025-01-02T00:00:00.000Z"
-        }
+          updatedAt: "2025-01-02T00:00:00.000Z",
+        },
       ] as never);
 
       const result = await controller.listTechnicians(mockUser);
@@ -127,7 +127,7 @@ describe("TechniciansController", () => {
         userId: undefined,
         assignedVehicleIds: [],
         createdAt: "2025-01-01T00:00:00.000Z",
-        updatedAt: "2025-01-02T00:00:00.000Z"
+        updatedAt: "2025-01-02T00:00:00.000Z",
       } as never);
 
       const result = await controller.getTechnician(mockUser, "tech-1");
@@ -152,7 +152,7 @@ describe("TechniciansController", () => {
         userId: undefined,
         assignedVehicleIds: [],
         createdAt: "2025-01-01T00:00:00.000Z",
-        updatedAt: "2025-01-02T00:00:00.000Z"
+        updatedAt: "2025-01-02T00:00:00.000Z",
       } as never);
 
       const result = await controller.updateTechnician(mockUser, "tech-1", body);
@@ -160,7 +160,7 @@ describe("TechniciansController", () => {
       expect(mockTechniciansService.updateTechnician).toHaveBeenCalledWith(
         mockUser,
         "tech-1",
-        body
+        body,
       );
       expect(result.firstName).toBe("Jane");
       expect(result.lastName).toBe("Smith");
@@ -193,7 +193,7 @@ describe("TechniciansController", () => {
         userId: "user-456",
         assignedVehicleIds: [],
         createdAt: "2025-01-01T00:00:00.000Z",
-        updatedAt: "2025-01-02T00:00:00.000Z"
+        updatedAt: "2025-01-02T00:00:00.000Z",
       } as never);
 
       const result = await controller.createTechnicianAccount(mockUser, "tech-1", body);
@@ -201,7 +201,7 @@ describe("TechniciansController", () => {
       expect(mockTechniciansService.createTechnicianUserAccount).toHaveBeenCalledWith(
         mockUser,
         "tech-1",
-        body
+        body,
       );
       expect(result.userId).toBe("user-456");
     });

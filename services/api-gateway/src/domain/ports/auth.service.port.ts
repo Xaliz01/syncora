@@ -6,7 +6,7 @@ import type {
   AuthUser,
   JwtPayload,
   CreateOrganizationBody,
-  SwitchOrganizationBody
+  SwitchOrganizationBody,
 } from "@syncora/shared";
 
 export abstract class AbstractAuthService {

@@ -19,7 +19,7 @@ import {
   ListRow,
   ListSearchField,
   ListTableShell,
-  ListToolbar
+  ListToolbar,
 } from "@/components/ui/list-page";
 
 const GRID = "md:grid-cols-[1.2fr_2fr_0.9fr_auto]";
@@ -31,12 +31,12 @@ export function TemplatesListPage() {
 
   const { data: templates = [], isLoading } = useQuery({
     queryKey: ["case-templates"],
-    queryFn: () => api.listTemplates()
+    queryFn: () => api.listTemplates(),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.deleteTemplate(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["case-templates"] })
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["case-templates"] }),
   });
 
   const filtered = useMemo(
@@ -45,9 +45,9 @@ export function TemplatesListPage() {
         t.name,
         t.description,
         String(t.steps.length),
-        String(t.steps.reduce((acc, s) => acc + s.todos.length, 0))
+        String(t.steps.reduce((acc, s) => acc + s.todos.length, 0)),
       ]),
-    [templates, search]
+    [templates, search],
   );
 
   return (
@@ -55,11 +55,17 @@ export function TemplatesListPage() {
       <ListPageHeader
         title="Modèles de dossier"
         description="Configurez des modèles avec étapes et tâches pour créer rapidement des dossiers typés."
-        action={<ListPrimaryAction href="/settings/case-templates/new">Nouveau modèle</ListPrimaryAction>}
+        action={
+          <ListPrimaryAction href="/settings/case-templates/new">Nouveau modèle</ListPrimaryAction>
+        }
       />
 
       <ListToolbar>
-        <ListSearchField value={search} onChange={setSearch} placeholder="Filtrer par nom ou description…" />
+        <ListSearchField
+          value={search}
+          onChange={setSearch}
+          placeholder="Filtrer par nom ou description…"
+        />
       </ListToolbar>
 
       {isLoading ? (
@@ -68,7 +74,10 @@ export function TemplatesListPage() {
         <ListEmptyState
           message="Aucun modèle de dossier."
           action={
-            <Link href="/settings/case-templates/new" className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium">
+            <Link
+              href="/settings/case-templates/new"
+              className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium"
+            >
               Créer un modèle
             </Link>
           }
@@ -92,7 +101,10 @@ export function TemplatesListPage() {
             return (
               <ListRow key={template.id} gridTemplateClass={GRID}>
                 <ListCellPrimary>
-                  <Link href={`/settings/case-templates/${template.id}`} className="hover:underline">
+                  <Link
+                    href={`/settings/case-templates/${template.id}`}
+                    className="hover:underline"
+                  >
                     {template.name}
                   </Link>
                 </ListCellPrimary>
@@ -100,7 +112,8 @@ export function TemplatesListPage() {
                   {template.description || "—"}
                 </ListCellMuted>
                 <ListCellDefault>
-                  {template.steps.length} étape{template.steps.length !== 1 ? "s" : ""} · {todoCount} tâche
+                  {template.steps.length} étape{template.steps.length !== 1 ? "s" : ""} ·{" "}
+                  {todoCount} tâche
                   {todoCount !== 1 ? "s" : ""}
                 </ListCellDefault>
                 <div className="flex flex-wrap gap-2 justify-end md:justify-start">
@@ -118,7 +131,7 @@ export function TemplatesListPage() {
                         description:
                           "Les dossiers déjà créés à partir de ce modèle ne sont pas supprimés, mais le modèle ne sera plus disponible pour les nouveaux dossiers.",
                         confirmLabel: "Supprimer le modèle",
-                        variant: "danger"
+                        variant: "danger",
                       });
                       if (ok) deleteMutation.mutate(template.id);
                     }}

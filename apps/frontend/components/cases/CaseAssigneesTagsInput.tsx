@@ -24,17 +24,14 @@ export function CaseAssigneesTagsInput({
   onChange,
   disabled = false,
   placeholder = "Ajouter un assigné…",
-  className = ""
+  className = "",
 }: CaseAssigneesTagsInputProps) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const labelById = useMemo(
-    () => new Map(options.map((o) => [o.id, o.label])),
-    [options]
-  );
+  const labelById = useMemo(() => new Map(options.map((o) => [o.id, o.label])), [options]);
 
   const selectedSet = useMemo(() => new Set(value), [value]);
 
@@ -70,7 +67,9 @@ export function CaseAssigneesTagsInput({
     <div ref={rootRef} className={`relative ${className}`}>
       <div
         className={`flex flex-wrap items-center gap-1.5 min-h-[42px] rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1.5 transition ${
-          disabled ? "bg-slate-50 dark:bg-slate-950 opacity-80" : "focus-within:border-brand-500 focus-within:ring-1 focus-within:ring-brand-500"
+          disabled
+            ? "bg-slate-50 dark:bg-slate-950 opacity-80"
+            : "focus-within:border-brand-500 focus-within:ring-1 focus-within:ring-brand-500"
         }`}
         onClick={() => !disabled && inputRef.current?.focus()}
       >

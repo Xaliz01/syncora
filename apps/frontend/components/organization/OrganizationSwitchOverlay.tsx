@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
  */
 export function OrganizationSwitchOverlay({
   visible,
-  organizationName
+  organizationName,
 }: {
   visible: boolean;
   organizationName?: string | null;
@@ -47,9 +47,13 @@ export function OrganizationSwitchOverlay({
             Changement d&apos;organisation
           </p>
           {organizationName ? (
-            <p className="mt-2 text-sm font-medium text-brand-600 dark:text-brand-400">{organizationName}</p>
+            <p className="mt-2 text-sm font-medium text-brand-600 dark:text-brand-400">
+              {organizationName}
+            </p>
           ) : (
-            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Préparation de votre espace…</p>
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+              Préparation de votre espace…
+            </p>
           )}
           <p className="mt-3 text-xs text-slate-400 dark:text-slate-500">
             Rechargement des données pour votre organisation…
@@ -57,6 +61,6 @@ export function OrganizationSwitchOverlay({
         </div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 }

@@ -4,7 +4,7 @@ import { UserDetailsPage } from "@/components/admin/UserDetailsPage";
 import { AppShell } from "@/components/layout/AppShell";
 
 export default async function UserDetailsRoute({
-  params
+  params,
 }: {
   params: Promise<{ userId: string }>;
 }) {

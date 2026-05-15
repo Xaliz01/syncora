@@ -1,11 +1,4 @@
-import {
-  BadRequestException,
-  Controller,
-  Headers,
-  HttpCode,
-  Post,
-  Req
-} from "@nestjs/common";
+import { BadRequestException, Controller, Headers, HttpCode, Post, Req } from "@nestjs/common";
 import type { RawBodyRequest } from "@nestjs/common";
 import type { Request } from "express";
 import { SubscriptionsService } from "../../domain/subscriptions.service";
@@ -18,7 +11,7 @@ export class StripeWebhookController {
   @HttpCode(200)
   async handleStripe(
     @Req() req: RawBodyRequest<Request>,
-    @Headers("stripe-signature") signature: string | undefined
+    @Headers("stripe-signature") signature: string | undefined,
   ) {
     const raw = req.rawBody;
     if (!raw || !Buffer.isBuffer(raw)) {

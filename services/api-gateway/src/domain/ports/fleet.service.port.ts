@@ -4,7 +4,7 @@ import type {
   UpdateVehicleBody,
   AssignTeamToVehicleBody,
   VehicleType,
-  VehicleStatus
+  VehicleStatus,
 } from "@syncora/shared";
 
 export abstract class AbstractFleetGatewayService {
@@ -20,23 +20,23 @@ export abstract class AbstractFleetGatewayService {
       vin?: string;
       mileage?: number;
       status?: VehicleStatus;
-    }
+    },
   ): Promise<VehicleResponse>;
   abstract listVehicles(currentUser: AuthUser): Promise<VehicleResponse[]>;
   abstract getVehicle(currentUser: AuthUser, vehicleId: string): Promise<VehicleResponse>;
   abstract updateVehicle(
     currentUser: AuthUser,
     vehicleId: string,
-    body: UpdateVehicleBody
+    body: UpdateVehicleBody,
   ): Promise<VehicleResponse>;
   abstract deleteVehicle(currentUser: AuthUser, vehicleId: string): Promise<{ deleted: true }>;
   abstract assignTeamToVehicle(
     currentUser: AuthUser,
     vehicleId: string,
-    body: AssignTeamToVehicleBody
+    body: AssignTeamToVehicleBody,
   ): Promise<VehicleResponse>;
   abstract unassignTeamFromVehicle(
     currentUser: AuthUser,
-    vehicleId: string
+    vehicleId: string,
   ): Promise<VehicleResponse>;
 }

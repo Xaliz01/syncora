@@ -4,7 +4,7 @@ import type {
   CaseResponse,
   CaseSummaryResponse,
   CaseTemplateResponse,
-  InterventionResponse
+  InterventionResponse,
 } from "@syncora/shared";
 
 export interface CreateCaseForOrgBody {
@@ -79,35 +79,38 @@ export interface UpdateTodoForOrgBody {
 }
 
 export abstract class AbstractCasesGatewayService {
-  abstract createTemplate(user: AuthUser, body: CreateTemplateForOrgBody): Promise<CaseTemplateResponse>;
+  abstract createTemplate(
+    user: AuthUser,
+    body: CreateTemplateForOrgBody,
+  ): Promise<CaseTemplateResponse>;
   abstract listTemplates(user: AuthUser): Promise<CaseTemplateResponse[]>;
   abstract getTemplate(user: AuthUser, templateId: string): Promise<CaseTemplateResponse>;
   abstract updateTemplate(
     user: AuthUser,
     templateId: string,
-    body: UpdateTemplateForOrgBody
+    body: UpdateTemplateForOrgBody,
   ): Promise<CaseTemplateResponse>;
   abstract deleteTemplate(user: AuthUser, templateId: string): Promise<{ deleted: true }>;
   abstract createCase(user: AuthUser, body: CreateCaseForOrgBody): Promise<CaseResponse>;
   abstract listCases(
     user: AuthUser,
-    filters?: { status?: string; assigneeId?: string; priority?: string; search?: string }
+    filters?: { status?: string; assigneeId?: string; priority?: string; search?: string },
   ): Promise<CaseSummaryResponse[]>;
   abstract getCase(user: AuthUser, caseId: string): Promise<CaseResponse>;
   abstract updateCase(
     user: AuthUser,
     caseId: string,
-    body: UpdateCaseForOrgBody
+    body: UpdateCaseForOrgBody,
   ): Promise<CaseResponse>;
   abstract deleteCase(user: AuthUser, caseId: string): Promise<{ deleted: true }>;
   abstract updateTodo(
     user: AuthUser,
     caseId: string,
-    body: UpdateTodoForOrgBody
+    body: UpdateTodoForOrgBody,
   ): Promise<CaseResponse>;
   abstract createIntervention(
     user: AuthUser,
-    body: CreateInterventionForOrgBody
+    body: CreateInterventionForOrgBody,
   ): Promise<InterventionResponse>;
   abstract listInterventions(
     user: AuthUser,
@@ -118,20 +121,14 @@ export abstract class AbstractCasesGatewayService {
       endDate?: string;
       status?: string;
       unscheduled?: string;
-    }
+    },
   ): Promise<InterventionResponse[]>;
-  abstract getIntervention(
-    user: AuthUser,
-    interventionId: string
-  ): Promise<InterventionResponse>;
+  abstract getIntervention(user: AuthUser, interventionId: string): Promise<InterventionResponse>;
   abstract updateIntervention(
     user: AuthUser,
     interventionId: string,
-    body: UpdateInterventionForOrgBody
+    body: UpdateInterventionForOrgBody,
   ): Promise<InterventionResponse>;
-  abstract deleteIntervention(
-    user: AuthUser,
-    interventionId: string
-  ): Promise<{ deleted: true }>;
+  abstract deleteIntervention(user: AuthUser, interventionId: string): Promise<{ deleted: true }>;
   abstract getDashboard(user: AuthUser): Promise<CaseDashboardResponse>;
 }

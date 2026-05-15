@@ -7,6 +7,8 @@ import { OrganizationsGatewayService } from "../domain/organizations.gateway.ser
 @Module({
   imports: [HttpModule.register({ timeout: 5000, maxRedirects: 0 })],
   controllers: [OrganizationsController],
-  providers: [{ provide: AbstractOrganizationsGatewayService, useClass: OrganizationsGatewayService }]
+  providers: [
+    { provide: AbstractOrganizationsGatewayService, useClass: OrganizationsGatewayService },
+  ],
 })
 export class OrganizationsModule {}

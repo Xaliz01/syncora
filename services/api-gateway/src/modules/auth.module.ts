@@ -15,10 +15,10 @@ import { SubscriptionsModule } from "./subscriptions.module";
     JwtModule.register({
       global: true,
       secret: process.env.JWT_SECRET ?? "syncora-dev-secret-change-in-production",
-      signOptions: { expiresIn: "7d" }
-    })
+      signOptions: { expiresIn: "7d" },
+    }),
   ],
   controllers: [AuthController],
-  providers: [{ provide: AbstractAuthService, useClass: AuthService }]
+  providers: [{ provide: AbstractAuthService, useClass: AuthService }],
 })
 export class AuthModule {}

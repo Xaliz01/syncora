@@ -7,7 +7,7 @@ import {
   Param,
   Patch,
   Post,
-  Query
+  Query,
 } from "@nestjs/common";
 import { AbstractAgencesService } from "../../domain/ports/agences.service.port";
 import type { CreateAgenceBody, UpdateAgenceBody } from "@syncora/shared";
@@ -28,10 +28,7 @@ export class AgencesController {
   }
 
   @Get(":id")
-  async getAgence(
-    @Param("id") id: string,
-    @Query("organizationId") organizationId: string
-  ) {
+  async getAgence(@Param("id") id: string, @Query("organizationId") organizationId: string) {
     this.ensureOrganizationId(organizationId);
     return this.agencesService.getAgence(organizationId, id);
   }
@@ -40,17 +37,14 @@ export class AgencesController {
   async updateAgence(
     @Param("id") id: string,
     @Query("organizationId") organizationId: string,
-    @Body() body: UpdateAgenceBody
+    @Body() body: UpdateAgenceBody,
   ) {
     this.ensureOrganizationId(organizationId);
     return this.agencesService.updateAgence(organizationId, id, body);
   }
 
   @Delete(":id")
-  async deleteAgence(
-    @Param("id") id: string,
-    @Query("organizationId") organizationId: string
-  ) {
+  async deleteAgence(@Param("id") id: string, @Query("organizationId") organizationId: string) {
     this.ensureOrganizationId(organizationId);
     return this.agencesService.deleteAgence(organizationId, id);
   }

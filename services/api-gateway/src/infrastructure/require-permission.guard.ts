@@ -3,7 +3,7 @@ import {
   ExecutionContext,
   ForbiddenException,
   Injectable,
-  SetMetadata
+  SetMetadata,
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import type { JwtPayload, PermissionCode } from "@syncora/shared";
@@ -32,7 +32,7 @@ export class RequirePermissionGuard implements CanActivate {
 
     const anyPermissions = this.reflector.getAllAndOverride<PermissionCode[] | undefined>(
       REQUIRED_ANY_PERMISSIONS_KEY,
-      [context.getHandler(), context.getClass()]
+      [context.getHandler(), context.getClass()],
     );
     if (anyPermissions && anyPermissions.length > 0) {
       const hasAny = anyPermissions.some((p) => userPermissions.has(p));
@@ -44,7 +44,7 @@ export class RequirePermissionGuard implements CanActivate {
 
     const requiredPermissions = this.reflector.getAllAndOverride<PermissionCode[] | undefined>(
       REQUIRED_PERMISSIONS_KEY,
-      [context.getHandler(), context.getClass()]
+      [context.getHandler(), context.getClass()],
     );
 
     if (!requiredPermissions || requiredPermissions.length === 0) return true;

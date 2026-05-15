@@ -21,7 +21,7 @@ describe("PermissionsController", () => {
       createInvitation: jest.fn(),
       listInvitations: jest.fn(),
       resolveInvitation: jest.fn(),
-      acceptInvitation: jest.fn()
+      acceptInvitation: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -29,9 +29,9 @@ describe("PermissionsController", () => {
       providers: [
         {
           provide: AbstractPermissionsService,
-          useValue: mockPermissionsService
-        }
-      ]
+          useValue: mockPermissionsService,
+        },
+      ],
     }).compile();
 
     controller = module.get<PermissionsController>(PermissionsController);
@@ -47,7 +47,7 @@ describe("PermissionsController", () => {
         organizationId: "org-1",
         name: "Test Profile",
         description: "A profile",
-        permissions: ["users.read", "cases.read"] as PermissionCode[]
+        permissions: ["users.read", "cases.read"] as PermissionCode[],
       };
       const expected = {
         id: "profile-123",
@@ -56,7 +56,7 @@ describe("PermissionsController", () => {
         description: "A profile",
         permissions: ["users.read", "cases.read"] as PermissionCode[],
         createdAt: "2025-01-01T00:00:00.000Z",
-        updatedAt: "2025-01-02T00:00:00.000Z"
+        updatedAt: "2025-01-02T00:00:00.000Z",
       };
       mockPermissionsService.createProfile.mockResolvedValue(expected);
 
@@ -76,8 +76,8 @@ describe("PermissionsController", () => {
           name: "Profile 1",
           permissions: ["users.read"] as PermissionCode[],
           createdAt: "2025-01-01T00:00:00.000Z",
-          updatedAt: "2025-01-02T00:00:00.000Z"
-        }
+          updatedAt: "2025-01-02T00:00:00.000Z",
+        },
       ];
       mockPermissionsService.listProfiles.mockResolvedValue(profiles);
 
@@ -90,7 +90,7 @@ describe("PermissionsController", () => {
     it("should throw BadRequestException when organizationId is missing", async () => {
       await expect(controller.listProfiles("")).rejects.toThrow(BadRequestException);
       await expect(controller.listProfiles("")).rejects.toThrow(
-        "organizationId query param is required"
+        "organizationId query param is required",
       );
     });
   });
@@ -103,22 +103,19 @@ describe("PermissionsController", () => {
         name: "Test Profile",
         permissions: ["users.read"] as PermissionCode[],
         createdAt: "2025-01-01T00:00:00.000Z",
-        updatedAt: "2025-01-02T00:00:00.000Z"
+        updatedAt: "2025-01-02T00:00:00.000Z",
       };
       mockPermissionsService.findProfileById.mockResolvedValue(profile);
 
       const result = await controller.findProfileById("profile-123", "org-1");
 
-      expect(mockPermissionsService.findProfileById).toHaveBeenCalledWith(
-        "profile-123",
-        "org-1"
-      );
+      expect(mockPermissionsService.findProfileById).toHaveBeenCalledWith("profile-123", "org-1");
       expect(result).toEqual(profile);
     });
 
     it("should throw BadRequestException when organizationId is missing", async () => {
       await expect(controller.findProfileById("profile-123", "")).rejects.toThrow(
-        BadRequestException
+        BadRequestException,
       );
     });
   });
@@ -130,7 +127,7 @@ describe("PermissionsController", () => {
         userId: "user-123",
         profileId: "profile-1",
         extraPermissions: ["cases.read"] as PermissionCode[],
-        revokedPermissions: [] as PermissionCode[]
+        revokedPermissions: [] as PermissionCode[],
       };
       const expected = {
         organizationId: "org-1",
@@ -139,7 +136,7 @@ describe("PermissionsController", () => {
         extraPermissions: ["cases.read"] as PermissionCode[],
         revokedPermissions: [] as PermissionCode[],
         effectivePermissions: ["users.read", "cases.read"] as PermissionCode[],
-        updatedAt: "2025-01-02T00:00:00.000Z"
+        updatedAt: "2025-01-02T00:00:00.000Z",
       };
       mockPermissionsService.assignUserPermissions.mockResolvedValue(expected);
 
@@ -147,7 +144,7 @@ describe("PermissionsController", () => {
 
       expect(mockPermissionsService.assignUserPermissions).toHaveBeenCalledWith({
         ...body,
-        userId: "user-123"
+        userId: "user-123",
       });
       expect(result).toEqual(expected);
     });
@@ -158,7 +155,7 @@ describe("PermissionsController", () => {
       const body = {
         organizationId: "org-1",
         userId: "user-1",
-        role: "admin" as const
+        role: "admin" as const,
       };
       const expected = {
         permissions: [
@@ -182,8 +179,8 @@ describe("PermissionsController", () => {
           "interventions.read",
           "interventions.create",
           "interventions.update",
-          "interventions.delete"
-        ] as PermissionCode[]
+          "interventions.delete",
+        ] as PermissionCode[],
       };
       mockPermissionsService.resolveEffectivePermissions.mockResolvedValue(expected);
 
@@ -201,7 +198,7 @@ describe("PermissionsController", () => {
         invitedUserId: "user-1",
         invitedEmail: "invited@example.com",
         invitedName: "Invited User",
-        invitedByUserId: "admin-1"
+        invitedByUserId: "admin-1",
       };
       const expected = {
         id: "inv-123",
@@ -214,7 +211,7 @@ describe("PermissionsController", () => {
         invitationToken: "token-abc",
         extraPermissions: [] as PermissionCode[],
         revokedPermissions: [] as PermissionCode[],
-        createdAt: "2025-01-01T00:00:00.000Z"
+        createdAt: "2025-01-01T00:00:00.000Z",
       };
       mockPermissionsService.createInvitation.mockResolvedValue(expected);
 

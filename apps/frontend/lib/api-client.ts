@@ -30,13 +30,13 @@ async function throwIfNotOk(response: Response, fallbackError: string): Promise<
 export async function apiRequestJson<T>(
   method: ApiMethod,
   path: string,
-  options: ApiRequestOptions = {}
+  options: ApiRequestOptions = {},
 ): Promise<T> {
   const {
     body,
     bearer = true,
     noTokenMessage = "Session expirée",
-    fallbackError = "Erreur API"
+    fallbackError = "Erreur API",
   } = options;
 
   const headers: Record<string, string> = {};
@@ -54,7 +54,7 @@ export async function apiRequestJson<T>(
   const response = await fetch(`${API_BASE}${path}`, {
     method,
     headers,
-    body: body === undefined ? undefined : JSON.stringify(body)
+    body: body === undefined ? undefined : JSON.stringify(body),
   });
 
   await throwIfNotOk(response, fallbackError);

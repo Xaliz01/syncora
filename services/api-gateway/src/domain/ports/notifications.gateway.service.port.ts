@@ -1,8 +1,4 @@
-import type {
-  AuthUser,
-  NotificationListResponse,
-  NotificationResponse
-} from "@syncora/shared";
+import type { AuthUser, NotificationListResponse, NotificationResponse } from "@syncora/shared";
 
 export abstract class AbstractNotificationsGatewayService {
   abstract listForCurrentUser(user: AuthUser, limit?: number): Promise<NotificationListResponse>;

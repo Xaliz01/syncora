@@ -24,16 +24,20 @@ describe("TechniciansService", () => {
     status: "actif",
     userId: undefined,
     get: jest.fn((key: string) =>
-      key === "createdAt" ? new Date("2025-01-01") : key === "updatedAt" ? new Date("2025-01-02") : undefined
+      key === "createdAt"
+        ? new Date("2025-01-01")
+        : key === "updatedAt"
+          ? new Date("2025-01-02")
+          : undefined,
     ),
     save: jest.fn().mockResolvedValue(undefined),
-    ...overrides
+    ...overrides,
   });
 
   beforeEach(async () => {
     const execMock = jest.fn();
     const findChain = {
-      sort: jest.fn().mockReturnValue({ exec: execMock })
+      sort: jest.fn().mockReturnValue({ exec: execMock }),
     };
 
     mockTechnicianModel = {
@@ -41,15 +45,15 @@ describe("TechniciansService", () => {
       findOne: jest.fn().mockReturnValue({ exec: execMock }),
       find: jest.fn().mockReturnValue(findChain),
       updateOne: jest.fn().mockReturnValue({
-        exec: jest.fn().mockResolvedValue({ matchedCount: 1, modifiedCount: 1 })
-      })
+        exec: jest.fn().mockResolvedValue({ matchedCount: 1, modifiedCount: 1 }),
+      }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TechniciansService,
-        { provide: getModelToken("Technician"), useValue: mockTechnicianModel }
-      ]
+        { provide: getModelToken("Technician"), useValue: mockTechnicianModel },
+      ],
     }).compile();
 
     service = module.get<TechniciansService>(TechniciansService);
@@ -70,7 +74,7 @@ describe("TechniciansService", () => {
         lastName: "Doe",
         email: "john@example.com",
         phone: "+33123456789",
-        speciality: "mechanic"
+        speciality: "mechanic",
       };
 
       const result = await service.createTechnician(body);
@@ -82,7 +86,7 @@ describe("TechniciansService", () => {
         email: body.email,
         phone: body.phone,
         speciality: body.speciality,
-        status: "actif"
+        status: "actif",
       });
       expect(result.id).toBe("tech-123");
       expect(result.firstName).toBe("John");
@@ -100,7 +104,7 @@ describe("TechniciansService", () => {
     it("should return technician when found and org matches", async () => {
       const doc = mockTechnicianDoc({ organizationId: "org-1" });
       mockTechnicianModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(doc)
+        exec: jest.fn().mockResolvedValue(doc),
       });
 
       const result = await service.getTechnician("org-1", "tech-123");
@@ -108,22 +112,24 @@ describe("TechniciansService", () => {
       expect(mockTechnicianModel.findOne).toHaveBeenCalledWith({
         _id: "tech-123",
         organizationId: "org-1",
-        ...activeDocumentFilter
+        ...activeDocumentFilter,
       });
       expect(result.id).toBe("tech-123");
     });
 
     it("should throw NotFoundException when technician not found", async () => {
       mockTechnicianModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(null)
+        exec: jest.fn().mockResolvedValue(null),
       });
 
-      await expect(service.getTechnician("org-1", "non-existent")).rejects.toThrow(NotFoundException);
+      await expect(service.getTechnician("org-1", "non-existent")).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it("should throw NotFoundException when org does not match", async () => {
       mockTechnicianModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(null)
+        exec: jest.fn().mockResolvedValue(null),
       });
 
       await expect(service.getTechnician("org-1", "tech-123")).rejects.toThrow(NotFoundException);
@@ -134,17 +140,17 @@ describe("TechniciansService", () => {
     it("should return sorted list for organization", async () => {
       const docs = [
         mockTechnicianDoc(),
-        mockTechnicianDoc({ _id: { toString: () => "tech-456" } })
+        mockTechnicianDoc({ _id: { toString: () => "tech-456" } }),
       ];
       mockTechnicianModel.find.mockReturnValue({
-        sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(docs) })
+        sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(docs) }),
       });
 
       const result = await service.listTechnicians("org-1");
 
       expect(mockTechnicianModel.find).toHaveBeenCalledWith({
         organizationId: "org-1",
-        ...activeDocumentFilter
+        ...activeDocumentFilter,
       });
       expect(mockTechnicianModel.find().sort).toHaveBeenCalledWith({ createdAt: -1 });
       expect(result).toHaveLength(2);
@@ -157,27 +163,29 @@ describe("TechniciansService", () => {
 
       expect(mockTechnicianModel.updateOne).toHaveBeenCalledWith(
         { _id: "tech-123", organizationId: "org-1", ...activeDocumentFilter },
-        { $set: { deletedAt: expect.any(Date) } }
+        { $set: { deletedAt: expect.any(Date) } },
       );
       expect(result).toEqual({ deleted: true });
     });
 
     it("should throw NotFoundException when technician not found", async () => {
       mockTechnicianModel.updateOne.mockReturnValueOnce({
-        exec: jest.fn().mockResolvedValue({ matchedCount: 0, modifiedCount: 0 })
+        exec: jest.fn().mockResolvedValue({ matchedCount: 0, modifiedCount: 0 }),
       });
 
       await expect(service.deleteTechnician("org-1", "non-existent")).rejects.toThrow(
-        NotFoundException
+        NotFoundException,
       );
     });
 
     it("should throw NotFoundException when org does not match", async () => {
       mockTechnicianModel.updateOne.mockReturnValueOnce({
-        exec: jest.fn().mockResolvedValue({ matchedCount: 0, modifiedCount: 0 })
+        exec: jest.fn().mockResolvedValue({ matchedCount: 0, modifiedCount: 0 }),
       });
 
-      await expect(service.deleteTechnician("org-1", "tech-123")).rejects.toThrow(NotFoundException);
+      await expect(service.deleteTechnician("org-1", "tech-123")).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -185,7 +193,7 @@ describe("TechniciansService", () => {
     it("should link user when technician has no userId", async () => {
       const doc = mockTechnicianDoc({ userId: undefined });
       mockTechnicianModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(doc)
+        exec: jest.fn().mockResolvedValue(doc),
       });
 
       const result = await service.linkUserToTechnician("org-1", "tech-123", "user-456");
@@ -198,24 +206,23 @@ describe("TechniciansService", () => {
     it("should throw BadRequestException when technician already has userId", async () => {
       const doc = mockTechnicianDoc({ userId: "existing-user" });
       mockTechnicianModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(doc)
+        exec: jest.fn().mockResolvedValue(doc),
       });
 
-      await expect(
-        service.linkUserToTechnician("org-1", "tech-123", "user-456")
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.linkUserToTechnician("org-1", "tech-123", "user-456")).rejects.toThrow(
+        BadRequestException,
+      );
       expect(doc.save).not.toHaveBeenCalled();
     });
 
     it("should throw NotFoundException when technician not found", async () => {
       mockTechnicianModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(null)
+        exec: jest.fn().mockResolvedValue(null),
       });
 
       await expect(
-        service.linkUserToTechnician("org-1", "non-existent", "user-456")
+        service.linkUserToTechnician("org-1", "non-existent", "user-456"),
       ).rejects.toThrow(NotFoundException);
     });
   });
-
 });

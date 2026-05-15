@@ -35,13 +35,13 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
   const switchingRef = useRef(false);
   const [switchOverlay, setSwitchOverlay] = useState<{ active: boolean; label: string | null }>({
     active: false,
-    label: null
+    label: null,
   });
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["organizations", "mine", user?.organizationId],
     queryFn: () => organizationsApi.listMine(),
-    enabled: isReady && isAuthenticated && !!user
+    enabled: isReady && isAuthenticated && !!user,
   });
 
   const sessionOrganizationId = user?.organizationId ?? "";
@@ -57,7 +57,7 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
 
   const activeOrganization = useMemo(
     () => organizations.find((o) => o.id === sessionOrganizationId),
-    [organizations, sessionOrganizationId]
+    [organizations, sessionOrganizationId],
   );
 
   const selectOrganization = useCallback(
@@ -66,8 +66,7 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
       if (switchingRef.current) return;
 
       switchingRef.current = true;
-      const targetLabel =
-        organizations.find((o) => o.id === organizationId)?.name ?? null;
+      const targetLabel = organizations.find((o) => o.id === organizationId)?.name ?? null;
       setSwitchOverlay({ active: true, label: targetLabel });
       const startedAt = Date.now();
 
@@ -93,7 +92,7 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
         switchingRef.current = false;
       }
     },
-    [organizations, sessionOrganizationId, switchOrganization, showToast, queryClient, router]
+    [organizations, sessionOrganizationId, switchOrganization, showToast, queryClient, router],
   );
 
   const refetchOrganizations = useCallback(() => {
@@ -109,7 +108,7 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
       isLoading,
       isSwitchingOrganization: switchOverlay.active,
       refetchOrganizations,
-      selectOrganization
+      selectOrganization,
     }),
     [
       organizations,
@@ -118,8 +117,8 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
       isLoading,
       switchOverlay.active,
       refetchOrganizations,
-      selectOrganization
-    ]
+      selectOrganization,
+    ],
   );
 
   return (

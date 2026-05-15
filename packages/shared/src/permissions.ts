@@ -61,7 +61,7 @@ export const ASSIGNABLE_PERMISSION_CODES = [
   "stock.movements.create",
   "stock.interventions.read",
   "stock.interventions.create",
-  "subscriptions.manage_billing"
+  "subscriptions.manage_billing",
 ] as const;
 
 export type AssignablePermissionCode = (typeof ASSIGNABLE_PERMISSION_CODES)[number];
@@ -69,7 +69,7 @@ export type AssignablePermissionCode = (typeof ASSIGNABLE_PERMISSION_CODES)[numb
 /** Inclut les droits dérivés du contexte (ex. abonnement actif). */
 export const AVAILABLE_PERMISSION_CODES = [
   ...ASSIGNABLE_PERMISSION_CODES,
-  "subscription.active"
+  "subscription.active",
 ] as const;
 
 export type PermissionCode = (typeof AVAILABLE_PERMISSION_CODES)[number];

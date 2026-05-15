@@ -1,0 +1,29 @@
+---
+description: Contexte Syncora (produit, tech, UI) et exigences de tests
+alwaysApply: true
+---
+
+# Syncora — consignes de développement
+
+Avant toute feature, lire (ou se réaligner sur) :
+
+- `syncora.product.config.yml` — métier, entités, auth/permissions
+- `syncora.tech.config.yml` — stack (Nest hexagonal, Mongo, gateway, `@syncora/shared`, CI)
+- `syncora.ui.config.yml` — design (slate + brand violet, cartes, libellés)
+
+## Tests obligatoires
+
+- **Backend** : tout code métier / HTTP ajouté ou modifié doit avoir des **tests unitaires** (Jest, `*.spec.ts` à côté du code ou dans `__tests__/`). Pas de PR sans tests pour la logique introduite.
+- **Frontend** : tout **nouveau parcours utilisateur** doit avoir au moins un **test E2E Playwright** dans `apps/frontend/tests/e2e/`.
+
+## E2E — philosophie
+
+- Tester le **parcours** (navigation, garde auth, soumission, résultat attendu), pas les détails d’UI.
+- Éviter : attributs HTML (`required`, `type`), branding texte dupliqué, un test par route identique, métadonnées (`lang`, titre).
+- Préférer : `getByRole` / labels, boucles sur routes protégées, un scénario qui enchaîne plusieurs écrans.
+- Fichier de référence : `apps/frontend/tests/e2e/journeys.spec.ts`.
+
+## Qualité
+
+- Respecter l’architecture existante ; pas de refactor hors scope.
+- Contrats typés via `@syncora/shared` quand le front et le back partagent un modèle.

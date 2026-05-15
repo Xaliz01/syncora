@@ -3,16 +3,11 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
-  NotFoundException
+  NotFoundException,
 } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
-import type {
-  AuthUser,
-  CreateAgenceBody,
-  UpdateAgenceBody,
-  AgenceResponse
-} from "@syncora/shared";
+import type { AuthUser, CreateAgenceBody, UpdateAgenceBody, AgenceResponse } from "@syncora/shared";
 import { AbstractAgencesGatewayService } from "./ports/agences.service.port";
 
 const TECHNICIANS_URL = process.env.TECHNICIANS_SERVICE_URL ?? "http://localhost:3006";
@@ -31,15 +26,15 @@ export class AgencesGatewayService extends AbstractAgencesGatewayService {
       city?: string;
       postalCode?: string;
       phone?: string;
-    }
+    },
   ): Promise<AgenceResponse> {
     return this.call<AgenceResponse>({
       method: "post",
       path: "/agences",
       body: {
         organizationId: currentUser.organizationId,
-        ...body
-      } satisfies CreateAgenceBody
+        ...body,
+      } satisfies CreateAgenceBody,
     });
   }
 
@@ -47,7 +42,7 @@ export class AgencesGatewayService extends AbstractAgencesGatewayService {
     return this.call<AgenceResponse[]>({
       method: "get",
       path: "/agences",
-      query: { organizationId: currentUser.organizationId }
+      query: { organizationId: currentUser.organizationId },
     });
   }
 
@@ -55,31 +50,28 @@ export class AgencesGatewayService extends AbstractAgencesGatewayService {
     return this.call<AgenceResponse>({
       method: "get",
       path: `/agences/${agenceId}`,
-      query: { organizationId: currentUser.organizationId }
+      query: { organizationId: currentUser.organizationId },
     });
   }
 
   async updateAgence(
     currentUser: AuthUser,
     agenceId: string,
-    body: UpdateAgenceBody
+    body: UpdateAgenceBody,
   ): Promise<AgenceResponse> {
     return this.call<AgenceResponse>({
       method: "patch",
       path: `/agences/${agenceId}`,
       query: { organizationId: currentUser.organizationId },
-      body
+      body,
     });
   }
 
-  async deleteAgence(
-    currentUser: AuthUser,
-    agenceId: string
-  ): Promise<{ deleted: true }> {
+  async deleteAgence(currentUser: AuthUser, agenceId: string): Promise<{ deleted: true }> {
     return this.call<{ deleted: true }>({
       method: "delete",
       path: `/agences/${agenceId}`,
-      query: { organizationId: currentUser.organizationId }
+      query: { organizationId: currentUser.organizationId },
     });
   }
 
@@ -95,8 +87,8 @@ export class AgencesGatewayService extends AbstractAgencesGatewayService {
           method: params.method,
           url: `${TECHNICIANS_URL}${params.path}`,
           data: params.body,
-          params: params.query
-        })
+          params: params.query,
+        }),
       );
       return response.data;
     } catch (err: unknown) {
@@ -107,8 +99,8 @@ export class AgencesGatewayService extends AbstractAgencesGatewayService {
   private rethrowAsHttpException(err: unknown): never {
     const status = (err as { response?: { status?: number } })?.response?.status;
     const message =
-      (err as { response?: { data?: { message?: string | string[] } } })?.response?.data
-        ?.message ?? "Downstream service error";
+      (err as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message ??
+      "Downstream service error";
 
     if (status === 400) throw new BadRequestException(message);
     if (status === 403) throw new ForbiddenException(message);

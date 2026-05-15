@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>({
     user: null,
     token: null,
-    isReady: false
+    isReady: false,
   });
 
   useEffect(() => {
@@ -80,7 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       persistAuth(accessToken, user);
       return user;
     },
-    [persistAuth]
+    [persistAuth],
   );
 
   const switchOrganization = useCallback(
@@ -89,7 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       persistAuth(accessToken, user);
       return user;
     },
-    [persistAuth]
+    [persistAuth],
   );
 
   const login = useCallback(
@@ -98,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       persistAuth(accessToken, user);
       return user;
     },
-    [persistAuth]
+    [persistAuth],
   );
 
   const register = useCallback(
@@ -112,7 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       persistAuth(accessToken, user);
       return user;
     },
-    [persistAuth]
+    [persistAuth],
   );
 
   const acceptInvitation = useCallback(
@@ -121,7 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       persistAuth(accessToken, user);
       return user;
     },
-    [persistAuth]
+    [persistAuth],
   );
 
   const logout = useCallback(() => {
@@ -139,9 +139,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       refreshSession,
       createOrganization,
       switchOrganization,
-      logout
+      logout,
     }),
-    [state, login, register, acceptInvitation, refreshSession, createOrganization, switchOrganization, logout]
+    [
+      state,
+      login,
+      register,
+      acceptInvitation,
+      refreshSession,
+      createOrganization,
+      switchOrganization,
+      logout,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

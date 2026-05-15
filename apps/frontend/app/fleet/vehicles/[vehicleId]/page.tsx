@@ -4,7 +4,7 @@ import { VehicleDetailsPage } from "@/components/fleet/VehicleDetailsPage";
 import { AppShell } from "@/components/layout/AppShell";
 
 export default async function VehicleDetailsRoute({
-  params
+  params,
 }: {
   params: Promise<{ vehicleId: string }>;
 }) {

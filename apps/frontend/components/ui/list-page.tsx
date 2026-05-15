@@ -11,7 +11,7 @@ function cn(...parts: (string | false | undefined | null)[]): string {
 export function filterListItems<T>(
   items: T[],
   query: string,
-  getSearchableParts: (item: T) => (string | undefined | null)[]
+  getSearchableParts: (item: T) => (string | undefined | null)[],
 ): T[] {
   const q = query.trim().toLowerCase();
   if (!q) return items;
@@ -28,7 +28,7 @@ export function ListPageRoot({ children }: { children: React.ReactNode }) {
 export function ListPageHeader({
   title,
   description,
-  action
+  action,
 }: {
   title: string;
   description?: string;
@@ -37,7 +37,9 @@ export function ListPageHeader({
   return (
     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
       <div>
-        <h1 className="text-xl sm:text-2xl font-semibold text-slate-900 dark:text-slate-100">{title}</h1>
+        <h1 className="text-xl sm:text-2xl font-semibold text-slate-900 dark:text-slate-100">
+          {title}
+        </h1>
         {description ? (
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{description}</p>
         ) : null}
@@ -79,7 +81,7 @@ export function ListSearchField({
   value,
   onChange,
   placeholder = "Rechercher ou filtrer…",
-  className
+  className,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -101,7 +103,9 @@ export function ListSearchField({
 
 export function ListToolbar({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">{children}</div>
+    <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
+      {children}
+    </div>
   );
 }
 
@@ -122,7 +126,11 @@ export function ListEmptyState({ message, action }: { message: string; action?: 
   );
 }
 
-export function ListNoResults({ message = "Aucun résultat ne correspond à votre recherche." }: { message?: string }) {
+export function ListNoResults({
+  message = "Aucun résultat ne correspond à votre recherche.",
+}: {
+  message?: string;
+}) {
   return (
     <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 text-center text-sm text-slate-500 dark:text-slate-400">
       {message}
@@ -137,7 +145,7 @@ export function ListNoResults({ message = "Aucun résultat ne correspond à votr
 export function ListTableShell({
   gridTemplateClass,
   headerCells,
-  children
+  children,
 }: {
   gridTemplateClass: string;
   headerCells: React.ReactNode;
@@ -148,7 +156,7 @@ export function ListTableShell({
       <div
         className={cn(
           "hidden md:grid gap-3 border-b border-slate-200 dark:border-slate-700 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500",
-          gridTemplateClass
+          gridTemplateClass,
         )}
       >
         {headerCells}
@@ -161,7 +169,7 @@ export function ListTableShell({
 export function ListRowLink({
   href,
   gridTemplateClass,
-  children
+  children,
 }: {
   href: string;
   gridTemplateClass: string;
@@ -172,7 +180,7 @@ export function ListRowLink({
       href={href}
       className={cn(
         "grid gap-2 md:gap-3 items-center px-4 py-3 border-b border-slate-200 dark:border-slate-700 last:border-b-0 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition",
-        gridTemplateClass
+        gridTemplateClass,
       )}
     >
       {children}
@@ -183,7 +191,7 @@ export function ListRowLink({
 export function ListRow({
   gridTemplateClass,
   children,
-  className
+  className,
 }: {
   gridTemplateClass: string;
   children: React.ReactNode;
@@ -194,7 +202,7 @@ export function ListRow({
       className={cn(
         "grid gap-2 md:gap-3 items-center px-4 py-3 border-b border-slate-200 dark:border-slate-700 last:border-b-0",
         gridTemplateClass,
-        className
+        className,
       )}
     >
       {children}
@@ -202,30 +210,63 @@ export function ListRow({
   );
 }
 
-export function ListCellPrimary({ children, className }: { children: React.ReactNode; className?: string }) {
+export function ListCellPrimary({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <span className={cn("font-medium text-brand-600 dark:text-brand-400 truncate min-w-0", className)}>
+    <span
+      className={cn("font-medium text-brand-600 dark:text-brand-400 truncate min-w-0", className)}
+    >
       {children}
     </span>
   );
 }
 
-export function ListCellMuted({ children, className }: { children: React.ReactNode; className?: string }) {
+export function ListCellMuted({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <span className={cn("text-sm text-slate-500 dark:text-slate-400 truncate min-w-0", className)}>{children}</span>
+    <span className={cn("text-sm text-slate-500 dark:text-slate-400 truncate min-w-0", className)}>
+      {children}
+    </span>
   );
 }
 
-export function ListCellDefault({ children, className }: { children: React.ReactNode; className?: string }) {
+export function ListCellDefault({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <span className={cn("text-sm text-slate-600 dark:text-slate-300 truncate min-w-0", className)}>{children}</span>
+    <span className={cn("text-sm text-slate-600 dark:text-slate-300 truncate min-w-0", className)}>
+      {children}
+    </span>
   );
 }
 
-export function ListBadge({ children, className }: { children: React.ReactNode; className?: string }) {
+export function ListBadge({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
     <span
-      className={cn("inline-flex w-fit max-w-full rounded-full border px-2 py-0.5 text-xs truncate", className)}
+      className={cn(
+        "inline-flex w-fit max-w-full rounded-full border px-2 py-0.5 text-xs truncate",
+        className,
+      )}
     >
       {children}
     </span>

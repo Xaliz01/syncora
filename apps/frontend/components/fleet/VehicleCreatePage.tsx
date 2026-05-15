@@ -5,7 +5,13 @@ import React, { useState } from "react";
 import type { VehicleType, VehicleStatus } from "@syncora/shared";
 
 const VEHICLE_TYPES: VehicleType[] = [
-  "camion", "camionnette", "voiture", "utilitaire", "fourgon", "remorque", "autre"
+  "camion",
+  "camionnette",
+  "voiture",
+  "utilitaire",
+  "fourgon",
+  "remorque",
+  "autre",
 ];
 const VEHICLE_STATUSES: VehicleStatus[] = ["actif", "maintenance", "hors_service"];
 import * as fleetApi from "@/lib/fleet.api";
@@ -18,13 +24,13 @@ const TYPE_LABELS: Record<string, string> = {
   utilitaire: "Utilitaire",
   fourgon: "Fourgon",
   remorque: "Remorque",
-  autre: "Autre"
+  autre: "Autre",
 };
 
 const STATUS_LABELS: Record<string, string> = {
   actif: "Actif",
   maintenance: "Maintenance",
-  hors_service: "Hors service"
+  hors_service: "Hors service",
 };
 
 export function VehicleCreatePage() {
@@ -56,7 +62,7 @@ export function VehicleCreatePage() {
         color: color.trim() || undefined,
         vin: vin.trim() || undefined,
         mileage: mileage ? parseInt(mileage, 10) : undefined,
-        status
+        status,
       });
       showToast("Véhicule ajouté avec succès.");
       router.push("/fleet/vehicles");
@@ -118,7 +124,9 @@ export function VehicleCreatePage() {
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Marque</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+                Marque
+              </label>
               <input
                 type="text"
                 placeholder="Renault, Mercedes..."
@@ -128,7 +136,9 @@ export function VehicleCreatePage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Modèle</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+                Modèle
+              </label>
               <input
                 type="text"
                 placeholder="Master, Sprinter..."
@@ -141,7 +151,9 @@ export function VehicleCreatePage() {
 
           <div className="grid gap-3 sm:grid-cols-3">
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Année</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+                Année
+              </label>
               <input
                 type="number"
                 placeholder="2024"
@@ -153,7 +165,9 @@ export function VehicleCreatePage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Couleur</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+                Couleur
+              </label>
               <input
                 type="text"
                 placeholder="Blanc, Bleu..."
@@ -163,7 +177,9 @@ export function VehicleCreatePage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Kilométrage</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+                Kilométrage
+              </label>
               <input
                 type="number"
                 placeholder="0"
@@ -177,7 +193,9 @@ export function VehicleCreatePage() {
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Numéro VIN</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+                Numéro VIN
+              </label>
               <input
                 type="text"
                 placeholder="Numéro d'identification du véhicule"
@@ -187,7 +205,9 @@ export function VehicleCreatePage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Statut</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+                Statut
+              </label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as VehicleStatus)}

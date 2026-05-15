@@ -38,8 +38,12 @@ export function LoginPage() {
               S
             </span>
             <div>
-              <div className="font-semibold text-lg text-slate-900 dark:text-slate-100">Syncora</div>
-              <div className="text-xs text-slate-500 dark:text-slate-400">CRM des opérations terrain</div>
+              <div className="font-semibold text-lg text-slate-900 dark:text-slate-100">
+                Syncora
+              </div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">
+                CRM des opérations terrain
+              </div>
             </div>
           </div>
           <ThemeToggle />
@@ -49,7 +53,9 @@ export function LoginPage() {
       <main className="flex-1 flex items-center justify-center px-4 py-8">
         <div className="w-full max-w-6xl grid gap-6 md:grid-cols-[1.2fr_1fr]">
           <section className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 p-6 shadow-sm dark:shadow-slate-950/20">
-            <h1 className="text-3xl font-semibold mb-2 text-slate-900 dark:text-slate-100">Bienvenue sur Syncora</h1>
+            <h1 className="text-3xl font-semibold mb-2 text-slate-900 dark:text-slate-100">
+              Bienvenue sur Syncora
+            </h1>
             <p className="text-slate-600 dark:text-slate-300 mb-8 max-w-xl">
               Gérez votre portefeuille client, planifiez vos interventions, suivez vos stocks et
               votre flotte au même endroit.
@@ -91,7 +97,10 @@ export function LoginPage() {
                 </div>
               )}
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1"
+                >
                   Email
                 </label>
                 <input
@@ -106,7 +115,10 @@ export function LoginPage() {
                 />
               </div>
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1"
+                >
                   Mot de passe
                 </label>
                 <input
@@ -130,13 +142,19 @@ export function LoginPage() {
 
             <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-300">
               Pas encore de compte ?{" "}
-              <Link href="/register" className="text-brand-600 dark:text-brand-400 hover:text-brand-500 hover:underline font-medium">
+              <Link
+                href="/register"
+                className="text-brand-600 dark:text-brand-400 hover:text-brand-500 hover:underline font-medium"
+              >
                 Créer une organisation
               </Link>
             </p>
             <p className="mt-2 text-center text-sm text-slate-600 dark:text-slate-300">
               Reçu une invitation ?{" "}
-              <Link href="/accept-invitation" className="text-brand-600 dark:text-brand-400 hover:text-brand-500 hover:underline font-medium">
+              <Link
+                href="/accept-invitation"
+                className="text-brand-600 dark:text-brand-400 hover:text-brand-500 hover:underline font-medium"
+              >
                 Activer votre compte invité
               </Link>
             </p>

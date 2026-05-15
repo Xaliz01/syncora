@@ -2,7 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
-  NotFoundException
+  NotFoundException,
 } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
@@ -23,27 +23,27 @@ export class DocumentsGatewayService extends AbstractDocumentsGatewayService {
     currentUser: AuthUser,
     entityType: DocumentEntityType,
     entityId: string,
-    file: Express.Multer.File
+    file: Express.Multer.File,
   ): Promise<DocumentResponse> {
     const form = new FormData();
     form.append("file", file.buffer, {
       filename: file.originalname,
-      contentType: file.mimetype
+      contentType: file.mimetype,
     });
 
     const queryParams = new URLSearchParams({
       organizationId: currentUser.organizationId,
       entityType,
       entityId,
-      uploadedBy: currentUser.id
+      uploadedBy: currentUser.id,
     });
 
     const response = await firstValueFrom(
       this.httpService.post<DocumentResponse>(
         `${DOCUMENTS_URL}/documents/upload?${queryParams.toString()}`,
         form,
-        { headers: form.getHeaders(), maxContentLength: 50 * 1024 * 1024 }
-      )
+        { headers: form.getHeaders(), maxContentLength: 50 * 1024 * 1024 },
+      ),
     );
     return response.data;
   }
@@ -51,16 +51,16 @@ export class DocumentsGatewayService extends AbstractDocumentsGatewayService {
   async listByEntity(
     currentUser: AuthUser,
     entityType: DocumentEntityType,
-    entityId: string
+    entityId: string,
   ): Promise<DocumentResponse[]> {
     const response = await firstValueFrom(
       this.httpService.get<DocumentResponse[]>(`${DOCUMENTS_URL}/documents`, {
         params: {
           organizationId: currentUser.organizationId,
           entityType,
-          entityId
-        }
-      })
+          entityId,
+        },
+      }),
     );
     return response.data;
   }
@@ -70,8 +70,8 @@ export class DocumentsGatewayService extends AbstractDocumentsGatewayService {
       const response = await firstValueFrom(
         this.httpService.get<{ url: string }>(
           `${DOCUMENTS_URL}/documents/${documentId}/download-url`,
-          { params: { organizationId: currentUser.organizationId } }
-        )
+          { params: { organizationId: currentUser.organizationId } },
+        ),
       );
       return { url: this.toClientDownloadUrl(response.data.url) };
     } catch (err: unknown) {
@@ -91,8 +91,8 @@ export class DocumentsGatewayService extends AbstractDocumentsGatewayService {
     try {
       const response = await firstValueFrom(
         this.httpService.get(`${DOCUMENTS_URL}/documents/download/${downstreamKey}`, {
-          responseType: "stream"
-        })
+          responseType: "stream",
+        }),
       );
 
       const headers = response.headers as Record<string, string | undefined>;
@@ -116,10 +116,9 @@ export class DocumentsGatewayService extends AbstractDocumentsGatewayService {
   async deleteDocument(currentUser: AuthUser, documentId: string): Promise<{ deleted: true }> {
     try {
       const response = await firstValueFrom(
-        this.httpService.delete<{ deleted: true }>(
-          `${DOCUMENTS_URL}/documents/${documentId}`,
-          { params: { organizationId: currentUser.organizationId } }
-        )
+        this.httpService.delete<{ deleted: true }>(`${DOCUMENTS_URL}/documents/${documentId}`, {
+          params: { organizationId: currentUser.organizationId },
+        }),
       );
       return response.data;
     } catch (err: unknown) {
@@ -133,7 +132,7 @@ export class DocumentsGatewayService extends AbstractDocumentsGatewayService {
     };
     const status = axiosErr.response?.status;
     const raw = axiosErr.response?.data?.message;
-    const message = Array.isArray(raw) ? raw.join(", ") : raw ?? "Downstream service error";
+    const message = Array.isArray(raw) ? raw.join(", ") : (raw ?? "Downstream service error");
 
     if (status === 400) throw new BadRequestException(message);
     if (status === 403) throw new ForbiddenException(message);

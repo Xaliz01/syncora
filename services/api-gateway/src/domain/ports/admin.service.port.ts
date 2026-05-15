@@ -35,22 +35,22 @@ export abstract class AbstractAdminService {
   abstract assignUserPermissions(
     currentUser: AuthUser,
     userId: string,
-    body: UpdateUserPermissionsBody
+    body: UpdateUserPermissionsBody,
   ): Promise<unknown>;
   abstract createPermissionProfile(
     currentUser: AuthUser,
-    body: CreatePermissionProfileForOrgBody
+    body: CreatePermissionProfileForOrgBody,
   ): Promise<unknown>;
   abstract listPermissionProfiles(currentUser: AuthUser): Promise<unknown>;
   abstract getPermissionProfile(currentUser: AuthUser, profileId: string): Promise<unknown>;
   abstract updatePermissionProfile(
     currentUser: AuthUser,
     profileId: string,
-    body: UpdatePermissionProfileForOrgBody
+    body: UpdatePermissionProfileForOrgBody,
   ): Promise<unknown>;
   abstract deletePermissionProfile(currentUser: AuthUser, profileId: string): Promise<unknown>;
   abstract listInvitations(
     currentUser: AuthUser,
-    status?: "pending" | "accepted" | "cancelled"
+    status?: "pending" | "accepted" | "cancelled",
   ): Promise<unknown>;
 }

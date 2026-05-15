@@ -76,8 +76,12 @@ export function ProfilesSettingsPage() {
                 >
                   {profile.name}
                 </Link>
-                <span className="text-sm text-slate-500 dark:text-slate-400">{profile.description ?? "—"}</span>
-                <span className="text-sm text-slate-500 dark:text-slate-400">{profile.permissions.length}</span>
+                <span className="text-sm text-slate-500 dark:text-slate-400">
+                  {profile.description ?? "—"}
+                </span>
+                <span className="text-sm text-slate-500 dark:text-slate-400">
+                  {profile.permissions.length}
+                </span>
               </div>
             ))}
           </div>

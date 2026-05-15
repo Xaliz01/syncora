@@ -19,7 +19,7 @@ import {
   ListRowLink,
   ListSearchField,
   ListTableShell,
-  ListToolbar
+  ListToolbar,
 } from "@/components/ui/list-page";
 
 const STATUS_LABELS: Record<CaseStatus, string> = {
@@ -28,30 +28,31 @@ const STATUS_LABELS: Record<CaseStatus, string> = {
   in_progress: "En cours",
   waiting: "En attente",
   completed: "Terminé",
-  cancelled: "Annulé"
+  cancelled: "Annulé",
 };
 
 const STATUS_COLORS: Record<CaseStatus, string> = {
-  draft: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700",
+  draft:
+    "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700",
   open: "bg-blue-50 text-blue-700 border-blue-200",
   in_progress: "bg-amber-50 text-amber-700 border-amber-200",
   waiting: "bg-purple-50 text-purple-700 border-purple-200",
   completed: "bg-green-50 text-green-700 border-green-200",
-  cancelled: "bg-red-50 text-red-600 border-red-200"
+  cancelled: "bg-red-50 text-red-600 border-red-200",
 };
 
 const PRIORITY_LABELS: Record<CasePriority, string> = {
   low: "Basse",
   medium: "Moyenne",
   high: "Haute",
-  urgent: "Urgente"
+  urgent: "Urgente",
 };
 
 const PRIORITY_COLORS: Record<CasePriority, string> = {
   low: "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700",
   medium: "bg-blue-50 text-blue-600 border-blue-200",
   high: "bg-orange-50 text-orange-600 border-orange-200",
-  urgent: "bg-red-50 text-red-600 border-red-200"
+  urgent: "bg-red-50 text-red-600 border-red-200",
 };
 
 const GRID = "md:grid-cols-[1.4fr_1fr_0.75fr_0.75fr_0.45fr]";
@@ -67,8 +68,8 @@ export function CasesListPage() {
       api.listCases({
         status: statusFilter || undefined,
         priority: priorityFilter || undefined,
-        search: search || undefined
-      })
+        search: search || undefined,
+      }),
   });
 
   const hasActiveFilters = Boolean(statusFilter || priorityFilter || search.trim());
@@ -121,7 +122,10 @@ export function CasesListPage() {
         <ListEmptyState
           message="Aucun dossier pour le moment."
           action={
-            <Link href="/cases/new" className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium">
+            <Link
+              href="/cases/new"
+              className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium"
+            >
               Créer un dossier
             </Link>
           }
@@ -144,12 +148,16 @@ export function CasesListPage() {
               <div className="min-w-0">
                 <ListCellPrimary className="block">{c.title}</ListCellPrimary>
                 {c.nextTodo ? (
-                  <p className="text-[11px] text-amber-600 mt-0.5 truncate">Prochaine tâche : {c.nextTodo}</p>
+                  <p className="text-[11px] text-amber-600 mt-0.5 truncate">
+                    Prochaine tâche : {c.nextTodo}
+                  </p>
                 ) : null}
               </div>
               <ListCellMuted>{c.customer?.displayName ?? "—"}</ListCellMuted>
               <ListBadge className={STATUS_COLORS[c.status]}>{STATUS_LABELS[c.status]}</ListBadge>
-              <ListBadge className={PRIORITY_COLORS[c.priority]}>{PRIORITY_LABELS[c.priority]}</ListBadge>
+              <ListBadge className={PRIORITY_COLORS[c.priority]}>
+                {PRIORITY_LABELS[c.priority]}
+              </ListBadge>
               <ListCellDefault>{c.progress}%</ListCellDefault>
             </ListRowLink>
           ))}

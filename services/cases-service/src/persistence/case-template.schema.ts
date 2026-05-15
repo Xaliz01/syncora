@@ -10,8 +10,7 @@ export class TemplateStepTodoSubDoc {
   description?: string;
 }
 
-export const TemplateStepTodoSubDocSchema =
-  SchemaFactory.createForClass(TemplateStepTodoSubDoc);
+export const TemplateStepTodoSubDocSchema = SchemaFactory.createForClass(TemplateStepTodoSubDoc);
 
 @Schema({ _id: false })
 export class TemplateStepSubDoc {
@@ -28,8 +27,7 @@ export class TemplateStepSubDoc {
   todos!: TemplateStepTodoSubDoc[];
 }
 
-export const TemplateStepSubDocSchema =
-  SchemaFactory.createForClass(TemplateStepSubDoc);
+export const TemplateStepSubDocSchema = SchemaFactory.createForClass(TemplateStepSubDoc);
 
 @Schema({ timestamps: true, _id: true, collection: "case_templates" })
 export class CaseTemplateDocument extends Document {
@@ -51,9 +49,8 @@ export class CaseTemplateDocument extends Document {
   deletedAt?: Date | null;
 }
 
-export const CaseTemplateSchema =
-  SchemaFactory.createForClass(CaseTemplateDocument);
+export const CaseTemplateSchema = SchemaFactory.createForClass(CaseTemplateDocument);
 CaseTemplateSchema.index(
   { organizationId: 1, name: 1 },
-  { unique: true, partialFilterExpression: { deletedAt: null } }
+  { unique: true, partialFilterExpression: { deletedAt: null } },
 );

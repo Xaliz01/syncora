@@ -7,14 +7,10 @@ import { FleetService } from "../domain/fleet.service";
 
 @Module({
   imports: [
-    MongooseModule.forRoot(
-      process.env.MONGODB_URI ?? "mongodb://localhost:27017/syncora-fleet"
-    ),
-    MongooseModule.forFeature([
-      { name: "Vehicle", schema: VehicleSchema }
-    ])
+    MongooseModule.forRoot(process.env.MONGODB_URI ?? "mongodb://localhost:27017/syncora-fleet"),
+    MongooseModule.forFeature([{ name: "Vehicle", schema: VehicleSchema }]),
   ],
   controllers: [FleetController],
-  providers: [{ provide: AbstractFleetService, useClass: FleetService }]
+  providers: [{ provide: AbstractFleetService, useClass: FleetService }],
 })
 export class AppModule {}

@@ -26,7 +26,10 @@ function isLinkActive(currentPath: string, href: string): boolean {
     return currentPath === "/users" || currentPath.startsWith("/users/");
   }
   if (href === "/cases") {
-    return currentPath === "/cases" || (currentPath.startsWith("/cases/") && !currentPath.startsWith("/cases/calendar"));
+    return (
+      currentPath === "/cases" ||
+      (currentPath.startsWith("/cases/") && !currentPath.startsWith("/cases/calendar"))
+    );
   }
   if (href === "/customers") {
     return currentPath === "/customers" || currentPath.startsWith("/customers/");
@@ -41,7 +44,7 @@ function NavLink({
   href,
   label,
   currentPath,
-  onClick
+  onClick,
 }: {
   href: string;
   label: string;
@@ -67,7 +70,7 @@ function NavLink({
 function SidebarContent({
   menuSections,
   pathname,
-  onNavigate
+  onNavigate,
 }: {
   menuSections: MenuSection[];
   pathname: string;
@@ -111,8 +114,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           label: "Général",
           links: [
             { label: "Tableau de bord", href: "/" },
-            ...(user ? [{ label: "Mon organisation", href: "/organization" }] : [])
-          ]
+            ...(user ? [{ label: "Mon organisation", href: "/organization" }] : []),
+          ],
         },
         {
           label: "Dossiers",
@@ -120,15 +123,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             { label: "Tous les dossiers", href: "/cases" },
             { label: "Clients", href: "/customers" },
             { label: "Calendrier", href: "/cases/calendar" },
-            { label: "Mouvements de stock", href: "/stock" }
-          ]
-        }
+            { label: "Mouvements de stock", href: "/stock" },
+          ],
+        },
       ]
     : [
         {
           label: "Abonnement",
-          links: user ? [{ label: "Mon organisation et abonnement", href: "/organization" }] : []
-        }
+          links: user ? [{ label: "Mon organisation et abonnement", href: "/organization" }] : [],
+        },
       ];
   if (subscriptionOk && user) {
     const fleetLinks: MenuLink[] = [];
@@ -151,7 +154,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (hasPermission(user, "users.read")) {
       menuSections.push({
         label: "Utilisateurs",
-        links: [{ label: "Gérer les utilisateurs", href: "/users" }]
+        links: [{ label: "Gérer les utilisateurs", href: "/users" }],
       });
     }
 
@@ -182,7 +185,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               className="lg:hidden -ml-1 rounded-md p-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200"
               aria-label="Menu"
             >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
                 {mobileMenuOpen ? (
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 ) : (
@@ -272,7 +281,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </span>
                 <div>
                   <div className="font-semibold text-sm leading-tight">Syncora</div>
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">Espace organisation</div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+                    Espace organisation
+                  </div>
                 </div>
               </div>
               <OrganizationSwitcher />

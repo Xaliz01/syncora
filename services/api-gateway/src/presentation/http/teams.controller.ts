@@ -1,17 +1,10 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Patch,
-  Post,
-  Put,
-  UseGuards
-} from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, UseGuards } from "@nestjs/common";
 import { AbstractTeamsGatewayService } from "../../domain/ports/teams.service.port";
 import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
-import { RequirePermissionGuard, RequirePermissions } from "../../infrastructure/require-permission.guard";
+import {
+  RequirePermissionGuard,
+  RequirePermissions,
+} from "../../infrastructure/require-permission.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
 import { NotifyEntity } from "../../infrastructure/notify-entity.decorator";
 import type { AuthUser } from "@syncora/shared";
@@ -33,10 +26,7 @@ export class TeamsGatewayController {
   @Post()
   @RequirePermissions("teams.create")
   @NotifyEntity({ type: "team", labelField: "name" })
-  async createTeam(
-    @CurrentUser() user: AuthUser,
-    @Body() body: CreateTeamPayload
-  ) {
+  async createTeam(@CurrentUser() user: AuthUser, @Body() body: CreateTeamPayload) {
     return this.teamsService.createTeam(user, body);
   }
 
@@ -48,10 +38,7 @@ export class TeamsGatewayController {
 
   @Get(":teamId")
   @RequirePermissions("teams.read")
-  async getTeam(
-    @CurrentUser() user: AuthUser,
-    @Param("teamId") teamId: string
-  ) {
+  async getTeam(@CurrentUser() user: AuthUser, @Param("teamId") teamId: string) {
     return this.teamsService.getTeam(user, teamId);
   }
 
@@ -61,7 +48,7 @@ export class TeamsGatewayController {
   async updateTeam(
     @CurrentUser() user: AuthUser,
     @Param("teamId") teamId: string,
-    @Body() body: UpdateTeamBody
+    @Body() body: UpdateTeamBody,
   ) {
     return this.teamsService.updateTeam(user, teamId, body);
   }
@@ -69,10 +56,7 @@ export class TeamsGatewayController {
   @Delete(":teamId")
   @RequirePermissions("teams.delete")
   @NotifyEntity({ type: "team", idParam: "teamId" })
-  async deleteTeam(
-    @CurrentUser() user: AuthUser,
-    @Param("teamId") teamId: string
-  ) {
+  async deleteTeam(@CurrentUser() user: AuthUser, @Param("teamId") teamId: string) {
     return this.teamsService.deleteTeam(user, teamId);
   }
 
@@ -82,7 +66,7 @@ export class TeamsGatewayController {
   async addMember(
     @CurrentUser() user: AuthUser,
     @Param("teamId") teamId: string,
-    @Param("technicianId") technicianId: string
+    @Param("technicianId") technicianId: string,
   ) {
     return this.teamsService.addMember(user, teamId, technicianId);
   }
@@ -93,7 +77,7 @@ export class TeamsGatewayController {
   async removeMember(
     @CurrentUser() user: AuthUser,
     @Param("teamId") teamId: string,
-    @Param("technicianId") technicianId: string
+    @Param("technicianId") technicianId: string,
   ) {
     return this.teamsService.removeMember(user, teamId, technicianId);
   }

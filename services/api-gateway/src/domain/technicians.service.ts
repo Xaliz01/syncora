@@ -3,7 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
-  NotFoundException
+  NotFoundException,
 } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
@@ -15,7 +15,7 @@ import type {
   CreateUserBody,
   UserResponse,
   TechnicianStatus,
-  CreateTechnicianUserAccountBody
+  CreateTechnicianUserAccountBody,
 } from "@syncora/shared";
 import { AbstractTechniciansGatewayService } from "./ports/technicians.service.port";
 
@@ -39,7 +39,7 @@ export class TechniciansGatewayService extends AbstractTechniciansGatewayService
       status?: TechnicianStatus;
       createUserAccount?: boolean;
       userAccountPassword?: string;
-    }
+    },
   ): Promise<TechnicianResponse> {
     const { createUserAccount, userAccountPassword, ...technicianFields } = body;
 
@@ -48,27 +48,27 @@ export class TechniciansGatewayService extends AbstractTechniciansGatewayService
       path: "/technicians",
       body: {
         organizationId: currentUser.organizationId,
-        ...technicianFields
-      } satisfies CreateTechnicianBody
+        ...technicianFields,
+      } satisfies CreateTechnicianBody,
     });
 
     if (createUserAccount && body.email) {
       if (!userAccountPassword) {
         throw new BadRequestException(
-          "Un mot de passe est requis pour créer un compte utilisateur"
+          "Un mot de passe est requis pour créer un compte utilisateur",
         );
       }
       const user = await this.createUserForTechnician(
         currentUser.organizationId,
         body.email,
         `${body.firstName} ${body.lastName}`,
-        userAccountPassword
+        userAccountPassword,
       );
       return this.callTechniciansService<TechnicianResponse>({
         method: "put",
         path: `/technicians/${technician.id}/link-user`,
         query: { organizationId: currentUser.organizationId },
-        body: { userId: user.id }
+        body: { userId: user.id },
       });
     }
 
@@ -79,49 +79,43 @@ export class TechniciansGatewayService extends AbstractTechniciansGatewayService
     return this.callTechniciansService<TechnicianResponse[]>({
       method: "get",
       path: "/technicians",
-      query: { organizationId: currentUser.organizationId }
+      query: { organizationId: currentUser.organizationId },
     });
   }
 
-  async getTechnician(
-    currentUser: AuthUser,
-    technicianId: string
-  ): Promise<TechnicianResponse> {
+  async getTechnician(currentUser: AuthUser, technicianId: string): Promise<TechnicianResponse> {
     return this.callTechniciansService<TechnicianResponse>({
       method: "get",
       path: `/technicians/${technicianId}`,
-      query: { organizationId: currentUser.organizationId }
+      query: { organizationId: currentUser.organizationId },
     });
   }
 
   async updateTechnician(
     currentUser: AuthUser,
     technicianId: string,
-    body: UpdateTechnicianBody
+    body: UpdateTechnicianBody,
   ): Promise<TechnicianResponse> {
     return this.callTechniciansService<TechnicianResponse>({
       method: "patch",
       path: `/technicians/${technicianId}`,
       query: { organizationId: currentUser.organizationId },
-      body
+      body,
     });
   }
 
-  async deleteTechnician(
-    currentUser: AuthUser,
-    technicianId: string
-  ): Promise<{ deleted: true }> {
+  async deleteTechnician(currentUser: AuthUser, technicianId: string): Promise<{ deleted: true }> {
     return this.callTechniciansService<{ deleted: true }>({
       method: "delete",
       path: `/technicians/${technicianId}`,
-      query: { organizationId: currentUser.organizationId }
+      query: { organizationId: currentUser.organizationId },
     });
   }
 
   async createTechnicianUserAccount(
     currentUser: AuthUser,
     technicianId: string,
-    body: CreateTechnicianUserAccountBody
+    body: CreateTechnicianUserAccountBody,
   ): Promise<TechnicianResponse> {
     const technician = await this.getTechnician(currentUser, technicianId);
     if (technician.userId) {
@@ -129,20 +123,20 @@ export class TechniciansGatewayService extends AbstractTechniciansGatewayService
     }
     if (!technician.email) {
       throw new BadRequestException(
-        "Le technicien doit avoir une adresse email pour créer un compte"
+        "Le technicien doit avoir une adresse email pour créer un compte",
       );
     }
     const user = await this.createUserForTechnician(
       currentUser.organizationId,
       technician.email,
       `${technician.firstName} ${technician.lastName}`,
-      body.password
+      body.password,
     );
     return this.callTechniciansService<TechnicianResponse>({
       method: "put",
       path: `/technicians/${technicianId}/link-user`,
       query: { organizationId: currentUser.organizationId },
-      body: { userId: user.id }
+      body: { userId: user.id },
     });
   }
 
@@ -150,7 +144,7 @@ export class TechniciansGatewayService extends AbstractTechniciansGatewayService
     organizationId: string,
     email: string,
     name: string,
-    password: string
+    password: string,
   ): Promise<UserResponse> {
     return this.callUsersService<UserResponse>({
       method: "post",
@@ -160,8 +154,8 @@ export class TechniciansGatewayService extends AbstractTechniciansGatewayService
         email,
         name,
         password,
-        role: "member"
-      } satisfies CreateUserBody
+        role: "member",
+      } satisfies CreateUserBody,
     });
   }
 
@@ -177,8 +171,8 @@ export class TechniciansGatewayService extends AbstractTechniciansGatewayService
           method: params.method,
           url: `${TECHNICIANS_URL}${params.path}`,
           data: params.body,
-          params: params.query
-        })
+          params: params.query,
+        }),
       );
       return response.data;
     } catch (err: unknown) {
@@ -198,8 +192,8 @@ export class TechniciansGatewayService extends AbstractTechniciansGatewayService
           method: params.method,
           url: `${USERS_URL}${params.path}`,
           data: params.body,
-          params: params.query
-        })
+          params: params.query,
+        }),
       );
       return response.data;
     } catch (err: unknown) {
@@ -210,8 +204,8 @@ export class TechniciansGatewayService extends AbstractTechniciansGatewayService
   private rethrowAsHttpException(err: unknown): never {
     const status = (err as { response?: { status?: number } })?.response?.status;
     const message =
-      (err as { response?: { data?: { message?: string | string[] } } })?.response?.data
-        ?.message ?? "Downstream service error";
+      (err as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message ??
+      "Downstream service error";
 
     if (status === 400) throw new BadRequestException(message);
     if (status === 403) throw new ForbiddenException(message);

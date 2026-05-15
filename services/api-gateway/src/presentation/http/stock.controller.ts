@@ -7,10 +7,13 @@ import {
   Patch,
   Post,
   Query,
-  UseGuards
+  UseGuards,
 } from "@nestjs/common";
 import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
-import { RequirePermissionGuard, RequirePermissions } from "../../infrastructure/require-permission.guard";
+import {
+  RequirePermissionGuard,
+  RequirePermissions,
+} from "../../infrastructure/require-permission.guard";
 import { SubscriptionAccessGuard } from "../../infrastructure/subscription-access.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
 import { NotifyEntity } from "../../infrastructure/notify-entity.decorator";
@@ -20,7 +23,7 @@ import type {
   AddInterventionArticleUsageForOrgBody,
   CreateArticleForOrgBody,
   CreateArticleMovementForOrgBody,
-  UpdateArticleForOrgBody
+  UpdateArticleForOrgBody,
 } from "../../domain/ports/stock.service.port";
 
 @Controller("stock")
@@ -31,10 +34,7 @@ export class StockController {
   @Post("articles")
   @RequirePermissions("stock.articles.create")
   @NotifyEntity({ type: "article", labelField: "name" })
-  async createArticle(
-    @CurrentUser() user: AuthUser,
-    @Body() body: CreateArticleForOrgBody
-  ) {
+  async createArticle(@CurrentUser() user: AuthUser, @Body() body: CreateArticleForOrgBody) {
     return this.stockService.createArticle(user, body);
   }
 
@@ -44,21 +44,18 @@ export class StockController {
     @CurrentUser() user: AuthUser,
     @Query("search") search?: string,
     @Query("lowStockOnly") lowStockOnly?: string,
-    @Query("activeOnly") activeOnly?: string
+    @Query("activeOnly") activeOnly?: string,
   ) {
     return this.stockService.listArticles(user, {
       search,
       lowStockOnly: lowStockOnly === "true",
-      activeOnly: activeOnly === undefined ? true : activeOnly === "true"
+      activeOnly: activeOnly === undefined ? true : activeOnly === "true",
     });
   }
 
   @Get("articles/:articleId")
   @RequirePermissions("stock.articles.read")
-  async getArticle(
-    @CurrentUser() user: AuthUser,
-    @Param("articleId") articleId: string
-  ) {
+  async getArticle(@CurrentUser() user: AuthUser, @Param("articleId") articleId: string) {
     return this.stockService.getArticle(user, articleId);
   }
 
@@ -68,7 +65,7 @@ export class StockController {
   async updateArticle(
     @CurrentUser() user: AuthUser,
     @Param("articleId") articleId: string,
-    @Body() body: UpdateArticleForOrgBody
+    @Body() body: UpdateArticleForOrgBody,
   ) {
     return this.stockService.updateArticle(user, articleId, body);
   }
@@ -76,10 +73,7 @@ export class StockController {
   @Delete("articles/:articleId")
   @RequirePermissions("stock.articles.delete")
   @NotifyEntity({ type: "article", idParam: "articleId" })
-  async deleteArticle(
-    @CurrentUser() user: AuthUser,
-    @Param("articleId") articleId: string
-  ) {
+  async deleteArticle(@CurrentUser() user: AuthUser, @Param("articleId") articleId: string) {
     return this.stockService.deleteArticle(user, articleId);
   }
 
@@ -88,7 +82,7 @@ export class StockController {
   @NotifyEntity({ type: "stock_movement", labelField: "articleName" })
   async createArticleMovement(
     @CurrentUser() user: AuthUser,
-    @Body() body: CreateArticleMovementForOrgBody
+    @Body() body: CreateArticleMovementForOrgBody,
   ) {
     return this.stockService.createArticleMovement(user, body);
   }
@@ -100,13 +94,13 @@ export class StockController {
     @Query("articleId") articleId?: string,
     @Query("interventionId") interventionId?: string,
     @Query("caseId") caseId?: string,
-    @Query("limit") limit?: string
+    @Query("limit") limit?: string,
   ) {
     return this.stockService.listArticleMovements(user, {
       articleId,
       interventionId,
       caseId,
-      limit: limit ? Number(limit) : undefined
+      limit: limit ? Number(limit) : undefined,
     });
   }
 
@@ -116,7 +110,7 @@ export class StockController {
   async addInterventionArticleUsage(
     @CurrentUser() user: AuthUser,
     @Param("interventionId") interventionId: string,
-    @Body() body: AddInterventionArticleUsageForOrgBody
+    @Body() body: AddInterventionArticleUsageForOrgBody,
   ) {
     return this.stockService.addInterventionArticleUsage(user, interventionId, body);
   }
@@ -125,7 +119,7 @@ export class StockController {
   @RequirePermissions("stock.interventions.read")
   async getInterventionUsage(
     @CurrentUser() user: AuthUser,
-    @Param("interventionId") interventionId: string
+    @Param("interventionId") interventionId: string,
   ) {
     return this.stockService.getInterventionUsage(user, interventionId);
   }

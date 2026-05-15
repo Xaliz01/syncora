@@ -5,7 +5,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthContext";
 import * as notificationsApi from "@/lib/notifications.api";
-import type { NotificationResponse, NotificationEntityType, NotificationAction } from "@syncora/shared";
+import type {
+  NotificationResponse,
+  NotificationEntityType,
+  NotificationAction,
+} from "@syncora/shared";
 
 const ENTITY_TYPE_LABELS: Record<NotificationEntityType, string> = {
   case: "Dossier",
@@ -21,13 +25,13 @@ const ENTITY_TYPE_LABELS: Record<NotificationEntityType, string> = {
   organization: "Organisation",
   user: "Utilisateur",
   permission_profile: "Profil de permission",
-  document: "Document"
+  document: "Document",
 };
 
 const ACTION_LABELS: Record<NotificationAction, string> = {
   created: "créé",
   updated: "modifié",
-  deleted: "supprimé"
+  deleted: "supprimé",
 };
 
 function getEntityRoute(entityType: NotificationEntityType, entityId: string): string | null {
@@ -90,28 +94,28 @@ export function NotificationBell() {
     queryKey: ["notifications", "unread-count"],
     queryFn: () => notificationsApi.getUnreadCount(),
     refetchInterval: 30_000,
-    enabled: !!user
+    enabled: !!user,
   });
 
   const { data: listData, isLoading } = useQuery({
     queryKey: ["notifications", "list"],
     queryFn: () => notificationsApi.listNotifications(50),
     refetchInterval: 30_000,
-    enabled: !!user && open
+    enabled: !!user && open,
   });
 
   const markReadMutation = useMutation({
     mutationFn: notificationsApi.markAsRead,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
-    }
+    },
   });
 
   const markAllReadMutation = useMutation({
     mutationFn: notificationsApi.markAllAsRead,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
-    }
+    },
   });
 
   const unreadCount = countData?.count ?? 0;
@@ -143,7 +147,7 @@ export function NotificationBell() {
         setOpen(false);
       }
     },
-    [markReadMutation, router]
+    [markReadMutation, router],
   );
 
   if (!user) return null;
@@ -158,7 +162,13 @@ export function NotificationBell() {
         title="Notifications"
         aria-label="Notifications"
       >
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <svg
+          className="h-4 w-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -201,9 +211,7 @@ export function NotificationBell() {
 
           <div className="overflow-y-auto flex-1">
             {isLoading && (
-              <div className="px-4 py-8 text-center text-sm text-slate-400">
-                Chargement…
-              </div>
+              <div className="px-4 py-8 text-center text-sm text-slate-400">Chargement…</div>
             )}
 
             {!isLoading && (!listData?.notifications || listData.notifications.length === 0) && (
@@ -227,7 +235,9 @@ export function NotificationBell() {
                       <span className="mt-1.5 flex-shrink-0 h-2 w-2 rounded-full bg-brand-600" />
                     )}
                     <div className={`flex-1 min-w-0 ${n.read ? "pl-5" : ""}`}>
-                      <p className={`text-sm leading-snug ${!n.read ? "text-slate-900 dark:text-slate-100 font-medium" : "text-slate-600 dark:text-slate-400"}`}>
+                      <p
+                        className={`text-sm leading-snug ${!n.read ? "text-slate-900 dark:text-slate-100 font-medium" : "text-slate-600 dark:text-slate-400"}`}
+                      >
                         {formatNotificationText(n)}
                       </p>
                       <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">

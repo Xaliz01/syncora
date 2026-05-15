@@ -11,7 +11,7 @@ import { SubscriptionsModule } from "./subscriptions.module";
   controllers: [TechniciansController],
   providers: [
     { provide: AbstractTechniciansGatewayService, useClass: TechniciansGatewayService },
-    RequirePermissionGuard
-  ]
+    RequirePermissionGuard,
+  ],
 })
 export class TechniciansModule {}

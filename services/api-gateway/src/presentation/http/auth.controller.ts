@@ -10,7 +10,7 @@ import type {
   AuthResponse,
   JwtPayload,
   CreateOrganizationBody,
-  SwitchOrganizationBody
+  SwitchOrganizationBody,
 } from "@syncora/shared";
 
 @Controller("auth")
@@ -36,7 +36,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async createOrganization(
     @Body() body: CreateOrganizationBody,
-    @Req() req: Request & { user: JwtPayload }
+    @Req() req: Request & { user: JwtPayload },
   ): Promise<AuthResponse> {
     return this.authService.createOrganization(body, req.user);
   }
@@ -45,7 +45,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async switchOrganization(
     @Body() body: SwitchOrganizationBody,
-    @Req() req: Request & { user: JwtPayload }
+    @Req() req: Request & { user: JwtPayload },
   ): Promise<AuthResponse> {
     return this.authService.switchOrganization(body, req.user);
   }

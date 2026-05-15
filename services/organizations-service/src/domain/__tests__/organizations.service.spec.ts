@@ -15,14 +15,14 @@ describe("OrganizationsService", () => {
     _id: { toString: () => "org-123" },
     name: "Test Org",
     get: jest.fn((key: string) => (key === "createdAt" ? new Date("2025-01-01") : undefined)),
-    ...overrides
+    ...overrides,
   });
 
   beforeEach(async () => {
     const execMock = jest.fn();
     mockOrganizationModel = {
       create: jest.fn(),
-      findOne: jest.fn().mockReturnValue({ exec: execMock })
+      findOne: jest.fn().mockReturnValue({ exec: execMock }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -30,9 +30,9 @@ describe("OrganizationsService", () => {
         { provide: AbstractOrganizationsService, useClass: OrganizationsService },
         {
           provide: getModelToken("Organization"),
-          useValue: mockOrganizationModel
-        }
-      ]
+          useValue: mockOrganizationModel,
+        },
+      ],
     }).compile();
 
     service = module.get<OrganizationsService>(AbstractOrganizationsService);
@@ -53,7 +53,7 @@ describe("OrganizationsService", () => {
       expect(result).toEqual({
         id: "org-123",
         name: "Acme Corp",
-        createdAt: new Date("2025-01-01").toISOString()
+        createdAt: new Date("2025-01-01").toISOString(),
       });
     });
   });
@@ -62,25 +62,25 @@ describe("OrganizationsService", () => {
     it("should return organization when found", async () => {
       const doc = mockDoc({ name: "Found Org" });
       mockOrganizationModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(doc)
+        exec: jest.fn().mockResolvedValue(doc),
       });
 
       const result = await service.findById("org-123");
 
       expect(mockOrganizationModel.findOne).toHaveBeenCalledWith({
         _id: "org-123",
-        ...activeDocumentFilter
+        ...activeDocumentFilter,
       });
       expect(result).toEqual({
         id: "org-123",
         name: "Found Org",
-        createdAt: new Date("2025-01-01").toISOString()
+        createdAt: new Date("2025-01-01").toISOString(),
       });
     });
 
     it("should return null when organization is not found", async () => {
       mockOrganizationModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(null)
+        exec: jest.fn().mockResolvedValue(null),
       });
 
       const result = await service.findById("non-existent");

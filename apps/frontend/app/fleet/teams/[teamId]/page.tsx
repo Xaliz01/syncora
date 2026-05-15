@@ -4,7 +4,7 @@ import { TeamDetailsPage } from "@/components/fleet/TeamDetailsPage";
 import { AppShell } from "@/components/layout/AppShell";
 
 export default async function TeamDetailsRoute({
-  params
+  params,
 }: {
   params: Promise<{ teamId: string }>;
 }) {

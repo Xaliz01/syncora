@@ -8,7 +8,7 @@ import {
   Post,
   Put,
   Query,
-  UseGuards
+  UseGuards,
 } from "@nestjs/common";
 import { AbstractCasesGatewayService } from "../../domain/ports/cases.service.port";
 import type {
@@ -18,10 +18,13 @@ import type {
   UpdateCaseForOrgBody,
   UpdateInterventionForOrgBody,
   UpdateTemplateForOrgBody,
-  UpdateTodoForOrgBody
+  UpdateTodoForOrgBody,
 } from "../../domain/ports/cases.service.port";
 import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
-import { RequirePermissionGuard, RequirePermissions } from "../../infrastructure/require-permission.guard";
+import {
+  RequirePermissionGuard,
+  RequirePermissions,
+} from "../../infrastructure/require-permission.guard";
 import { SubscriptionAccessGuard } from "../../infrastructure/subscription-access.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
 import { NotifyEntity } from "../../infrastructure/notify-entity.decorator";
@@ -35,10 +38,7 @@ export class CasesController {
   @Post("templates")
   @RequirePermissions("case_templates.create")
   @NotifyEntity({ type: "case_template", labelField: "name" })
-  async createTemplate(
-    @CurrentUser() user: AuthUser,
-    @Body() body: CreateTemplateForOrgBody
-  ) {
+  async createTemplate(@CurrentUser() user: AuthUser, @Body() body: CreateTemplateForOrgBody) {
     return this.casesService.createTemplate(user, body);
   }
 
@@ -50,10 +50,7 @@ export class CasesController {
 
   @Get("templates/:templateId")
   @RequirePermissions("case_templates.read")
-  async getTemplate(
-    @CurrentUser() user: AuthUser,
-    @Param("templateId") templateId: string
-  ) {
+  async getTemplate(@CurrentUser() user: AuthUser, @Param("templateId") templateId: string) {
     return this.casesService.getTemplate(user, templateId);
   }
 
@@ -63,7 +60,7 @@ export class CasesController {
   async updateTemplate(
     @CurrentUser() user: AuthUser,
     @Param("templateId") templateId: string,
-    @Body() body: UpdateTemplateForOrgBody
+    @Body() body: UpdateTemplateForOrgBody,
   ) {
     return this.casesService.updateTemplate(user, templateId, body);
   }
@@ -71,20 +68,14 @@ export class CasesController {
   @Delete("templates/:templateId")
   @RequirePermissions("case_templates.delete")
   @NotifyEntity({ type: "case_template", idParam: "templateId" })
-  async deleteTemplate(
-    @CurrentUser() user: AuthUser,
-    @Param("templateId") templateId: string
-  ) {
+  async deleteTemplate(@CurrentUser() user: AuthUser, @Param("templateId") templateId: string) {
     return this.casesService.deleteTemplate(user, templateId);
   }
 
   @Post("items")
   @RequirePermissions("cases.create")
   @NotifyEntity({ type: "case", labelField: "title" })
-  async createCase(
-    @CurrentUser() user: AuthUser,
-    @Body() body: CreateCaseForOrgBody
-  ) {
+  async createCase(@CurrentUser() user: AuthUser, @Body() body: CreateCaseForOrgBody) {
     return this.casesService.createCase(user, body);
   }
 
@@ -95,17 +86,14 @@ export class CasesController {
     @Query("status") status?: string,
     @Query("assigneeId") assigneeId?: string,
     @Query("priority") priority?: string,
-    @Query("search") search?: string
+    @Query("search") search?: string,
   ) {
     return this.casesService.listCases(user, { status, assigneeId, priority, search });
   }
 
   @Get("items/:caseId")
   @RequirePermissions("cases.read")
-  async getCase(
-    @CurrentUser() user: AuthUser,
-    @Param("caseId") caseId: string
-  ) {
+  async getCase(@CurrentUser() user: AuthUser, @Param("caseId") caseId: string) {
     return this.casesService.getCase(user, caseId);
   }
 
@@ -115,7 +103,7 @@ export class CasesController {
   async updateCase(
     @CurrentUser() user: AuthUser,
     @Param("caseId") caseId: string,
-    @Body() body: UpdateCaseForOrgBody
+    @Body() body: UpdateCaseForOrgBody,
   ) {
     return this.casesService.updateCase(user, caseId, body);
   }
@@ -123,10 +111,7 @@ export class CasesController {
   @Delete("items/:caseId")
   @RequirePermissions("cases.delete")
   @NotifyEntity({ type: "case", idParam: "caseId" })
-  async deleteCase(
-    @CurrentUser() user: AuthUser,
-    @Param("caseId") caseId: string
-  ) {
+  async deleteCase(@CurrentUser() user: AuthUser, @Param("caseId") caseId: string) {
     return this.casesService.deleteCase(user, caseId);
   }
 
@@ -136,7 +121,7 @@ export class CasesController {
   async updateTodo(
     @CurrentUser() user: AuthUser,
     @Param("caseId") caseId: string,
-    @Body() body: UpdateTodoForOrgBody
+    @Body() body: UpdateTodoForOrgBody,
   ) {
     return this.casesService.updateTodo(user, caseId, body);
   }
@@ -146,7 +131,7 @@ export class CasesController {
   @NotifyEntity({ type: "intervention", labelField: "title" })
   async createIntervention(
     @CurrentUser() user: AuthUser,
-    @Body() body: CreateInterventionForOrgBody
+    @Body() body: CreateInterventionForOrgBody,
   ) {
     return this.casesService.createIntervention(user, body);
   }
@@ -160,7 +145,7 @@ export class CasesController {
     @Query("startDate") startDate?: string,
     @Query("endDate") endDate?: string,
     @Query("status") status?: string,
-    @Query("unscheduled") unscheduled?: string
+    @Query("unscheduled") unscheduled?: string,
   ) {
     return this.casesService.listInterventions(user, {
       caseId,
@@ -168,7 +153,7 @@ export class CasesController {
       startDate,
       endDate,
       status,
-      unscheduled
+      unscheduled,
     });
   }
 
@@ -176,7 +161,7 @@ export class CasesController {
   @RequirePermissions("interventions.read")
   async getIntervention(
     @CurrentUser() user: AuthUser,
-    @Param("interventionId") interventionId: string
+    @Param("interventionId") interventionId: string,
   ) {
     return this.casesService.getIntervention(user, interventionId);
   }
@@ -187,7 +172,7 @@ export class CasesController {
   async updateIntervention(
     @CurrentUser() user: AuthUser,
     @Param("interventionId") interventionId: string,
-    @Body() body: UpdateInterventionForOrgBody
+    @Body() body: UpdateInterventionForOrgBody,
   ) {
     return this.casesService.updateIntervention(user, interventionId, body);
   }
@@ -197,7 +182,7 @@ export class CasesController {
   @NotifyEntity({ type: "intervention", idParam: "interventionId" })
   async deleteIntervention(
     @CurrentUser() user: AuthUser,
-    @Param("interventionId") interventionId: string
+    @Param("interventionId") interventionId: string,
   ) {
     return this.casesService.deleteIntervention(user, interventionId);
   }

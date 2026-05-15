@@ -5,7 +5,7 @@ const USER_STATUS_LABELS: Record<string, string> = {
   invited: "Invité",
   pending: "En attente",
   inactive: "Inactif",
-  suspended: "Suspendu"
+  suspended: "Suspendu",
 };
 
 /** Libellé « statut » pour l’admin org : invitation portée par `organizationMembershipStatus`, repli legacy sur `user.status`. */

@@ -11,7 +11,7 @@ import { SubscriptionsModule } from "./subscriptions.module";
   controllers: [StockController],
   providers: [
     { provide: AbstractStockGatewayService, useClass: StockGatewayService },
-    RequirePermissionGuard
-  ]
+    RequirePermissionGuard,
+  ],
 })
 export class StockModule {}

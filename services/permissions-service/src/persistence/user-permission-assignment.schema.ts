@@ -21,6 +21,6 @@ export class UserPermissionAssignmentDocument extends Document {
 }
 
 export const UserPermissionAssignmentSchema = SchemaFactory.createForClass(
-  UserPermissionAssignmentDocument
+  UserPermissionAssignmentDocument,
 );
 UserPermissionAssignmentSchema.index({ organizationId: 1, userId: 1 }, { unique: true });

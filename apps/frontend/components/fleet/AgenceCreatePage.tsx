@@ -27,7 +27,7 @@ export function AgenceCreatePage() {
         address: address.trim() || undefined,
         city: city.trim() || undefined,
         postalCode: postalCode.trim() || undefined,
-        phone: phone.trim() || undefined
+        phone: phone.trim() || undefined,
       });
       showToast("Agence créée avec succès.");
       router.push("/fleet/agences");
@@ -88,7 +88,9 @@ export function AgenceCreatePage() {
           />
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Téléphone</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+              Téléphone
+            </label>
             <input
               type="tel"
               placeholder="01 23 45 67 89"

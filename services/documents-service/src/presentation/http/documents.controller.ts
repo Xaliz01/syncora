@@ -9,7 +9,7 @@ import {
   Query,
   Res,
   UploadedFile,
-  UseInterceptors
+  UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import type { Response } from "express";
@@ -21,14 +21,19 @@ import { LocalStorageProvider } from "../../infrastructure/local-storage.provide
 import { AbstractStorageProvider } from "../../infrastructure/storage.port";
 
 const VALID_ENTITY_TYPES: DocumentEntityType[] = [
-  "case", "vehicle", "team", "technician", "customer", "organization"
+  "case",
+  "vehicle",
+  "team",
+  "technician",
+  "customer",
+  "organization",
 ];
 
 @Controller("documents")
 export class DocumentsController {
   constructor(
     private readonly documentsService: AbstractDocumentsService,
-    private readonly storage: AbstractStorageProvider
+    private readonly storage: AbstractStorageProvider,
   ) {}
 
   @Post("upload")
@@ -38,7 +43,7 @@ export class DocumentsController {
     @Query("organizationId") organizationId: string,
     @Query("entityType") entityType: string,
     @Query("entityId") entityId: string,
-    @Query("uploadedBy") uploadedBy: string
+    @Query("uploadedBy") uploadedBy: string,
   ) {
     if (!file) throw new BadRequestException("Fichier requis");
     if (!organizationId) throw new BadRequestException("organizationId requis");
@@ -56,16 +61,13 @@ export class DocumentsController {
       originalName: file.originalname,
       mimeType: file.mimetype,
       size: file.size,
-      buffer: file.buffer
+      buffer: file.buffer,
     });
   }
 
   /** Segment fixe avant les routes paramétrées `:id/…`. */
   @Get("download/:key")
-  async downloadLocal(
-    @Param("key") key: string,
-    @Res() res: Response
-  ) {
+  async downloadLocal(@Param("key") key: string, @Res() res: Response) {
     if (!(this.storage instanceof LocalStorageProvider)) {
       throw new BadRequestException("Direct download only available in local storage mode");
     }
@@ -81,7 +83,7 @@ export class DocumentsController {
       ".png": "image/png",
       ".gif": "image/gif",
       ".webp": "image/webp",
-      ".pdf": "application/pdf"
+      ".pdf": "application/pdf",
     };
     const contentType = mimeByExt[ext];
     if (contentType) res.setHeader("Content-Type", contentType);
@@ -93,7 +95,7 @@ export class DocumentsController {
   async listByEntity(
     @Query("organizationId") organizationId: string,
     @Query("entityType") entityType: string,
-    @Query("entityId") entityId: string
+    @Query("entityId") entityId: string,
   ) {
     if (!organizationId) throw new BadRequestException("organizationId requis");
     if (!entityType || !VALID_ENTITY_TYPES.includes(entityType as DocumentEntityType)) {
@@ -104,25 +106,19 @@ export class DocumentsController {
     return this.documentsService.listByEntity(
       organizationId,
       entityType as DocumentEntityType,
-      entityId
+      entityId,
     );
   }
 
   @Get(":id/download-url")
-  async getDownloadUrl(
-    @Param("id") id: string,
-    @Query("organizationId") organizationId: string
-  ) {
+  async getDownloadUrl(@Param("id") id: string, @Query("organizationId") organizationId: string) {
     if (!organizationId) throw new BadRequestException("organizationId requis");
     const url = await this.documentsService.getDownloadUrl(organizationId, id);
     return { url };
   }
 
   @Delete(":id")
-  async deleteDocument(
-    @Param("id") id: string,
-    @Query("organizationId") organizationId: string
-  ) {
+  async deleteDocument(@Param("id") id: string, @Query("organizationId") organizationId: string) {
     if (!organizationId) throw new BadRequestException("organizationId requis");
     return this.documentsService.deleteDocument(organizationId, id);
   }

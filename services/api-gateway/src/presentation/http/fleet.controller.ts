@@ -1,17 +1,10 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Patch,
-  Post,
-  Put,
-  UseGuards
-} from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, UseGuards } from "@nestjs/common";
 import { AbstractFleetGatewayService } from "../../domain/ports/fleet.service.port";
 import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
-import { RequirePermissionGuard, RequirePermissions } from "../../infrastructure/require-permission.guard";
+import {
+  RequirePermissionGuard,
+  RequirePermissions,
+} from "../../infrastructure/require-permission.guard";
 import { SubscriptionAccessGuard } from "../../infrastructure/subscription-access.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
 import { NotifyEntity } from "../../infrastructure/notify-entity.decorator";
@@ -20,7 +13,7 @@ import type {
   AssignTeamToVehicleBody,
   UpdateVehicleBody,
   VehicleType,
-  VehicleStatus
+  VehicleStatus,
 } from "@syncora/shared";
 
 interface CreateVehiclePayload {
@@ -44,10 +37,7 @@ export class FleetController {
   @RequirePermissions("fleet.vehicles.create")
   @RequirePermissions("vehicles.create")
   @NotifyEntity({ type: "vehicle", labelField: "registrationNumber" })
-  async createVehicle(
-    @CurrentUser() user: AuthUser,
-    @Body() body: CreateVehiclePayload
-  ) {
+  async createVehicle(@CurrentUser() user: AuthUser, @Body() body: CreateVehiclePayload) {
     return this.fleetService.createVehicle(user, body);
   }
 
@@ -61,10 +51,7 @@ export class FleetController {
   @Get("vehicles/:vehicleId")
   @RequirePermissions("fleet.vehicles.read")
   @RequirePermissions("vehicles.read")
-  async getVehicle(
-    @CurrentUser() user: AuthUser,
-    @Param("vehicleId") vehicleId: string
-  ) {
+  async getVehicle(@CurrentUser() user: AuthUser, @Param("vehicleId") vehicleId: string) {
     return this.fleetService.getVehicle(user, vehicleId);
   }
 
@@ -75,7 +62,7 @@ export class FleetController {
   async updateVehicle(
     @CurrentUser() user: AuthUser,
     @Param("vehicleId") vehicleId: string,
-    @Body() body: UpdateVehicleBody
+    @Body() body: UpdateVehicleBody,
   ) {
     return this.fleetService.updateVehicle(user, vehicleId, body);
   }
@@ -84,10 +71,7 @@ export class FleetController {
   @RequirePermissions("fleet.vehicles.delete")
   @RequirePermissions("vehicles.delete")
   @NotifyEntity({ type: "vehicle", idParam: "vehicleId" })
-  async deleteVehicle(
-    @CurrentUser() user: AuthUser,
-    @Param("vehicleId") vehicleId: string
-  ) {
+  async deleteVehicle(@CurrentUser() user: AuthUser, @Param("vehicleId") vehicleId: string) {
     return this.fleetService.deleteVehicle(user, vehicleId);
   }
 
@@ -98,7 +82,7 @@ export class FleetController {
   async assignTeam(
     @CurrentUser() user: AuthUser,
     @Param("vehicleId") vehicleId: string,
-    @Body() body: AssignTeamToVehicleBody
+    @Body() body: AssignTeamToVehicleBody,
   ) {
     return this.fleetService.assignTeamToVehicle(user, vehicleId, body);
   }
@@ -107,10 +91,7 @@ export class FleetController {
   @RequirePermissions("vehicles.update")
   @RequirePermissions("fleet.vehicles.assign")
   @NotifyEntity({ type: "vehicle", idParam: "vehicleId", action: "updated" })
-  async unassignTeam(
-    @CurrentUser() user: AuthUser,
-    @Param("vehicleId") vehicleId: string
-  ) {
+  async unassignTeam(@CurrentUser() user: AuthUser, @Param("vehicleId") vehicleId: string) {
     return this.fleetService.unassignTeamFromVehicle(user, vehicleId);
   }
 }

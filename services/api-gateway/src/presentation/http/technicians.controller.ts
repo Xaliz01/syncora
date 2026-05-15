@@ -1,16 +1,10 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Patch,
-  Post,
-  UseGuards
-} from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from "@nestjs/common";
 import { AbstractTechniciansGatewayService } from "../../domain/ports/technicians.service.port";
 import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
-import { RequirePermissionGuard, RequirePermissions } from "../../infrastructure/require-permission.guard";
+import {
+  RequirePermissionGuard,
+  RequirePermissions,
+} from "../../infrastructure/require-permission.guard";
 import { SubscriptionAccessGuard } from "../../infrastructure/subscription-access.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
 import { NotifyEntity } from "../../infrastructure/notify-entity.decorator";
@@ -18,7 +12,7 @@ import type { AuthUser } from "@syncora/shared";
 import type {
   CreateTechnicianUserAccountBody,
   UpdateTechnicianBody,
-  TechnicianStatus
+  TechnicianStatus,
 } from "@syncora/shared";
 
 interface CreateTechnicianPayload {
@@ -41,10 +35,7 @@ export class TechniciansController {
   @RequirePermissions("fleet.technicians.create")
   @RequirePermissions("technicians.create")
   @NotifyEntity({ type: "technician", labelField: "firstName" })
-  async createTechnician(
-    @CurrentUser() user: AuthUser,
-    @Body() body: CreateTechnicianPayload
-  ) {
+  async createTechnician(@CurrentUser() user: AuthUser, @Body() body: CreateTechnicianPayload) {
     return this.techniciansService.createTechnician(user, body);
   }
 
@@ -58,10 +49,7 @@ export class TechniciansController {
   @Get(":technicianId")
   @RequirePermissions("fleet.technicians.read")
   @RequirePermissions("technicians.read")
-  async getTechnician(
-    @CurrentUser() user: AuthUser,
-    @Param("technicianId") technicianId: string
-  ) {
+  async getTechnician(@CurrentUser() user: AuthUser, @Param("technicianId") technicianId: string) {
     return this.techniciansService.getTechnician(user, technicianId);
   }
 
@@ -72,7 +60,7 @@ export class TechniciansController {
   async updateTechnician(
     @CurrentUser() user: AuthUser,
     @Param("technicianId") technicianId: string,
-    @Body() body: UpdateTechnicianBody
+    @Body() body: UpdateTechnicianBody,
   ) {
     return this.techniciansService.updateTechnician(user, technicianId, body);
   }
@@ -83,7 +71,7 @@ export class TechniciansController {
   @NotifyEntity({ type: "technician", idParam: "technicianId" })
   async deleteTechnician(
     @CurrentUser() user: AuthUser,
-    @Param("technicianId") technicianId: string
+    @Param("technicianId") technicianId: string,
   ) {
     return this.techniciansService.deleteTechnician(user, technicianId);
   }
@@ -94,7 +82,7 @@ export class TechniciansController {
   async createTechnicianAccount(
     @CurrentUser() user: AuthUser,
     @Param("technicianId") technicianId: string,
-    @Body() body: CreateTechnicianUserAccountBody
+    @Body() body: CreateTechnicianUserAccountBody,
   ) {
     return this.techniciansService.createTechnicianUserAccount(user, technicianId, body);
   }

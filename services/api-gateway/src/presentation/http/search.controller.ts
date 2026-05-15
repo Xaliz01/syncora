@@ -10,10 +10,7 @@ export class SearchController {
   constructor(private readonly searchService: AbstractSearchService) {}
 
   @Get()
-  async search(
-    @CurrentUser() user: AuthUser,
-    @Query("q") query?: string
-  ) {
+  async search(@CurrentUser() user: AuthUser, @Query("q") query?: string) {
     return this.searchService.search(user, query ?? "");
   }
 }

@@ -16,7 +16,7 @@ import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
 function hasPermission(
   role: string | undefined,
   permissions: PermissionCode[] | undefined,
-  code: PermissionCode
+  code: PermissionCode,
 ): boolean {
   if (role === "admin") return true;
   return permissions?.includes(code) ?? false;
@@ -27,7 +27,7 @@ function formatDate(iso?: string) {
   try {
     return new Date(iso).toLocaleString("fr-FR", {
       dateStyle: "medium",
-      timeStyle: "short"
+      timeStyle: "short",
     });
   } catch {
     return iso;
@@ -46,9 +46,15 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
   const canUpdate = hasPermission(user?.role, user?.permissions, "customers.update");
   const canDelete = hasPermission(user?.role, user?.permissions, "customers.delete");
 
-  const { data: c, isLoading, isError, error, refetch } = useQuery({
+  const {
+    data: c,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: ["customer", customerId],
-    queryFn: () => customersApi.getCustomer(customerId)
+    queryFn: () => customersApi.getCustomer(customerId),
   });
 
   const updateMutation = useMutation({
@@ -62,7 +68,7 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
       showToast("Client mis à jour.");
       void refetch();
     },
-    onError: (err: Error) => setMutationError(err.message)
+    onError: (err: Error) => setMutationError(err.message),
   });
 
   const deleteMutation = useMutation({
@@ -72,7 +78,7 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
       showToast("Client supprimé.");
       router.push("/customers");
     },
-    onError: (err: Error) => setMutationError(err.message)
+    onError: (err: Error) => setMutationError(err.message),
   });
 
   if (isLoading) {
@@ -82,7 +88,10 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
   if (isError || !c) {
     return (
       <div className="space-y-4">
-        <Link href="/customers" className="text-sm font-medium text-brand-600 dark:text-brand-400 hover:text-brand-500">
+        <Link
+          href="/customers"
+          className="text-sm font-medium text-brand-600 dark:text-brand-400 hover:text-brand-500"
+        >
           &larr; Clients
         </Link>
         <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
@@ -108,7 +117,7 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
       description:
         "Le client sera archivé (suppression logique) : il ne figurera plus dans les listes ni dans les sélecteurs, mais les dossiers déjà liés conservent leur référence.",
       confirmLabel: "Archiver le client",
-      variant: "danger"
+      variant: "danger",
     });
     if (!ok) return;
     setMutationError("");
@@ -118,7 +127,10 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link href="/customers" className="text-sm font-medium text-brand-600 dark:text-brand-400 hover:text-brand-500">
+        <Link
+          href="/customers"
+          className="text-sm font-medium text-brand-600 dark:text-brand-400 hover:text-brand-500"
+        >
           &larr; Clients
         </Link>
         <div className="flex flex-wrap items-center gap-2">
@@ -148,12 +160,16 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
       </div>
 
       {mutationError && !isEditing && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{mutationError}</div>
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          {mutationError}
+        </div>
       )}
 
       {isEditing ? (
         <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/20 sm:p-6">
-          <h2 className="mb-4 text-lg font-semibold text-slate-900 dark:text-slate-100">Modifier le client</h2>
+          <h2 className="mb-4 text-lg font-semibold text-slate-900 dark:text-slate-100">
+            Modifier le client
+          </h2>
           <CustomerEditForm
             customer={c}
             isPending={updateMutation.isPending}
@@ -171,19 +187,28 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
       ) : (
         <>
           <div>
-            <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100 sm:text-2xl">{c.displayName}</h1>
-            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{CUSTOMER_KIND_LABELS[c.kind]}</p>
+            <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100 sm:text-2xl">
+              {c.displayName}
+            </h1>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+              {CUSTOMER_KIND_LABELS[c.kind]}
+            </p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/20 sm:col-span-2">
-              <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Coordonnées</h2>
+              <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                Coordonnées
+              </h2>
               <dl className="mt-3 space-y-2 text-sm">
                 {c.email && (
                   <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
                     <dt className="text-slate-500 dark:text-slate-400 sm:w-32">E-mail</dt>
                     <dd>
-                      <a href={`mailto:${c.email}`} className="text-brand-600 dark:text-brand-400 hover:text-brand-500">
+                      <a
+                        href={`mailto:${c.email}`}
+                        className="text-brand-600 dark:text-brand-400 hover:text-brand-500"
+                      >
                         {c.email}
                       </a>
                     </dd>
@@ -210,7 +235,9 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
                   </div>
                 )}
                 {!c.email && !c.phone && !c.mobile && (
-                  <p className="text-slate-500 dark:text-slate-400">Aucune coordonnée renseignée.</p>
+                  <p className="text-slate-500 dark:text-slate-400">
+                    Aucune coordonnée renseignée.
+                  </p>
                 )}
               </dl>
             </div>
@@ -219,7 +246,9 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
             (c.kind === "company" && c.companyName) ||
             c.legalIdentifier ? (
               <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/20 sm:col-span-2">
-                <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Identité</h2>
+                <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                  Identité
+                </h2>
                 <dl className="mt-3 space-y-2 text-sm">
                   {c.kind === "individual" && (c.firstName || c.lastName) && (
                     <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
@@ -237,7 +266,9 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
                   )}
                   {c.legalIdentifier && (
                     <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
-                      <dt className="text-slate-500 dark:text-slate-400 sm:w-32">Identifiant légal</dt>
+                      <dt className="text-slate-500 dark:text-slate-400 sm:w-32">
+                        Identifiant légal
+                      </dt>
                       <dd className="text-slate-800 dark:text-slate-100">{c.legalIdentifier}</dd>
                     </div>
                   )}
@@ -247,7 +278,9 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
 
             {c.address && (
               <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/20 sm:col-span-2">
-                <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Adresse</h2>
+                <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                  Adresse
+                </h2>
                 <address className="mt-3 text-sm not-italic text-slate-700 dark:text-slate-200">
                   {c.address.line1}
                   <br />
@@ -267,7 +300,9 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
             {c.notes && (
               <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/20 sm:col-span-2">
                 <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Notes</h2>
-                <p className="mt-3 whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-200">{c.notes}</p>
+                <p className="mt-3 whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-200">
+                  {c.notes}
+                </p>
               </div>
             )}
 

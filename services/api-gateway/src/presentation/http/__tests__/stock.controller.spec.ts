@@ -17,7 +17,7 @@ describe("StockController", () => {
     role: "admin",
     status: "active",
     permissions: [],
-    name: "Admin User"
+    name: "Admin User",
   };
 
   beforeEach(async () => {
@@ -30,7 +30,7 @@ describe("StockController", () => {
       createArticleMovement: jest.fn(),
       listArticleMovements: jest.fn(),
       addInterventionArticleUsage: jest.fn(),
-      getInterventionUsage: jest.fn()
+      getInterventionUsage: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -38,9 +38,9 @@ describe("StockController", () => {
       providers: [
         {
           provide: AbstractStockGatewayService,
-          useValue: mockStockService
-        }
-      ]
+          useValue: mockStockService,
+        },
+      ],
     })
       .overrideGuard(JwtAuthGuard)
       .useValue({ canActivate: () => true })
@@ -63,7 +63,7 @@ describe("StockController", () => {
         name: "Article A",
         reference: "REF-001",
         description: "Description",
-        unit: "unité"
+        unit: "unité",
       };
       mockStockService.createArticle.mockResolvedValue({
         id: "article-1",
@@ -77,7 +77,7 @@ describe("StockController", () => {
         isActive: true,
         lowStock: false,
         stockStatus: "ok",
-        suggestedReorderQuantity: 0
+        suggestedReorderQuantity: 0,
       } as never);
 
       const result = await controller.createArticle(mockUser, body);
@@ -103,8 +103,8 @@ describe("StockController", () => {
           isActive: true,
           lowStock: false,
           stockStatus: "ok",
-          suggestedReorderQuantity: 10
-        }
+          suggestedReorderQuantity: 10,
+        },
       ] as never);
 
       const result = await controller.listArticles(mockUser, "search", "false", "true");
@@ -112,7 +112,7 @@ describe("StockController", () => {
       expect(mockStockService.listArticles).toHaveBeenCalledWith(mockUser, {
         search: "search",
         lowStockOnly: false,
-        activeOnly: true
+        activeOnly: true,
       });
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe("article-1");
@@ -133,7 +133,7 @@ describe("StockController", () => {
         isActive: true,
         lowStock: false,
         stockStatus: "ok",
-        suggestedReorderQuantity: 10
+        suggestedReorderQuantity: 10,
       } as never);
 
       const result = await controller.getArticle(mockUser, "article-1");
@@ -158,7 +158,7 @@ describe("StockController", () => {
         isActive: true,
         lowStock: false,
         stockStatus: "ok",
-        suggestedReorderQuantity: 15
+        suggestedReorderQuantity: 15,
       } as never);
 
       const result = await controller.updateArticle(mockUser, "article-1", body);
@@ -184,7 +184,7 @@ describe("StockController", () => {
       const body = {
         articleId: "article-1",
         movementType: "in" as const,
-        quantity: 10
+        quantity: 10,
       };
       mockStockService.createArticleMovement.mockResolvedValue({
         id: "movement-1",
@@ -194,7 +194,7 @@ describe("StockController", () => {
         movementType: "in",
         quantity: 10,
         previousStock: 0,
-        newStock: 10
+        newStock: 10,
       } as never);
 
       const result = await controller.createArticleMovement(mockUser, body);
@@ -216,8 +216,8 @@ describe("StockController", () => {
           movementType: "in",
           quantity: 10,
           previousStock: 0,
-          newStock: 10
-        }
+          newStock: 10,
+        },
       ] as never);
 
       const result = await controller.listArticleMovements(
@@ -225,14 +225,14 @@ describe("StockController", () => {
         "article-1",
         "int-1",
         "case-1",
-        "50"
+        "50",
       );
 
       expect(mockStockService.listArticleMovements).toHaveBeenCalledWith(mockUser, {
         articleId: "article-1",
         interventionId: "int-1",
         caseId: "case-1",
-        limit: 50
+        limit: 50,
       });
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe("movement-1");
@@ -244,7 +244,7 @@ describe("StockController", () => {
       const body = {
         articleId: "article-1",
         quantity: 5,
-        caseId: "case-1"
+        caseId: "case-1",
       };
       mockStockService.addInterventionArticleUsage.mockResolvedValue({
         id: "movement-1",
@@ -254,19 +254,15 @@ describe("StockController", () => {
         movementType: "out",
         quantity: 5,
         previousStock: 10,
-        newStock: 5
+        newStock: 5,
       } as never);
 
-      const result = await controller.addInterventionArticleUsage(
-        mockUser,
-        "intervention-1",
-        body
-      );
+      const result = await controller.addInterventionArticleUsage(mockUser, "intervention-1", body);
 
       expect(mockStockService.addInterventionArticleUsage).toHaveBeenCalledWith(
         mockUser,
         "intervention-1",
-        body
+        body,
       );
       expect(result.movementType).toBe("out");
       expect(result.quantity).toBe(5);
@@ -282,15 +278,15 @@ describe("StockController", () => {
           unit: "unité",
           consumedQuantity: 5,
           returnedQuantity: 0,
-          netQuantity: 5
-        }
+          netQuantity: 5,
+        },
       ] as never);
 
       const result = await controller.getInterventionUsage(mockUser, "intervention-1");
 
       expect(mockStockService.getInterventionUsage).toHaveBeenCalledWith(
         mockUser,
-        "intervention-1"
+        "intervention-1",
       );
       expect(result).toHaveLength(1);
       expect(result[0].articleId).toBe("article-1");

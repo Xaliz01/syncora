@@ -16,19 +16,19 @@ import { AgenceSchema } from "../persistence/agence.schema";
 @Module({
   imports: [
     MongooseModule.forRoot(
-      process.env.MONGODB_URI ?? "mongodb://localhost:27017/syncora-technicians"
+      process.env.MONGODB_URI ?? "mongodb://localhost:27017/syncora-technicians",
     ),
     MongooseModule.forFeature([
       { name: "Technician", schema: TechnicianSchema },
       { name: "Team", schema: TeamSchema },
-      { name: "Agence", schema: AgenceSchema }
-    ])
+      { name: "Agence", schema: AgenceSchema },
+    ]),
   ],
   controllers: [TechniciansController, TeamsController, AgencesController],
   providers: [
     { provide: AbstractTechniciansService, useClass: TechniciansService },
     { provide: AbstractTeamsService, useClass: TeamsService },
-    { provide: AbstractAgencesService, useClass: AgencesService }
-  ]
+    { provide: AbstractAgencesService, useClass: AgencesService },
+  ],
 })
 export class AppModule {}

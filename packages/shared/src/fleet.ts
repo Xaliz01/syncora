@@ -7,7 +7,7 @@ export const VEHICLE_TYPES = [
   "utilitaire",
   "fourgon",
   "remorque",
-  "autre"
+  "autre",
 ] as const;
 
 export type VehicleType = (typeof VEHICLE_TYPES)[number];

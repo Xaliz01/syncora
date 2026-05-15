@@ -1,4 +1,8 @@
-import { Injectable, InternalServerErrorException, ServiceUnavailableException } from "@nestjs/common";
+import {
+  Injectable,
+  InternalServerErrorException,
+  ServiceUnavailableException,
+} from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import axios from "axios";
 import { firstValueFrom } from "rxjs";
@@ -7,12 +11,11 @@ import type {
   OrganizationMembershipResponse,
   OrganizationResponse,
   UpdateOrganizationBody,
-  UserOrganizationsListResponse
+  UserOrganizationsListResponse,
 } from "@syncora/shared";
 import { AbstractOrganizationsGatewayService } from "./ports/organizations.service.port";
 
-const ORGANIZATIONS_URL =
-  process.env.ORGANIZATIONS_SERVICE_URL ?? "http://localhost:3001";
+const ORGANIZATIONS_URL = process.env.ORGANIZATIONS_SERVICE_URL ?? "http://localhost:3001";
 const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
 
 @Injectable()
@@ -25,8 +28,8 @@ export class OrganizationsGatewayService extends AbstractOrganizationsGatewaySer
     try {
       const res = await firstValueFrom(
         this.httpService.get<OrganizationMembershipResponse[]>(
-          `${USERS_URL}/users/${user.id}/organization-memberships`
-        )
+          `${USERS_URL}/users/${user.id}/organization-memberships`,
+        ),
       );
       const ids = [...new Set(res.data.map((m) => m.organizationId))];
       if (ids.length === 0 && user.organizationId) {
@@ -35,7 +38,7 @@ export class OrganizationsGatewayService extends AbstractOrganizationsGatewaySer
       }
       const orgs = await Promise.all(ids.map((id) => this.fetchOrganization(id)));
       return {
-        organizations: orgs.filter((o): o is OrganizationResponse => o !== null)
+        organizations: orgs.filter((o): o is OrganizationResponse => o !== null),
       };
     } catch {
       const org = await this.fetchOrganization(user.organizationId);
@@ -47,13 +50,16 @@ export class OrganizationsGatewayService extends AbstractOrganizationsGatewaySer
     return this.fetchOrganization(user.organizationId);
   }
 
-  async updateMine(user: AuthUser, body: UpdateOrganizationBody): Promise<OrganizationResponse | null> {
+  async updateMine(
+    user: AuthUser,
+    body: UpdateOrganizationBody,
+  ): Promise<OrganizationResponse | null> {
     try {
       const res = await firstValueFrom(
         this.httpService.patch<OrganizationResponse>(
           `${ORGANIZATIONS_URL}/organizations/${user.organizationId}`,
-          body
-        )
+          body,
+        ),
       );
       return res.data;
     } catch (err: unknown) {
@@ -69,7 +75,7 @@ export class OrganizationsGatewayService extends AbstractOrganizationsGatewaySer
             netCode === "ENOTFOUND")
         ) {
           throw new ServiceUnavailableException(
-            `Service organizations injoignable (${ORGANIZATIONS_URL}).`
+            `Service organizations injoignable (${ORGANIZATIONS_URL}).`,
           );
         }
       }
@@ -80,7 +86,9 @@ export class OrganizationsGatewayService extends AbstractOrganizationsGatewaySer
   private async fetchOrganization(organizationId: string): Promise<OrganizationResponse | null> {
     try {
       const res = await firstValueFrom(
-        this.httpService.get<OrganizationResponse>(`${ORGANIZATIONS_URL}/organizations/${organizationId}`)
+        this.httpService.get<OrganizationResponse>(
+          `${ORGANIZATIONS_URL}/organizations/${organizationId}`,
+        ),
       );
       return res.data;
     } catch (err: unknown) {
@@ -96,7 +104,7 @@ export class OrganizationsGatewayService extends AbstractOrganizationsGatewaySer
             netCode === "ENOTFOUND")
         ) {
           throw new ServiceUnavailableException(
-            `Service organizations injoignable (${ORGANIZATIONS_URL}).`
+            `Service organizations injoignable (${ORGANIZATIONS_URL}).`,
           );
         }
       }

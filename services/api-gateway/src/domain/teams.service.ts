@@ -3,7 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
-  NotFoundException
+  NotFoundException,
 } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
@@ -12,7 +12,7 @@ import type {
   CreateTeamBody,
   UpdateTeamBody,
   TeamResponse,
-  TeamStatus
+  TeamStatus,
 } from "@syncora/shared";
 import { AbstractTeamsGatewayService } from "./ports/teams.service.port";
 
@@ -32,15 +32,15 @@ export class TeamsGatewayService extends AbstractTeamsGatewayService {
       technicianIds?: string[];
       status?: TeamStatus;
       calendarColor?: string;
-    }
+    },
   ): Promise<TeamResponse> {
     return this.call<TeamResponse>({
       method: "post",
       path: "/teams",
       body: {
         organizationId: currentUser.organizationId,
-        ...body
-      } satisfies CreateTeamBody
+        ...body,
+      } satisfies CreateTeamBody,
     });
   }
 
@@ -48,7 +48,7 @@ export class TeamsGatewayService extends AbstractTeamsGatewayService {
     return this.call<TeamResponse[]>({
       method: "get",
       path: "/teams",
-      query: { organizationId: currentUser.organizationId }
+      query: { organizationId: currentUser.organizationId },
     });
   }
 
@@ -56,55 +56,52 @@ export class TeamsGatewayService extends AbstractTeamsGatewayService {
     return this.call<TeamResponse>({
       method: "get",
       path: `/teams/${teamId}`,
-      query: { organizationId: currentUser.organizationId }
+      query: { organizationId: currentUser.organizationId },
     });
   }
 
   async updateTeam(
     currentUser: AuthUser,
     teamId: string,
-    body: UpdateTeamBody
+    body: UpdateTeamBody,
   ): Promise<TeamResponse> {
     return this.call<TeamResponse>({
       method: "patch",
       path: `/teams/${teamId}`,
       query: { organizationId: currentUser.organizationId },
-      body
+      body,
     });
   }
 
-  async deleteTeam(
-    currentUser: AuthUser,
-    teamId: string
-  ): Promise<{ deleted: true }> {
+  async deleteTeam(currentUser: AuthUser, teamId: string): Promise<{ deleted: true }> {
     return this.call<{ deleted: true }>({
       method: "delete",
       path: `/teams/${teamId}`,
-      query: { organizationId: currentUser.organizationId }
+      query: { organizationId: currentUser.organizationId },
     });
   }
 
   async addMember(
     currentUser: AuthUser,
     teamId: string,
-    technicianId: string
+    technicianId: string,
   ): Promise<TeamResponse> {
     return this.call<TeamResponse>({
       method: "put",
       path: `/teams/${teamId}/members/${technicianId}`,
-      query: { organizationId: currentUser.organizationId }
+      query: { organizationId: currentUser.organizationId },
     });
   }
 
   async removeMember(
     currentUser: AuthUser,
     teamId: string,
-    technicianId: string
+    technicianId: string,
   ): Promise<TeamResponse> {
     return this.call<TeamResponse>({
       method: "delete",
       path: `/teams/${teamId}/members/${technicianId}`,
-      query: { organizationId: currentUser.organizationId }
+      query: { organizationId: currentUser.organizationId },
     });
   }
 
@@ -120,8 +117,8 @@ export class TeamsGatewayService extends AbstractTeamsGatewayService {
           method: params.method,
           url: `${TECHNICIANS_URL}${params.path}`,
           data: params.body,
-          params: params.query
-        })
+          params: params.query,
+        }),
       );
       return response.data;
     } catch (err: unknown) {
@@ -132,8 +129,8 @@ export class TeamsGatewayService extends AbstractTeamsGatewayService {
   private rethrowAsHttpException(err: unknown): never {
     const status = (err as { response?: { status?: number } })?.response?.status;
     const message =
-      (err as { response?: { data?: { message?: string | string[] } } })?.response?.data
-        ?.message ?? "Downstream service error";
+      (err as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message ??
+      "Downstream service error";
 
     if (status === 400) throw new BadRequestException(message);
     if (status === 403) throw new ForbiddenException(message);

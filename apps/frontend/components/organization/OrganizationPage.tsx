@@ -32,7 +32,7 @@ export function OrganizationPage() {
     addressLine2: "",
     postalCode: "",
     city: "",
-    country: ""
+    country: "",
   });
 
   useEffect(() => {
@@ -44,7 +44,7 @@ export function OrganizationPage() {
       addressLine2: activeOrganization?.addressLine2 ?? "",
       postalCode: activeOrganization?.postalCode ?? "",
       city: activeOrganization?.city ?? "",
-      country: activeOrganization?.country ?? ""
+      country: activeOrganization?.country ?? "",
     });
   }, [activeOrganization]);
 
@@ -58,17 +58,19 @@ export function OrganizationPage() {
         addressLine2: form.addressLine2.trim() || null,
         postalCode: form.postalCode.trim() || null,
         city: form.city.trim() || null,
-        country: form.country.trim() || null
+        country: form.country.trim() || null,
       }),
     onSuccess: () => {
       showToast("Coordonnées de l’organisation mises à jour.");
       void queryClient.invalidateQueries({ queryKey: ["organizations", "mine"] });
-      void queryClient.invalidateQueries({ queryKey: ["organizations", "mine", user?.organizationId] });
+      void queryClient.invalidateQueries({
+        queryKey: ["organizations", "mine", user?.organizationId],
+      });
       setIsEditing(false);
     },
     onError: (err: Error) => {
       showToast(err.message ?? "Impossible de mettre à jour l’organisation.", "error");
-    }
+    },
   });
 
   const canSave = useMemo(() => form.name.trim().length > 0, [form.name]);
@@ -83,7 +85,7 @@ export function OrganizationPage() {
       addressLine2: activeOrganization?.addressLine2 ?? "",
       postalCode: activeOrganization?.postalCode ?? "",
       city: activeOrganization?.city ?? "",
-      country: activeOrganization?.country ?? ""
+      country: activeOrganization?.country ?? "",
     });
   };
 
@@ -91,7 +93,9 @@ export function OrganizationPage() {
     <div className="space-y-8 w-full">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-slate-900 dark:text-slate-100">{displayName}</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold text-slate-900 dark:text-slate-100">
+            {displayName}
+          </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             Informations liées à votre espace et gestion de l’abonnement Syncora.
           </p>
@@ -129,18 +133,26 @@ export function OrganizationPage() {
       <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/20">
         <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
           <div>
-            <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Coordonnées de l’organisation</h2>
+            <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+              Coordonnées de l’organisation
+            </h2>
           </div>
           <div className="text-right">
-            <p className="text-[11px] uppercase tracking-wide text-slate-400 dark:text-slate-500">ID technique</p>
-            <code className="text-xs text-slate-700 dark:text-slate-200 break-all">{user?.organizationId ?? "—"}</code>
+            <p className="text-[11px] uppercase tracking-wide text-slate-400 dark:text-slate-500">
+              ID technique
+            </p>
+            <code className="text-xs text-slate-700 dark:text-slate-200 break-all">
+              {user?.organizationId ?? "—"}
+            </code>
           </div>
         </div>
 
         {isEditing ? (
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block">
-              <span className="text-xs text-slate-500 dark:text-slate-400">Nom de l’organisation</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                Nom de l’organisation
+              </span>
               <input
                 type="text"
                 value={form.name}
@@ -188,33 +200,47 @@ export function OrganizationPage() {
           <dl className="grid gap-3 text-sm sm:grid-cols-2">
             <div className="sm:col-span-2">
               <dt className="text-slate-500 dark:text-slate-400">Nom</dt>
-              <dd className="font-medium text-slate-900 dark:text-slate-100 mt-0.5">{formatValue(activeOrganization?.name)}</dd>
+              <dd className="font-medium text-slate-900 dark:text-slate-100 mt-0.5">
+                {formatValue(activeOrganization?.name)}
+              </dd>
             </div>
             <div>
               <dt className="text-slate-500 dark:text-slate-400">Email</dt>
-              <dd className="mt-0.5 text-slate-800 dark:text-slate-100">{formatValue(activeOrganization?.email)}</dd>
+              <dd className="mt-0.5 text-slate-800 dark:text-slate-100">
+                {formatValue(activeOrganization?.email)}
+              </dd>
             </div>
             <div>
               <dt className="text-slate-500 dark:text-slate-400">Téléphone</dt>
-              <dd className="mt-0.5 text-slate-800 dark:text-slate-100">{formatValue(activeOrganization?.phone)}</dd>
+              <dd className="mt-0.5 text-slate-800 dark:text-slate-100">
+                {formatValue(activeOrganization?.phone)}
+              </dd>
             </div>
             <div className="sm:col-span-2">
               <dt className="text-slate-500 dark:text-slate-400">Adresse</dt>
               <dd className="mt-0.5 text-slate-800 dark:text-slate-100">
-                {[activeOrganization?.addressLine1, activeOrganization?.addressLine2].filter(Boolean).join(", ") || "—"}
+                {[activeOrganization?.addressLine1, activeOrganization?.addressLine2]
+                  .filter(Boolean)
+                  .join(", ") || "—"}
               </dd>
             </div>
             <div>
               <dt className="text-slate-500 dark:text-slate-400">Code postal</dt>
-              <dd className="mt-0.5 text-slate-800 dark:text-slate-100">{formatValue(activeOrganization?.postalCode)}</dd>
+              <dd className="mt-0.5 text-slate-800 dark:text-slate-100">
+                {formatValue(activeOrganization?.postalCode)}
+              </dd>
             </div>
             <div>
               <dt className="text-slate-500 dark:text-slate-400">Ville</dt>
-              <dd className="mt-0.5 text-slate-800 dark:text-slate-100">{formatValue(activeOrganization?.city)}</dd>
+              <dd className="mt-0.5 text-slate-800 dark:text-slate-100">
+                {formatValue(activeOrganization?.city)}
+              </dd>
             </div>
             <div>
               <dt className="text-slate-500 dark:text-slate-400">Pays</dt>
-              <dd className="mt-0.5 text-slate-800 dark:text-slate-100">{formatValue(activeOrganization?.country)}</dd>
+              <dd className="mt-0.5 text-slate-800 dark:text-slate-100">
+                {formatValue(activeOrganization?.country)}
+              </dd>
             </div>
             <div className="sm:col-span-2 pt-2 border-t border-slate-100 dark:border-slate-800">
               <dt className="text-slate-500 dark:text-slate-400">Créée le</dt>

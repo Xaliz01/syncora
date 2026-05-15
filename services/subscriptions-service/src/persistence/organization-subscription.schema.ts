@@ -29,5 +29,5 @@ export class OrganizationSubscriptionDocument extends Document {
 }
 
 export const OrganizationSubscriptionSchema = SchemaFactory.createForClass(
-  OrganizationSubscriptionDocument
+  OrganizationSubscriptionDocument,
 );

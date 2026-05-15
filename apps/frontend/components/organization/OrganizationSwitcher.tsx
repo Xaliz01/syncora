@@ -14,7 +14,7 @@ export function OrganizationSwitcher({ variant = "sidebar" }: { variant?: "sideb
     isLoading,
     isSwitchingOrganization,
     selectOrganization,
-    refetchOrganizations
+    refetchOrganizations,
   } = useOrganization();
   const { showToast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -65,13 +65,17 @@ export function OrganizationSwitcher({ variant = "sidebar" }: { variant?: "sideb
   return (
     <div className={shellClass}>
       {variant === "gate" && (
-        <p className="text-[11px] uppercase tracking-wide text-slate-400 dark:text-slate-500">Espace synchronisé</p>
+        <p className="text-[11px] uppercase tracking-wide text-slate-400 dark:text-slate-500">
+          Espace synchronisé
+        </p>
       )}
 
       {variant === "gate" && organizations.length <= 1 && !isLoading ? (
         <p className="text-sm text-slate-600 dark:text-slate-300">
           Organisation :{" "}
-          <span className="font-medium text-slate-900 dark:text-white">{activeOrganization?.name ?? "—"}</span>
+          <span className="font-medium text-slate-900 dark:text-white">
+            {activeOrganization?.name ?? "—"}
+          </span>
         </p>
       ) : (
         <>
@@ -101,11 +105,7 @@ export function OrganizationSwitcher({ variant = "sidebar" }: { variant?: "sideb
         </>
       )}
 
-      <button
-        type="button"
-        onClick={() => setDialogOpen(true)}
-        className={createBtnClass}
-      >
+      <button type="button" onClick={() => setDialogOpen(true)} className={createBtnClass}>
         + Nouvelle organisation
       </button>
 
@@ -125,14 +125,20 @@ export function OrganizationSwitcher({ variant = "sidebar" }: { variant?: "sideb
             className="w-full max-w-md rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl p-5"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 id="syncora-new-org-title" className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+            <h2
+              id="syncora-new-org-title"
+              className="text-lg font-semibold text-slate-900 dark:text-slate-100"
+            >
               Nouvelle organisation
             </h2>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              Un espace distinct sera créé et votre session y sera associée (nouvelle organisation = nouvel abonnement
-              à activer si besoin).
+              Un espace distinct sera créé et votre session y sera associée (nouvelle organisation =
+              nouvel abonnement à activer si besoin).
             </p>
-            <label htmlFor="syncora-new-org-name" className="mt-4 block text-xs font-medium text-slate-600 dark:text-slate-300">
+            <label
+              htmlFor="syncora-new-org-name"
+              className="mt-4 block text-xs font-medium text-slate-600 dark:text-slate-300"
+            >
               Nom
             </label>
             <input

@@ -17,7 +17,7 @@ describe("StockController", () => {
       createArticleMovement: jest.fn(),
       addInterventionArticleUsage: jest.fn(),
       listArticleMovements: jest.fn(),
-      getInterventionUsage: jest.fn()
+      getInterventionUsage: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -25,9 +25,9 @@ describe("StockController", () => {
       providers: [
         {
           provide: AbstractStockService,
-          useValue: mockStockService
-        }
-      ]
+          useValue: mockStockService,
+        },
+      ],
     }).compile();
 
     controller = module.get<StockController>(StockController);
@@ -42,7 +42,7 @@ describe("StockController", () => {
       const body = {
         organizationId: "org-1",
         name: "Article A",
-        reference: "REF-001"
+        reference: "REF-001",
       };
       mockStockService.createArticle.mockResolvedValue({
         id: "article-1",
@@ -56,7 +56,7 @@ describe("StockController", () => {
         isActive: true,
         lowStock: false,
         stockStatus: "ok",
-        suggestedReorderQuantity: 0
+        suggestedReorderQuantity: 0,
       } as never);
 
       const result = await controller.createArticle(body);
@@ -82,8 +82,8 @@ describe("StockController", () => {
           isActive: true,
           lowStock: false,
           stockStatus: "ok",
-          suggestedReorderQuantity: 10
-        }
+          suggestedReorderQuantity: 10,
+        },
       ] as never);
 
       const result = await controller.listArticles("org-1", "search", "false", "true");
@@ -91,7 +91,7 @@ describe("StockController", () => {
       expect(mockStockService.listArticles).toHaveBeenCalledWith("org-1", {
         search: "search",
         lowStockOnly: false,
-        activeOnly: true
+        activeOnly: true,
       });
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe("article-1");
@@ -99,10 +99,10 @@ describe("StockController", () => {
 
     it("should throw BadRequestException when organizationId is missing", async () => {
       await expect(
-        controller.listArticles(undefined as never, undefined, undefined, undefined)
+        controller.listArticles(undefined as never, undefined, undefined, undefined),
       ).rejects.toThrow(BadRequestException);
       await expect(
-        controller.listArticles(undefined as never, undefined, undefined, undefined)
+        controller.listArticles(undefined as never, undefined, undefined, undefined),
       ).rejects.toThrow("organizationId query param is required");
       expect(mockStockService.listArticles).not.toHaveBeenCalled();
     });
@@ -122,7 +122,7 @@ describe("StockController", () => {
         isActive: true,
         lowStock: false,
         stockStatus: "ok",
-        suggestedReorderQuantity: 10
+        suggestedReorderQuantity: 10,
       } as never);
 
       const result = await controller.getArticle("article-1", "org-1");
@@ -133,7 +133,7 @@ describe("StockController", () => {
 
     it("should throw BadRequestException when organizationId is missing", async () => {
       await expect(controller.getArticle("article-1", undefined as never)).rejects.toThrow(
-        BadRequestException
+        BadRequestException,
       );
       expect(mockStockService.getArticle).not.toHaveBeenCalled();
     });
@@ -145,7 +145,7 @@ describe("StockController", () => {
         organizationId: "org-1",
         name: "Updated Article",
         reorderPoint: 10,
-        targetStock: 25
+        targetStock: 25,
       };
       mockStockService.updateArticle.mockResolvedValue({
         id: "article-1",
@@ -159,7 +159,7 @@ describe("StockController", () => {
         isActive: true,
         lowStock: false,
         stockStatus: "ok",
-        suggestedReorderQuantity: 15
+        suggestedReorderQuantity: 15,
       } as never);
 
       const result = await controller.updateArticle("article-1", body);
@@ -181,7 +181,7 @@ describe("StockController", () => {
 
     it("should throw BadRequestException when organizationId is missing", async () => {
       await expect(controller.deleteArticle("article-1", undefined as never)).rejects.toThrow(
-        BadRequestException
+        BadRequestException,
       );
       expect(mockStockService.deleteArticle).not.toHaveBeenCalled();
     });
@@ -193,7 +193,7 @@ describe("StockController", () => {
         organizationId: "org-1",
         articleId: "article-1",
         movementType: "in" as const,
-        quantity: 10
+        quantity: 10,
       };
       mockStockService.createArticleMovement.mockResolvedValue({
         id: "movement-1",
@@ -203,7 +203,7 @@ describe("StockController", () => {
         movementType: "in",
         quantity: 10,
         previousStock: 0,
-        newStock: 10
+        newStock: 10,
       } as never);
 
       const result = await controller.createArticleMovement(body);
@@ -225,8 +225,8 @@ describe("StockController", () => {
           movementType: "in",
           quantity: 10,
           previousStock: 0,
-          newStock: 10
-        }
+          newStock: 10,
+        },
       ] as never);
 
       const result = await controller.listArticleMovements(
@@ -234,14 +234,14 @@ describe("StockController", () => {
         "article-1",
         "int-1",
         "case-1",
-        "50"
+        "50",
       );
 
       expect(mockStockService.listArticleMovements).toHaveBeenCalledWith("org-1", {
         articleId: "article-1",
         interventionId: "int-1",
         caseId: "case-1",
-        limit: 50
+        limit: 50,
       });
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe("movement-1");
@@ -249,7 +249,13 @@ describe("StockController", () => {
 
     it("should throw BadRequestException when organizationId is missing", async () => {
       await expect(
-        controller.listArticleMovements(undefined as never, undefined, undefined, undefined, undefined)
+        controller.listArticleMovements(
+          undefined as never,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+        ),
       ).rejects.toThrow(BadRequestException);
       expect(mockStockService.listArticleMovements).not.toHaveBeenCalled();
     });
@@ -260,7 +266,7 @@ describe("StockController", () => {
       const body = {
         organizationId: "org-1",
         articleId: "article-1",
-        quantity: 5
+        quantity: 5,
       };
       mockStockService.addInterventionArticleUsage.mockResolvedValue({
         id: "movement-1",
@@ -270,14 +276,14 @@ describe("StockController", () => {
         movementType: "out",
         quantity: 5,
         previousStock: 10,
-        newStock: 5
+        newStock: 5,
       } as never);
 
       const result = await controller.addInterventionArticleUsage("intervention-1", body);
 
       expect(mockStockService.addInterventionArticleUsage).toHaveBeenCalledWith(
         "intervention-1",
-        body
+        body,
       );
       expect(result.movementType).toBe("out");
       expect(result.quantity).toBe(5);
@@ -293,8 +299,8 @@ describe("StockController", () => {
           unit: "unité",
           consumedQuantity: 5,
           returnedQuantity: 0,
-          netQuantity: 5
-        }
+          netQuantity: 5,
+        },
       ] as never);
 
       const result = await controller.getInterventionUsage("intervention-1", "org-1");
@@ -306,7 +312,7 @@ describe("StockController", () => {
 
     it("should throw BadRequestException when organizationId is missing", async () => {
       await expect(
-        controller.getInterventionUsage("intervention-1", undefined as never)
+        controller.getInterventionUsage("intervention-1", undefined as never),
       ).rejects.toThrow(BadRequestException);
       expect(mockStockService.getInterventionUsage).not.toHaveBeenCalled();
     });

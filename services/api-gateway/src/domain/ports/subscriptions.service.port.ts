@@ -4,7 +4,7 @@ import type {
   CreateBillingPortalResponse,
   CreateCheckoutSessionGatewayBody,
   CreateCheckoutSessionResponse,
-  OrganizationSubscriptionResponse
+  OrganizationSubscriptionResponse,
 } from "@syncora/shared";
 
 export abstract class AbstractSubscriptionsGatewayService {
@@ -12,11 +12,11 @@ export abstract class AbstractSubscriptionsGatewayService {
 
   abstract createCheckoutSession(
     user: AuthUser,
-    body: CreateCheckoutSessionGatewayBody
+    body: CreateCheckoutSessionGatewayBody,
   ): Promise<CreateCheckoutSessionResponse>;
 
   abstract createBillingPortalSession(
     user: AuthUser,
-    body: CreateBillingPortalGatewayBody
+    body: CreateBillingPortalGatewayBody,
   ): Promise<CreateBillingPortalResponse>;
 }

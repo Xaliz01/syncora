@@ -20,8 +20,7 @@ export class PostalAddressSubDoc {
   country!: string;
 }
 
-export const PostalAddressSubDocSchema =
-  SchemaFactory.createForClass(PostalAddressSubDoc);
+export const PostalAddressSubDocSchema = SchemaFactory.createForClass(PostalAddressSubDoc);
 
 @Schema({ timestamps: true, _id: true, collection: "customers" })
 export class CustomerDocument extends Document {
@@ -71,5 +70,5 @@ CustomerSchema.index({
   companyName: 1,
   firstName: 1,
   lastName: 1,
-  email: 1
+  email: 1,
 });

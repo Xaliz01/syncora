@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Get,
-  Param,
-  Patch,
-  Query,
-  UseGuards
-} from "@nestjs/common";
+import { Controller, Get, Param, Patch, Query, UseGuards } from "@nestjs/common";
 import { AbstractNotificationsGatewayService } from "../../domain/ports/notifications.gateway.service.port";
 import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
 import { SubscriptionAccessGuard } from "../../infrastructure/subscription-access.guard";
@@ -15,26 +8,18 @@ import type { AuthUser } from "@syncora/shared";
 @Controller("notifications")
 @UseGuards(JwtAuthGuard, SubscriptionAccessGuard)
 export class NotificationsController {
-  constructor(
-    private readonly notificationsService: AbstractNotificationsGatewayService
-  ) {}
+  constructor(private readonly notificationsService: AbstractNotificationsGatewayService) {}
 
   @Get()
-  async list(
-    @CurrentUser() user: AuthUser,
-    @Query("limit") limit?: string
-  ) {
+  async list(@CurrentUser() user: AuthUser, @Query("limit") limit?: string) {
     return this.notificationsService.listForCurrentUser(
       user,
-      limit ? parseInt(limit, 10) : undefined
+      limit ? parseInt(limit, 10) : undefined,
     );
   }
 
   @Patch(":id/read")
-  async markAsRead(
-    @CurrentUser() user: AuthUser,
-    @Param("id") id: string
-  ) {
+  async markAsRead(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.notificationsService.markAsRead(user, id);
   }
 

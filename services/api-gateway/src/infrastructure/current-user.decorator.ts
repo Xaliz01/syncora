@@ -13,7 +13,7 @@ export const CurrentUser = createParamDecorator(
       role: p.role,
       status: p.status,
       permissions: p.permissions,
-      name: p.name
+      name: p.name,
     };
-  }
+  },
 );

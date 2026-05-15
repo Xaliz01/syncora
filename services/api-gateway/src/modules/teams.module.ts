@@ -7,8 +7,6 @@ import { TeamsGatewayService } from "../domain/teams.service";
 @Module({
   imports: [HttpModule.register({ timeout: 5000, maxRedirects: 0 })],
   controllers: [TeamsGatewayController],
-  providers: [
-    { provide: AbstractTeamsGatewayService, useClass: TeamsGatewayService }
-  ]
+  providers: [{ provide: AbstractTeamsGatewayService, useClass: TeamsGatewayService }],
 })
 export class TeamsModule {}

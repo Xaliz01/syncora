@@ -4,7 +4,7 @@ import { ProfileDetailsPage } from "@/components/admin/ProfileDetailsPage";
 import { AppShell } from "@/components/layout/AppShell";
 
 export default async function SettingsProfileDetailsPage({
-  params
+  params,
 }: {
   params: Promise<{ profileId: string }>;
 }) {

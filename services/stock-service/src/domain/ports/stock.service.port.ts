@@ -5,14 +5,14 @@ import type {
   CreateArticleMovementBody,
   InterventionArticleUsageResponse,
   StockMovementResponse,
-  UpdateArticleBody
+  UpdateArticleBody,
 } from "@syncora/shared";
 
 export abstract class AbstractStockService {
   abstract createArticle(body: CreateArticleBody): Promise<ArticleResponse>;
   abstract listArticles(
     organizationId: string,
-    filters?: { search?: string; lowStockOnly?: boolean; activeOnly?: boolean }
+    filters?: { search?: string; lowStockOnly?: boolean; activeOnly?: boolean },
   ): Promise<ArticleResponse[]>;
   abstract getArticle(id: string, organizationId: string): Promise<ArticleResponse>;
   abstract updateArticle(id: string, body: UpdateArticleBody): Promise<ArticleResponse>;
@@ -20,14 +20,14 @@ export abstract class AbstractStockService {
   abstract createArticleMovement(body: CreateArticleMovementBody): Promise<StockMovementResponse>;
   abstract addInterventionArticleUsage(
     interventionId: string,
-    body: AddInterventionArticleUsageBody
+    body: AddInterventionArticleUsageBody,
   ): Promise<StockMovementResponse>;
   abstract listArticleMovements(
     organizationId: string,
-    filters?: { articleId?: string; interventionId?: string; caseId?: string; limit?: number }
+    filters?: { articleId?: string; interventionId?: string; caseId?: string; limit?: number },
   ): Promise<StockMovementResponse[]>;
   abstract getInterventionUsage(
     organizationId: string,
-    interventionId: string
+    interventionId: string,
   ): Promise<InterventionArticleUsageResponse[]>;
 }

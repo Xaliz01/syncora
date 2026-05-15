@@ -8,13 +8,10 @@ import {
   Patch,
   Post,
   Put,
-  Query
+  Query,
 } from "@nestjs/common";
 import { AbstractTechniciansService } from "../../domain/ports/technicians.service.port";
-import type {
-  CreateTechnicianBody,
-  UpdateTechnicianBody
-} from "@syncora/shared";
+import type { CreateTechnicianBody, UpdateTechnicianBody } from "@syncora/shared";
 
 @Controller("technicians")
 export class TechniciansController {
@@ -32,10 +29,7 @@ export class TechniciansController {
   }
 
   @Get(":id")
-  async getTechnician(
-    @Param("id") id: string,
-    @Query("organizationId") organizationId: string
-  ) {
+  async getTechnician(@Param("id") id: string, @Query("organizationId") organizationId: string) {
     this.ensureOrganizationId(organizationId);
     return this.techniciansService.getTechnician(organizationId, id);
   }
@@ -44,17 +38,14 @@ export class TechniciansController {
   async updateTechnician(
     @Param("id") id: string,
     @Query("organizationId") organizationId: string,
-    @Body() body: UpdateTechnicianBody
+    @Body() body: UpdateTechnicianBody,
   ) {
     this.ensureOrganizationId(organizationId);
     return this.techniciansService.updateTechnician(organizationId, id, body);
   }
 
   @Delete(":id")
-  async deleteTechnician(
-    @Param("id") id: string,
-    @Query("organizationId") organizationId: string
-  ) {
+  async deleteTechnician(@Param("id") id: string, @Query("organizationId") organizationId: string) {
     this.ensureOrganizationId(organizationId);
     return this.techniciansService.deleteTechnician(organizationId, id);
   }
@@ -63,7 +54,7 @@ export class TechniciansController {
   async linkUserToTechnician(
     @Param("id") id: string,
     @Query("organizationId") organizationId: string,
-    @Body() body: { userId: string }
+    @Body() body: { userId: string },
   ) {
     this.ensureOrganizationId(organizationId);
     return this.techniciansService.linkUserToTechnician(organizationId, id, body.userId);

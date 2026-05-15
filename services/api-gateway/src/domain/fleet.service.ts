@@ -3,7 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
-  NotFoundException
+  NotFoundException,
 } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
@@ -14,7 +14,7 @@ import type {
   VehicleResponse,
   AssignTeamToVehicleBody,
   VehicleType,
-  VehicleStatus
+  VehicleStatus,
 } from "@syncora/shared";
 import { AbstractFleetGatewayService } from "./ports/fleet.service.port";
 
@@ -38,15 +38,15 @@ export class FleetGatewayService extends AbstractFleetGatewayService {
       vin?: string;
       mileage?: number;
       status?: VehicleStatus;
-    }
+    },
   ): Promise<VehicleResponse> {
     return this.callFleetService<VehicleResponse>({
       method: "post",
       path: "/vehicles",
       body: {
         organizationId: currentUser.organizationId,
-        ...body
-      } satisfies CreateVehicleBody
+        ...body,
+      } satisfies CreateVehicleBody,
     });
   }
 
@@ -54,7 +54,7 @@ export class FleetGatewayService extends AbstractFleetGatewayService {
     return this.callFleetService<VehicleResponse[]>({
       method: "get",
       path: "/vehicles",
-      query: { organizationId: currentUser.organizationId }
+      query: { organizationId: currentUser.organizationId },
     });
   }
 
@@ -62,55 +62,52 @@ export class FleetGatewayService extends AbstractFleetGatewayService {
     return this.callFleetService<VehicleResponse>({
       method: "get",
       path: `/vehicles/${vehicleId}`,
-      query: { organizationId: currentUser.organizationId }
+      query: { organizationId: currentUser.organizationId },
     });
   }
 
   async updateVehicle(
     currentUser: AuthUser,
     vehicleId: string,
-    body: UpdateVehicleBody
+    body: UpdateVehicleBody,
   ): Promise<VehicleResponse> {
     return this.callFleetService<VehicleResponse>({
       method: "patch",
       path: `/vehicles/${vehicleId}`,
       query: { organizationId: currentUser.organizationId },
-      body
+      body,
     });
   }
 
-  async deleteVehicle(
-    currentUser: AuthUser,
-    vehicleId: string
-  ): Promise<{ deleted: true }> {
+  async deleteVehicle(currentUser: AuthUser, vehicleId: string): Promise<{ deleted: true }> {
     return this.callFleetService<{ deleted: true }>({
       method: "delete",
       path: `/vehicles/${vehicleId}`,
-      query: { organizationId: currentUser.organizationId }
+      query: { organizationId: currentUser.organizationId },
     });
   }
 
   async assignTeamToVehicle(
     currentUser: AuthUser,
     vehicleId: string,
-    body: AssignTeamToVehicleBody
+    body: AssignTeamToVehicleBody,
   ): Promise<VehicleResponse> {
     return this.callFleetService<VehicleResponse>({
       method: "put",
       path: `/vehicles/${vehicleId}/assign-team`,
       query: { organizationId: currentUser.organizationId },
-      body
+      body,
     });
   }
 
   async unassignTeamFromVehicle(
     currentUser: AuthUser,
-    vehicleId: string
+    vehicleId: string,
   ): Promise<VehicleResponse> {
     return this.callFleetService<VehicleResponse>({
       method: "delete",
       path: `/vehicles/${vehicleId}/assign-team`,
-      query: { organizationId: currentUser.organizationId }
+      query: { organizationId: currentUser.organizationId },
     });
   }
 
@@ -126,8 +123,8 @@ export class FleetGatewayService extends AbstractFleetGatewayService {
           method: params.method,
           url: `${FLEET_URL}${params.path}`,
           data: params.body,
-          params: params.query
-        })
+          params: params.query,
+        }),
       );
       return response.data;
     } catch (err: unknown) {
@@ -138,8 +135,8 @@ export class FleetGatewayService extends AbstractFleetGatewayService {
   private rethrowAsHttpException(err: unknown): never {
     const status = (err as { response?: { status?: number } })?.response?.status;
     const message =
-      (err as { response?: { data?: { message?: string | string[] } } })?.response?.data
-        ?.message ?? "Downstream service error";
+      (err as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message ??
+      "Downstream service error";
 
     if (status === 400) throw new BadRequestException(message);
     if (status === 403) throw new ForbiddenException(message);

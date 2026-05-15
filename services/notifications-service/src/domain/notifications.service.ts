@@ -4,7 +4,7 @@ import { Model } from "mongoose";
 import type {
   CreateNotificationBody,
   NotificationListResponse,
-  NotificationResponse
+  NotificationResponse,
 } from "@syncora/shared";
 import type { NotificationDocument } from "../persistence/notification.schema";
 import { AbstractNotificationsService } from "./ports/notifications.service.port";
@@ -13,14 +13,14 @@ import { AbstractNotificationsService } from "./ports/notifications.service.port
 export class NotificationsService extends AbstractNotificationsService {
   constructor(
     @InjectModel("Notification")
-    private readonly notificationModel: Model<NotificationDocument>
+    private readonly notificationModel: Model<NotificationDocument>,
   ) {
     super();
   }
 
   async createForOrganization(
     body: CreateNotificationBody,
-    userIds: string[]
+    userIds: string[],
   ): Promise<NotificationResponse[]> {
     const recipientIds = userIds.filter((id) => id !== body.actorId);
     if (recipientIds.length === 0) return [];
@@ -35,8 +35,8 @@ export class NotificationsService extends AbstractNotificationsService {
         entityId: body.entityId,
         entityLabel: body.entityLabel,
         action: body.action,
-        read: false
-      }))
+        read: false,
+      })),
     );
 
     return docs.map((d) => this.toResponse(d as NotificationDocument));
@@ -45,7 +45,7 @@ export class NotificationsService extends AbstractNotificationsService {
   async listForUser(
     userId: string,
     organizationId: string,
-    limit = 50
+    limit = 50,
   ): Promise<NotificationListResponse> {
     const [notifications, unreadCount] = await Promise.all([
       this.notificationModel
@@ -53,48 +53,35 @@ export class NotificationsService extends AbstractNotificationsService {
         .sort({ createdAt: -1 })
         .limit(limit)
         .exec(),
-      this.notificationModel.countDocuments({ userId, organizationId, read: false })
+      this.notificationModel.countDocuments({ userId, organizationId, read: false }),
     ]);
 
     return {
       notifications: notifications.map((d) => this.toResponse(d)),
-      unreadCount
+      unreadCount,
     };
   }
 
   async markAsRead(notificationId: string, userId: string): Promise<NotificationResponse> {
     const doc = await this.notificationModel
-      .findOneAndUpdate(
-        { _id: notificationId, userId },
-        { $set: { read: true } },
-        { new: true }
-      )
+      .findOneAndUpdate({ _id: notificationId, userId }, { $set: { read: true } }, { new: true })
       .exec();
     if (!doc) throw new NotFoundException("Notification not found");
     return this.toResponse(doc);
   }
 
-  async markAllAsRead(
-    userId: string,
-    organizationId: string
-  ): Promise<{ updated: number }> {
+  async markAllAsRead(userId: string, organizationId: string): Promise<{ updated: number }> {
     const result = await this.notificationModel
-      .updateMany(
-        { userId, organizationId, read: false },
-        { $set: { read: true } }
-      )
+      .updateMany({ userId, organizationId, read: false }, { $set: { read: true } })
       .exec();
     return { updated: result.modifiedCount };
   }
 
-  async getUnreadCount(
-    userId: string,
-    organizationId: string
-  ): Promise<{ count: number }> {
+  async getUnreadCount(userId: string, organizationId: string): Promise<{ count: number }> {
     const count = await this.notificationModel.countDocuments({
       userId,
       organizationId,
-      read: false
+      read: false,
     });
     return { count };
   }
@@ -111,7 +98,7 @@ export class NotificationsService extends AbstractNotificationsService {
       entityLabel: doc.entityLabel,
       action: doc.action,
       read: doc.read,
-      createdAt: doc.get("createdAt")?.toISOString()
+      createdAt: doc.get("createdAt")?.toISOString(),
     };
   }
 }

@@ -12,40 +12,100 @@ const TYPE_LABELS: Record<string, string> = {
   vehicle: "Véhicules",
   technician: "Techniciens",
   article: "Articles",
-  user: "Utilisateurs"
+  user: "Utilisateurs",
 };
 
 const TYPE_ICONS: Record<string, JSX.Element> = {
   case: (
-    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
+    <svg
+      className="h-5 w-5"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.5}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"
+      />
     </svg>
   ),
   intervention: (
-    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17l-5.2-5.2m0 0l5.2-5.2m-5.2 5.2H21.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
+    <svg
+      className="h-5 w-5"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.5}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M11.42 15.17l-5.2-5.2m0 0l5.2-5.2m-5.2 5.2H21.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"
+      />
     </svg>
   ),
   vehicle: (
-    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0H21M3.375 14.25h17.25M3.375 14.25V6.75A2.25 2.25 0 015.625 4.5h8.25a2.25 2.25 0 012.25 2.25v7.5" />
+    <svg
+      className="h-5 w-5"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.5}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0H21M3.375 14.25h17.25M3.375 14.25V6.75A2.25 2.25 0 015.625 4.5h8.25a2.25 2.25 0 012.25 2.25v7.5"
+      />
     </svg>
   ),
   technician: (
-    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17l-5.2-5.2m0 0l5.2-5.2m-5.2 5.2H21.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
+    <svg
+      className="h-5 w-5"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.5}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M11.42 15.17l-5.2-5.2m0 0l5.2-5.2m-5.2 5.2H21.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"
+      />
     </svg>
   ),
   article: (
-    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+    <svg
+      className="h-5 w-5"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.5}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"
+      />
     </svg>
   ),
   user: (
-    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+    <svg
+      className="h-5 w-5"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.5}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
+      />
     </svg>
-  )
+  ),
 };
 
 const TYPE_COLORS: Record<string, string> = {
@@ -54,7 +114,7 @@ const TYPE_COLORS: Record<string, string> = {
   vehicle: "bg-emerald-50 text-emerald-600",
   technician: "bg-amber-50 text-amber-600",
   article: "bg-rose-50 text-rose-600",
-  user: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
+  user: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300",
 };
 
 const TYPE_ORDER = ["case", "intervention", "vehicle", "technician", "article", "user"];
@@ -71,9 +131,13 @@ function ResultCard({ item }: { item: SearchResultItem }) {
         {TYPE_ICONS[item.type]}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">{item.title}</p>
+        <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
+          {item.title}
+        </p>
         {item.subtitle && (
-          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400 truncate">{item.subtitle}</p>
+          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400 truncate">
+            {item.subtitle}
+          </p>
         )}
         <span
           className={`mt-1.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${TYPE_COLORS[item.type] ?? "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"}`}
@@ -95,7 +159,7 @@ export function SearchResultsPage() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["global-search", queryFromUrl],
     queryFn: () => globalSearch(queryFromUrl),
-    enabled: queryFromUrl.length > 0
+    enabled: queryFromUrl.length > 0,
   });
 
   const filteredResults = activeFilter
@@ -106,7 +170,9 @@ export function SearchResultsPage() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-6">Recherche globale</h1>
+      <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-6">
+        Recherche globale
+      </h1>
 
       <form
         onSubmit={(e) => {
@@ -211,7 +277,9 @@ export function SearchResultsPage() {
       {isLoading && (
         <div className="flex items-center justify-center py-16">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 dark:border-slate-700 border-t-brand-600" />
-          <span className="ml-3 text-sm text-slate-500 dark:text-slate-400">Recherche en cours…</span>
+          <span className="ml-3 text-sm text-slate-500 dark:text-slate-400">
+            Recherche en cours…
+          </span>
         </div>
       )}
 
@@ -240,7 +308,8 @@ export function SearchResultsPage() {
             Saisissez un mot-clé pour lancer une recherche
           </p>
           <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
-            La recherche couvre les dossiers, interventions, véhicules, techniciens, articles et utilisateurs.
+            La recherche couvre les dossiers, interventions, véhicules, techniciens, articles et
+            utilisateurs.
           </p>
         </div>
       )}

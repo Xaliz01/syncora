@@ -33,7 +33,7 @@ export function CreateUserPage() {
     try {
       const [catalogRes, profilesRes] = await Promise.all([
         adminApi.getPermissionsCatalog(),
-        adminApi.listPermissionProfiles()
+        adminApi.listPermissionProfiles(),
       ]);
       setCatalog(catalogRes.availablePermissions);
       setProfiles(profilesRes);
@@ -68,11 +68,11 @@ export function CreateUserPage() {
         revokedPermissions: adminRoleSelected
           ? []
           : (profiles.find((profile) => profile.id === profileId)?.permissions ?? []).filter(
-              (permission) => !selectedPermissions.includes(permission)
-            )
+              (permission) => !selectedPermissions.includes(permission),
+            ),
       });
       const invitationUrl = `${window.location.origin}/accept-invitation?token=${encodeURIComponent(
-        result.invitation.invitationToken
+        result.invitation.invitationToken,
       )}`;
       await navigator.clipboard.writeText(invitationUrl).catch(() => undefined);
       showToast("Invitation créée. Lien d'activation copié (2s).");
@@ -170,7 +170,9 @@ export function CreateUserPage() {
             )}
             <div className={`${adminRoleSelected ? "opacity-60" : ""}`}>
               <div>
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">Permissions</p>
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
+                  Permissions
+                </p>
                 <div className="grid gap-1 sm:grid-cols-2">
                   {catalog.map((permission) => (
                     <label key={permission} className="flex items-center gap-2 text-sm">
@@ -179,12 +181,18 @@ export function CreateUserPage() {
                         disabled={adminRoleSelected}
                         checked={selectedPermissions.includes(permission)}
                         onChange={() =>
-                          setSelectedPermissions((previous) => togglePermission(previous, permission))
+                          setSelectedPermissions((previous) =>
+                            togglePermission(previous, permission),
+                          )
                         }
                       />
                       <span>
-                        <span className="block text-slate-700 dark:text-slate-200">{getPermissionLabel(permission)}</span>
-                        <span className="block font-mono text-xs text-slate-400 dark:text-slate-500">{permission}</span>
+                        <span className="block text-slate-700 dark:text-slate-200">
+                          {getPermissionLabel(permission)}
+                        </span>
+                        <span className="block font-mono text-xs text-slate-400 dark:text-slate-500">
+                          {permission}
+                        </span>
                       </span>
                     </label>
                   ))}

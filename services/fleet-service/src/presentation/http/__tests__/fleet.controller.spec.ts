@@ -16,7 +16,7 @@ describe("FleetController", () => {
       deleteVehicle: jest.fn(),
       assignTeam: jest.fn(),
       unassignTeam: jest.fn(),
-      unassignTeamFromAllVehicles: jest.fn()
+      unassignTeamFromAllVehicles: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -24,9 +24,9 @@ describe("FleetController", () => {
       providers: [
         {
           provide: AbstractFleetService,
-          useValue: mockFleetService
-        }
-      ]
+          useValue: mockFleetService,
+        },
+      ],
     }).compile();
 
     controller = module.get<FleetController>(FleetController);
@@ -44,7 +44,7 @@ describe("FleetController", () => {
         type: "voiture" as const,
         brand: "Brand",
         model: "Model",
-        year: 2020
+        year: 2020,
       };
       mockFleetService.createVehicle.mockResolvedValue({ id: "v1", ...body } as never);
 
@@ -66,7 +66,9 @@ describe("FleetController", () => {
     });
 
     it("should throw BadRequestException when organizationId is missing", async () => {
-      await expect(controller.listVehicles(undefined as never)).rejects.toThrow(BadRequestException);
+      await expect(controller.listVehicles(undefined as never)).rejects.toThrow(
+        BadRequestException,
+      );
       expect(mockFleetService.listVehicles).not.toHaveBeenCalled();
     });
   });
@@ -83,7 +85,7 @@ describe("FleetController", () => {
 
     it("should throw BadRequestException when organizationId is missing", async () => {
       await expect(controller.getVehicle("v1", undefined as never)).rejects.toThrow(
-        BadRequestException
+        BadRequestException,
       );
       expect(mockFleetService.getVehicle).not.toHaveBeenCalled();
     });
@@ -101,7 +103,7 @@ describe("FleetController", () => {
 
     it("should throw BadRequestException when organizationId is missing", async () => {
       await expect(controller.deleteVehicle("v1", undefined as never)).rejects.toThrow(
-        BadRequestException
+        BadRequestException,
       );
       expect(mockFleetService.deleteVehicle).not.toHaveBeenCalled();
     });

@@ -3,24 +3,19 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
-  NotFoundException
+  NotFoundException,
 } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
 import type { AuthUser } from "@syncora/shared";
-import type {
-  CreateCustomerBody,
-  CustomerResponse,
-  UpdateCustomerBody
-} from "@syncora/shared";
+import type { CreateCustomerBody, CustomerResponse, UpdateCustomerBody } from "@syncora/shared";
 import {
   AbstractCustomersGatewayService,
   type CreateCustomerForOrgBody,
-  type UpdateCustomerForOrgBody
+  type UpdateCustomerForOrgBody,
 } from "./ports/customers.service.port";
 
-const CUSTOMERS_URL =
-  process.env.CUSTOMERS_SERVICE_URL ?? "http://localhost:3009";
+const CUSTOMERS_URL = process.env.CUSTOMERS_SERVICE_URL ?? "http://localhost:3009";
 
 @Injectable()
 export class CustomersGatewayService extends AbstractCustomersGatewayService {
@@ -34,22 +29,19 @@ export class CustomersGatewayService extends AbstractCustomersGatewayService {
       path: "/customers",
       body: {
         organizationId: user.organizationId,
-        ...body
-      } satisfies CreateCustomerBody
+        ...body,
+      } satisfies CreateCustomerBody,
     });
   }
 
-  async listCustomers(
-    user: AuthUser,
-    filters?: { search?: string; ids?: string }
-  ) {
+  async listCustomers(user: AuthUser, filters?: { search?: string; ids?: string }) {
     return this.callCustomers<CustomerResponse[]>({
       method: "get",
       path: "/customers",
       query: {
         organizationId: user.organizationId,
-        ...filters
-      }
+        ...filters,
+      },
     });
   }
 
@@ -63,7 +55,7 @@ export class CustomersGatewayService extends AbstractCustomersGatewayService {
     return this.callCustomers<CustomerResponse>({
       method: "get",
       path: `/customers/${customerId}`,
-      query: { organizationId: user.organizationId }
+      query: { organizationId: user.organizationId },
     });
   }
 
@@ -73,8 +65,8 @@ export class CustomersGatewayService extends AbstractCustomersGatewayService {
       path: `/customers/${customerId}`,
       body: {
         organizationId: user.organizationId,
-        ...body
-      } satisfies UpdateCustomerBody
+        ...body,
+      } satisfies UpdateCustomerBody,
     });
   }
 
@@ -82,7 +74,7 @@ export class CustomersGatewayService extends AbstractCustomersGatewayService {
     return this.callCustomers<{ deleted: true }>({
       method: "delete",
       path: `/customers/${customerId}`,
-      query: { organizationId: user.organizationId }
+      query: { organizationId: user.organizationId },
     });
   }
 
@@ -98,8 +90,8 @@ export class CustomersGatewayService extends AbstractCustomersGatewayService {
           method: params.method,
           url: `${CUSTOMERS_URL}${params.path}`,
           data: params.body,
-          params: params.query
-        })
+          params: params.query,
+        }),
       );
       return response.data;
     } catch (err: unknown) {
@@ -110,8 +102,8 @@ export class CustomersGatewayService extends AbstractCustomersGatewayService {
   private rethrowAsHttpException(err: unknown): never {
     const status = (err as { response?: { status?: number } })?.response?.status;
     const message =
-      (err as { response?: { data?: { message?: string | string[] } } })?.response?.data
-        ?.message ?? "Customers service error";
+      (err as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message ??
+      "Customers service error";
 
     if (status === 400) throw new BadRequestException(message);
     if (status === 403) throw new ForbiddenException(message);

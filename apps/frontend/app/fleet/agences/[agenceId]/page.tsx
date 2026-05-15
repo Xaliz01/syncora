@@ -4,7 +4,7 @@ import { AgenceDetailsPage } from "@/components/fleet/AgenceDetailsPage";
 import { AppShell } from "@/components/layout/AppShell";
 
 export default async function AgenceDetailsRoute({
-  params
+  params,
 }: {
   params: Promise<{ agenceId: string }>;
 }) {

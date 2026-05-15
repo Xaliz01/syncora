@@ -11,7 +11,7 @@ import { SubscriptionsModule } from "./subscriptions.module";
   controllers: [FleetController],
   providers: [
     { provide: AbstractFleetGatewayService, useClass: FleetGatewayService },
-    RequirePermissionGuard
-  ]
+    RequirePermissionGuard,
+  ],
 })
 export class FleetModule {}

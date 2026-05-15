@@ -3,7 +3,7 @@ import {
   S3Client,
   PutObjectCommand,
   GetObjectCommand,
-  DeleteObjectCommand
+  DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { AbstractStorageProvider } from "./storage.port";
@@ -20,8 +20,8 @@ export class S3StorageProvider extends AbstractStorageProvider {
       region: process.env.AWS_REGION ?? "eu-west-1",
       ...(process.env.S3_ENDPOINT && {
         endpoint: process.env.S3_ENDPOINT,
-        forcePathStyle: true
-      })
+        forcePathStyle: true,
+      }),
     });
   }
 
@@ -31,15 +31,15 @@ export class S3StorageProvider extends AbstractStorageProvider {
         Bucket: this.bucket,
         Key: key,
         Body: buffer,
-        ContentType: mimeType
-      })
+        ContentType: mimeType,
+      }),
     );
   }
 
   async getDownloadUrl(key: string): Promise<string> {
     const command = new GetObjectCommand({
       Bucket: this.bucket,
-      Key: key
+      Key: key,
     });
     return getSignedUrl(this.client, command, { expiresIn: 3600 });
   }
@@ -48,8 +48,8 @@ export class S3StorageProvider extends AbstractStorageProvider {
     await this.client.send(
       new DeleteObjectCommand({
         Bucket: this.bucket,
-        Key: key
-      })
+        Key: key,
+      }),
     );
   }
 }

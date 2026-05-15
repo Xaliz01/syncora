@@ -10,5 +10,5 @@ export class ProcessedStripeEventDocument extends Document {
 }
 
 export const ProcessedStripeEventSchema = SchemaFactory.createForClass(
-  ProcessedStripeEventDocument
+  ProcessedStripeEventDocument,
 );

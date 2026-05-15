@@ -19,13 +19,13 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
   const { data: existing } = useQuery({
     queryKey: ["case-template", templateId],
     queryFn: () => api.getTemplate(templateId!),
-    enabled: isEdit
+    enabled: isEdit,
   });
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [steps, setSteps] = useState<StepForm[]>([
-    { name: "", description: "", todos: [{ label: "", description: "" }] }
+    { name: "", description: "", todos: [{ label: "", description: "" }] },
   ]);
   const [error, setError] = useState("");
 
@@ -39,8 +39,8 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
           description: s.description ?? "",
           todos: s.todos.length
             ? s.todos.map((t) => ({ label: t.label, description: t.description ?? "" }))
-            : [{ label: "", description: "" }]
-        }))
+            : [{ label: "", description: "" }],
+        })),
       );
     }
   }, [existing]);
@@ -51,7 +51,7 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
       queryClient.invalidateQueries({ queryKey: ["case-templates"] });
       router.push("/settings/case-templates");
     },
-    onError: (err: Error) => setError(err.message)
+    onError: (err: Error) => setError(err.message),
   });
 
   const updateMutation = useMutation({
@@ -62,11 +62,14 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
       queryClient.invalidateQueries({ queryKey: ["case-template", templateId] });
       router.push("/settings/case-templates");
     },
-    onError: (err: Error) => setError(err.message)
+    onError: (err: Error) => setError(err.message),
   });
 
   const addStep = useCallback(() => {
-    setSteps((prev) => [...prev, { name: "", description: "", todos: [{ label: "", description: "" }] }]);
+    setSteps((prev) => [
+      ...prev,
+      { name: "", description: "", todos: [{ label: "", description: "" }] },
+    ]);
   }, []);
 
   const removeStep = useCallback((index: number) => {
@@ -80,16 +83,16 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
   const addTodo = useCallback((stepIndex: number) => {
     setSteps((prev) =>
       prev.map((s, i) =>
-        i === stepIndex ? { ...s, todos: [...s.todos, { label: "", description: "" }] } : s
-      )
+        i === stepIndex ? { ...s, todos: [...s.todos, { label: "", description: "" }] } : s,
+      ),
     );
   }, []);
 
   const removeTodo = useCallback((stepIndex: number, todoIndex: number) => {
     setSteps((prev) =>
       prev.map((s, i) =>
-        i === stepIndex ? { ...s, todos: s.todos.filter((_, j) => j !== todoIndex) } : s
-      )
+        i === stepIndex ? { ...s, todos: s.todos.filter((_, j) => j !== todoIndex) } : s,
+      ),
     );
   }, []);
 
@@ -100,13 +103,13 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
           i === stepIndex
             ? {
                 ...s,
-                todos: s.todos.map((t, j) => (j === todoIndex ? { ...t, [field]: value } : t))
+                todos: s.todos.map((t, j) => (j === todoIndex ? { ...t, [field]: value } : t)),
               }
-            : s
-        )
+            : s,
+        ),
       );
     },
-    []
+    [],
   );
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -130,9 +133,9 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
             .filter((t) => t.label.trim())
             .map((t) => ({
               label: t.label.trim(),
-              description: t.description.trim() || undefined
-            }))
-        }))
+              description: t.description.trim() || undefined,
+            })),
+        })),
     };
 
     if (isEdit) {
@@ -151,7 +154,8 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
           {isEdit ? "Modifier le modèle" : "Nouveau modèle de dossier"}
         </h1>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Définissez les étapes et tâches qui seront automatiquement créées pour chaque dossier basé sur ce modèle.
+          Définissez les étapes et tâches qui seront automatiquement créées pour chaque dossier basé
+          sur ce modèle.
         </p>
       </div>
 
@@ -240,7 +244,9 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
               </div>
 
               <div className="ml-8 space-y-2">
-                <div className="text-xs font-medium text-slate-500 dark:text-slate-400">Tâches :</div>
+                <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                  Tâches :
+                </div>
                 {step.todos.map((todo, todoIdx) => (
                   <div key={todoIdx} className="flex items-center gap-2">
                     <div className="h-3 w-3 rounded border border-slate-300 dark:border-slate-600 flex-shrink-0" />

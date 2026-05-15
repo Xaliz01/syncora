@@ -12,7 +12,7 @@ function getConsoleFormat(serviceName: string): winston.Logform.Format {
     return winston.format.combine(
       winston.format.timestamp(),
       winston.format.errors({ stack: true }),
-      winston.format.json()
+      winston.format.json(),
     );
   }
   return winston.format.combine(
@@ -25,7 +25,7 @@ function getConsoleFormat(serviceName: string): winston.Logform.Format {
     winston.format.colorize({ all: true }),
     winston.format.printf(({ level, message, timestamp, service }) => {
       return `${timestamp} [${service ?? serviceName}] ${level}: ${message}`;
-    })
+    }),
   );
 }
 
@@ -39,7 +39,7 @@ export function createLogger(serviceName: string): winston.Logger {
     level: process.env.LOG_LEVEL ?? "info",
     defaultMeta: { service: serviceName },
     format: getConsoleFormat(serviceName),
-    transports: [new winston.transports.Console()]
+    transports: [new winston.transports.Console()],
   });
 }
 

@@ -3,7 +3,7 @@ import type {
   PermissionCode,
   PermissionProfileResponse,
   UserPermissionAssignmentResponse,
-  UserResponse
+  UserResponse,
 } from "@syncora/shared";
 import { apiRequestJson, type ApiMethod } from "./api-client";
 
@@ -36,7 +36,7 @@ export interface CreatePermissionProfilePayload {
 async function adminRequest<TResponse>(
   method: ApiMethod,
   path: string,
-  body?: unknown
+  body?: unknown,
 ): Promise<TResponse> {
   return apiRequestJson<TResponse>(method, path, typeof body === "undefined" ? {} : { body });
 }
@@ -44,7 +44,7 @@ async function adminRequest<TResponse>(
 export function getPermissionsCatalog() {
   return adminRequest<{ availablePermissions: PermissionCode[] }>(
     "GET",
-    "/admin/permissions/catalog"
+    "/admin/permissions/catalog",
   );
 }
 
@@ -62,12 +62,12 @@ export function createPermissionProfile(payload: CreatePermissionProfilePayload)
 
 export function updatePermissionProfile(
   profileId: string,
-  payload: Partial<CreatePermissionProfilePayload>
+  payload: Partial<CreatePermissionProfilePayload>,
 ) {
   return adminRequest<PermissionProfileResponse>(
     "PATCH",
     `/admin/permission-profiles/${profileId}`,
-    payload
+    payload,
   );
 }
 
@@ -93,7 +93,7 @@ export function inviteOrganizationUser(payload: InviteOrganizationUserPayload) {
 
 export function updateOrganizationUserPermissions(
   userId: string,
-  payload: UpdateOrganizationUserPermissionsPayload
+  payload: UpdateOrganizationUserPermissionsPayload,
 ) {
   return adminRequest<{
     userId: string;

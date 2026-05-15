@@ -8,13 +8,13 @@ import {
   Patch,
   Post,
   Put,
-  Query
+  Query,
 } from "@nestjs/common";
 import { AbstractFleetService } from "../../domain/ports/fleet.service.port";
 import type {
   AssignTeamToVehicleBody,
   CreateVehicleBody,
-  UpdateVehicleBody
+  UpdateVehicleBody,
 } from "@syncora/shared";
 
 @Controller("vehicles")
@@ -33,10 +33,7 @@ export class FleetController {
   }
 
   @Get(":id")
-  async getVehicle(
-    @Param("id") id: string,
-    @Query("organizationId") organizationId: string
-  ) {
+  async getVehicle(@Param("id") id: string, @Query("organizationId") organizationId: string) {
     this.ensureOrganizationId(organizationId);
     return this.fleetService.getVehicle(organizationId, id);
   }
@@ -45,17 +42,14 @@ export class FleetController {
   async updateVehicle(
     @Param("id") id: string,
     @Query("organizationId") organizationId: string,
-    @Body() body: UpdateVehicleBody
+    @Body() body: UpdateVehicleBody,
   ) {
     this.ensureOrganizationId(organizationId);
     return this.fleetService.updateVehicle(organizationId, id, body);
   }
 
   @Delete(":id")
-  async deleteVehicle(
-    @Param("id") id: string,
-    @Query("organizationId") organizationId: string
-  ) {
+  async deleteVehicle(@Param("id") id: string, @Query("organizationId") organizationId: string) {
     this.ensureOrganizationId(organizationId);
     return this.fleetService.deleteVehicle(organizationId, id);
   }
@@ -64,17 +58,14 @@ export class FleetController {
   async assignTeam(
     @Param("id") id: string,
     @Query("organizationId") organizationId: string,
-    @Body() body: AssignTeamToVehicleBody
+    @Body() body: AssignTeamToVehicleBody,
   ) {
     this.ensureOrganizationId(organizationId);
     return this.fleetService.assignTeam(organizationId, id, body.teamId);
   }
 
   @Delete(":id/assign-team")
-  async unassignTeam(
-    @Param("id") id: string,
-    @Query("organizationId") organizationId: string
-  ) {
+  async unassignTeam(@Param("id") id: string, @Query("organizationId") organizationId: string) {
     this.ensureOrganizationId(organizationId);
     return this.fleetService.unassignTeam(organizationId, id);
   }
@@ -82,7 +73,7 @@ export class FleetController {
   @Delete("by-team/:teamId")
   async unassignTeamFromAllVehicles(
     @Param("teamId") teamId: string,
-    @Query("organizationId") organizationId: string
+    @Query("organizationId") organizationId: string,
   ) {
     this.ensureOrganizationId(organizationId);
     await this.fleetService.unassignTeamFromAllVehicles(organizationId, teamId);

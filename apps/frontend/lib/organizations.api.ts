@@ -1,7 +1,7 @@
 import type {
   OrganizationResponse,
   UpdateOrganizationBody,
-  UserOrganizationsListResponse
+  UserOrganizationsListResponse,
 } from "@syncora/shared";
 import { apiRequestJson } from "./api-client";
 

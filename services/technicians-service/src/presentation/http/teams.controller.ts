@@ -8,7 +8,7 @@ import {
   Patch,
   Post,
   Put,
-  Query
+  Query,
 } from "@nestjs/common";
 import { AbstractTeamsService } from "../../domain/ports/teams.service.port";
 import type { CreateTeamBody, UpdateTeamBody } from "@syncora/shared";
@@ -29,10 +29,7 @@ export class TeamsController {
   }
 
   @Get(":id")
-  async getTeam(
-    @Param("id") id: string,
-    @Query("organizationId") organizationId: string
-  ) {
+  async getTeam(@Param("id") id: string, @Query("organizationId") organizationId: string) {
     this.ensureOrganizationId(organizationId);
     return this.teamsService.getTeam(organizationId, id);
   }
@@ -41,17 +38,14 @@ export class TeamsController {
   async updateTeam(
     @Param("id") id: string,
     @Query("organizationId") organizationId: string,
-    @Body() body: UpdateTeamBody
+    @Body() body: UpdateTeamBody,
   ) {
     this.ensureOrganizationId(organizationId);
     return this.teamsService.updateTeam(organizationId, id, body);
   }
 
   @Delete(":id")
-  async deleteTeam(
-    @Param("id") id: string,
-    @Query("organizationId") organizationId: string
-  ) {
+  async deleteTeam(@Param("id") id: string, @Query("organizationId") organizationId: string) {
     this.ensureOrganizationId(organizationId);
     return this.teamsService.deleteTeam(organizationId, id);
   }
@@ -60,7 +54,7 @@ export class TeamsController {
   async addMember(
     @Param("id") id: string,
     @Param("technicianId") technicianId: string,
-    @Query("organizationId") organizationId: string
+    @Query("organizationId") organizationId: string,
   ) {
     this.ensureOrganizationId(organizationId);
     return this.teamsService.addMember(organizationId, id, technicianId);
@@ -70,7 +64,7 @@ export class TeamsController {
   async removeMember(
     @Param("id") id: string,
     @Param("technicianId") technicianId: string,
-    @Query("organizationId") organizationId: string
+    @Query("organizationId") organizationId: string,
   ) {
     this.ensureOrganizationId(organizationId);
     return this.teamsService.removeMember(organizationId, id, technicianId);

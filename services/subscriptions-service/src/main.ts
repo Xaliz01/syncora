@@ -10,12 +10,12 @@ async function bootstrap() {
   logger.info("Démarrage subscriptions-service (Nest + MongoDB)…", { port });
   const app = await NestFactory.create(AppModule, {
     logger,
-    rawBody: true
+    rawBody: true,
   });
   await app.listen(port);
   logger.info(
     "Subscriptions microservice prêt (Stripe Checkout, portail client, webhooks sur POST /webhooks/stripe)",
-    { port }
+    { port },
   );
 }
 

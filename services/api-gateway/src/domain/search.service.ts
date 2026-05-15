@@ -8,12 +8,12 @@ import type {
   VehicleResponse,
   TechnicianResponse,
   ArticleResponse,
-  UserResponse
+  UserResponse,
 } from "@syncora/shared";
 import {
   AbstractSearchService,
   type GlobalSearchResponse,
-  type SearchResultItem
+  type SearchResultItem,
 } from "./ports/search.service.port";
 
 const CASES_URL = process.env.CASES_SERVICE_URL ?? "http://localhost:3004";
@@ -34,15 +34,16 @@ export class SearchGatewayService extends AbstractSearchService {
       return { query, results: [], counts: {} };
     }
 
-    const [cases, interventions, vehicles, technicians, articles, users] =
-      await Promise.allSettled([
+    const [cases, interventions, vehicles, technicians, articles, users] = await Promise.allSettled(
+      [
         this.fetchCases(user),
         this.fetchInterventions(user),
         this.fetchVehicles(user),
         this.fetchTechnicians(user),
         this.fetchArticles(user),
-        user.role === "admin" ? this.fetchUsers(user) : Promise.resolve([])
-      ]);
+        user.role === "admin" ? this.fetchUsers(user) : Promise.resolve([]),
+      ],
+    );
 
     const results: SearchResultItem[] = [];
 
@@ -56,7 +57,7 @@ export class SearchGatewayService extends AbstractSearchService {
           assigneesText,
           c.customer?.displayName,
           c.status,
-          ...(c.tags ?? [])
+          ...(c.tags ?? []),
         )
       ) {
         const assigneePart = assigneeNames.length ? ` · ${assigneeNames.join(", ")}` : "";
@@ -65,7 +66,7 @@ export class SearchGatewayService extends AbstractSearchService {
           type: "case",
           title: c.title,
           subtitle: `${this.caseStatusLabel(c.status)} · ${this.casePriorityLabel(c.priority)}${assigneePart}`,
-          url: `/cases/${c.id}`
+          url: `/cases/${c.id}`,
         });
       }
     }
@@ -79,7 +80,7 @@ export class SearchGatewayService extends AbstractSearchService {
           i.assigneeName,
           i.assignedTeamName,
           i.caseTitle,
-          i.status
+          i.status,
         )
       ) {
         const who =
@@ -91,19 +92,29 @@ export class SearchGatewayService extends AbstractSearchService {
           type: "intervention",
           title: i.title,
           subtitle: `${this.interventionStatusLabel(i.status)}${i.caseTitle ? ` · Dossier : ${i.caseTitle}` : ""}${who ? ` · ${who}` : ""}`,
-          url: `/cases/${i.caseId}`
+          url: `/cases/${i.caseId}`,
         });
       }
     }
 
     for (const v of this.settled(vehicles)) {
-      if (this.matches(normalizedQuery, v.registrationNumber, v.brand, v.model, v.type, v.vin, v.color)) {
+      if (
+        this.matches(
+          normalizedQuery,
+          v.registrationNumber,
+          v.brand,
+          v.model,
+          v.type,
+          v.vin,
+          v.color,
+        )
+      ) {
         results.push({
           id: v.id,
           type: "vehicle",
           title: `${v.brand ?? ""} ${v.model ?? ""} – ${v.registrationNumber}`.trim(),
           subtitle: `${v.type} · ${this.vehicleStatusLabel(v.status)}`,
-          url: `/fleet/vehicles/${v.id}`
+          url: `/fleet/vehicles/${v.id}`,
         });
       }
     }
@@ -115,7 +126,7 @@ export class SearchGatewayService extends AbstractSearchService {
           type: "technician",
           title: `${t.firstName} ${t.lastName}`,
           subtitle: `${t.speciality ?? "Technicien"}${t.email ? ` · ${t.email}` : ""}`,
-          url: `/fleet/technicians/${t.id}`
+          url: `/fleet/technicians/${t.id}`,
         });
       }
     }
@@ -127,7 +138,7 @@ export class SearchGatewayService extends AbstractSearchService {
           type: "article",
           title: `${a.name} (${a.reference})`,
           subtitle: `Stock : ${a.stockQuantity} ${a.unit}`,
-          url: `/settings/stock/articles`
+          url: `/settings/stock/articles`,
         });
       }
     }
@@ -139,7 +150,7 @@ export class SearchGatewayService extends AbstractSearchService {
           type: "user",
           title: u.name ?? u.email,
           subtitle: `${u.email} · ${u.role === "admin" ? "Administrateur" : "Membre"}`,
-          url: `/users/${u.id}`
+          url: `/users/${u.id}`,
         });
       }
     }
@@ -167,7 +178,7 @@ export class SearchGatewayService extends AbstractSearchService {
       in_progress: "En cours",
       waiting: "En attente",
       completed: "Terminé",
-      cancelled: "Annulé"
+      cancelled: "Annulé",
     };
     return map[status] ?? status;
   }
@@ -177,7 +188,7 @@ export class SearchGatewayService extends AbstractSearchService {
       low: "Basse",
       medium: "Moyenne",
       high: "Haute",
-      urgent: "Urgente"
+      urgent: "Urgente",
     };
     return map[priority] ?? priority;
   }
@@ -187,7 +198,7 @@ export class SearchGatewayService extends AbstractSearchService {
       planned: "Planifiée",
       in_progress: "En cours",
       completed: "Terminée",
-      cancelled: "Annulée"
+      cancelled: "Annulée",
     };
     return map[status] ?? status;
   }
@@ -196,66 +207,58 @@ export class SearchGatewayService extends AbstractSearchService {
     const map: Record<string, string> = {
       actif: "Actif",
       maintenance: "Maintenance",
-      hors_service: "Hors service"
+      hors_service: "Hors service",
     };
     return map[status] ?? status;
   }
 
   private async fetchCases(user: AuthUser): Promise<CaseSummaryResponse[]> {
-    return this.callService<CaseSummaryResponse[]>(
-      CASES_URL,
-      "/cases",
-      { organizationId: user.organizationId }
-    );
+    return this.callService<CaseSummaryResponse[]>(CASES_URL, "/cases", {
+      organizationId: user.organizationId,
+    });
   }
 
   private async fetchInterventions(user: AuthUser): Promise<InterventionResponse[]> {
-    return this.callService<InterventionResponse[]>(
-      CASES_URL,
-      "/interventions",
-      { organizationId: user.organizationId }
-    );
+    return this.callService<InterventionResponse[]>(CASES_URL, "/interventions", {
+      organizationId: user.organizationId,
+    });
   }
 
   private async fetchVehicles(user: AuthUser): Promise<VehicleResponse[]> {
-    return this.callService<VehicleResponse[]>(
-      FLEET_URL,
-      "/vehicles",
-      { organizationId: user.organizationId }
-    );
+    return this.callService<VehicleResponse[]>(FLEET_URL, "/vehicles", {
+      organizationId: user.organizationId,
+    });
   }
 
   private async fetchTechnicians(user: AuthUser): Promise<TechnicianResponse[]> {
-    return this.callService<TechnicianResponse[]>(
-      TECHNICIANS_URL,
-      "/technicians",
-      { organizationId: user.organizationId }
-    );
+    return this.callService<TechnicianResponse[]>(TECHNICIANS_URL, "/technicians", {
+      organizationId: user.organizationId,
+    });
   }
 
   private async fetchArticles(user: AuthUser): Promise<ArticleResponse[]> {
-    return this.callService<ArticleResponse[]>(
-      STOCK_URL,
-      "/articles",
-      { organizationId: user.organizationId }
-    );
+    return this.callService<ArticleResponse[]>(STOCK_URL, "/articles", {
+      organizationId: user.organizationId,
+    });
   }
 
   private async fetchUsers(user: AuthUser): Promise<UserResponse[]> {
-    return this.callService<UserResponse[]>(
-      USERS_URL,
-      "/users",
-      { organizationId: user.organizationId }
-    );
+    return this.callService<UserResponse[]>(USERS_URL, "/users", {
+      organizationId: user.organizationId,
+    });
   }
 
-  private async callService<T>(baseUrl: string, path: string, query: Record<string, string>): Promise<T> {
+  private async callService<T>(
+    baseUrl: string,
+    path: string,
+    query: Record<string, string>,
+  ): Promise<T> {
     const response = await firstValueFrom(
       this.httpService.request<T>({
         method: "get",
         url: `${baseUrl}${path}`,
-        params: query
-      })
+        params: query,
+      }),
     );
     return response.data;
   }

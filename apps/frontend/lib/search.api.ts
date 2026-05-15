@@ -22,14 +22,11 @@ export async function globalSearch(query: string): Promise<GlobalSearchResponse>
   const token = getToken();
   if (!token) throw new Error("Session expirée");
 
-  const response = await fetch(
-    `${API_BASE}/search?q=${encodeURIComponent(query)}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    }
-  );
+  const response = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));

@@ -26,17 +26,20 @@ import { DocumentsModule } from "./documents.module";
     OrganizationsModule,
     AdminModule,
     FleetModule,
-    TechniciansModule, TeamsModule, AgencesModule,
+    TechniciansModule,
+    TeamsModule,
+    AgencesModule,
     CasesModule,
-    StockModule, SearchModule,
+    StockModule,
+    SearchModule,
     SubscriptionsModule,
     NotificationsModule,
-    DocumentsModule
+    DocumentsModule,
   ],
   controllers: [AppController],
   providers: [
     { provide: AbstractAppService, useClass: AppService },
-    { provide: APP_INTERCEPTOR, useClass: NotifyInterceptor }
-  ]
+    { provide: APP_INTERCEPTOR, useClass: NotifyInterceptor },
+  ],
 })
 export class AppModule {}

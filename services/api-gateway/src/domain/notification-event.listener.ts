@@ -7,12 +7,11 @@ import type {
   CreateNotificationBody,
   NotificationEntityType,
   NotificationAction,
-  UserResponse
+  UserResponse,
 } from "@syncora/shared";
 
 const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
-const NOTIFICATIONS_URL =
-  process.env.NOTIFICATIONS_SERVICE_URL ?? "http://localhost:3010";
+const NOTIFICATIONS_URL = process.env.NOTIFICATIONS_SERVICE_URL ?? "http://localhost:3010";
 
 @Injectable()
 export class NotificationEventListener {
@@ -34,16 +33,14 @@ export class NotificationEventListener {
         entityId: event.entityId,
         entityLabel: event.entityLabel,
         action: event.action as NotificationAction,
-        userIds
+        userIds,
       };
 
-      await firstValueFrom(
-        this.httpService.post(`${NOTIFICATIONS_URL}/notifications`, body)
-      );
+      await firstValueFrom(this.httpService.post(`${NOTIFICATIONS_URL}/notifications`, body));
     } catch (err) {
       this.logger.warn(
         `Failed to create notifications for ${event.entityType}:${event.entityId}`,
-        (err as Error).message
+        (err as Error).message,
       );
     }
   }
@@ -52,14 +49,14 @@ export class NotificationEventListener {
     try {
       const response = await firstValueFrom(
         this.httpService.get<UserResponse[]>(`${USERS_URL}/users`, {
-          params: { organizationId }
-        })
+          params: { organizationId },
+        }),
       );
       return response.data.map((u) => u.id);
     } catch (err) {
       this.logger.warn(
         `Failed to fetch users for organization ${organizationId}`,
-        (err as Error).message
+        (err as Error).message,
       );
       return [];
     }

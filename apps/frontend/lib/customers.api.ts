@@ -4,7 +4,7 @@ import { apiRequestJson, type ApiMethod } from "./api-client";
 async function customersRequest<TResponse>(
   method: ApiMethod,
   path: string,
-  body?: unknown
+  body?: unknown,
 ): Promise<TResponse> {
   return apiRequestJson<TResponse>(method, path, typeof body === "undefined" ? {} : { body });
 }

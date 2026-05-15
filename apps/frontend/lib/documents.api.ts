@@ -17,7 +17,7 @@ function needsAuthenticatedFetch(url: string): boolean {
 export async function uploadDocument(
   entityType: DocumentEntityType,
   entityId: string,
-  file: File
+  file: File,
 ): Promise<DocumentResponse> {
   const token = getAccessToken();
   if (!token) throw new Error("Session expirée");
@@ -25,14 +25,11 @@ export async function uploadDocument(
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(
-    `${API_BASE}/documents/upload/${entityType}/${entityId}`,
-    {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-      body: formData
-    }
-  );
+  const response = await fetch(`${API_BASE}/documents/upload/${entityType}/${entityId}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
@@ -44,18 +41,15 @@ export async function uploadDocument(
 
 export async function listDocuments(
   entityType: DocumentEntityType,
-  entityId: string
+  entityId: string,
 ): Promise<DocumentResponse[]> {
   const token = getAccessToken();
   if (!token) throw new Error("Session expirée");
 
-  const response = await fetch(
-    `${API_BASE}/documents/${entityType}/${entityId}`,
-    {
-      method: "GET",
-      headers: { Authorization: `Bearer ${token}` }
-    }
-  );
+  const response = await fetch(`${API_BASE}/documents/${entityType}/${entityId}`, {
+    method: "GET",
+    headers: { Authorization: `Bearer ${token}` },
+  });
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
@@ -69,13 +63,10 @@ export async function getDocumentDownloadUrl(documentId: string): Promise<string
   const token = getAccessToken();
   if (!token) throw new Error("Session expirée");
 
-  const response = await fetch(
-    `${API_BASE}/documents/${documentId}/download-url`,
-    {
-      method: "GET",
-      headers: { Authorization: `Bearer ${token}` }
-    }
-  );
+  const response = await fetch(`${API_BASE}/documents/${documentId}/download-url`, {
+    method: "GET",
+    headers: { Authorization: `Bearer ${token}` },
+  });
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
@@ -95,7 +86,7 @@ export async function fetchDocumentPreviewUrl(documentId: string): Promise<strin
   if (!token) throw new Error("Session expirée");
 
   const response = await fetch(fileUrl, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { Authorization: `Bearer ${token}` },
   });
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
@@ -107,7 +98,7 @@ export async function fetchDocumentPreviewUrl(documentId: string): Promise<strin
 
 export async function openDocumentDownload(
   documentId: string,
-  originalName: string
+  originalName: string,
 ): Promise<void> {
   const fileUrl = await getDocumentDownloadUrl(documentId);
   if (!needsAuthenticatedFetch(fileUrl)) {
@@ -119,7 +110,7 @@ export async function openDocumentDownload(
   if (!token) throw new Error("Session expirée");
 
   const response = await fetch(fileUrl, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { Authorization: `Bearer ${token}` },
   });
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
@@ -138,13 +129,10 @@ export async function deleteDocument(documentId: string): Promise<void> {
   const token = getAccessToken();
   if (!token) throw new Error("Session expirée");
 
-  const response = await fetch(
-    `${API_BASE}/documents/${documentId}`,
-    {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` }
-    }
-  );
+  const response = await fetch(`${API_BASE}/documents/${documentId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));

@@ -18,8 +18,8 @@ describe("AuthController", () => {
       role: "admin",
       status: "active",
       permissions: [],
-      name: "Admin User"
-    }
+      name: "Admin User",
+    },
   };
 
   beforeEach(async () => {
@@ -29,23 +29,23 @@ describe("AuthController", () => {
       acceptInvitation: jest.fn(),
       createOrganization: jest.fn(),
       switchOrganization: jest.fn(),
-      getSessionUser: jest.fn()
+      getSessionUser: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
       imports: [
         JwtModule.register({
           secret: "test-secret",
-          signOptions: { expiresIn: "7d" }
-        })
+          signOptions: { expiresIn: "7d" },
+        }),
       ],
       controllers: [AuthController],
       providers: [
         {
           provide: AbstractAuthService,
-          useValue: mockAuthService
-        }
-      ]
+          useValue: mockAuthService,
+        },
+      ],
     })
       .overrideGuard(JwtAuthGuard)
       .useValue({ canActivate: () => true })
@@ -64,7 +64,7 @@ describe("AuthController", () => {
         organizationName: "Test Org",
         adminEmail: "admin@example.com",
         adminPassword: "secret123",
-        adminName: "Admin User"
+        adminName: "Admin User",
       };
       mockAuthService.register.mockResolvedValue(mockAuthResponse);
 
@@ -80,7 +80,7 @@ describe("AuthController", () => {
     it("should call authService.login and return auth response", async () => {
       const body = {
         email: "admin@example.com",
-        password: "secret123"
+        password: "secret123",
       };
       mockAuthService.login.mockResolvedValue(mockAuthResponse);
 
@@ -100,7 +100,7 @@ describe("AuthController", () => {
         status: "active",
         permissions: [],
         email: "admin@example.com",
-        name: "Admin User"
+        name: "Admin User",
       };
       mockAuthService.getSessionUser.mockResolvedValue(mockAuthResponse.user);
 
@@ -116,7 +116,7 @@ describe("AuthController", () => {
       const body = {
         invitationToken: "inv-token-123",
         password: "newpassword",
-        name: "New User"
+        name: "New User",
       };
       mockAuthService.acceptInvitation.mockResolvedValue(mockAuthResponse);
 

@@ -1,12 +1,15 @@
 import { Body, Controller, Get, Post, UseGuards } from "@nestjs/common";
 import { AbstractSubscriptionsGatewayService } from "../../domain/ports/subscriptions.service.port";
 import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
-import { RequirePermissionGuard, RequirePermissions } from "../../infrastructure/require-permission.guard";
+import {
+  RequirePermissionGuard,
+  RequirePermissions,
+} from "../../infrastructure/require-permission.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
 import type {
   AuthUser,
   CreateBillingPortalGatewayBody,
-  CreateCheckoutSessionGatewayBody
+  CreateCheckoutSessionGatewayBody,
 } from "@syncora/shared";
 
 @Controller("subscriptions")
@@ -24,7 +27,7 @@ export class SubscriptionsController {
   @RequirePermissions("subscriptions.manage_billing")
   createCheckoutSession(
     @CurrentUser() user: AuthUser,
-    @Body() body: CreateCheckoutSessionGatewayBody
+    @Body() body: CreateCheckoutSessionGatewayBody,
   ) {
     return this.subscriptionsService.createCheckoutSession(user, body);
   }
@@ -32,10 +35,7 @@ export class SubscriptionsController {
   @Post("billing-portal")
   @UseGuards(RequirePermissionGuard)
   @RequirePermissions("subscriptions.manage_billing")
-  createBillingPortal(
-    @CurrentUser() user: AuthUser,
-    @Body() body: CreateBillingPortalGatewayBody
-  ) {
+  createBillingPortal(@CurrentUser() user: AuthUser, @Body() body: CreateBillingPortalGatewayBody) {
     return this.subscriptionsService.createBillingPortalSession(user, body);
   }
 }

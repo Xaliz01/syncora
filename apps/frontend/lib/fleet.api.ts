@@ -10,7 +10,7 @@ import type {
   UpdateVehicleBody,
   UpdateTechnicianBody,
   UpdateTeamBody,
-  UpdateAgenceBody
+  UpdateAgenceBody,
 } from "@syncora/shared";
 import { apiRequestJson, type ApiMethod } from "./api-client";
 
@@ -40,7 +40,7 @@ export interface CreateTechnicianPayload {
 async function fleetRequest<TResponse>(
   method: ApiMethod,
   path: string,
-  body?: unknown
+  body?: unknown,
 ): Promise<TResponse> {
   return apiRequestJson<TResponse>(method, path, typeof body === "undefined" ? {} : { body });
 }
@@ -82,11 +82,7 @@ export function createTechnician(payload: CreateTechnicianPayload) {
 }
 
 export function updateTechnician(technicianId: string, payload: UpdateTechnicianBody) {
-  return fleetRequest<TechnicianResponse>(
-    "PATCH",
-    `/fleet/technicians/${technicianId}`,
-    payload
-  );
+  return fleetRequest<TechnicianResponse>("PATCH", `/fleet/technicians/${technicianId}`, payload);
 }
 
 export function deleteTechnician(technicianId: string) {
@@ -97,7 +93,7 @@ export function createTechnicianUserAccount(technicianId: string, password: stri
   return fleetRequest<TechnicianResponse>(
     "POST",
     `/fleet/technicians/${technicianId}/create-account`,
-    { password }
+    { password },
   );
 }
 
@@ -141,7 +137,7 @@ export function removeTeamMember(teamId: string, technicianId: string) {
 
 export function assignTeamToVehicle(vehicleId: string, teamId: string) {
   return fleetRequest<VehicleResponse>("PUT", `/fleet/vehicles/${vehicleId}/assign-team`, {
-    teamId
+    teamId,
   });
 }
 

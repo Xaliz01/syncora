@@ -3,7 +3,7 @@ import {
   UnauthorizedException,
   ConflictException,
   BadRequestException,
-  ForbiddenException
+  ForbiddenException,
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { HttpService } from "@nestjs/axios";
@@ -23,24 +23,22 @@ import type {
   ValidateCredentialsResponse,
   PermissionCode,
   CreateOrganizationBody,
-  SwitchOrganizationBody
+  SwitchOrganizationBody,
 } from "@syncora/shared";
 import { ASSIGNABLE_PERMISSION_CODES } from "@syncora/shared";
 import { AbstractAuthService } from "./ports/auth.service.port";
 import { AbstractSubscriptionsGatewayService } from "./ports/subscriptions.service.port";
 
-const ORGANIZATIONS_URL =
-  process.env.ORGANIZATIONS_SERVICE_URL ?? "http://localhost:3001";
+const ORGANIZATIONS_URL = process.env.ORGANIZATIONS_SERVICE_URL ?? "http://localhost:3001";
 const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
-const PERMISSIONS_URL =
-  process.env.PERMISSIONS_SERVICE_URL ?? "http://localhost:3003";
+const PERMISSIONS_URL = process.env.PERMISSIONS_SERVICE_URL ?? "http://localhost:3003";
 
 @Injectable()
 export class AuthService extends AbstractAuthService {
   constructor(
     private readonly httpService: HttpService,
     private readonly jwtService: JwtService,
-    private readonly subscriptionsGateway: AbstractSubscriptionsGatewayService
+    private readonly subscriptionsGateway: AbstractSubscriptionsGatewayService,
   ) {
     super();
   }
@@ -49,7 +47,7 @@ export class AuthService extends AbstractAuthService {
     const permissions = await this.mergePermissionsWithSubscription(
       jwt.organizationId,
       jwt.sub,
-      jwt.role
+      jwt.role,
     );
     return {
       id: jwt.sub,
@@ -58,7 +56,7 @@ export class AuthService extends AbstractAuthService {
       role: jwt.role,
       status: jwt.status,
       permissions,
-      name: jwt.name
+      name: jwt.name,
     };
   }
 
@@ -67,8 +65,8 @@ export class AuthService extends AbstractAuthService {
     try {
       const res = await firstValueFrom(
         this.httpService.post<OrganizationResponse>(`${ORGANIZATIONS_URL}/organizations`, {
-          name: body.organizationName
-        })
+          name: body.organizationName,
+        }),
       );
       org = res.data;
     } catch (err: unknown) {
@@ -85,8 +83,8 @@ export class AuthService extends AbstractAuthService {
           email: body.adminEmail,
           password: body.adminPassword,
           name: body.adminName,
-          role: "admin"
-        })
+          role: "admin",
+        }),
       );
       user = res.data;
     } catch (err: unknown) {
@@ -98,7 +96,7 @@ export class AuthService extends AbstractAuthService {
     const permissions = await this.mergePermissionsWithSubscription(
       user.organizationId,
       user.id,
-      user.role
+      user.role,
     );
     const authUser: AuthUser = {
       id: user.id,
@@ -107,7 +105,7 @@ export class AuthService extends AbstractAuthService {
       role: user.role,
       status: user.status,
       permissions,
-      name: user.name
+      name: user.name,
     };
     const payload: JwtPayload = {
       sub: user.id,
@@ -116,7 +114,7 @@ export class AuthService extends AbstractAuthService {
       status: user.status,
       permissions,
       email: user.email,
-      name: user.name
+      name: user.name,
     };
     const accessToken = this.jwtService.sign(payload);
     return { accessToken, user: authUser };
@@ -128,8 +126,8 @@ export class AuthService extends AbstractAuthService {
       const res = await firstValueFrom(
         this.httpService.post<ValidateCredentialsResponse>(
           `${USERS_URL}/users/validate-credentials`,
-          { email: body.email, password: body.password }
-        )
+          { email: body.email, password: body.password },
+        ),
       );
       user = res.data;
     } catch (err: unknown) {
@@ -141,7 +139,7 @@ export class AuthService extends AbstractAuthService {
     const permissions = await this.mergePermissionsWithSubscription(
       user.organizationId,
       user.id,
-      user.role
+      user.role,
     );
     const authUser: AuthUser = {
       id: user.id,
@@ -150,7 +148,7 @@ export class AuthService extends AbstractAuthService {
       role: user.role,
       status: user.status,
       permissions,
-      name: user.name
+      name: user.name,
     };
     const payload: JwtPayload = {
       sub: user.id,
@@ -159,7 +157,7 @@ export class AuthService extends AbstractAuthService {
       status: user.status,
       permissions,
       email: user.email,
-      name: user.name
+      name: user.name,
     };
     const accessToken = this.jwtService.sign(payload);
     return { accessToken, user: authUser };
@@ -174,8 +172,8 @@ export class AuthService extends AbstractAuthService {
     try {
       const res = await firstValueFrom(
         this.httpService.post<OrganizationResponse>(`${ORGANIZATIONS_URL}/organizations`, {
-          name: body.name.trim()
-        })
+          name: body.name.trim(),
+        }),
       );
       org = res.data;
     } catch (err: unknown) {
@@ -191,9 +189,9 @@ export class AuthService extends AbstractAuthService {
           {
             organizationId: org.id,
             role: "admin",
-            membershipStatus: "active"
-          }
-        )
+            membershipStatus: "active",
+          },
+        ),
       );
     } catch (err: unknown) {
       throw err;
@@ -204,8 +202,8 @@ export class AuthService extends AbstractAuthService {
       const res = await firstValueFrom(
         this.httpService.patch<UserResponse>(`${USERS_URL}/users/${jwt.sub}`, {
           organizationId: org.id,
-          role: "admin"
-        })
+          role: "admin",
+        }),
       );
       user = res.data;
     } catch (err: unknown) {
@@ -217,7 +215,7 @@ export class AuthService extends AbstractAuthService {
     const permissions = await this.mergePermissionsWithSubscription(
       user.organizationId,
       user.id,
-      user.role
+      user.role,
     );
     const authUser: AuthUser = {
       id: user.id,
@@ -226,7 +224,7 @@ export class AuthService extends AbstractAuthService {
       role: user.role,
       status: user.status,
       permissions,
-      name: user.name
+      name: user.name,
     };
     const payload: JwtPayload = {
       sub: user.id,
@@ -235,7 +233,7 @@ export class AuthService extends AbstractAuthService {
       status: user.status,
       permissions,
       email: user.email,
-      name: user.name
+      name: user.name,
     };
     const accessToken = this.jwtService.sign(payload);
     return { accessToken, user: authUser };
@@ -254,8 +252,8 @@ export class AuthService extends AbstractAuthService {
     try {
       const res = await firstValueFrom(
         this.httpService.get<OrganizationMembershipResponse[]>(
-          `${USERS_URL}/users/${jwt.sub}/organization-memberships`
-        )
+          `${USERS_URL}/users/${jwt.sub}/organization-memberships`,
+        ),
       );
       memberships = res.data;
     } catch (err: unknown) {
@@ -265,7 +263,7 @@ export class AuthService extends AbstractAuthService {
     }
 
     const targetMembership = memberships.find(
-      (m) => m.organizationId === targetId && m.membershipStatus === "active"
+      (m) => m.organizationId === targetId && m.membershipStatus === "active",
     );
     if (!targetMembership) {
       throw new ForbiddenException("Organisation non accessible pour ce compte.");
@@ -276,8 +274,8 @@ export class AuthService extends AbstractAuthService {
       const res = await firstValueFrom(
         this.httpService.patch<UserResponse>(`${USERS_URL}/users/${jwt.sub}`, {
           organizationId: targetId,
-          role: targetMembership.role
-        })
+          role: targetMembership.role,
+        }),
       );
       user = res.data;
     } catch (err: unknown) {
@@ -289,7 +287,7 @@ export class AuthService extends AbstractAuthService {
     const permissions = await this.mergePermissionsWithSubscription(
       user.organizationId,
       user.id,
-      user.role
+      user.role,
     );
     const authUser: AuthUser = {
       id: user.id,
@@ -298,7 +296,7 @@ export class AuthService extends AbstractAuthService {
       role: user.role,
       status: user.status,
       permissions,
-      name: user.name
+      name: user.name,
     };
     const payload: JwtPayload = {
       sub: user.id,
@@ -307,7 +305,7 @@ export class AuthService extends AbstractAuthService {
       status: user.status,
       permissions,
       email: user.email,
-      name: user.name
+      name: user.name,
     };
     const accessToken = this.jwtService.sign(payload);
     return { accessToken, user: authUser };
@@ -318,8 +316,8 @@ export class AuthService extends AbstractAuthService {
     try {
       const res = await firstValueFrom(
         this.httpService.post<InvitationResponse>(`${PERMISSIONS_URL}/invitations/resolve`, {
-          invitationToken: body.invitationToken
-        })
+          invitationToken: body.invitationToken,
+        }),
       );
       invitation = res.data;
     } catch (err: unknown) {
@@ -332,24 +330,28 @@ export class AuthService extends AbstractAuthService {
     let user: UserResponse;
     try {
       const res = await firstValueFrom(
-        this.httpService.post<UserResponse>(`${USERS_URL}/users/${invitation.invitedUserId}/activate`, {
-          password: body.password,
-          name: body.name
-        })
+        this.httpService.post<UserResponse>(
+          `${USERS_URL}/users/${invitation.invitedUserId}/activate`,
+          {
+            password: body.password,
+            name: body.name,
+          },
+        ),
       );
       user = res.data;
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } })?.response?.status;
       if (status === 404) throw new UnauthorizedException("Utilisateur invité introuvable");
-      if (status === 400) throw new UnauthorizedException("État d'activation de l'invitation invalide");
+      if (status === 400)
+        throw new UnauthorizedException("État d'activation de l'invitation invalide");
       throw err;
     }
 
     try {
       await firstValueFrom(
         this.httpService.post<InvitationResponse>(`${PERMISSIONS_URL}/invitations/accept`, {
-          invitationToken: body.invitationToken
-        })
+          invitationToken: body.invitationToken,
+        }),
       );
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } })?.response?.status;
@@ -361,7 +363,7 @@ export class AuthService extends AbstractAuthService {
     const permissions = await this.mergePermissionsWithSubscription(
       user.organizationId,
       user.id,
-      user.role
+      user.role,
     );
     const authUser: AuthUser = {
       id: user.id,
@@ -370,7 +372,7 @@ export class AuthService extends AbstractAuthService {
       role: user.role,
       status: user.status,
       permissions,
-      name: user.name
+      name: user.name,
     };
     const payload: JwtPayload = {
       sub: user.id,
@@ -379,7 +381,7 @@ export class AuthService extends AbstractAuthService {
       status: user.status,
       permissions,
       email: user.email,
-      name: user.name
+      name: user.name,
     };
     const accessToken = this.jwtService.sign(payload);
     return { accessToken, user: authUser };
@@ -388,7 +390,7 @@ export class AuthService extends AbstractAuthService {
   private async mergePermissionsWithSubscription(
     organizationId: string,
     userId: string,
-    role: "admin" | "member"
+    role: "admin" | "member",
   ): Promise<PermissionCode[]> {
     const basePerms = await this.resolveEffectivePermissions(organizationId, userId, role);
     const minimalUser: AuthUser = {
@@ -397,7 +399,7 @@ export class AuthService extends AbstractAuthService {
       organizationId,
       role,
       status: "active",
-      permissions: basePerms
+      permissions: basePerms,
     };
     try {
       const sub = await this.subscriptionsGateway.getCurrentSubscription(minimalUser);
@@ -411,15 +413,18 @@ export class AuthService extends AbstractAuthService {
   private async resolveEffectivePermissions(
     organizationId: string,
     userId: string,
-    role: "admin" | "member"
+    role: "admin" | "member",
   ): Promise<EffectivePermissionsResponse["permissions"]> {
     try {
       const res = await firstValueFrom(
-        this.httpService.post<EffectivePermissionsResponse>(`${PERMISSIONS_URL}/permissions/effective`, {
-          organizationId,
-          userId,
-          role
-        })
+        this.httpService.post<EffectivePermissionsResponse>(
+          `${PERMISSIONS_URL}/permissions/effective`,
+          {
+            organizationId,
+            userId,
+            role,
+          },
+        ),
       );
       return res.data.permissions;
     } catch {

@@ -20,7 +20,7 @@ export function CustomerCreateForm({
   onSuccess,
   onCancel,
   submitLabel = "Créer le client",
-  compact = false
+  compact = false,
 }: Props) {
   const queryClient = useQueryClient();
   const [createError, setCreateError] = useState("");
@@ -38,7 +38,9 @@ export function CustomerCreateForm({
   const [addrCity, setAddrCity] = useState("");
   const [addrCountry, setAddrCountry] = useState("FR");
 
-  const labelCls = compact ? "mb-0.5 block text-xs font-medium text-slate-600 dark:text-slate-300" : "mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200";
+  const labelCls = compact
+    ? "mb-0.5 block text-xs font-medium text-slate-600 dark:text-slate-300"
+    : "mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200";
   const inputCls = compact
     ? "w-full rounded-md border border-slate-200 dark:border-slate-700 px-2 py-1.5 text-sm"
     : "w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500";
@@ -61,13 +63,14 @@ export function CustomerCreateForm({
   };
 
   const createMutation = useMutation({
-    mutationFn: (payload: customersApi.CreateCustomerPayload) => customersApi.createCustomer(payload),
+    mutationFn: (payload: customersApi.CreateCustomerPayload) =>
+      customersApi.createCustomer(payload),
     onSuccess: (c: CustomerResponse) => {
       queryClient.invalidateQueries({ queryKey: ["customers"] });
       resetForm();
       onSuccess(c);
     },
-    onError: (err: Error) => setCreateError(err.message)
+    onError: (err: Error) => setCreateError(err.message),
   });
 
   const addressPayload = useMemo(() => {
@@ -77,7 +80,7 @@ export function CustomerCreateForm({
       line2: addrLine2.trim() || undefined,
       postalCode: addrPostal.trim(),
       city: addrCity.trim(),
-      country: addrCountry.trim() || "FR"
+      country: addrCountry.trim() || "FR",
     };
   }, [addrLine1, addrLine2, addrPostal, addrCity, addrCountry]);
 
@@ -91,7 +94,7 @@ export function CustomerCreateForm({
       mobile: newMobile.trim() || undefined,
       legalIdentifier: newLegalId.trim() || undefined,
       address: addressPayload,
-      notes: undefined
+      notes: undefined,
     };
     if (newKind === "company") {
       if (!newCompanyName.trim()) {
@@ -100,7 +103,7 @@ export function CustomerCreateForm({
       }
       createMutation.mutate({
         ...base,
-        companyName: newCompanyName.trim()
+        companyName: newCompanyName.trim(),
       });
     } else {
       if (!newFirstName.trim() && !newLastName.trim()) {
@@ -110,7 +113,7 @@ export function CustomerCreateForm({
       createMutation.mutate({
         ...base,
         firstName: newFirstName.trim() || undefined,
-        lastName: newLastName.trim() || undefined
+        lastName: newLastName.trim() || undefined,
       });
     }
   };
@@ -126,7 +129,9 @@ export function CustomerCreateForm({
     <>
       {compact && (
         <div className="flex items-center justify-between gap-2">
-          <span className="text-sm font-medium text-slate-800 dark:text-slate-100">Nouveau client</span>
+          <span className="text-sm font-medium text-slate-800 dark:text-slate-100">
+            Nouveau client
+          </span>
           {onCancel && (
             <button
               type="button"
@@ -169,39 +174,68 @@ export function CustomerCreateForm({
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <label className={labelCls}>Prénom</label>
-            <input value={newFirstName} onChange={(e) => setNewFirstName(e.target.value)} className={inputCls} />
+            <input
+              value={newFirstName}
+              onChange={(e) => setNewFirstName(e.target.value)}
+              className={inputCls}
+            />
           </div>
           <div>
             <label className={labelCls}>Nom</label>
-            <input value={newLastName} onChange={(e) => setNewLastName(e.target.value)} className={inputCls} />
+            <input
+              value={newLastName}
+              onChange={(e) => setNewLastName(e.target.value)}
+              className={inputCls}
+            />
           </div>
         </div>
       ) : (
         <div>
           <label className={labelCls}>Raison sociale</label>
-          <input value={newCompanyName} onChange={(e) => setNewCompanyName(e.target.value)} className={inputCls} />
+          <input
+            value={newCompanyName}
+            onChange={(e) => setNewCompanyName(e.target.value)}
+            className={inputCls}
+          />
         </div>
       )}
 
       {newKind === "company" && (
         <div>
           <label className={labelCls}>SIRET / identifiant (optionnel)</label>
-          <input value={newLegalId} onChange={(e) => setNewLegalId(e.target.value)} className={inputCls} />
+          <input
+            value={newLegalId}
+            onChange={(e) => setNewLegalId(e.target.value)}
+            className={inputCls}
+          />
         </div>
       )}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div>
           <label className={labelCls}>E-mail</label>
-          <input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} className={inputCls} />
+          <input
+            type="email"
+            value={newEmail}
+            onChange={(e) => setNewEmail(e.target.value)}
+            className={inputCls}
+          />
         </div>
         <div>
           <label className={labelCls}>Téléphone</label>
-          <input value={newPhone} onChange={(e) => setNewPhone(e.target.value)} className={inputCls} />
+          <input
+            value={newPhone}
+            onChange={(e) => setNewPhone(e.target.value)}
+            className={inputCls}
+          />
         </div>
         <div>
           <label className={labelCls}>Mobile</label>
-          <input value={newMobile} onChange={(e) => setNewMobile(e.target.value)} className={inputCls} />
+          <input
+            value={newMobile}
+            onChange={(e) => setNewMobile(e.target.value)}
+            className={inputCls}
+          />
         </div>
       </div>
 
@@ -212,7 +246,9 @@ export function CustomerCreateForm({
             : "rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80 px-3 py-2"
         }
       >
-        <summary className={`cursor-pointer font-medium text-slate-700 dark:text-slate-200 ${compact ? "text-xs" : "text-sm"}`}>
+        <summary
+          className={`cursor-pointer font-medium text-slate-700 dark:text-slate-200 ${compact ? "text-xs" : "text-sm"}`}
+        >
           Adresse postale (optionnel)
         </summary>
         <div className="mt-2">

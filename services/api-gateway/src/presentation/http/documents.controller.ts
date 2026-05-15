@@ -7,7 +7,7 @@ import {
   Res,
   UploadedFile,
   UseGuards,
-  UseInterceptors
+  UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import type { Response } from "express";
@@ -31,7 +31,7 @@ export class DocumentsController {
     @CurrentUser() user: AuthUser,
     @Param("entityType") entityType: DocumentEntityType,
     @Param("entityId") entityId: string,
-    @UploadedFile() file: Express.Multer.File
+    @UploadedFile() file: Express.Multer.File,
   ) {
     return this.documentsService.upload(user, entityType, entityId, file);
   }
@@ -40,26 +40,20 @@ export class DocumentsController {
   async downloadFile(
     @CurrentUser() user: AuthUser,
     @Param("key") key: string,
-    @Res() res: Response
+    @Res() res: Response,
   ) {
     return this.documentsService.downloadFile(user, key, res);
   }
 
   /** Routes à segments fixes avant `:entityType/:entityId` (sinon `…/id/download-url` est pris pour une liste). */
   @Get(":documentId/download-url")
-  async getDownloadUrl(
-    @CurrentUser() user: AuthUser,
-    @Param("documentId") documentId: string
-  ) {
+  async getDownloadUrl(@CurrentUser() user: AuthUser, @Param("documentId") documentId: string) {
     return this.documentsService.getDownloadUrl(user, documentId);
   }
 
   @Delete(":documentId")
   @NotifyEntity({ type: "document", idParam: "documentId" })
-  async deleteDocument(
-    @CurrentUser() user: AuthUser,
-    @Param("documentId") documentId: string
-  ) {
+  async deleteDocument(@CurrentUser() user: AuthUser, @Param("documentId") documentId: string) {
     return this.documentsService.deleteDocument(user, documentId);
   }
 
@@ -67,7 +61,7 @@ export class DocumentsController {
   async listByEntity(
     @CurrentUser() user: AuthUser,
     @Param("entityType") entityType: DocumentEntityType,
-    @Param("entityId") entityId: string
+    @Param("entityId") entityId: string,
   ) {
     return this.documentsService.listByEntity(user, entityType, entityId);
   }

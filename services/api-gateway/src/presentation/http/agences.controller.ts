@@ -1,19 +1,10 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Patch,
-  Post,
-  UseGuards
-} from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from "@nestjs/common";
 import { AbstractAgencesGatewayService } from "../../domain/ports/agences.service.port";
 import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
 import {
   RequireAnyPermissions,
   RequirePermissionGuard,
-  RequirePermissions
+  RequirePermissions,
 } from "../../infrastructure/require-permission.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
 import { NotifyEntity } from "../../infrastructure/notify-entity.decorator";
@@ -35,10 +26,7 @@ export class AgencesGatewayController {
   @Post()
   @RequirePermissions("agences.create")
   @NotifyEntity({ type: "agence", labelField: "name" })
-  async createAgence(
-    @CurrentUser() user: AuthUser,
-    @Body() body: CreateAgencePayload
-  ) {
+  async createAgence(@CurrentUser() user: AuthUser, @Body() body: CreateAgencePayload) {
     return this.agencesService.createAgence(user, body);
   }
 
@@ -50,10 +38,7 @@ export class AgencesGatewayController {
 
   @Get(":agenceId")
   @RequireAnyPermissions("agences.read", "teams.read")
-  async getAgence(
-    @CurrentUser() user: AuthUser,
-    @Param("agenceId") agenceId: string
-  ) {
+  async getAgence(@CurrentUser() user: AuthUser, @Param("agenceId") agenceId: string) {
     return this.agencesService.getAgence(user, agenceId);
   }
 
@@ -63,7 +48,7 @@ export class AgencesGatewayController {
   async updateAgence(
     @CurrentUser() user: AuthUser,
     @Param("agenceId") agenceId: string,
-    @Body() body: UpdateAgenceBody
+    @Body() body: UpdateAgenceBody,
   ) {
     return this.agencesService.updateAgence(user, agenceId, body);
   }
@@ -71,10 +56,7 @@ export class AgencesGatewayController {
   @Delete(":agenceId")
   @RequirePermissions("agences.delete")
   @NotifyEntity({ type: "agence", idParam: "agenceId" })
-  async deleteAgence(
-    @CurrentUser() user: AuthUser,
-    @Param("agenceId") agenceId: string
-  ) {
+  async deleteAgence(@CurrentUser() user: AuthUser, @Param("agenceId") agenceId: string) {
     return this.agencesService.deleteAgence(user, agenceId);
   }
 }

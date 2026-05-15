@@ -3,7 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
-  NotFoundException
+  NotFoundException,
 } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
@@ -24,7 +24,7 @@ import type {
   UpdateCaseTemplateBody,
   UpdateInterventionBody,
   UpdateTodoBody,
-  UserResponse
+  UserResponse,
 } from "@syncora/shared";
 import { AbstractCustomersGatewayService } from "./ports/customers.service.port";
 import {
@@ -35,18 +35,17 @@ import {
   type UpdateTemplateForOrgBody,
   type CreateInterventionForOrgBody,
   type UpdateInterventionForOrgBody,
-  type UpdateTodoForOrgBody
+  type UpdateTodoForOrgBody,
 } from "./ports/cases.service.port";
 
-const CASES_URL =
-  process.env.CASES_SERVICE_URL ?? "http://localhost:3004";
+const CASES_URL = process.env.CASES_SERVICE_URL ?? "http://localhost:3004";
 const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
 
 @Injectable()
 export class CasesGatewayService extends AbstractCasesGatewayService {
   constructor(
     private readonly httpService: HttpService,
-    private readonly customersGateway: AbstractCustomersGatewayService
+    private readonly customersGateway: AbstractCustomersGatewayService,
   ) {
     super();
   }
@@ -59,8 +58,8 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       path: "/templates",
       body: {
         organizationId: user.organizationId,
-        ...body
-      } satisfies CreateCaseTemplateBody
+        ...body,
+      } satisfies CreateCaseTemplateBody,
     });
   }
 
@@ -68,7 +67,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     return this.callCasesService<CaseTemplateResponse[]>({
       method: "get",
       path: "/templates",
-      query: { organizationId: user.organizationId }
+      query: { organizationId: user.organizationId },
     });
   }
 
@@ -76,7 +75,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     return this.callCasesService<CaseTemplateResponse>({
       method: "get",
       path: `/templates/${templateId}`,
-      query: { organizationId: user.organizationId }
+      query: { organizationId: user.organizationId },
     });
   }
 
@@ -86,8 +85,8 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       path: `/templates/${templateId}`,
       body: {
         organizationId: user.organizationId,
-        ...body
-      } satisfies UpdateCaseTemplateBody
+        ...body,
+      } satisfies UpdateCaseTemplateBody,
     });
   }
 
@@ -95,7 +94,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     return this.callCasesService<{ deleted: true }>({
       method: "delete",
       path: `/templates/${templateId}`,
-      query: { organizationId: user.organizationId }
+      query: { organizationId: user.organizationId },
     });
   }
 
@@ -118,23 +117,23 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
         organizationId: user.organizationId,
         ...rest,
         ...(customerId?.trim() ? { customerId: customerId.trim() } : {}),
-        ...(assignees !== undefined ? { assignees } : {})
-      } as CreateCaseBody
+        ...(assignees !== undefined ? { assignees } : {}),
+      } as CreateCaseBody,
     });
     return this.enrichCaseResponse(user, created);
   }
 
   async listCases(
     user: AuthUser,
-    filters?: { status?: string; assigneeId?: string; priority?: string; search?: string }
+    filters?: { status?: string; assigneeId?: string; priority?: string; search?: string },
   ) {
     const rows = await this.callCasesService<CaseSummaryResponse[]>({
       method: "get",
       path: "/cases",
       query: {
         organizationId: user.organizationId,
-        ...filters
-      }
+        ...filters,
+      },
     });
     return this.enrichCaseSummaries(user, rows);
   }
@@ -143,35 +142,31 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     const row = await this.callCasesService<CaseResponse>({
       method: "get",
       path: `/cases/${caseId}`,
-      query: { organizationId: user.organizationId }
+      query: { organizationId: user.organizationId },
     });
     return this.enrichCaseResponse(user, row);
   }
 
   async updateCase(user: AuthUser, caseId: string, body: UpdateCaseForOrgBody) {
-    if (
-      body.customerId !== undefined &&
-      body.customerId !== null &&
-      body.customerId.trim()
-    ) {
+    if (body.customerId !== undefined && body.customerId !== null && body.customerId.trim()) {
       await this.customersGateway.getCustomer(user, body.customerId.trim());
     }
     const casesBody = {
       organizationId: user.organizationId,
-      ...body
+      ...body,
     } as UpdateCaseBody;
 
     if (Object.prototype.hasOwnProperty.call(body, "assigneeIds")) {
       casesBody.assignees = await this.resolveCaseAssigneesForWrite(
         user.organizationId,
-        body.assigneeIds ?? []
+        body.assigneeIds ?? [],
       );
     }
 
     const updated = await this.callCasesService<CaseResponse>({
       method: "patch",
       path: `/cases/${caseId}`,
-      body: casesBody
+      body: casesBody,
     });
     return this.enrichCaseResponse(user, updated);
   }
@@ -180,7 +175,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     return this.callCasesService<{ deleted: true }>({
       method: "delete",
       path: `/cases/${caseId}`,
-      query: { organizationId: user.organizationId }
+      query: { organizationId: user.organizationId },
     });
   }
 
@@ -190,8 +185,8 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       path: `/cases/${caseId}/todos`,
       body: {
         organizationId: user.organizationId,
-        ...body
-      } as UpdateTodoBody
+        ...body,
+      } as UpdateTodoBody,
     });
     return this.enrichCaseResponse(user, row);
   }
@@ -204,8 +199,8 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       path: "/interventions",
       body: {
         organizationId: user.organizationId,
-        ...body
-      } as CreateInterventionBody
+        ...body,
+      } as CreateInterventionBody,
     });
   }
 
@@ -218,15 +213,15 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       endDate?: string;
       status?: string;
       unscheduled?: string;
-    }
+    },
   ) {
     return this.callCasesService<InterventionResponse[]>({
       method: "get",
       path: "/interventions",
       query: {
         organizationId: user.organizationId,
-        ...filters
-      }
+        ...filters,
+      },
     });
   }
 
@@ -234,18 +229,22 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     return this.callCasesService<InterventionResponse>({
       method: "get",
       path: `/interventions/${interventionId}`,
-      query: { organizationId: user.organizationId }
+      query: { organizationId: user.organizationId },
     });
   }
 
-  async updateIntervention(user: AuthUser, interventionId: string, body: UpdateInterventionForOrgBody) {
+  async updateIntervention(
+    user: AuthUser,
+    interventionId: string,
+    body: UpdateInterventionForOrgBody,
+  ) {
     return this.callCasesService<InterventionResponse>({
       method: "patch",
       path: `/interventions/${interventionId}`,
       body: {
         organizationId: user.organizationId,
-        ...body
-      } as UpdateInterventionBody
+        ...body,
+      } as UpdateInterventionBody,
     });
   }
 
@@ -253,7 +252,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     return this.callCasesService<{ deleted: true }>({
       method: "delete",
       path: `/interventions/${interventionId}`,
-      query: { organizationId: user.organizationId }
+      query: { organizationId: user.organizationId },
     });
   }
 
@@ -265,12 +264,12 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       path: "/dashboard",
       query: {
         organizationId: user.organizationId,
-        userId: user.id
-      }
+        userId: user.id,
+      },
     });
     const [assignedCases, overdueCases] = await Promise.all([
       this.enrichCaseSummaries(user, dash.assignedCases),
-      this.enrichCaseSummaries(user, dash.overdueCases)
+      this.enrichCaseSummaries(user, dash.overdueCases),
     ]);
     return { ...dash, assignedCases, overdueCases };
   }
@@ -281,7 +280,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
 
   private async enrichCaseSummaries(
     user: AuthUser,
-    rows: CaseSummaryResponse[]
+    rows: CaseSummaryResponse[],
   ): Promise<CaseSummaryResponse[]> {
     const ids = [...new Set(rows.map((r) => r.customerId).filter(Boolean))] as string[];
     if (ids.length === 0) return rows;
@@ -305,18 +304,18 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
 
   private async resolveCaseAssigneesForWrite(
     organizationId: string,
-    assigneeIds: string[]
+    assigneeIds: string[],
   ): Promise<CaseAssignee[]> {
     const ids = [...new Set(assigneeIds.map((id) => id.trim()).filter(Boolean))];
     const assignees: CaseAssignee[] = [];
     for (const id of ids) {
       const user = await this.callUsersService<UserResponse>({
         method: "get",
-        path: `/users/${id}`
+        path: `/users/${id}`,
       });
       if (user.organizationId !== organizationId) {
         throw new ForbiddenException(
-          "Un utilisateur assigné n'appartient pas à cette organisation"
+          "Un utilisateur assigné n'appartient pas à cette organisation",
         );
       }
       assignees.push({ userId: id, name: user.name?.trim() || user.email });
@@ -336,8 +335,8 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
           method: params.method,
           url: `${USERS_URL}${params.path}`,
           data: params.body,
-          params: params.query
-        })
+          params: params.query,
+        }),
       );
       return response.data;
     } catch (err: unknown) {
@@ -357,8 +356,8 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
           method: params.method,
           url: `${CASES_URL}${params.path}`,
           data: params.body,
-          params: params.query
-        })
+          params: params.query,
+        }),
       );
       return response.data;
     } catch (err: unknown) {
@@ -369,8 +368,8 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
   private rethrowAsHttpException(err: unknown): never {
     const status = (err as { response?: { status?: number } })?.response?.status;
     const message =
-      (err as { response?: { data?: { message?: string | string[] } } })?.response?.data
-        ?.message ?? "Downstream service error";
+      (err as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message ??
+      "Downstream service error";
 
     if (status === 400) throw new BadRequestException(message);
     if (status === 403) throw new ForbiddenException(message);

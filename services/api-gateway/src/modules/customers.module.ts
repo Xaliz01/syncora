@@ -11,8 +11,8 @@ import { SubscriptionsModule } from "./subscriptions.module";
   controllers: [CustomersController],
   providers: [
     { provide: AbstractCustomersGatewayService, useClass: CustomersGatewayService },
-    RequirePermissionGuard
+    RequirePermissionGuard,
   ],
-  exports: [AbstractCustomersGatewayService]
+  exports: [AbstractCustomersGatewayService],
 })
 export class CustomersModule {}

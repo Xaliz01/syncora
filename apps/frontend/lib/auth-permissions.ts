@@ -9,7 +9,7 @@ export function hasPermission(user: AuthUser | null | undefined, code: Permissio
 
 export function hasAnyPermission(
   user: AuthUser | null | undefined,
-  codes: PermissionCode[]
+  codes: PermissionCode[],
 ): boolean {
   if (!user) return false;
   if (user.role === "admin") return true;

@@ -11,12 +11,12 @@ import { SubscriptionsModule } from "./subscriptions.module";
   imports: [
     HttpModule.register({ timeout: 5000, maxRedirects: 0 }),
     CustomersModule,
-    SubscriptionsModule
+    SubscriptionsModule,
   ],
   controllers: [CasesController],
   providers: [
     { provide: AbstractCasesGatewayService, useClass: CasesGatewayService },
-    RequirePermissionGuard
-  ]
+    RequirePermissionGuard,
+  ],
 })
 export class CasesModule {}

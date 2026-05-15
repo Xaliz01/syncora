@@ -6,8 +6,7 @@ export class AppService extends AbstractAppService {
   getHealth() {
     return {
       status: "ok",
-      service: "api-gateway"
+      service: "api-gateway",
     };
   }
 }
-

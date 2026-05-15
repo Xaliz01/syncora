@@ -21,7 +21,9 @@ export function SubscriptionGateScreen() {
               S
             </span>
             <div>
-              <div className="font-semibold text-sm leading-tight text-slate-900 dark:text-slate-100">Syncora</div>
+              <div className="font-semibold text-sm leading-tight text-slate-900 dark:text-slate-100">
+                Syncora
+              </div>
               <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
                 Activation de l’abonnement
               </div>

@@ -10,7 +10,10 @@ export function CustomerCreatePage() {
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/customers" className="text-sm font-medium text-brand-600 dark:text-brand-400 hover:text-brand-500">
+        <Link
+          href="/customers"
+          className="text-sm font-medium text-brand-600 dark:text-brand-400 hover:text-brand-500"
+        >
           &larr; Clients
         </Link>
         <h1 className="mt-3 text-xl font-semibold sm:text-2xl">Nouveau client</h1>

@@ -19,19 +19,19 @@ import {
   ListRowLink,
   ListSearchField,
   ListTableShell,
-  ListToolbar
+  ListToolbar,
 } from "@/components/ui/list-page";
 
 const STATUS_COLORS: Record<string, string> = {
   actif: "bg-emerald-50 text-emerald-700 border-emerald-200",
   maintenance: "bg-amber-50 text-amber-700 border-amber-200",
-  hors_service: "bg-red-50 text-red-700 border-red-200"
+  hors_service: "bg-red-50 text-red-700 border-red-200",
 };
 
 const STATUS_LABELS: Record<string, string> = {
   actif: "Actif",
   maintenance: "Maintenance",
-  hors_service: "Hors service"
+  hors_service: "Hors service",
 };
 
 const GRID = "md:grid-cols-[1fr_1fr_0.8fr_0.6fr_0.6fr]";
@@ -67,9 +67,9 @@ export function VehiclesListPage() {
         v.model,
         v.type,
         v.mileage != null ? `${v.mileage} km` : "",
-        STATUS_LABELS[v.status] ?? v.status
+        STATUS_LABELS[v.status] ?? v.status,
       ]),
-    [vehicles, search]
+    [vehicles, search],
   );
 
   return (
@@ -77,7 +77,9 @@ export function VehiclesListPage() {
       <ListPageHeader
         title="Véhicules"
         description="Flotte de véhicules de l'organisation. Cliquez sur un véhicule pour voir sa fiche."
-        action={<ListPrimaryAction href="/fleet/vehicles/new">Ajouter un véhicule</ListPrimaryAction>}
+        action={
+          <ListPrimaryAction href="/fleet/vehicles/new">Ajouter un véhicule</ListPrimaryAction>
+        }
       />
 
       {error ? <ListPageError message={error} onRetry={() => void loadData()} /> : null}
@@ -96,7 +98,10 @@ export function VehiclesListPage() {
         <ListEmptyState
           message="Aucun véhicule enregistré."
           action={
-            <Link href="/fleet/vehicles/new" className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium">
+            <Link
+              href="/fleet/vehicles/new"
+              className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium"
+            >
               Ajouter votre premier véhicule
             </Link>
           }
@@ -117,7 +122,11 @@ export function VehiclesListPage() {
           }
         >
           {filtered.map((vehicle) => (
-            <ListRowLink key={vehicle.id} href={`/fleet/vehicles/${vehicle.id}`} gridTemplateClass={GRID}>
+            <ListRowLink
+              key={vehicle.id}
+              href={`/fleet/vehicles/${vehicle.id}`}
+              gridTemplateClass={GRID}
+            >
               <ListCellPrimary>{vehicle.registrationNumber}</ListCellPrimary>
               <ListCellDefault>
                 {[vehicle.brand, vehicle.model].filter(Boolean).join(" ") || "—"}
@@ -126,7 +135,12 @@ export function VehiclesListPage() {
               <ListCellDefault>
                 {vehicle.mileage != null ? `${vehicle.mileage.toLocaleString("fr-FR")} km` : "—"}
               </ListCellDefault>
-              <ListBadge className={STATUS_COLORS[vehicle.status] ?? "bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700"}>
+              <ListBadge
+                className={
+                  STATUS_COLORS[vehicle.status] ??
+                  "bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700"
+                }
+              >
                 {STATUS_LABELS[vehicle.status] ?? vehicle.status}
               </ListBadge>
             </ListRowLink>

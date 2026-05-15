@@ -23,11 +23,13 @@ export class OrganizationMembershipDocument extends Document {
   deletedAt?: Date | null;
 }
 
-export const OrganizationMembershipSchema = SchemaFactory.createForClass(OrganizationMembershipDocument);
+export const OrganizationMembershipSchema = SchemaFactory.createForClass(
+  OrganizationMembershipDocument,
+);
 
 OrganizationMembershipSchema.index(
   { userId: 1, organizationId: 1 },
-  { unique: true, partialFilterExpression: { deletedAt: null } }
+  { unique: true, partialFilterExpression: { deletedAt: null } },
 );
 OrganizationMembershipSchema.index({ organizationId: 1, deletedAt: 1 });
 OrganizationMembershipSchema.index({ userId: 1, deletedAt: 1 });
