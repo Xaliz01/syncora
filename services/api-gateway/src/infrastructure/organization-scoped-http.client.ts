@@ -42,9 +42,7 @@ export class OrganizationScopedHttpClient {
       organizationId = requireOrganizationId(options.organizationId);
       query = scopeRequestQuery(organizationId, options.query);
       body =
-        options.body !== undefined
-          ? scopeRequestBody(organizationId, options.body)
-          : undefined;
+        options.body !== undefined ? scopeRequestBody(organizationId, options.body) : undefined;
     } catch (err) {
       this.rethrowScopeError(err);
     }
@@ -91,8 +89,8 @@ export class OrganizationScopedHttpClient {
 
   private rethrowAsHttpException(err: unknown, fallbackMessage: string): never {
     const status = (err as { response?: { status?: number } })?.response?.status;
-    const raw = (err as { response?: { data?: { message?: string | string[] } } })?.response
-      ?.data?.message;
+    const raw = (err as { response?: { data?: { message?: string | string[] } } })?.response?.data
+      ?.message;
     const message = Array.isArray(raw) ? raw.join(", ") : (raw ?? fallbackMessage);
 
     if (status === 400) throw new BadRequestException(message);

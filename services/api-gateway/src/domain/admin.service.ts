@@ -21,7 +21,10 @@ import type {
   UserResponse,
 } from "@syncora/shared";
 import { ASSIGNABLE_PERMISSION_CODES } from "@syncora/shared";
-import { assertAnyAssignablePermission, assertAssignablePermission } from "../infrastructure/permission-checks";
+import {
+  assertAnyAssignablePermission,
+  assertAssignablePermission,
+} from "../infrastructure/permission-checks";
 import {
   AbstractAdminService,
   type InviteOrganizationUserBody,

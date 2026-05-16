@@ -1,7 +1,9 @@
 import { ForbiddenException } from "@nestjs/common";
 import type { AuthUser, JwtPayload, PermissionCode } from "@syncora/shared";
 
-type PermissionSubject = Pick<AuthUser, "role" | "permissions"> | Pick<JwtPayload, "role" | "permissions">;
+type PermissionSubject =
+  | Pick<AuthUser, "role" | "permissions">
+  | Pick<JwtPayload, "role" | "permissions">;
 
 function permissionSet(subject: PermissionSubject): Set<PermissionCode> {
   return new Set((subject.permissions ?? []) as PermissionCode[]);

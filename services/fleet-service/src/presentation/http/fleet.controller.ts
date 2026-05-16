@@ -1,14 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Patch,
-  Post,
-  Put,
-  Query,
-} from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from "@nestjs/common";
 import { parseOrganizationIdQuery } from "@syncora/shared";
 import { AbstractFleetService } from "../../domain/ports/fleet.service.port";
 import type {

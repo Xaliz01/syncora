@@ -13,9 +13,9 @@ describe("organization-scope", () => {
   });
 
   it("scopeRequestBody rejects organizationId mismatch", () => {
-    expect(() =>
-      scopeRequestBody("org-a", { organizationId: "org-b", name: "Test" }),
-    ).toThrow(OrganizationScopeError);
+    expect(() => scopeRequestBody("org-a", { organizationId: "org-b", name: "Test" })).toThrow(
+      OrganizationScopeError,
+    );
   });
 
   it("scopeRequestBody injects organizationId", () => {
@@ -45,9 +45,9 @@ describe("organization-scope", () => {
   });
 
   it("assertOrganizationScopedPayload validates arrays and ignores delete markers", () => {
-    expect(() =>
-      assertOrganizationScopedPayload("org-a", [{ organizationId: "org-b" }]),
-    ).toThrow(OrganizationScopeError);
+    expect(() => assertOrganizationScopedPayload("org-a", [{ organizationId: "org-b" }])).toThrow(
+      OrganizationScopeError,
+    );
     expect(() => assertOrganizationScopedPayload("org-a", { deleted: true })).not.toThrow();
   });
 });

@@ -87,7 +87,9 @@ export class CustomersService extends AbstractCustomersService {
   }
 
   async getCustomer(id: string, organizationId: string): Promise<CustomerResponse> {
-    const doc = await this.customerModel.findOne({ _id: id, ...organizationScopeFilter(organizationId) }).exec();
+    const doc = await this.customerModel
+      .findOne({ _id: id, ...organizationScopeFilter(organizationId) })
+      .exec();
     if (!doc) throw new NotFoundException("Client introuvable");
     return assertOrganizationScopedResourceNest(
       organizationId,

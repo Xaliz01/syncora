@@ -13,9 +13,7 @@ export class OrganizationScopeError extends Error {
 }
 
 /** Valide et normalise un identifiant d'organisation (requêtes / corps API). */
-export function requireOrganizationId(
-  organizationId: string | undefined | null,
-): string {
+export function requireOrganizationId(organizationId: string | undefined | null): string {
   const trimmed = organizationId?.trim();
   if (!trimmed) {
     throw new OrganizationScopeError("organizationId is required");
@@ -41,9 +39,7 @@ export function scopeRequestBody<T extends object>(
 ): T & { organizationId: string } {
   const org = requireOrganizationId(expectedOrganizationId);
   const rawOrg =
-    "organizationId" in body
-      ? (body as { organizationId?: unknown }).organizationId
-      : undefined;
+    "organizationId" in body ? (body as { organizationId?: unknown }).organizationId : undefined;
   const bodyOrg = typeof rawOrg === "string" ? rawOrg.trim() : undefined;
   if (bodyOrg && bodyOrg !== org) {
     throw new OrganizationScopeError("organizationId mismatch");

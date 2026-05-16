@@ -33,8 +33,8 @@ describe("permission-checks", () => {
     expect(() => assertAssignablePermission(member, "organizations.update")).toThrow(
       ForbiddenException,
     );
-    expect(() =>
-      assertAnyAssignablePermission(member, ["cases.assign", "cases.update"]),
-    ).toThrow(ForbiddenException);
+    expect(() => assertAnyAssignablePermission(member, ["cases.assign", "cases.update"])).toThrow(
+      ForbiddenException,
+    );
   });
 });

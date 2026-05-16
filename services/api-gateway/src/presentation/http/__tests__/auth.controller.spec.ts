@@ -129,7 +129,6 @@ describe("AuthController", () => {
       expect(mockAuthService.createOrganization).toHaveBeenCalledWith(body, jwtPayload);
       expect(result).toEqual(mockAuthResponse);
     });
-
   });
 
   describe("acceptInvitation", () => {

@@ -162,7 +162,9 @@ describe("UsersService", () => {
       const execMock = jest.fn().mockResolvedValue(mockDoc({ organizationId: "org-new" }));
       mockUserModel.findOneAndUpdate.mockReturnValue({ exec: execMock });
       mockMembershipModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(mockMemDoc({ organizationId: "org-new", role: "member" })),
+        exec: jest
+          .fn()
+          .mockResolvedValue(mockMemDoc({ organizationId: "org-new", role: "member" })),
       });
 
       const result = await service.patch("user-123", { organizationId: "org-new" });

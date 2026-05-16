@@ -35,7 +35,13 @@ export class TechniciansGatewayService extends AbstractTechniciansGatewayService
     });
   }
 
-  private usersRequest<T>(organizationId: string, params: Omit<Parameters<OrganizationScopedHttpClient["request"]>[0], "baseUrl" | "organizationId" | "errorLabel">) {
+  private usersRequest<T>(
+    organizationId: string,
+    params: Omit<
+      Parameters<OrganizationScopedHttpClient["request"]>[0],
+      "baseUrl" | "organizationId" | "errorLabel"
+    >,
+  ) {
     return this.scopedHttp.request<T>({
       ...params,
       baseUrl: USERS_URL,
