@@ -1,7 +1,7 @@
 import { BadRequestException, Body, Controller, Get, Post, Query } from "@nestjs/common";
 import { SubscriptionsService } from "../../domain/subscriptions.service";
 import type { CreateAddonCheckoutSessionBody, CreateBillingPortalBody, CreateCheckoutSessionBody } from "@syncora/shared";
-import { ADDON_CODES } from "@syncora/shared";
+import { isValidAddonCode } from "@syncora/shared";
 
 @Controller("subscriptions")
 export class SubscriptionsController {
@@ -33,7 +33,7 @@ export class SubscriptionsController {
     if (!body.successUrl?.trim() || !body.cancelUrl?.trim()) {
       throw new BadRequestException("successUrl and cancelUrl are required");
     }
-    if (!(ADDON_CODES as readonly string[]).includes(body.addonCode)) {
+    if (!isValidAddonCode(body.addonCode)) {
       throw new BadRequestException(`Code addon invalide : ${body.addonCode}`);
     }
     return this.subscriptionsService.createAddonCheckoutSession({

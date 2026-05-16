@@ -1,32 +1,20 @@
 "use client";
 
 import React from "react";
-import { useAddon } from "@/lib/hooks/useAddon";
-import { ADDON_PRICES } from "@syncora/shared";
+import { AddonLockedOverlay } from "@/components/addon/AddonLockedOverlay";
 import {
   InterventionTeamOptimizer,
   type InterventionTeamOptimizerProps,
 } from "@/components/cases/InterventionTeamOptimizer";
 
-interface TeamSuggestionAddonGateProps extends InterventionTeamOptimizerProps {
-  /** Si true, désactive l'auto-sélection de la meilleure équipe (utile en édition). */
-  disableAutoSelect?: boolean;
-}
-
-function LockedTeaser({
-  canManageBilling,
-  onStartCheckout,
-  isPending,
-}: {
-  canManageBilling: boolean;
-  onStartCheckout: () => void;
-  isPending: boolean;
-}) {
+/**
+ * Aperçu skeleton du module de suggestion d'équipe.
+ * Affiché en version floue quand l'addon n'est pas actif.
+ */
+function TeamSuggestionPreview() {
   return (
-    <div className="relative rounded-xl border border-slate-200 dark:border-slate-700 bg-gradient-to-b from-slate-50/90 to-white dark:from-slate-900 dark:to-slate-950 p-3 shadow-sm overflow-hidden">
-      <div className="absolute inset-0 backdrop-blur-[2px] bg-white/40 dark:bg-slate-950/40 z-10 pointer-events-none" />
-
-      <div className="flex items-start gap-2 mb-2 opacity-60">
+    <>
+      <div className="flex items-start gap-2 mb-2">
         <div
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-600 text-white shadow-md shadow-brand-900/20"
           aria-hidden
@@ -56,7 +44,7 @@ function LockedTeaser({
         </div>
       </div>
 
-      <div className="space-y-2 opacity-50 pointer-events-none select-none" aria-hidden>
+      <div className="space-y-2">
         {[1, 2].map((i) => (
           <div
             key={i}
@@ -92,70 +80,24 @@ function LockedTeaser({
           </div>
         ))}
       </div>
-
-      <div className="relative z-20 mt-3 rounded-xl border border-brand-200 dark:border-brand-800 bg-gradient-to-br from-brand-50 via-white to-indigo-50 dark:from-slate-900 dark:via-slate-900 dark:to-indigo-950/30 p-4">
-        <div className="flex items-center gap-2 mb-2">
-          <svg
-            className="h-5 w-5 text-brand-600 dark:text-brand-400 shrink-0"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-            />
-          </svg>
-          <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-            Module addon — {ADDON_PRICES.team_suggestion}
-          </h4>
-        </div>
-        <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed mb-3">
-          Optimisez vos tournées en assignant automatiquement l'équipe la plus
-          proche. Estimez la distance, le temps de trajet, la consommation de
-          carburant et l'empreinte CO₂ pour chaque intervention.
-        </p>
-        {canManageBilling ? (
-          <button
-            type="button"
-            onClick={onStartCheckout}
-            disabled={isPending}
-            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
-          >
-            {isPending ? "Redirection…" : "Obtenir le module de suggestion"}
-          </button>
-        ) : (
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Contactez un administrateur de votre organisation pour activer cet addon.
-          </p>
-        )}
-      </div>
-    </div>
+    </>
   );
 }
 
-export function TeamSuggestionAddonGate({
-  disableAutoSelect,
-  ...optimizerProps
-}: TeamSuggestionAddonGateProps) {
-  const { hasAddon, isLoading, canManageBilling, startCheckout, isCheckoutPending } =
-    useAddon("team_suggestion");
-
-  if (isLoading) {
-    return null;
-  }
-
-  if (!hasAddon) {
-    return (
-      <LockedTeaser
-        canManageBilling={canManageBilling}
-        onStartCheckout={startCheckout}
-        isPending={isCheckoutPending}
-      />
-    );
-  }
-
-  return <InterventionTeamOptimizer {...optimizerProps} />;
+/**
+ * Gate spécifique à l'addon « team_suggestion ».
+ *
+ * Utilise le composant générique AddonLockedOverlay :
+ * - addon actif  → affiche InterventionTeamOptimizer
+ * - addon absent → affiche un teaser visuel spécifique + CTA d'achat
+ */
+export function TeamSuggestionAddonGate(optimizerProps: InterventionTeamOptimizerProps) {
+  return (
+    <AddonLockedOverlay
+      addonCode="team_suggestion"
+      preview={<TeamSuggestionPreview />}
+    >
+      <InterventionTeamOptimizer {...optimizerProps} />
+    </AddonLockedOverlay>
+  );
 }

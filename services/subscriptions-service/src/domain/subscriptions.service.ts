@@ -14,17 +14,21 @@ import type {
   OrganizationSubscriptionResponse,
   OrganizationSubscriptionStatus,
 } from "@syncora/shared";
-import { ADDON_CODES } from "@syncora/shared";
+import { ADDON_CATALOG, isValidAddonCode } from "@syncora/shared";
 import type { OrganizationSubscriptionDocument } from "../persistence/organization-subscription.schema";
 import type { ProcessedStripeEventDocument } from "../persistence/processed-stripe-event.schema";
 
 const DEFAULT_TRIAL_DAYS = 15;
 const PLAN_LABEL = "9,99 € / mois, sans engagement";
 
-const ADDON_PRICE_IDS: Record<AddonCode, string> = {
-  team_suggestion:
-    process.env.STRIPE_ADDON_TEAM_SUGGESTION_PRICE_ID ?? "price_addon_team_suggestion",
-};
+/**
+ * Résout le Stripe Price ID d'un addon depuis le catalogue partagé + env vars.
+ * Convention : chaque addon définit son `stripePriceEnvVar` dans ADDON_CATALOG.
+ */
+function resolveAddonPriceId(code: AddonCode): string {
+  const descriptor = ADDON_CATALOG[code];
+  return process.env[descriptor.stripePriceEnvVar] ?? descriptor.stripePriceDefault;
+}
 
 function getStripe(): Stripe {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -61,10 +65,6 @@ function computeHasAccess(
     return true;
   }
   return false;
-}
-
-function isValidAddonCode(code: string): code is AddonCode {
-  return (ADDON_CODES as readonly string[]).includes(code);
 }
 
 @Injectable()
@@ -183,10 +183,11 @@ export class SubscriptionsService {
       throw new BadRequestException(`L'addon « ${params.addonCode} » est déjà actif.`);
     }
 
-    const priceId = ADDON_PRICE_IDS[params.addonCode];
+    const priceId = resolveAddonPriceId(params.addonCode);
     if (!priceId?.trim()) {
       throw new InternalServerErrorException(
-        `Prix Stripe non configuré pour l'addon ${params.addonCode}`,
+        `Prix Stripe non configuré pour l'addon ${params.addonCode}. ` +
+        `Définissez la variable d'environnement ${ADDON_CATALOG[params.addonCode].stripePriceEnvVar}.`,
       );
     }
 
