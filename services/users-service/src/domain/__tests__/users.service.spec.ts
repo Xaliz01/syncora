@@ -1,6 +1,11 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getModelToken } from "@nestjs/mongoose";
-import { ConflictException, NotFoundException, BadRequestException } from "@nestjs/common";
+import {
+  ConflictException,
+  NotFoundException,
+  BadRequestException,
+  UnauthorizedException,
+} from "@nestjs/common";
 import * as bcrypt from "bcrypt";
 import { activeDocumentFilter } from "@syncora/shared";
 import { UsersService } from "../users.service";
@@ -26,6 +31,10 @@ describe("UsersService", () => {
     findOne: jest.Mock;
     countDocuments: jest.Mock;
     updateMany: jest.Mock;
+  };
+  let mockPreferencesModel: {
+    findOne: jest.Mock;
+    findOneAndUpdate: jest.Mock;
   };
 
   const mockDoc = (overrides: Record<string, unknown> = {}) => ({
@@ -88,11 +97,17 @@ describe("UsersService", () => {
       updateMany: jest.fn().mockResolvedValue({ modifiedCount: 1 }),
     };
 
+    mockPreferencesModel = {
+      findOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
+      findOneAndUpdate: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         { provide: AbstractUsersService, useClass: UsersService },
         { provide: getModelToken("User"), useValue: mockUserModel },
         { provide: getModelToken("OrganizationMembership"), useValue: mockMembershipModel },
+        { provide: getModelToken("UserPreferences"), useValue: mockPreferencesModel },
       ],
     }).compile();
 
@@ -387,6 +402,155 @@ describe("UsersService", () => {
       const result = await service.validateCredentials("user@example.com", "password");
 
       expect(result).toBeNull();
+    });
+  });
+
+  describe("updateName", () => {
+    it("should update user name", async () => {
+      const doc = mockDoc({ name: "New Name" });
+      mockUserModel.findOneAndUpdate.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+
+      const result = await service.updateName("user-123", { name: "New Name" });
+
+      expect(mockUserModel.findOneAndUpdate).toHaveBeenCalledWith(
+        { _id: "user-123", ...activeDocumentFilter },
+        { $set: { name: "New Name" } },
+        { new: true },
+      );
+      expect(result.name).toBe("New Name");
+    });
+
+    it("should throw BadRequestException when name is empty", async () => {
+      await expect(service.updateName("user-123", { name: "   " })).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it("should throw NotFoundException when user does not exist", async () => {
+      mockUserModel.findOneAndUpdate.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null),
+      });
+
+      await expect(service.updateName("user-123", { name: "X" })).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe("changePassword", () => {
+    it("should change password when current password is correct", async () => {
+      const doc = mockDoc({
+        passwordHash: "hashed",
+        save: jest.fn().mockResolvedValue(undefined),
+      });
+      mockUserModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+      await service.changePassword("user-123", {
+        currentPassword: "old",
+        newPassword: "new-pass",
+      });
+
+      expect(bcrypt.compare).toHaveBeenCalledWith("old", "hashed");
+      expect(bcrypt.hash).toHaveBeenCalledWith("new-pass", 10);
+      expect(doc.save).toHaveBeenCalled();
+    });
+
+    it("should throw UnauthorizedException when current password is wrong", async () => {
+      const doc = mockDoc({ passwordHash: "hashed" });
+      mockUserModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+
+      await expect(
+        service.changePassword("user-123", {
+          currentPassword: "wrong",
+          newPassword: "new",
+        }),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it("should throw NotFoundException when user does not exist", async () => {
+      mockUserModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null),
+      });
+
+      await expect(
+        service.changePassword("non-existent", {
+          currentPassword: "old",
+          newPassword: "new",
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe("getPreferences", () => {
+    it("should return default preferences when none exist", async () => {
+      mockPreferencesModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null),
+      });
+
+      const result = await service.getPreferences("user-123");
+
+      expect(result).toEqual({
+        userId: "user-123",
+        preferences: { theme: "light", sidebarCollapsed: "expanded" },
+      });
+    });
+
+    it("should return stored preferences when they exist", async () => {
+      mockPreferencesModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({
+          userId: "user-123",
+          theme: "dark",
+          sidebarCollapsed: "collapsed",
+        }),
+      });
+
+      const result = await service.getPreferences("user-123");
+
+      expect(result).toEqual({
+        userId: "user-123",
+        preferences: { theme: "dark", sidebarCollapsed: "collapsed" },
+      });
+    });
+  });
+
+  describe("updatePreferences", () => {
+    it("should upsert preferences and return them", async () => {
+      const doc = mockDoc();
+      mockUserModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+      mockPreferencesModel.findOneAndUpdate.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({
+          userId: "user-123",
+          theme: "dark",
+          sidebarCollapsed: "expanded",
+        }),
+      });
+
+      const result = await service.updatePreferences("user-123", { theme: "dark" });
+
+      expect(result).toEqual({
+        userId: "user-123",
+        preferences: { theme: "dark", sidebarCollapsed: "expanded" },
+      });
+    });
+
+    it("should throw NotFoundException when user does not exist", async () => {
+      mockUserModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null),
+      });
+
+      await expect(service.updatePreferences("non-existent", { theme: "dark" })).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

@@ -1,10 +1,14 @@
 import type {
   ActivateInvitedUserBody,
+  ChangePasswordBody,
   CreateInvitedUserBody,
   CreateOrganizationMembershipBody,
   CreateUserBody,
   OrganizationMembershipResponse,
   PatchUserBody,
+  UpdateUserNameBody,
+  UpdateUserPreferencesBody,
+  UserPreferencesResponse,
   UserResponse,
   ValidateCredentialsResponse,
 } from "@syncora/shared";
@@ -25,4 +29,11 @@ export abstract class AbstractUsersService {
     email: string,
     password: string,
   ): Promise<ValidateCredentialsResponse | null>;
+  abstract updateName(id: string, body: UpdateUserNameBody): Promise<UserResponse>;
+  abstract changePassword(id: string, body: ChangePasswordBody): Promise<void>;
+  abstract getPreferences(userId: string): Promise<UserPreferencesResponse>;
+  abstract updatePreferences(
+    userId: string,
+    body: UpdateUserPreferencesBody,
+  ): Promise<UserPreferencesResponse>;
 }

@@ -172,4 +172,70 @@ describe("AuthService", () => {
       expect(jwtSignSpy).not.toHaveBeenCalled();
     });
   });
+
+  describe("getSessionUser", () => {
+    const jwtPayload = {
+      sub: "user-123",
+      organizationId: "org-123",
+      role: "admin" as const,
+      status: "active" as const,
+      permissions: ["cases.read" as const],
+      email: "admin@example.com",
+      name: "Stale JWT Name",
+    };
+
+    it("should return the name from users-service, not the JWT", async () => {
+      jest.spyOn(httpService, "get").mockImplementation((url: string) => {
+        if (url.includes("/organization-memberships")) {
+          return of({
+            data: [{ organizationId: "org-123", role: "admin", membershipStatus: "active" }],
+            status: 200,
+          } as AxiosResponse);
+        }
+        if (url.includes("/users/user-123") && !url.includes("memberships")) {
+          return of({
+            data: { ...mockUserResponse, name: "Fresh DB Name" },
+            status: 200,
+          } as AxiosResponse);
+        }
+        return of({ data: {}, status: 200 } as AxiosResponse);
+      });
+      jest.spyOn(httpService, "post").mockImplementation((url: string) => {
+        if (url.includes("/permissions/effective")) {
+          return of({ data: mockPermissionsResponse, status: 200 } as AxiosResponse);
+        }
+        return of({ data: {}, status: 200 } as AxiosResponse);
+      });
+
+      const user = await service.getSessionUser(jwtPayload);
+
+      expect(user.name).toBe("Fresh DB Name");
+      expect(user.email).toBe("admin@example.com");
+    });
+
+    it("should fall back to JWT name when users-service is unavailable", async () => {
+      jest.spyOn(httpService, "get").mockImplementation((url: string) => {
+        if (url.includes("/organization-memberships")) {
+          return of({
+            data: [{ organizationId: "org-123", role: "admin", membershipStatus: "active" }],
+            status: 200,
+          } as AxiosResponse);
+        }
+        if (url.includes("/users/user-123")) {
+          return throwError(() => ({ response: { status: 404 } }));
+        }
+        return of({ data: {}, status: 200 } as AxiosResponse);
+      });
+      jest.spyOn(httpService, "post").mockImplementation((url: string) => {
+        if (url.includes("/permissions/effective")) {
+          return of({ data: mockPermissionsResponse, status: 200 } as AxiosResponse);
+        }
+        return of({ data: {}, status: 200 } as AxiosResponse);
+      });
+
+      const user = await service.getSessionUser(jwtPayload);
+
+      expect(user.name).toBe("Stale JWT Name");
+    });
+  });
 });

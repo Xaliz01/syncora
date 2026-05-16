@@ -6,6 +6,7 @@ import { AbstractAppService } from "../domain/ports/app.service.port";
 import { AppService } from "../services/app.service";
 import { NotifyInterceptor } from "../infrastructure/notify.interceptor";
 import { AuthModule } from "./auth.module";
+import { AccountModule } from "./account.module";
 import { AdminModule } from "./admin.module";
 import { FleetModule } from "./fleet.module";
 import { TechniciansModule } from "./technicians.module";
@@ -25,6 +26,7 @@ import { GatewayHttpModule } from "./gateway-http.module";
     EventEmitterModule.forRoot(),
     GatewayHttpModule,
     AuthModule,
+    AccountModule,
     OrganizationsModule,
     AdminModule,
     FleetModule,

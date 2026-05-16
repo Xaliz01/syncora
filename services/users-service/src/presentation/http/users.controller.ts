@@ -3,20 +3,26 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
+  HttpStatus,
   NotFoundException,
   Param,
   Patch,
   Post,
+  Put,
   Query,
   UnauthorizedException,
 } from "@nestjs/common";
 import { AbstractUsersService } from "../../domain/ports/users.service.port";
 import type {
   ActivateInvitedUserBody,
+  ChangePasswordBody,
   CreateInvitedUserBody,
   CreateOrganizationMembershipBody,
   CreateUserBody,
   PatchUserBody,
+  UpdateUserNameBody,
+  UpdateUserPreferencesBody,
   ValidateCredentialsBody,
   ValidateCredentialsResponse,
 } from "@syncora/shared";
@@ -70,6 +76,27 @@ export class UsersController {
   @Post(":id/activate")
   async activateInvitedUser(@Param("id") id: string, @Body() body: ActivateInvitedUserBody) {
     return this.usersService.activateInvitedUser(id, body);
+  }
+
+  @Put(":id/name")
+  async updateName(@Param("id") id: string, @Body() body: UpdateUserNameBody) {
+    return this.usersService.updateName(id, body);
+  }
+
+  @Post(":id/change-password")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async changePassword(@Param("id") id: string, @Body() body: ChangePasswordBody) {
+    await this.usersService.changePassword(id, body);
+  }
+
+  @Get(":id/preferences")
+  async getPreferences(@Param("id") id: string) {
+    return this.usersService.getPreferences(id);
+  }
+
+  @Put(":id/preferences")
+  async updatePreferences(@Param("id") id: string, @Body() body: UpdateUserPreferencesBody) {
+    return this.usersService.updatePreferences(id, body);
   }
 
   @Patch(":id")

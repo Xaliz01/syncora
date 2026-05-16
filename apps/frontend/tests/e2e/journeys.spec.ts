@@ -57,6 +57,7 @@ const ALL_PROTECTED_PATHS = [
   "/",
   "/organization",
   "/subscription",
+  "/account",
   "/search",
   "/stock",
   "/customers",

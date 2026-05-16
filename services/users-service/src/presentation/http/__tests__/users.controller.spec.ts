@@ -18,6 +18,10 @@ describe("UsersController", () => {
       listOrganizationMemberships: jest.fn(),
       addOrganizationMembership: jest.fn(),
       validateCredentials: jest.fn(),
+      updateName: jest.fn(),
+      changePassword: jest.fn(),
+      getPreferences: jest.fn(),
+      updatePreferences: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -163,6 +167,74 @@ describe("UsersController", () => {
       await expect(controller.listByOrganization("")).rejects.toThrow(
         "organizationId query param is required",
       );
+    });
+  });
+
+  describe("updateName", () => {
+    it("should call service.updateName and return the result", async () => {
+      const body = { name: "New Name" };
+      const expected = {
+        id: "user-123",
+        organizationId: "org-1",
+        email: "user@example.com",
+        name: "New Name",
+        role: "member" as const,
+        status: "active" as const,
+        createdAt: "2025-01-01T00:00:00.000Z",
+      };
+      mockUsersService.updateName.mockResolvedValue(expected);
+
+      const result = await controller.updateName("user-123", body);
+
+      expect(mockUsersService.updateName).toHaveBeenCalledWith("user-123", body);
+      expect(result).toEqual(expected);
+    });
+  });
+
+  describe("changePassword", () => {
+    it("should call service.changePassword", async () => {
+      mockUsersService.changePassword.mockResolvedValue(undefined);
+
+      await controller.changePassword("user-123", {
+        currentPassword: "old",
+        newPassword: "new",
+      });
+
+      expect(mockUsersService.changePassword).toHaveBeenCalledWith("user-123", {
+        currentPassword: "old",
+        newPassword: "new",
+      });
+    });
+  });
+
+  describe("getPreferences", () => {
+    it("should call service.getPreferences and return the result", async () => {
+      const expected = {
+        userId: "user-123",
+        preferences: { theme: "light" as const, sidebarCollapsed: "expanded" as const },
+      };
+      mockUsersService.getPreferences.mockResolvedValue(expected);
+
+      const result = await controller.getPreferences("user-123");
+
+      expect(mockUsersService.getPreferences).toHaveBeenCalledWith("user-123");
+      expect(result).toEqual(expected);
+    });
+  });
+
+  describe("updatePreferences", () => {
+    it("should call service.updatePreferences and return the result", async () => {
+      const body = { theme: "dark" as const };
+      const expected = {
+        userId: "user-123",
+        preferences: { theme: "dark" as const, sidebarCollapsed: "expanded" as const },
+      };
+      mockUsersService.updatePreferences.mockResolvedValue(expected);
+
+      const result = await controller.updatePreferences("user-123", body);
+
+      expect(mockUsersService.updatePreferences).toHaveBeenCalledWith("user-123", body);
+      expect(result).toEqual(expected);
     });
   });
 

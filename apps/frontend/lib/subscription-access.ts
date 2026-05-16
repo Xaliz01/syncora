@@ -20,11 +20,13 @@ export function subscriptionModifyAddonsPath(addonCode: AddonCode): string {
   return `/subscription?modify=${encodeURIComponent(addonCode)}`;
 }
 
-/** Routes accessibles sans abonnement actif (organisation + facturation). */
+/** Routes accessibles sans abonnement actif (organisation, facturation, compte). */
 export function isOrganizationSubscriptionRoute(pathname: string): boolean {
   return (
     pathname === "/organization" ||
     pathname.startsWith("/organization/") ||
+    pathname === "/account" ||
+    pathname.startsWith("/account/") ||
     isSubscriptionRoute(pathname)
   );
 }

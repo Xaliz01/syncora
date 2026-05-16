@@ -1,15 +1,33 @@
 "use client";
 
 import { useTheme } from "next-themes";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
+import type { ThemePreference } from "@syncora/shared";
+import { useAuth } from "@/components/auth/AuthContext";
+import * as accountApi from "@/lib/account.api";
+import { notifyThemePreferenceChanged } from "@/lib/user-preferences";
 
 export function ThemeToggle() {
   const { setTheme, resolvedTheme } = useTheme();
+  const { isAuthenticated, isReady } = useAuth();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const toggleTheme = useCallback(() => {
+    const next: ThemePreference = resolvedTheme === "dark" ? "light" : "dark";
+    setTheme(next);
+    if (isReady && isAuthenticated) {
+      void accountApi
+        .updatePreferences({ theme: next })
+        .then(() => notifyThemePreferenceChanged(next))
+        .catch(() => {
+          /* thème déjà appliqué localement */
+        });
+    }
+  }, [resolvedTheme, setTheme, isReady, isAuthenticated]);
 
   if (!mounted) {
     return (
@@ -25,7 +43,7 @@ export function ThemeToggle() {
   return (
     <button
       type="button"
-      onClick={() => setTheme(isDark ? "light" : "dark")}
+      onClick={toggleTheme}
       className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
       title={isDark ? "Passer en thème clair" : "Passer en thème sombre"}
       aria-label={isDark ? "Passer en thème clair" : "Passer en thème sombre"}
