@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
+import { SidebarNavIcon } from "@/components/layout/sidebar-nav-icons";
+import { readSidebarCollapsed, writeSidebarCollapsed } from "@/lib/sidebar-preference";
 import { useAuth } from "@/components/auth/AuthContext";
 import { hasActiveSubscriptionAccess } from "@/lib/subscription-access";
 import { OrganizationSwitcher } from "@/components/organization/OrganizationSwitcher";
@@ -47,11 +49,13 @@ function NavLink({
   href,
   label,
   currentPath,
+  collapsed,
   onClick,
 }: {
   href: string;
   label: string;
   currentPath: string;
+  collapsed?: boolean;
   onClick?: () => void;
 }) {
   const isActive = isLinkActive(currentPath, href);
@@ -59,33 +63,80 @@ function NavLink({
     <Link
       href={href}
       onClick={onClick}
-      className={`block rounded-md px-3 py-2 text-sm transition ${
+      title={collapsed ? label : undefined}
+      className={`flex items-center rounded-md text-sm transition ${
+        collapsed ? "justify-center p-2" : "gap-3 px-3 py-2"
+      } ${
         isActive
           ? "bg-brand-600/10 text-brand-600 dark:text-brand-400 font-medium"
           : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100"
       }`}
     >
-      {label}
+      <SidebarNavIcon href={href} />
+      {!collapsed && <span className="truncate">{label}</span>}
     </Link>
+  );
+}
+
+function SidebarCollapseToggle({
+  collapsed,
+  onToggle,
+}: {
+  collapsed: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      title={collapsed ? "Agrandir le menu" : "Réduire le menu"}
+      aria-label={collapsed ? "Agrandir le menu" : "Réduire le menu"}
+      className={`flex w-full shrink-0 items-center border-b border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition ${
+        collapsed ? "justify-center p-3" : "gap-2 px-3 py-2.5"
+      }`}
+    >
+      <svg
+        className="h-5 w-5 shrink-0"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2}
+        aria-hidden
+      >
+        {collapsed ? (
+          <path strokeLinecap="round" strokeLinejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+        ) : (
+          <path strokeLinecap="round" strokeLinejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+        )}
+      </svg>
+      {!collapsed && <span className="text-xs font-medium">Réduire le menu</span>}
+    </button>
   );
 }
 
 function SidebarContent({
   menuSections,
   pathname,
+  collapsed,
   onNavigate,
 }: {
   menuSections: MenuSection[];
   pathname: string;
+  collapsed?: boolean;
   onNavigate?: () => void;
 }) {
   return (
-    <nav className="space-y-5 px-3 py-4">
-      {menuSections.map((section) => (
-        <section key={section.label}>
-          <h2 className="mb-1.5 px-3 text-[11px] uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-500">
-            {section.label}
-          </h2>
+    <nav className={`flex-1 space-y-5 py-4 ${collapsed ? "px-2" : "px-3"}`}>
+      {menuSections.map((section, index) => (
+        <section
+          key={section.label}
+          className={collapsed && index > 0 ? "pt-4 border-t border-slate-100 dark:border-slate-800" : ""}
+        >
+          {!collapsed && (
+            <h2 className="mb-1.5 px-3 text-[11px] uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-500">
+              {section.label}
+            </h2>
+          )}
           <div className="space-y-0.5">
             {section.links.map((link) => (
               <NavLink
@@ -93,6 +144,7 @@ function SidebarContent({
                 href={link.href}
                 label={link.label}
                 currentPath={pathname}
+                collapsed={collapsed}
                 onClick={onNavigate}
               />
             ))}
@@ -109,7 +161,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarPrefReady, setSidebarPrefReady] = useState(false);
   const subscriptionOk = hasActiveSubscriptionAccess(user);
+
+  useEffect(() => {
+    setSidebarCollapsed(readSidebarCollapsed());
+    setSidebarPrefReady(true);
+  }, []);
+
+  const toggleSidebarCollapsed = useCallback(() => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      writeSidebarCollapsed(next);
+      return next;
+    });
+  }, []);
 
   const menuSections: MenuSection[] = subscriptionOk
     ? [
@@ -279,9 +346,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <div className="flex flex-1">
         {/* Desktop sidebar */}
-        <aside className="hidden lg:flex lg:flex-col lg:w-[260px] lg:flex-shrink-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-[57px] h-[calc(100vh-57px)] overflow-y-auto">
-          <OrganizationSwitcher />
-          <SidebarContent menuSections={visibleSections} pathname={pathname} />
+        <aside
+          className={`hidden lg:flex lg:flex-col lg:flex-shrink-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-[57px] h-[calc(100vh-57px)] overflow-y-auto overflow-x-hidden transition-[width] duration-200 ${
+            sidebarPrefReady && sidebarCollapsed ? "lg:w-[4.5rem]" : "lg:w-[260px]"
+          }`}
+        >
+          <SidebarCollapseToggle collapsed={sidebarCollapsed} onToggle={toggleSidebarCollapsed} />
+          <OrganizationSwitcher collapsed={sidebarCollapsed} />
+          <SidebarContent
+            menuSections={visibleSections}
+            pathname={pathname}
+            collapsed={sidebarCollapsed}
+          />
         </aside>
 
         {/* Mobile sidebar overlay */}
