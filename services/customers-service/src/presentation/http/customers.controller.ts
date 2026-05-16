@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from "@nestjs/common";
 import type { CreateCustomerBody, UpdateCustomerBody } from "@syncora/shared";
-import { parseOrganizationIdQuery } from "@syncora/shared";
+import { parseOrganizationIdQuery } from "@syncora/shared/nest";
 import { AbstractCustomersService } from "../../domain/ports/customers.service.port";
 
 @Controller("customers")

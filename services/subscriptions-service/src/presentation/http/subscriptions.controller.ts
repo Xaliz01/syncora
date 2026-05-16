@@ -4,6 +4,7 @@ import type {
   CreateAddonCheckoutSessionBody,
   CreateBillingPortalBody,
   CreateCheckoutSessionBody,
+  UpdateSubscriptionAddonsBody,
 } from "@syncora/shared";
 import { isValidAddonCode } from "@syncora/shared";
 
@@ -43,8 +44,30 @@ export class SubscriptionsController {
     return this.subscriptionsService.createAddonCheckoutSession({
       organizationId: body.organizationId,
       addonCode: body.addonCode,
+      customerEmail: body.customerEmail?.trim(),
       successUrl: body.successUrl.trim(),
       cancelUrl: body.cancelUrl.trim(),
+    });
+  }
+
+  @Post("update-addons")
+  updateSubscriptionAddons(@Body() body: UpdateSubscriptionAddonsBody) {
+    this.ensureOrg(body.organizationId);
+    if (!body.successUrl?.trim()) {
+      throw new BadRequestException("successUrl is required");
+    }
+    if (!Array.isArray(body.addonCodes)) {
+      throw new BadRequestException("addonCodes must be an array");
+    }
+    for (const code of body.addonCodes) {
+      if (!isValidAddonCode(code)) {
+        throw new BadRequestException(`Code addon invalide : ${code}`);
+      }
+    }
+    return this.subscriptionsService.updateSubscriptionAddons({
+      organizationId: body.organizationId,
+      addonCodes: body.addonCodes,
+      successUrl: body.successUrl.trim(),
     });
   }
 
@@ -57,6 +80,7 @@ export class SubscriptionsController {
     return this.subscriptionsService.createBillingPortalSession({
       organizationId: body.organizationId,
       returnUrl: body.returnUrl.trim(),
+      flow: body.flow,
     });
   }
 

@@ -20,7 +20,7 @@ import type {
   UpdateInterventionBody,
   UpdateTodoBody,
 } from "@syncora/shared";
-import { parseOrganizationIdQuery } from "@syncora/shared";
+import { parseOrganizationIdQuery } from "@syncora/shared/nest";
 
 @Controller()
 export class CasesController {

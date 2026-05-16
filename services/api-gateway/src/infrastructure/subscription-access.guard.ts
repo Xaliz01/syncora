@@ -35,7 +35,7 @@ export class SubscriptionAccessGuard implements CanActivate {
     const sub = await this.subscriptionsGateway.getCurrentSubscription(user);
     if (!sub.hasAccess) {
       throw new ForbiddenException(
-        "Abonnement inactif ou expiré. Ouvrez Mon organisation pour activer un essai ou vous réabonner.",
+        "Abonnement inactif ou expiré. Ouvrez Mon abonnement pour activer un essai ou vous réabonner.",
       );
     }
     return true;

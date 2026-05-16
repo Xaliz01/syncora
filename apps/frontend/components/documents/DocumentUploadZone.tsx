@@ -170,64 +170,6 @@ export function DocumentUploadZone({ entityType, entityId }: Props) {
     <div className="mt-8 border-t border-slate-200 dark:border-slate-700 pt-6">
       <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4">Documents</h3>
 
-      {/* Drop zone */}
-      <div
-        onDrop={handleDrop}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onClick={() => fileInputRef.current?.click()}
-        className={`
-          relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer
-          transition-all duration-200
-          ${
-            dragOver
-              ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-              : "border-slate-300 dark:border-slate-600 hover:border-blue-400 hover:bg-slate-50 dark:hover:bg-slate-800/50"
-          }
-          ${uploading ? "opacity-60 pointer-events-none" : ""}
-        `}
-      >
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          onChange={handleFileInput}
-          className="hidden"
-        />
-        <div className="flex flex-col items-center gap-2">
-          <svg
-            className={`w-8 h-8 ${dragOver ? "text-blue-500" : "text-slate-400 dark:text-slate-500"}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.5}
-              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-            />
-          </svg>
-          {uploading ? (
-            <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">
-              Upload en cours...
-            </p>
-          ) : (
-            <>
-              <p className="text-sm text-slate-600 dark:text-slate-400">
-                <span className="font-medium text-blue-600 dark:text-blue-400">
-                  Cliquez pour sélectionner
-                </span>{" "}
-                ou glissez-déposez vos fichiers ici
-              </p>
-              <p className="text-xs text-slate-400 dark:text-slate-500">Taille maximale : 50 Mo</p>
-            </>
-          )}
-        </div>
-      </div>
-
-      {error && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>}
-
       {/* Document list */}
       {loading ? (
         <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
@@ -379,6 +321,64 @@ export function DocumentUploadZone({ entityType, entityId }: Props) {
           </div>
         </div>
       )}
+
+      {/* Drop zone */}
+      <div
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onClick={() => fileInputRef.current?.click()}
+        className={`
+          relative border-2 border-dashed rounded-xl mt-4 p-6 text-center cursor-pointer
+          transition-all duration-200
+          ${
+            dragOver
+              ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+              : "border-slate-300 dark:border-slate-600 hover:border-blue-400 hover:bg-slate-50 dark:hover:bg-slate-800/50"
+          }
+          ${uploading ? "opacity-60 pointer-events-none" : ""}
+        `}
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          onChange={handleFileInput}
+          className="hidden"
+        />
+        <div className="flex flex-col items-center gap-2">
+          <svg
+            className={`w-8 h-8 ${dragOver ? "text-blue-500" : "text-slate-400 dark:text-slate-500"}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+            />
+          </svg>
+          {uploading ? (
+            <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">
+              Upload en cours...
+            </p>
+          ) : (
+            <>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                <span className="font-medium text-blue-600 dark:text-blue-400">
+                  Cliquez pour sélectionner
+                </span>{" "}
+                ou glissez-déposez vos fichiers ici
+              </p>
+              <p className="text-xs text-slate-400 dark:text-slate-500">Taille maximale : 50 Mo</p>
+            </>
+          )}
+        </div>
+      </div>
+
+      {error && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>}
     </div>
   );
 }

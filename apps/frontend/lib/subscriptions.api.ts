@@ -5,6 +5,8 @@ import type {
   CreateCheckoutSessionGatewayBody,
   CreateCheckoutSessionResponse,
   OrganizationSubscriptionResponse,
+  UpdateSubscriptionAddonsGatewayBody,
+  UpdateSubscriptionAddonsResponse,
 } from "@syncora/shared";
 import { apiRequestJson, type ApiMethod } from "./api-client";
 
@@ -40,6 +42,14 @@ export function createBillingPortalSession(payload: CreateBillingPortalGatewayBo
   return subscriptionsRequest<CreateBillingPortalResponse>(
     "POST",
     "/subscriptions/billing-portal",
+    payload,
+  );
+}
+
+export function updateSubscriptionAddons(payload: UpdateSubscriptionAddonsGatewayBody) {
+  return subscriptionsRequest<UpdateSubscriptionAddonsResponse>(
+    "POST",
+    "/subscriptions/update-addons",
     payload,
   );
 }

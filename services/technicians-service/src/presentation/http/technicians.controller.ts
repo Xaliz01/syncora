@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from "@nestjs/common";
-import { parseOrganizationIdQuery } from "@syncora/shared";
+import { parseOrganizationIdQuery } from "@syncora/shared/nest";
 import { AbstractTechniciansService } from "../../domain/ports/technicians.service.port";
 import type { CreateTechnicianBody, UpdateTechnicianBody } from "@syncora/shared";
 

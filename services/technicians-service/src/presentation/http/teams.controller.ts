@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from "@nestjs/common";
-import { parseOrganizationIdQuery } from "@syncora/shared";
+import { parseOrganizationIdQuery } from "@syncora/shared/nest";
 import { AbstractTeamsService } from "../../domain/ports/teams.service.port";
 import type { CreateTeamBody, UpdateTeamBody } from "@syncora/shared";
 

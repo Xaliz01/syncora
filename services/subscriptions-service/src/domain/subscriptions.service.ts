@@ -13,13 +13,21 @@ import type {
   CreateCheckoutSessionResponse,
   OrganizationSubscriptionResponse,
   OrganizationSubscriptionStatus,
+  UpdateSubscriptionAddonsResponse,
 } from "@syncora/shared";
-import { ADDON_CATALOG, isValidAddonCode } from "@syncora/shared";
+import {
+  ADDON_CATALOG,
+  ADDON_CODES,
+  addonAllowsStandaloneCheckout,
+  BASE_SUBSCRIPTION_PLAN,
+  BASE_SUBSCRIPTION_PLAN_LABEL,
+  isValidAddonCode,
+} from "@syncora/shared";
 import type { OrganizationSubscriptionDocument } from "../persistence/organization-subscription.schema";
 import type { ProcessedStripeEventDocument } from "../persistence/processed-stripe-event.schema";
 
 const DEFAULT_TRIAL_DAYS = 15;
-const PLAN_LABEL = "9,99 € / mois, sans engagement";
+const PLAN_LABEL = BASE_SUBSCRIPTION_PLAN_LABEL;
 
 /**
  * Résout le Stripe Price ID d'un addon depuis le catalogue partagé + env vars.
@@ -28,6 +36,34 @@ const PLAN_LABEL = "9,99 € / mois, sans engagement";
 function resolveAddonPriceId(code: AddonCode): string {
   const descriptor = ADDON_CATALOG[code];
   return process.env[descriptor.stripePriceEnvVar] ?? descriptor.stripePriceDefault;
+}
+
+function resolveBasePriceId(): string {
+  const priceId = process.env.STRIPE_PRICE_ID ?? "price_1TJBxC159m6jcNWDEmpIfyrE";
+  if (!priceId?.trim()) {
+    throw new BadRequestException(
+      "STRIPE_PRICE_ID is missing: create a recurring EUR price (9,99 €/month) in Stripe and set its ID.",
+    );
+  }
+  return priceId;
+}
+
+function hasActiveBaseSubscription(doc: OrganizationSubscriptionDocument | null): boolean {
+  if (!doc?.stripeSubscriptionId?.trim()) {
+    return false;
+  }
+  const status = mapStripeStatus(doc.stripeStatus);
+  if (status === "trialing" || status === "active" || status === "past_due") {
+    return true;
+  }
+  if (
+    status === "canceled" &&
+    doc.currentPeriodEnd &&
+    doc.currentPeriodEnd.getTime() > Date.now()
+  ) {
+    return true;
+  }
+  return false;
 }
 
 function getStripe(): Stripe {
@@ -88,6 +124,7 @@ export class SubscriptionsService {
       trialEndsAt: trialEndsAt ? trialEndsAt.toISOString() : null,
       currentPeriodEnd: currentPeriodEnd ? currentPeriodEnd.toISOString() : null,
       cancelAtPeriodEnd: doc.cancelAtPeriodEnd ?? false,
+      planName: BASE_SUBSCRIPTION_PLAN.name,
       planLabel: PLAN_LABEL,
       activeAddons,
     };
@@ -103,6 +140,7 @@ export class SubscriptionsService {
         trialEndsAt: null,
         currentPeriodEnd: null,
         cancelAtPeriodEnd: false,
+        planName: BASE_SUBSCRIPTION_PLAN.name,
         planLabel: PLAN_LABEL,
         activeAddons: [],
       };
@@ -116,12 +154,7 @@ export class SubscriptionsService {
     successUrl: string;
     cancelUrl: string;
   }): Promise<CreateCheckoutSessionResponse> {
-    const priceId = process.env.STRIPE_PRICE_ID ?? "price_1TJBxC159m6jcNWDEmpIfyrE";
-    if (!priceId?.trim()) {
-      throw new BadRequestException(
-        "STRIPE_PRICE_ID is missing: create a recurring EUR price (9,99 €/month) in Stripe and set its ID.",
-      );
-    }
+    const priceId = resolveBasePriceId();
 
     const trialDays = Number(process.env.STRIPE_TRIAL_DAYS ?? DEFAULT_TRIAL_DAYS);
     if (!Number.isFinite(trialDays) || trialDays < 0) {
@@ -129,11 +162,25 @@ export class SubscriptionsService {
     }
 
     const stripe = getStripe();
-    const stripeCustomerId = await this.resolveStripeCustomerIdForCheckout(
+    let stripeCustomerId = await this.resolveStripeCustomerIdForCheckout(
       stripe,
       params.organizationId,
       params.customerEmail,
     );
+    if (!stripeCustomerId && params.customerEmail?.trim()) {
+      const created = await stripe.customers.create({
+        email: params.customerEmail.trim(),
+        metadata: { organizationId: params.organizationId },
+      });
+      stripeCustomerId = created.id;
+      await this.subscriptionModel
+        .findOneAndUpdate(
+          { organizationId: params.organizationId },
+          { stripeCustomerId },
+          { upsert: true },
+        )
+        .exec();
+    }
 
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
       mode: "subscription",
@@ -165,6 +212,7 @@ export class SubscriptionsService {
   async createAddonCheckoutSession(params: {
     organizationId: string;
     addonCode: AddonCode;
+    customerEmail?: string;
     successUrl: string;
     cancelUrl: string;
   }): Promise<CreateCheckoutSessionResponse> {
@@ -172,32 +220,39 @@ export class SubscriptionsService {
       throw new BadRequestException(`Code addon invalide : ${params.addonCode}`);
     }
 
-    const doc = await this.subscriptionModel
-      .findOne({ organizationId: params.organizationId })
-      .exec();
-    if (!doc?.stripeCustomerId) {
-      throw new BadRequestException(
-        "Un abonnement principal actif est requis avant d'ajouter un addon. Finalisez d'abord votre abonnement.",
-      );
-    }
-
-    if ((doc.activeAddons ?? []).includes(params.addonCode)) {
-      throw new BadRequestException(`L'addon « ${params.addonCode} » est déjà actif.`);
-    }
-
-    const priceId = resolveAddonPriceId(params.addonCode);
-    if (!priceId?.trim()) {
+    const addonPriceId = resolveAddonPriceId(params.addonCode);
+    if (!addonPriceId?.trim()) {
       throw new InternalServerErrorException(
         `Prix Stripe non configuré pour l'addon ${params.addonCode}. ` +
           `Définissez la variable d'environnement ${ADDON_CATALOG[params.addonCode].stripePriceEnvVar}.`,
       );
     }
 
+    const doc = await this.subscriptionModel
+      .findOne({ organizationId: params.organizationId })
+      .exec();
+
+    if ((doc?.activeAddons ?? []).includes(params.addonCode)) {
+      throw new BadRequestException(
+        `L'addon « ${ADDON_CATALOG[params.addonCode].label} » est déjà actif.`,
+      );
+    }
+
     const stripe = getStripe();
+
+    if (!addonAllowsStandaloneCheckout(params.addonCode)) {
+      return this.createBundledAddonCheckoutSession(stripe, params, doc, addonPriceId);
+    }
+
+    if (!doc?.stripeCustomerId) {
+      throw new BadRequestException(
+        "Un abonnement principal actif est requis avant d'ajouter un addon. Finalisez d'abord votre abonnement.",
+      );
+    }
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
-      line_items: [{ price: priceId, quantity: 1 }],
+      line_items: [{ price: addonPriceId, quantity: 1 }],
       success_url: params.successUrl,
       cancel_url: params.cancelUrl,
       customer: doc.stripeCustomerId,
@@ -220,24 +275,313 @@ export class SubscriptionsService {
     return { url: session.url };
   }
 
+  /**
+   * Paywall Stripe : Essentiel + addon sur une seule souscription, ou ajout de l'addon
+   * sur l'abonnement socle existant (facture hébergée).
+   */
+  private async createBundledAddonCheckoutSession(
+    stripe: Stripe,
+    params: {
+      organizationId: string;
+      addonCode: AddonCode;
+      customerEmail?: string;
+      successUrl: string;
+      cancelUrl: string;
+    },
+    doc: OrganizationSubscriptionDocument | null,
+    addonPriceId: string,
+  ): Promise<CreateCheckoutSessionResponse> {
+    if (!hasActiveBaseSubscription(doc)) {
+      return this.createBasePlusAddonCheckoutSession(stripe, params, doc, addonPriceId);
+    }
+
+    const subscriptionId = doc!.stripeSubscriptionId!.trim();
+    const sub = await stripe.subscriptions.retrieve(subscriptionId, {
+      expand: ["items.data.price"],
+    });
+
+    const addonAlreadyOnSubscription = sub.items.data.some((item) => {
+      const priceId = typeof item.price === "string" ? item.price : item.price?.id;
+      return priceId === addonPriceId;
+    });
+    if (addonAlreadyOnSubscription) {
+      throw new BadRequestException(
+        `L'addon « ${ADDON_CATALOG[params.addonCode].label} » est déjà actif.`,
+      );
+    }
+
+    const existingItems = sub.items.data.map((item) => ({
+      id: item.id,
+      quantity: item.quantity ?? 1,
+    }));
+
+    const updated = await stripe.subscriptions.update(subscriptionId, {
+      items: [...existingItems, { price: addonPriceId, quantity: 1 }],
+      proration_behavior: "always_invoice",
+      payment_behavior: "pending_if_incomplete",
+      expand: ["latest_invoice"],
+    });
+
+    const paywallUrl = await this.resolveAddonPaywallUrl(
+      stripe,
+      updated.latest_invoice,
+      params.successUrl,
+    );
+    if (paywallUrl) {
+      return { url: paywallUrl };
+    }
+
+    throw new InternalServerErrorException(
+      "Impossible d'ouvrir le paiement Stripe pour cet addon. Réessayez ou contactez le support.",
+    );
+  }
+
+  /**
+   * URL de paiement Stripe (facture hébergée ouverte) — l'addon n'est activé qu'après règlement (webhook).
+   * En période d'essai, la facture de prorata est souvent à 0 € et déjà « payée » : on renvoie alors
+   * vers l'app (évite la page reçu « Facture payée 0,00 € »).
+   */
+  private async resolveAddonPaywallUrl(
+    stripe: Stripe,
+    latestInvoice: Stripe.Subscription["latest_invoice"],
+    successUrl: string,
+  ): Promise<string | null> {
+    if (!latestInvoice || typeof latestInvoice === "string") {
+      return null;
+    }
+
+    let invoice = latestInvoice;
+    if (invoice.status === "draft") {
+      invoice = await stripe.invoices.finalizeInvoice(invoice.id);
+    }
+
+    if (invoice.status === "open" && (invoice.amount_due ?? 0) > 0 && invoice.hosted_invoice_url) {
+      return invoice.hosted_invoice_url;
+    }
+
+    if (invoice.status === "paid" || (invoice.amount_due ?? 0) === 0) {
+      return successUrl;
+    }
+
+    if (invoice.hosted_invoice_url && invoice.status === "open") {
+      return invoice.hosted_invoice_url;
+    }
+
+    return null;
+  }
+
+  /** Checkout : abonnement socle Essentiel + addon sur une même souscription Stripe. */
+  private async createBasePlusAddonCheckoutSession(
+    stripe: Stripe,
+    params: {
+      organizationId: string;
+      addonCode: AddonCode;
+      customerEmail?: string;
+      successUrl: string;
+      cancelUrl: string;
+    },
+    doc: OrganizationSubscriptionDocument | null,
+    addonPriceId: string,
+  ): Promise<CreateCheckoutSessionResponse> {
+    const basePriceId = resolveBasePriceId();
+    const trialDays = Number(process.env.STRIPE_TRIAL_DAYS ?? DEFAULT_TRIAL_DAYS);
+    if (!Number.isFinite(trialDays) || trialDays < 0) {
+      throw new InternalServerErrorException("Invalid STRIPE_TRIAL_DAYS");
+    }
+
+    let stripeCustomerId = doc?.stripeCustomerId?.trim();
+    if (!stripeCustomerId) {
+      stripeCustomerId = await this.resolveStripeCustomerIdForCheckout(
+        stripe,
+        params.organizationId,
+        params.customerEmail,
+      );
+    }
+    if (!stripeCustomerId && params.customerEmail?.trim()) {
+      const created = await stripe.customers.create({
+        email: params.customerEmail.trim(),
+        metadata: { organizationId: params.organizationId },
+      });
+      stripeCustomerId = created.id;
+      await this.subscriptionModel
+        .findOneAndUpdate(
+          { organizationId: params.organizationId },
+          { stripeCustomerId },
+          { upsert: true },
+        )
+        .exec();
+    }
+
+    const sessionParams: Stripe.Checkout.SessionCreateParams = {
+      mode: "subscription",
+      line_items: [
+        { price: basePriceId, quantity: 1 },
+        { price: addonPriceId, quantity: 1 },
+      ],
+      success_url: params.successUrl,
+      cancel_url: params.cancelUrl,
+      client_reference_id: params.organizationId,
+      metadata: {
+        organizationId: params.organizationId,
+        addonCode: params.addonCode,
+        checkoutKind: "base_plus_addon",
+      },
+      subscription_data: {
+        trial_period_days: trialDays,
+        metadata: { organizationId: params.organizationId },
+      },
+      allow_promotion_codes: true,
+    };
+
+    if (stripeCustomerId) {
+      sessionParams.customer = stripeCustomerId;
+    } else if (params.customerEmail?.trim()) {
+      sessionParams.customer_email = params.customerEmail.trim();
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
+    if (!session.url) {
+      throw new InternalServerErrorException("Stripe Checkout session has no URL");
+    }
+    return { url: session.url };
+  }
+
   async createBillingPortalSession(params: {
     organizationId: string;
     returnUrl: string;
+    flow?: "default" | "subscription_update";
   }): Promise<CreateBillingPortalResponse> {
     const doc = await this.subscriptionModel
       .findOne({ organizationId: params.organizationId })
       .exec();
-    if (!doc?.stripeCustomerId) {
+    if (!doc?.stripeCustomerId && !doc?.stripeSubscriptionId) {
       throw new NotFoundException(
         "No Stripe customer for this organization; complete checkout first.",
       );
     }
+
     const stripe = getStripe();
-    const session = await stripe.billingPortal.sessions.create({
-      customer: doc.stripeCustomerId,
+    const billing = await this.resolveBillingPortalContext(stripe, params.organizationId, doc);
+
+    if (billing.stripeCustomerId !== doc.stripeCustomerId) {
+      await this.subscriptionModel
+        .updateOne(
+          { organizationId: params.organizationId },
+          { stripeCustomerId: billing.stripeCustomerId },
+        )
+        .exec();
+    }
+
+    const portalConfigurationId = process.env.STRIPE_BILLING_PORTAL_CONFIGURATION_ID?.trim();
+    const sessionParams: Stripe.BillingPortal.SessionCreateParams = {
+      customer: billing.stripeCustomerId,
       return_url: params.returnUrl,
-    });
+      ...(portalConfigurationId ? { configuration: portalConfigurationId } : {}),
+    };
+
+    if (params.flow === "subscription_update") {
+      if (!billing.stripeSubscriptionId) {
+        throw new BadRequestException(
+          "Aucun abonnement Essentiel actif : finalisez d'abord votre abonnement socle.",
+        );
+      }
+      sessionParams.flow_data = {
+        type: "subscription_update",
+        subscription_update: {
+          subscription: billing.stripeSubscriptionId,
+        },
+        after_completion: {
+          type: "redirect",
+          redirect: { return_url: params.returnUrl },
+        },
+      };
+    }
+
+    const session = await stripe.billingPortal.sessions.create(sessionParams);
     return { url: session.url };
+  }
+
+  /**
+   * Applique l'ensemble d'options souhaité sur l'abonnement socle (ajouts et retraits).
+   * Retourne une URL de paiement Stripe si nécessaire, sinon null (changements déjà actifs).
+   */
+  async updateSubscriptionAddons(params: {
+    organizationId: string;
+    addonCodes: AddonCode[];
+    successUrl: string;
+  }): Promise<UpdateSubscriptionAddonsResponse> {
+    const desired = [
+      ...new Set(
+        params.addonCodes.filter(
+          (code): code is AddonCode =>
+            isValidAddonCode(code) && ADDON_CATALOG[code].requiresBaseSubscription,
+        ),
+      ),
+    ];
+
+    const doc = await this.subscriptionModel
+      .findOne({ organizationId: params.organizationId })
+      .exec();
+    if (!hasActiveBaseSubscription(doc)) {
+      throw new BadRequestException(
+        "Aucun abonnement Essentiel actif : activez d'abord votre abonnement socle.",
+      );
+    }
+
+    const subscriptionId = doc!.stripeSubscriptionId!.trim();
+    const stripe = getStripe();
+    const sub = await stripe.subscriptions.retrieve(subscriptionId, {
+      expand: ["items.data.price"],
+    });
+
+    const subOrgId = sub.metadata?.organizationId;
+    if (subOrgId && subOrgId !== params.organizationId) {
+      throw new BadRequestException("L'abonnement Stripe ne correspond pas à cette organisation.");
+    }
+
+    const currentCrossSell = this.addonsFromSubscriptionItems(sub);
+    const toAdd = desired.filter((code) => !currentCrossSell.includes(code));
+    const toRemove = currentCrossSell.filter((code) => !desired.includes(code));
+
+    if (toAdd.length === 0 && toRemove.length === 0) {
+      throw new BadRequestException("Aucune modification à appliquer.");
+    }
+
+    const toRemovePriceIds = new Set(toRemove.map((code) => resolveAddonPriceId(code)));
+    const items: Stripe.SubscriptionUpdateParams.Item[] = [];
+
+    for (const item of sub.items.data) {
+      const priceId = typeof item.price === "string" ? item.price : (item.price?.id ?? undefined);
+      if (priceId && toRemovePriceIds.has(priceId)) {
+        items.push({ id: item.id, deleted: true });
+        continue;
+      }
+      items.push({ id: item.id, quantity: item.quantity ?? 1 });
+    }
+
+    for (const code of toAdd) {
+      items.push({ price: resolveAddonPriceId(code), quantity: 1 });
+    }
+
+    const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer.id;
+    const updated = await stripe.subscriptions.update(subscriptionId, {
+      items,
+      proration_behavior: "always_invoice",
+      payment_behavior: "pending_if_incomplete",
+      expand: ["latest_invoice"],
+    });
+
+    const paywallUrl = await this.resolveAddonPaywallUrl(
+      stripe,
+      updated.latest_invoice,
+      params.successUrl,
+    );
+    if (paywallUrl) {
+      return { url: paywallUrl };
+    }
+
+    await this.persistSubscription(params.organizationId, customerId, updated);
+    return { url: null };
   }
 
   async handleStripeWebhook(
@@ -301,8 +645,55 @@ export class SubscriptionsService {
   }
 
   /**
-   * Priorité : 1) `stripeCustomerId` persisté pour l'org (validé chez Stripe), 2) client Stripe
-   * avec `metadata.organizationId`, 3) client le plus récent sur l'e-mail (évite les doublons checkout).
+   * Contexte Stripe pour le portail de facturation : client + abonnement principal de l'org.
+   * L'abonnement principal est utilisé pour un deep link `subscription_update` (vente croisée addons).
+   */
+  private async resolveBillingPortalContext(
+    stripe: Stripe,
+    organizationId: string,
+    doc: OrganizationSubscriptionDocument,
+  ): Promise<{ stripeCustomerId: string; stripeSubscriptionId?: string }> {
+    const subscriptionId = doc.stripeSubscriptionId?.trim();
+    if (subscriptionId) {
+      const sub = await stripe.subscriptions.retrieve(subscriptionId);
+      const subOrgId = sub.metadata?.organizationId;
+      if (subOrgId && subOrgId !== organizationId) {
+        throw new BadRequestException(
+          "L'abonnement Stripe ne correspond pas à cette organisation.",
+        );
+      }
+      const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer.id;
+      return { stripeCustomerId: customerId, stripeSubscriptionId: sub.id };
+    }
+
+    const stored = doc.stripeCustomerId?.trim();
+    if (!stored) {
+      throw new NotFoundException(
+        "No Stripe customer for this organization; complete checkout first.",
+      );
+    }
+
+    const customer = await stripe.customers.retrieve(stored);
+    if (typeof customer === "string" || ("deleted" in customer && customer.deleted)) {
+      throw new NotFoundException(
+        "No Stripe customer for this organization; complete checkout first.",
+      );
+    }
+
+    const customerOrgId = customer.metadata?.organizationId;
+    if (customerOrgId && customerOrgId !== organizationId) {
+      throw new BadRequestException(
+        "Le client Stripe enregistré ne correspond pas à cette organisation.",
+      );
+    }
+
+    return { stripeCustomerId: stored };
+  }
+
+  /**
+   * Priorité : 1) `stripeCustomerId` persisté pour l'org (validé chez Stripe + metadata),
+   * 2) client Stripe avec `metadata.organizationId` sur le même e-mail.
+   * Ne réutilise jamais un client Stripe d'une autre organisation (même e-mail).
    */
   private async resolveStripeCustomerIdForCheckout(
     stripe: Stripe,
@@ -320,9 +711,14 @@ export class SubscriptionsService {
       try {
         const c = await stripe.customers.retrieve(stored);
         if (typeof c !== "string" && !("deleted" in c && c.deleted)) {
-          return stored;
+          const metaOrg = c.metadata?.organizationId;
+          if (!metaOrg || metaOrg === organizationId) {
+            return stored;
+          }
+          dropStored = true;
+        } else {
+          dropStored = typeof c !== "string" && "deleted" in c && c.deleted === true;
         }
-        dropStored = typeof c !== "string" && "deleted" in c && c.deleted === true;
       } catch (err: unknown) {
         if (this.isStripeCustomerMissingError(err)) {
           dropStored = true;
@@ -341,10 +737,7 @@ export class SubscriptionsService {
     }
     const { data } = await stripe.customers.list({ email, limit: 25 });
     const withOrgMeta = data.find((c) => c.metadata?.organizationId === organizationId);
-    if (withOrgMeta) {
-      return withOrgMeta.id;
-    }
-    return data[0]?.id;
+    return withOrgMeta?.id;
   }
 
   private isStripeCustomerMissingError(err: unknown): boolean {
@@ -370,7 +763,8 @@ export class SubscriptionsService {
       return;
     }
 
-    if (addonCode && isValidAddonCode(addonCode)) {
+    const checkoutKind = session.metadata?.checkoutKind;
+    if (addonCode && isValidAddonCode(addonCode) && checkoutKind !== "base_plus_addon") {
       await this.activateAddon(organizationId, customerId, addonCode, subscriptionId);
       return;
     }
@@ -463,11 +857,42 @@ export class SubscriptionsService {
       .exec();
   }
 
+  /** Addons présents comme ligne sur l'abonnement socle (vente croisée Stripe). */
+  private addonsFromSubscriptionItems(sub: Stripe.Subscription): AddonCode[] {
+    const priceIds = new Set(
+      sub.items.data
+        .map((item) => {
+          const price = item.price;
+          return typeof price === "string" ? price : price?.id;
+        })
+        .filter((id): id is string => Boolean(id)),
+    );
+
+    return ADDON_CODES.filter(
+      (code) =>
+        ADDON_CATALOG[code].requiresBaseSubscription && priceIds.has(resolveAddonPriceId(code)),
+    );
+  }
+
+  private mergeActiveAddons(
+    existing: string[] | undefined,
+    crossSellFromMainSub: AddonCode[],
+  ): AddonCode[] {
+    const legacyStandalone = (existing ?? []).filter(
+      (code): code is AddonCode => isValidAddonCode(code) && addonAllowsStandaloneCheckout(code),
+    );
+    return [...new Set([...legacyStandalone, ...crossSellFromMainSub])];
+  }
+
   private async persistSubscription(
     organizationId: string,
     stripeCustomerId: string,
     sub: Stripe.Subscription,
   ): Promise<void> {
+    const existing = await this.subscriptionModel.findOne({ organizationId }).lean().exec();
+    const crossSellAddons = this.addonsFromSubscriptionItems(sub);
+    const activeAddons = this.mergeActiveAddons(existing?.activeAddons, crossSellAddons);
+
     await this.subscriptionModel
       .findOneAndUpdate(
         { organizationId },
@@ -481,6 +906,7 @@ export class SubscriptionsService {
             ? new Date(sub.current_period_end * 1000)
             : undefined,
           cancelAtPeriodEnd: sub.cancel_at_period_end ?? false,
+          activeAddons,
         },
         { upsert: true, new: true },
       )

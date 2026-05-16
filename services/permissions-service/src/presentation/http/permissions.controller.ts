@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from "@nestjs/common";
-import { parseOrganizationIdQuery } from "@syncora/shared";
+import { parseOrganizationIdQuery } from "@syncora/shared/nest";
 import { AbstractPermissionsService } from "../../domain/ports/permissions.service.port";
 import type {
   AssignUserPermissionsBody,

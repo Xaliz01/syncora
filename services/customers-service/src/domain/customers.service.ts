@@ -2,14 +2,16 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import {
-  assertOrganizationScopedListNest,
-  assertOrganizationScopedResourceNest,
   organizationScopeFilter,
-  parseOrganizationIdBody,
   type CreateCustomerBody,
   type CustomerResponse,
   type UpdateCustomerBody,
 } from "@syncora/shared";
+import {
+  assertOrganizationScopedListNest,
+  assertOrganizationScopedResourceNest,
+  parseOrganizationIdBody,
+} from "@syncora/shared/nest";
 import type { CustomerDocument } from "../persistence/customer.schema";
 import { AbstractCustomersService } from "./ports/customers.service.port";
 

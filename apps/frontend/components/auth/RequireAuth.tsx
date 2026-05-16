@@ -7,8 +7,6 @@ import {
   hasActiveSubscriptionAccess,
   isOrganizationSubscriptionRoute,
 } from "@/lib/subscription-access";
-import { SubscriptionGateScreen } from "@/components/subscription/SubscriptionGateScreen";
-
 export function RequireAuth({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isReady, user } = useAuth();
   const router = useRouter();
@@ -24,7 +22,7 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
     if (!isReady || !isAuthenticated || !user) return;
     if (subscriptionOk) return;
     if (isOrganizationSubscriptionRoute(pathname)) return;
-    router.replace("/organization");
+    router.replace("/subscription");
   }, [isReady, isAuthenticated, user, pathname, router, subscriptionOk]);
 
   if (!isReady) {
@@ -39,8 +37,8 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
     return null;
   }
 
-  if (user && !subscriptionOk) {
-    return <SubscriptionGateScreen />;
+  if (user && !subscriptionOk && !isOrganizationSubscriptionRoute(pathname)) {
+    return null;
   }
 
   return <>{children}</>;

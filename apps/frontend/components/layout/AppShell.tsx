@@ -37,6 +37,9 @@ function isLinkActive(currentPath: string, href: string): boolean {
   if (href === "/organization") {
     return currentPath === "/organization" || currentPath.startsWith("/organization/");
   }
+  if (href === "/subscription") {
+    return currentPath === "/subscription" || currentPath.startsWith("/subscription/");
+  }
   return currentPath === href || currentPath.startsWith(`${href}/`);
 }
 
@@ -114,15 +117,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           label: "Général",
           links: [
             { label: "Tableau de bord", href: "/" },
-            ...(user ? [{ label: "Mon organisation", href: "/organization" }] : []),
+            ...(user
+              ? [
+                  { label: "Mon organisation", href: "/organization" },
+                  { label: "Mon abonnement", href: "/subscription" },
+                ]
+              : []),
           ],
         },
         {
-          label: "Dossiers",
+          label: "Suivi",
           links: [
-            ...(hasPermission(user, "cases.read")
-              ? [{ label: "Tous les dossiers", href: "/cases" }]
-              : []),
+            ...(hasPermission(user, "cases.read") ? [{ label: "Dossiers", href: "/cases" }] : []),
             ...(hasPermission(user, "customers.read")
               ? [{ label: "Clients", href: "/customers" }]
               : []),
@@ -138,11 +144,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     : [
         {
           label: "Abonnement",
-          links: user ? [{ label: "Mon organisation et abonnement", href: "/organization" }] : [],
+          links: user
+            ? [
+                { label: "Mon organisation", href: "/organization" },
+                { label: "Mon abonnement", href: "/subscription" },
+              ]
+            : [],
         },
       ];
   if (subscriptionOk && user) {
     const fleetLinks: MenuLink[] = [];
+    if (hasPermission(user, "users.read")) {
+      fleetLinks.push({ label: "Utilisateurs", href: "/users" });
+    }
     if (hasPermission(user, "teams.read")) {
       fleetLinks.push({ label: "Équipes", href: "/fleet/teams" });
     }
@@ -157,13 +171,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
     if (fleetLinks.length > 0) {
       menuSections.push({ label: "Gestion", links: fleetLinks });
-    }
-
-    if (hasPermission(user, "users.read")) {
-      menuSections.push({
-        label: "Utilisateurs",
-        links: [{ label: "Gérer les utilisateurs", href: "/users" }],
-      });
     }
 
     const settingsLinks: MenuLink[] = [];

@@ -11,6 +11,7 @@ import type {
   CreateAddonCheckoutSessionGatewayBody,
   CreateBillingPortalGatewayBody,
   CreateCheckoutSessionGatewayBody,
+  UpdateSubscriptionAddonsGatewayBody,
 } from "@syncora/shared";
 
 @Controller("subscriptions")
@@ -48,5 +49,15 @@ export class SubscriptionsController {
   @RequirePermissions("subscriptions.manage_billing")
   createBillingPortal(@CurrentUser() user: AuthUser, @Body() body: CreateBillingPortalGatewayBody) {
     return this.subscriptionsService.createBillingPortalSession(user, body);
+  }
+
+  @Post("update-addons")
+  @UseGuards(RequirePermissionGuard)
+  @RequirePermissions("subscriptions.manage_billing")
+  updateSubscriptionAddons(
+    @CurrentUser() user: AuthUser,
+    @Body() body: UpdateSubscriptionAddonsGatewayBody,
+  ) {
+    return this.subscriptionsService.updateSubscriptionAddons(user, body);
   }
 }

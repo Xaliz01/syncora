@@ -56,6 +56,7 @@ test.describe("Parcours navigation auth", () => {
 const ALL_PROTECTED_PATHS = [
   "/",
   "/organization",
+  "/subscription",
   "/search",
   "/stock",
   "/customers",

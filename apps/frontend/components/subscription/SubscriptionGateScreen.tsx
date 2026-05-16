@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@/components/auth/AuthContext";
-import { OrganizationSubscriptionSection } from "@/components/organization/OrganizationSubscriptionSection";
+import { SubscriptionSection } from "@/components/subscription/SubscriptionSection";
 import { OrganizationSwitcher } from "@/components/organization/OrganizationSwitcher";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
@@ -53,7 +53,7 @@ export function SubscriptionGateScreen() {
 
       <main className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 space-y-6">
-          <OrganizationSubscriptionSection mode="pitchCheckout" />
+          <SubscriptionSection mode="pitchCheckout" />
         </div>
       </main>
     </div>

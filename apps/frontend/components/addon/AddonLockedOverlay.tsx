@@ -27,8 +27,7 @@ interface AddonLockedOverlayProps {
  * avec le code addon correspondant + un preview et children spécifiques.
  */
 export function AddonLockedOverlay({ addonCode, preview, children }: AddonLockedOverlayProps) {
-  const { hasAddon, isLoading, canManageBilling, startCheckout, isCheckoutPending } =
-    useAddon(addonCode);
+  const { hasAddon, isLoading, canManageBilling, openSubscriptionModify } = useAddon(addonCode);
 
   if (isLoading) return null;
   if (hasAddon) return <>{children}</>;
@@ -69,14 +68,15 @@ export function AddonLockedOverlay({ addonCode, preview, children }: AddonLocked
           {descriptor.pitch}
         </p>
         {canManageBilling ? (
-          <button
-            type="button"
-            onClick={startCheckout}
-            disabled={isCheckoutPending}
-            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
-          >
-            {isCheckoutPending ? "Redirection…" : `Obtenir « ${descriptor.label} »`}
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={openSubscriptionModify}
+              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition"
+            >
+              {`Obtenir « ${descriptor.label} »`}
+            </button>
+          </>
         ) : (
           <p className="text-xs text-slate-500 dark:text-slate-400">
             Contactez un administrateur de votre organisation pour activer cet addon.

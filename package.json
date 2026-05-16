@@ -21,9 +21,9 @@
     "e2e": "npm run e2e --workspace @syncora/frontend --if-present",
     "backend": "docker compose up -d --wait && npm run backend:run",
     "backend:datadog": "docker compose --profile datadog up -d --wait && npm run backend:run",
-    "backend:microservices": "TS_NODE_TRANSPILE_ONLY=true concurrently -n org,users,permissions,fleet,technicians,dossiers,stock,customers,subscriptions,notifications,documents \"npm run start:dev -w @syncora/organizations-service\" \"npm run start:dev -w @syncora/users-service\" \"npm run start:dev -w @syncora/permissions-service\" \"npm run start:dev -w @syncora/fleet-service\" \"npm run start:dev -w @syncora/technicians-service\" \"npm run start:dev -w @syncora/cases-service\" \"npm run start:dev -w @syncora/stock-service\" \"npm run start:dev -w @syncora/customers-service\" \"npm run start:dev -w @syncora/subscriptions-service\" \"npm run start:dev -w @syncora/notifications-service\" \"npm run start:dev -w @syncora/documents-service\"",
+    "backend:microservices": "npm run build:shared && TS_NODE_TRANSPILE_ONLY=true concurrently -n org,users,permissions,fleet,technicians,dossiers,stock,customers,subscriptions,notifications,documents \"npm run start:dev -w @syncora/organizations-service\" \"npm run start:dev -w @syncora/users-service\" \"npm run start:dev -w @syncora/permissions-service\" \"npm run start:dev -w @syncora/fleet-service\" \"npm run start:dev -w @syncora/technicians-service\" \"npm run start:dev -w @syncora/cases-service\" \"npm run start:dev -w @syncora/stock-service\" \"npm run start:dev -w @syncora/customers-service\" \"npm run start:dev -w @syncora/subscriptions-service\" \"npm run start:dev -w @syncora/notifications-service\" \"npm run start:dev -w @syncora/documents-service\"",
     "backend:gateway": "npm run start:dev -w @syncora/api-gateway",
-    "backend:run": "wait-on -t 60000 tcp:localhost:27017 && node scripts/backend-run.mjs",
+    "backend:run": "npm run build:shared && wait-on -t 60000 tcp:localhost:27017 && node scripts/backend-run.mjs",
     "backend:down": "docker compose down",
     "datadog:up": "docker compose --profile datadog up -d --wait",
     "datadog:down": "docker rm -f syncora-datadog-agent 2>/dev/null || true"

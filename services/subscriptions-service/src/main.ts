@@ -7,7 +7,7 @@ import "./tracer";
 import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./modules/app.module";
-import { createNestLogger } from "@syncora/shared";
+import { createNestLogger } from "@syncora/shared/nest";
 
 async function bootstrap() {
   const logger = createNestLogger("subscriptions-service");
