@@ -4,7 +4,7 @@ import { AbstractSubscriptionsGatewayService } from "../../../domain/ports/subsc
 import { JwtAuthGuard } from "../../../infrastructure/jwt-auth.guard";
 import { RequirePermissionGuard } from "../../../infrastructure/require-permission.guard";
 import { SubscriptionAccessGuard } from "../../../infrastructure/subscription-access.guard";
-import type { AuthUser } from "@syncora/shared";
+import type { AddonCode, AuthUser } from "@syncora/shared";
 
 describe("SubscriptionsController", () => {
   let controller: SubscriptionsController;
@@ -24,7 +24,9 @@ describe("SubscriptionsController", () => {
     mockSubscriptionsService = {
       getCurrentSubscription: jest.fn(),
       createCheckoutSession: jest.fn(),
+      createAddonCheckoutSession: jest.fn(),
       createBillingPortalSession: jest.fn(),
+      updateSubscriptionAddons: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -80,6 +82,26 @@ describe("SubscriptionsController", () => {
     });
   });
 
+  describe("createAddonCheckoutSession", () => {
+    it("should call subscriptionsService.createAddonCheckoutSession with user and body", () => {
+      const body = {
+        addonCode: "team_suggestion" as const,
+        successUrl: "https://example.com/success",
+        cancelUrl: "https://example.com/cancel",
+      };
+      const expected = { url: "https://checkout.stripe.com/addon-session-1" };
+      mockSubscriptionsService.createAddonCheckoutSession.mockResolvedValue(expected as never);
+
+      const result = controller.createAddonCheckoutSession(mockUser, body);
+
+      expect(mockSubscriptionsService.createAddonCheckoutSession).toHaveBeenCalledWith(
+        mockUser,
+        body,
+      );
+      expect(result).resolves.toEqual(expected);
+    });
+  });
+
   describe("createBillingPortal", () => {
     it("should call subscriptionsService.createBillingPortalSession with user and body", () => {
       const body = { returnUrl: "https://example.com/settings" };
@@ -89,6 +111,25 @@ describe("SubscriptionsController", () => {
       const result = controller.createBillingPortal(mockUser, body);
 
       expect(mockSubscriptionsService.createBillingPortalSession).toHaveBeenCalledWith(
+        mockUser,
+        body,
+      );
+      expect(result).resolves.toEqual(expected);
+    });
+  });
+
+  describe("updateSubscriptionAddons", () => {
+    it("should call subscriptionsService.updateSubscriptionAddons with user and body", () => {
+      const body = {
+        addonCodes: ["team_suggestion"] satisfies AddonCode[],
+        successUrl: "https://example.com/subscription?checkout=success",
+      };
+      const expected = { url: null };
+      mockSubscriptionsService.updateSubscriptionAddons.mockResolvedValue(expected as never);
+
+      const result = controller.updateSubscriptionAddons(mockUser, body);
+
+      expect(mockSubscriptionsService.updateSubscriptionAddons).toHaveBeenCalledWith(
         mockUser,
         body,
       );

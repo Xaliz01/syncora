@@ -3,14 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/components/auth/AuthContext";
-import { OrganizationSubscriptionSection } from "@/components/organization/OrganizationSubscriptionSection";
 import { useOrganization } from "@/lib/organization";
 import { useToast } from "@/components/ui/ToastProvider";
 import { PostalAddressFields } from "@/components/address/PostalAddressFields";
 import * as organizationsApi from "@/lib/organizations.api";
 import { hasPermission } from "@/lib/auth-permissions";
-import { hasActiveSubscriptionAccess } from "@/lib/subscription-access";
-
 function formatValue(value: string | undefined | null) {
   const v = value?.trim();
   return v && v.length > 0 ? v : "—";
@@ -21,7 +18,6 @@ export function OrganizationPage() {
   const { activeOrganization } = useOrganization();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
-  const subscriptionOk = hasActiveSubscriptionAccess(user);
   const canUpdateOrganization = hasPermission(user, "organizations.update");
 
   const displayName = activeOrganization?.name?.trim() || "Organisation";
@@ -99,10 +95,10 @@ export function OrganizationPage() {
             {displayName}
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Informations liées à votre espace et gestion de l’abonnement Syncora.
+            Coordonnées et identité de votre espace Syncora.
           </p>
         </div>
-        {subscriptionOk && canUpdateOrganization && !isEditing && (
+        {canUpdateOrganization && !isEditing && (
           <button
             type="button"
             onClick={() => setIsEditing(true)}
@@ -111,7 +107,7 @@ export function OrganizationPage() {
             Modifier
           </button>
         )}
-        {subscriptionOk && canUpdateOrganization && isEditing && (
+        {canUpdateOrganization && isEditing && (
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
@@ -255,8 +251,6 @@ export function OrganizationPage() {
           </dl>
         )}
       </section>
-
-      {subscriptionOk && <OrganizationSubscriptionSection />}
     </div>
   );
 }

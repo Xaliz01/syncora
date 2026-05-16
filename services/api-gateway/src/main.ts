@@ -3,7 +3,7 @@ import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { AppModule } from "./modules/app.module";
-import { createNestLogger } from "@syncora/shared";
+import { createNestLogger } from "@syncora/shared/nest";
 
 async function bootstrap() {
   const logger = createNestLogger("api-gateway");

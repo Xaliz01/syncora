@@ -1,9 +1,12 @@
 import type {
+  CreateAddonCheckoutSessionGatewayBody,
   CreateBillingPortalGatewayBody,
   CreateBillingPortalResponse,
   CreateCheckoutSessionGatewayBody,
   CreateCheckoutSessionResponse,
   OrganizationSubscriptionResponse,
+  UpdateSubscriptionAddonsGatewayBody,
+  UpdateSubscriptionAddonsResponse,
 } from "@syncora/shared";
 import { apiRequestJson, type ApiMethod } from "./api-client";
 
@@ -27,10 +30,26 @@ export function createCheckoutSession(payload: CreateCheckoutSessionGatewayBody)
   );
 }
 
+export function createAddonCheckoutSession(payload: CreateAddonCheckoutSessionGatewayBody) {
+  return subscriptionsRequest<CreateCheckoutSessionResponse>(
+    "POST",
+    "/subscriptions/addon-checkout-session",
+    payload,
+  );
+}
+
 export function createBillingPortalSession(payload: CreateBillingPortalGatewayBody) {
   return subscriptionsRequest<CreateBillingPortalResponse>(
     "POST",
     "/subscriptions/billing-portal",
+    payload,
+  );
+}
+
+export function updateSubscriptionAddons(payload: UpdateSubscriptionAddonsGatewayBody) {
+  return subscriptionsRequest<UpdateSubscriptionAddonsResponse>(
+    "POST",
+    "/subscriptions/update-addons",
     payload,
   );
 }

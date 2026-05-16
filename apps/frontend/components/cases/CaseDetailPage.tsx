@@ -12,7 +12,7 @@ import { listOrganizationUsers } from "@/lib/admin.api";
 import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
 import { CaseAssigneesTagsInput } from "@/components/cases/CaseAssigneesTagsInput";
 import { CaseCustomerPicker } from "@/components/cases/CaseCustomerPicker";
-import { InterventionTeamOptimizer } from "@/components/cases/InterventionTeamOptimizer";
+import { TeamSuggestionAddonGate } from "@/components/cases/TeamSuggestionAddonGate";
 import { CUSTOMER_KIND_LABELS } from "@/components/customers/customer-kind-labels";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { usePermissions } from "@/lib/hooks/usePermissions";
@@ -74,6 +74,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   const { can, canAny } = usePermissions();
   const canAssignCase = canAny(["cases.assign", "cases.update"]);
   const [showNewIntervention, setShowNewIntervention] = useState(false);
+  const [editingInterventionId, setEditingInterventionId] = useState<string | null>(null);
 
   const { data: caseData, isLoading } = useQuery({
     queryKey: ["case", caseId],
@@ -108,7 +109,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
         .join("|"),
     ],
     queryFn: () => fleetApi.resolveAgencesForTeams(teamsData ?? []),
-    enabled: !!teamsData?.length && showNewIntervention,
+    enabled: !!teamsData?.length && (showNewIntervention || !!editingInterventionId),
   });
 
   const { data: articles } = useQuery({
@@ -131,7 +132,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   const { data: plannerCustomer, isLoading: plannerCustomerLoading } = useQuery({
     queryKey: ["customer", plannerCustomerId],
     queryFn: () => customersApi.getCustomer(plannerCustomerId!),
-    enabled: !!plannerCustomerId && showNewIntervention,
+    enabled: !!plannerCustomerId && (showNewIntervention || !!editingInterventionId),
   });
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState("");
@@ -140,6 +141,12 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   const [editAssigneeIds, setEditAssigneeIds] = useState<string[]>([]);
   const [editDueDate, setEditDueDate] = useState("");
   const [editCustomerId, setEditCustomerId] = useState("");
+  const [editIntTeamId, setEditIntTeamId] = useState("");
+  const [editIntAssignee, setEditIntAssignee] = useState("");
+  const [editIntTitle, setEditIntTitle] = useState("");
+  const [editIntDesc, setEditIntDesc] = useState("");
+  const [editIntStart, setEditIntStart] = useState("");
+  const [editIntEnd, setEditIntEnd] = useState("");
   const [interventionError, setInterventionError] = useState("");
   const [usageDrafts, setUsageDrafts] = useState<
     Record<
@@ -872,7 +879,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                     </div>
                   ) : (
                     <div className="sm:col-span-2">
-                      <InterventionTeamOptimizer
+                      <TeamSuggestionAddonGate
                         teams={teamsData ?? []}
                         agences={agencesData ?? []}
                         agencesLoading={agencesRoutingLoading}
@@ -928,224 +935,388 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
               <div className="space-y-2">
                 {interventions.map((intervention) => {
                   const usedArticles = interventionUsageMap.get(intervention.id) ?? [];
+                  const isEditingThis = editingInterventionId === intervention.id;
+
+                  const startEditingIntervention = () => {
+                    setEditingInterventionId(intervention.id);
+                    setEditIntTitle(intervention.title);
+                    setEditIntDesc(intervention.description ?? "");
+                    setEditIntTeamId(intervention.assignedTeamId ?? "");
+                    setEditIntAssignee(intervention.assigneeId ?? "");
+                    setEditIntStart(
+                      intervention.scheduledStart ? intervention.scheduledStart.slice(0, 16) : "",
+                    );
+                    setEditIntEnd(
+                      intervention.scheduledEnd ? intervention.scheduledEnd.slice(0, 16) : "",
+                    );
+                    setInterventionError("");
+                  };
+
+                  const cancelEditingIntervention = () => {
+                    setEditingInterventionId(null);
+                    setInterventionError("");
+                  };
+
+                  const submitEditIntervention = () => {
+                    if (!editIntTitle.trim()) return;
+                    updateInterventionMutation.mutate(
+                      {
+                        id: intervention.id,
+                        payload: {
+                          title: editIntTitle.trim(),
+                          description: editIntDesc.trim() || undefined,
+                          assignedTeamId: editIntTeamId || null,
+                          assigneeId: editIntAssignee || null,
+                          scheduledStart: editIntStart
+                            ? new Date(editIntStart).toISOString()
+                            : null,
+                          scheduledEnd: editIntEnd ? new Date(editIntEnd).toISOString() : null,
+                        },
+                      },
+                      { onSuccess: () => setEditingInterventionId(null) },
+                    );
+                  };
+
                   return (
                     <div
                       key={intervention.id}
                       className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 shadow-sm dark:shadow-slate-950/20"
                     >
-                      <div className="flex items-center justify-between flex-wrap gap-2">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-medium text-sm text-slate-800 dark:text-slate-100">
-                            {intervention.title}
-                          </h4>
-                          <span
-                            className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${
-                              INTERVENTION_STATUS_COLORS[intervention.status] ?? ""
-                            }`}
-                          >
-                            {INTERVENTION_STATUS_LABELS[intervention.status] ?? intervention.status}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          {intervention.status === "planned" && (
-                            <button
-                              onClick={() =>
-                                updateInterventionMutation.mutate({
-                                  id: intervention.id,
-                                  payload: { status: "in_progress" },
-                                })
-                              }
-                              className="text-[10px] text-amber-600 hover:text-amber-700 px-1.5 py-0.5 rounded bg-amber-50"
-                            >
-                              Démarrer
-                            </button>
-                          )}
-                          {intervention.status === "in_progress" && (
-                            <button
-                              onClick={() =>
-                                updateInterventionMutation.mutate({
-                                  id: intervention.id,
-                                  payload: { status: "completed" },
-                                })
-                              }
-                              className="text-[10px] text-green-600 hover:text-green-700 px-1.5 py-0.5 rounded bg-green-50"
-                            >
-                              Terminer
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                      <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
-                        {intervention.assignedTeamName && (
-                          <span className="rounded bg-indigo-50 border border-indigo-200 text-indigo-700 px-1.5 py-0.5 text-xs">
-                            {intervention.assignedTeamName}
-                          </span>
-                        )}
-                        {intervention.assigneeName && <span>{intervention.assigneeName}</span>}
-                        {intervention.scheduledStart && (
-                          <span>
-                            {new Date(intervention.scheduledStart).toLocaleDateString("fr-FR")}{" "}
-                            {new Date(intervention.scheduledStart).toLocaleTimeString("fr-FR", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
-                        )}
-                        {intervention.scheduledEnd && (
-                          <span>
-                            &rarr;{" "}
-                            {new Date(intervention.scheduledEnd).toLocaleTimeString("fr-FR", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
-                        )}
-                      </div>
-                      {intervention.description && (
-                        <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
-                          {intervention.description}
-                        </p>
-                      )}
-
-                      {usedArticles.length > 0 && (
-                        <div className="mt-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-2">
-                          <div className="text-[11px] font-semibold text-slate-700 dark:text-slate-200 mb-1">
-                            Articles liés à l&apos;intervention
+                      {isEditingThis ? (
+                        <div className="space-y-3">
+                          <div className="rounded-lg border border-amber-200 bg-amber-50/60 px-3 py-2 text-sm text-amber-950">
+                            <span className="rounded-md bg-amber-100 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide">
+                              Édition
+                            </span>{" "}
+                            <span className="font-medium text-amber-900">
+                              Modifier l&apos;intervention
+                            </span>
                           </div>
-                          <div className="space-y-1">
-                            {usedArticles.map((item) => (
-                              <div
-                                key={item.articleId}
-                                className="flex flex-wrap items-center justify-between text-[11px] text-slate-600 dark:text-slate-300 gap-1"
-                              >
-                                <span>
-                                  {item.articleName}
-                                  {item.articleReference ? ` (${item.articleReference})` : ""}
-                                </span>
-                                <span className="text-right">
-                                  consommé: {item.consumedQuantity} / retourné:{" "}
-                                  {item.returnedQuantity} / net: {item.netQuantity} {item.unit}
-                                </span>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <input
+                              type="text"
+                              value={editIntTitle}
+                              onChange={(e) => setEditIntTitle(e.target.value)}
+                              placeholder="Titre de l'intervention"
+                              className="sm:col-span-2 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
+                            />
+                            <textarea
+                              value={editIntDesc}
+                              onChange={(e) => setEditIntDesc(e.target.value)}
+                              placeholder="Description (optionnelle)"
+                              rows={2}
+                              className="sm:col-span-2 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
+                            />
+                            <select
+                              value={editIntTeamId}
+                              onChange={(e) => setEditIntTeamId(e.target.value)}
+                              className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
+                            >
+                              <option value="">Équipe (aucune)</option>
+                              {teamsData?.map((t) => (
+                                <option key={t.id} value={t.id}>
+                                  {t.name}
+                                </option>
+                              ))}
+                            </select>
+                            <select
+                              value={editIntAssignee}
+                              onChange={(e) => setEditIntAssignee(e.target.value)}
+                              className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
+                            >
+                              <option value="">Assignée à (personne)</option>
+                              {usersData?.users.map((u) => (
+                                <option key={u.id} value={u.id}>
+                                  {u.name ?? u.email}
+                                </option>
+                              ))}
+                            </select>
+                            {plannerCustomerLoading && plannerCustomerId ? (
+                              <div className="sm:col-span-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 p-4 animate-pulse">
+                                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-48 mb-3" />
+                                <div className="h-24 bg-slate-100 dark:bg-slate-800 rounded-xl" />
                               </div>
-                            ))}
+                            ) : (
+                              <div className="sm:col-span-2">
+                                <TeamSuggestionAddonGate
+                                  teams={teamsData ?? []}
+                                  agences={agencesData ?? []}
+                                  agencesLoading={agencesRoutingLoading}
+                                  agencesError={agencesRoutingError}
+                                  customerLinked={Boolean(plannerCustomerId)}
+                                  customerAddress={plannerCustomer?.address}
+                                  selectedTeamId={editIntTeamId}
+                                  onSelectTeam={setEditIntTeamId}
+                                />
+                              </div>
+                            )}
+                            <div>
+                              <label className="text-xs text-slate-500 dark:text-slate-400">
+                                Début
+                              </label>
+                              <input
+                                type="datetime-local"
+                                value={editIntStart}
+                                onChange={(e) => setEditIntStart(e.target.value)}
+                                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs text-slate-500 dark:text-slate-400">
+                                Fin
+                              </label>
+                              <input
+                                type="datetime-local"
+                                value={editIntEnd}
+                                onChange={(e) => setEditIntEnd(e.target.value)}
+                                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
+                              />
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={submitEditIntervention}
+                              disabled={updateInterventionMutation.isPending}
+                              className="rounded-lg bg-brand-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
+                            >
+                              {updateInterventionMutation.isPending ? "…" : "Enregistrer"}
+                            </button>
+                            <button
+                              onClick={cancelEditingIntervention}
+                              className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                            >
+                              Annuler
+                            </button>
                           </div>
                         </div>
-                      )}
+                      ) : (
+                        <>
+                          <div className="flex items-center justify-between flex-wrap gap-2">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-medium text-sm text-slate-800 dark:text-slate-100">
+                                {intervention.title}
+                              </h4>
+                              <span
+                                className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${
+                                  INTERVENTION_STATUS_COLORS[intervention.status] ?? ""
+                                }`}
+                              >
+                                {INTERVENTION_STATUS_LABELS[intervention.status] ??
+                                  intervention.status}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              {can("interventions.update") && (
+                                <button
+                                  onClick={startEditingIntervention}
+                                  className="text-[10px] text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                                >
+                                  Modifier
+                                </button>
+                              )}
+                              {intervention.status === "planned" && (
+                                <button
+                                  onClick={() =>
+                                    updateInterventionMutation.mutate({
+                                      id: intervention.id,
+                                      payload: { status: "in_progress" },
+                                    })
+                                  }
+                                  className="text-[10px] text-amber-600 hover:text-amber-700 px-1.5 py-0.5 rounded bg-amber-50"
+                                >
+                                  Démarrer
+                                </button>
+                              )}
+                              {intervention.status === "in_progress" && (
+                                <button
+                                  onClick={() =>
+                                    updateInterventionMutation.mutate({
+                                      id: intervention.id,
+                                      payload: { status: "completed" },
+                                    })
+                                  }
+                                  className="text-[10px] text-green-600 hover:text-green-700 px-1.5 py-0.5 rounded bg-green-50"
+                                >
+                                  Terminer
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+                            {intervention.assignedTeamName && (
+                              <span className="rounded bg-indigo-50 border border-indigo-200 text-indigo-700 px-1.5 py-0.5 text-xs">
+                                {intervention.assignedTeamName}
+                              </span>
+                            )}
+                            {intervention.assigneeName && <span>{intervention.assigneeName}</span>}
+                            {intervention.scheduledStart && (
+                              <span>
+                                {new Date(intervention.scheduledStart).toLocaleDateString("fr-FR")}{" "}
+                                {new Date(intervention.scheduledStart).toLocaleTimeString("fr-FR", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </span>
+                            )}
+                            {intervention.scheduledEnd && (
+                              <span>
+                                &rarr;{" "}
+                                {new Date(intervention.scheduledEnd).toLocaleTimeString("fr-FR", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </span>
+                            )}
+                          </div>
+                          {intervention.description && (
+                            <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+                              {intervention.description}
+                            </p>
+                          )}
 
-                      <div className="mt-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-2">
-                        <div className="mb-1 text-[11px] font-semibold text-slate-700 dark:text-slate-200">
-                          Mouvement de stock sur cette intervention
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-                          <select
-                            value={usageDrafts[intervention.id]?.articleId ?? ""}
-                            onChange={(e) =>
-                              setUsageDrafts((prev) => ({
-                                ...prev,
-                                [intervention.id]: {
-                                  articleId: e.target.value,
-                                  quantity: prev[intervention.id]?.quantity ?? "1",
-                                  movementType: prev[intervention.id]?.movementType ?? "out",
-                                  note: prev[intervention.id]?.note ?? "",
-                                },
-                              }))
-                            }
-                            className="rounded border border-slate-200 dark:border-slate-700 px-2 py-1 text-xs"
-                          >
-                            <option value="">Article</option>
-                            {(articles ?? []).map((article) => (
-                              <option key={article.id} value={article.id}>
-                                {article.reference} — {article.name} ({article.stockQuantity})
-                              </option>
-                            ))}
-                          </select>
-                          <select
-                            value={usageDrafts[intervention.id]?.movementType ?? "out"}
-                            onChange={(e) =>
-                              setUsageDrafts((prev) => ({
-                                ...prev,
-                                [intervention.id]: {
-                                  articleId: prev[intervention.id]?.articleId ?? "",
-                                  quantity: prev[intervention.id]?.quantity ?? "1",
-                                  movementType: e.target.value as "in" | "out",
-                                  note: prev[intervention.id]?.note ?? "",
-                                },
-                              }))
-                            }
-                            className="rounded border border-slate-200 dark:border-slate-700 px-2 py-1 text-xs"
-                          >
-                            <option value="out">Consommation (-)</option>
-                            <option value="in">Retour (+)</option>
-                          </select>
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={usageDrafts[intervention.id]?.quantity ?? "1"}
-                            onChange={(e) =>
-                              setUsageDrafts((prev) => ({
-                                ...prev,
-                                [intervention.id]: {
-                                  articleId: prev[intervention.id]?.articleId ?? "",
-                                  quantity: e.target.value,
-                                  movementType: prev[intervention.id]?.movementType ?? "out",
-                                  note: prev[intervention.id]?.note ?? "",
-                                },
-                              }))
-                            }
-                            className="rounded border border-slate-200 dark:border-slate-700 px-2 py-1 text-xs"
-                            placeholder="Quantité"
-                          />
-                          <input
-                            value={usageDrafts[intervention.id]?.note ?? ""}
-                            onChange={(e) =>
-                              setUsageDrafts((prev) => ({
-                                ...prev,
-                                [intervention.id]: {
-                                  articleId: prev[intervention.id]?.articleId ?? "",
-                                  quantity: prev[intervention.id]?.quantity ?? "1",
-                                  movementType: prev[intervention.id]?.movementType ?? "out",
-                                  note: e.target.value,
-                                },
-                              }))
-                            }
-                            className="rounded border border-slate-200 dark:border-slate-700 px-2 py-1 text-xs"
-                            placeholder="Note (optionnelle)"
-                          />
-                        </div>
-                        <div className="mt-2">
-                          <button
-                            onClick={() => {
-                              const draft = usageDrafts[intervention.id];
-                              if (!draft?.articleId) {
-                                setInterventionError(
-                                  "Sélectionnez un article avant de valider le mouvement",
-                                );
-                                return;
-                              }
-                              const qty = Number(draft.quantity);
-                              if (!Number.isFinite(qty) || qty <= 0) {
-                                setInterventionError("La quantité doit être strictement positive");
-                                return;
-                              }
-                              addInterventionArticleMutation.mutate({
-                                interventionId: intervention.id,
-                                payload: {
-                                  caseId,
-                                  articleId: draft.articleId,
-                                  movementType: draft.movementType,
-                                  quantity: qty,
-                                  note: draft.note.trim() || undefined,
-                                },
-                              });
-                            }}
-                            disabled={addInterventionArticleMutation.isPending}
-                            className="rounded bg-brand-600 px-3 py-1 text-xs font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
-                          >
-                            Enregistrer le mouvement
-                          </button>
-                        </div>
-                      </div>
+                          {usedArticles.length > 0 && (
+                            <div className="mt-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-2">
+                              <div className="text-[11px] font-semibold text-slate-700 dark:text-slate-200 mb-1">
+                                Articles liés à l&apos;intervention
+                              </div>
+                              <div className="space-y-1">
+                                {usedArticles.map((item) => (
+                                  <div
+                                    key={item.articleId}
+                                    className="flex flex-wrap items-center justify-between text-[11px] text-slate-600 dark:text-slate-300 gap-1"
+                                  >
+                                    <span>
+                                      {item.articleName}
+                                      {item.articleReference ? ` (${item.articleReference})` : ""}
+                                    </span>
+                                    <span className="text-right">
+                                      consommé: {item.consumedQuantity} / retourné:{" "}
+                                      {item.returnedQuantity} / net: {item.netQuantity} {item.unit}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="mt-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-2">
+                            <div className="mb-1 text-[11px] font-semibold text-slate-700 dark:text-slate-200">
+                              Mouvement de stock sur cette intervention
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                              <select
+                                value={usageDrafts[intervention.id]?.articleId ?? ""}
+                                onChange={(e) =>
+                                  setUsageDrafts((prev) => ({
+                                    ...prev,
+                                    [intervention.id]: {
+                                      articleId: e.target.value,
+                                      quantity: prev[intervention.id]?.quantity ?? "1",
+                                      movementType: prev[intervention.id]?.movementType ?? "out",
+                                      note: prev[intervention.id]?.note ?? "",
+                                    },
+                                  }))
+                                }
+                                className="rounded border border-slate-200 dark:border-slate-700 px-2 py-1 text-xs"
+                              >
+                                <option value="">Article</option>
+                                {(articles ?? []).map((article) => (
+                                  <option key={article.id} value={article.id}>
+                                    {article.reference} — {article.name} ({article.stockQuantity})
+                                  </option>
+                                ))}
+                              </select>
+                              <select
+                                value={usageDrafts[intervention.id]?.movementType ?? "out"}
+                                onChange={(e) =>
+                                  setUsageDrafts((prev) => ({
+                                    ...prev,
+                                    [intervention.id]: {
+                                      articleId: prev[intervention.id]?.articleId ?? "",
+                                      quantity: prev[intervention.id]?.quantity ?? "1",
+                                      movementType: e.target.value as "in" | "out",
+                                      note: prev[intervention.id]?.note ?? "",
+                                    },
+                                  }))
+                                }
+                                className="rounded border border-slate-200 dark:border-slate-700 px-2 py-1 text-xs"
+                              >
+                                <option value="out">Consommation (-)</option>
+                                <option value="in">Retour (+)</option>
+                              </select>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={usageDrafts[intervention.id]?.quantity ?? "1"}
+                                onChange={(e) =>
+                                  setUsageDrafts((prev) => ({
+                                    ...prev,
+                                    [intervention.id]: {
+                                      articleId: prev[intervention.id]?.articleId ?? "",
+                                      quantity: e.target.value,
+                                      movementType: prev[intervention.id]?.movementType ?? "out",
+                                      note: prev[intervention.id]?.note ?? "",
+                                    },
+                                  }))
+                                }
+                                className="rounded border border-slate-200 dark:border-slate-700 px-2 py-1 text-xs"
+                                placeholder="Quantité"
+                              />
+                              <input
+                                value={usageDrafts[intervention.id]?.note ?? ""}
+                                onChange={(e) =>
+                                  setUsageDrafts((prev) => ({
+                                    ...prev,
+                                    [intervention.id]: {
+                                      articleId: prev[intervention.id]?.articleId ?? "",
+                                      quantity: prev[intervention.id]?.quantity ?? "1",
+                                      movementType: prev[intervention.id]?.movementType ?? "out",
+                                      note: e.target.value,
+                                    },
+                                  }))
+                                }
+                                className="rounded border border-slate-200 dark:border-slate-700 px-2 py-1 text-xs"
+                                placeholder="Note (optionnelle)"
+                              />
+                            </div>
+                            <div className="mt-2">
+                              <button
+                                onClick={() => {
+                                  const draft = usageDrafts[intervention.id];
+                                  if (!draft?.articleId) {
+                                    setInterventionError(
+                                      "Sélectionnez un article avant de valider le mouvement",
+                                    );
+                                    return;
+                                  }
+                                  const qty = Number(draft.quantity);
+                                  if (!Number.isFinite(qty) || qty <= 0) {
+                                    setInterventionError(
+                                      "La quantité doit être strictement positive",
+                                    );
+                                    return;
+                                  }
+                                  addInterventionArticleMutation.mutate({
+                                    interventionId: intervention.id,
+                                    payload: {
+                                      caseId,
+                                      articleId: draft.articleId,
+                                      movementType: draft.movementType,
+                                      quantity: qty,
+                                      note: draft.note.trim() || undefined,
+                                    },
+                                  });
+                                }}
+                                disabled={addInterventionArticleMutation.isPending}
+                                className="rounded bg-brand-600 px-3 py-1 text-xs font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
+                              >
+                                Enregistrer le mouvement
+                              </button>
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   );
                 })}

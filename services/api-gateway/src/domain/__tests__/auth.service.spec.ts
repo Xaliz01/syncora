@@ -50,8 +50,14 @@ describe("AuthService", () => {
       trialEndsAt: null,
       currentPeriodEnd: null,
       cancelAtPeriodEnd: false,
+      planName: "Essentiel",
       planLabel: "9,99 € / mois",
+      activeAddons: [],
     }),
+    createCheckoutSession: jest.fn(),
+    createAddonCheckoutSession: jest.fn(),
+    createBillingPortalSession: jest.fn(),
+    updateSubscriptionAddons: jest.fn(),
   };
 
   beforeEach(async () => {

@@ -26,6 +26,14 @@ export class OrganizationSubscriptionDocument extends Document {
 
   @Prop({ default: false })
   cancelAtPeriodEnd!: boolean;
+
+  /** Addons actifs (codes métier, ex. "team_suggestion"). */
+  @Prop({ type: [String], default: [] })
+  activeAddons!: string[];
+
+  /** Map addonCode → stripeSubscriptionId pour pouvoir résilier un addon individuellement. */
+  @Prop({ type: Map, of: String, default: {} })
+  addonStripeSubscriptionIds!: Map<string, string>;
 }
 
 export const OrganizationSubscriptionSchema = SchemaFactory.createForClass(

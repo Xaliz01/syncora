@@ -8,8 +8,10 @@ import {
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
 import type {
   AuthUser,
+  CreateAddonCheckoutSessionGatewayBody,
   CreateBillingPortalGatewayBody,
   CreateCheckoutSessionGatewayBody,
+  UpdateSubscriptionAddonsGatewayBody,
 } from "@syncora/shared";
 
 @Controller("subscriptions")
@@ -32,10 +34,30 @@ export class SubscriptionsController {
     return this.subscriptionsService.createCheckoutSession(user, body);
   }
 
+  @Post("addon-checkout-session")
+  @UseGuards(RequirePermissionGuard)
+  @RequirePermissions("subscriptions.manage_billing")
+  createAddonCheckoutSession(
+    @CurrentUser() user: AuthUser,
+    @Body() body: CreateAddonCheckoutSessionGatewayBody,
+  ) {
+    return this.subscriptionsService.createAddonCheckoutSession(user, body);
+  }
+
   @Post("billing-portal")
   @UseGuards(RequirePermissionGuard)
   @RequirePermissions("subscriptions.manage_billing")
   createBillingPortal(@CurrentUser() user: AuthUser, @Body() body: CreateBillingPortalGatewayBody) {
     return this.subscriptionsService.createBillingPortalSession(user, body);
+  }
+
+  @Post("update-addons")
+  @UseGuards(RequirePermissionGuard)
+  @RequirePermissions("subscriptions.manage_billing")
+  updateSubscriptionAddons(
+    @CurrentUser() user: AuthUser,
+    @Body() body: UpdateSubscriptionAddonsGatewayBody,
+  ) {
+    return this.subscriptionsService.updateSubscriptionAddons(user, body);
   }
 }

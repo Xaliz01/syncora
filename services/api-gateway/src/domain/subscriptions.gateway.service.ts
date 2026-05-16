@@ -12,11 +12,14 @@ import axios from "axios";
 import { firstValueFrom } from "rxjs";
 import type { AuthUser } from "@syncora/shared";
 import type {
+  CreateAddonCheckoutSessionGatewayBody,
   CreateBillingPortalGatewayBody,
   CreateBillingPortalResponse,
   CreateCheckoutSessionGatewayBody,
   CreateCheckoutSessionResponse,
   OrganizationSubscriptionResponse,
+  UpdateSubscriptionAddonsGatewayBody,
+  UpdateSubscriptionAddonsResponse,
 } from "@syncora/shared";
 import { AbstractSubscriptionsGatewayService } from "./ports/subscriptions.service.port";
 
@@ -52,6 +55,23 @@ export class SubscriptionsGatewayService extends AbstractSubscriptionsGatewaySer
     });
   }
 
+  async createAddonCheckoutSession(
+    user: AuthUser,
+    body: CreateAddonCheckoutSessionGatewayBody,
+  ): Promise<CreateCheckoutSessionResponse> {
+    return this.callSubscriptions<CreateCheckoutSessionResponse>({
+      method: "post",
+      path: "/subscriptions/addon-checkout-session",
+      body: {
+        organizationId: user.organizationId,
+        addonCode: body.addonCode,
+        customerEmail: body.customerEmail,
+        successUrl: body.successUrl,
+        cancelUrl: body.cancelUrl,
+      },
+    });
+  }
+
   async createBillingPortalSession(
     user: AuthUser,
     body: CreateBillingPortalGatewayBody,
@@ -62,6 +82,22 @@ export class SubscriptionsGatewayService extends AbstractSubscriptionsGatewaySer
       body: {
         organizationId: user.organizationId,
         returnUrl: body.returnUrl,
+        flow: body.flow,
+      },
+    });
+  }
+
+  async updateSubscriptionAddons(
+    user: AuthUser,
+    body: UpdateSubscriptionAddonsGatewayBody,
+  ): Promise<UpdateSubscriptionAddonsResponse> {
+    return this.callSubscriptions<UpdateSubscriptionAddonsResponse>({
+      method: "post",
+      path: "/subscriptions/update-addons",
+      body: {
+        organizationId: user.organizationId,
+        addonCodes: body.addonCodes,
+        successUrl: body.successUrl,
       },
     });
   }
