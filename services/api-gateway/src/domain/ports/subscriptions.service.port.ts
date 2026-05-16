@@ -1,5 +1,6 @@
 import type { AuthUser } from "@syncora/shared";
 import type {
+  CreateAddonCheckoutSessionGatewayBody,
   CreateBillingPortalGatewayBody,
   CreateBillingPortalResponse,
   CreateCheckoutSessionGatewayBody,
@@ -13,6 +14,11 @@ export abstract class AbstractSubscriptionsGatewayService {
   abstract createCheckoutSession(
     user: AuthUser,
     body: CreateCheckoutSessionGatewayBody,
+  ): Promise<CreateCheckoutSessionResponse>;
+
+  abstract createAddonCheckoutSession(
+    user: AuthUser,
+    body: CreateAddonCheckoutSessionGatewayBody,
   ): Promise<CreateCheckoutSessionResponse>;
 
   abstract createBillingPortalSession(

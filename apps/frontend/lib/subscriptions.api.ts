@@ -1,4 +1,5 @@
 import type {
+  CreateAddonCheckoutSessionGatewayBody,
   CreateBillingPortalGatewayBody,
   CreateBillingPortalResponse,
   CreateCheckoutSessionGatewayBody,
@@ -23,6 +24,14 @@ export function createCheckoutSession(payload: CreateCheckoutSessionGatewayBody)
   return subscriptionsRequest<CreateCheckoutSessionResponse>(
     "POST",
     "/subscriptions/checkout-session",
+    payload,
+  );
+}
+
+export function createAddonCheckoutSession(payload: CreateAddonCheckoutSessionGatewayBody) {
+  return subscriptionsRequest<CreateCheckoutSessionResponse>(
+    "POST",
+    "/subscriptions/addon-checkout-session",
     payload,
   );
 }

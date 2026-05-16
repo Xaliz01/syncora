@@ -8,6 +8,7 @@ describe("SubscriptionsController", () => {
   let mockSubscriptionsService: {
     getByOrganization: jest.Mock;
     createCheckoutSession: jest.Mock;
+    createAddonCheckoutSession: jest.Mock;
     createBillingPortalSession: jest.Mock;
   };
 
@@ -15,6 +16,7 @@ describe("SubscriptionsController", () => {
     mockSubscriptionsService = {
       getByOrganization: jest.fn(),
       createCheckoutSession: jest.fn(),
+      createAddonCheckoutSession: jest.fn(),
       createBillingPortalSession: jest.fn(),
     };
 
@@ -109,6 +111,66 @@ describe("SubscriptionsController", () => {
 
       expect(() => controller.createCheckoutSession(body)).toThrow(BadRequestException);
       expect(mockSubscriptionsService.createCheckoutSession).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("createAddonCheckoutSession", () => {
+    it("should delegate to service.createAddonCheckoutSession", async () => {
+      const body = {
+        organizationId: "org-1",
+        addonCode: "team_suggestion" as const,
+        successUrl: "https://example.com/success",
+        cancelUrl: "https://example.com/cancel",
+      };
+      mockSubscriptionsService.createAddonCheckoutSession.mockResolvedValue({
+        url: "https://checkout.stripe.com/addon-session",
+      });
+
+      const result = await controller.createAddonCheckoutSession(body);
+
+      expect(mockSubscriptionsService.createAddonCheckoutSession).toHaveBeenCalledWith({
+        organizationId: "org-1",
+        addonCode: "team_suggestion",
+        successUrl: "https://example.com/success",
+        cancelUrl: "https://example.com/cancel",
+      });
+      expect(result.url).toBe("https://checkout.stripe.com/addon-session");
+    });
+
+    it("should throw BadRequestException when organizationId is missing", () => {
+      const body = {
+        organizationId: "",
+        addonCode: "team_suggestion" as const,
+        successUrl: "https://example.com/success",
+        cancelUrl: "https://example.com/cancel",
+      };
+
+      expect(() => controller.createAddonCheckoutSession(body)).toThrow(BadRequestException);
+      expect(mockSubscriptionsService.createAddonCheckoutSession).not.toHaveBeenCalled();
+    });
+
+    it("should throw BadRequestException when addonCode is invalid", () => {
+      const body = {
+        organizationId: "org-1",
+        addonCode: "invalid_addon" as never,
+        successUrl: "https://example.com/success",
+        cancelUrl: "https://example.com/cancel",
+      };
+
+      expect(() => controller.createAddonCheckoutSession(body)).toThrow(BadRequestException);
+      expect(mockSubscriptionsService.createAddonCheckoutSession).not.toHaveBeenCalled();
+    });
+
+    it("should throw BadRequestException when successUrl is missing", () => {
+      const body = {
+        organizationId: "org-1",
+        addonCode: "team_suggestion" as const,
+        successUrl: "",
+        cancelUrl: "https://example.com/cancel",
+      };
+
+      expect(() => controller.createAddonCheckoutSession(body)).toThrow(BadRequestException);
+      expect(mockSubscriptionsService.createAddonCheckoutSession).not.toHaveBeenCalled();
     });
   });
 

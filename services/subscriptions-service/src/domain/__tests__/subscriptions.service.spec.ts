@@ -1,11 +1,13 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getModelToken } from "@nestjs/mongoose";
 import { SubscriptionsService } from "../subscriptions.service";
+import { BadRequestException } from "@nestjs/common";
 
 describe("SubscriptionsService", () => {
   let service: SubscriptionsService;
   let mockSubscriptionModel: {
     findOne: jest.Mock;
+    findOneAndUpdate: jest.Mock;
   };
   let mockProcessedEventModel: Record<string, jest.Mock>;
 
@@ -17,12 +19,15 @@ describe("SubscriptionsService", () => {
     trialEndsAt: new Date("2025-02-01"),
     currentPeriodEnd: new Date("2025-03-01"),
     cancelAtPeriodEnd: false,
+    activeAddons: [],
+    addonStripeSubscriptionIds: new Map(),
     ...overrides,
   });
 
   beforeEach(async () => {
     mockSubscriptionModel = {
       findOne: jest.fn(),
+      findOneAndUpdate: jest.fn(),
     };
 
     mockProcessedEventModel = {
@@ -62,6 +67,7 @@ describe("SubscriptionsService", () => {
         currentPeriodEnd: null,
         cancelAtPeriodEnd: false,
         planLabel: "9,99 € / mois, sans engagement",
+        activeAddons: [],
       });
     });
 
@@ -78,6 +84,7 @@ describe("SubscriptionsService", () => {
       expect(result.hasAccess).toBe(true);
       expect(result.cancelAtPeriodEnd).toBe(false);
       expect(result.planLabel).toBe("9,99 € / mois, sans engagement");
+      expect(result.activeAddons).toEqual([]);
     });
 
     it("should return hasAccess true for trialing status", async () => {
@@ -146,6 +153,80 @@ describe("SubscriptionsService", () => {
 
       expect(result.status).toBe("canceled");
       expect(result.hasAccess).toBe(false);
+    });
+
+    it("should include activeAddons in response when present", async () => {
+      const doc = mockSubscriptionDoc({
+        stripeStatus: "active",
+        activeAddons: ["team_suggestion"],
+      });
+      mockSubscriptionModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+
+      const result = await service.getByOrganization("org-1");
+
+      expect(result.activeAddons).toEqual(["team_suggestion"]);
+    });
+
+    it("should filter out invalid addon codes from response", async () => {
+      const doc = mockSubscriptionDoc({
+        stripeStatus: "active",
+        activeAddons: ["team_suggestion", "invalid_addon"],
+      });
+      mockSubscriptionModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+
+      const result = await service.getByOrganization("org-1");
+
+      expect(result.activeAddons).toEqual(["team_suggestion"]);
+    });
+  });
+
+  describe("createAddonCheckoutSession", () => {
+    it("should throw BadRequestException when no Stripe customer exists", async () => {
+      mockSubscriptionModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null),
+      });
+
+      await expect(
+        service.createAddonCheckoutSession({
+          organizationId: "org-1",
+          addonCode: "team_suggestion",
+          successUrl: "https://example.com/success",
+          cancelUrl: "https://example.com/cancel",
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("should throw BadRequestException when addon is already active", async () => {
+      const doc = mockSubscriptionDoc({
+        activeAddons: ["team_suggestion"],
+      });
+      mockSubscriptionModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+
+      await expect(
+        service.createAddonCheckoutSession({
+          organizationId: "org-1",
+          addonCode: "team_suggestion",
+          successUrl: "https://example.com/success",
+          cancelUrl: "https://example.com/cancel",
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("should throw BadRequestException for invalid addon code", async () => {
+      await expect(
+        service.createAddonCheckoutSession({
+          organizationId: "org-1",
+          addonCode: "invalid_addon" as never,
+          successUrl: "https://example.com/success",
+          cancelUrl: "https://example.com/cancel",
+        }),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 });

@@ -12,6 +12,7 @@ import axios from "axios";
 import { firstValueFrom } from "rxjs";
 import type { AuthUser } from "@syncora/shared";
 import type {
+  CreateAddonCheckoutSessionGatewayBody,
   CreateBillingPortalGatewayBody,
   CreateBillingPortalResponse,
   CreateCheckoutSessionGatewayBody,
@@ -46,6 +47,22 @@ export class SubscriptionsGatewayService extends AbstractSubscriptionsGatewaySer
       body: {
         organizationId: user.organizationId,
         customerEmail: body.customerEmail,
+        successUrl: body.successUrl,
+        cancelUrl: body.cancelUrl,
+      },
+    });
+  }
+
+  async createAddonCheckoutSession(
+    user: AuthUser,
+    body: CreateAddonCheckoutSessionGatewayBody,
+  ): Promise<CreateCheckoutSessionResponse> {
+    return this.callSubscriptions<CreateCheckoutSessionResponse>({
+      method: "post",
+      path: "/subscriptions/addon-checkout-session",
+      body: {
+        organizationId: user.organizationId,
+        addonCode: body.addonCode,
         successUrl: body.successUrl,
         cancelUrl: body.cancelUrl,
       },

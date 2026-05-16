@@ -24,6 +24,7 @@ describe("SubscriptionsController", () => {
     mockSubscriptionsService = {
       getCurrentSubscription: jest.fn(),
       createCheckoutSession: jest.fn(),
+      createAddonCheckoutSession: jest.fn(),
       createBillingPortalSession: jest.fn(),
     };
 
@@ -76,6 +77,26 @@ describe("SubscriptionsController", () => {
       const result = controller.createCheckoutSession(mockUser, body);
 
       expect(mockSubscriptionsService.createCheckoutSession).toHaveBeenCalledWith(mockUser, body);
+      expect(result).resolves.toEqual(expected);
+    });
+  });
+
+  describe("createAddonCheckoutSession", () => {
+    it("should call subscriptionsService.createAddonCheckoutSession with user and body", () => {
+      const body = {
+        addonCode: "team_suggestion" as const,
+        successUrl: "https://example.com/success",
+        cancelUrl: "https://example.com/cancel",
+      };
+      const expected = { url: "https://checkout.stripe.com/addon-session-1" };
+      mockSubscriptionsService.createAddonCheckoutSession.mockResolvedValue(expected as never);
+
+      const result = controller.createAddonCheckoutSession(mockUser, body);
+
+      expect(mockSubscriptionsService.createAddonCheckoutSession).toHaveBeenCalledWith(
+        mockUser,
+        body,
+      );
       expect(result).resolves.toEqual(expected);
     });
   });

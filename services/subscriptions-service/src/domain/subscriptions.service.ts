@@ -8,16 +8,23 @@ import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import Stripe from "stripe";
 import type {
+  AddonCode,
   CreateBillingPortalResponse,
   CreateCheckoutSessionResponse,
   OrganizationSubscriptionResponse,
   OrganizationSubscriptionStatus,
 } from "@syncora/shared";
+import { ADDON_CODES } from "@syncora/shared";
 import type { OrganizationSubscriptionDocument } from "../persistence/organization-subscription.schema";
 import type { ProcessedStripeEventDocument } from "../persistence/processed-stripe-event.schema";
 
 const DEFAULT_TRIAL_DAYS = 15;
 const PLAN_LABEL = "9,99 € / mois, sans engagement";
+
+const ADDON_PRICE_IDS: Record<AddonCode, string> = {
+  team_suggestion:
+    process.env.STRIPE_ADDON_TEAM_SUGGESTION_PRICE_ID ?? "price_addon_team_suggestion",
+};
 
 function getStripe(): Stripe {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -56,6 +63,10 @@ function computeHasAccess(
   return false;
 }
 
+function isValidAddonCode(code: string): code is AddonCode {
+  return (ADDON_CODES as readonly string[]).includes(code);
+}
+
 @Injectable()
 export class SubscriptionsService {
   constructor(
@@ -69,6 +80,7 @@ export class SubscriptionsService {
     const status = mapStripeStatus(doc.stripeStatus);
     const trialEndsAt = doc.trialEndsAt ?? null;
     const currentPeriodEnd = doc.currentPeriodEnd ?? null;
+    const activeAddons = (doc.activeAddons ?? []).filter(isValidAddonCode);
     return {
       organizationId: doc.organizationId,
       status,
@@ -77,6 +89,7 @@ export class SubscriptionsService {
       currentPeriodEnd: currentPeriodEnd ? currentPeriodEnd.toISOString() : null,
       cancelAtPeriodEnd: doc.cancelAtPeriodEnd ?? false,
       planLabel: PLAN_LABEL,
+      activeAddons,
     };
   }
 
@@ -91,6 +104,7 @@ export class SubscriptionsService {
         currentPeriodEnd: null,
         cancelAtPeriodEnd: false,
         planLabel: PLAN_LABEL,
+        activeAddons: [],
       };
     }
     return this.toResponse(doc);
@@ -142,6 +156,61 @@ export class SubscriptionsService {
     }
 
     const session = await stripe.checkout.sessions.create(sessionParams);
+    if (!session.url) {
+      throw new InternalServerErrorException("Stripe Checkout session has no URL");
+    }
+    return { url: session.url };
+  }
+
+  async createAddonCheckoutSession(params: {
+    organizationId: string;
+    addonCode: AddonCode;
+    successUrl: string;
+    cancelUrl: string;
+  }): Promise<CreateCheckoutSessionResponse> {
+    if (!isValidAddonCode(params.addonCode)) {
+      throw new BadRequestException(`Code addon invalide : ${params.addonCode}`);
+    }
+
+    const doc = await this.subscriptionModel.findOne({ organizationId: params.organizationId }).exec();
+    if (!doc?.stripeCustomerId) {
+      throw new BadRequestException(
+        "Un abonnement principal actif est requis avant d'ajouter un addon. Finalisez d'abord votre abonnement.",
+      );
+    }
+
+    if ((doc.activeAddons ?? []).includes(params.addonCode)) {
+      throw new BadRequestException(`L'addon « ${params.addonCode} » est déjà actif.`);
+    }
+
+    const priceId = ADDON_PRICE_IDS[params.addonCode];
+    if (!priceId?.trim()) {
+      throw new InternalServerErrorException(
+        `Prix Stripe non configuré pour l'addon ${params.addonCode}`,
+      );
+    }
+
+    const stripe = getStripe();
+
+    const session = await stripe.checkout.sessions.create({
+      mode: "subscription",
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: params.successUrl,
+      cancel_url: params.cancelUrl,
+      customer: doc.stripeCustomerId,
+      client_reference_id: params.organizationId,
+      metadata: {
+        organizationId: params.organizationId,
+        addonCode: params.addonCode,
+      },
+      subscription_data: {
+        metadata: {
+          organizationId: params.organizationId,
+          addonCode: params.addonCode,
+        },
+      },
+    });
+
     if (!session.url) {
       throw new InternalServerErrorException("Stripe Checkout session has no URL");
     }
@@ -229,8 +298,8 @@ export class SubscriptionsService {
   }
 
   /**
-   * Priorité : 1) `stripeCustomerId` persisté pour l’org (validé chez Stripe), 2) client Stripe
-   * avec `metadata.organizationId`, 3) client le plus récent sur l’e-mail (évite les doublons checkout).
+   * Priorité : 1) `stripeCustomerId` persisté pour l'org (validé chez Stripe), 2) client Stripe
+   * avec `metadata.organizationId`, 3) client le plus récent sur l'e-mail (évite les doublons checkout).
    */
   private async resolveStripeCustomerIdForCheckout(
     stripe: Stripe,
@@ -287,6 +356,9 @@ export class SubscriptionsService {
     if (!organizationId || session.mode !== "subscription") {
       return;
     }
+
+    const addonCode = session.metadata?.addonCode;
+
     const customerId =
       typeof session.customer === "string" ? session.customer : session.customer?.id;
     const subscriptionId =
@@ -294,6 +366,12 @@ export class SubscriptionsService {
     if (!customerId || !subscriptionId) {
       return;
     }
+
+    if (addonCode && isValidAddonCode(addonCode)) {
+      await this.activateAddon(organizationId, customerId, addonCode, subscriptionId);
+      return;
+    }
+
     const stripe = getStripe();
     const sub = await stripe.subscriptions.retrieve(subscriptionId);
     await this.persistSubscription(organizationId, customerId, sub);
@@ -304,6 +382,18 @@ export class SubscriptionsService {
     if (!organizationId) {
       return;
     }
+
+    const addonCode = sub.metadata?.addonCode;
+    if (addonCode && isValidAddonCode(addonCode)) {
+      const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer.id;
+      if (sub.status === "active" || sub.status === "trialing") {
+        await this.activateAddon(organizationId, customerId, addonCode, sub.id);
+      } else if (sub.status === "canceled" || sub.status === "unpaid") {
+        await this.deactivateAddon(organizationId, addonCode);
+      }
+      return;
+    }
+
     const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer.id;
     await this.persistSubscription(organizationId, customerId, sub);
   }
@@ -313,6 +403,13 @@ export class SubscriptionsService {
     if (!organizationId) {
       return;
     }
+
+    const addonCode = sub.metadata?.addonCode;
+    if (addonCode && isValidAddonCode(addonCode)) {
+      await this.deactivateAddon(organizationId, addonCode);
+      return;
+    }
+
     await this.subscriptionModel
       .findOneAndUpdate(
         { organizationId },
@@ -326,6 +423,42 @@ export class SubscriptionsService {
           cancelAtPeriodEnd: false,
         },
         { upsert: true, new: true },
+      )
+      .exec();
+  }
+
+  private async activateAddon(
+    organizationId: string,
+    stripeCustomerId: string,
+    addonCode: AddonCode,
+    stripeSubscriptionId: string,
+  ): Promise<void> {
+    await this.subscriptionModel
+      .findOneAndUpdate(
+        { organizationId },
+        {
+          $addToSet: { activeAddons: addonCode },
+          $set: {
+            [`addonStripeSubscriptionIds.${addonCode}`]: stripeSubscriptionId,
+            stripeCustomerId,
+          },
+        },
+        { upsert: true, new: true },
+      )
+      .exec();
+  }
+
+  private async deactivateAddon(
+    organizationId: string,
+    addonCode: AddonCode,
+  ): Promise<void> {
+    await this.subscriptionModel
+      .findOneAndUpdate(
+        { organizationId },
+        {
+          $pull: { activeAddons: addonCode },
+          $unset: { [`addonStripeSubscriptionIds.${addonCode}`]: "" },
+        },
       )
       .exec();
   }

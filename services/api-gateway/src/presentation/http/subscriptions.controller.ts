@@ -8,6 +8,7 @@ import {
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
 import type {
   AuthUser,
+  CreateAddonCheckoutSessionGatewayBody,
   CreateBillingPortalGatewayBody,
   CreateCheckoutSessionGatewayBody,
 } from "@syncora/shared";
@@ -30,6 +31,16 @@ export class SubscriptionsController {
     @Body() body: CreateCheckoutSessionGatewayBody,
   ) {
     return this.subscriptionsService.createCheckoutSession(user, body);
+  }
+
+  @Post("addon-checkout-session")
+  @UseGuards(RequirePermissionGuard)
+  @RequirePermissions("subscriptions.manage_billing")
+  createAddonCheckoutSession(
+    @CurrentUser() user: AuthUser,
+    @Body() body: CreateAddonCheckoutSessionGatewayBody,
+  ) {
+    return this.subscriptionsService.createAddonCheckoutSession(user, body);
   }
 
   @Post("billing-portal")
