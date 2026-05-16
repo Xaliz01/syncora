@@ -10,6 +10,7 @@ describe("SubscriptionsController", () => {
     createCheckoutSession: jest.Mock;
     createAddonCheckoutSession: jest.Mock;
     createBillingPortalSession: jest.Mock;
+    updateSubscriptionAddons: jest.Mock;
   };
 
   beforeEach(async () => {
@@ -18,6 +19,7 @@ describe("SubscriptionsController", () => {
       createCheckoutSession: jest.fn(),
       createAddonCheckoutSession: jest.fn(),
       createBillingPortalSession: jest.fn(),
+      updateSubscriptionAddons: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({

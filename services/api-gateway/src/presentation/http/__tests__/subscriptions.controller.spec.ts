@@ -4,7 +4,7 @@ import { AbstractSubscriptionsGatewayService } from "../../../domain/ports/subsc
 import { JwtAuthGuard } from "../../../infrastructure/jwt-auth.guard";
 import { RequirePermissionGuard } from "../../../infrastructure/require-permission.guard";
 import { SubscriptionAccessGuard } from "../../../infrastructure/subscription-access.guard";
-import type { AuthUser } from "@syncora/shared";
+import type { AddonCode, AuthUser } from "@syncora/shared";
 
 describe("SubscriptionsController", () => {
   let controller: SubscriptionsController;
@@ -26,6 +26,7 @@ describe("SubscriptionsController", () => {
       createCheckoutSession: jest.fn(),
       createAddonCheckoutSession: jest.fn(),
       createBillingPortalSession: jest.fn(),
+      updateSubscriptionAddons: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -113,6 +114,22 @@ describe("SubscriptionsController", () => {
         mockUser,
         body,
       );
+      expect(result).resolves.toEqual(expected);
+    });
+  });
+
+  describe("updateSubscriptionAddons", () => {
+    it("should call subscriptionsService.updateSubscriptionAddons with user and body", () => {
+      const body = {
+        addonCodes: ["team_suggestion"] satisfies AddonCode[],
+        successUrl: "https://example.com/subscription?checkout=success",
+      };
+      const expected = { url: null };
+      mockSubscriptionsService.updateSubscriptionAddons.mockResolvedValue(expected as never);
+
+      const result = controller.updateSubscriptionAddons(mockUser, body);
+
+      expect(mockSubscriptionsService.updateSubscriptionAddons).toHaveBeenCalledWith(mockUser, body);
       expect(result).resolves.toEqual(expected);
     });
   });
