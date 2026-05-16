@@ -35,11 +35,11 @@ function TeamSuggestionPreview() {
         </div>
         <div>
           <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100 leading-tight">
-            Suggestion intelligente d'équipe
+            Suggestion intelligente d&apos;équipe
           </h3>
           <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-            Comparez automatiquement les distances, temps de trajet, consommation
-            et CO₂ de chaque équipe pour choisir la meilleure.
+            Comparez automatiquement les distances, temps de trajet, consommation et CO₂ de chaque
+            équipe pour choisir la meilleure.
           </p>
         </div>
       </div>
@@ -93,10 +93,7 @@ function TeamSuggestionPreview() {
  */
 export function TeamSuggestionAddonGate(optimizerProps: InterventionTeamOptimizerProps) {
   return (
-    <AddonLockedOverlay
-      addonCode="team_suggestion"
-      preview={<TeamSuggestionPreview />}
-    >
+    <AddonLockedOverlay addonCode="team_suggestion" preview={<TeamSuggestionPreview />}>
       <InterventionTeamOptimizer {...optimizerProps} />
     </AddonLockedOverlay>
   );

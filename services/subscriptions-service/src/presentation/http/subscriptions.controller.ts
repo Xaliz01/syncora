@@ -1,6 +1,10 @@
 import { BadRequestException, Body, Controller, Get, Post, Query } from "@nestjs/common";
 import { SubscriptionsService } from "../../domain/subscriptions.service";
-import type { CreateAddonCheckoutSessionBody, CreateBillingPortalBody, CreateCheckoutSessionBody } from "@syncora/shared";
+import type {
+  CreateAddonCheckoutSessionBody,
+  CreateBillingPortalBody,
+  CreateCheckoutSessionBody,
+} from "@syncora/shared";
 import { isValidAddonCode } from "@syncora/shared";
 
 @Controller("subscriptions")

@@ -172,7 +172,9 @@ export class SubscriptionsService {
       throw new BadRequestException(`Code addon invalide : ${params.addonCode}`);
     }
 
-    const doc = await this.subscriptionModel.findOne({ organizationId: params.organizationId }).exec();
+    const doc = await this.subscriptionModel
+      .findOne({ organizationId: params.organizationId })
+      .exec();
     if (!doc?.stripeCustomerId) {
       throw new BadRequestException(
         "Un abonnement principal actif est requis avant d'ajouter un addon. Finalisez d'abord votre abonnement.",
@@ -187,7 +189,7 @@ export class SubscriptionsService {
     if (!priceId?.trim()) {
       throw new InternalServerErrorException(
         `Prix Stripe non configuré pour l'addon ${params.addonCode}. ` +
-        `Définissez la variable d'environnement ${ADDON_CATALOG[params.addonCode].stripePriceEnvVar}.`,
+          `Définissez la variable d'environnement ${ADDON_CATALOG[params.addonCode].stripePriceEnvVar}.`,
       );
     }
 
@@ -449,10 +451,7 @@ export class SubscriptionsService {
       .exec();
   }
 
-  private async deactivateAddon(
-    organizationId: string,
-    addonCode: AddonCode,
-  ): Promise<void> {
+  private async deactivateAddon(organizationId: string, addonCode: AddonCode): Promise<void> {
     await this.subscriptionModel
       .findOneAndUpdate(
         { organizationId },

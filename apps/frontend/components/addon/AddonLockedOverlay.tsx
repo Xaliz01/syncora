@@ -26,11 +26,7 @@ interface AddonLockedOverlayProps {
  * Pour ajouter un nouvel addon verrouillé, il suffit d'utiliser ce composant
  * avec le code addon correspondant + un preview et children spécifiques.
  */
-export function AddonLockedOverlay({
-  addonCode,
-  preview,
-  children,
-}: AddonLockedOverlayProps) {
+export function AddonLockedOverlay({ addonCode, preview, children }: AddonLockedOverlayProps) {
   const { hasAddon, isLoading, canManageBilling, startCheckout, isCheckoutPending } =
     useAddon(addonCode);
 

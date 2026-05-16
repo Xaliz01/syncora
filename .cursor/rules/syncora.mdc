@@ -38,3 +38,9 @@ Avant toute feature, lire (ou se réaligner sur) :
 
 - Respecter l’architecture existante ; pas de refactor hors scope.
 - Contrats typés via `@syncora/shared` quand le front et le back partagent un modèle.
+
+## Formatage du code
+
+- **Avant chaque commit**, exécuter `npm run format` à la racine du projet pour formater tout le code avec Prettier.
+- Vérifier ensuite avec `npm run lint` que le code passe ESLint.
+- Ne jamais pousser du code qui échoue au format check (`npm run format:check`) ou au lint.

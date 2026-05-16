@@ -944,14 +944,10 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                     setEditIntTeamId(intervention.assignedTeamId ?? "");
                     setEditIntAssignee(intervention.assigneeId ?? "");
                     setEditIntStart(
-                      intervention.scheduledStart
-                        ? intervention.scheduledStart.slice(0, 16)
-                        : "",
+                      intervention.scheduledStart ? intervention.scheduledStart.slice(0, 16) : "",
                     );
                     setEditIntEnd(
-                      intervention.scheduledEnd
-                        ? intervention.scheduledEnd.slice(0, 16)
-                        : "",
+                      intervention.scheduledEnd ? intervention.scheduledEnd.slice(0, 16) : "",
                     );
                     setInterventionError("");
                   };
@@ -974,9 +970,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                           scheduledStart: editIntStart
                             ? new Date(editIntStart).toISOString()
                             : null,
-                          scheduledEnd: editIntEnd
-                            ? new Date(editIntEnd).toISOString()
-                            : null,
+                          scheduledEnd: editIntEnd ? new Date(editIntEnd).toISOString() : null,
                         },
                       },
                       { onSuccess: () => setEditingInterventionId(null) },
@@ -994,7 +988,9 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                             <span className="rounded-md bg-amber-100 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide">
                               Édition
                             </span>{" "}
-                            <span className="font-medium text-amber-900">Modifier l&apos;intervention</span>
+                            <span className="font-medium text-amber-900">
+                              Modifier l&apos;intervention
+                            </span>
                           </div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <input
@@ -1055,7 +1051,9 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                               </div>
                             )}
                             <div>
-                              <label className="text-xs text-slate-500 dark:text-slate-400">Début</label>
+                              <label className="text-xs text-slate-500 dark:text-slate-400">
+                                Début
+                              </label>
                               <input
                                 type="datetime-local"
                                 value={editIntStart}
@@ -1064,7 +1062,9 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                               />
                             </div>
                             <div>
-                              <label className="text-xs text-slate-500 dark:text-slate-400">Fin</label>
+                              <label className="text-xs text-slate-500 dark:text-slate-400">
+                                Fin
+                              </label>
                               <input
                                 type="datetime-local"
                                 value={editIntEnd}
@@ -1101,7 +1101,8 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                                   INTERVENTION_STATUS_COLORS[intervention.status] ?? ""
                                 }`}
                               >
-                                {INTERVENTION_STATUS_LABELS[intervention.status] ?? intervention.status}
+                                {INTERVENTION_STATUS_LABELS[intervention.status] ??
+                                  intervention.status}
                               </span>
                             </div>
                             <div className="flex items-center gap-1">
@@ -1291,7 +1292,9 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                                   }
                                   const qty = Number(draft.quantity);
                                   if (!Number.isFinite(qty) || qty <= 0) {
-                                    setInterventionError("La quantité doit être strictement positive");
+                                    setInterventionError(
+                                      "La quantité doit être strictement positive",
+                                    );
                                     return;
                                   }
                                   addInterventionArticleMutation.mutate({
