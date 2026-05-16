@@ -23,6 +23,11 @@ Avant toute feature, lire (ou se réaligner sur) :
 - Préférer : `getByRole` / labels, boucles sur routes protégées, un scénario qui enchaîne plusieurs écrans.
 - Fichier de référence : `apps/frontend/tests/e2e/journeys.spec.ts`.
 
+## Permissions
+
+- Chaque **nouvelle entité ou action métier** doit définir ses codes dans `packages/shared/src/permissions.ts` (`ASSIGNABLE_PERMISSION_CODES`), les libellés dans `apps/frontend/lib/permissions-catalog.ts`, et les appliquer côté **API gateway** (`@RequirePermissions` / `@RequireAnyPermissions` + garde `RequirePermissionGuard`) et **frontend** (`hasPermission`, `PermissionGate`, boutons masqués).
+- Vérifier que les routes gateway et les parcours UI ne restent pas accessibles sans le droit associé (y compris pour les membres non admin).
+
 ## Qualité
 
 - Respecter l’architecture existante ; pas de refactor hors scope.

@@ -2,6 +2,9 @@
 
 /** Droits configurables via profils et affectations (hors abonnement). */
 export const ASSIGNABLE_PERMISSION_CODES = [
+  "organizations.read",
+  "organizations.create",
+  "organizations.update",
   "users.read",
   "users.invite",
   "users.assign_profile",

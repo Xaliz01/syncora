@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "start": "node dist/main.js",
-    "start:dev": "ts-node-dev --respawn src/main.ts --env-file .env",
+    "start:dev": "ts-node-dev --respawn src/main.ts",
     "build": "nest build",
     "lint": "eslint \"src/**/*.ts\"",
     "test": "jest --config jest.config.json"
@@ -15,6 +15,7 @@
     "@nestjs/mongoose": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
     "@syncora/shared": "0.1.0",
+    "dotenv": "^16.4.5",
     "dd-trace": "^5.0.0",
     "mongoose": "^8.0.0",
     "reflect-metadata": "^0.2.0",

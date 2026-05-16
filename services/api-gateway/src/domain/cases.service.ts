@@ -26,6 +26,7 @@ import type {
   UpdateTodoBody,
   UserResponse,
 } from "@syncora/shared";
+import { assertAnyAssignablePermission } from "../infrastructure/permission-checks";
 import { AbstractCustomersGatewayService } from "./ports/customers.service.port";
 import {
   AbstractCasesGatewayService,
@@ -157,6 +158,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     } as UpdateCaseBody;
 
     if (Object.prototype.hasOwnProperty.call(body, "assigneeIds")) {
+      assertAnyAssignablePermission(user, ["cases.assign", "cases.update"]);
       casesBody.assignees = await this.resolveCaseAssigneesForWrite(
         user.organizationId,
         body.assigneeIds ?? [],

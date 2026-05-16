@@ -111,6 +111,27 @@ describe("AuthController", () => {
     });
   });
 
+  describe("createOrganization", () => {
+    it("should call authService.createOrganization when the member has organizations.create", async () => {
+      const body = { name: "New Org" };
+      const jwtPayload: JwtPayload = {
+        sub: "user-123",
+        organizationId: "org-123",
+        role: "member",
+        status: "active",
+        permissions: ["organizations.create"],
+        email: "member@example.com",
+      };
+      mockAuthService.createOrganization.mockResolvedValue(mockAuthResponse);
+
+      const result = await controller.createOrganization(body, { user: jwtPayload } as never);
+
+      expect(mockAuthService.createOrganization).toHaveBeenCalledWith(body, jwtPayload);
+      expect(result).toEqual(mockAuthResponse);
+    });
+
+  });
+
   describe("acceptInvitation", () => {
     it("should call authService.acceptInvitation and return auth response", async () => {
       const body = {

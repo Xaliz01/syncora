@@ -7,6 +7,21 @@ export interface PermissionMetadata {
 }
 
 export const PERMISSION_METADATA: Record<PermissionCode, PermissionMetadata> = {
+  "organizations.read": {
+    code: "organizations.read",
+    label: "Voir l’organisation",
+    description: "Consulter les coordonnées et paramètres de l’organisation active.",
+  },
+  "organizations.create": {
+    code: "organizations.create",
+    label: "Créer des organisations",
+    description: "Créer un nouvel espace organisation distinct (nouvel abonnement à activer).",
+  },
+  "organizations.update": {
+    code: "organizations.update",
+    label: "Modifier l’organisation",
+    description: "Mettre à jour le nom et les coordonnées de l’organisation active.",
+  },
   "subscription.active": {
     code: "subscription.active",
     label: "Abonnement actif",

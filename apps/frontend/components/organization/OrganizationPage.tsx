@@ -8,6 +8,7 @@ import { useOrganization } from "@/lib/organization";
 import { useToast } from "@/components/ui/ToastProvider";
 import { PostalAddressFields } from "@/components/address/PostalAddressFields";
 import * as organizationsApi from "@/lib/organizations.api";
+import { hasPermission } from "@/lib/auth-permissions";
 import { hasActiveSubscriptionAccess } from "@/lib/subscription-access";
 
 function formatValue(value: string | undefined | null) {
@@ -21,6 +22,7 @@ export function OrganizationPage() {
   const { showToast } = useToast();
   const queryClient = useQueryClient();
   const subscriptionOk = hasActiveSubscriptionAccess(user);
+  const canUpdateOrganization = hasPermission(user, "organizations.update");
 
   const displayName = activeOrganization?.name?.trim() || "Organisation";
   const [isEditing, setIsEditing] = useState(false);
@@ -100,7 +102,7 @@ export function OrganizationPage() {
             Informations liées à votre espace et gestion de l’abonnement Syncora.
           </p>
         </div>
-        {subscriptionOk && !isEditing && (
+        {subscriptionOk && canUpdateOrganization && !isEditing && (
           <button
             type="button"
             onClick={() => setIsEditing(true)}
@@ -109,7 +111,7 @@ export function OrganizationPage() {
             Modifier
           </button>
         )}
-        {subscriptionOk && isEditing && (
+        {subscriptionOk && canUpdateOrganization && isEditing && (
           <div className="flex flex-wrap gap-2">
             <button
               type="button"

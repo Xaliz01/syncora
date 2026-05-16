@@ -71,7 +71,8 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const confirm = useConfirm();
-  const { can } = usePermissions();
+  const { can, canAny } = usePermissions();
+  const canAssignCase = canAny(["cases.assign", "cases.update"]);
   const [showNewIntervention, setShowNewIntervention] = useState(false);
 
   const { data: caseData, isLoading } = useQuery({
@@ -622,7 +623,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                   options={assigneePickerOptions}
                   value={caseData.assignees.map((a) => a.userId)}
                   onChange={(ids) => updateMutation.mutate({ assigneeIds: ids })}
-                  disabled={updateMutation.isPending}
+                  disabled={!canAssignCase || updateMutation.isPending}
                   placeholder="Rechercher un membre à assigner…"
                 />
               </div>

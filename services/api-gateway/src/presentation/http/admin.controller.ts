@@ -19,6 +19,7 @@ import type {
 } from "../../domain/ports/admin.service.port";
 import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
 import {
+  RequireAnyPermissions,
   RequirePermissionGuard,
   RequirePermissions,
 } from "../../infrastructure/require-permission.guard";
@@ -58,7 +59,7 @@ export class AdminController {
   }
 
   @Put("users/:userId/permissions")
-  @RequirePermissions("users.manage_permissions")
+  @RequireAnyPermissions("users.manage_permissions", "users.assign_profile")
   async assignUserPermissions(
     @CurrentUser() user: AuthUser,
     @Param("userId") userId: string,

@@ -21,6 +21,7 @@ import type {
   UserResponse,
 } from "@syncora/shared";
 import { ASSIGNABLE_PERMISSION_CODES } from "@syncora/shared";
+import { assertAnyAssignablePermission, assertAssignablePermission } from "../infrastructure/permission-checks";
 import {
   AbstractAdminService,
   type InviteOrganizationUserBody,
@@ -202,6 +203,19 @@ export class AdminService extends AbstractAdminService {
     userId: string,
     body: UpdateUserPermissionsBody,
   ) {
+    const touchesExtra = (body.extraPermissions?.length ?? 0) > 0;
+    const touchesRevoked = (body.revokedPermissions?.length ?? 0) > 0;
+    if (touchesExtra || touchesRevoked) {
+      assertAssignablePermission(currentUser, "users.manage_permissions");
+    } else if (body.profileId !== undefined) {
+      assertAnyAssignablePermission(currentUser, [
+        "users.assign_profile",
+        "users.manage_permissions",
+      ]);
+    } else {
+      assertAssignablePermission(currentUser, "users.manage_permissions");
+    }
+
     const targetUser = await this.callUsersService<UserResponse>({
       method: "get",
       path: `/users/${userId}`,

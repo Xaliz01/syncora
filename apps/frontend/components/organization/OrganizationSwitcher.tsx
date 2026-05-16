@@ -3,10 +3,12 @@
 import { useState } from "react";
 import { useAuth } from "@/components/auth/AuthContext";
 import { useOrganization } from "@/lib/organization";
+import { hasPermission } from "@/lib/auth-permissions";
 import { useToast } from "@/components/ui/ToastProvider";
 
 export function OrganizationSwitcher({ variant = "sidebar" }: { variant?: "sidebar" | "gate" }) {
-  const { createOrganization } = useAuth();
+  const { user, createOrganization } = useAuth();
+  const canCreateOrganization = hasPermission(user, "organizations.create");
   const {
     organizations,
     sessionOrganizationId,
@@ -105,9 +107,11 @@ export function OrganizationSwitcher({ variant = "sidebar" }: { variant?: "sideb
         </>
       )}
 
-      <button type="button" onClick={() => setDialogOpen(true)} className={createBtnClass}>
-        + Nouvelle organisation
-      </button>
+      {canCreateOrganization && (
+        <button type="button" onClick={() => setDialogOpen(true)} className={createBtnClass}>
+          + Nouvelle organisation
+        </button>
+      )}
 
       {dialogOpen && (
         <div

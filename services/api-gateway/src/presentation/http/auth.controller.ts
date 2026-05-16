@@ -2,6 +2,10 @@ import { Body, Controller, Get, Post, Req, UseGuards } from "@nestjs/common";
 import type { Request } from "express";
 import { AbstractAuthService } from "../../domain/ports/auth.service.port";
 import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
+import {
+  RequirePermissionGuard,
+  RequirePermissions,
+} from "../../infrastructure/require-permission.guard";
 import type {
   AcceptInvitationBody,
   AuthUser,
@@ -33,7 +37,8 @@ export class AuthController {
   }
 
   @Post("create-organization")
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RequirePermissionGuard)
+  @RequirePermissions("organizations.create")
   async createOrganization(
     @Body() body: CreateOrganizationBody,
     @Req() req: Request & { user: JwtPayload },
