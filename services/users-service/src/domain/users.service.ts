@@ -3,6 +3,7 @@ import {
   ConflictException,
   NotFoundException,
   BadRequestException,
+  UnauthorizedException,
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import type { Model } from "mongoose";
@@ -10,14 +11,20 @@ import { Types } from "mongoose";
 import * as bcrypt from "bcrypt";
 import type { UserDocument } from "../persistence/user.schema";
 import type { OrganizationMembershipDocument } from "../persistence/organization-membership.schema";
+import type { UserPreferencesDocument } from "../persistence/user-preferences.schema";
 import {
   activeDocumentFilter,
+  DEFAULT_USER_PREFERENCES,
   type ActivateInvitedUserBody,
+  type ChangePasswordBody,
   type CreateInvitedUserBody,
   type CreateOrganizationMembershipBody,
   type CreateUserBody,
   type OrganizationMembershipResponse,
   type PatchUserBody,
+  type UpdateUserNameBody,
+  type UpdateUserPreferencesBody,
+  type UserPreferencesResponse,
   type UserResponse,
   type UserRole,
   type ValidateCredentialsResponse,
@@ -33,6 +40,8 @@ export class UsersService extends AbstractUsersService {
     @InjectModel("User") private readonly userModel: Model<UserDocument>,
     @InjectModel("OrganizationMembership")
     private readonly membershipModel: Model<OrganizationMembershipDocument>,
+    @InjectModel("UserPreferences")
+    private readonly preferencesModel: Model<UserPreferencesDocument>,
   ) {
     super();
   }
@@ -218,6 +227,89 @@ export class UsersService extends AbstractUsersService {
       throw new BadRequestException("Impossible de créer le rattachement organisation.");
     }
     return this.membershipToResponse(doc);
+  }
+
+  async updateName(id: string, body: UpdateUserNameBody): Promise<UserResponse> {
+    if (!body.name?.trim()) {
+      throw new BadRequestException("Le nom est requis");
+    }
+    const doc = await this.userModel
+      .findOneAndUpdate(
+        { _id: id, ...activeDocumentFilter },
+        { $set: { name: body.name.trim() } },
+        { new: true },
+      )
+      .exec();
+    if (!doc) throw new NotFoundException("User not found");
+    return this.toResponseForOrganization(doc, doc.organizationId);
+  }
+
+  async changePassword(id: string, body: ChangePasswordBody): Promise<void> {
+    if (!body.newPassword?.trim()) {
+      throw new BadRequestException("Le nouveau mot de passe est requis");
+    }
+    const doc = await this.userModel.findOne({ _id: id, ...activeDocumentFilter }).exec();
+    if (!doc) throw new NotFoundException("User not found");
+    if (!doc.passwordHash) {
+      throw new BadRequestException("Ce compte n'a pas de mot de passe défini");
+    }
+    const ok = await bcrypt.compare(body.currentPassword, doc.passwordHash);
+    if (!ok) {
+      throw new UnauthorizedException("Mot de passe actuel incorrect");
+    }
+    doc.passwordHash = await bcrypt.hash(body.newPassword, SALT_ROUNDS);
+    await doc.save();
+  }
+
+  async getPreferences(userId: string): Promise<UserPreferencesResponse> {
+    const doc = await this.preferencesModel.findOne({ userId }).exec();
+    if (!doc) {
+      return { userId, preferences: { ...DEFAULT_USER_PREFERENCES } };
+    }
+    return {
+      userId: doc.userId,
+      preferences: {
+        theme: doc.theme,
+        sidebarCollapsed: doc.sidebarCollapsed,
+      },
+    };
+  }
+
+  async updatePreferences(
+    userId: string,
+    body: UpdateUserPreferencesBody,
+  ): Promise<UserPreferencesResponse> {
+    const user = await this.userModel.findOne({ _id: userId, ...activeDocumentFilter }).exec();
+    if (!user) throw new NotFoundException("User not found");
+
+    const $set: Record<string, unknown> = {};
+    if (body.theme !== undefined) $set.theme = body.theme;
+    if (body.sidebarCollapsed !== undefined) $set.sidebarCollapsed = body.sidebarCollapsed;
+
+    const doc = await this.preferencesModel
+      .findOneAndUpdate(
+        { userId },
+        {
+          $set,
+          $setOnInsert: {
+            userId,
+            ...(body.theme === undefined ? { theme: DEFAULT_USER_PREFERENCES.theme } : {}),
+            ...(body.sidebarCollapsed === undefined
+              ? { sidebarCollapsed: DEFAULT_USER_PREFERENCES.sidebarCollapsed }
+              : {}),
+          },
+        },
+        { upsert: true, new: true },
+      )
+      .exec();
+
+    return {
+      userId: doc!.userId,
+      preferences: {
+        theme: doc!.theme,
+        sidebarCollapsed: doc!.sidebarCollapsed,
+      },
+    };
   }
 
   async validateCredentials(

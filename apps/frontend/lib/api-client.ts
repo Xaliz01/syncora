@@ -58,5 +58,6 @@ export async function apiRequestJson<T>(
   });
 
   await throwIfNotOk(response, fallbackError);
+  if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
 }

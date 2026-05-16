@@ -42,6 +42,9 @@ function isLinkActive(currentPath: string, href: string): boolean {
   if (href === "/subscription") {
     return currentPath === "/subscription" || currentPath.startsWith("/subscription/");
   }
+  if (href === "/account") {
+    return currentPath === "/account" || currentPath.startsWith("/account/");
+  }
   return currentPath === href || currentPath.startsWith(`${href}/`);
 }
 
@@ -190,6 +193,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               ? [
                   { label: "Mon organisation", href: "/organization" },
                   { label: "Mon abonnement", href: "/subscription" },
+                  { label: "Mon compte", href: "/account" },
                 ]
               : []),
           ],
@@ -217,6 +221,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             ? [
                 { label: "Mon organisation", href: "/organization" },
                 { label: "Mon abonnement", href: "/subscription" },
+                { label: "Mon compte", href: "/account" },
               ]
             : [],
         },

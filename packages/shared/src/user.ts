@@ -57,3 +57,37 @@ export interface ValidateCredentialsResponse {
   role: UserRole;
   status: UserStatus;
 }
+
+/* ── Mon compte / User Account ─────────────────────────────── */
+
+export type ThemePreference = "light" | "dark";
+export type SidebarPreference = "expanded" | "collapsed";
+
+export interface UserPreferences {
+  theme: ThemePreference;
+  sidebarCollapsed: SidebarPreference;
+}
+
+export const DEFAULT_USER_PREFERENCES: UserPreferences = {
+  theme: "light",
+  sidebarCollapsed: "expanded",
+};
+
+export interface UpdateUserNameBody {
+  name: string;
+}
+
+export interface ChangePasswordBody {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface UpdateUserPreferencesBody {
+  theme?: ThemePreference;
+  sidebarCollapsed?: SidebarPreference;
+}
+
+export interface UserPreferencesResponse {
+  userId: string;
+  preferences: UserPreferences;
+}
