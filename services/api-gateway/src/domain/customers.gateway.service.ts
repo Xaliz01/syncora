@@ -1,14 +1,7 @@
-import {
-  BadRequestException,
-  ConflictException,
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
-import { HttpService } from "@nestjs/axios";
-import { firstValueFrom } from "rxjs";
+import { Injectable } from "@nestjs/common";
 import type { AuthUser } from "@syncora/shared";
-import type { CreateCustomerBody, CustomerResponse, UpdateCustomerBody } from "@syncora/shared";
+import type { CustomerResponse } from "@syncora/shared";
+import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
 import {
   AbstractCustomersGatewayService,
   type CreateCustomerForOrgBody,
@@ -19,29 +12,29 @@ const CUSTOMERS_URL = process.env.CUSTOMERS_SERVICE_URL ?? "http://localhost:300
 
 @Injectable()
 export class CustomersGatewayService extends AbstractCustomersGatewayService {
-  constructor(private readonly httpService: HttpService) {
+  constructor(private readonly scopedHttp: OrganizationScopedHttpClient) {
     super();
   }
 
   async createCustomer(user: AuthUser, body: CreateCustomerForOrgBody) {
-    return this.callCustomers<CustomerResponse>({
+    return this.scopedHttp.request<CustomerResponse>({
+      baseUrl: CUSTOMERS_URL,
+      organizationId: user.organizationId,
       method: "post",
       path: "/customers",
-      body: {
-        organizationId: user.organizationId,
-        ...body,
-      } satisfies CreateCustomerBody,
+      body: { ...body },
+      errorLabel: "Customers service error",
     });
   }
 
   async listCustomers(user: AuthUser, filters?: { search?: string; ids?: string }) {
-    return this.callCustomers<CustomerResponse[]>({
+    return this.scopedHttp.request<CustomerResponse[]>({
+      baseUrl: CUSTOMERS_URL,
+      organizationId: user.organizationId,
       method: "get",
       path: "/customers",
-      query: {
-        organizationId: user.organizationId,
-        ...filters,
-      },
+      query: filters,
+      errorLabel: "Customers service error",
     });
   }
 
@@ -52,63 +45,34 @@ export class CustomersGatewayService extends AbstractCustomersGatewayService {
   }
 
   async getCustomer(user: AuthUser, customerId: string) {
-    return this.callCustomers<CustomerResponse>({
+    return this.scopedHttp.request<CustomerResponse>({
+      baseUrl: CUSTOMERS_URL,
+      organizationId: user.organizationId,
       method: "get",
       path: `/customers/${customerId}`,
-      query: { organizationId: user.organizationId },
+      errorLabel: "Customers service error",
     });
   }
 
   async updateCustomer(user: AuthUser, customerId: string, body: UpdateCustomerForOrgBody) {
-    return this.callCustomers<CustomerResponse>({
+    return this.scopedHttp.request<CustomerResponse>({
+      baseUrl: CUSTOMERS_URL,
+      organizationId: user.organizationId,
       method: "patch",
       path: `/customers/${customerId}`,
-      body: {
-        organizationId: user.organizationId,
-        ...body,
-      } satisfies UpdateCustomerBody,
+      body: { ...body },
+      errorLabel: "Customers service error",
     });
   }
 
   async deleteCustomer(user: AuthUser, customerId: string) {
-    return this.callCustomers<{ deleted: true }>({
+    return this.scopedHttp.request<{ deleted: true }>({
+      baseUrl: CUSTOMERS_URL,
+      organizationId: user.organizationId,
       method: "delete",
       path: `/customers/${customerId}`,
-      query: { organizationId: user.organizationId },
+      validateResponseScope: false,
+      errorLabel: "Customers service error",
     });
-  }
-
-  private async callCustomers<T>(params: {
-    method: "get" | "post" | "patch" | "put" | "delete";
-    path: string;
-    body?: unknown;
-    query?: Record<string, unknown>;
-  }): Promise<T> {
-    try {
-      const response = await firstValueFrom(
-        this.httpService.request<T>({
-          method: params.method,
-          url: `${CUSTOMERS_URL}${params.path}`,
-          data: params.body,
-          params: params.query,
-        }),
-      );
-      return response.data;
-    } catch (err: unknown) {
-      this.rethrowAsHttpException(err);
-    }
-  }
-
-  private rethrowAsHttpException(err: unknown): never {
-    const status = (err as { response?: { status?: number } })?.response?.status;
-    const message =
-      (err as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message ??
-      "Customers service error";
-
-    if (status === 400) throw new BadRequestException(message);
-    if (status === 403) throw new ForbiddenException(message);
-    if (status === 404) throw new NotFoundException(message);
-    if (status === 409) throw new ConflictException(message);
-    throw err;
   }
 }

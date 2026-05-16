@@ -34,7 +34,6 @@ describe("UsersService", () => {
     email: "user@example.com",
     passwordHash: "hashed",
     name: "Test User",
-    role: "member",
     status: "active",
     get: jest.fn((key: string) => (key === "createdAt" ? new Date("2025-01-01") : undefined)),
     save: jest.fn().mockResolvedValue(undefined),
@@ -105,7 +104,7 @@ describe("UsersService", () => {
   });
 
   describe("create", () => {
-    it("should create a user with hashed password and membership", async () => {
+    it("should create a user with hashed password and membership (role on membership only)", async () => {
       mockUserModel.findOne.mockReturnValue({ exec: jest.fn().mockResolvedValue(null) });
       const doc = mockDoc({ email: "new@example.com", name: "New User" });
       mockUserModel.create.mockResolvedValue(doc);
@@ -129,7 +128,6 @@ describe("UsersService", () => {
         email: "new@example.com",
         passwordHash: "hashed",
         name: "New User",
-        role: "member",
         status: "active",
       });
       expect(mockMembershipModel.findOneAndUpdate).toHaveBeenCalled();
@@ -160,9 +158,12 @@ describe("UsersService", () => {
   });
 
   describe("patch", () => {
-    it("should update organizationId", async () => {
+    it("should update organizationId only (role stays on membership)", async () => {
       const execMock = jest.fn().mockResolvedValue(mockDoc({ organizationId: "org-new" }));
       mockUserModel.findOneAndUpdate.mockReturnValue({ exec: execMock });
+      mockMembershipModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockMemDoc({ organizationId: "org-new", role: "member" })),
+      });
 
       const result = await service.patch("user-123", { organizationId: "org-new" });
 
@@ -172,21 +173,7 @@ describe("UsersService", () => {
         { new: true },
       );
       expect(result.organizationId).toBe("org-new");
-    });
-
-    it("should update organizationId and role together", async () => {
-      const execMock = jest
-        .fn()
-        .mockResolvedValue(mockDoc({ organizationId: "org-new", role: "admin" }));
-      mockUserModel.findOneAndUpdate.mockReturnValue({ exec: execMock });
-
-      await service.patch("user-123", { organizationId: "org-new", role: "admin" });
-
-      expect(mockUserModel.findOneAndUpdate).toHaveBeenCalledWith(
-        { _id: "user-123", ...activeDocumentFilter },
-        { $set: { organizationId: "org-new", role: "admin" } },
-        { new: true },
-      );
+      expect(result.role).toBe("member");
     });
 
     it("should throw BadRequestException when organizationId is missing", async () => {
@@ -286,6 +273,7 @@ describe("UsersService", () => {
         id: "user-123",
         email: "user@example.com",
         status: "active",
+        role: "member",
       });
     });
 
@@ -310,7 +298,7 @@ describe("UsersService", () => {
           exec: jest.fn().mockResolvedValue(mRows),
         }),
       });
-      const udoc = mockDoc({ role: "member", _id: { toString: () => "user-123" } });
+      const udoc = mockDoc({ _id: { toString: () => "user-123" } });
       mockUserModel.find.mockReturnValue({
         exec: jest.fn().mockResolvedValue([udoc]),
       });
@@ -377,6 +365,21 @@ describe("UsersService", () => {
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
       mockMembershipModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockMemDoc({ membershipStatus: "invited" })),
+      });
+
+      const result = await service.validateCredentials("user@example.com", "password");
+
+      expect(result).toBeNull();
+    });
+
+    it("should return null when no membership exists for active org", async () => {
+      const doc = mockDoc({ passwordHash: "hashed" });
+      mockUserModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      mockMembershipModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null),
       });
 
       const result = await service.validateCredentials("user@example.com", "password");

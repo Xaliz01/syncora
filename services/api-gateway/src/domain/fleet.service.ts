@@ -1,29 +1,36 @@
-import {
-  BadRequestException,
-  ConflictException,
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
-import { HttpService } from "@nestjs/axios";
-import { firstValueFrom } from "rxjs";
+import { Injectable } from "@nestjs/common";
 import type {
+  AssignTeamToVehicleBody,
   AuthUser,
-  CreateVehicleBody,
   UpdateVehicleBody,
   VehicleResponse,
-  AssignTeamToVehicleBody,
-  VehicleType,
   VehicleStatus,
+  VehicleType,
 } from "@syncora/shared";
+import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
 import { AbstractFleetGatewayService } from "./ports/fleet.service.port";
 
 const FLEET_URL = process.env.FLEET_SERVICE_URL ?? "http://localhost:3005";
 
 @Injectable()
 export class FleetGatewayService extends AbstractFleetGatewayService {
-  constructor(private readonly httpService: HttpService) {
+  constructor(private readonly scopedHttp: OrganizationScopedHttpClient) {
     super();
+  }
+
+  private request<T>(
+    user: AuthUser,
+    params: Omit<
+      Parameters<OrganizationScopedHttpClient["request"]>[0],
+      "baseUrl" | "organizationId" | "errorLabel"
+    >,
+  ) {
+    return this.scopedHttp.request<T>({
+      ...params,
+      baseUrl: FLEET_URL,
+      organizationId: user.organizationId,
+      errorLabel: "Downstream service error",
+    });
   }
 
   async createVehicle(
@@ -40,29 +47,24 @@ export class FleetGatewayService extends AbstractFleetGatewayService {
       status?: VehicleStatus;
     },
   ): Promise<VehicleResponse> {
-    return this.callFleetService<VehicleResponse>({
+    return this.request<VehicleResponse>(currentUser, {
       method: "post",
       path: "/vehicles",
-      body: {
-        organizationId: currentUser.organizationId,
-        ...body,
-      } satisfies CreateVehicleBody,
+      body: { ...body },
     });
   }
 
   async listVehicles(currentUser: AuthUser): Promise<VehicleResponse[]> {
-    return this.callFleetService<VehicleResponse[]>({
+    return this.request<VehicleResponse[]>(currentUser, {
       method: "get",
       path: "/vehicles",
-      query: { organizationId: currentUser.organizationId },
     });
   }
 
   async getVehicle(currentUser: AuthUser, vehicleId: string): Promise<VehicleResponse> {
-    return this.callFleetService<VehicleResponse>({
+    return this.request<VehicleResponse>(currentUser, {
       method: "get",
       path: `/vehicles/${vehicleId}`,
-      query: { organizationId: currentUser.organizationId },
     });
   }
 
@@ -71,19 +73,18 @@ export class FleetGatewayService extends AbstractFleetGatewayService {
     vehicleId: string,
     body: UpdateVehicleBody,
   ): Promise<VehicleResponse> {
-    return this.callFleetService<VehicleResponse>({
+    return this.request<VehicleResponse>(currentUser, {
       method: "patch",
       path: `/vehicles/${vehicleId}`,
-      query: { organizationId: currentUser.organizationId },
       body,
     });
   }
 
   async deleteVehicle(currentUser: AuthUser, vehicleId: string): Promise<{ deleted: true }> {
-    return this.callFleetService<{ deleted: true }>({
+    return this.request<{ deleted: true }>(currentUser, {
       method: "delete",
       path: `/vehicles/${vehicleId}`,
-      query: { organizationId: currentUser.organizationId },
+      validateResponseScope: false,
     });
   }
 
@@ -92,10 +93,9 @@ export class FleetGatewayService extends AbstractFleetGatewayService {
     vehicleId: string,
     body: AssignTeamToVehicleBody,
   ): Promise<VehicleResponse> {
-    return this.callFleetService<VehicleResponse>({
+    return this.request<VehicleResponse>(currentUser, {
       method: "put",
       path: `/vehicles/${vehicleId}/assign-team`,
-      query: { organizationId: currentUser.organizationId },
       body,
     });
   }
@@ -104,44 +104,9 @@ export class FleetGatewayService extends AbstractFleetGatewayService {
     currentUser: AuthUser,
     vehicleId: string,
   ): Promise<VehicleResponse> {
-    return this.callFleetService<VehicleResponse>({
+    return this.request<VehicleResponse>(currentUser, {
       method: "delete",
       path: `/vehicles/${vehicleId}/assign-team`,
-      query: { organizationId: currentUser.organizationId },
     });
-  }
-
-  private async callFleetService<T>(params: {
-    method: "get" | "post" | "patch" | "put" | "delete";
-    path: string;
-    body?: unknown;
-    query?: Record<string, unknown>;
-  }): Promise<T> {
-    try {
-      const response = await firstValueFrom(
-        this.httpService.request<T>({
-          method: params.method,
-          url: `${FLEET_URL}${params.path}`,
-          data: params.body,
-          params: params.query,
-        }),
-      );
-      return response.data;
-    } catch (err: unknown) {
-      this.rethrowAsHttpException(err);
-    }
-  }
-
-  private rethrowAsHttpException(err: unknown): never {
-    const status = (err as { response?: { status?: number } })?.response?.status;
-    const message =
-      (err as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message ??
-      "Downstream service error";
-
-    if (status === 400) throw new BadRequestException(message);
-    if (status === 403) throw new ForbiddenException(message);
-    if (status === 404) throw new NotFoundException(message);
-    if (status === 409) throw new ConflictException(message);
-    throw err;
   }
 }

@@ -1,12 +1,4 @@
-import {
-  BadRequestException,
-  ConflictException,
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
-import { HttpService } from "@nestjs/axios";
-import { firstValueFrom } from "rxjs";
+import { ForbiddenException, Injectable } from "@nestjs/common";
 import type {
   AuthUser,
   CaseAssignee,
@@ -27,6 +19,7 @@ import type {
   UserResponse,
 } from "@syncora/shared";
 import { assertAnyAssignablePermission } from "../infrastructure/permission-checks";
+import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
 import { AbstractCustomersGatewayService } from "./ports/customers.service.port";
 import {
   AbstractCasesGatewayService,
@@ -45,7 +38,7 @@ const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
 @Injectable()
 export class CasesGatewayService extends AbstractCasesGatewayService {
   constructor(
-    private readonly httpService: HttpService,
+    private readonly scopedHttp: OrganizationScopedHttpClient,
     private readonly customersGateway: AbstractCustomersGatewayService,
   ) {
     super();
@@ -54,7 +47,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
   // ── Templates ──
 
   async createTemplate(user: AuthUser, body: CreateTemplateForOrgBody) {
-    return this.callCasesService<CaseTemplateResponse>({
+    return this.callCasesService<CaseTemplateResponse>(user.organizationId, {
       method: "post",
       path: "/templates",
       body: {
@@ -65,7 +58,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
   }
 
   async listTemplates(user: AuthUser) {
-    return this.callCasesService<CaseTemplateResponse[]>({
+    return this.callCasesService<CaseTemplateResponse[]>(user.organizationId, {
       method: "get",
       path: "/templates",
       query: { organizationId: user.organizationId },
@@ -73,7 +66,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
   }
 
   async getTemplate(user: AuthUser, templateId: string) {
-    return this.callCasesService<CaseTemplateResponse>({
+    return this.callCasesService<CaseTemplateResponse>(user.organizationId, {
       method: "get",
       path: `/templates/${templateId}`,
       query: { organizationId: user.organizationId },
@@ -81,7 +74,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
   }
 
   async updateTemplate(user: AuthUser, templateId: string, body: UpdateTemplateForOrgBody) {
-    return this.callCasesService<CaseTemplateResponse>({
+    return this.callCasesService<CaseTemplateResponse>(user.organizationId, {
       method: "patch",
       path: `/templates/${templateId}`,
       body: {
@@ -92,7 +85,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
   }
 
   async deleteTemplate(user: AuthUser, templateId: string) {
-    return this.callCasesService<{ deleted: true }>({
+    return this.callCasesService<{ deleted: true }>(user.organizationId, {
       method: "delete",
       path: `/templates/${templateId}`,
       query: { organizationId: user.organizationId },
@@ -111,7 +104,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       assignees = await this.resolveCaseAssigneesForWrite(user.organizationId, assigneeIds);
     }
 
-    const created = await this.callCasesService<CaseResponse>({
+    const created = await this.callCasesService<CaseResponse>(user.organizationId, {
       method: "post",
       path: "/cases",
       body: {
@@ -128,7 +121,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     user: AuthUser,
     filters?: { status?: string; assigneeId?: string; priority?: string; search?: string },
   ) {
-    const rows = await this.callCasesService<CaseSummaryResponse[]>({
+    const rows = await this.callCasesService<CaseSummaryResponse[]>(user.organizationId, {
       method: "get",
       path: "/cases",
       query: {
@@ -140,7 +133,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
   }
 
   async getCase(user: AuthUser, caseId: string) {
-    const row = await this.callCasesService<CaseResponse>({
+    const row = await this.callCasesService<CaseResponse>(user.organizationId, {
       method: "get",
       path: `/cases/${caseId}`,
       query: { organizationId: user.organizationId },
@@ -165,7 +158,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       );
     }
 
-    const updated = await this.callCasesService<CaseResponse>({
+    const updated = await this.callCasesService<CaseResponse>(user.organizationId, {
       method: "patch",
       path: `/cases/${caseId}`,
       body: casesBody,
@@ -174,7 +167,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
   }
 
   async deleteCase(user: AuthUser, caseId: string) {
-    return this.callCasesService<{ deleted: true }>({
+    return this.callCasesService<{ deleted: true }>(user.organizationId, {
       method: "delete",
       path: `/cases/${caseId}`,
       query: { organizationId: user.organizationId },
@@ -182,7 +175,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
   }
 
   async updateTodo(user: AuthUser, caseId: string, body: UpdateTodoForOrgBody) {
-    const row = await this.callCasesService<CaseResponse>({
+    const row = await this.callCasesService<CaseResponse>(user.organizationId, {
       method: "put",
       path: `/cases/${caseId}/todos`,
       body: {
@@ -196,7 +189,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
   // ── Interventions ──
 
   async createIntervention(user: AuthUser, body: CreateInterventionForOrgBody) {
-    return this.callCasesService<InterventionResponse>({
+    return this.callCasesService<InterventionResponse>(user.organizationId, {
       method: "post",
       path: "/interventions",
       body: {
@@ -217,7 +210,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       unscheduled?: string;
     },
   ) {
-    return this.callCasesService<InterventionResponse[]>({
+    return this.callCasesService<InterventionResponse[]>(user.organizationId, {
       method: "get",
       path: "/interventions",
       query: {
@@ -228,7 +221,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
   }
 
   async getIntervention(user: AuthUser, interventionId: string) {
-    return this.callCasesService<InterventionResponse>({
+    return this.callCasesService<InterventionResponse>(user.organizationId, {
       method: "get",
       path: `/interventions/${interventionId}`,
       query: { organizationId: user.organizationId },
@@ -240,7 +233,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     interventionId: string,
     body: UpdateInterventionForOrgBody,
   ) {
-    return this.callCasesService<InterventionResponse>({
+    return this.callCasesService<InterventionResponse>(user.organizationId, {
       method: "patch",
       path: `/interventions/${interventionId}`,
       body: {
@@ -251,7 +244,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
   }
 
   async deleteIntervention(user: AuthUser, interventionId: string) {
-    return this.callCasesService<{ deleted: true }>({
+    return this.callCasesService<{ deleted: true }>(user.organizationId, {
       method: "delete",
       path: `/interventions/${interventionId}`,
       query: { organizationId: user.organizationId },
@@ -261,7 +254,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
   // ── Dashboard ──
 
   async getDashboard(user: AuthUser) {
-    const dash = await this.callCasesService<CaseDashboardResponse>({
+    const dash = await this.callCasesService<CaseDashboardResponse>(user.organizationId, {
       method: "get",
       path: "/dashboard",
       query: {
@@ -311,7 +304,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     const ids = [...new Set(assigneeIds.map((id) => id.trim()).filter(Boolean))];
     const assignees: CaseAssignee[] = [];
     for (const id of ids) {
-      const user = await this.callUsersService<UserResponse>({
+      const user = await this.callUsersService<UserResponse>(organizationId, {
         method: "get",
         path: `/users/${id}`,
       });
@@ -325,58 +318,47 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     return assignees;
   }
 
-  private async callUsersService<T>(params: {
-    method: "get" | "post" | "patch" | "put" | "delete";
-    path: string;
-    body?: unknown;
-    query?: Record<string, unknown>;
-  }): Promise<T> {
-    try {
-      const response = await firstValueFrom(
-        this.httpService.request<T>({
-          method: params.method,
-          url: `${USERS_URL}${params.path}`,
-          data: params.body,
-          params: params.query,
-        }),
-      );
-      return response.data;
-    } catch (err: unknown) {
-      this.rethrowAsHttpException(err);
-    }
+  private callUsersService<T>(
+    organizationId: string,
+    params: {
+      method: "get" | "post" | "patch" | "put" | "delete";
+      path: string;
+      body?: object;
+      query?: Record<string, unknown>;
+      validateResponseScope?: boolean;
+    },
+  ): Promise<T> {
+    return this.scopedHttp.request<T>({
+      baseUrl: USERS_URL,
+      organizationId,
+      errorLabel: "Users service error",
+      method: params.method,
+      path: params.path,
+      body: params.body,
+      query: params.query,
+      validateResponseScope: params.validateResponseScope,
+    });
   }
 
-  private async callCasesService<T>(params: {
-    method: "get" | "post" | "patch" | "put" | "delete";
-    path: string;
-    body?: unknown;
-    query?: Record<string, unknown>;
-  }): Promise<T> {
-    try {
-      const response = await firstValueFrom(
-        this.httpService.request<T>({
-          method: params.method,
-          url: `${CASES_URL}${params.path}`,
-          data: params.body,
-          params: params.query,
-        }),
-      );
-      return response.data;
-    } catch (err: unknown) {
-      this.rethrowAsHttpException(err);
-    }
-  }
-
-  private rethrowAsHttpException(err: unknown): never {
-    const status = (err as { response?: { status?: number } })?.response?.status;
-    const message =
-      (err as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message ??
-      "Downstream service error";
-
-    if (status === 400) throw new BadRequestException(message);
-    if (status === 403) throw new ForbiddenException(message);
-    if (status === 404) throw new NotFoundException(message);
-    if (status === 409) throw new ConflictException(message);
-    throw err;
+  private callCasesService<T>(
+    organizationId: string,
+    params: {
+      method: "get" | "post" | "patch" | "put" | "delete";
+      path: string;
+      body?: object;
+      query?: Record<string, unknown>;
+      validateResponseScope?: boolean;
+    },
+  ): Promise<T> {
+    return this.scopedHttp.request<T>({
+      baseUrl: CASES_URL,
+      organizationId,
+      errorLabel: "Cases service error",
+      method: params.method,
+      path: params.path,
+      body: params.body,
+      query: params.query,
+      validateResponseScope: params.validateResponseScope,
+    });
   }
 }

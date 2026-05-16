@@ -1,31 +1,47 @@
-import {
-  BadRequestException,
-  ConflictException,
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
-import { HttpService } from "@nestjs/axios";
-import { firstValueFrom } from "rxjs";
+import { BadRequestException, Injectable } from "@nestjs/common";
 import type {
   AuthUser,
   CreateTechnicianBody,
   UpdateTechnicianBody,
   TechnicianResponse,
-  CreateUserBody,
   UserResponse,
   TechnicianStatus,
   CreateTechnicianUserAccountBody,
 } from "@syncora/shared";
 import { AbstractTechniciansGatewayService } from "./ports/technicians.service.port";
+import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
 
 const TECHNICIANS_URL = process.env.TECHNICIANS_SERVICE_URL ?? "http://localhost:3006";
 const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
 
 @Injectable()
 export class TechniciansGatewayService extends AbstractTechniciansGatewayService {
-  constructor(private readonly httpService: HttpService) {
+  constructor(private readonly scopedHttp: OrganizationScopedHttpClient) {
     super();
+  }
+
+  private techniciansRequest<T>(
+    user: AuthUser,
+    params: Omit<
+      Parameters<OrganizationScopedHttpClient["request"]>[0],
+      "baseUrl" | "organizationId" | "errorLabel"
+    >,
+  ) {
+    return this.scopedHttp.request<T>({
+      ...params,
+      baseUrl: TECHNICIANS_URL,
+      organizationId: user.organizationId,
+      errorLabel: "Downstream service error",
+    });
+  }
+
+  private usersRequest<T>(organizationId: string, params: Omit<Parameters<OrganizationScopedHttpClient["request"]>[0], "baseUrl" | "organizationId" | "errorLabel">) {
+    return this.scopedHttp.request<T>({
+      ...params,
+      baseUrl: USERS_URL,
+      organizationId,
+      errorLabel: "Users service error",
+    });
   }
 
   async createTechnician(
@@ -43,13 +59,10 @@ export class TechniciansGatewayService extends AbstractTechniciansGatewayService
   ): Promise<TechnicianResponse> {
     const { createUserAccount, userAccountPassword, ...technicianFields } = body;
 
-    const technician = await this.callTechniciansService<TechnicianResponse>({
+    const technician = await this.techniciansRequest<TechnicianResponse>(currentUser, {
       method: "post",
       path: "/technicians",
-      body: {
-        organizationId: currentUser.organizationId,
-        ...technicianFields,
-      } satisfies CreateTechnicianBody,
+      body: { ...technicianFields } as CreateTechnicianBody,
     });
 
     if (createUserAccount && body.email) {
@@ -64,10 +77,9 @@ export class TechniciansGatewayService extends AbstractTechniciansGatewayService
         `${body.firstName} ${body.lastName}`,
         userAccountPassword,
       );
-      return this.callTechniciansService<TechnicianResponse>({
+      return this.techniciansRequest<TechnicianResponse>(currentUser, {
         method: "put",
         path: `/technicians/${technician.id}/link-user`,
-        query: { organizationId: currentUser.organizationId },
         body: { userId: user.id },
       });
     }
@@ -76,18 +88,16 @@ export class TechniciansGatewayService extends AbstractTechniciansGatewayService
   }
 
   async listTechnicians(currentUser: AuthUser): Promise<TechnicianResponse[]> {
-    return this.callTechniciansService<TechnicianResponse[]>({
+    return this.techniciansRequest<TechnicianResponse[]>(currentUser, {
       method: "get",
       path: "/technicians",
-      query: { organizationId: currentUser.organizationId },
     });
   }
 
   async getTechnician(currentUser: AuthUser, technicianId: string): Promise<TechnicianResponse> {
-    return this.callTechniciansService<TechnicianResponse>({
+    return this.techniciansRequest<TechnicianResponse>(currentUser, {
       method: "get",
       path: `/technicians/${technicianId}`,
-      query: { organizationId: currentUser.organizationId },
     });
   }
 
@@ -96,19 +106,18 @@ export class TechniciansGatewayService extends AbstractTechniciansGatewayService
     technicianId: string,
     body: UpdateTechnicianBody,
   ): Promise<TechnicianResponse> {
-    return this.callTechniciansService<TechnicianResponse>({
+    return this.techniciansRequest<TechnicianResponse>(currentUser, {
       method: "patch",
       path: `/technicians/${technicianId}`,
-      query: { organizationId: currentUser.organizationId },
       body,
     });
   }
 
   async deleteTechnician(currentUser: AuthUser, technicianId: string): Promise<{ deleted: true }> {
-    return this.callTechniciansService<{ deleted: true }>({
+    return this.techniciansRequest<{ deleted: true }>(currentUser, {
       method: "delete",
       path: `/technicians/${technicianId}`,
-      query: { organizationId: currentUser.organizationId },
+      validateResponseScope: false,
     });
   }
 
@@ -132,10 +141,9 @@ export class TechniciansGatewayService extends AbstractTechniciansGatewayService
       `${technician.firstName} ${technician.lastName}`,
       body.password,
     );
-    return this.callTechniciansService<TechnicianResponse>({
+    return this.techniciansRequest<TechnicianResponse>(currentUser, {
       method: "put",
       path: `/technicians/${technicianId}/link-user`,
-      query: { organizationId: currentUser.organizationId },
       body: { userId: user.id },
     });
   }
@@ -146,71 +154,15 @@ export class TechniciansGatewayService extends AbstractTechniciansGatewayService
     name: string,
     password: string,
   ): Promise<UserResponse> {
-    return this.callUsersService<UserResponse>({
+    return this.usersRequest<UserResponse>(organizationId, {
       method: "post",
       path: "/users",
       body: {
-        organizationId,
         email,
         name,
         password,
         role: "member",
-      } satisfies CreateUserBody,
+      },
     });
-  }
-
-  private async callTechniciansService<T>(params: {
-    method: "get" | "post" | "patch" | "put" | "delete";
-    path: string;
-    body?: unknown;
-    query?: Record<string, unknown>;
-  }): Promise<T> {
-    try {
-      const response = await firstValueFrom(
-        this.httpService.request<T>({
-          method: params.method,
-          url: `${TECHNICIANS_URL}${params.path}`,
-          data: params.body,
-          params: params.query,
-        }),
-      );
-      return response.data;
-    } catch (err: unknown) {
-      this.rethrowAsHttpException(err);
-    }
-  }
-
-  private async callUsersService<T>(params: {
-    method: "get" | "post" | "patch" | "put" | "delete";
-    path: string;
-    body?: unknown;
-    query?: Record<string, unknown>;
-  }): Promise<T> {
-    try {
-      const response = await firstValueFrom(
-        this.httpService.request<T>({
-          method: params.method,
-          url: `${USERS_URL}${params.path}`,
-          data: params.body,
-          params: params.query,
-        }),
-      );
-      return response.data;
-    } catch (err: unknown) {
-      this.rethrowAsHttpException(err);
-    }
-  }
-
-  private rethrowAsHttpException(err: unknown): never {
-    const status = (err as { response?: { status?: number } })?.response?.status;
-    const message =
-      (err as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message ??
-      "Downstream service error";
-
-    if (status === 400) throw new BadRequestException(message);
-    if (status === 403) throw new ForbiddenException(message);
-    if (status === 404) throw new NotFoundException(message);
-    if (status === 409) throw new ConflictException(message);
-    throw err;
   }
 }

@@ -40,9 +40,8 @@ export interface ActivateInvitedUserBody {
 
 /** Mise à jour partielle côté serveur (ex. gateway → users-service). */
 export interface PatchUserBody {
+  /** Organisation active du compte (le rôle par org vit dans organization_memberships). */
   organizationId?: string;
-  /** Rôle dans l’organisation active (aligné sur la ligne de jointure lors d’un switch). */
-  role?: UserRole;
 }
 
 export interface ValidateCredentialsBody {

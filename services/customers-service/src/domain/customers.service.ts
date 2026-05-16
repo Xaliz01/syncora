@@ -2,7 +2,10 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import {
-  activeDocumentFilter,
+  assertOrganizationScopedListNest,
+  assertOrganizationScopedResourceNest,
+  organizationScopeFilter,
+  parseOrganizationIdBody,
   type CreateCustomerBody,
   type CustomerResponse,
   type UpdateCustomerBody,
@@ -20,9 +23,10 @@ export class CustomersService extends AbstractCustomersService {
   }
 
   async createCustomer(body: CreateCustomerBody): Promise<CustomerResponse> {
+    const organizationId = parseOrganizationIdBody(body.organizationId);
     this.validateCreateCustomer(body);
     const doc = await this.customerModel.create({
-      organizationId: body.organizationId,
+      organizationId,
       kind: body.kind,
       firstName: body.firstName?.trim() || undefined,
       lastName: body.lastName?.trim() || undefined,
@@ -49,7 +53,7 @@ export class CustomersService extends AbstractCustomersService {
     organizationId: string,
     filters?: { search?: string; ids?: string[] },
   ): Promise<CustomerResponse[]> {
-    const query: Record<string, unknown> = { organizationId, ...activeDocumentFilter };
+    const query: Record<string, unknown> = { ...organizationScopeFilter(organizationId) };
 
     const ids = filters?.ids?.length
       ? [...new Set(filters.ids.map((id) => id.trim()).filter(Boolean))].slice(0, 100)
@@ -76,18 +80,24 @@ export class CustomersService extends AbstractCustomersService {
       .sort({ updatedAt: -1 })
       .limit(ids.length > 0 ? ids.length : 200)
       .exec();
-    return docs.map((d) => this.toCustomerResponse(d));
+    return assertOrganizationScopedListNest(
+      organizationId,
+      docs.map((d) => this.toCustomerResponse(d)),
+    );
   }
 
   async getCustomer(id: string, organizationId: string): Promise<CustomerResponse> {
-    const doc = await this.customerModel
-      .findOne({ _id: id, organizationId, ...activeDocumentFilter })
-      .exec();
+    const doc = await this.customerModel.findOne({ _id: id, ...organizationScopeFilter(organizationId) }).exec();
     if (!doc) throw new NotFoundException("Client introuvable");
-    return this.toCustomerResponse(doc);
+    return assertOrganizationScopedResourceNest(
+      organizationId,
+      this.toCustomerResponse(doc),
+      "Client introuvable",
+    );
   }
 
   async updateCustomer(id: string, body: UpdateCustomerBody): Promise<CustomerResponse> {
+    const organizationId = parseOrganizationIdBody(body.organizationId);
     const setUpdate: Record<string, unknown> = {};
     if (body.kind !== undefined) setUpdate.kind = body.kind;
     if (body.firstName !== undefined) setUpdate.firstName = body.firstName?.trim() || null;
@@ -120,7 +130,7 @@ export class CustomersService extends AbstractCustomersService {
 
     const doc = await this.customerModel
       .findOneAndUpdate(
-        { _id: id, organizationId: body.organizationId, ...activeDocumentFilter },
+        { _id: id, ...organizationScopeFilter(organizationId) },
         { $set: setUpdate },
         { new: true },
       )
@@ -128,13 +138,17 @@ export class CustomersService extends AbstractCustomersService {
     if (!doc) throw new NotFoundException("Client introuvable");
 
     this.validateCustomerDoc(doc);
-    return this.toCustomerResponse(doc);
+    return assertOrganizationScopedResourceNest(
+      organizationId,
+      this.toCustomerResponse(doc),
+      "Client introuvable",
+    );
   }
 
   async deleteCustomer(id: string, organizationId: string): Promise<{ deleted: true }> {
     const res = await this.customerModel
       .findOneAndUpdate(
-        { _id: id, organizationId, ...activeDocumentFilter },
+        { _id: id, ...organizationScopeFilter(organizationId) },
         { $set: { deletedAt: new Date() } },
         { new: true },
       )

@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -9,6 +8,7 @@ import {
   Post,
   Query,
 } from "@nestjs/common";
+import { parseOrganizationIdQuery } from "@syncora/shared";
 import { AbstractStockService } from "../../domain/ports/stock.service.port";
 import type {
   AddInterventionArticleUsageBody,
@@ -33,7 +33,7 @@ export class StockController {
     @Query("lowStockOnly") lowStockOnly?: string,
     @Query("activeOnly") activeOnly?: string,
   ) {
-    this.ensureOrganizationId(organizationId);
+    organizationId = parseOrganizationIdQuery(organizationId);
     return this.stockService.listArticles(organizationId, {
       search,
       lowStockOnly: lowStockOnly === "true",
@@ -43,7 +43,7 @@ export class StockController {
 
   @Get("articles/:id")
   async getArticle(@Param("id") id: string, @Query("organizationId") organizationId: string) {
-    this.ensureOrganizationId(organizationId);
+    organizationId = parseOrganizationIdQuery(organizationId);
     return this.stockService.getArticle(id, organizationId);
   }
 
@@ -54,7 +54,7 @@ export class StockController {
 
   @Delete("articles/:id")
   async deleteArticle(@Param("id") id: string, @Query("organizationId") organizationId: string) {
-    this.ensureOrganizationId(organizationId);
+    organizationId = parseOrganizationIdQuery(organizationId);
     return this.stockService.deleteArticle(id, organizationId);
   }
 
@@ -71,7 +71,7 @@ export class StockController {
     @Query("caseId") caseId?: string,
     @Query("limit") limit?: string,
   ) {
-    this.ensureOrganizationId(organizationId);
+    organizationId = parseOrganizationIdQuery(organizationId);
     return this.stockService.listArticleMovements(organizationId, {
       articleId,
       interventionId,
@@ -93,13 +93,7 @@ export class StockController {
     @Param("interventionId") interventionId: string,
     @Query("organizationId") organizationId: string,
   ) {
-    this.ensureOrganizationId(organizationId);
+    organizationId = parseOrganizationIdQuery(organizationId);
     return this.stockService.getInterventionUsage(organizationId, interventionId);
-  }
-
-  private ensureOrganizationId(organizationId: string): void {
-    if (!organizationId) {
-      throw new BadRequestException("organizationId query param is required");
-    }
   }
 }

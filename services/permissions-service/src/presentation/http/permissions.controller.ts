@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -10,6 +9,7 @@ import {
   Put,
   Query,
 } from "@nestjs/common";
+import { parseOrganizationIdQuery } from "@syncora/shared";
 import { AbstractPermissionsService } from "../../domain/ports/permissions.service.port";
 import type {
   AssignUserPermissionsBody,
@@ -30,13 +30,13 @@ export class PermissionsController {
 
   @Get("profiles")
   async listProfiles(@Query("organizationId") organizationId: string) {
-    this.ensureOrganizationId(organizationId);
+    organizationId = parseOrganizationIdQuery(organizationId);
     return this.permissionsService.listProfiles(organizationId);
   }
 
   @Get("profiles/:id")
   async findProfileById(@Param("id") id: string, @Query("organizationId") organizationId: string) {
-    this.ensureOrganizationId(organizationId);
+    organizationId = parseOrganizationIdQuery(organizationId);
     return this.permissionsService.findProfileById(id, organizationId);
   }
 
@@ -47,7 +47,7 @@ export class PermissionsController {
 
   @Delete("profiles/:id")
   async deleteProfile(@Param("id") id: string, @Query("organizationId") organizationId: string) {
-    this.ensureOrganizationId(organizationId);
+    organizationId = parseOrganizationIdQuery(organizationId);
     return this.permissionsService.deleteProfile(id, organizationId);
   }
 
@@ -64,7 +64,7 @@ export class PermissionsController {
     @Param("userId") userId: string,
     @Query("organizationId") organizationId: string,
   ) {
-    this.ensureOrganizationId(organizationId);
+    organizationId = parseOrganizationIdQuery(organizationId);
     return this.permissionsService.getUserAssignment(organizationId, userId);
   }
 
@@ -83,7 +83,7 @@ export class PermissionsController {
     @Query("organizationId") organizationId: string,
     @Query("status") status?: "pending" | "accepted" | "cancelled",
   ) {
-    this.ensureOrganizationId(organizationId);
+    organizationId = parseOrganizationIdQuery(organizationId);
     return this.permissionsService.listInvitations(organizationId, status);
   }
 
@@ -95,11 +95,5 @@ export class PermissionsController {
   @Post("invitations/accept")
   async acceptInvitation(@Body() body: { invitationToken: string }) {
     return this.permissionsService.acceptInvitation(body.invitationToken);
-  }
-
-  private ensureOrganizationId(organizationId: string): void {
-    if (!organizationId) {
-      throw new BadRequestException("organizationId query param is required");
-    }
   }
 }

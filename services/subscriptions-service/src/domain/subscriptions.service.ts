@@ -172,9 +172,12 @@ export class SubscriptionsService {
     rawBody: Buffer,
     signature: string | undefined,
   ): Promise<{ received: boolean }> {
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-    if (!webhookSecret?.trim()) {
-      throw new InternalServerErrorException("STRIPE_WEBHOOK_SECRET is not configured");
+    const webhookSecret =
+      process.env.STRIPE_WEBHOOK_SECRET?.trim() || process.env.WEBHOOK_SECRET?.trim();
+    if (!webhookSecret) {
+      throw new InternalServerErrorException(
+        "STRIPE_WEBHOOK_SECRET is not configured (valeur fournie par `stripe listen`, ex. whsec_…)",
+      );
     }
     if (!signature) {
       throw new BadRequestException("Missing Stripe-Signature header");

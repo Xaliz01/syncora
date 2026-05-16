@@ -28,6 +28,12 @@ Avant toute feature, lire (ou se réaligner sur) :
 - Chaque **nouvelle entité ou action métier** doit définir ses codes dans `packages/shared/src/permissions.ts` (`ASSIGNABLE_PERMISSION_CODES`), les libellés dans `apps/frontend/lib/permissions-catalog.ts`, et les appliquer côté **API gateway** (`@RequirePermissions` / `@RequireAnyPermissions` + garde `RequirePermissionGuard`) et **frontend** (`hasPermission`, `PermissionGate`, boutons masqués).
 - Vérifier que les routes gateway et les parcours UI ne restent pas accessibles sans le droit associé (y compris pour les membres non admin).
 
+## Isolation organisation (multi-tenant)
+
+- Toute ressource métier persistée doit être filtrée par `organizationId` : utiliser `organizationScopeFilter()` / `parseOrganizationIdQuery()` / `parseOrganizationIdBody()` depuis `@syncora/shared`.
+- **Gateway** : appels downstream via `OrganizationScopedHttpClient` (injection `organizationId` depuis `AuthUser`, validation des réponses).
+- **Microservices** : requêtes Mongo avec `organizationScopeFilter`, et `assertOrganizationScopedListNest` / `assertOrganizationScopedResourceNest` en sortie de service (défense en profondeur).
+
 ## Qualité
 
 - Respecter l’architecture existante ; pas de refactor hors scope.

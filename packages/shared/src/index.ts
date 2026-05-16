@@ -18,3 +18,5 @@ export * from "./nest-logger.adapter";
 export * from "./notification";
 export * from "./document";
 export * from "./soft-delete";
+export * from "./organization-scope";
+export * from "./organization-scope-nest";

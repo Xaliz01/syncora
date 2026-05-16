@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -9,6 +8,7 @@ import {
   Post,
   Query,
 } from "@nestjs/common";
+import { parseOrganizationIdQuery } from "@syncora/shared";
 import { AbstractAgencesService } from "../../domain/ports/agences.service.port";
 import type { CreateAgenceBody, UpdateAgenceBody } from "@syncora/shared";
 
@@ -23,13 +23,13 @@ export class AgencesController {
 
   @Get()
   async listAgences(@Query("organizationId") organizationId: string) {
-    this.ensureOrganizationId(organizationId);
+    organizationId = parseOrganizationIdQuery(organizationId);
     return this.agencesService.listAgences(organizationId);
   }
 
   @Get(":id")
   async getAgence(@Param("id") id: string, @Query("organizationId") organizationId: string) {
-    this.ensureOrganizationId(organizationId);
+    organizationId = parseOrganizationIdQuery(organizationId);
     return this.agencesService.getAgence(organizationId, id);
   }
 
@@ -39,19 +39,13 @@ export class AgencesController {
     @Query("organizationId") organizationId: string,
     @Body() body: UpdateAgenceBody,
   ) {
-    this.ensureOrganizationId(organizationId);
+    organizationId = parseOrganizationIdQuery(organizationId);
     return this.agencesService.updateAgence(organizationId, id, body);
   }
 
   @Delete(":id")
   async deleteAgence(@Param("id") id: string, @Query("organizationId") organizationId: string) {
-    this.ensureOrganizationId(organizationId);
+    organizationId = parseOrganizationIdQuery(organizationId);
     return this.agencesService.deleteAgence(organizationId, id);
-  }
-
-  private ensureOrganizationId(organizationId: string): void {
-    if (!organizationId) {
-      throw new BadRequestException("organizationId query param is required");
-    }
   }
 }

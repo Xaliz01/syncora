@@ -18,10 +18,12 @@ import { SubscriptionsModule } from "./subscriptions.module";
 import { OrganizationsModule } from "./organizations.module";
 import { NotificationsModule } from "./notifications.module";
 import { DocumentsModule } from "./documents.module";
+import { GatewayHttpModule } from "./gateway-http.module";
 
 @Module({
   imports: [
     EventEmitterModule.forRoot(),
+    GatewayHttpModule,
     AuthModule,
     OrganizationsModule,
     AdminModule,

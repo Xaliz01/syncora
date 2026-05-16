@@ -44,16 +44,17 @@ export class AuthService extends AbstractAuthService {
   }
 
   async getSessionUser(jwt: JwtPayload): Promise<AuthUser> {
+    const role = await this.resolveMembershipRole(jwt.sub, jwt.organizationId, jwt.role);
     const permissions = await this.mergePermissionsWithSubscription(
       jwt.organizationId,
       jwt.sub,
-      jwt.role,
+      role,
     );
     return {
       id: jwt.sub,
       email: jwt.email,
       organizationId: jwt.organizationId,
-      role: jwt.role,
+      role,
       status: jwt.status,
       permissions,
       name: jwt.name,
@@ -198,7 +199,6 @@ export class AuthService extends AbstractAuthService {
       const res = await firstValueFrom(
         this.httpService.patch<UserResponse>(`${USERS_URL}/users/${jwt.sub}`, {
           organizationId: org.id,
-          role: "admin",
         }),
       );
       user = res.data;
@@ -270,7 +270,6 @@ export class AuthService extends AbstractAuthService {
       const res = await firstValueFrom(
         this.httpService.patch<UserResponse>(`${USERS_URL}/users/${jwt.sub}`, {
           organizationId: targetId,
-          role: targetMembership.role,
         }),
       );
       user = res.data;
@@ -280,16 +279,17 @@ export class AuthService extends AbstractAuthService {
       throw err;
     }
 
+    const role = targetMembership.role;
     const permissions = await this.mergePermissionsWithSubscription(
       user.organizationId,
       user.id,
-      user.role,
+      role,
     );
     const authUser: AuthUser = {
       id: user.id,
       email: user.email,
       organizationId: user.organizationId,
-      role: user.role,
+      role,
       status: user.status,
       permissions,
       name: user.name,
@@ -297,7 +297,7 @@ export class AuthService extends AbstractAuthService {
     const payload: JwtPayload = {
       sub: user.id,
       organizationId: user.organizationId,
-      role: user.role,
+      role,
       status: user.status,
       permissions,
       email: user.email,
@@ -381,6 +381,27 @@ export class AuthService extends AbstractAuthService {
     };
     const accessToken = this.jwtService.sign(payload);
     return { accessToken, user: authUser };
+  }
+
+  /** Le JWT peut être obsolète ; le rôle par org vit dans organization_memberships. */
+  private async resolveMembershipRole(
+    userId: string,
+    organizationId: string,
+    fallback: "admin" | "member",
+  ): Promise<"admin" | "member"> {
+    try {
+      const res = await firstValueFrom(
+        this.httpService.get<OrganizationMembershipResponse[]>(
+          `${USERS_URL}/users/${userId}/organization-memberships`,
+        ),
+      );
+      const active = res.data.find(
+        (m) => m.organizationId === organizationId && m.membershipStatus === "active",
+      );
+      return active?.role ?? fallback;
+    } catch {
+      return fallback;
+    }
   }
 
   private async mergePermissionsWithSubscription(

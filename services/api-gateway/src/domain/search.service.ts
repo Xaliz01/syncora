@@ -1,6 +1,4 @@
 import { Injectable } from "@nestjs/common";
-import { HttpService } from "@nestjs/axios";
-import { firstValueFrom } from "rxjs";
 import type {
   AuthUser,
   CaseSummaryResponse,
@@ -15,6 +13,7 @@ import {
   type GlobalSearchResponse,
   type SearchResultItem,
 } from "./ports/search.service.port";
+import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
 
 const CASES_URL = process.env.CASES_SERVICE_URL ?? "http://localhost:3004";
 const FLEET_URL = process.env.FLEET_SERVICE_URL ?? "http://localhost:3005";
@@ -24,7 +23,7 @@ const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
 
 @Injectable()
 export class SearchGatewayService extends AbstractSearchService {
-  constructor(private readonly httpService: HttpService) {
+  constructor(private readonly scopedHttp: OrganizationScopedHttpClient) {
     super();
   }
 
@@ -212,54 +211,63 @@ export class SearchGatewayService extends AbstractSearchService {
     return map[status] ?? status;
   }
 
-  private async fetchCases(user: AuthUser): Promise<CaseSummaryResponse[]> {
-    return this.callService<CaseSummaryResponse[]>(CASES_URL, "/cases", {
+  private fetchCases(user: AuthUser): Promise<CaseSummaryResponse[]> {
+    return this.scopedHttp.request<CaseSummaryResponse[]>({
+      baseUrl: CASES_URL,
       organizationId: user.organizationId,
+      method: "get",
+      path: "/cases",
+      errorLabel: "Cases service error",
     });
   }
 
-  private async fetchInterventions(user: AuthUser): Promise<InterventionResponse[]> {
-    return this.callService<InterventionResponse[]>(CASES_URL, "/interventions", {
+  private fetchInterventions(user: AuthUser): Promise<InterventionResponse[]> {
+    return this.scopedHttp.request<InterventionResponse[]>({
+      baseUrl: CASES_URL,
       organizationId: user.organizationId,
+      method: "get",
+      path: "/interventions",
+      errorLabel: "Cases service error",
     });
   }
 
-  private async fetchVehicles(user: AuthUser): Promise<VehicleResponse[]> {
-    return this.callService<VehicleResponse[]>(FLEET_URL, "/vehicles", {
+  private fetchVehicles(user: AuthUser): Promise<VehicleResponse[]> {
+    return this.scopedHttp.request<VehicleResponse[]>({
+      baseUrl: FLEET_URL,
       organizationId: user.organizationId,
+      method: "get",
+      path: "/vehicles",
+      errorLabel: "Fleet service error",
     });
   }
 
-  private async fetchTechnicians(user: AuthUser): Promise<TechnicianResponse[]> {
-    return this.callService<TechnicianResponse[]>(TECHNICIANS_URL, "/technicians", {
+  private fetchTechnicians(user: AuthUser): Promise<TechnicianResponse[]> {
+    return this.scopedHttp.request<TechnicianResponse[]>({
+      baseUrl: TECHNICIANS_URL,
       organizationId: user.organizationId,
+      method: "get",
+      path: "/technicians",
+      errorLabel: "Technicians service error",
     });
   }
 
-  private async fetchArticles(user: AuthUser): Promise<ArticleResponse[]> {
-    return this.callService<ArticleResponse[]>(STOCK_URL, "/articles", {
+  private fetchArticles(user: AuthUser): Promise<ArticleResponse[]> {
+    return this.scopedHttp.request<ArticleResponse[]>({
+      baseUrl: STOCK_URL,
       organizationId: user.organizationId,
+      method: "get",
+      path: "/articles",
+      errorLabel: "Stock service error",
     });
   }
 
-  private async fetchUsers(user: AuthUser): Promise<UserResponse[]> {
-    return this.callService<UserResponse[]>(USERS_URL, "/users", {
+  private fetchUsers(user: AuthUser): Promise<UserResponse[]> {
+    return this.scopedHttp.request<UserResponse[]>({
+      baseUrl: USERS_URL,
       organizationId: user.organizationId,
+      method: "get",
+      path: "/users",
+      errorLabel: "Users service error",
     });
-  }
-
-  private async callService<T>(
-    baseUrl: string,
-    path: string,
-    query: Record<string, string>,
-  ): Promise<T> {
-    const response = await firstValueFrom(
-      this.httpService.request<T>({
-        method: "get",
-        url: `${baseUrl}${path}`,
-        params: query,
-      }),
-    );
-    return response.data;
   }
 }

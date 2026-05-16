@@ -191,6 +191,7 @@ export class AdminService extends AbstractAdminService {
     return {
       user: {
         ...user,
+        role: membershipForOrg?.role ?? "member",
         organizationMembershipStatus: membershipForOrg?.membershipStatus,
         permissions: effectivePermissions.permissions,
         permissionAssignment: assignment,

@@ -19,11 +19,13 @@ import {
   type OrganizationMembershipResponse,
   type PatchUserBody,
   type UserResponse,
+  type UserRole,
   type ValidateCredentialsResponse,
 } from "@syncora/shared";
 import { AbstractUsersService } from "./ports/users.service.port";
 
 const SALT_ROUNDS = 10;
+const DEFAULT_ROLE: UserRole = "member";
 
 @Injectable()
 export class UsersService extends AbstractUsersService {
@@ -48,7 +50,6 @@ export class UsersService extends AbstractUsersService {
       email: body.email,
       passwordHash,
       name: body.name,
-      role: body.role,
       status: "active",
     });
     const uid = doc._id.toString();
@@ -64,7 +65,7 @@ export class UsersService extends AbstractUsersService {
       },
       { upsert: true, new: true },
     );
-    return this.toResponse(doc);
+    return this.toResponseForOrganization(doc, body.organizationId);
   }
 
   async invite(body: CreateInvitedUserBody): Promise<UserResponse> {
@@ -74,11 +75,11 @@ export class UsersService extends AbstractUsersService {
     if (existing) {
       throw new ConflictException("User with this email already exists");
     }
+    const invitedRole = body.role ?? DEFAULT_ROLE;
     const doc = await this.userModel.create({
       organizationId: body.organizationId,
       email: body.email,
       name: body.name,
-      role: body.role ?? "member",
       status: "active",
       invitedByUserId: body.invitedByUserId,
     });
@@ -87,7 +88,7 @@ export class UsersService extends AbstractUsersService {
       { userId: uid, organizationId: body.organizationId },
       {
         $set: {
-          role: body.role ?? "member",
+          role: invitedRole,
           membershipStatus: "invited",
           deletedAt: null,
         },
@@ -95,7 +96,7 @@ export class UsersService extends AbstractUsersService {
       },
       { upsert: true, new: true },
     );
-    return this.toResponse(doc);
+    return this.toResponseForOrganization(doc, body.organizationId);
   }
 
   async activateInvitedUser(id: string, body: ActivateInvitedUserBody): Promise<UserResponse> {
@@ -128,29 +129,29 @@ export class UsersService extends AbstractUsersService {
       { $set: { membershipStatus: "active" } },
     );
 
-    return this.toResponse(doc);
+    return this.toResponseForOrganization(doc, doc.organizationId);
   }
 
   async patch(id: string, body: PatchUserBody): Promise<UserResponse> {
     if (body.organizationId === undefined) {
       throw new BadRequestException("organizationId is required");
     }
-    const set: Record<string, unknown> = { organizationId: body.organizationId };
-    if (body.role !== undefined) {
-      set.role = body.role;
-    }
     const doc = await this.userModel
-      .findOneAndUpdate({ _id: id, ...activeDocumentFilter }, { $set: set }, { new: true })
+      .findOneAndUpdate(
+        { _id: id, ...activeDocumentFilter },
+        { $set: { organizationId: body.organizationId } },
+        { new: true },
+      )
       .exec();
     if (!doc) throw new NotFoundException("User not found");
-    return this.toResponse(doc);
+    return this.toResponseForOrganization(doc, body.organizationId);
   }
 
   async findById(id: string): Promise<UserResponse | null> {
     const doc = await this.userModel.findOne({ _id: id, ...activeDocumentFilter }).exec();
     if (!doc) return null;
     await this.ensureMembershipsBackfill(doc);
-    return this.toResponse(doc);
+    return this.toResponseForOrganization(doc, doc.organizationId);
   }
 
   async listByOrganization(organizationId: string): Promise<UserResponse[]> {
@@ -172,9 +173,8 @@ export class UsersService extends AbstractUsersService {
     for (const m of memberships) {
       const u = byId.get(m.userId);
       if (!u) continue;
-      const base = this.toResponse(u);
       out.push({
-        ...base,
+        ...this.toBaseResponse(u),
         role: m.role as UserResponse["role"],
         organizationMembershipStatus:
           m.membershipStatus as UserResponse["organizationMembershipStatus"],
@@ -240,18 +240,16 @@ export class UsersService extends AbstractUsersService {
         deletedAt: null,
       })
       .exec();
-    if (m?.membershipStatus === "invited") {
+    if (!m || m.membershipStatus === "invited") {
       return null;
     }
-
-    const role = (m?.role ?? doc.role) as ValidateCredentialsResponse["role"];
 
     return {
       id: uid,
       organizationId: doc.organizationId,
       email: doc.email,
       name: doc.name,
-      role,
+      role: m.role as ValidateCredentialsResponse["role"],
       status: doc.status,
     };
   }
@@ -270,7 +268,7 @@ export class UsersService extends AbstractUsersService {
     };
   }
 
-  /** Migre les anciens champs (linkedOrganizationIds, ou absence de lignes) vers organization_memberships. */
+  /** Migre les anciens champs (users.role, linkedOrganizationIds) vers organization_memberships. */
   private async ensureMembershipsBackfillByUserId(userId: string): Promise<void> {
     const doc = await this.userModel.findOne({ _id: userId, ...activeDocumentFilter }).exec();
     if (doc) await this.ensureMembershipsBackfill(doc);
@@ -284,6 +282,7 @@ export class UsersService extends AbstractUsersService {
     if (count > 0) return;
 
     const raw = await this.userModel.collection.findOne({ _id: new Types.ObjectId(uid) });
+    const legacyRole = (raw?.role as UserRole | undefined) ?? DEFAULT_ROLE;
     const legacyLinked =
       (raw?.linkedOrganizationIds as string[] | undefined)?.filter(Boolean) ?? [];
 
@@ -291,7 +290,7 @@ export class UsersService extends AbstractUsersService {
       { userId: uid, organizationId: doc.organizationId },
       {
         $set: {
-          role: doc.role,
+          role: legacyRole,
           membershipStatus: doc.status === "invited" ? "invited" : "active",
           deletedAt: null,
         },
@@ -306,7 +305,7 @@ export class UsersService extends AbstractUsersService {
         { userId: uid, organizationId: oid },
         {
           $set: {
-            role: doc.role,
+            role: legacyRole,
             membershipStatus: "active",
             deletedAt: null,
           },
@@ -316,21 +315,43 @@ export class UsersService extends AbstractUsersService {
       );
     }
 
-    if (legacyLinked.length > 0) {
-      await this.userModel.collection.updateOne(
-        { _id: doc._id },
-        { $unset: { linkedOrganizationIds: "" } },
-      );
+    const unset: Record<string, string> = {};
+    if (legacyLinked.length > 0) unset.linkedOrganizationIds = "";
+    if (raw?.role !== undefined) unset.role = "";
+    if (Object.keys(unset).length > 0) {
+      await this.userModel.collection.updateOne({ _id: doc._id }, { $unset: unset });
     }
   }
 
-  private toResponse(doc: UserDocument): UserResponse {
+  private async requireRoleForOrganization(
+    userId: string,
+    organizationId: string,
+  ): Promise<UserRole> {
+    const m = await this.membershipModel
+      .findOne({ userId, organizationId, deletedAt: null })
+      .exec();
+    if (!m) {
+      throw new NotFoundException(
+        "Aucun rattachement organisation pour cet utilisateur (organization_memberships).",
+      );
+    }
+    return m.role as UserRole;
+  }
+
+  private async toResponseForOrganization(
+    doc: UserDocument,
+    organizationId: string,
+  ): Promise<UserResponse> {
+    const role = await this.requireRoleForOrganization(doc._id.toString(), organizationId);
+    return { ...this.toBaseResponse(doc), role };
+  }
+
+  private toBaseResponse(doc: UserDocument): Omit<UserResponse, "role"> {
     return {
       id: doc._id.toString(),
       organizationId: doc.organizationId,
       email: doc.email,
       name: doc.name,
-      role: doc.role as UserResponse["role"],
       status: doc.status,
       createdAt: doc.get("createdAt")?.toISOString(),
     };

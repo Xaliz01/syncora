@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -10,6 +9,7 @@ import {
   Put,
   Query,
 } from "@nestjs/common";
+import { parseOrganizationIdQuery } from "@syncora/shared";
 import { AbstractFleetService } from "../../domain/ports/fleet.service.port";
 import type {
   AssignTeamToVehicleBody,
@@ -28,13 +28,13 @@ export class FleetController {
 
   @Get()
   async listVehicles(@Query("organizationId") organizationId: string) {
-    this.ensureOrganizationId(organizationId);
+    organizationId = parseOrganizationIdQuery(organizationId);
     return this.fleetService.listVehicles(organizationId);
   }
 
   @Get(":id")
   async getVehicle(@Param("id") id: string, @Query("organizationId") organizationId: string) {
-    this.ensureOrganizationId(organizationId);
+    organizationId = parseOrganizationIdQuery(organizationId);
     return this.fleetService.getVehicle(organizationId, id);
   }
 
@@ -44,13 +44,13 @@ export class FleetController {
     @Query("organizationId") organizationId: string,
     @Body() body: UpdateVehicleBody,
   ) {
-    this.ensureOrganizationId(organizationId);
+    organizationId = parseOrganizationIdQuery(organizationId);
     return this.fleetService.updateVehicle(organizationId, id, body);
   }
 
   @Delete(":id")
   async deleteVehicle(@Param("id") id: string, @Query("organizationId") organizationId: string) {
-    this.ensureOrganizationId(organizationId);
+    organizationId = parseOrganizationIdQuery(organizationId);
     return this.fleetService.deleteVehicle(organizationId, id);
   }
 
@@ -60,13 +60,13 @@ export class FleetController {
     @Query("organizationId") organizationId: string,
     @Body() body: AssignTeamToVehicleBody,
   ) {
-    this.ensureOrganizationId(organizationId);
+    organizationId = parseOrganizationIdQuery(organizationId);
     return this.fleetService.assignTeam(organizationId, id, body.teamId);
   }
 
   @Delete(":id/assign-team")
   async unassignTeam(@Param("id") id: string, @Query("organizationId") organizationId: string) {
-    this.ensureOrganizationId(organizationId);
+    organizationId = parseOrganizationIdQuery(organizationId);
     return this.fleetService.unassignTeam(organizationId, id);
   }
 
@@ -75,14 +75,8 @@ export class FleetController {
     @Param("teamId") teamId: string,
     @Query("organizationId") organizationId: string,
   ) {
-    this.ensureOrganizationId(organizationId);
+    organizationId = parseOrganizationIdQuery(organizationId);
     await this.fleetService.unassignTeamFromAllVehicles(organizationId, teamId);
     return { success: true };
-  }
-
-  private ensureOrganizationId(organizationId: string): void {
-    if (!organizationId) {
-      throw new BadRequestException("organizationId query param is required");
-    }
   }
 }

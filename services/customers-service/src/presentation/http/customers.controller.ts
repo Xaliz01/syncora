@@ -1,15 +1,6 @@
-import {
-  BadRequestException,
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Patch,
-  Post,
-  Query,
-} from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from "@nestjs/common";
 import type { CreateCustomerBody, UpdateCustomerBody } from "@syncora/shared";
+import { parseOrganizationIdQuery } from "@syncora/shared";
 import { AbstractCustomersService } from "../../domain/ports/customers.service.port";
 
 @Controller("customers")
@@ -27,14 +18,14 @@ export class CustomersController {
     @Query("search") search?: string,
     @Query("ids") idsCsv?: string,
   ) {
-    this.ensureOrganizationId(organizationId);
+    const orgId = parseOrganizationIdQuery(organizationId);
     const ids = idsCsv
       ? idsCsv
           .split(",")
           .map((s) => s.trim())
           .filter(Boolean)
       : undefined;
-    return this.customersService.listCustomers(organizationId, {
+    return this.customersService.listCustomers(orgId, {
       search,
       ids: ids?.length ? ids : undefined,
     });
@@ -42,8 +33,7 @@ export class CustomersController {
 
   @Get(":id")
   async getCustomer(@Param("id") id: string, @Query("organizationId") organizationId: string) {
-    this.ensureOrganizationId(organizationId);
-    return this.customersService.getCustomer(id, organizationId);
+    return this.customersService.getCustomer(id, parseOrganizationIdQuery(organizationId));
   }
 
   @Patch(":id")
@@ -53,13 +43,6 @@ export class CustomersController {
 
   @Delete(":id")
   async deleteCustomer(@Param("id") id: string, @Query("organizationId") organizationId: string) {
-    this.ensureOrganizationId(organizationId);
-    return this.customersService.deleteCustomer(id, organizationId);
-  }
-
-  private ensureOrganizationId(organizationId: string): void {
-    if (!organizationId) {
-      throw new BadRequestException("organizationId query param is required");
-    }
+    return this.customersService.deleteCustomer(id, parseOrganizationIdQuery(organizationId));
   }
 }

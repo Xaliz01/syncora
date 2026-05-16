@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -10,6 +9,7 @@ import {
   Put,
   Query,
 } from "@nestjs/common";
+import { parseOrganizationIdQuery } from "@syncora/shared";
 import { AbstractTeamsService } from "../../domain/ports/teams.service.port";
 import type { CreateTeamBody, UpdateTeamBody } from "@syncora/shared";
 
@@ -24,13 +24,13 @@ export class TeamsController {
 
   @Get()
   async listTeams(@Query("organizationId") organizationId: string) {
-    this.ensureOrganizationId(organizationId);
+    organizationId = parseOrganizationIdQuery(organizationId);
     return this.teamsService.listTeams(organizationId);
   }
 
   @Get(":id")
   async getTeam(@Param("id") id: string, @Query("organizationId") organizationId: string) {
-    this.ensureOrganizationId(organizationId);
+    organizationId = parseOrganizationIdQuery(organizationId);
     return this.teamsService.getTeam(organizationId, id);
   }
 
@@ -40,13 +40,13 @@ export class TeamsController {
     @Query("organizationId") organizationId: string,
     @Body() body: UpdateTeamBody,
   ) {
-    this.ensureOrganizationId(organizationId);
+    organizationId = parseOrganizationIdQuery(organizationId);
     return this.teamsService.updateTeam(organizationId, id, body);
   }
 
   @Delete(":id")
   async deleteTeam(@Param("id") id: string, @Query("organizationId") organizationId: string) {
-    this.ensureOrganizationId(organizationId);
+    organizationId = parseOrganizationIdQuery(organizationId);
     return this.teamsService.deleteTeam(organizationId, id);
   }
 
@@ -56,7 +56,7 @@ export class TeamsController {
     @Param("technicianId") technicianId: string,
     @Query("organizationId") organizationId: string,
   ) {
-    this.ensureOrganizationId(organizationId);
+    organizationId = parseOrganizationIdQuery(organizationId);
     return this.teamsService.addMember(organizationId, id, technicianId);
   }
 
@@ -66,13 +66,7 @@ export class TeamsController {
     @Param("technicianId") technicianId: string,
     @Query("organizationId") organizationId: string,
   ) {
-    this.ensureOrganizationId(organizationId);
+    organizationId = parseOrganizationIdQuery(organizationId);
     return this.teamsService.removeMember(organizationId, id, technicianId);
-  }
-
-  private ensureOrganizationId(organizationId: string): void {
-    if (!organizationId) {
-      throw new BadRequestException("organizationId query param is required");
-    }
   }
 }

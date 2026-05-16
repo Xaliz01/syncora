@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -10,6 +9,7 @@ import {
   Put,
   Query,
 } from "@nestjs/common";
+import { parseOrganizationIdQuery } from "@syncora/shared";
 import { AbstractTechniciansService } from "../../domain/ports/technicians.service.port";
 import type { CreateTechnicianBody, UpdateTechnicianBody } from "@syncora/shared";
 
@@ -24,13 +24,13 @@ export class TechniciansController {
 
   @Get()
   async listTechnicians(@Query("organizationId") organizationId: string) {
-    this.ensureOrganizationId(organizationId);
+    organizationId = parseOrganizationIdQuery(organizationId);
     return this.techniciansService.listTechnicians(organizationId);
   }
 
   @Get(":id")
   async getTechnician(@Param("id") id: string, @Query("organizationId") organizationId: string) {
-    this.ensureOrganizationId(organizationId);
+    organizationId = parseOrganizationIdQuery(organizationId);
     return this.techniciansService.getTechnician(organizationId, id);
   }
 
@@ -40,13 +40,13 @@ export class TechniciansController {
     @Query("organizationId") organizationId: string,
     @Body() body: UpdateTechnicianBody,
   ) {
-    this.ensureOrganizationId(organizationId);
+    organizationId = parseOrganizationIdQuery(organizationId);
     return this.techniciansService.updateTechnician(organizationId, id, body);
   }
 
   @Delete(":id")
   async deleteTechnician(@Param("id") id: string, @Query("organizationId") organizationId: string) {
-    this.ensureOrganizationId(organizationId);
+    organizationId = parseOrganizationIdQuery(organizationId);
     return this.techniciansService.deleteTechnician(organizationId, id);
   }
 
@@ -56,13 +56,7 @@ export class TechniciansController {
     @Query("organizationId") organizationId: string,
     @Body() body: { userId: string },
   ) {
-    this.ensureOrganizationId(organizationId);
+    organizationId = parseOrganizationIdQuery(organizationId);
     return this.techniciansService.linkUserToTechnician(organizationId, id, body.userId);
-  }
-
-  private ensureOrganizationId(organizationId: string): void {
-    if (!organizationId) {
-      throw new BadRequestException("organizationId query param is required");
-    }
   }
 }
