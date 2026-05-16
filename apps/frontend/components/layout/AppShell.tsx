@@ -130,7 +130,9 @@ function SidebarContent({
       {menuSections.map((section, index) => (
         <section
           key={section.label}
-          className={collapsed && index > 0 ? "pt-4 border-t border-slate-100 dark:border-slate-800" : ""}
+          className={
+            collapsed && index > 0 ? "pt-4 border-t border-slate-100 dark:border-slate-800" : ""
+          }
         >
           {!collapsed && (
             <h2 className="mb-1.5 px-3 text-[11px] uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-500">

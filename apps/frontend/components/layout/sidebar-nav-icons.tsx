@@ -18,7 +18,11 @@ function Icon({ children, className }: { children: React.ReactNode; className?: 
 const ICONS: Record<string, (props: SVGProps<SVGSVGElement>) => ReactNode> = {
   "/": (p) => (
     <Icon className={p.className}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0 7-7 7 7M5 10v10a1 1 0 001 1h3m10-11 2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0h6" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M3 12l2-2m0 0 7-7 7 7M5 10v10a1 1 0 001 1h3m10-11 2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0h6"
+      />
     </Icon>
   ),
   "/organization": (p) => (
