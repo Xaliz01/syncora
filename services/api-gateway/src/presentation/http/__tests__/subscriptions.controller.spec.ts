@@ -129,7 +129,10 @@ describe("SubscriptionsController", () => {
 
       const result = controller.updateSubscriptionAddons(mockUser, body);
 
-      expect(mockSubscriptionsService.updateSubscriptionAddons).toHaveBeenCalledWith(mockUser, body);
+      expect(mockSubscriptionsService.updateSubscriptionAddons).toHaveBeenCalledWith(
+        mockUser,
+        body,
+      );
       expect(result).resolves.toEqual(expected);
     });
   });
