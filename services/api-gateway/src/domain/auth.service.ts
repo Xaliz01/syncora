@@ -50,14 +50,15 @@ export class AuthService extends AbstractAuthService {
       jwt.sub,
       role,
     );
+    const profile = await this.resolveUserProfile(jwt.sub);
     return {
       id: jwt.sub,
-      email: jwt.email,
+      email: profile?.email ?? jwt.email,
       organizationId: jwt.organizationId,
       role,
-      status: jwt.status,
+      status: profile?.status ?? jwt.status,
       permissions,
-      name: jwt.name,
+      name: profile?.name ?? jwt.name,
     };
   }
 
@@ -381,6 +382,18 @@ export class AuthService extends AbstractAuthService {
     };
     const accessToken = this.jwtService.sign(payload);
     return { accessToken, user: authUser };
+  }
+
+  /** Nom / email / statut : rechargés depuis users-service (le JWT peut être obsolète). */
+  private async resolveUserProfile(userId: string): Promise<UserResponse | null> {
+    try {
+      const res = await firstValueFrom(
+        this.httpService.get<UserResponse>(`${USERS_URL}/users/${userId}`),
+      );
+      return res.data;
+    } catch {
+      return null;
+    }
   }
 
   /** Le JWT peut être obsolète ; le rôle par org vit dans organization_memberships. */

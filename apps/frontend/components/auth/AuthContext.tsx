@@ -1,8 +1,19 @@
 "use client";
 
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { useTheme } from "next-themes";
 import type { AuthUser } from "@syncora/shared";
 import * as authApi from "@/lib/auth.api";
+import * as accountApi from "@/lib/account.api";
+import { applyUserPreferences } from "@/lib/user-preferences";
 
 interface AuthState {
   user: AuthUser | null;
@@ -36,11 +47,23 @@ interface AuthContextValue extends AuthState {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const { setTheme } = useTheme();
+  const setThemeRef = useRef(setTheme);
+  setThemeRef.current = setTheme;
   const [state, setState] = useState<AuthState>({
     user: null,
     token: null,
     isReady: false,
   });
+
+  const syncUserPreferences = useCallback(async () => {
+    try {
+      const res = await accountApi.getPreferences();
+      applyUserPreferences(res.preferences, (theme) => setThemeRef.current(theme));
+    } catch {
+      /* préférences par défaut côté UI */
+    }
+  }, []);
 
   useEffect(() => {
     const token = authApi.getToken();
@@ -50,17 +73,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     authApi
       .getMe()
-      .then((user) => setState({ user, token, isReady: true }))
+      .then(async (user) => {
+        setState({ user, token, isReady: true });
+        await syncUserPreferences();
+      })
       .catch(() => {
         authApi.clearToken();
         setState({ user: null, token: null, isReady: true });
       });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- bootstrap session une fois au montage
   }, []);
 
-  const persistAuth = useCallback((accessToken: string, user: AuthUser) => {
-    authApi.setToken(accessToken);
-    setState({ user, token: accessToken, isReady: true });
-  }, []);
+  const persistAuth = useCallback(
+    (accessToken: string, user: AuthUser) => {
+      authApi.setToken(accessToken);
+      setState({ user, token: accessToken, isReady: true });
+      void syncUserPreferences();
+    },
+    [syncUserPreferences],
+  );
 
   const refreshSession = useCallback(async () => {
     const token = authApi.getToken();
