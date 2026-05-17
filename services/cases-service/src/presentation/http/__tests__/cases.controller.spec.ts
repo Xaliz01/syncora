@@ -26,6 +26,8 @@ describe("CasesController", () => {
       updateIntervention: jest.fn(),
       deleteIntervention: jest.fn(),
       getDashboard: jest.fn(),
+      addCaseHistory: jest.fn(),
+      listCaseHistory: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -162,6 +164,56 @@ describe("CasesController", () => {
 
       expect(mockCasesService.createIntervention).toHaveBeenCalledWith(body);
       expect(result.id).toBe("int-1");
+    });
+  });
+
+  describe("addCaseHistory", () => {
+    it("should call casesService.addCaseHistory with body", async () => {
+      const body = {
+        organizationId: "org-1",
+        caseId: "case-1",
+        actorId: "user-1",
+        actorName: "User One",
+        action: "case_created" as const,
+        details: "Case 1",
+      };
+      mockCasesService.addCaseHistory.mockResolvedValue({
+        id: "hist-1",
+        ...body,
+        changes: [],
+        createdAt: "2025-06-01T00:00:00.000Z",
+      } as never);
+
+      const result = await controller.addCaseHistory(body);
+
+      expect(mockCasesService.addCaseHistory).toHaveBeenCalledWith(body);
+      expect(result.id).toBe("hist-1");
+    });
+  });
+
+  describe("listCaseHistory", () => {
+    it("should call casesService.listCaseHistory with id and organizationId", async () => {
+      const history = [
+        {
+          id: "hist-1",
+          action: "case_created",
+          actorName: "User One",
+          createdAt: "2025-06-01T00:00:00.000Z",
+        },
+      ];
+      mockCasesService.listCaseHistory.mockResolvedValue(history as never);
+
+      const result = await controller.listCaseHistory("case-1", "org-1");
+
+      expect(mockCasesService.listCaseHistory).toHaveBeenCalledWith("case-1", "org-1");
+      expect(result).toHaveLength(1);
+    });
+
+    it("should throw BadRequestException when organizationId is missing", async () => {
+      await expect(controller.listCaseHistory("case-1", undefined as never)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(mockCasesService.listCaseHistory).not.toHaveBeenCalled();
     });
   });
 

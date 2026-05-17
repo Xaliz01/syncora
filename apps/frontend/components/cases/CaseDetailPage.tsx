@@ -10,6 +10,7 @@ import * as customersApi from "@/lib/customers.api";
 import * as stockApi from "@/lib/stock.api";
 import { listOrganizationUsers } from "@/lib/admin.api";
 import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
+import { CaseHistory } from "@/components/cases/CaseHistory";
 import { CaseAssigneesTagsInput } from "@/components/cases/CaseAssigneesTagsInput";
 import { CaseCustomerPicker } from "@/components/cases/CaseCustomerPicker";
 import { TeamSuggestionAddonGate } from "@/components/cases/TeamSuggestionAddonGate";
@@ -64,7 +65,9 @@ function CaseHeaderCustomerContact({ customer }: { customer: CaseCustomerRef }) 
 
   if (!hasContact) {
     return (
-      <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">Aucune coordonnée renseignée.</p>
+      <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+        Aucune coordonnée renseignée.
+      </p>
     );
   }
 
@@ -291,8 +294,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   const canAssignCase = canAny(["cases.assign", "cases.update"]);
   const canViewInterventionArticles = can("stock.interventions.read");
   const canAddInterventionArticles = can("stock.interventions.create");
-  const showInterventionArticles =
-    canViewInterventionArticles || canAddInterventionArticles;
+  const showInterventionArticles = canViewInterventionArticles || canAddInterventionArticles;
   const [showNewIntervention, setShowNewIntervention] = useState(false);
   const [editingInterventionId, setEditingInterventionId] = useState<string | null>(null);
 
@@ -380,6 +382,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
     queryClient.invalidateQueries({ queryKey: ["cases"] });
     queryClient.invalidateQueries({ queryKey: ["stock-movements", caseId] });
     queryClient.invalidateQueries({ queryKey: ["articles"] });
+    queryClient.invalidateQueries({ queryKey: ["case-history", caseId] });
   };
 
   const statusMutation = useMutation({
@@ -842,9 +845,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
               meta={
                 <>
                   {caseData.dueDate && (
-                    <span>
-                      Échéance : {new Date(caseData.dueDate).toLocaleDateString("fr-FR")}
-                    </span>
+                    <span>Échéance : {new Date(caseData.dueDate).toLocaleDateString("fr-FR")}</span>
                   )}
                   {caseData.tags.length > 0 && (
                     <span className="flex flex-wrap gap-1">
@@ -1211,7 +1212,9 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                           <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
                             {intervention.assigneeName && (
                               <span className="inline-flex items-center gap-1">
-                                <span className="text-slate-400 dark:text-slate-500">Assigné :</span>
+                                <span className="text-slate-400 dark:text-slate-500">
+                                  Assigné :
+                                </span>
                                 <span className="font-medium text-slate-600 dark:text-slate-300">
                                   {intervention.assigneeName}
                                 </span>
@@ -1324,6 +1327,8 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
       )}
 
       <DocumentUploadZone entityType="case" entityId={caseId} />
+
+      <CaseHistory caseId={caseId} />
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { AbstractCasesService } from "../domain/ports/cases.service.port";
 import { CasesService } from "../domain/cases.service";
 import { CaseTemplateSchema } from "../persistence/case-template.schema";
 import { CaseSchema } from "../persistence/case.schema";
+import { CaseHistorySchema } from "../persistence/case-history.schema";
 import { InterventionSchema } from "../persistence/intervention.schema";
 
 @Module({
@@ -13,6 +14,7 @@ import { InterventionSchema } from "../persistence/intervention.schema";
     MongooseModule.forFeature([
       { name: "CaseTemplate", schema: CaseTemplateSchema },
       { name: "Case", schema: CaseSchema },
+      { name: "CaseHistory", schema: CaseHistorySchema },
       { name: "Intervention", schema: InterventionSchema },
     ]),
   ],

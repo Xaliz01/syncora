@@ -200,6 +200,51 @@ export interface UpdateTodoBody {
   status: TodoItemStatus;
 }
 
+// ── Case history ──
+
+export type CaseHistoryAction =
+  | "case_created"
+  | "case_updated"
+  | "status_changed"
+  | "priority_changed"
+  | "assignees_changed"
+  | "customer_changed"
+  | "todo_updated"
+  | "intervention_created"
+  | "intervention_updated"
+  | "intervention_deleted"
+  | "document_uploaded"
+  | "document_deleted"
+  | "case_deleted";
+
+export interface CaseHistoryChange {
+  field: string;
+  oldValue?: string;
+  newValue?: string;
+}
+
+export interface CreateCaseHistoryBody {
+  organizationId: string;
+  caseId: string;
+  actorId: string;
+  actorName: string;
+  action: CaseHistoryAction;
+  details?: string;
+  changes?: CaseHistoryChange[];
+}
+
+export interface CaseHistoryEntryResponse {
+  id: string;
+  organizationId: string;
+  caseId: string;
+  actorId: string;
+  actorName: string;
+  action: CaseHistoryAction;
+  details?: string;
+  changes?: CaseHistoryChange[];
+  createdAt: string;
+}
+
 // ── Dashboard ──
 
 export interface CaseDashboardResponse {

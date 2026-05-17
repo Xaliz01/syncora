@@ -13,6 +13,7 @@ import {
 import { AbstractCasesService } from "../../domain/ports/cases.service.port";
 import type {
   CreateCaseBody,
+  CreateCaseHistoryBody,
   CreateCaseTemplateBody,
   CreateInterventionBody,
   UpdateCaseBody,
@@ -100,6 +101,19 @@ export class CasesController {
   @Put("cases/:id/todos")
   async updateTodo(@Param("id") id: string, @Body() body: UpdateTodoBody) {
     return this.casesService.updateTodo(id, body);
+  }
+
+  // ── History ──
+
+  @Post("cases/:id/history")
+  async addCaseHistory(@Body() body: CreateCaseHistoryBody) {
+    return this.casesService.addCaseHistory(body);
+  }
+
+  @Get("cases/:id/history")
+  async listCaseHistory(@Param("id") id: string, @Query("organizationId") organizationId: string) {
+    organizationId = parseOrganizationIdQuery(organizationId);
+    return this.casesService.listCaseHistory(id, organizationId);
   }
 
   // ── Interventions ──

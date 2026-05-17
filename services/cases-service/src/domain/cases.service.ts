@@ -4,9 +4,11 @@ import { Model, Types } from "mongoose";
 import {
   activeDocumentFilter,
   type CaseAssignee,
+  type CaseHistoryEntryResponse,
   type CaseResponse,
   type CaseSummaryResponse,
   type CreateCaseBody,
+  type CreateCaseHistoryBody,
   type CreateCaseTemplateBody,
   type CreateInterventionBody,
   type CaseDashboardResponse,
@@ -19,6 +21,7 @@ import {
 } from "@syncora/shared";
 import type { CaseTemplateDocument } from "../persistence/case-template.schema";
 import type { CaseDocument } from "../persistence/case.schema";
+import type { CaseHistoryDocument } from "../persistence/case-history.schema";
 import type { InterventionDocument } from "../persistence/intervention.schema";
 import { AbstractCasesService } from "./ports/cases.service.port";
 
@@ -31,6 +34,8 @@ export class CasesService extends AbstractCasesService {
     private readonly caseModel: Model<CaseDocument>,
     @InjectModel("Intervention")
     private readonly interventionModel: Model<InterventionDocument>,
+    @InjectModel("CaseHistory")
+    private readonly caseHistoryModel: Model<CaseHistoryDocument>,
   ) {
     super();
   }
@@ -460,6 +465,33 @@ export class CasesService extends AbstractCasesService {
     };
   }
 
+  // ── History ──
+
+  async addCaseHistory(body: CreateCaseHistoryBody): Promise<CaseHistoryEntryResponse> {
+    const doc = await this.caseHistoryModel.create({
+      organizationId: body.organizationId,
+      caseId: body.caseId,
+      actorId: body.actorId,
+      actorName: body.actorName,
+      action: body.action,
+      details: body.details,
+      changes: body.changes ?? [],
+    });
+    return this.toHistoryResponse(doc);
+  }
+
+  async listCaseHistory(
+    caseId: string,
+    organizationId: string,
+  ): Promise<CaseHistoryEntryResponse[]> {
+    const docs = await this.caseHistoryModel
+      .find({ caseId, organizationId })
+      .sort({ createdAt: -1 })
+      .limit(200)
+      .exec();
+    return docs.map((d) => this.toHistoryResponse(d));
+  }
+
   // ── Helpers ──
 
   private autoAdvanceStatus(doc: CaseDocument): void {
@@ -604,6 +636,24 @@ export class CasesService extends AbstractCasesService {
       notes: doc.notes,
       createdAt: doc.get("createdAt")?.toISOString(),
       updatedAt: doc.get("updatedAt")?.toISOString(),
+    };
+  }
+
+  private toHistoryResponse(doc: CaseHistoryDocument): CaseHistoryEntryResponse {
+    return {
+      id: doc._id.toString(),
+      organizationId: doc.organizationId,
+      caseId: doc.caseId,
+      actorId: doc.actorId,
+      actorName: doc.actorName,
+      action: doc.action,
+      details: doc.details,
+      changes: (doc.changes ?? []).map((c) => ({
+        field: c.field,
+        oldValue: c.oldValue,
+        newValue: c.newValue,
+      })),
+      createdAt: doc.get("createdAt")?.toISOString(),
     };
   }
 

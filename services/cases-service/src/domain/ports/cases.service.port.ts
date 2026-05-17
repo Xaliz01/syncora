@@ -2,7 +2,9 @@ import type {
   CreateCaseBody,
   CreateCaseTemplateBody,
   CreateInterventionBody,
+  CreateCaseHistoryBody,
   CaseDashboardResponse,
+  CaseHistoryEntryResponse,
   CaseResponse,
   CaseSummaryResponse,
   CaseTemplateResponse,
@@ -54,4 +56,9 @@ export abstract class AbstractCasesService {
   ): Promise<InterventionResponse>;
   abstract deleteIntervention(id: string, organizationId: string): Promise<{ deleted: true }>;
   abstract getDashboard(organizationId: string, userId: string): Promise<CaseDashboardResponse>;
+  abstract addCaseHistory(body: CreateCaseHistoryBody): Promise<CaseHistoryEntryResponse>;
+  abstract listCaseHistory(
+    caseId: string,
+    organizationId: string,
+  ): Promise<CaseHistoryEntryResponse[]>;
 }
