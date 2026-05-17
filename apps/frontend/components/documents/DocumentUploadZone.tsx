@@ -163,7 +163,10 @@ export function DocumentUploadZone({ entityType, entityId }: Props) {
       title: "Supprimer ce document ?",
       description: (
         <>
-          Le fichier <strong className="font-medium text-slate-800 dark:text-slate-100">{doc.originalName}</strong>{" "}
+          Le fichier{" "}
+          <strong className="font-medium text-slate-800 dark:text-slate-100">
+            {doc.originalName}
+          </strong>{" "}
           sera supprimé définitivement. Cette action ne peut pas être annulée.
         </>
       ),

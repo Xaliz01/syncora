@@ -213,9 +213,7 @@ export function CaseProgressTimeline({
   }, [sortedSteps]);
 
   const expandedStep = sortedSteps.find((s) => s.id === expandedStepId);
-  const expandedIndex = expandedStep
-    ? sortedSteps.findIndex((s) => s.id === expandedStep.id)
-    : -1;
+  const expandedIndex = expandedStep ? sortedSteps.findIndex((s) => s.id === expandedStep.id) : -1;
 
   return (
     <header className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm dark:shadow-slate-950/20 overflow-hidden">
@@ -290,7 +288,8 @@ export function CaseProgressTimeline({
                 const doneCount = step.todos.filter(
                   (t) => t.status === "done" || t.status === "skipped",
                 ).length;
-                const prevPhase = index > 0 ? stepPhase(sortedSteps[index - 1], index - 1, sortedSteps) : null;
+                const prevPhase =
+                  index > 0 ? stepPhase(sortedSteps[index - 1], index - 1, sortedSteps) : null;
 
                 return (
                   <React.Fragment key={step.id}>
@@ -364,9 +363,11 @@ export function CaseProgressTimeline({
                 </div>
                 {expandedStep.todos.length > 0 && (
                   <span className="rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:text-slate-300">
-                    {expandedStep.todos.filter(
-                      (t) => t.status === "done" || t.status === "skipped",
-                    ).length}
+                    {
+                      expandedStep.todos.filter(
+                        (t) => t.status === "done" || t.status === "skipped",
+                      ).length
+                    }
                     /{expandedStep.todos.length} tâches
                   </span>
                 )}
