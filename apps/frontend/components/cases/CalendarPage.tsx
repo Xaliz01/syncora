@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import React, { useCallback, useMemo, useState, useRef } from "react";
+import { useIsDarkMode } from "@/lib/use-is-dark-mode";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as api from "@/lib/cases.api";
 import * as fleetApi from "@/lib/fleet.api";
@@ -100,13 +101,13 @@ function unscheduledPanelStatusStyle(status: string): string {
     return "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700";
   }
   if (status === "in_progress") {
-    return "bg-amber-50 text-amber-700";
+    return "bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-100 border border-amber-200 dark:border-amber-800";
   }
   if (status === "completed") {
-    return "bg-green-50 text-green-700";
+    return "bg-green-50 text-green-800 dark:bg-green-950 dark:text-green-100 border border-green-200 dark:border-green-800";
   }
   if (status === "cancelled") {
-    return "bg-red-50 text-red-700";
+    return "bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-100 border border-red-200 dark:border-red-800";
   }
   return "bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300";
 }
@@ -124,10 +125,12 @@ function UnscheduledPanel({
   onDragStart,
   onDropToUnschedule,
   teamsById,
+  isDark,
 }: {
   onDragStart: (e: React.DragEvent, intervention: InterventionResponse) => void;
   onDropToUnschedule: (interventionId: string) => void;
   teamsById: Map<string, TeamResponse>;
+  isDark: boolean;
 }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [collapsed, setCollapsed] = useState(false);
@@ -184,7 +187,7 @@ function UnscheduledPanel({
   if (collapsed) {
     return (
       <div
-        className={`flex-shrink-0 flex flex-col items-center gap-2 rounded-xl border-2 border-dashed p-2 transition-colors ${
+        className={`flex-shrink-0 self-stretch flex flex-col items-center gap-2 rounded-xl border-2 border-dashed p-2 transition-colors ${
           dropHover
             ? "border-brand-600 bg-brand-50"
             : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900"
@@ -220,7 +223,7 @@ function UnscheduledPanel({
 
   return (
     <div
-      className={`flex-shrink-0 w-72 xl:w-80 rounded-xl border-2 shadow-sm dark:shadow-slate-950/20 flex flex-col max-h-[calc(100vh-220px)] transition-colors ${
+      className={`flex-shrink-0 self-stretch w-72 xl:w-80 h-full min-h-0 rounded-xl border-2 shadow-sm dark:shadow-slate-950/20 flex flex-col transition-colors ${
         dropHover
           ? "border-brand-600 bg-brand-50/30"
           : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900"
@@ -357,6 +360,7 @@ function UnscheduledPanel({
             intervention.assignedTeamId
               ? teamsById.get(intervention.assignedTeamId)?.calendarColor
               : undefined,
+            isDark,
           );
           return (
             <Link
@@ -365,7 +369,7 @@ function UnscheduledPanel({
               draggable
               onDragStart={(e) => onDragStart(e, intervention)}
               title={`Ouvrir le dossier${intervention.caseTitle ? ` « ${intervention.caseTitle} »` : ""}`}
-              className={`group block rounded-lg p-2.5 cursor-grab active:cursor-grabbing hover:shadow-md transition-all no-underline text-left ${appearance.className}`}
+              className={`group block rounded-lg p-2.5 cursor-grab active:cursor-grabbing hover:shadow-md transition-all no-underline text-left text-inherit ${appearance.className}`}
               style={appearance.style}
             >
               <div className="flex items-start gap-2">
@@ -401,7 +405,7 @@ function UnscheduledPanel({
                       {unscheduledPanelStatusLabel(intervention.status)}
                     </span>
                     {(intervention.assigneeName || intervention.assignedTeamName) && (
-                      <span className="text-[10px] text-slate-400 dark:text-slate-500 truncate">
+                      <span className="text-[10px] truncate text-inherit opacity-85">
                         {intervention.assigneeName ??
                           (intervention.assignedTeamName
                             ? `Équipe : ${intervention.assignedTeamName}`
@@ -432,6 +436,7 @@ function UnscheduledPanel({
 
 export function CalendarPage() {
   const queryClient = useQueryClient();
+  const isDark = useIsDarkMode();
   const [view, setView] = useState<ViewMode>("week");
   const [referenceDate, setReferenceDate] = useState(new Date());
   const dragRef = useRef<{ intervention: InterventionResponse; originDate: Date } | null>(null);
@@ -639,10 +644,10 @@ export function CalendarPage() {
         <div className="text-sm font-semibold text-slate-700 dark:text-slate-200">{headerText}</div>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-start">
-        <div className="flex-1 min-w-0 w-full space-y-4">
+      <div className="flex flex-col lg:flex-row gap-4 items-stretch">
+        <div className="flex-1 min-w-0 w-full">
           {view === "week" ? (
-            <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm dark:shadow-slate-950/20 overflow-auto">
+            <div className="h-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm dark:shadow-slate-950/20 overflow-auto">
               <div className="grid grid-cols-[60px_repeat(7,1fr)] min-w-[800px]">
                 <div className="border-b border-r border-slate-200 dark:border-slate-700 p-2" />
                 {weekDays.map((day, i) => {
@@ -689,6 +694,7 @@ export function CalendarPage() {
                               intervention.assignedTeamId
                                 ? teamsById.get(intervention.assignedTeamId)?.calendarColor
                                 : undefined,
+                              isDark,
                             );
                             return (
                               <Link
@@ -696,7 +702,7 @@ export function CalendarPage() {
                                 href={`/cases/${intervention.caseId}`}
                                 draggable
                                 onDragStart={(e) => handleDragStart(e, intervention)}
-                                className={`block rounded px-1.5 py-0.5 text-[10px] cursor-grab active:cursor-grabbing mb-0.5 no-underline ${appearance.className}`}
+                                className={`block rounded px-1.5 py-0.5 text-[10px] cursor-grab active:cursor-grabbing mb-0.5 no-underline text-inherit ${appearance.className}`}
                                 style={appearance.style}
                                 title={`Ouvrir le dossier — ${intervention.title}${intervention.caseTitle ? ` (${intervention.caseTitle})` : ""}${intervention.assignedTeamName ? ` · ${intervention.assignedTeamName}` : ""}`}
                               >
@@ -720,7 +726,7 @@ export function CalendarPage() {
               </div>
             </div>
           ) : (
-            <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm dark:shadow-slate-950/20 overflow-hidden">
+            <div className="h-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm dark:shadow-slate-950/20 overflow-hidden">
               <div className="grid grid-cols-7">
                 {DAY_NAMES.map((day) => (
                   <div
@@ -761,6 +767,7 @@ export function CalendarPage() {
                                   intervention.assignedTeamId
                                     ? teamsById.get(intervention.assignedTeamId)?.calendarColor
                                     : undefined,
+                                  isDark,
                                 );
                                 return (
                                   <Link
@@ -768,7 +775,7 @@ export function CalendarPage() {
                                     href={`/cases/${intervention.caseId}`}
                                     draggable
                                     onDragStart={(e) => handleDragStart(e, intervention)}
-                                    className={`flex items-center gap-1 cursor-grab active:cursor-grabbing rounded px-0.5 py-0.5 -mx-0.5 no-underline min-w-0 ${appearance.className}`}
+                                    className={`flex items-center gap-1 cursor-grab active:cursor-grabbing rounded px-0.5 py-0.5 -mx-0.5 no-underline min-w-0 text-inherit ${appearance.className}`}
                                     style={appearance.style}
                                     title={`Ouvrir le dossier — ${intervention.title}${intervention.caseTitle ? ` (${intervention.caseTitle})` : ""}${intervention.assignedTeamName ? ` · ${intervention.assignedTeamName}` : ""}`}
                                   >
@@ -798,74 +805,72 @@ export function CalendarPage() {
               </div>
             </div>
           )}
-
-          <div className="flex flex-col gap-3 text-xs text-slate-500 dark:text-slate-400">
-            <p>
-              <span className="font-medium text-slate-600 dark:text-slate-300">
-                Couleur des cartes
-              </span>{" "}
-              — selon l&apos;équipe assignée à l&apos;intervention. Sans équipe : gris. Couleur
-              personnalisable sur la fiche de chaque équipe (Flotte).
-            </p>
-
-            {teamsSorted.length > 0 && (
-              <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/50 px-3 py-2.5">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-2">
-                  Légende équipes
-                </p>
-                <ul className="flex flex-wrap gap-x-4 gap-y-2">
-                  {teamsSorted.map((t) => (
-                    <li key={t.id} className="flex items-center gap-2 min-w-0 max-w-[220px]">
-                      {t.calendarColor && normalizeCalendarColorHex(t.calendarColor) ? (
-                        <span
-                          className="team-cal-legend-swatch h-3.5 w-3.5 rounded shrink-0"
-                          style={teamLegendSwatchStyle(t.calendarColor)}
-                          aria-hidden
-                        />
-                      ) : (
-                        <span
-                          className={`inline-block h-3.5 w-3.5 rounded shrink-0 ${getTeamCalendarCardClasses(t.id)}`}
-                          aria-hidden
-                        />
-                      )}
-                      <span className="truncate text-slate-700 dark:text-slate-200" title={t.name}>
-                        {t.name}
-                      </span>
-                      {!t.calendarColor && (
-                        <span className="text-[10px] text-slate-400 dark:text-slate-500 shrink-0">
-                          (auto)
-                        </span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-              <span className="font-medium text-slate-600 dark:text-slate-300 mr-1">
-                Statut (point)
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="h-2 w-2 rounded-full bg-blue-500" /> Planifiée
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="h-2 w-2 rounded-full bg-amber-500" /> En cours
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="h-2 w-2 rounded-full bg-green-500" /> Terminée
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="h-2 w-2 rounded-full bg-red-400" /> Annulée
-              </span>
-            </div>
-          </div>
         </div>
+
         <UnscheduledPanel
           onDragStart={handleDragStart}
           onDropToUnschedule={handleDropToUnschedule}
           teamsById={teamsById}
+          isDark={isDark}
         />
+      </div>
+
+      <div className="flex flex-col gap-3 text-xs text-slate-500 dark:text-slate-400">
+        <p>
+          <span className="font-medium text-slate-600 dark:text-slate-300">Couleur des cartes</span>{" "}
+              — selon l&apos;équipe assignée à l&apos;intervention. Sans équipe : gris. Couleur
+          personnalisable sur la fiche de chaque équipe (Flotte).
+        </p>
+
+        {teamsSorted.length > 0 && (
+          <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/50 px-3 py-2.5">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-2">
+              Légende équipes
+            </p>
+            <ul className="flex flex-wrap gap-x-4 gap-y-2">
+              {teamsSorted.map((t) => (
+                <li key={t.id} className="flex items-center gap-2 min-w-0 max-w-[220px]">
+                  {t.calendarColor && normalizeCalendarColorHex(t.calendarColor) ? (
+                    <span
+                      className="team-cal-legend-swatch h-3.5 w-3.5 rounded shrink-0"
+                      style={teamLegendSwatchStyle(t.calendarColor, isDark)}
+                      aria-hidden
+                    />
+                  ) : (
+                    <span
+                      className={`inline-block h-3.5 w-3.5 rounded shrink-0 ${getTeamCalendarCardClasses(t.id, isDark)}`}
+                      aria-hidden
+                    />
+                  )}
+                  <span className="truncate text-slate-700 dark:text-slate-200" title={t.name}>
+                    {t.name}
+                  </span>
+                  {!t.calendarColor && (
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 shrink-0">
+                      (auto)
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+          <span className="font-medium text-slate-600 dark:text-slate-300 mr-1">Statut (point)</span>
+          <span className="flex items-center gap-1">
+            <span className="h-2 w-2 rounded-full bg-blue-500" /> Planifiée
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="h-2 w-2 rounded-full bg-amber-500" /> En cours
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="h-2 w-2 rounded-full bg-green-500" /> Terminée
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="h-2 w-2 rounded-full bg-red-400" /> Annulée
+          </span>
+        </div>
       </div>
     </div>
   );

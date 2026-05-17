@@ -13,27 +13,10 @@ html.dark {
   color-scheme: dark;
 }
 
-/* Cartes calendrier — couleur équipe paramétrée (#RRGGBB via --team-cal-border) */
-.team-cal-custom {
-  border-width: 1px;
-  border-style: solid;
-  border-color: var(--team-cal-border);
-  background: color-mix(in srgb, var(--team-cal-border) 22%, white);
-  color: rgb(15 23 42);
-}
-html.dark .team-cal-custom {
-  background: color-mix(in srgb, var(--team-cal-border) 38%, rgb(15 23 42));
-  color: rgb(248 250 252);
-}
-
+/* Pastille légende équipe (couleurs via style inline depuis team-calendar-colors) */
 .team-cal-legend-swatch {
   border-width: 1px;
   border-style: solid;
-  border-color: var(--team-cal-border);
-  background: color-mix(in srgb, var(--team-cal-border) 22%, white);
-}
-html.dark .team-cal-legend-swatch {
-  background: color-mix(in srgb, var(--team-cal-border) 38%, rgb(15 23 42));
 }
 
 @keyframes org-switch-backdrop-in {

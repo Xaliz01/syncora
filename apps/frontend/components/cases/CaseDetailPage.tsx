@@ -13,10 +13,24 @@ import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
 import { CaseAssigneesTagsInput } from "@/components/cases/CaseAssigneesTagsInput";
 import { CaseCustomerPicker } from "@/components/cases/CaseCustomerPicker";
 import { TeamSuggestionAddonGate } from "@/components/cases/TeamSuggestionAddonGate";
+import { CaseProgressTimeline } from "@/components/cases/CaseProgressTimeline";
+import {
+  InterventionArticlesDialog,
+  type InterventionArticleUsageItem,
+} from "@/components/cases/InterventionArticlesDialog";
 import { CUSTOMER_KIND_LABELS } from "@/components/customers/customer-kind-labels";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { usePermissions } from "@/lib/hooks/usePermissions";
-import type { CasePriority, CaseStatus, TodoItemStatus } from "@syncora/shared";
+import { getTeamCalendarCardAppearance } from "@/lib/team-calendar-colors";
+import { useIsDarkMode } from "@/lib/use-is-dark-mode";
+import { formatPostalAddress } from "@/lib/team-route-insights";
+import type {
+  CaseCustomerRef,
+  CasePriority,
+  CaseStatus,
+  TeamResponse,
+  TodoItemStatus,
+} from "@syncora/shared";
 
 const STATUS_LABELS: Record<CaseStatus, string> = {
   draft: "Brouillon",
@@ -44,6 +58,155 @@ const PRIORITY_LABELS: Record<CasePriority, string> = {
   urgent: "Urgente",
 };
 
+function CaseHeaderCustomerContact({ customer }: { customer: CaseCustomerRef }) {
+  const addressLine = customer.address ? formatPostalAddress(customer.address) : "";
+  const hasContact = Boolean(customer.email || customer.phone || customer.mobile || addressLine);
+
+  if (!hasContact) {
+    return (
+      <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">Aucune coordonnée renseignée.</p>
+    );
+  }
+
+  return (
+    <dl className="mt-3 grid gap-2 border-t border-slate-100 dark:border-slate-800 pt-3 text-xs sm:grid-cols-2">
+      {customer.email ? (
+        <div>
+          <dt className="text-slate-400 dark:text-slate-500">E-mail</dt>
+          <dd className="mt-0.5">
+            <a
+              href={`mailto:${customer.email}`}
+              className="text-brand-600 dark:text-brand-400 hover:text-brand-500 break-all"
+            >
+              {customer.email}
+            </a>
+          </dd>
+        </div>
+      ) : null}
+      {customer.phone ? (
+        <div>
+          <dt className="text-slate-400 dark:text-slate-500">Téléphone</dt>
+          <dd className="mt-0.5">
+            <a
+              href={`tel:${customer.phone}`}
+              className="text-slate-700 dark:text-slate-200 hover:text-brand-600 dark:hover:text-brand-400"
+            >
+              {customer.phone}
+            </a>
+          </dd>
+        </div>
+      ) : null}
+      {customer.mobile ? (
+        <div>
+          <dt className="text-slate-400 dark:text-slate-500">Mobile</dt>
+          <dd className="mt-0.5">
+            <a
+              href={`tel:${customer.mobile}`}
+              className="text-slate-700 dark:text-slate-200 hover:text-brand-600 dark:hover:text-brand-400"
+            >
+              {customer.mobile}
+            </a>
+          </dd>
+        </div>
+      ) : null}
+      {addressLine ? (
+        <div className="sm:col-span-2">
+          <dt className="text-slate-400 dark:text-slate-500">Adresse</dt>
+          <dd className="mt-0.5 text-slate-700 dark:text-slate-200 leading-snug">{addressLine}</dd>
+        </div>
+      ) : null}
+    </dl>
+  );
+}
+
+function CaseHeaderCustomerCard({
+  customer,
+  customerId,
+  canViewCustomer,
+}: {
+  customer?: CaseCustomerRef;
+  customerId?: string;
+  canViewCustomer: boolean;
+}) {
+  const href = customer?.id ? `/customers/${customer.id}` : undefined;
+  const showLink = Boolean(canViewCustomer && href);
+
+  const headerRow = (
+    <div className="flex items-start gap-4">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-white shadow-sm shadow-brand-600/25">
+        <svg
+          className="h-6 w-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={1.75}
+          aria-hidden
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
+          />
+        </svg>
+      </div>
+      <div className="min-w-0 flex-1 pt-0.5">
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-600 dark:text-brand-400">
+          Client
+        </p>
+        {customer ? (
+          <>
+            <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-white truncate">
+              {customer.displayName}
+            </p>
+            <span className="mt-2 inline-flex rounded-full border border-slate-200 dark:border-slate-600 bg-white/80 dark:bg-slate-800/80 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:text-slate-300">
+              {CUSTOMER_KIND_LABELS[customer.kind] ?? customer.kind}
+            </span>
+          </>
+        ) : (
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+            Référence client enregistrée
+            {customerId ? (
+              <span className="mt-1 block font-mono text-xs text-slate-400 dark:text-slate-500 truncate">
+                {customerId}
+              </span>
+            ) : null}
+          </p>
+        )}
+      </div>
+      {showLink && (
+        <svg
+          className="h-5 w-5 shrink-0 text-slate-400 transition group-hover:text-brand-600 dark:group-hover:text-brand-400"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+          aria-hidden
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+        </svg>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm dark:shadow-slate-950/20">
+      <div className="p-4 sm:p-5">
+        {showLink && href ? (
+          <Link
+            href={href}
+            className="group block rounded-lg no-underline transition hover:bg-slate-50 dark:hover:bg-slate-800/50 -m-2 p-2"
+          >
+            {headerRow}
+          </Link>
+        ) : (
+          headerRow
+        )}
+        {customer ? <CaseHeaderCustomerContact customer={customer} /> : null}
+      </div>
+    </div>
+  );
+}
+
 const STATUS_TRANSITIONS: Record<CaseStatus, CaseStatus[]> = {
   draft: ["open", "cancelled"],
   open: ["in_progress", "cancelled"],
@@ -67,12 +230,69 @@ const INTERVENTION_STATUS_COLORS: Record<string, string> = {
   cancelled: "bg-red-50 text-red-600 border-red-200",
 };
 
+function InterventionTeamHighlight({
+  teamId,
+  teamName,
+  teamsById,
+}: {
+  teamId?: string;
+  teamName?: string;
+  teamsById: Map<string, TeamResponse>;
+}) {
+  const isDark = useIsDarkMode();
+
+  if (!teamId && !teamName) return null;
+  const team = teamId ? teamsById.get(teamId) : undefined;
+  const displayName = teamName ?? team?.name ?? "Équipe";
+  const appearance = getTeamCalendarCardAppearance(teamId, team?.calendarColor, isDark);
+
+  return (
+    <div
+      className={`mt-2.5 flex items-center gap-3 rounded-lg px-3 py-2.5 shadow-sm ${appearance.className}`}
+      style={appearance.style}
+    >
+      <span
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-black/10"
+        style={{ color: appearance.style?.color }}
+        aria-hidden
+      >
+        <svg
+          className="h-5 w-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={1.75}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 2.198a5.001 5.001 0 00-7.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"
+          />
+        </svg>
+      </span>
+      <div
+        className="min-w-0"
+        style={appearance.style?.color ? { color: appearance.style.color } : undefined}
+      >
+        <p className="text-[10px] font-semibold uppercase tracking-wide opacity-90">
+          Équipe assignée
+        </p>
+        <p className="text-sm font-semibold truncate">{displayName}</p>
+      </div>
+    </div>
+  );
+}
+
 export function CaseDetailPage({ caseId }: { caseId: string }) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const confirm = useConfirm();
   const { can, canAny } = usePermissions();
   const canAssignCase = canAny(["cases.assign", "cases.update"]);
+  const canViewInterventionArticles = can("stock.interventions.read");
+  const canAddInterventionArticles = can("stock.interventions.create");
+  const showInterventionArticles =
+    canViewInterventionArticles || canAddInterventionArticles;
   const [showNewIntervention, setShowNewIntervention] = useState(false);
   const [editingInterventionId, setEditingInterventionId] = useState<string | null>(null);
 
@@ -115,11 +335,13 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   const { data: articles } = useQuery({
     queryKey: ["articles", "intervention-usage"],
     queryFn: () => stockApi.listArticles({ activeOnly: true }),
+    enabled: canAddInterventionArticles,
   });
 
   const { data: stockMovements } = useQuery({
     queryKey: ["stock-movements", caseId],
     queryFn: () => stockApi.listArticleMovements({ caseId, limit: 200 }),
+    enabled: showInterventionArticles,
   });
 
   const [newIntTitle, setNewIntTitle] = useState("");
@@ -148,17 +370,9 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   const [editIntStart, setEditIntStart] = useState("");
   const [editIntEnd, setEditIntEnd] = useState("");
   const [interventionError, setInterventionError] = useState("");
-  const [usageDrafts, setUsageDrafts] = useState<
-    Record<
-      string,
-      {
-        articleId: string;
-        quantity: string;
-        movementType: "in" | "out";
-        note: string;
-      }
-    >
-  >({});
+  const [articlesDialogInterventionId, setArticlesDialogInterventionId] = useState<string | null>(
+    null,
+  );
 
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: ["case", caseId] });
@@ -217,30 +431,6 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
     onSuccess: () => {
       invalidateAll();
       setInterventionError("");
-    },
-    onError: (err: Error) => setInterventionError(err.message),
-  });
-
-  const addInterventionArticleMutation = useMutation({
-    mutationFn: ({
-      interventionId,
-      payload,
-    }: {
-      interventionId: string;
-      payload: stockApi.AddInterventionArticleUsagePayload;
-    }) => stockApi.addInterventionArticleUsage(interventionId, payload),
-    onSuccess: (_, variables) => {
-      invalidateAll();
-      setInterventionError("");
-      setUsageDrafts((prev) => ({
-        ...prev,
-        [variables.interventionId]: {
-          articleId: "",
-          quantity: "1",
-          movementType: "out",
-          note: "",
-        },
-      }));
     },
     onError: (err: Error) => setInterventionError(err.message),
   });
@@ -309,6 +499,14 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
     return map;
   }, [articles, stockMovements]);
 
+  const teamsById = useMemo(() => {
+    const map = new Map<string, TeamResponse>();
+    for (const team of teamsData ?? []) {
+      map.set(team.id, team);
+    }
+    return map;
+  }, [teamsData]);
+
   const assigneePickerOptions = useMemo(() => {
     if (!caseData) return [] as { id: string; label: string }[];
     const map = new Map<string, string>();
@@ -324,6 +522,10 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   if (isLoading || !caseData) {
     return <div className="text-sm text-slate-500 dark:text-slate-400">Chargement…</div>;
   }
+
+  const articlesDialogIntervention = interventions?.find(
+    (i) => i.id === articlesDialogInterventionId,
+  );
 
   const allowedTransitions = STATUS_TRANSITIONS[caseData.status] ?? [];
   const isOverdue =
@@ -424,8 +626,8 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                 </div>
                 <p className="mt-1.5 text-xs text-amber-900/80 leading-relaxed">
                   Le <strong>statut</strong> ne se modifie pas ici : une fois revenu sur la fiche
-                  (après enregistrement ou annulation), utilisez la section{" "}
-                  <strong>Progression</strong>.
+                  (après enregistrement ou annulation), utilisez l&apos;en-tête{" "}
+                  <strong>Progression</strong> en haut de la fiche.
                 </p>
               </div>
 
@@ -571,245 +773,110 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
               </div>
             </div>
           ) : (
-            <>
-              <div className="flex items-center gap-3 flex-wrap">
-                <h1 className="text-xl sm:text-2xl font-semibold">{caseData.title}</h1>
-                <span
-                  className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[caseData.status]}`}
-                >
-                  {STATUS_LABELS[caseData.status]}
-                </span>
-                <span
-                  className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                    caseData.priority === "urgent"
-                      ? "bg-red-50 text-red-600"
-                      : caseData.priority === "high"
-                        ? "bg-orange-50 text-orange-600"
-                        : caseData.priority === "medium"
-                          ? "bg-blue-50 text-blue-600"
-                          : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
-                  }`}
-                >
-                  {PRIORITY_LABELS[caseData.priority]}
-                </span>
-                {isOverdue && (
-                  <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700">
-                    En retard
+            <CaseProgressTimeline
+              title={caseData.title}
+              description={caseData.description}
+              titleBadges={
+                <>
+                  <span
+                    className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[caseData.status]}`}
+                  >
+                    {STATUS_LABELS[caseData.status]}
                   </span>
-                )}
-              </div>
-              {caseData.description && (
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  {caseData.description}
-                </p>
-              )}
-              {(caseData.customer || caseData.customerId) && (
-                <div className="mt-3 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/80 p-3">
-                  <div className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                    Client
-                  </div>
-                  {caseData.customer ? (
-                    <>
-                      <div className="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">
-                        {caseData.customer.displayName}
-                      </div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400">
-                        {CUSTOMER_KIND_LABELS[caseData.customer.kind] ?? caseData.customer.kind}
-                      </div>
-                    </>
-                  ) : (
-                    <div className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                      Référence client enregistrée
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                      caseData.priority === "urgent"
+                        ? "bg-red-50 text-red-600"
+                        : caseData.priority === "high"
+                          ? "bg-orange-50 text-orange-600"
+                          : caseData.priority === "medium"
+                            ? "bg-blue-50 text-blue-600"
+                            : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
+                    }`}
+                  >
+                    {PRIORITY_LABELS[caseData.priority]}
+                  </span>
+                  {isOverdue && (
+                    <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700">
+                      En retard
+                    </span>
+                  )}
+                </>
+              }
+              details={
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  {(caseData.customer || caseData.customerId) && (
+                    <div className="min-w-0 flex-1 lg:max-w-xl">
+                      <CaseHeaderCustomerCard
+                        customer={caseData.customer}
+                        customerId={caseData.customerId}
+                        canViewCustomer={can("customers.read")}
+                      />
                     </div>
                   )}
+                  <div
+                    className={`w-full shrink-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20 ${
+                      caseData.customer || caseData.customerId
+                        ? "lg:w-[min(100%,20rem)] lg:ml-auto"
+                        : "lg:max-w-md lg:ml-auto"
+                    }`}
+                  >
+                    <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      Assignés
+                    </h2>
+                    <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">
+                      Membres responsables de ce dossier
+                    </p>
+                    <div className="mt-3">
+                      <CaseAssigneesTagsInput
+                        options={assigneePickerOptions}
+                        value={caseData.assignees.map((a) => a.userId)}
+                        onChange={(ids) => updateMutation.mutate({ assigneeIds: ids })}
+                        disabled={!canAssignCase || updateMutation.isPending}
+                        placeholder="Rechercher un membre à assigner…"
+                      />
+                    </div>
+                  </div>
                 </div>
-              )}
-              <div className="mt-3 space-y-1.5">
-                <span className="text-sm text-slate-500 dark:text-slate-400">Assignés</span>
-                <CaseAssigneesTagsInput
-                  options={assigneePickerOptions}
-                  value={caseData.assignees.map((a) => a.userId)}
-                  onChange={(ids) => updateMutation.mutate({ assigneeIds: ids })}
-                  disabled={!canAssignCase || updateMutation.isPending}
-                  placeholder="Rechercher un membre à assigner…"
-                />
-              </div>
-              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
-                {caseData.dueDate && (
-                  <span>Échéance : {new Date(caseData.dueDate).toLocaleDateString("fr-FR")}</span>
-                )}
-                {caseData.tags.length > 0 && (
-                  <span className="flex gap-1">
-                    {caseData.tags.map((t) => (
-                      <span
-                        key={t}
-                        className="rounded bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-[10px]"
-                      >
-                        {t}
-                      </span>
-                    ))}
-                  </span>
-                )}
-              </div>
-            </>
+              }
+              meta={
+                <>
+                  {caseData.dueDate && (
+                    <span>
+                      Échéance : {new Date(caseData.dueDate).toLocaleDateString("fr-FR")}
+                    </span>
+                  )}
+                  {caseData.tags.length > 0 && (
+                    <span className="flex flex-wrap gap-1">
+                      {caseData.tags.map((t) => (
+                        <span
+                          key={t}
+                          className="rounded bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-[10px]"
+                        >
+                          {t}
+                        </span>
+                      ))}
+                    </span>
+                  )}
+                </>
+              }
+              progress={caseData.progress}
+              steps={caseData.steps}
+              canUpdateStatus={can("cases.update")}
+              allowedTransitions={allowedTransitions}
+              onStatusChange={(s) => statusMutation.mutate(s)}
+              statusChangePending={statusMutation.isPending}
+              canUpdateTodos={can("cases.update")}
+              onTodoStatusChange={(stepId, todoId, status) =>
+                todoMutation.mutate({ stepId, todoId, status })
+              }
+            />
           )}
         </div>
       </div>
 
       {!isEditing && (
         <>
-          <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20">
-            <div className="flex items-center justify-between mb-3">
-              <div className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                Progression
-              </div>
-              <div className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-                {caseData.progress}%
-              </div>
-            </div>
-            <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800">
-              <div
-                className={`h-full rounded-full transition-all ${
-                  caseData.progress === 100 ? "bg-green-500" : "bg-brand-600"
-                }`}
-                style={{ width: `${caseData.progress}%` }}
-              />
-            </div>
-            {can("cases.update") && allowedTransitions.length > 0 && (
-              <div className="mt-3 flex gap-2 flex-wrap">
-                <span className="text-xs text-slate-500 dark:text-slate-400 self-center">
-                  Changer le statut :
-                </span>
-                {allowedTransitions.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => statusMutation.mutate(s)}
-                    disabled={statusMutation.isPending}
-                    className={`rounded-lg border px-3 py-1 text-xs font-medium transition hover:shadow-sm dark:shadow-slate-950/20 ${STATUS_COLORS[s]}`}
-                  >
-                    {STATUS_LABELS[s]}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {caseData.steps.length > 0 && (
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
-                Étapes & Tâches
-              </h2>
-              {[...caseData.steps]
-                .sort((a, b) => a.order - b.order)
-                .map((step) => {
-                  const doneTodos = step.todos.filter(
-                    (t) => t.status === "done" || t.status === "skipped",
-                  ).length;
-                  const totalTodos = step.todos.length;
-                  const stepProgress =
-                    totalTodos > 0 ? Math.round((doneTodos / totalTodos) * 100) : 0;
-
-                  return (
-                    <div
-                      key={step.id}
-                      className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20"
-                    >
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-600/10 text-xs font-semibold text-brand-600 dark:text-brand-400">
-                            {step.order + 1}
-                          </span>
-                          <h3 className="font-semibold text-slate-700 dark:text-slate-200">
-                            {step.name}
-                          </h3>
-                        </div>
-                        <span className="text-xs text-slate-500 dark:text-slate-400">
-                          {doneTodos}/{totalTodos} — {stepProgress}%
-                        </span>
-                      </div>
-                      {step.description && (
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 ml-8">
-                          {step.description}
-                        </p>
-                      )}
-                      <div className="ml-8 space-y-1.5">
-                        {step.todos.map((todo) => (
-                          <div key={todo.id} className="flex items-center gap-2 group">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const newStatus: TodoItemStatus =
-                                  todo.status === "done" ? "pending" : "done";
-                                todoMutation.mutate({
-                                  stepId: step.id,
-                                  todoId: todo.id,
-                                  status: newStatus,
-                                });
-                              }}
-                              className={`h-4 w-4 rounded border flex-shrink-0 flex items-center justify-center transition ${
-                                todo.status === "done"
-                                  ? "bg-green-500 border-green-500 text-white"
-                                  : todo.status === "skipped"
-                                    ? "bg-slate-300 border-slate-300 dark:border-slate-600 text-white"
-                                    : "border-slate-300 dark:border-slate-600 hover:border-brand-500"
-                              }`}
-                            >
-                              {todo.status === "done" && (
-                                <svg
-                                  className="h-3 w-3"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                  strokeWidth={3}
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d="M5 13l4 4L19 7"
-                                  />
-                                </svg>
-                              )}
-                            </button>
-                            <span
-                              className={`text-sm ${
-                                todo.status === "done"
-                                  ? "text-slate-400 dark:text-slate-500 line-through"
-                                  : todo.status === "skipped"
-                                    ? "text-slate-400 dark:text-slate-500 line-through"
-                                    : "text-slate-700 dark:text-slate-200"
-                              }`}
-                            >
-                              {todo.label}
-                            </span>
-                            {todo.status === "pending" && (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  todoMutation.mutate({
-                                    stepId: step.id,
-                                    todoId: todo.id,
-                                    status: "skipped",
-                                  })
-                                }
-                                className="text-[10px] text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-300 opacity-0 group-hover:opacity-100 transition"
-                              >
-                                ignorer
-                              </button>
-                            )}
-                            {todo.completedAt && (
-                              <span className="text-[10px] text-slate-400 dark:text-slate-500">
-                                {new Date(todo.completedAt).toLocaleDateString("fr-FR")}
-                              </span>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
-          )}
-
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
@@ -934,7 +1001,9 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
             {interventions && interventions.length > 0 ? (
               <div className="space-y-2">
                 {interventions.map((intervention) => {
-                  const usedArticles = interventionUsageMap.get(intervention.id) ?? [];
+                  const usedArticles = (interventionUsageMap.get(intervention.id) ?? []).filter(
+                    (item) => item.netQuantity > 0,
+                  );
                   const isEditingThis = editingInterventionId === intervention.id;
 
                   const startEditingIntervention = () => {
@@ -984,14 +1053,6 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                     >
                       {isEditingThis ? (
                         <div className="space-y-3">
-                          <div className="rounded-lg border border-amber-200 bg-amber-50/60 px-3 py-2 text-sm text-amber-950">
-                            <span className="rounded-md bg-amber-100 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide">
-                              Édition
-                            </span>{" "}
-                            <span className="font-medium text-amber-900">
-                              Modifier l&apos;intervention
-                            </span>
-                          </div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <input
                               type="text"
@@ -1111,7 +1172,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                                   onClick={startEditingIntervention}
                                   className="text-[10px] text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
                                 >
-                                  Modifier
+                                  Modifier l&apos;intervention
                                 </button>
                               )}
                               {intervention.status === "planned" && (
@@ -1142,13 +1203,20 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                               )}
                             </div>
                           </div>
+                          <InterventionTeamHighlight
+                            teamId={intervention.assignedTeamId}
+                            teamName={intervention.assignedTeamName}
+                            teamsById={teamsById}
+                          />
                           <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
-                            {intervention.assignedTeamName && (
-                              <span className="rounded bg-indigo-50 border border-indigo-200 text-indigo-700 px-1.5 py-0.5 text-xs">
-                                {intervention.assignedTeamName}
+                            {intervention.assigneeName && (
+                              <span className="inline-flex items-center gap-1">
+                                <span className="text-slate-400 dark:text-slate-500">Assigné :</span>
+                                <span className="font-medium text-slate-600 dark:text-slate-300">
+                                  {intervention.assigneeName}
+                                </span>
                               </span>
                             )}
-                            {intervention.assigneeName && <span>{intervention.assigneeName}</span>}
                             {intervention.scheduledStart && (
                               <span>
                                 {new Date(intervention.scheduledStart).toLocaleDateString("fr-FR")}{" "}
@@ -1174,147 +1242,53 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                             </p>
                           )}
 
-                          {usedArticles.length > 0 && (
-                            <div className="mt-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-2">
-                              <div className="text-[11px] font-semibold text-slate-700 dark:text-slate-200 mb-1">
-                                Articles liés à l&apos;intervention
-                              </div>
-                              <div className="space-y-1">
-                                {usedArticles.map((item) => (
-                                  <div
-                                    key={item.articleId}
-                                    className="flex flex-wrap items-center justify-between text-[11px] text-slate-600 dark:text-slate-300 gap-1"
+                          {showInterventionArticles && (
+                            <div className="mt-3">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+                                  Articles utilisés
+                                </p>
+                                {canAddInterventionArticles && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setArticlesDialogInterventionId(intervention.id)}
+                                    className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
                                   >
-                                    <span>
-                                      {item.articleName}
-                                      {item.articleReference ? ` (${item.articleReference})` : ""}
-                                    </span>
-                                    <span className="text-right">
-                                      consommé: {item.consumedQuantity} / retourné:{" "}
-                                      {item.returnedQuantity} / net: {item.netQuantity} {item.unit}
-                                    </span>
-                                  </div>
-                                ))}
+                                    {usedArticles.length > 0
+                                      ? "Modifier les articles"
+                                      : "Ajouter des articles"}
+                                  </button>
+                                )}
                               </div>
+                              {canViewInterventionArticles && usedArticles.length > 0 ? (
+                                <ul className="mt-2 space-y-1">
+                                  {usedArticles.map((item) => (
+                                    <li
+                                      key={item.articleId}
+                                      className="flex flex-wrap items-baseline justify-between gap-2 text-xs text-slate-600 dark:text-slate-300"
+                                    >
+                                      <span>
+                                        {item.articleName}
+                                        {item.articleReference ? (
+                                          <span className="text-slate-400 dark:text-slate-500">
+                                            {" "}
+                                            · {item.articleReference}
+                                          </span>
+                                        ) : null}
+                                      </span>
+                                      <span className="tabular-nums font-medium text-slate-700 dark:text-slate-200">
+                                        {item.netQuantity} {item.unit}
+                                      </span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              ) : canViewInterventionArticles ? (
+                                <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+                                  Aucun article déclaré.
+                                </p>
+                              ) : null}
                             </div>
                           )}
-
-                          <div className="mt-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-2">
-                            <div className="mb-1 text-[11px] font-semibold text-slate-700 dark:text-slate-200">
-                              Mouvement de stock sur cette intervention
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-                              <select
-                                value={usageDrafts[intervention.id]?.articleId ?? ""}
-                                onChange={(e) =>
-                                  setUsageDrafts((prev) => ({
-                                    ...prev,
-                                    [intervention.id]: {
-                                      articleId: e.target.value,
-                                      quantity: prev[intervention.id]?.quantity ?? "1",
-                                      movementType: prev[intervention.id]?.movementType ?? "out",
-                                      note: prev[intervention.id]?.note ?? "",
-                                    },
-                                  }))
-                                }
-                                className="rounded border border-slate-200 dark:border-slate-700 px-2 py-1 text-xs"
-                              >
-                                <option value="">Article</option>
-                                {(articles ?? []).map((article) => (
-                                  <option key={article.id} value={article.id}>
-                                    {article.reference} — {article.name} ({article.stockQuantity})
-                                  </option>
-                                ))}
-                              </select>
-                              <select
-                                value={usageDrafts[intervention.id]?.movementType ?? "out"}
-                                onChange={(e) =>
-                                  setUsageDrafts((prev) => ({
-                                    ...prev,
-                                    [intervention.id]: {
-                                      articleId: prev[intervention.id]?.articleId ?? "",
-                                      quantity: prev[intervention.id]?.quantity ?? "1",
-                                      movementType: e.target.value as "in" | "out",
-                                      note: prev[intervention.id]?.note ?? "",
-                                    },
-                                  }))
-                                }
-                                className="rounded border border-slate-200 dark:border-slate-700 px-2 py-1 text-xs"
-                              >
-                                <option value="out">Consommation (-)</option>
-                                <option value="in">Retour (+)</option>
-                              </select>
-                              <input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                value={usageDrafts[intervention.id]?.quantity ?? "1"}
-                                onChange={(e) =>
-                                  setUsageDrafts((prev) => ({
-                                    ...prev,
-                                    [intervention.id]: {
-                                      articleId: prev[intervention.id]?.articleId ?? "",
-                                      quantity: e.target.value,
-                                      movementType: prev[intervention.id]?.movementType ?? "out",
-                                      note: prev[intervention.id]?.note ?? "",
-                                    },
-                                  }))
-                                }
-                                className="rounded border border-slate-200 dark:border-slate-700 px-2 py-1 text-xs"
-                                placeholder="Quantité"
-                              />
-                              <input
-                                value={usageDrafts[intervention.id]?.note ?? ""}
-                                onChange={(e) =>
-                                  setUsageDrafts((prev) => ({
-                                    ...prev,
-                                    [intervention.id]: {
-                                      articleId: prev[intervention.id]?.articleId ?? "",
-                                      quantity: prev[intervention.id]?.quantity ?? "1",
-                                      movementType: prev[intervention.id]?.movementType ?? "out",
-                                      note: e.target.value,
-                                    },
-                                  }))
-                                }
-                                className="rounded border border-slate-200 dark:border-slate-700 px-2 py-1 text-xs"
-                                placeholder="Note (optionnelle)"
-                              />
-                            </div>
-                            <div className="mt-2">
-                              <button
-                                onClick={() => {
-                                  const draft = usageDrafts[intervention.id];
-                                  if (!draft?.articleId) {
-                                    setInterventionError(
-                                      "Sélectionnez un article avant de valider le mouvement",
-                                    );
-                                    return;
-                                  }
-                                  const qty = Number(draft.quantity);
-                                  if (!Number.isFinite(qty) || qty <= 0) {
-                                    setInterventionError(
-                                      "La quantité doit être strictement positive",
-                                    );
-                                    return;
-                                  }
-                                  addInterventionArticleMutation.mutate({
-                                    interventionId: intervention.id,
-                                    payload: {
-                                      caseId,
-                                      articleId: draft.articleId,
-                                      movementType: draft.movementType,
-                                      quantity: qty,
-                                      note: draft.note.trim() || undefined,
-                                    },
-                                  });
-                                }}
-                                disabled={addInterventionArticleMutation.isPending}
-                                className="rounded bg-brand-600 px-3 py-1 text-xs font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
-                              >
-                                Enregistrer le mouvement
-                              </button>
-                            </div>
-                          </div>
                         </>
                       )}
                     </div>
@@ -1330,6 +1304,23 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
             )}
           </div>
         </>
+      )}
+
+      {articlesDialogIntervention && (
+        <InterventionArticlesDialog
+          open={articlesDialogInterventionId === articlesDialogIntervention.id}
+          onClose={() => setArticlesDialogInterventionId(null)}
+          interventionId={articlesDialogIntervention.id}
+          interventionTitle={articlesDialogIntervention.title}
+          caseId={caseId}
+          currentUsage={
+            (interventionUsageMap.get(articlesDialogIntervention.id) ??
+              []) as InterventionArticleUsageItem[]
+          }
+          articles={articles ?? []}
+          canEdit={canAddInterventionArticles}
+          onSaved={invalidateAll}
+        />
       )}
 
       <DocumentUploadZone entityType="case" entityId={caseId} />

@@ -270,7 +270,15 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
   }
 
   private toCaseCustomerRef(c: CustomerResponse): CaseCustomerRef {
-    return { id: c.id, displayName: c.displayName, kind: c.kind };
+    return {
+      id: c.id,
+      displayName: c.displayName,
+      kind: c.kind,
+      email: c.email,
+      phone: c.phone,
+      mobile: c.mobile,
+      address: c.address,
+    };
   }
 
   private async enrichCaseSummaries(

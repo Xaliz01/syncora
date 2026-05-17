@@ -4,6 +4,7 @@ import Image from "next/image";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import type { DocumentEntityType, DocumentResponse } from "@syncora/shared";
 import * as documentsApi from "@/lib/documents.api";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} o`;
@@ -56,6 +57,7 @@ interface Props {
 }
 
 export function DocumentUploadZone({ entityType, entityId }: Props) {
+  const confirm = useConfirm();
   const [documents, setDocuments] = useState<DocumentResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -157,7 +159,18 @@ export function DocumentUploadZone({ entityType, entityId }: Props) {
   };
 
   const handleDelete = async (doc: DocumentResponse) => {
-    if (!confirm(`Supprimer "${doc.originalName}" ?`)) return;
+    const ok = await confirm({
+      title: "Supprimer ce document ?",
+      description: (
+        <>
+          Le fichier <strong className="font-medium text-slate-800 dark:text-slate-100">{doc.originalName}</strong>{" "}
+          sera supprimé définitivement. Cette action ne peut pas être annulée.
+        </>
+      ),
+      confirmLabel: "Supprimer le document",
+      variant: "danger",
+    });
+    if (!ok) return;
     try {
       await documentsApi.deleteDocument(doc.id);
       await loadDocuments();

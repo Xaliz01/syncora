@@ -1,6 +1,6 @@
 /** API contracts for cases-service (templates, cases, interventions) */
 
-import type { CustomerKind } from "./customer";
+import type { CustomerKind, PostalAddress } from "./customer";
 
 // ── Statuses ──
 
@@ -61,6 +61,10 @@ export interface CaseCustomerRef {
   id: string;
   displayName: string;
   kind: CustomerKind;
+  email?: string;
+  phone?: string;
+  mobile?: string;
+  address?: PostalAddress;
 }
 
 export interface CaseTodoItem {
