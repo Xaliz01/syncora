@@ -18,6 +18,7 @@ import { useToast } from "@/components/ui/ToastProvider";
 import { usePermissions } from "@/lib/hooks/usePermissions";
 import { useRouter } from "next/navigation";
 import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
+import { AppErrorAlert, ResourceNotFoundPanel } from "@/components/ui/AppErrorAlert";
 
 const STATUS_COLORS: Record<string, string> = {
   active: "bg-emerald-50 text-emerald-700 border-emerald-200",
@@ -42,7 +43,7 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
 
   const [editName, setEditName] = useState("");
   const [editAgenceId, setEditAgenceId] = useState("");
@@ -72,7 +73,7 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
       setEditStatus(teamData.status);
       setEditCalendarColor(teamData.calendarColor ?? "");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur de chargement");
+      setError(err);
     } finally {
       setLoading(false);
     }
@@ -98,7 +99,7 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
       void queryClient.invalidateQueries({ queryKey: ["fleet-teams"] });
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Impossible de sauvegarder");
+      setError(err);
     } finally {
       setSaving(false);
     }
@@ -111,7 +112,7 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
       showToast("Équipe supprimée.");
       router.push("/fleet/teams");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Impossible de supprimer");
+      setError(err);
     }
   };
 
@@ -125,7 +126,7 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
       setAddTechnicianId("");
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Impossible d'ajouter le membre");
+      setError(err);
     } finally {
       setSaving(false);
     }
@@ -140,7 +141,7 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
       showToast("Technicien retiré de l'équipe.");
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Impossible de retirer le membre");
+      setError(err);
     } finally {
       setSaving(false);
     }
@@ -156,12 +157,13 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
 
   if (!team) {
     return (
-      <div className="space-y-3">
-        <p className="text-slate-700 dark:text-slate-200">Équipe introuvable.</p>
-        <Link href="/fleet/teams" className="text-brand-600 dark:text-brand-400 hover:underline">
-          Retour à la liste
-        </Link>
-      </div>
+      <ResourceNotFoundPanel
+        error={error}
+        resourceLabel="Équipe"
+        backHref="/fleet/teams"
+        backLabel="Retour à la liste"
+        onRetry={() => void refresh()}
+      />
     );
   }
 
@@ -207,11 +209,7 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
         </div>
       </div>
 
-      {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm p-3">
-          {error}
-        </div>
-      )}
+      {error ? <AppErrorAlert error={error} onRetry={() => void refresh()} /> : null}
 
       {!isEditing ? (
         <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">

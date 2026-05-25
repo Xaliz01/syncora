@@ -11,6 +11,7 @@ import { usePermissions } from "@/lib/hooks/usePermissions";
 import { CustomerEditForm } from "./CustomerEditForm";
 import { CUSTOMER_KIND_LABELS } from "./customer-kind-labels";
 import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
+import { AppErrorAlert } from "@/components/ui/AppErrorAlert";
 
 function formatDate(iso?: string) {
   if (!iso) return null;
@@ -84,16 +85,11 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
         >
           &larr; Clients
         </Link>
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-          {error instanceof Error ? error.message : "Client introuvable."}
-          <button
-            type="button"
-            onClick={() => refetch()}
-            className="ml-3 rounded-lg border border-red-300 bg-white dark:bg-slate-900 px-3 py-1 text-xs font-medium text-red-800 hover:bg-red-50"
-          >
-            Réessayer
-          </button>
-        </div>
+        {isError ? (
+          <AppErrorAlert error={error} onRetry={() => void refetch()} />
+        ) : (
+          <p className="text-sm text-slate-700 dark:text-slate-200">Client introuvable.</p>
+        )}
       </div>
     );
   }

@@ -40,7 +40,7 @@ const GRID = "md:grid-cols-[1.2fr_1fr_0.8fr_0.5fr]";
 export function TechniciansListPage() {
   const [technicians, setTechnicians] = useState<TechnicianResponse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [search, setSearch] = useState("");
 
   const loadData = useCallback(async () => {
@@ -50,7 +50,7 @@ export function TechniciansListPage() {
       const data = await fleetApi.listTechnicians();
       setTechnicians(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur de chargement");
+      setError(err);
     } finally {
       setLoading(false);
     }
@@ -87,7 +87,9 @@ export function TechniciansListPage() {
         }
       />
 
-      {error ? <ListPageError message={error} onRetry={() => void loadData()} /> : null}
+      {error ? (
+        <ListPageError error={error} fallbackMessage="Erreur de chargement" onRetry={() => void loadData()} />
+      ) : null}
 
       <ListToolbar>
         <ListSearchField

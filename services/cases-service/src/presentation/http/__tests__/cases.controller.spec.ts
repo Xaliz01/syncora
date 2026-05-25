@@ -219,7 +219,7 @@ describe("CasesController", () => {
   });
 
   describe("getDashboard", () => {
-    it("should call casesService.getDashboard with organizationId, userId and userRole", async () => {
+    it("should call casesService.getDashboard with organizationId, userId and userProfileId", async () => {
       const dashboard = {
         assignedCases: [],
         upcomingInterventions: [],
@@ -229,9 +229,9 @@ describe("CasesController", () => {
       };
       mockCasesService.getDashboard.mockResolvedValue(dashboard as never);
 
-      const result = await controller.getDashboard("org-1", "user-1", "admin");
+      const result = await controller.getDashboard("org-1", "user-1", "profile-1");
 
-      expect(mockCasesService.getDashboard).toHaveBeenCalledWith("org-1", "user-1", "admin");
+      expect(mockCasesService.getDashboard).toHaveBeenCalledWith("org-1", "user-1", "profile-1");
       expect(result).toEqual(dashboard);
     });
 
@@ -257,7 +257,7 @@ describe("CasesController", () => {
       const result = await controller.getDashboardTodoCases(
         "org-1",
         "user-1",
-        "admin",
+        "profile-1",
         "tpl-1",
         "My Todo",
       );
@@ -265,7 +265,7 @@ describe("CasesController", () => {
       expect(mockCasesService.getDashboardTodoCases).toHaveBeenCalledWith(
         "org-1",
         "user-1",
-        "admin",
+        "profile-1",
         "tpl-1",
         "My Todo",
       );
@@ -274,13 +274,25 @@ describe("CasesController", () => {
 
     it("should throw BadRequestException when templateId is missing", async () => {
       await expect(
-        controller.getDashboardTodoCases("org-1", "user-1", "admin", undefined as never, "My Todo"),
+        controller.getDashboardTodoCases(
+          "org-1",
+          "user-1",
+          "profile-1",
+          undefined as never,
+          "My Todo",
+        ),
       ).rejects.toThrow(BadRequestException);
     });
 
     it("should throw BadRequestException when todoLabel is missing", async () => {
       await expect(
-        controller.getDashboardTodoCases("org-1", "user-1", "admin", "tpl-1", undefined as never),
+        controller.getDashboardTodoCases(
+          "org-1",
+          "user-1",
+          "profile-1",
+          "tpl-1",
+          undefined as never,
+        ),
       ).rejects.toThrow(BadRequestException);
     });
   });

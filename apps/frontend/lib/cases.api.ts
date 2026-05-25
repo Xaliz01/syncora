@@ -32,7 +32,7 @@ export interface CreateTemplatePayload {
       dashboardRule?: {
         showOnDashboard: boolean;
         visibility?: string;
-        roles?: string[];
+        profileIds?: string[];
         userIds?: string[];
       };
     }[];

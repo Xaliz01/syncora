@@ -45,7 +45,7 @@ export interface CreateTemplateForOrgBody {
       dashboardRule?: {
         showOnDashboard: boolean;
         visibility?: TodoDashboardVisibility;
-        roles?: string[];
+        profileIds?: string[];
         userIds?: string[];
       };
     }[];
@@ -65,7 +65,7 @@ export interface UpdateTemplateForOrgBody {
       dashboardRule?: {
         showOnDashboard: boolean;
         visibility?: TodoDashboardVisibility;
-        roles?: string[];
+        profileIds?: string[];
         userIds?: string[];
       };
     }[];

@@ -59,12 +59,12 @@ export abstract class AbstractCasesService {
   abstract getDashboard(
     organizationId: string,
     userId: string,
-    userRole?: string,
+    userProfileId?: string,
   ): Promise<CaseDashboardResponse>;
   abstract getDashboardTodoCases(
     organizationId: string,
     userId: string,
-    userRole: string,
+    userProfileId: string | undefined,
     templateId: string,
     todoLabel: string,
   ): Promise<DashboardTodoCaseItem[]>;

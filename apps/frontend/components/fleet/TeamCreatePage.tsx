@@ -6,6 +6,7 @@ import type { TeamStatus, TechnicianResponse, AgenceResponse } from "@syncora/sh
 import * as fleetApi from "@/lib/fleet.api";
 import { normalizeCalendarColorHex } from "@/lib/team-calendar-colors";
 import { useToast } from "@/components/ui/ToastProvider";
+import { AppErrorAlert } from "@/components/ui/AppErrorAlert";
 
 const TEAM_STATUSES: TeamStatus[] = ["active", "inactive"];
 
@@ -18,13 +19,15 @@ export function TeamCreatePage() {
   const [status, setStatus] = useState<TeamStatus>("active");
   const [calendarColor, setCalendarColor] = useState("");
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
+  const [loadError, setLoadError] = useState<unknown>(null);
 
   const [technicians, setTechnicians] = useState<TechnicianResponse[]>([]);
   const [agences, setAgences] = useState<AgenceResponse[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
+    setLoadError(null);
     try {
       const [techList, agenceList] = await Promise.all([
         fleetApi.listTechnicians(),
@@ -32,8 +35,8 @@ export function TeamCreatePage() {
       ]);
       setTechnicians(techList);
       setAgences(agenceList);
-    } catch {
-      // continue without options
+    } catch (err) {
+      setLoadError(err);
     } finally {
       setLoading(false);
     }
@@ -64,7 +67,7 @@ export function TeamCreatePage() {
       showToast("Équipe créée avec succès.");
       router.push("/fleet/teams");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Impossible de créer l'équipe");
+      setError(err);
     } finally {
       setSaving(false);
     }
@@ -79,11 +82,9 @@ export function TeamCreatePage() {
         </p>
       </div>
 
-      {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm p-3">
-          {error}
-        </div>
-      )}
+      {loadError ? <AppErrorAlert error={loadError} onRetry={() => void loadData()} /> : null}
+
+      {error ? <AppErrorAlert error={error} /> : null}
 
       <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 sm:p-5">
         <form onSubmit={handleSubmit} className="space-y-4">

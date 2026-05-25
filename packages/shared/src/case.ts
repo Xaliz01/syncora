@@ -13,12 +13,12 @@ export type CasePriority = "low" | "medium" | "high" | "urgent";
 
 // ── Case templates ──
 
-export type TodoDashboardVisibility = "all" | "by_role" | "by_user";
+export type TodoDashboardVisibility = "all" | "by_profile" | "by_user";
 
 export interface TodoDashboardRule {
   showOnDashboard: boolean;
   visibility?: TodoDashboardVisibility;
-  roles?: string[];
+  profileIds?: string[];
   userIds?: string[];
 }
 

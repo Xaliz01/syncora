@@ -11,7 +11,7 @@ export class TodoDashboardRuleSubDoc {
   visibility?: TodoDashboardVisibility;
 
   @Prop({ type: [String], default: [] })
-  roles!: string[];
+  profileIds!: string[];
 
   @Prop({ type: [String], default: [] })
   userIds!: string[];

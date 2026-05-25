@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import React from "react";
+import { AppErrorAlert } from "@/components/ui/AppErrorAlert";
 
 function cn(...parts: (string | false | undefined | null)[]): string {
   return parts.filter(Boolean).join(" ");
@@ -60,20 +61,25 @@ export function ListPrimaryAction({ href, children }: { href: string; children: 
   );
 }
 
-export function ListPageError({ message, onRetry }: { message: string; onRetry?: () => void }) {
+export function ListPageError({
+  error,
+  message,
+  fallbackMessage = "Une erreur est survenue.",
+  onRetry,
+}: {
+  /** Erreur API (ex. `ApiError` 403) — préférée pour déduire le style orange. */
+  error?: unknown;
+  message?: string;
+  fallbackMessage?: string;
+  onRetry?: () => void;
+}) {
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/30 p-3 sm:p-4 text-sm text-red-700 dark:text-red-300">
-      <span>{message}</span>
-      {onRetry ? (
-        <button
-          type="button"
-          onClick={onRetry}
-          className="rounded-lg border border-red-300 dark:border-red-800 bg-white dark:bg-slate-900 px-3 py-1 text-xs font-medium text-red-800 dark:text-red-200 hover:bg-red-50 dark:hover:bg-red-950/40"
-        >
-          Réessayer
-        </button>
-      ) : null}
-    </div>
+    <AppErrorAlert
+      error={error}
+      message={message}
+      fallbackMessage={fallbackMessage}
+      onRetry={onRetry}
+    />
   );
 }
 

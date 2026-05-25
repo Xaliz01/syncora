@@ -6,11 +6,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "@/lib/cases.api";
 import * as adminApi from "@/lib/admin.api";
 import type { TodoDashboardVisibility } from "@syncora/shared";
+import { AppErrorAlert } from "@/components/ui/AppErrorAlert";
 
 interface TodoDashboardRuleForm {
   showOnDashboard: boolean;
   visibility: TodoDashboardVisibility;
-  roles: string[];
+  profileIds: string[];
   userIds: string[];
 }
 
@@ -23,7 +24,7 @@ interface TodoForm {
 const defaultDashboardRule = (): TodoDashboardRuleForm => ({
   showOnDashboard: false,
   visibility: "all",
-  roles: [],
+  profileIds: [],
   userIds: [],
 });
 
@@ -49,6 +50,11 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
     queryFn: () => adminApi.listOrganizationUsers(),
   });
 
+  const { data: profilesData } = useQuery({
+    queryKey: ["permission-profiles"],
+    queryFn: () => adminApi.listPermissionProfiles(),
+  });
+
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [steps, setSteps] = useState<StepForm[]>([
@@ -58,7 +64,7 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
       todos: [{ label: "", description: "", dashboardRule: defaultDashboardRule() }],
     },
   ]);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<unknown>(null);
 
   useEffect(() => {
     if (existing) {
@@ -76,7 +82,7 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
                   ? {
                       showOnDashboard: t.dashboardRule.showOnDashboard,
                       visibility: t.dashboardRule.visibility ?? "all",
-                      roles: t.dashboardRule.roles ?? [],
+                      profileIds: t.dashboardRule.profileIds ?? [],
                       userIds: t.dashboardRule.userIds ?? [],
                     }
                   : defaultDashboardRule(),
@@ -93,7 +99,7 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
       queryClient.invalidateQueries({ queryKey: ["case-templates"] });
       router.push("/settings/case-templates");
     },
-    onError: (err: Error) => setError(err.message),
+    onError: (err) => setError(err),
   });
 
   const updateMutation = useMutation({
@@ -104,7 +110,7 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
       queryClient.invalidateQueries({ queryKey: ["case-template", templateId] });
       router.push("/settings/case-templates");
     },
-    onError: (err: Error) => setError(err.message),
+    onError: (err) => setError(err),
   });
 
   const addStep = useCallback(() => {
@@ -186,7 +192,7 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+    setError(null);
     if (!name.trim()) {
       setError("Le nom est obligatoire");
       return;
@@ -210,8 +216,10 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
                 ? {
                     showOnDashboard: true,
                     visibility: t.dashboardRule.visibility,
-                    roles:
-                      t.dashboardRule.visibility === "by_role" ? t.dashboardRule.roles : undefined,
+                    profileIds:
+                      t.dashboardRule.visibility === "by_profile"
+                        ? t.dashboardRule.profileIds
+                        : undefined,
                     userIds:
                       t.dashboardRule.visibility === "by_user"
                         ? t.dashboardRule.userIds
@@ -243,11 +251,7 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
         </p>
       </div>
 
-      {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-          {error}
-        </div>
-      )}
+      {error ? <AppErrorAlert error={error} /> : null}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/20">
@@ -381,47 +385,54 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
                               onChange={(e) =>
                                 updateTodoDashboardRule(stepIdx, todoIdx, {
                                   visibility: e.target.value as TodoDashboardVisibility,
-                                  roles: [],
+                                  profileIds: [],
                                   userIds: [],
                                 })
                               }
                               className="w-full rounded border border-slate-200 dark:border-slate-700 px-2 py-1 text-xs bg-white dark:bg-slate-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                             >
                               <option value="all">Tous les utilisateurs</option>
-                              <option value="by_role">Par rôle</option>
+                              <option value="by_profile">Par profil</option>
                               <option value="by_user">Par utilisateur</option>
                             </select>
                           </div>
 
-                          {todo.dashboardRule.visibility === "by_role" && (
+                          {todo.dashboardRule.visibility === "by_profile" && (
                             <div>
                               <label className="block text-[11px] text-slate-500 dark:text-slate-400 mb-1">
-                                Rôles
+                                Profils de permissions
                               </label>
-                              <div className="flex flex-wrap gap-2">
-                                {(["admin", "member"] as const).map((role) => (
+                              <div className="space-y-1">
+                                {(profilesData ?? []).map((profile) => (
                                   <label
-                                    key={role}
+                                    key={profile.id}
                                     className="flex items-center gap-1.5 cursor-pointer"
                                   >
                                     <input
                                       type="checkbox"
-                                      checked={todo.dashboardRule.roles.includes(role)}
+                                      checked={todo.dashboardRule.profileIds.includes(profile.id)}
                                       onChange={(e) => {
-                                        const newRoles = e.target.checked
-                                          ? [...todo.dashboardRule.roles, role]
-                                          : todo.dashboardRule.roles.filter((r) => r !== role);
+                                        const newProfileIds = e.target.checked
+                                          ? [...todo.dashboardRule.profileIds, profile.id]
+                                          : todo.dashboardRule.profileIds.filter(
+                                              (id) => id !== profile.id,
+                                            );
                                         updateTodoDashboardRule(stepIdx, todoIdx, {
-                                          roles: newRoles,
+                                          profileIds: newProfileIds,
                                         });
                                       }}
                                       className="h-3 w-3 rounded border-slate-300 dark:border-slate-600 text-brand-600 focus:ring-brand-500"
                                     />
                                     <span className="text-[11px] text-slate-600 dark:text-slate-300">
-                                      {role === "admin" ? "Administrateur" : "Membre"}
+                                      {profile.name}
                                     </span>
                                   </label>
                                 ))}
+                                {(profilesData ?? []).length === 0 && (
+                                  <p className="text-[11px] text-slate-400">
+                                    Aucun profil disponible
+                                  </p>
+                                )}
                               </div>
                             </div>
                           )}

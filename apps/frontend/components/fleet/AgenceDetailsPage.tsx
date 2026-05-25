@@ -8,6 +8,7 @@ import * as fleetApi from "@/lib/fleet.api";
 import { useToast } from "@/components/ui/ToastProvider";
 import { usePermissions } from "@/lib/hooks/usePermissions";
 import { useRouter } from "next/navigation";
+import { AppErrorAlert, ResourceNotFoundPanel } from "@/components/ui/AppErrorAlert";
 
 export function AgenceDetailsPage({ agenceId }: { agenceId: string }) {
   const router = useRouter();
@@ -18,7 +19,7 @@ export function AgenceDetailsPage({ agenceId }: { agenceId: string }) {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
 
   const [editName, setEditName] = useState("");
   const [editAddress, setEditAddress] = useState("");
@@ -43,7 +44,7 @@ export function AgenceDetailsPage({ agenceId }: { agenceId: string }) {
       setEditPostalCode(agenceData.postalCode ?? "");
       setEditPhone(agenceData.phone ?? "");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur de chargement");
+      setError(err);
     } finally {
       setLoading(false);
     }
@@ -69,7 +70,7 @@ export function AgenceDetailsPage({ agenceId }: { agenceId: string }) {
       setIsEditing(false);
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Impossible de sauvegarder");
+      setError(err);
     } finally {
       setSaving(false);
     }
@@ -82,7 +83,7 @@ export function AgenceDetailsPage({ agenceId }: { agenceId: string }) {
       showToast("Agence supprimée.");
       router.push("/fleet/agences");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Impossible de supprimer");
+      setError(err);
     }
   };
 
@@ -96,12 +97,13 @@ export function AgenceDetailsPage({ agenceId }: { agenceId: string }) {
 
   if (!agence) {
     return (
-      <div className="space-y-3">
-        <p className="text-slate-700 dark:text-slate-200">Agence introuvable.</p>
-        <Link href="/fleet/agences" className="text-brand-600 dark:text-brand-400 hover:underline">
-          Retour à la liste
-        </Link>
-      </div>
+      <ResourceNotFoundPanel
+        error={error}
+        resourceLabel="Agence"
+        backHref="/fleet/agences"
+        backLabel="Retour à la liste"
+        onRetry={() => void refresh()}
+      />
     );
   }
 
@@ -143,11 +145,7 @@ export function AgenceDetailsPage({ agenceId }: { agenceId: string }) {
         </div>
       </div>
 
-      {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm p-3">
-          {error}
-        </div>
-      )}
+      {error ? <AppErrorAlert error={error} onRetry={() => void refresh()} /> : null}
 
       {!isEditing ? (
         <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">

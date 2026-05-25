@@ -77,7 +77,8 @@ export function CustomersListPage() {
 
       {isError ? (
         <ListPageError
-          message={error instanceof Error ? error.message : "Impossible de charger les clients."}
+          error={error}
+          fallbackMessage="Impossible de charger les clients."
           onRetry={() => void refetch()}
         />
       ) : null}

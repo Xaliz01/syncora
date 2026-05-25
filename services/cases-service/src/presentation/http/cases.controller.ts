@@ -170,18 +170,18 @@ export class CasesController {
   async getDashboard(
     @Query("organizationId") organizationId: string,
     @Query("userId") userId: string,
-    @Query("userRole") userRole?: string,
+    @Query("userProfileId") userProfileId?: string,
   ) {
     organizationId = parseOrganizationIdQuery(organizationId);
     if (!userId) throw new BadRequestException("userId query param is required");
-    return this.casesService.getDashboard(organizationId, userId, userRole);
+    return this.casesService.getDashboard(organizationId, userId, userProfileId);
   }
 
   @Get("dashboard/todo-cases")
   async getDashboardTodoCases(
     @Query("organizationId") organizationId: string,
     @Query("userId") userId: string,
-    @Query("userRole") userRole: string,
+    @Query("userProfileId") userProfileId: string | undefined,
     @Query("templateId") templateId: string,
     @Query("todoLabel") todoLabel: string,
   ) {
@@ -192,7 +192,7 @@ export class CasesController {
     return this.casesService.getDashboardTodoCases(
       organizationId,
       userId,
-      userRole ?? "member",
+      userProfileId,
       templateId,
       todoLabel,
     );

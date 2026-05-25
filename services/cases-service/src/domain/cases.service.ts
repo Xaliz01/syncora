@@ -417,7 +417,7 @@ export class CasesService extends AbstractCasesService {
   async getDashboardTodoCases(
     organizationId: string,
     userId: string,
-    userRole: string,
+    userProfileId: string | undefined,
     templateId: string,
     todoLabel: string,
   ): Promise<DashboardTodoCaseItem[]> {
@@ -430,7 +430,7 @@ export class CasesService extends AbstractCasesService {
     for (const step of template.steps) {
       for (const todo of step.todos) {
         if (todo.label === todoLabel && todo.dashboardRule?.showOnDashboard) {
-          if (this.isTodoVisibleToUser(todo.dashboardRule, userId, userRole)) {
+          if (this.isTodoVisibleToUser(todo.dashboardRule, userId, userProfileId)) {
             found = true;
           }
         }
@@ -464,7 +464,7 @@ export class CasesService extends AbstractCasesService {
   async getDashboard(
     organizationId: string,
     userId: string,
-    userRole?: string,
+    userProfileId?: string,
   ): Promise<CaseDashboardResponse> {
     const now = new Date();
     const startOfWeek = new Date(now);
@@ -511,7 +511,7 @@ export class CasesService extends AbstractCasesService {
       .exec();
     const caseMap = new Map(cases.map((c) => [c._id.toString(), c.title]));
 
-    const todoWidgets = await this.computeTodoWidgets(organizationId, userId, userRole);
+    const todoWidgets = await this.computeTodoWidgets(organizationId, userId, userProfileId);
 
     return {
       assignedCases: assignedCases.map((c) => this.toCaseSummary(c)),
@@ -559,17 +559,22 @@ export class CasesService extends AbstractCasesService {
   // ── Helpers ──
 
   private isTodoVisibleToUser(
-    rule: { showOnDashboard: boolean; visibility?: string; roles?: string[]; userIds?: string[] },
+    rule: {
+      showOnDashboard: boolean;
+      visibility?: string;
+      profileIds?: string[];
+      userIds?: string[];
+    },
     userId: string,
-    userRole?: string,
+    userProfileId?: string,
   ): boolean {
     if (!rule.showOnDashboard) return false;
 
     switch (rule.visibility) {
       case "all":
         return true;
-      case "by_role":
-        return !!(userRole && rule.roles?.includes(userRole));
+      case "by_profile":
+        return !!(userProfileId && rule.profileIds?.includes(userProfileId));
       case "by_user":
         return !!(rule.userIds && rule.userIds.includes(userId));
       default:
@@ -580,7 +585,7 @@ export class CasesService extends AbstractCasesService {
   private async computeTodoWidgets(
     organizationId: string,
     userId: string,
-    userRole?: string,
+    userProfileId?: string,
   ): Promise<DashboardTodoItem[]> {
     const templates = await this.templateModel
       .find({ organizationId, ...activeDocumentFilter })
@@ -598,7 +603,7 @@ export class CasesService extends AbstractCasesService {
         for (const todo of step.todos) {
           if (
             todo.dashboardRule?.showOnDashboard &&
-            this.isTodoVisibleToUser(todo.dashboardRule, userId, userRole)
+            this.isTodoVisibleToUser(todo.dashboardRule, userId, userProfileId)
           ) {
             todoConfigs.push({
               templateId: template._id.toString(),
@@ -695,7 +700,7 @@ export class CasesService extends AbstractCasesService {
             ? {
                 showOnDashboard: t.dashboardRule.showOnDashboard,
                 visibility: t.dashboardRule.visibility,
-                roles: t.dashboardRule.roles,
+                profileIds: t.dashboardRule.profileIds,
                 userIds: t.dashboardRule.userIds,
               }
             : undefined,
