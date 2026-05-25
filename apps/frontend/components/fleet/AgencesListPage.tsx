@@ -66,7 +66,11 @@ export function AgencesListPage() {
       />
 
       {error ? (
-        <ListPageError error={error} fallbackMessage="Erreur de chargement" onRetry={() => void loadData()} />
+        <ListPageError
+          error={error}
+          fallbackMessage="Erreur de chargement"
+          onRetry={() => void loadData()}
+        />
       ) : null}
 
       <ListToolbar>

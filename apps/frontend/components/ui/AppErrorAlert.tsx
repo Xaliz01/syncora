@@ -9,10 +9,7 @@ function cn(...parts: (string | false | undefined | null)[]): string {
   return parts.filter(Boolean).join(" ");
 }
 
-const VARIANT_STYLES: Record<
-  ApiErrorVariant,
-  { container: string; retryButton: string }
-> = {
+const VARIANT_STYLES: Record<ApiErrorVariant, { container: string; retryButton: string }> = {
   error: {
     container:
       "border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300",

@@ -1,7 +1,6 @@
 /** Erreurs HTTP renvoyées par api-client (utilisées pour l’affichage UI). */
 
-export const API_FORBIDDEN_MESSAGE =
-  "Vous n'avez pas l'autorisation pour effectuer cette action.";
+export const API_FORBIDDEN_MESSAGE = "Vous n'avez pas l'autorisation pour effectuer cette action.";
 
 export type ApiErrorVariant = "error" | "forbidden";
 
@@ -23,11 +22,7 @@ export function isApiError(error: unknown): error is ApiError {
   return error instanceof ApiError;
 }
 
-const GENERIC_FORBIDDEN_MESSAGES = new Set([
-  "Forbidden",
-  "Forbidden resource",
-  "Accès refusé",
-]);
+const GENERIC_FORBIDDEN_MESSAGES = new Set(["Forbidden", "Forbidden resource", "Accès refusé"]);
 
 export function normalizeApiErrorMessage(
   status: number,
