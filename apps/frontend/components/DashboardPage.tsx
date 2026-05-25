@@ -1,11 +1,11 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/components/auth/AuthContext";
 import * as api from "@/lib/cases.api";
-import type { CaseStatus } from "@syncora/shared";
+import type { CaseStatus, CasePriority, DashboardTodoItem } from "@syncora/shared";
 
 const STATUS_LABELS: Record<CaseStatus, string> = {
   draft: "Brouillon",
@@ -24,6 +24,157 @@ const STATUS_COLORS: Record<CaseStatus, string> = {
   completed: "bg-green-50 text-green-700",
   cancelled: "bg-red-50 text-red-600",
 };
+
+const PRIORITY_LABELS: Record<CasePriority, string> = {
+  low: "Basse",
+  medium: "Moyenne",
+  high: "Haute",
+  urgent: "Urgente",
+};
+
+const PRIORITY_COLORS: Record<CasePriority, string> = {
+  low: "text-slate-500",
+  medium: "text-blue-600",
+  high: "text-amber-600",
+  urgent: "text-red-600",
+};
+
+function TodoCasesModal({ todo, onClose }: { todo: DashboardTodoItem; onClose: () => void }) {
+  const { data: cases, isLoading } = useQuery({
+    queryKey: ["dashboard-todo-cases", todo.templateId, todo.todoLabel],
+    queryFn: () => api.getDashboardTodoCases(todo.templateId, todo.todoLabel),
+  });
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-lg mx-4 max-h-[80vh] flex flex-col rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 px-5 py-4">
+          <div>
+            <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+              {todo.todoLabel}
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              {todo.templateName} — {todo.stepName}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg leading-none"
+          >
+            &times;
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-5 py-3">
+          {isLoading ? (
+            <p className="text-sm text-slate-500 dark:text-slate-400 py-4 text-center">
+              Chargement…
+            </p>
+          ) : !cases?.length ? (
+            <p className="text-sm text-slate-500 dark:text-slate-400 py-4 text-center">
+              Aucun dossier concerné.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {cases.map((c) => (
+                <Link
+                  key={c.caseId}
+                  href={`/cases/${c.caseId}`}
+                  onClick={onClose}
+                  className="flex items-center justify-between rounded-lg border border-slate-100 dark:border-slate-800 p-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">
+                        {c.caseTitle}
+                      </span>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-medium flex-shrink-0 ${STATUS_COLORS[c.status]}`}
+                      >
+                        {STATUS_LABELS[c.status]}
+                      </span>
+                    </div>
+                    {c.customerName && (
+                      <div className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                        Client : {c.customerName}
+                      </div>
+                    )}
+                  </div>
+                  <div className="ml-3 text-right flex-shrink-0">
+                    <span className={`text-[10px] font-medium ${PRIORITY_COLORS[c.priority]}`}>
+                      {PRIORITY_LABELS[c.priority]}
+                    </span>
+                    {c.createdAt && (
+                      <div className="text-[10px] text-slate-400 dark:text-slate-500">
+                        {new Date(c.createdAt).toLocaleDateString("fr-FR")}
+                      </div>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="border-t border-slate-200 dark:border-slate-700 px-5 py-3 flex justify-end">
+          <button
+            onClick={onClose}
+            className="rounded-lg border border-slate-200 dark:border-slate-700 px-4 py-1.5 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+          >
+            Fermer
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DashboardTodoWidgets({ todos }: { todos: DashboardTodoItem[] }) {
+  const [selectedTodo, setSelectedTodo] = useState<DashboardTodoItem | null>(null);
+
+  return (
+    <>
+      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20">
+        <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100 mb-3">
+          Tâches à suivre
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+          {todos.map((todo, idx) => (
+            <button
+              key={`${todo.templateId}-${todo.todoLabel}-${idx}`}
+              onClick={() => setSelectedTodo(todo)}
+              className="flex items-center justify-between rounded-lg border border-slate-100 dark:border-slate-800 p-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition text-left"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">
+                  {todo.todoLabel}
+                </div>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                  {todo.templateName}
+                </div>
+              </div>
+              <div className="ml-3 flex-shrink-0">
+                <span className="inline-flex h-7 min-w-[28px] items-center justify-center rounded-full bg-brand-600/10 text-sm font-semibold text-brand-600 dark:text-brand-400 px-2">
+                  {todo.count}
+                </span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {selectedTodo && <TodoCasesModal todo={selectedTodo} onClose={() => setSelectedTodo(null)} />}
+    </>
+  );
+}
 
 export function DashboardPage() {
   const { user } = useAuth();
@@ -241,6 +392,10 @@ export function DashboardPage() {
           )}
         </div>
       </div>
+
+      {(dashboard?.todoWidgets?.length ?? 0) > 0 && (
+        <DashboardTodoWidgets todos={dashboard!.todoWidgets} />
+      )}
 
       <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20">
         <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100 mb-3">

@@ -15,6 +15,7 @@ import type {
   CaseSummaryResponse,
   CaseTemplateResponse,
   CustomerResponse,
+  DashboardTodoCaseItem,
   InterventionResponse,
   UpdateCaseBody,
   UpdateCaseTemplateBody,
@@ -344,6 +345,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       query: {
         organizationId: user.organizationId,
         userId: user.id,
+        userRole: user.role,
       },
     });
     const [assignedCases, overdueCases] = await Promise.all([
@@ -351,6 +353,24 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       this.enrichCaseSummaries(user, dash.overdueCases),
     ]);
     return { ...dash, assignedCases, overdueCases };
+  }
+
+  async getDashboardTodoCases(
+    user: AuthUser,
+    templateId: string,
+    todoLabel: string,
+  ): Promise<DashboardTodoCaseItem[]> {
+    return this.callCasesService<DashboardTodoCaseItem[]>(user.organizationId, {
+      method: "get",
+      path: "/dashboard/todo-cases",
+      query: {
+        organizationId: user.organizationId,
+        userId: user.id,
+        userRole: user.role,
+        templateId,
+        todoLabel,
+      },
+    });
   }
 
   // ── History ──

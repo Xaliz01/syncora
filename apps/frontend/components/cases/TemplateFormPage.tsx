@@ -4,11 +4,33 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "@/lib/cases.api";
+import * as adminApi from "@/lib/admin.api";
+import type { TodoDashboardVisibility } from "@syncora/shared";
+
+interface TodoDashboardRuleForm {
+  showOnDashboard: boolean;
+  visibility: TodoDashboardVisibility;
+  roles: string[];
+  userIds: string[];
+}
+
+interface TodoForm {
+  label: string;
+  description: string;
+  dashboardRule: TodoDashboardRuleForm;
+}
+
+const defaultDashboardRule = (): TodoDashboardRuleForm => ({
+  showOnDashboard: false,
+  visibility: "all",
+  roles: [],
+  userIds: [],
+});
 
 interface StepForm {
   name: string;
   description: string;
-  todos: { label: string; description: string }[];
+  todos: TodoForm[];
 }
 
 export function TemplateFormPage({ templateId }: { templateId?: string }) {
@@ -22,10 +44,19 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
     enabled: isEdit,
   });
 
+  const { data: usersData } = useQuery({
+    queryKey: ["organization-users"],
+    queryFn: () => adminApi.listOrganizationUsers(),
+  });
+
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [steps, setSteps] = useState<StepForm[]>([
-    { name: "", description: "", todos: [{ label: "", description: "" }] },
+    {
+      name: "",
+      description: "",
+      todos: [{ label: "", description: "", dashboardRule: defaultDashboardRule() }],
+    },
   ]);
   const [error, setError] = useState("");
 
@@ -38,8 +69,19 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
           name: s.name,
           description: s.description ?? "",
           todos: s.todos.length
-            ? s.todos.map((t) => ({ label: t.label, description: t.description ?? "" }))
-            : [{ label: "", description: "" }],
+            ? s.todos.map((t) => ({
+                label: t.label,
+                description: t.description ?? "",
+                dashboardRule: t.dashboardRule
+                  ? {
+                      showOnDashboard: t.dashboardRule.showOnDashboard,
+                      visibility: t.dashboardRule.visibility ?? "all",
+                      roles: t.dashboardRule.roles ?? [],
+                      userIds: t.dashboardRule.userIds ?? [],
+                    }
+                  : defaultDashboardRule(),
+              }))
+            : [{ label: "", description: "", dashboardRule: defaultDashboardRule() }],
         })),
       );
     }
@@ -68,7 +110,11 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
   const addStep = useCallback(() => {
     setSteps((prev) => [
       ...prev,
-      { name: "", description: "", todos: [{ label: "", description: "" }] },
+      {
+        name: "",
+        description: "",
+        todos: [{ label: "", description: "", dashboardRule: defaultDashboardRule() }],
+      },
     ]);
   }, []);
 
@@ -83,7 +129,15 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
   const addTodo = useCallback((stepIndex: number) => {
     setSteps((prev) =>
       prev.map((s, i) =>
-        i === stepIndex ? { ...s, todos: [...s.todos, { label: "", description: "" }] } : s,
+        i === stepIndex
+          ? {
+              ...s,
+              todos: [
+                ...s.todos,
+                { label: "", description: "", dashboardRule: defaultDashboardRule() },
+              ],
+            }
+          : s,
       ),
     );
   }, []);
@@ -104,6 +158,24 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
             ? {
                 ...s,
                 todos: s.todos.map((t, j) => (j === todoIndex ? { ...t, [field]: value } : t)),
+              }
+            : s,
+        ),
+      );
+    },
+    [],
+  );
+
+  const updateTodoDashboardRule = useCallback(
+    (stepIndex: number, todoIndex: number, rule: Partial<TodoDashboardRuleForm>) => {
+      setSteps((prev) =>
+        prev.map((s, i) =>
+          i === stepIndex
+            ? {
+                ...s,
+                todos: s.todos.map((t, j) =>
+                  j === todoIndex ? { ...t, dashboardRule: { ...t.dashboardRule, ...rule } } : t,
+                ),
               }
             : s,
         ),
@@ -134,6 +206,18 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
             .map((t) => ({
               label: t.label.trim(),
               description: t.description.trim() || undefined,
+              dashboardRule: t.dashboardRule.showOnDashboard
+                ? {
+                    showOnDashboard: true,
+                    visibility: t.dashboardRule.visibility,
+                    roles:
+                      t.dashboardRule.visibility === "by_role" ? t.dashboardRule.roles : undefined,
+                    userIds:
+                      t.dashboardRule.visibility === "by_user"
+                        ? t.dashboardRule.userIds
+                        : undefined,
+                  }
+                : undefined,
             })),
         })),
     };
@@ -243,29 +327,145 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
                 )}
               </div>
 
-              <div className="ml-8 space-y-2">
+              <div className="ml-8 space-y-3">
                 <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
                   Tâches :
                 </div>
                 {step.todos.map((todo, todoIdx) => (
-                  <div key={todoIdx} className="flex items-center gap-2">
-                    <div className="h-3 w-3 rounded border border-slate-300 dark:border-slate-600 flex-shrink-0" />
-                    <input
-                      type="text"
-                      value={todo.label}
-                      onChange={(e) => updateTodo(stepIdx, todoIdx, "label", e.target.value)}
-                      className="flex-1 rounded border border-slate-200 dark:border-slate-700 px-2 py-1 text-xs focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-                      placeholder="Libellé de la tâche"
-                    />
-                    {step.todos.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeTodo(stepIdx, todoIdx)}
-                        className="text-xs text-red-400 hover:text-red-500"
-                      >
-                        &times;
-                      </button>
-                    )}
+                  <div key={todoIdx} className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="h-3 w-3 rounded border border-slate-300 dark:border-slate-600 flex-shrink-0" />
+                      <input
+                        type="text"
+                        value={todo.label}
+                        onChange={(e) => updateTodo(stepIdx, todoIdx, "label", e.target.value)}
+                        className="flex-1 rounded border border-slate-200 dark:border-slate-700 px-2 py-1 text-xs focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                        placeholder="Libellé de la tâche"
+                      />
+                      {step.todos.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeTodo(stepIdx, todoIdx)}
+                          className="text-xs text-red-400 hover:text-red-500"
+                        >
+                          &times;
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="ml-5 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30 p-2.5 space-y-2">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={todo.dashboardRule.showOnDashboard}
+                          onChange={(e) =>
+                            updateTodoDashboardRule(stepIdx, todoIdx, {
+                              showOnDashboard: e.target.checked,
+                            })
+                          }
+                          className="h-3.5 w-3.5 rounded border-slate-300 dark:border-slate-600 text-brand-600 focus:ring-brand-500"
+                        />
+                        <span className="text-[11px] text-slate-600 dark:text-slate-400">
+                          Afficher sur le tableau de bord
+                        </span>
+                      </label>
+
+                      {todo.dashboardRule.showOnDashboard && (
+                        <div className="space-y-2 pl-5">
+                          <div>
+                            <label className="block text-[11px] text-slate-500 dark:text-slate-400 mb-1">
+                              Visibilité
+                            </label>
+                            <select
+                              value={todo.dashboardRule.visibility}
+                              onChange={(e) =>
+                                updateTodoDashboardRule(stepIdx, todoIdx, {
+                                  visibility: e.target.value as TodoDashboardVisibility,
+                                  roles: [],
+                                  userIds: [],
+                                })
+                              }
+                              className="w-full rounded border border-slate-200 dark:border-slate-700 px-2 py-1 text-xs bg-white dark:bg-slate-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                            >
+                              <option value="all">Tous les utilisateurs</option>
+                              <option value="by_role">Par rôle</option>
+                              <option value="by_user">Par utilisateur</option>
+                            </select>
+                          </div>
+
+                          {todo.dashboardRule.visibility === "by_role" && (
+                            <div>
+                              <label className="block text-[11px] text-slate-500 dark:text-slate-400 mb-1">
+                                Rôles
+                              </label>
+                              <div className="flex flex-wrap gap-2">
+                                {(["admin", "member"] as const).map((role) => (
+                                  <label
+                                    key={role}
+                                    className="flex items-center gap-1.5 cursor-pointer"
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={todo.dashboardRule.roles.includes(role)}
+                                      onChange={(e) => {
+                                        const newRoles = e.target.checked
+                                          ? [...todo.dashboardRule.roles, role]
+                                          : todo.dashboardRule.roles.filter((r) => r !== role);
+                                        updateTodoDashboardRule(stepIdx, todoIdx, {
+                                          roles: newRoles,
+                                        });
+                                      }}
+                                      className="h-3 w-3 rounded border-slate-300 dark:border-slate-600 text-brand-600 focus:ring-brand-500"
+                                    />
+                                    <span className="text-[11px] text-slate-600 dark:text-slate-300">
+                                      {role === "admin" ? "Administrateur" : "Membre"}
+                                    </span>
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {todo.dashboardRule.visibility === "by_user" && (
+                            <div>
+                              <label className="block text-[11px] text-slate-500 dark:text-slate-400 mb-1">
+                                Utilisateurs
+                              </label>
+                              <div className="space-y-1">
+                                {(usersData?.users ?? []).map((u) => (
+                                  <label
+                                    key={u.id}
+                                    className="flex items-center gap-1.5 cursor-pointer"
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={todo.dashboardRule.userIds.includes(u.id)}
+                                      onChange={(e) => {
+                                        const newIds = e.target.checked
+                                          ? [...todo.dashboardRule.userIds, u.id]
+                                          : todo.dashboardRule.userIds.filter((id) => id !== u.id);
+                                        updateTodoDashboardRule(stepIdx, todoIdx, {
+                                          userIds: newIds,
+                                        });
+                                      }}
+                                      className="h-3 w-3 rounded border-slate-300 dark:border-slate-600 text-brand-600 focus:ring-brand-500"
+                                    />
+                                    <span className="text-[11px] text-slate-600 dark:text-slate-300">
+                                      {u.name || u.email}
+                                    </span>
+                                  </label>
+                                ))}
+                                {(!usersData?.users || usersData.users.length === 0) && (
+                                  <p className="text-[11px] text-slate-400">
+                                    Aucun utilisateur disponible
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))}
                 <button

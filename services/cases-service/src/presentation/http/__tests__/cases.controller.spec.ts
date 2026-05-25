@@ -26,6 +26,7 @@ describe("CasesController", () => {
       updateIntervention: jest.fn(),
       deleteIntervention: jest.fn(),
       getDashboard: jest.fn(),
+      getDashboardTodoCases: jest.fn(),
       addCaseHistory: jest.fn(),
       listCaseHistory: jest.fn(),
     };
@@ -218,33 +219,69 @@ describe("CasesController", () => {
   });
 
   describe("getDashboard", () => {
-    it("should call casesService.getDashboard with organizationId and userId", async () => {
+    it("should call casesService.getDashboard with organizationId, userId and userRole", async () => {
       const dashboard = {
         assignedCases: [],
         upcomingInterventions: [],
         overdueCases: [],
+        todoWidgets: [],
         stats: { totalAssigned: 0, inProgress: 0, completedThisWeek: 0, overdue: 0 },
       };
       mockCasesService.getDashboard.mockResolvedValue(dashboard as never);
 
-      const result = await controller.getDashboard("org-1", "user-1");
+      const result = await controller.getDashboard("org-1", "user-1", "admin");
 
-      expect(mockCasesService.getDashboard).toHaveBeenCalledWith("org-1", "user-1");
+      expect(mockCasesService.getDashboard).toHaveBeenCalledWith("org-1", "user-1", "admin");
       expect(result).toEqual(dashboard);
     });
 
     it("should throw BadRequestException when organizationId is missing", async () => {
-      await expect(controller.getDashboard(undefined as never, "user-1")).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        controller.getDashboard(undefined as never, "user-1", undefined),
+      ).rejects.toThrow(BadRequestException);
       expect(mockCasesService.getDashboard).not.toHaveBeenCalled();
     });
 
     it("should throw BadRequestException when userId is missing", async () => {
-      await expect(controller.getDashboard("org-1", undefined as never)).rejects.toThrow(
+      await expect(controller.getDashboard("org-1", undefined as never, undefined)).rejects.toThrow(
         BadRequestException,
       );
       expect(mockCasesService.getDashboard).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("getDashboardTodoCases", () => {
+    it("should call casesService.getDashboardTodoCases with all params", async () => {
+      mockCasesService.getDashboardTodoCases.mockResolvedValue([]);
+
+      const result = await controller.getDashboardTodoCases(
+        "org-1",
+        "user-1",
+        "admin",
+        "tpl-1",
+        "My Todo",
+      );
+
+      expect(mockCasesService.getDashboardTodoCases).toHaveBeenCalledWith(
+        "org-1",
+        "user-1",
+        "admin",
+        "tpl-1",
+        "My Todo",
+      );
+      expect(result).toEqual([]);
+    });
+
+    it("should throw BadRequestException when templateId is missing", async () => {
+      await expect(
+        controller.getDashboardTodoCases("org-1", "user-1", "admin", undefined as never, "My Todo"),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("should throw BadRequestException when todoLabel is missing", async () => {
+      await expect(
+        controller.getDashboardTodoCases("org-1", "user-1", "admin", "tpl-1", undefined as never),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 });

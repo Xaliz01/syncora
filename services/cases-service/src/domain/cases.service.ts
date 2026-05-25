@@ -13,6 +13,8 @@ import {
   type CreateInterventionBody,
   type CaseDashboardResponse,
   type CaseTemplateResponse,
+  type DashboardTodoItem,
+  type DashboardTodoCaseItem,
   type InterventionResponse,
   type UpdateCaseBody,
   type UpdateCaseTemplateBody,
@@ -52,7 +54,11 @@ export class CasesService extends AbstractCasesService {
           name: s.name,
           description: s.description,
           order: s.order ?? i,
-          todos: s.todos ?? [],
+          todos: (s.todos ?? []).map((t) => ({
+            label: t.label,
+            description: t.description,
+            dashboardRule: t.dashboardRule,
+          })),
         })),
       });
       return this.toTemplateResponse(doc);
@@ -89,7 +95,11 @@ export class CasesService extends AbstractCasesService {
         name: s.name,
         description: s.description,
         order: s.order ?? i,
-        todos: s.todos ?? [],
+        todos: (s.todos ?? []).map((t) => ({
+          label: t.label,
+          description: t.description,
+          dashboardRule: t.dashboardRule,
+        })),
       }));
     }
     try {
@@ -404,7 +414,58 @@ export class CasesService extends AbstractCasesService {
 
   // ── Dashboard ──
 
-  async getDashboard(organizationId: string, userId: string): Promise<CaseDashboardResponse> {
+  async getDashboardTodoCases(
+    organizationId: string,
+    userId: string,
+    userRole: string,
+    templateId: string,
+    todoLabel: string,
+  ): Promise<DashboardTodoCaseItem[]> {
+    const template = await this.templateModel
+      .findOne({ _id: templateId, organizationId, ...activeDocumentFilter })
+      .exec();
+    if (!template) return [];
+
+    let found = false;
+    for (const step of template.steps) {
+      for (const todo of step.todos) {
+        if (todo.label === todoLabel && todo.dashboardRule?.showOnDashboard) {
+          if (this.isTodoVisibleToUser(todo.dashboardRule, userId, userRole)) {
+            found = true;
+          }
+        }
+      }
+    }
+    if (!found) return [];
+
+    const cases = await this.caseModel
+      .find({
+        organizationId,
+        templateId,
+        ...activeDocumentFilter,
+        status: { $nin: ["completed", "cancelled"] },
+        "steps.todos": {
+          $elemMatch: { label: todoLabel, status: "pending" },
+        },
+      })
+      .sort({ createdAt: 1 })
+      .exec();
+
+    return cases.map((c) => ({
+      caseId: c._id.toString(),
+      caseTitle: c.title,
+      customerName: undefined,
+      status: c.status,
+      priority: c.priority,
+      createdAt: c.get("createdAt")?.toISOString(),
+    }));
+  }
+
+  async getDashboard(
+    organizationId: string,
+    userId: string,
+    userRole?: string,
+  ): Promise<CaseDashboardResponse> {
     const now = new Date();
     const startOfWeek = new Date(now);
     startOfWeek.setDate(now.getDate() - now.getDay() + 1);
@@ -450,12 +511,15 @@ export class CasesService extends AbstractCasesService {
       .exec();
     const caseMap = new Map(cases.map((c) => [c._id.toString(), c.title]));
 
+    const todoWidgets = await this.computeTodoWidgets(organizationId, userId, userRole);
+
     return {
       assignedCases: assignedCases.map((c) => this.toCaseSummary(c)),
       upcomingInterventions: upcomingInterventions.map((i) =>
         this.toInterventionResponse(i, caseMap.get(i.caseId)),
       ),
       overdueCases: overdueCases.map((c) => this.toCaseSummary(c)),
+      todoWidgets,
       stats: {
         totalAssigned: assignedCases.length,
         inProgress: assignedCases.filter((c) => c.status === "in_progress").length,
@@ -493,6 +557,94 @@ export class CasesService extends AbstractCasesService {
   }
 
   // ── Helpers ──
+
+  private isTodoVisibleToUser(
+    rule: { showOnDashboard: boolean; visibility?: string; roles?: string[]; userIds?: string[] },
+    userId: string,
+    userRole?: string,
+  ): boolean {
+    if (!rule.showOnDashboard) return false;
+
+    switch (rule.visibility) {
+      case "all":
+        return true;
+      case "by_role":
+        return !!(userRole && rule.roles?.includes(userRole));
+      case "by_user":
+        return !!(rule.userIds && rule.userIds.includes(userId));
+      default:
+        return true;
+    }
+  }
+
+  private async computeTodoWidgets(
+    organizationId: string,
+    userId: string,
+    userRole?: string,
+  ): Promise<DashboardTodoItem[]> {
+    const templates = await this.templateModel
+      .find({ organizationId, ...activeDocumentFilter })
+      .exec();
+
+    const todoConfigs: {
+      templateId: string;
+      templateName: string;
+      stepName: string;
+      todoLabel: string;
+    }[] = [];
+
+    for (const template of templates) {
+      for (const step of template.steps) {
+        for (const todo of step.todos) {
+          if (
+            todo.dashboardRule?.showOnDashboard &&
+            this.isTodoVisibleToUser(todo.dashboardRule, userId, userRole)
+          ) {
+            todoConfigs.push({
+              templateId: template._id.toString(),
+              templateName: template.name,
+              stepName: step.name,
+              todoLabel: todo.label,
+            });
+          }
+        }
+      }
+    }
+
+    if (todoConfigs.length === 0) return [];
+
+    const templateIds = [...new Set(todoConfigs.map((c) => c.templateId))];
+    const activeCases = await this.caseModel
+      .find({
+        organizationId,
+        templateId: { $in: templateIds },
+        ...activeDocumentFilter,
+        status: { $nin: ["completed", "cancelled"] },
+      })
+      .exec();
+
+    const results: DashboardTodoItem[] = [];
+    for (const config of todoConfigs) {
+      const matching = activeCases.filter(
+        (c) =>
+          c.templateId === config.templateId &&
+          c.steps.some((s) =>
+            s.todos.some((t) => t.label === config.todoLabel && t.status === "pending"),
+          ),
+      );
+      if (matching.length > 0) {
+        results.push({
+          todoLabel: config.todoLabel,
+          stepName: config.stepName,
+          templateId: config.templateId,
+          templateName: config.templateName,
+          count: matching.length,
+        });
+      }
+    }
+
+    return results;
+  }
 
   private autoAdvanceStatus(doc: CaseDocument): void {
     const allTodos = doc.steps.flatMap((s) => s.todos);
@@ -539,6 +691,14 @@ export class CasesService extends AbstractCasesService {
         todos: (s.todos ?? []).map((t) => ({
           label: t.label,
           description: t.description,
+          dashboardRule: t.dashboardRule
+            ? {
+                showOnDashboard: t.dashboardRule.showOnDashboard,
+                visibility: t.dashboardRule.visibility,
+                roles: t.dashboardRule.roles,
+                userIds: t.dashboardRule.userIds,
+              }
+            : undefined,
         })),
       })),
       createdAt: doc.get("createdAt")?.toISOString(),

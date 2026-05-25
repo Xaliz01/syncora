@@ -4,6 +4,7 @@ import type {
   CaseResponse,
   CaseSummaryResponse,
   CaseTemplateResponse,
+  DashboardTodoCaseItem,
   InterventionResponse,
 } from "@syncora/shared";
 import { apiRequestJson, type ApiMethod } from "./api-client";
@@ -25,7 +26,16 @@ export interface CreateTemplatePayload {
     name: string;
     description?: string;
     order: number;
-    todos: { label: string; description?: string }[];
+    todos: {
+      label: string;
+      description?: string;
+      dashboardRule?: {
+        showOnDashboard: boolean;
+        visibility?: string;
+        roles?: string[];
+        userIds?: string[];
+      };
+    }[];
   }[];
 }
 
@@ -184,4 +194,14 @@ export function listCaseHistory(caseId: string) {
 
 export function getDashboard() {
   return casesRequest<CaseDashboardResponse>("GET", "/cases/dashboard");
+}
+
+export function getDashboardTodoCases(templateId: string, todoLabel: string) {
+  const params = new URLSearchParams();
+  params.set("templateId", templateId);
+  params.set("todoLabel", todoLabel);
+  return casesRequest<DashboardTodoCaseItem[]>(
+    "GET",
+    `/cases/dashboard/todo-cases?${params.toString()}`,
+  );
 }

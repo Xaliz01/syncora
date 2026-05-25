@@ -13,9 +13,19 @@ export type CasePriority = "low" | "medium" | "high" | "urgent";
 
 // ── Case templates ──
 
+export type TodoDashboardVisibility = "all" | "by_role" | "by_user";
+
+export interface TodoDashboardRule {
+  showOnDashboard: boolean;
+  visibility?: TodoDashboardVisibility;
+  roles?: string[];
+  userIds?: string[];
+}
+
 export interface TemplateStepTodo {
   label: string;
   description?: string;
+  dashboardRule?: TodoDashboardRule;
 }
 
 export interface TemplateStep {
@@ -47,6 +57,23 @@ export interface CaseTemplateResponse {
   steps: TemplateStep[];
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface DashboardTodoItem {
+  todoLabel: string;
+  stepName: string;
+  templateId: string;
+  templateName: string;
+  count: number;
+}
+
+export interface DashboardTodoCaseItem {
+  caseId: string;
+  caseTitle: string;
+  customerName?: string;
+  status: CaseStatus;
+  priority: CasePriority;
+  createdAt?: string;
 }
 
 // ── Case ──
@@ -251,6 +278,7 @@ export interface CaseDashboardResponse {
   assignedCases: CaseSummaryResponse[];
   upcomingInterventions: InterventionResponse[];
   overdueCases: CaseSummaryResponse[];
+  todoWidgets: DashboardTodoItem[];
   stats: {
     totalAssigned: number;
     inProgress: number;

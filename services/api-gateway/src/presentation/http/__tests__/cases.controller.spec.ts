@@ -39,6 +39,7 @@ describe("CasesController", () => {
       updateIntervention: jest.fn(),
       deleteIntervention: jest.fn(),
       getDashboard: jest.fn(),
+      getDashboardTodoCases: jest.fn(),
       listCaseHistory: jest.fn(),
     };
 
@@ -329,6 +330,21 @@ describe("CasesController", () => {
 
       expect(mockCasesService.getDashboard).toHaveBeenCalledWith(mockUser);
       expect(result).toEqual(dashboard);
+    });
+  });
+
+  describe("getDashboardTodoCases", () => {
+    it("should call casesService.getDashboardTodoCases with user, templateId and todoLabel", async () => {
+      mockCasesService.getDashboardTodoCases.mockResolvedValue([]);
+
+      const result = await controller.getDashboardTodoCases(mockUser, "tpl-1", "My Todo");
+
+      expect(mockCasesService.getDashboardTodoCases).toHaveBeenCalledWith(
+        mockUser,
+        "tpl-1",
+        "My Todo",
+      );
+      expect(result).toEqual([]);
     });
   });
 
