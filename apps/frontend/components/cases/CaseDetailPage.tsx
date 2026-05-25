@@ -16,7 +16,7 @@ import { TeamSuggestionAddonGate } from "@/components/cases/TeamSuggestionAddonG
 import { CUSTOMER_KIND_LABELS } from "@/components/customers/customer-kind-labels";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { usePermissions } from "@/lib/hooks/usePermissions";
-import type { CasePriority, CaseStatus, TodoItemStatus } from "@syncora/shared";
+import type { CaseCustomerRef, CasePriority, CaseStatus, TodoItemStatus } from "@syncora/shared";
 
 const STATUS_LABELS: Record<CaseStatus, string> = {
   draft: "Brouillon",
@@ -67,12 +67,82 @@ const INTERVENTION_STATUS_COLORS: Record<string, string> = {
   cancelled: "bg-red-50 text-red-600 border-red-200",
 };
 
+function CaseDetailCustomerSummary({
+  customer,
+  customerId,
+  canViewCustomer,
+}: {
+  customer?: CaseCustomerRef;
+  customerId?: string;
+  canViewCustomer: boolean;
+}) {
+  const customerHref =
+    customer?.id && canViewCustomer ? `/customers/${customer.id}` : null;
+  const cardClassName =
+    "mt-3 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/80 p-3";
+
+  const inner = (
+    <>
+      <div className="flex items-start justify-between gap-2">
+        <div className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+          Client
+        </div>
+        {customerHref ? (
+          <svg
+            className="h-4 w-4 shrink-0 text-slate-400 transition group-hover:text-brand-600 dark:group-hover:text-brand-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+            aria-hidden
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+          </svg>
+        ) : null}
+      </div>
+      {customer ? (
+        <>
+          <div className="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">
+            {customer.displayName}
+          </div>
+          <div className="text-xs text-slate-500 dark:text-slate-400">
+            {CUSTOMER_KIND_LABELS[customer.kind] ?? customer.kind}
+          </div>
+        </>
+      ) : (
+        <div className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+          Référence client enregistrée
+          {customerId ? (
+            <span className="mt-1 block font-mono text-xs text-slate-400 dark:text-slate-500 truncate">
+              {customerId}
+            </span>
+          ) : null}
+        </div>
+      )}
+    </>
+  );
+
+  if (customerHref) {
+    return (
+      <Link
+        href={customerHref}
+        className={`${cardClassName} group block no-underline transition hover:border-slate-200 dark:hover:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-900/80`}
+      >
+        {inner}
+      </Link>
+    );
+  }
+
+  return <div className={cardClassName}>{inner}</div>;
+}
+
 export function CaseDetailPage({ caseId }: { caseId: string }) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const confirm = useConfirm();
   const { can, canAny } = usePermissions();
   const canAssignCase = canAny(["cases.assign", "cases.update"]);
+  const canViewCustomer = can("customers.read");
   const [showNewIntervention, setShowNewIntervention] = useState(false);
   const [editingInterventionId, setEditingInterventionId] = useState<string | null>(null);
 
@@ -604,25 +674,11 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                 </p>
               )}
               {(caseData.customer || caseData.customerId) && (
-                <div className="mt-3 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/80 p-3">
-                  <div className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                    Client
-                  </div>
-                  {caseData.customer ? (
-                    <>
-                      <div className="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">
-                        {caseData.customer.displayName}
-                      </div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400">
-                        {CUSTOMER_KIND_LABELS[caseData.customer.kind] ?? caseData.customer.kind}
-                      </div>
-                    </>
-                  ) : (
-                    <div className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                      Référence client enregistrée
-                    </div>
-                  )}
-                </div>
+                <CaseDetailCustomerSummary
+                  customer={caseData.customer}
+                  customerId={caseData.customerId}
+                  canViewCustomer={canViewCustomer}
+                />
               )}
               <div className="mt-3 space-y-1.5">
                 <span className="text-sm text-slate-500 dark:text-slate-400">Assignés</span>

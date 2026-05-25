@@ -150,6 +150,7 @@ describe("CasesController", () => {
         "assignee-1",
         "high",
         "search-term",
+        "cust-1",
       );
 
       expect(mockCasesService.listCases).toHaveBeenCalledWith(mockUser, {
@@ -157,6 +158,7 @@ describe("CasesController", () => {
         assigneeId: "assignee-1",
         priority: "high",
         search: "search-term",
+        customerId: "cust-1",
       });
       expect(result).toEqual([{ id: "case-1" }]);
     });
@@ -171,6 +173,7 @@ describe("CasesController", () => {
         assigneeId: undefined,
         priority: undefined,
         search: undefined,
+        customerId: undefined,
       });
       expect(result).toEqual([]);
     });

@@ -168,6 +168,7 @@ export class CasesService extends AbstractCasesService {
       assigneeId?: string;
       priority?: string;
       search?: string;
+      customerId?: string;
     },
   ): Promise<CaseSummaryResponse[]> {
     const query: Record<string, unknown> = { organizationId, ...activeDocumentFilter };
@@ -179,6 +180,8 @@ export class CasesService extends AbstractCasesService {
       ];
     }
     if (filters?.priority) query.priority = filters.priority;
+    const customerId = filters?.customerId?.trim();
+    if (customerId) query.customerId = customerId;
     if (filters?.search) {
       query.title = { $regex: filters.search, $options: "i" };
     }

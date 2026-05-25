@@ -27,6 +27,7 @@ export abstract class AbstractCasesService {
       assigneeId?: string;
       priority?: string;
       search?: string;
+      customerId?: string;
     },
   ): Promise<CaseSummaryResponse[]>;
   abstract getCase(id: string, organizationId: string): Promise<CaseResponse>;

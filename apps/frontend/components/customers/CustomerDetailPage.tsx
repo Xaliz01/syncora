@@ -4,13 +4,25 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import * as casesApi from "@/lib/cases.api";
 import * as customersApi from "@/lib/customers.api";
+import { formatPostalAddress } from "@/lib/team-route-insights";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/ToastProvider";
 import { usePermissions } from "@/lib/hooks/usePermissions";
 import { CustomerEditForm } from "./CustomerEditForm";
 import { CUSTOMER_KIND_LABELS } from "./customer-kind-labels";
 import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
+import type { CaseStatus } from "@syncora/shared";
+
+const CASE_STATUS_LABELS: Record<CaseStatus, string> = {
+  draft: "Brouillon",
+  open: "Ouvert",
+  in_progress: "En cours",
+  waiting: "En attente",
+  completed: "Terminé",
+  cancelled: "Annulé",
+};
 
 function formatDate(iso?: string) {
   if (!iso) return null;
@@ -35,6 +47,7 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
 
   const canUpdate = can("customers.update");
   const canDelete = can("customers.delete");
+  const canReadCases = can("cases.read");
 
   const {
     data: c,
@@ -45,6 +58,12 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
   } = useQuery({
     queryKey: ["customer", customerId],
     queryFn: () => customersApi.getCustomer(customerId),
+  });
+
+  const { data: customerCases = [], isLoading: customerCasesLoading } = useQuery({
+    queryKey: ["cases", "customer", customerId],
+    queryFn: () => casesApi.listCases({ customerId }),
+    enabled: canReadCases,
   });
 
   const updateMutation = useMutation({
@@ -100,6 +119,8 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
 
   const created = formatDate(c.createdAt);
   const updated = formatDate(c.updatedAt);
+  const addressLine = c.address ? formatPostalAddress(c.address) : "";
+  const hasContact = Boolean(c.email || c.phone || c.mobile || addressLine);
 
   const handleDelete = async () => {
     const ok = await confirm({
@@ -224,7 +245,13 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
                     </dd>
                   </div>
                 )}
-                {!c.email && !c.phone && !c.mobile && (
+                {addressLine ? (
+                  <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
+                    <dt className="text-slate-500 dark:text-slate-400 sm:w-32">Adresse</dt>
+                    <dd className="text-slate-800 dark:text-slate-100 leading-snug">{addressLine}</dd>
+                  </div>
+                ) : null}
+                {!hasContact && (
                   <p className="text-slate-500 dark:text-slate-400">
                     Aucune coordonnée renseignée.
                   </p>
@@ -266,27 +293,6 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
               </div>
             ) : null}
 
-            {c.address && (
-              <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/20 sm:col-span-2">
-                <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-                  Adresse
-                </h2>
-                <address className="mt-3 text-sm not-italic text-slate-700 dark:text-slate-200">
-                  {c.address.line1}
-                  <br />
-                  {c.address.line2 ? (
-                    <>
-                      {c.address.line2}
-                      <br />
-                    </>
-                  ) : null}
-                  {c.address.postalCode} {c.address.city}
-                  <br />
-                  {c.address.country}
-                </address>
-              </div>
-            )}
-
             {c.notes && (
               <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/20 sm:col-span-2">
                 <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Notes</h2>
@@ -304,6 +310,49 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
               </div>
             )}
           </div>
+
+          {canReadCases && (
+            <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/20">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                  Dossiers rattachés
+                </h2>
+                <Link
+                  href="/cases"
+                  className="text-xs font-medium text-brand-600 dark:text-brand-400 hover:text-brand-500"
+                >
+                  Voir tous les dossiers
+                </Link>
+              </div>
+              {customerCasesLoading ? (
+                <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">Chargement…</p>
+              ) : customerCases.length === 0 ? (
+                <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
+                  Aucun dossier lié à ce client.
+                </p>
+              ) : (
+                <ul className="mt-3 divide-y divide-slate-100 dark:divide-slate-800">
+                  {customerCases.map((caseItem) => (
+                    <li key={caseItem.id}>
+                      <Link
+                        href={`/cases/${caseItem.id}`}
+                        className="flex flex-wrap items-center justify-between gap-2 py-3 no-underline transition hover:bg-slate-50 dark:hover:bg-slate-800/50 -mx-2 px-2 rounded-lg"
+                      >
+                        <span className="min-w-0 flex-1 font-medium text-slate-800 dark:text-slate-100 truncate">
+                          {caseItem.title}
+                        </span>
+                        <span className="shrink-0 text-xs text-slate-500 dark:text-slate-400">
+                          {CASE_STATUS_LABELS[caseItem.status] ?? caseItem.status}
+                          {" · "}
+                          {caseItem.progress}%
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
         </>
       )}
 

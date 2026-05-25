@@ -94,7 +94,13 @@ export abstract class AbstractCasesGatewayService {
   abstract createCase(user: AuthUser, body: CreateCaseForOrgBody): Promise<CaseResponse>;
   abstract listCases(
     user: AuthUser,
-    filters?: { status?: string; assigneeId?: string; priority?: string; search?: string },
+    filters?: {
+      status?: string;
+      assigneeId?: string;
+      priority?: string;
+      search?: string;
+      customerId?: string;
+    },
   ): Promise<CaseSummaryResponse[]>;
   abstract getCase(user: AuthUser, caseId: string): Promise<CaseResponse>;
   abstract updateCase(

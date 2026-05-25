@@ -314,6 +314,22 @@ describe("CasesService", () => {
       );
       expect(result).toHaveLength(1);
     });
+
+    it("should filter cases by customerId", async () => {
+      const docs = [mockCaseDoc({ customerId: "cust-abc" })];
+      mockCaseModel.find.mockReturnValue({
+        sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(docs) }),
+      });
+
+      const result = await service.listCases("org-1", { customerId: "cust-abc" });
+
+      expect(mockCaseModel.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          customerId: "cust-abc",
+        }),
+      );
+      expect(result).toHaveLength(1);
+    });
   });
 
   describe("getCase", () => {

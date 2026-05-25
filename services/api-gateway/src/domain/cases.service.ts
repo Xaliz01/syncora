@@ -119,7 +119,13 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
 
   async listCases(
     user: AuthUser,
-    filters?: { status?: string; assigneeId?: string; priority?: string; search?: string },
+    filters?: {
+      status?: string;
+      assigneeId?: string;
+      priority?: string;
+      search?: string;
+      customerId?: string;
+    },
   ) {
     const rows = await this.callCasesService<CaseSummaryResponse[]>(user.organizationId, {
       method: "get",
