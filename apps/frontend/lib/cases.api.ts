@@ -1,5 +1,6 @@
 import type {
   CaseDashboardResponse,
+  CaseHistoryEntryResponse,
   CaseResponse,
   CaseSummaryResponse,
   CaseTemplateResponse,
@@ -171,6 +172,12 @@ export function updateIntervention(interventionId: string, payload: UpdateInterv
 
 export function deleteIntervention(interventionId: string) {
   return casesRequest<{ deleted: true }>("DELETE", `/cases/interventions/${interventionId}`);
+}
+
+// ── History ──
+
+export function listCaseHistory(caseId: string) {
+  return casesRequest<CaseHistoryEntryResponse[]>("GET", `/cases/items/${caseId}/history`);
 }
 
 // ── Dashboard ──

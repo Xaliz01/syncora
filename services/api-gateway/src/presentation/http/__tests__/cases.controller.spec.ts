@@ -39,6 +39,7 @@ describe("CasesController", () => {
       updateIntervention: jest.fn(),
       deleteIntervention: jest.fn(),
       getDashboard: jest.fn(),
+      listCaseHistory: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -328,6 +329,25 @@ describe("CasesController", () => {
 
       expect(mockCasesService.getDashboard).toHaveBeenCalledWith(mockUser);
       expect(result).toEqual(dashboard);
+    });
+  });
+
+  describe("listCaseHistory", () => {
+    it("should call casesService.listCaseHistory with user and caseId", async () => {
+      const history = [
+        {
+          id: "hist-1",
+          action: "case_created",
+          actorName: "Admin User",
+          createdAt: "2025-06-01T00:00:00.000Z",
+        },
+      ];
+      mockCasesService.listCaseHistory.mockResolvedValue(history as never);
+
+      const result = await controller.listCaseHistory(mockUser, "case-1");
+
+      expect(mockCasesService.listCaseHistory).toHaveBeenCalledWith(mockUser, "case-1");
+      expect(result).toEqual(history);
     });
   });
 });

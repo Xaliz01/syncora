@@ -3,7 +3,11 @@ import type {
   AuthUser,
   CaseAssignee,
   CaseCustomerRef,
+  CaseHistoryChange,
+  CaseHistoryAction,
+  CaseHistoryEntryResponse,
   CreateCaseBody,
+  CreateCaseHistoryBody,
   CreateCaseTemplateBody,
   CreateInterventionBody,
   CaseDashboardResponse,
@@ -114,6 +118,14 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
         ...(assignees !== undefined ? { assignees } : {}),
       } as CreateCaseBody,
     });
+    this.recordHistory(
+      user.organizationId,
+      created.id,
+      user.id,
+      user.name ?? user.email,
+      "case_created",
+      created.title,
+    );
     return this.enrichCaseResponse(user, created);
   }
 
@@ -145,6 +157,18 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     if (body.customerId !== undefined && body.customerId !== null && body.customerId.trim()) {
       await this.customersGateway.getCustomer(user, body.customerId.trim());
     }
+
+    let previousCase: CaseResponse | undefined;
+    try {
+      previousCase = await this.callCasesService<CaseResponse>(user.organizationId, {
+        method: "get",
+        path: `/cases/${caseId}`,
+        query: { organizationId: user.organizationId },
+      });
+    } catch {
+      /* proceed without previous state */
+    }
+
     const casesBody = {
       organizationId: user.organizationId,
       ...body,
@@ -163,15 +187,26 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       path: `/cases/${caseId}`,
       body: casesBody,
     });
+
+    this.emitCaseUpdateHistory(user, caseId, body, previousCase, updated);
+
     return this.enrichCaseResponse(user, updated);
   }
 
   async deleteCase(user: AuthUser, caseId: string) {
-    return this.callCasesService<{ deleted: true }>(user.organizationId, {
+    const result = await this.callCasesService<{ deleted: true }>(user.organizationId, {
       method: "delete",
       path: `/cases/${caseId}`,
       query: { organizationId: user.organizationId },
     });
+    this.recordHistory(
+      user.organizationId,
+      caseId,
+      user.id,
+      user.name ?? user.email,
+      "case_deleted",
+    );
+    return result;
   }
 
   async updateTodo(user: AuthUser, caseId: string, body: UpdateTodoForOrgBody) {
@@ -183,13 +218,23 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
         ...body,
       } as UpdateTodoBody,
     });
+    const todoLabel = row.steps.flatMap((s) => s.todos).find((t) => t.id === body.todoId)?.label;
+    this.recordHistory(
+      user.organizationId,
+      caseId,
+      user.id,
+      user.name ?? user.email,
+      "todo_updated",
+      todoLabel,
+      [{ field: "status", newValue: body.status }],
+    );
     return this.enrichCaseResponse(user, row);
   }
 
   // ── Interventions ──
 
   async createIntervention(user: AuthUser, body: CreateInterventionForOrgBody) {
-    return this.callCasesService<InterventionResponse>(user.organizationId, {
+    const result = await this.callCasesService<InterventionResponse>(user.organizationId, {
       method: "post",
       path: "/interventions",
       body: {
@@ -197,6 +242,15 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
         ...body,
       } as CreateInterventionBody,
     });
+    this.recordHistory(
+      user.organizationId,
+      body.caseId,
+      user.id,
+      user.name ?? user.email,
+      "intervention_created",
+      result.title,
+    );
+    return result;
   }
 
   async listInterventions(
@@ -233,7 +287,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     interventionId: string,
     body: UpdateInterventionForOrgBody,
   ) {
-    return this.callCasesService<InterventionResponse>(user.organizationId, {
+    const result = await this.callCasesService<InterventionResponse>(user.organizationId, {
       method: "patch",
       path: `/interventions/${interventionId}`,
       body: {
@@ -241,14 +295,44 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
         ...body,
       } as UpdateInterventionBody,
     });
+    this.recordHistory(
+      user.organizationId,
+      result.caseId,
+      user.id,
+      user.name ?? user.email,
+      "intervention_updated",
+      result.title,
+    );
+    return result;
   }
 
   async deleteIntervention(user: AuthUser, interventionId: string) {
-    return this.callCasesService<{ deleted: true }>(user.organizationId, {
+    let intervention: InterventionResponse | undefined;
+    try {
+      intervention = await this.callCasesService<InterventionResponse>(user.organizationId, {
+        method: "get",
+        path: `/interventions/${interventionId}`,
+        query: { organizationId: user.organizationId },
+      });
+    } catch {
+      /* proceed without intervention info */
+    }
+    const result = await this.callCasesService<{ deleted: true }>(user.organizationId, {
       method: "delete",
       path: `/interventions/${interventionId}`,
       query: { organizationId: user.organizationId },
     });
+    if (intervention) {
+      this.recordHistory(
+        user.organizationId,
+        intervention.caseId,
+        user.id,
+        user.name ?? user.email,
+        "intervention_deleted",
+        intervention.title,
+      );
+    }
+    return result;
   }
 
   // ── Dashboard ──
@@ -267,6 +351,146 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       this.enrichCaseSummaries(user, dash.overdueCases),
     ]);
     return { ...dash, assignedCases, overdueCases };
+  }
+
+  // ── History ──
+
+  async listCaseHistory(user: AuthUser, caseId: string) {
+    return this.callCasesService<CaseHistoryEntryResponse[]>(user.organizationId, {
+      method: "get",
+      path: `/cases/${caseId}/history`,
+      query: { organizationId: user.organizationId },
+    });
+  }
+
+  private emitCaseUpdateHistory(
+    user: AuthUser,
+    caseId: string,
+    body: UpdateCaseForOrgBody,
+    prev: CaseResponse | undefined,
+    updated: CaseResponse,
+  ): void {
+    const actorName = user.name ?? user.email;
+
+    if (body.status !== undefined && prev && body.status !== prev.status) {
+      this.recordHistory(
+        user.organizationId,
+        caseId,
+        user.id,
+        actorName,
+        "status_changed",
+        undefined,
+        [{ field: "status", oldValue: prev.status, newValue: body.status }],
+      );
+      return;
+    }
+
+    if (body.priority !== undefined && prev && body.priority !== prev.priority) {
+      this.recordHistory(
+        user.organizationId,
+        caseId,
+        user.id,
+        actorName,
+        "priority_changed",
+        undefined,
+        [{ field: "priority", oldValue: prev.priority, newValue: body.priority }],
+      );
+      return;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(body, "assigneeIds")) {
+      const oldNames = (prev?.assignees ?? []).map((a) => a.name).join(", ") || "aucun";
+      const newNames = (updated.assignees ?? []).map((a) => a.name).join(", ") || "aucun";
+      if (oldNames !== newNames) {
+        this.recordHistory(
+          user.organizationId,
+          caseId,
+          user.id,
+          actorName,
+          "assignees_changed",
+          undefined,
+          [{ field: "assignees", oldValue: oldNames, newValue: newNames }],
+        );
+        return;
+      }
+    }
+
+    if (body.customerId !== undefined && prev && body.customerId !== prev.customerId) {
+      this.recordHistory(
+        user.organizationId,
+        caseId,
+        user.id,
+        actorName,
+        "customer_changed",
+        undefined,
+        [
+          {
+            field: "customer",
+            oldValue: prev.customerId ?? "aucun",
+            newValue: body.customerId ?? "aucun",
+          },
+        ],
+      );
+      return;
+    }
+
+    const changes: CaseHistoryChange[] = [];
+    if (body.title !== undefined && prev && body.title !== prev.title) {
+      changes.push({ field: "title", oldValue: prev.title, newValue: body.title });
+    }
+    if (body.description !== undefined && prev && body.description !== prev.description) {
+      changes.push({
+        field: "description",
+        oldValue: prev.description ?? "",
+        newValue: body.description ?? "",
+      });
+    }
+    if (body.dueDate !== undefined && prev) {
+      const oldDue = prev.dueDate?.split("T")[0] ?? "";
+      const newDue = body.dueDate === null ? "" : (body.dueDate?.split("T")[0] ?? "");
+      if (oldDue !== newDue) {
+        changes.push({ field: "dueDate", oldValue: oldDue, newValue: newDue });
+      }
+    }
+
+    if (changes.length > 0) {
+      this.recordHistory(
+        user.organizationId,
+        caseId,
+        user.id,
+        actorName,
+        "case_updated",
+        undefined,
+        changes,
+      );
+    }
+  }
+
+  private recordHistory(
+    organizationId: string,
+    caseId: string,
+    actorId: string,
+    actorName: string,
+    action: CaseHistoryAction,
+    details?: string,
+    changes?: CaseHistoryChange[],
+  ): void {
+    const body: CreateCaseHistoryBody = {
+      organizationId,
+      caseId,
+      actorId,
+      actorName,
+      action,
+      details,
+      changes,
+    };
+    this.callCasesService<CaseHistoryEntryResponse>(organizationId, {
+      method: "post",
+      path: `/cases/${caseId}/history`,
+      body,
+    }).catch(() => {
+      /* best-effort: don't fail the main operation if history recording fails */
+    });
   }
 
   private toCaseCustomerRef(c: CustomerResponse): CaseCustomerRef {

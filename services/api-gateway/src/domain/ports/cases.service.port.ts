@@ -1,6 +1,7 @@
 import type {
   AuthUser,
   CaseDashboardResponse,
+  CaseHistoryEntryResponse,
   CaseResponse,
   CaseSummaryResponse,
   CaseTemplateResponse,
@@ -131,4 +132,5 @@ export abstract class AbstractCasesGatewayService {
   ): Promise<InterventionResponse>;
   abstract deleteIntervention(user: AuthUser, interventionId: string): Promise<{ deleted: true }>;
   abstract getDashboard(user: AuthUser): Promise<CaseDashboardResponse>;
+  abstract listCaseHistory(user: AuthUser, caseId: string): Promise<CaseHistoryEntryResponse[]>;
 }

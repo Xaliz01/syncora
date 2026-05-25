@@ -38,6 +38,10 @@ describe("CasesService", () => {
     updateOne: jest.Mock;
     updateMany: jest.Mock;
   };
+  let mockCaseHistoryModel: {
+    create: jest.Mock;
+    find: jest.Mock;
+  };
 
   const mockTemplateDoc = (overrides: Record<string, unknown> = {}) => ({
     _id: { toString: () => "tpl-123" },
@@ -126,11 +130,21 @@ describe("CasesService", () => {
       updateMany: jest.fn().mockImplementation(() => updateChain({ modifiedCount: 2 })),
     };
 
+    mockCaseHistoryModel = {
+      create: jest.fn(),
+      find: jest.fn().mockReturnValue({
+        sort: jest.fn().mockReturnValue({
+          limit: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue([]) }),
+        }),
+      }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         { provide: AbstractCasesService, useClass: CasesService },
         { provide: getModelToken("CaseTemplate"), useValue: mockTemplateModel },
         { provide: getModelToken("Case"), useValue: mockCaseModel },
+        { provide: getModelToken("CaseHistory"), useValue: mockCaseHistoryModel },
         { provide: getModelToken("Intervention"), useValue: mockInterventionModel },
       ],
     }).compile();
@@ -442,6 +456,108 @@ describe("CasesService", () => {
       await expect(service.deleteIntervention("non-existent", "org-1")).rejects.toThrow(
         NotFoundException,
       );
+    });
+  });
+
+  describe("addCaseHistory", () => {
+    it("should create a history entry", async () => {
+      const historyDoc = {
+        _id: { toString: () => "hist-1" },
+        organizationId: "org-1",
+        caseId: "case-123",
+        actorId: "user-1",
+        actorName: "User One",
+        action: "case_created",
+        details: "Case 1",
+        changes: [],
+        get: jest.fn((key: string) => (key === "createdAt" ? new Date("2025-06-01") : undefined)),
+      };
+      mockCaseHistoryModel.create.mockResolvedValue(historyDoc);
+
+      const result = await service.addCaseHistory({
+        organizationId: "org-1",
+        caseId: "case-123",
+        actorId: "user-1",
+        actorName: "User One",
+        action: "case_created",
+        details: "Case 1",
+      });
+
+      expect(mockCaseHistoryModel.create).toHaveBeenCalledWith({
+        organizationId: "org-1",
+        caseId: "case-123",
+        actorId: "user-1",
+        actorName: "User One",
+        action: "case_created",
+        details: "Case 1",
+        changes: [],
+      });
+      expect(result.id).toBe("hist-1");
+      expect(result.action).toBe("case_created");
+      expect(result.actorName).toBe("User One");
+    });
+  });
+
+  describe("listCaseHistory", () => {
+    it("should return history entries for a case", async () => {
+      const historyDocs = [
+        {
+          _id: { toString: () => "hist-1" },
+          organizationId: "org-1",
+          caseId: "case-123",
+          actorId: "user-1",
+          actorName: "User One",
+          action: "case_created",
+          details: "Case 1",
+          changes: [],
+          get: jest.fn((key: string) => (key === "createdAt" ? new Date("2025-06-01") : undefined)),
+        },
+        {
+          _id: { toString: () => "hist-2" },
+          organizationId: "org-1",
+          caseId: "case-123",
+          actorId: "user-1",
+          actorName: "User One",
+          action: "status_changed",
+          changes: [{ field: "status", oldValue: "draft", newValue: "open" }],
+          get: jest.fn((key: string) => (key === "createdAt" ? new Date("2025-06-02") : undefined)),
+        },
+      ];
+
+      mockCaseHistoryModel.find.mockReturnValue({
+        sort: jest.fn().mockReturnValue({
+          limit: jest.fn().mockReturnValue({
+            exec: jest.fn().mockResolvedValue(historyDocs),
+          }),
+        }),
+      });
+
+      const result = await service.listCaseHistory("case-123", "org-1");
+
+      expect(mockCaseHistoryModel.find).toHaveBeenCalledWith({
+        caseId: "case-123",
+        organizationId: "org-1",
+      });
+      expect(result).toHaveLength(2);
+      expect(result[0].id).toBe("hist-1");
+      expect(result[0].action).toBe("case_created");
+      expect(result[1].id).toBe("hist-2");
+      expect(result[1].action).toBe("status_changed");
+      expect(result[1].changes).toEqual([{ field: "status", oldValue: "draft", newValue: "open" }]);
+    });
+
+    it("should return empty array when no history exists", async () => {
+      mockCaseHistoryModel.find.mockReturnValue({
+        sort: jest.fn().mockReturnValue({
+          limit: jest.fn().mockReturnValue({
+            exec: jest.fn().mockResolvedValue([]),
+          }),
+        }),
+      });
+
+      const result = await service.listCaseHistory("case-456", "org-1");
+
+      expect(result).toEqual([]);
     });
   });
 });

@@ -200,16 +200,7 @@ export function InterventionArticlesDialog({
     } finally {
       setSaving(false);
     }
-  }, [
-    canEdit,
-    lines,
-    currentUsage,
-    interventionId,
-    caseId,
-    showToast,
-    onSaved,
-    onClose,
-  ]);
+  }, [canEdit, lines, currentUsage, interventionId, caseId, showToast, onSaved, onClose]);
 
   if (!open) return null;
 

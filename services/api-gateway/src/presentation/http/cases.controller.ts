@@ -126,6 +126,12 @@ export class CasesController {
     return this.casesService.updateTodo(user, caseId, body);
   }
 
+  @Get("items/:caseId/history")
+  @RequirePermissions("cases.read")
+  async listCaseHistory(@CurrentUser() user: AuthUser, @Param("caseId") caseId: string) {
+    return this.casesService.listCaseHistory(user, caseId);
+  }
+
   @Post("interventions")
   @RequirePermissions("interventions.create")
   @NotifyEntity({ type: "intervention", labelField: "title" })
