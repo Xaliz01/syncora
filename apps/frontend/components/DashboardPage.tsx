@@ -144,7 +144,7 @@ function DashboardTodoWidgets({ todos }: { todos: DashboardTodoItem[] }) {
     <>
       <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20">
         <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100 mb-3">
-          Tâches à suivre
+          Tâches à faire
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
           {todos.map((todo, idx) => (

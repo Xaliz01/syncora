@@ -175,9 +175,19 @@ export function ModifySubscriptionAddonsDialog({
             type="button"
             onClick={() => updateMutation.mutate()}
             disabled={!canApplyChanges || !hasChanges || updateMutation.isPending}
-            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
           >
-            {updateMutation.isPending ? "Synchronisation…" : "Enregistrer les options"}
+            {updateMutation.isPending ? (
+              <>
+                <span
+                  className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
+                  aria-hidden
+                />
+                Synchronisation…
+              </>
+            ) : (
+              "Enregistrer les options"
+            )}
           </button>
         </div>
       </div>

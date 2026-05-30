@@ -382,7 +382,7 @@ export function CaseHistory({ caseId }: { caseId: string }) {
         </div>
       ) : (
         <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm dark:shadow-slate-950/20 overflow-hidden">
-          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+          <div className="max-h-[min(28rem,50vh)] divide-y divide-slate-100 dark:divide-slate-800 overflow-y-auto">
             {history.map((entry, idx) => {
               const config = ACTION_CONFIG[entry.action] ?? ACTION_CONFIG.case_updated;
               return (
