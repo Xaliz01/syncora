@@ -144,4 +144,46 @@ describe("AccountService", () => {
       );
     });
   });
+
+  describe("getCrispIdentity", () => {
+    const originalSecret = process.env.CRISP_IDENTITY_SECRET;
+
+    afterEach(() => {
+      if (originalSecret === undefined) {
+        delete process.env.CRISP_IDENTITY_SECRET;
+      } else {
+        process.env.CRISP_IDENTITY_SECRET = originalSecret;
+      }
+    });
+
+    it("should return email and nickname without signature when secret is unset", async () => {
+      delete process.env.CRISP_IDENTITY_SECRET;
+
+      const result = await service.getCrispIdentity(mockUser);
+
+      expect(result).toEqual({
+        email: "user@example.com",
+        nickname: "Test User",
+      });
+    });
+
+    it("should return HMAC signature when CRISP_IDENTITY_SECRET is set", async () => {
+      process.env.CRISP_IDENTITY_SECRET = "test-crisp-secret";
+
+      const result = await service.getCrispIdentity(mockUser);
+
+      expect(result.email).toBe("user@example.com");
+      expect(result.nickname).toBe("Test User");
+      expect(result.signature).toMatch(/^[a-f0-9]{64}$/);
+    });
+
+    it("should fall back to email as nickname when name is missing", async () => {
+      const result = await service.getCrispIdentity({
+        ...mockUser,
+        name: undefined,
+      });
+
+      expect(result.nickname).toBe("user@example.com");
+    });
+  });
 });

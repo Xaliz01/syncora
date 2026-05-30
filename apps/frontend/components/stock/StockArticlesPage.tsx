@@ -4,6 +4,21 @@ import React, { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "@/lib/stock.api";
 import { usePermissions } from "@/lib/hooks/usePermissions";
+import {
+  ListBadge,
+  ListCellDefault,
+  ListCellPrimary,
+  ListEmptyState,
+  ListLoadingState,
+  ListNoResults,
+  ListPageError,
+  ListPageHeader,
+  ListPageRoot,
+  ListRow,
+  ListSearchField,
+  ListTableShell,
+  ListToolbar,
+} from "@/components/ui/list-page";
 
 type StockPageMode = "catalog" | "movements" | "full";
 
@@ -12,6 +27,23 @@ const MOVEMENT_TYPE_LABELS: Record<string, string> = {
   out: "Sortie",
   adjustment: "Ajustement",
 };
+
+const ARTICLES_GRID = "md:grid-cols-[0.8fr_1.2fr_0.7fr_0.5fr_0.5fr_0.5fr_auto]";
+
+const STOCK_STATUS_COLORS: Record<string, string> = {
+  out: "bg-red-50 text-red-700 border-red-200",
+  low: "bg-amber-50 text-amber-700 border-amber-200",
+  ok: "bg-emerald-50 text-emerald-700 border-emerald-200",
+};
+
+const STOCK_STATUS_LABELS: Record<string, string> = {
+  out: "Rupture",
+  low: "Bas",
+  ok: "OK",
+};
+
+const PRIMARY_BUTTON_CLASS =
+  "rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition self-start flex-shrink-0";
 
 export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
   const { can } = usePermissions();
@@ -116,28 +148,50 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
         ? "Pilotez les entrées, sorties et ajustements de stock au quotidien."
         : "Gérez vos consommables, suivez les mouvements et anticipez les ruptures.";
 
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-semibold">{pageTitle}</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{pageDescription}</p>
-        </div>
-        {showCatalogActions && (
-          <button
-            onClick={() => setShowCreateForm((prev) => !prev)}
-            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition self-start flex-shrink-0"
-          >
-            {showCreateForm ? "Fermer" : "+ Nouvel article"}
-          </button>
-        )}
-      </div>
+  const hasActiveFilters =
+    search.trim() !== "" || lowStockOnly || (showCatalogActions && showInactive);
 
-      {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-          {error}
-        </div>
-      )}
+  return (
+    <ListPageRoot>
+      <ListPageHeader
+        title={pageTitle}
+        description={pageDescription}
+        action={
+          showCatalogActions ? (
+            <button
+              type="button"
+              onClick={() => setShowCreateForm((prev) => !prev)}
+              className={PRIMARY_BUTTON_CLASS}
+            >
+              {showCreateForm ? "Fermer" : "Nouvel article"}
+            </button>
+          ) : undefined
+        }
+      />
+
+      {error ? <ListPageError message={error} fallbackMessage="Une erreur est survenue." /> : null}
+
+      <ListToolbar>
+        <ListSearchField value={search} onChange={setSearch} placeholder="Rechercher un article…" />
+        <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+          <input
+            type="checkbox"
+            checked={lowStockOnly}
+            onChange={(e) => setLowStockOnly(e.target.checked)}
+          />
+          Stock bas uniquement
+        </label>
+        {showCatalogActions && (
+          <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+            <input
+              type="checkbox"
+              checked={showInactive}
+              onChange={(e) => setShowInactive(e.target.checked)}
+            />
+            Inclure inactifs
+          </label>
+        )}
+      </ListToolbar>
 
       {lowStockArticles.length > 0 && (
         <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-4">
@@ -189,8 +243,8 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
       )}
 
       {showCatalogActions && showCreateForm && (
-        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20">
-          <h2 className="mb-3 text-sm font-semibold text-slate-800 dark:text-slate-100">
+        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
+          <h2 className="mb-3 font-semibold text-slate-900 dark:text-slate-100">
             Créer un article
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -305,10 +359,8 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
       )}
 
       {showMovementActions && (
-        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20 space-y-3">
-          <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-            Mouvement rapide
-          </h2>
+        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 space-y-3">
+          <h2 className="font-semibold text-slate-900 dark:text-slate-100">Mouvement rapide</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <select
               value={movementArticleId}
@@ -380,132 +432,105 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
         </div>
       )}
 
-      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20">
-        <div className="mb-3 flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-3">
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Rechercher un article..."
-            className="w-full sm:w-72 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
-          />
-          <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
-            <input
-              type="checkbox"
-              checked={lowStockOnly}
-              onChange={(e) => setLowStockOnly(e.target.checked)}
-            />
-            Stock bas uniquement
-          </label>
-          {showCatalogActions && (
-            <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
-              <input
-                type="checkbox"
-                checked={showInactive}
-                onChange={(e) => setShowInactive(e.target.checked)}
-              />
-              Inclure inactifs
-            </label>
-          )}
-        </div>
-
-        {isLoading ? (
-          <div className="text-sm text-slate-500 dark:text-slate-400">Chargement des articles…</div>
-        ) : !(articles ?? []).length ? (
-          <div className="text-sm text-slate-500 dark:text-slate-400">Aucun article trouvé.</div>
+      {isLoading ? (
+        <ListLoadingState />
+      ) : !(articles ?? []).length ? (
+        hasActiveFilters ? (
+          <ListNoResults message="Aucun article ne correspond à ces filtres." />
         ) : (
-          <div className="overflow-x-auto -mx-4 px-4">
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 dark:border-slate-700 text-left text-slate-500 dark:text-slate-400">
-                  <th className="px-2 py-2">Référence</th>
-                  <th className="px-2 py-2">Nom</th>
-                  <th className="px-2 py-2">Stock</th>
-                  <th className="px-2 py-2 hidden sm:table-cell">Seuil</th>
-                  <th className="px-2 py-2 hidden sm:table-cell">Cible</th>
-                  <th className="px-2 py-2">Statut</th>
-                  <th className="px-2 py-2">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {articles!.map((article) => (
-                  <tr key={article.id} className="border-b border-slate-100 dark:border-slate-800">
-                    <td className="px-2 py-2 font-mono text-xs">{article.reference}</td>
-                    <td className="px-2 py-2">
-                      <div className="font-medium text-slate-800 dark:text-slate-100">
-                        {article.name}
-                      </div>
-                      {!article.isActive && (
-                        <div className="text-[11px] text-slate-400 dark:text-slate-500">
-                          Inactif
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-2 py-2">
-                      {article.stockQuantity} {article.unit}
-                    </td>
-                    <td className="px-2 py-2 hidden sm:table-cell">{article.reorderPoint}</td>
-                    <td className="px-2 py-2 hidden sm:table-cell">{article.targetStock}</td>
-                    <td className="px-2 py-2">
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                          article.stockStatus === "out"
-                            ? "bg-red-50 text-red-700"
-                            : article.stockStatus === "low"
-                              ? "bg-amber-50 text-amber-700"
-                              : "bg-green-50 text-green-700"
-                        }`}
-                      >
-                        {article.stockStatus === "out"
-                          ? "Rupture"
-                          : article.stockStatus === "low"
-                            ? "Bas"
-                            : "OK"}
-                      </span>
-                    </td>
-                    <td className="px-2 py-2">
-                      <div className="flex items-center gap-2">
-                        {showMovementActions && (
-                          <button
-                            onClick={() =>
-                              restockToTargetMutation.mutate({
-                                articleId: article.id,
-                                movementType: "adjustment",
-                                quantity: article.targetStock,
-                                reason: "restock",
-                                note: "Réassort au stock cible",
-                              })
-                            }
-                            disabled={
-                              restockToTargetMutation.isPending ||
-                              article.targetStock <= article.stockQuantity
-                            }
-                            className="rounded border border-slate-200 dark:border-slate-700 px-2 py-1 text-xs text-brand-600 dark:text-brand-400 disabled:opacity-50"
-                          >
-                            Réassort
-                          </button>
-                        )}
-                        {showCatalogActions && article.isActive && can("stock.articles.delete") && (
-                          <button
-                            onClick={() => deactivateMutation.mutate(article.id)}
-                            disabled={deactivateMutation.isPending}
-                            className="rounded border border-slate-200 dark:border-slate-700 px-2 py-1 text-xs text-slate-600 dark:text-slate-300 disabled:opacity-50"
-                          >
-                            Désactiver
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+          <ListEmptyState
+            message="Aucun article."
+            action={
+              showCatalogActions ? (
+                <button
+                  type="button"
+                  onClick={() => setShowCreateForm(true)}
+                  className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium"
+                >
+                  Créer votre premier article
+                </button>
+              ) : undefined
+            }
+          />
+        )
+      ) : (
+        <ListTableShell
+          gridTemplateClass={ARTICLES_GRID}
+          headerCells={
+            <>
+              <span>Référence</span>
+              <span>Nom</span>
+              <span>Stock</span>
+              <span>Seuil</span>
+              <span>Cible</span>
+              <span>Statut</span>
+              <span className="text-right md:text-left">Actions</span>
+            </>
+          }
+        >
+          {articles!.map((article) => (
+            <ListRow key={article.id} gridTemplateClass={ARTICLES_GRID}>
+              <ListCellDefault className="font-mono text-xs">{article.reference}</ListCellDefault>
+              <div className="min-w-0">
+                <ListCellPrimary className="block">{article.name}</ListCellPrimary>
+                {!article.isActive && (
+                  <span className="text-xs text-slate-400 dark:text-slate-500">Inactif</span>
+                )}
+              </div>
+              <ListCellDefault>
+                {article.stockQuantity} {article.unit}
+              </ListCellDefault>
+              <ListCellDefault>{article.reorderPoint}</ListCellDefault>
+              <ListCellDefault>{article.targetStock}</ListCellDefault>
+              <ListBadge
+                className={
+                  STOCK_STATUS_COLORS[article.stockStatus] ??
+                  "bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700"
+                }
+              >
+                {STOCK_STATUS_LABELS[article.stockStatus] ?? article.stockStatus}
+              </ListBadge>
+              <div className="flex flex-wrap gap-2 justify-end md:justify-start">
+                {showMovementActions && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      restockToTargetMutation.mutate({
+                        articleId: article.id,
+                        movementType: "adjustment",
+                        quantity: article.targetStock,
+                        reason: "restock",
+                        note: "Réassort au stock cible",
+                      })
+                    }
+                    disabled={
+                      restockToTargetMutation.isPending ||
+                      article.targetStock <= article.stockQuantity
+                    }
+                    className="text-xs text-brand-600 dark:text-brand-400 hover:text-brand-500 font-medium disabled:opacity-50"
+                  >
+                    Réassort
+                  </button>
+                )}
+                {showCatalogActions && article.isActive && can("stock.articles.delete") && (
+                  <button
+                    type="button"
+                    onClick={() => deactivateMutation.mutate(article.id)}
+                    disabled={deactivateMutation.isPending}
+                    className="text-xs text-slate-600 dark:text-slate-300 hover:text-slate-800 dark:hover:text-slate-100 disabled:opacity-50"
+                  >
+                    Désactiver
+                  </button>
+                )}
+              </div>
+            </ListRow>
+          ))}
+        </ListTableShell>
+      )}
 
       {showMovementActions && (
-        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20">
-          <h2 className="mb-3 text-sm font-semibold text-slate-800 dark:text-slate-100">
+        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
+          <h2 className="mb-3 font-semibold text-slate-900 dark:text-slate-100">
             Derniers mouvements
           </h2>
           {!recentMovements?.length ? (
@@ -537,6 +562,6 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
           )}
         </div>
       )}
-    </div>
+    </ListPageRoot>
   );
 }

@@ -560,4 +560,89 @@ describe("CasesService", () => {
       expect(result).toEqual([]);
     });
   });
+
+  describe("getDashboardTodoCases", () => {
+    it("returns cases when dashboard todo visibility matches user profile", async () => {
+      const template = mockTemplateDoc({
+        steps: [
+          {
+            name: "Étape 1",
+            order: 0,
+            todos: [
+              {
+                label: "Relancer client",
+                dashboardRule: {
+                  showOnDashboard: true,
+                  visibility: "by_profile",
+                  profileIds: ["profile-1"],
+                  userIds: [],
+                },
+              },
+            ],
+          },
+        ],
+      });
+      mockTemplateModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(template),
+      });
+      mockCaseModel.find.mockReturnValue({
+        sort: jest.fn().mockReturnValue({
+          exec: jest.fn().mockResolvedValue([
+            mockCaseDoc({
+              templateId: "tpl-123",
+              title: "Dossier A",
+              steps: [{ todos: [{ label: "Relancer client", status: "pending" }] }],
+            }),
+          ]),
+        }),
+      });
+
+      const result = await service.getDashboardTodoCases(
+        "org-1",
+        "user-1",
+        "profile-1",
+        "tpl-123",
+        "Relancer client",
+      );
+
+      expect(result).toHaveLength(1);
+      expect(result[0].caseTitle).toBe("Dossier A");
+    });
+
+    it("returns empty when user profile is not allowed", async () => {
+      const template = mockTemplateDoc({
+        steps: [
+          {
+            name: "Étape 1",
+            order: 0,
+            todos: [
+              {
+                label: "Relancer client",
+                dashboardRule: {
+                  showOnDashboard: true,
+                  visibility: "by_profile",
+                  profileIds: ["profile-1"],
+                  userIds: [],
+                },
+              },
+            ],
+          },
+        ],
+      });
+      mockTemplateModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(template),
+      });
+
+      const result = await service.getDashboardTodoCases(
+        "org-1",
+        "user-1",
+        "profile-2",
+        "tpl-123",
+        "Relancer client",
+      );
+
+      expect(result).toEqual([]);
+      expect(mockCaseModel.find).not.toHaveBeenCalled();
+    });
+  });
 });

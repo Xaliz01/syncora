@@ -1,5 +1,23 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document, Types } from "mongoose";
+import type { TodoDashboardVisibility } from "@syncora/shared";
+
+@Schema({ _id: false })
+export class TodoDashboardRuleSubDoc {
+  @Prop({ default: false })
+  showOnDashboard!: boolean;
+
+  @Prop({ type: String })
+  visibility?: TodoDashboardVisibility;
+
+  @Prop({ type: [String], default: [] })
+  profileIds!: string[];
+
+  @Prop({ type: [String], default: [] })
+  userIds!: string[];
+}
+
+export const TodoDashboardRuleSubDocSchema = SchemaFactory.createForClass(TodoDashboardRuleSubDoc);
 
 @Schema({ _id: false })
 export class TemplateStepTodoSubDoc {
@@ -8,6 +26,9 @@ export class TemplateStepTodoSubDoc {
 
   @Prop()
   description?: string;
+
+  @Prop({ type: TodoDashboardRuleSubDocSchema })
+  dashboardRule?: TodoDashboardRuleSubDoc;
 }
 
 export const TemplateStepTodoSubDocSchema = SchemaFactory.createForClass(TemplateStepTodoSubDoc);

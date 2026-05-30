@@ -11,6 +11,7 @@ import { useToast } from "@/components/ui/ToastProvider";
 import { usePermissions } from "@/lib/hooks/usePermissions";
 import { useRouter } from "next/navigation";
 import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
+import { AppErrorAlert, ResourceNotFoundPanel } from "@/components/ui/AppErrorAlert";
 
 const STATUS_COLORS: Record<string, string> = {
   actif: "bg-emerald-50 text-emerald-700 border-emerald-200",
@@ -38,7 +39,7 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
 
   const [editFirstName, setEditFirstName] = useState("");
   const [editLastName, setEditLastName] = useState("");
@@ -69,7 +70,7 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
       setEditSpeciality(techData.speciality ?? "");
       setEditStatus(techData.status);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur de chargement");
+      setError(err);
     } finally {
       setLoading(false);
     }
@@ -96,7 +97,7 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
       setIsEditing(false);
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Impossible de sauvegarder");
+      setError(err);
     } finally {
       setSaving(false);
     }
@@ -117,7 +118,7 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
       showToast("Technicien supprimé.");
       router.push("/fleet/technicians");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Impossible de supprimer");
+      setError(err);
     }
   };
 
@@ -136,7 +137,7 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
       setAccountPassword("");
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Impossible de créer le compte");
+      setError(err);
     } finally {
       setCreatingAccount(false);
     }
@@ -152,15 +153,13 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
 
   if (!technician) {
     return (
-      <div className="space-y-3">
-        <p className="text-slate-700 dark:text-slate-200">Technicien introuvable.</p>
-        <Link
-          href="/fleet/technicians"
-          className="text-brand-600 dark:text-brand-400 hover:underline"
-        >
-          Retour à la liste
-        </Link>
-      </div>
+      <ResourceNotFoundPanel
+        error={error}
+        resourceLabel="Technicien"
+        backHref="/fleet/technicians"
+        backLabel="Retour à la liste"
+        onRetry={() => void refresh()}
+      />
     );
   }
 
@@ -204,11 +203,7 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
         </div>
       </div>
 
-      {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm p-3">
-          {error}
-        </div>
-      )}
+      {error ? <AppErrorAlert error={error} onRetry={() => void refresh()} /> : null}
 
       {!isEditing ? (
         <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">

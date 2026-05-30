@@ -34,4 +34,9 @@ export class AccountController {
   async updatePreferences(@CurrentUser() user: AuthUser, @Body() body: UpdateUserPreferencesBody) {
     return this.accountService.updatePreferences(user, body);
   }
+
+  @Get("support/crisp-identity")
+  async getCrispIdentity(@CurrentUser() user: AuthUser) {
+    return this.accountService.getCrispIdentity(user);
+  }
 }

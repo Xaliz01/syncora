@@ -1,3 +1,5 @@
+import { ApiError, normalizeApiErrorMessage } from "./api-errors";
+
 export const API_BASE =
   (typeof process !== "undefined" && process.env.NEXT_PUBLIC_API_URL) ||
   "http://localhost:3000/api";
@@ -22,9 +24,12 @@ export interface ApiRequestOptions {
 async function throwIfNotOk(response: Response, fallbackError: string): Promise<void> {
   if (response.ok) return;
   const err = await response.json().catch(() => ({}));
-  const message = (err as { message?: string | string[] }).message;
-  if (Array.isArray(message)) throw new Error(message.join(", "));
-  throw new Error(message ?? fallbackError);
+  const raw = (err as { message?: string | string[] }).message;
+  const message = Array.isArray(raw) ? raw.join(", ") : raw;
+  throw new ApiError(
+    normalizeApiErrorMessage(response.status, message, fallbackError),
+    response.status,
+  );
 }
 
 export async function apiRequestJson<T>(

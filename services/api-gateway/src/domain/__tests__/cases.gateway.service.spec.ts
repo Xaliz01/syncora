@@ -1,4 +1,6 @@
 import { Test } from "@nestjs/testing";
+import { HttpService } from "@nestjs/axios";
+import { of } from "rxjs";
 import type { AuthUser, CaseResponse, CustomerResponse } from "@syncora/shared";
 import { CasesGatewayService } from "../cases.service";
 import { OrganizationScopedHttpClient } from "../../infrastructure/organization-scoped-http.client";
@@ -8,6 +10,7 @@ describe("CasesGatewayService", () => {
   let service: CasesGatewayService;
   let scopedHttp: { request: jest.Mock };
   let customersGateway: { getCustomer: jest.Mock; listCustomersByIds: jest.Mock };
+  let httpService: { get: jest.Mock };
 
   const user: AuthUser = {
     id: "user-1",
@@ -54,12 +57,27 @@ describe("CasesGatewayService", () => {
       getCustomer: jest.fn(),
       listCustomersByIds: jest.fn(),
     };
+    httpService = {
+      get: jest.fn().mockReturnValue(
+        of({
+          data: {
+            organizationId: "org-1",
+            userId: "user-1",
+            profileId: "profile-1",
+            extraPermissions: [],
+            revokedPermissions: [],
+            effectivePermissions: [],
+          },
+        }),
+      ),
+    };
 
     const module = await Test.createTestingModule({
       providers: [
         CasesGatewayService,
         { provide: OrganizationScopedHttpClient, useValue: scopedHttp },
         { provide: AbstractCustomersGatewayService, useValue: customersGateway },
+        { provide: HttpService, useValue: httpService },
       ],
     }).compile();
 

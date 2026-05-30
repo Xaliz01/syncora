@@ -19,9 +19,17 @@ import {
   ADDON_CATALOG,
   ADDON_CODES,
   addonAllowsStandaloneCheckout,
+  BASE_SUBSCRIPTION_INCLUDED_USERS,
   BASE_SUBSCRIPTION_PLAN,
   BASE_SUBSCRIPTION_PLAN_LABEL,
+  computeMaxOrganizationUsers,
+  estimateMonthlySubscriptionCents,
+  isBooleanAddonCode,
+  isQuantityAddonCode,
   isValidAddonCode,
+  QUANTITY_ADDON_CODES,
+  sanitizeAddonQuantities,
+  type AddonQuantities,
 } from "@syncora/shared";
 import type { OrganizationSubscriptionDocument } from "../persistence/organization-subscription.schema";
 import type { ProcessedStripeEventDocument } from "../persistence/processed-stripe-event.schema";
@@ -112,11 +120,40 @@ export class SubscriptionsService {
     private readonly processedEventModel: Model<ProcessedStripeEventDocument>,
   ) {}
 
-  private toResponse(doc: OrganizationSubscriptionDocument): OrganizationSubscriptionResponse {
+  private readAddonQuantities(doc: OrganizationSubscriptionDocument | null): AddonQuantities {
+    const raw = doc?.addonQuantities;
+    const fromMap: AddonQuantities = {};
+    if (raw instanceof Map) {
+      for (const code of QUANTITY_ADDON_CODES) {
+        const value = raw.get(code);
+        if (typeof value === "number" && Number.isFinite(value)) {
+          fromMap[code] = value;
+        }
+      }
+    } else if (raw && typeof raw === "object") {
+      for (const code of QUANTITY_ADDON_CODES) {
+        const value = (raw as Record<string, unknown>)[code];
+        if (typeof value === "number" && Number.isFinite(value)) {
+          fromMap[code] = value;
+        }
+      }
+    }
+    return sanitizeAddonQuantities(fromMap);
+  }
+
+  private toResponse(
+    doc: OrganizationSubscriptionDocument,
+    monthly: { monthlyTotalCents: number | null; monthlyTotalCurrency: string | null },
+  ): OrganizationSubscriptionResponse {
     const status = mapStripeStatus(doc.stripeStatus);
     const trialEndsAt = doc.trialEndsAt ?? null;
     const currentPeriodEnd = doc.currentPeriodEnd ?? null;
-    const activeAddons = (doc.activeAddons ?? []).filter(isValidAddonCode);
+    const activeAddons = (doc.activeAddons ?? []).filter(
+      (code): code is AddonCode => isValidAddonCode(code) && isBooleanAddonCode(code),
+    );
+    const addonQuantities = this.readAddonQuantities(doc);
+    const includedUsers = BASE_SUBSCRIPTION_INCLUDED_USERS;
+    const maxUsers = computeMaxOrganizationUsers(addonQuantities);
     return {
       organizationId: doc.organizationId,
       status,
@@ -127,25 +164,104 @@ export class SubscriptionsService {
       planName: BASE_SUBSCRIPTION_PLAN.name,
       planLabel: PLAN_LABEL,
       activeAddons,
+      addonQuantities,
+      includedUsers,
+      maxUsers,
+      monthlyTotalCents: monthly.monthlyTotalCents,
+      monthlyTotalCurrency: monthly.monthlyTotalCurrency,
     };
+  }
+
+  private buildNoneResponse(organizationId: string): OrganizationSubscriptionResponse {
+    return {
+      organizationId,
+      status: "none",
+      hasAccess: false,
+      trialEndsAt: null,
+      currentPeriodEnd: null,
+      cancelAtPeriodEnd: false,
+      planName: BASE_SUBSCRIPTION_PLAN.name,
+      planLabel: PLAN_LABEL,
+      activeAddons: [],
+      addonQuantities: sanitizeAddonQuantities({}),
+      includedUsers: BASE_SUBSCRIPTION_INCLUDED_USERS,
+      maxUsers: computeMaxOrganizationUsers({}),
+      monthlyTotalCents: null,
+      monthlyTotalCurrency: null,
+    };
+  }
+
+  private async resolveMonthlyTotal(
+    doc: OrganizationSubscriptionDocument | null,
+    activeAddons: AddonCode[],
+    addonQuantities: AddonQuantities,
+  ): Promise<{ monthlyTotalCents: number | null; monthlyTotalCurrency: string | null }> {
+    const subscriptionId = doc?.stripeSubscriptionId?.trim();
+    if (subscriptionId) {
+      const fromStripe = await this.fetchStripeMonthlyTotal(subscriptionId);
+      if (fromStripe.monthlyTotalCents != null) {
+        return fromStripe;
+      }
+    }
+
+    if (!doc || mapStripeStatus(doc.stripeStatus) === "none") {
+      return { monthlyTotalCents: null, monthlyTotalCurrency: null };
+    }
+
+    return {
+      monthlyTotalCents: estimateMonthlySubscriptionCents({ activeAddons, addonQuantities }),
+      monthlyTotalCurrency: "eur",
+    };
+  }
+
+  private async fetchStripeMonthlyTotal(
+    subscriptionId: string,
+  ): Promise<{ monthlyTotalCents: number | null; monthlyTotalCurrency: string | null }> {
+    try {
+      const stripe = getStripe();
+      const sub = await stripe.subscriptions.retrieve(subscriptionId, {
+        expand: ["items.data.price"],
+      });
+
+      let totalCents = 0;
+      let currency: string | null = null;
+
+      for (const item of sub.items.data) {
+        const price = item.price;
+        if (!price || typeof price === "string") {
+          continue;
+        }
+        const unitAmount = price.unit_amount ?? 0;
+        const quantity = item.quantity ?? 1;
+        totalCents += unitAmount * quantity;
+        currency = price.currency ?? currency;
+      }
+
+      if (totalCents <= 0) {
+        return { monthlyTotalCents: null, monthlyTotalCurrency: currency };
+      }
+
+      return {
+        monthlyTotalCents: totalCents,
+        monthlyTotalCurrency: currency ?? "eur",
+      };
+    } catch {
+      return { monthlyTotalCents: null, monthlyTotalCurrency: null };
+    }
   }
 
   async getByOrganization(organizationId: string): Promise<OrganizationSubscriptionResponse> {
     const doc = await this.subscriptionModel.findOne({ organizationId }).exec();
     if (!doc) {
-      return {
-        organizationId,
-        status: "none",
-        hasAccess: false,
-        trialEndsAt: null,
-        currentPeriodEnd: null,
-        cancelAtPeriodEnd: false,
-        planName: BASE_SUBSCRIPTION_PLAN.name,
-        planLabel: PLAN_LABEL,
-        activeAddons: [],
-      };
+      return this.buildNoneResponse(organizationId);
     }
-    return this.toResponse(doc);
+
+    const activeAddons = (doc.activeAddons ?? []).filter(
+      (code): code is AddonCode => isValidAddonCode(code) && isBooleanAddonCode(code),
+    );
+    const addonQuantities = this.readAddonQuantities(doc);
+    const monthly = await this.resolveMonthlyTotal(doc, activeAddons, addonQuantities);
+    return this.toResponse(doc, monthly);
   }
 
   async createCheckoutSession(params: {
@@ -218,6 +334,12 @@ export class SubscriptionsService {
   }): Promise<CreateCheckoutSessionResponse> {
     if (!isValidAddonCode(params.addonCode)) {
       throw new BadRequestException(`Code addon invalide : ${params.addonCode}`);
+    }
+
+    if (isQuantityAddonCode(params.addonCode)) {
+      throw new BadRequestException(
+        `L'option « ${ADDON_CATALOG[params.addonCode].label} » se règle en quantité depuis la page Abonnement.`,
+      );
     }
 
     const addonPriceId = resolveAddonPriceId(params.addonCode);
@@ -508,16 +630,20 @@ export class SubscriptionsService {
   async updateSubscriptionAddons(params: {
     organizationId: string;
     addonCodes: AddonCode[];
+    addonQuantities?: AddonQuantities;
     successUrl: string;
   }): Promise<UpdateSubscriptionAddonsResponse> {
-    const desired = [
+    const desiredBoolean = [
       ...new Set(
         params.addonCodes.filter(
           (code): code is AddonCode =>
-            isValidAddonCode(code) && ADDON_CATALOG[code].requiresBaseSubscription,
+            isValidAddonCode(code) &&
+            isBooleanAddonCode(code) &&
+            ADDON_CATALOG[code].requiresBaseSubscription,
         ),
       ),
     ];
+    const desiredQuantities = sanitizeAddonQuantities(params.addonQuantities);
 
     const doc = await this.subscriptionModel
       .findOne({ organizationId: params.organizationId })
@@ -539,16 +665,21 @@ export class SubscriptionsService {
       throw new BadRequestException("L'abonnement Stripe ne correspond pas à cette organisation.");
     }
 
-    const currentCrossSell = this.addonsFromSubscriptionItems(sub);
-    const toAdd = desired.filter((code) => !currentCrossSell.includes(code));
-    const toRemove = currentCrossSell.filter((code) => !desired.includes(code));
+    const current = this.parseSubscriptionAddonState(sub);
+    const toAddBoolean = desiredBoolean.filter((code) => !current.booleanAddons.includes(code));
+    const toRemoveBoolean = current.booleanAddons.filter((code) => !desiredBoolean.includes(code));
+    const extraUsersChanged =
+      (current.quantities.extra_users ?? 0) !== (desiredQuantities.extra_users ?? 0);
 
-    if (toAdd.length === 0 && toRemove.length === 0) {
+    if (toAddBoolean.length === 0 && toRemoveBoolean.length === 0 && !extraUsersChanged) {
       throw new BadRequestException("Aucune modification à appliquer.");
     }
 
-    const toRemovePriceIds = new Set(toRemove.map((code) => resolveAddonPriceId(code)));
+    const toRemovePriceIds = new Set(toRemoveBoolean.map((code) => resolveAddonPriceId(code)));
+    const extraUsersPriceId = resolveAddonPriceId("extra_users");
+    const desiredExtraUsers = desiredQuantities.extra_users ?? 0;
     const items: Stripe.SubscriptionUpdateParams.Item[] = [];
+    let extraUsersItemId: string | undefined;
 
     for (const item of sub.items.data) {
       const priceId = typeof item.price === "string" ? item.price : (item.price?.id ?? undefined);
@@ -556,11 +687,28 @@ export class SubscriptionsService {
         items.push({ id: item.id, deleted: true });
         continue;
       }
+      if (priceId === extraUsersPriceId) {
+        extraUsersItemId = item.id;
+        if (extraUsersChanged) {
+          if (desiredExtraUsers <= 0) {
+            items.push({ id: item.id, deleted: true });
+          } else {
+            items.push({ id: item.id, quantity: desiredExtraUsers });
+          }
+        } else {
+          items.push({ id: item.id, quantity: item.quantity ?? 1 });
+        }
+        continue;
+      }
       items.push({ id: item.id, quantity: item.quantity ?? 1 });
     }
 
-    for (const code of toAdd) {
+    for (const code of toAddBoolean) {
       items.push({ price: resolveAddonPriceId(code), quantity: 1 });
+    }
+
+    if (extraUsersChanged && desiredExtraUsers > 0 && !extraUsersItemId) {
+      items.push({ price: extraUsersPriceId, quantity: desiredExtraUsers });
     }
 
     const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer.id;
@@ -857,21 +1005,38 @@ export class SubscriptionsService {
       .exec();
   }
 
-  /** Addons présents comme ligne sur l'abonnement socle (vente croisée Stripe). */
-  private addonsFromSubscriptionItems(sub: Stripe.Subscription): AddonCode[] {
-    const priceIds = new Set(
-      sub.items.data
-        .map((item) => {
-          const price = item.price;
-          return typeof price === "string" ? price : price?.id;
-        })
-        .filter((id): id is string => Boolean(id)),
-    );
+  private parseSubscriptionAddonState(sub: Stripe.Subscription): {
+    booleanAddons: AddonCode[];
+    quantities: AddonQuantities;
+  } {
+    const booleanAddons: AddonCode[] = [];
+    const quantities: AddonQuantities = {};
 
-    return ADDON_CODES.filter(
-      (code) =>
-        ADDON_CATALOG[code].requiresBaseSubscription && priceIds.has(resolveAddonPriceId(code)),
-    );
+    for (const item of sub.items.data) {
+      const priceId = typeof item.price === "string" ? item.price : (item.price?.id ?? undefined);
+      if (!priceId) {
+        continue;
+      }
+
+      for (const code of ADDON_CODES) {
+        if (resolveAddonPriceId(code) !== priceId) {
+          continue;
+        }
+        if (!ADDON_CATALOG[code].requiresBaseSubscription) {
+          continue;
+        }
+        if (isQuantityAddonCode(code)) {
+          quantities[code] = Math.max(0, item.quantity ?? 0);
+        } else {
+          booleanAddons.push(code);
+        }
+      }
+    }
+
+    return {
+      booleanAddons,
+      quantities: sanitizeAddonQuantities(quantities),
+    };
   }
 
   private mergeActiveAddons(
@@ -879,7 +1044,8 @@ export class SubscriptionsService {
     crossSellFromMainSub: AddonCode[],
   ): AddonCode[] {
     const legacyStandalone = (existing ?? []).filter(
-      (code): code is AddonCode => isValidAddonCode(code) && addonAllowsStandaloneCheckout(code),
+      (code): code is AddonCode =>
+        isValidAddonCode(code) && addonAllowsStandaloneCheckout(code) && isBooleanAddonCode(code),
     );
     return [...new Set([...legacyStandalone, ...crossSellFromMainSub])];
   }
@@ -890,8 +1056,8 @@ export class SubscriptionsService {
     sub: Stripe.Subscription,
   ): Promise<void> {
     const existing = await this.subscriptionModel.findOne({ organizationId }).lean().exec();
-    const crossSellAddons = this.addonsFromSubscriptionItems(sub);
-    const activeAddons = this.mergeActiveAddons(existing?.activeAddons, crossSellAddons);
+    const { booleanAddons, quantities } = this.parseSubscriptionAddonState(sub);
+    const activeAddons = this.mergeActiveAddons(existing?.activeAddons, booleanAddons);
 
     await this.subscriptionModel
       .findOneAndUpdate(
@@ -907,6 +1073,7 @@ export class SubscriptionsService {
             : undefined,
           cancelAtPeriodEnd: sub.cancel_at_period_end ?? false,
           activeAddons,
+          addonQuantities: quantities,
         },
         { upsert: true, new: true },
       )

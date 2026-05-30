@@ -40,7 +40,7 @@ const GRID = "md:grid-cols-[1.5fr_1fr_0.5fr_0.5fr]";
 export function TeamsListPage() {
   const [teams, setTeams] = useState<TeamResponse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [search, setSearch] = useState("");
 
   const loadData = useCallback(async () => {
@@ -50,7 +50,7 @@ export function TeamsListPage() {
       const data = await fleetApi.listTeams();
       setTeams(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur de chargement");
+      setError(err);
     } finally {
       setLoading(false);
     }
@@ -83,7 +83,13 @@ export function TeamsListPage() {
         }
       />
 
-      {error ? <ListPageError message={error} onRetry={() => void loadData()} /> : null}
+      {error ? (
+        <ListPageError
+          error={error}
+          fallbackMessage="Erreur de chargement"
+          onRetry={() => void loadData()}
+        />
+      ) : null}
 
       <ListToolbar>
         <ListSearchField

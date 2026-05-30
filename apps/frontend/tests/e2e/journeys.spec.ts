@@ -1,15 +1,19 @@
 import { test, expect } from "@playwright/test";
 
-const PROTECTED_PATHS = [
-  "/",
-  "/fleet/vehicles",
-  "/cases",
-  "/users",
-  "/settings/case-templates",
-  "/route-inconnue",
-];
+/** Routes applicatives connues (RequireAuth) — pas le catch-all, qui renvoie vers `/`. */
+const PROTECTED_PATHS = ["/fleet/vehicles", "/cases", "/users", "/settings/case-templates"];
 
 test.describe("Accès invité", () => {
+  test("la page d'accueil affiche la landing marketing", async ({ page }) => {
+    await page.goto("/");
+    await expect(page).toHaveURL("/");
+    await expect(
+      page.getByRole("heading", {
+        name: "Pilotez vos opérations terrain depuis un seul outil",
+      }),
+    ).toBeVisible();
+  });
+
   test("les routes protégées redirigent vers la connexion", async ({ page }) => {
     for (const path of PROTECTED_PATHS) {
       await page.goto(path);
@@ -54,7 +58,6 @@ test.describe("Parcours navigation auth", () => {
 /* ------------------------------------------------------------------ */
 
 const ALL_PROTECTED_PATHS = [
-  "/",
   "/organization",
   "/subscription",
   "/account",
@@ -154,13 +157,41 @@ test.describe("Soumission formulaire d'inscription", () => {
 });
 
 test.describe("Navigation catch-all", () => {
-  test("une route inconnue redirige vers /login", async ({ page }) => {
+  test("une route inconnue redirige vers la landing", async ({ page }) => {
     await page.goto("/unknown-page-xyz");
-    await expect(page).toHaveURL(/\/login/);
+    await expect(page).toHaveURL("/");
+    await expect(
+      page.getByRole("heading", {
+        name: "Pilotez vos opérations terrain depuis un seul outil",
+      }),
+    ).toBeVisible();
   });
 
-  test("une route imbriquée inconnue redirige vers /login", async ({ page }) => {
+  test("une route imbriquée inconnue redirige vers la landing", async ({ page }) => {
     await page.goto("/fleet/unknown/deep/path");
+    await expect(page).toHaveURL("/");
+    await expect(
+      page.getByRole("heading", {
+        name: "Pilotez vos opérations terrain depuis un seul outil",
+      }),
+    ).toBeVisible();
+  });
+});
+
+test.describe("Parcours landing publique", () => {
+  test("enchaîne landing, inscription et connexion", async ({ page }) => {
+    await page.goto("/");
+    await expect(
+      page.getByRole("heading", {
+        name: "Pilotez vos opérations terrain depuis un seul outil",
+      }),
+    ).toBeVisible();
+
+    await page.getByRole("link", { name: "Créer mon organisation" }).first().click();
+    await expect(page).toHaveURL(/\/register/);
+
+    await page.goto("/");
+    await page.getByRole("link", { name: "Se connecter" }).first().click();
     await expect(page).toHaveURL(/\/login/);
   });
 });

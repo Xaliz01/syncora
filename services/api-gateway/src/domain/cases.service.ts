@@ -1,4 +1,6 @@
 import { ForbiddenException, Injectable } from "@nestjs/common";
+import { HttpService } from "@nestjs/axios";
+import { firstValueFrom } from "rxjs";
 import type {
   AuthUser,
   CaseAssignee,
@@ -15,11 +17,13 @@ import type {
   CaseSummaryResponse,
   CaseTemplateResponse,
   CustomerResponse,
+  DashboardTodoCaseItem,
   InterventionResponse,
   UpdateCaseBody,
   UpdateCaseTemplateBody,
   UpdateInterventionBody,
   UpdateTodoBody,
+  UserPermissionAssignmentResponse,
   UserResponse,
 } from "@syncora/shared";
 import { assertAnyAssignablePermission } from "../infrastructure/permission-checks";
@@ -38,12 +42,14 @@ import {
 
 const CASES_URL = process.env.CASES_SERVICE_URL ?? "http://localhost:3004";
 const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
+const PERMISSIONS_URL = process.env.PERMISSIONS_SERVICE_URL ?? "http://localhost:3003";
 
 @Injectable()
 export class CasesGatewayService extends AbstractCasesGatewayService {
   constructor(
     private readonly scopedHttp: OrganizationScopedHttpClient,
     private readonly customersGateway: AbstractCustomersGatewayService,
+    private readonly httpService: HttpService,
   ) {
     super();
   }
@@ -338,12 +344,14 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
   // ── Dashboard ──
 
   async getDashboard(user: AuthUser) {
+    const userProfileId = await this.resolveUserProfileId(user);
     const dash = await this.callCasesService<CaseDashboardResponse>(user.organizationId, {
       method: "get",
       path: "/dashboard",
       query: {
         organizationId: user.organizationId,
         userId: user.id,
+        userProfileId,
       },
     });
     const [assignedCases, overdueCases] = await Promise.all([
@@ -351,6 +359,39 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       this.enrichCaseSummaries(user, dash.overdueCases),
     ]);
     return { ...dash, assignedCases, overdueCases };
+  }
+
+  async getDashboardTodoCases(
+    user: AuthUser,
+    templateId: string,
+    todoLabel: string,
+  ): Promise<DashboardTodoCaseItem[]> {
+    const userProfileId = await this.resolveUserProfileId(user);
+    return this.callCasesService<DashboardTodoCaseItem[]>(user.organizationId, {
+      method: "get",
+      path: "/dashboard/todo-cases",
+      query: {
+        organizationId: user.organizationId,
+        userId: user.id,
+        userProfileId,
+        templateId,
+        todoLabel,
+      },
+    });
+  }
+
+  private async resolveUserProfileId(user: AuthUser): Promise<string | undefined> {
+    try {
+      const res = await firstValueFrom(
+        this.httpService.get<UserPermissionAssignmentResponse>(
+          `${PERMISSIONS_URL}/assignments/${user.id}`,
+          { params: { organizationId: user.organizationId } },
+        ),
+      );
+      return res.data.profileId;
+    } catch {
+      return undefined;
+    }
   }
 
   // ── History ──

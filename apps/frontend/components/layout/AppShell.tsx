@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { SidebarNavIcon } from "@/components/layout/sidebar-nav-icons";
 import { readSidebarCollapsed, writeSidebarCollapsed } from "@/lib/sidebar-preference";
 import { notifySidebarPreferenceChanged, USER_PREFERENCES_APPLIED } from "@/lib/user-preferences";
@@ -14,6 +14,7 @@ import { OrganizationSwitcher } from "@/components/organization/OrganizationSwit
 import { hasPermission } from "@/lib/auth-permissions";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { CrispHelpButton } from "@/components/support/CrispHelpButton";
 
 interface MenuLink {
   label: string;
@@ -171,6 +172,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarPrefReady, setSidebarPrefReady] = useState(false);
+  const sidebarCollapsedRef = useRef(sidebarCollapsed);
+  sidebarCollapsedRef.current = sidebarCollapsed;
   const subscriptionOk = hasActiveSubscriptionAccess(user);
 
   useEffect(() => {
@@ -182,18 +185,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, []);
 
   const toggleSidebarCollapsed = useCallback(() => {
-    setSidebarCollapsed((prev) => {
-      const next = !prev;
-      writeSidebarCollapsed(next);
-      const sidebarCollapsed: SidebarPreference = next ? "collapsed" : "expanded";
-      notifySidebarPreferenceChanged(sidebarCollapsed);
-      if (user) {
-        void accountApi.updatePreferences({ sidebarCollapsed }).catch(() => {
-          /* localStorage déjà à jour */
-        });
-      }
-      return next;
-    });
+    const next = !sidebarCollapsedRef.current;
+    setSidebarCollapsed(next);
+    writeSidebarCollapsed(next);
+    const sidebarPreference: SidebarPreference = next ? "collapsed" : "expanded";
+    notifySidebarPreferenceChanged(sidebarPreference);
+    if (user) {
+      void accountApi.updatePreferences({ sidebarCollapsed: sidebarPreference }).catch(() => {
+        /* localStorage déjà à jour */
+      });
+    }
   }, [user]);
 
   const menuSections: MenuSection[] = subscriptionOk
@@ -268,7 +269,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       settingsLinks.push({ label: "Modèles de dossier", href: "/settings/case-templates" });
     }
     if (hasPermission(user, "profiles.read")) {
-      settingsLinks.push({ label: "Permissions", href: "/settings/permissions" });
       settingsLinks.push({ label: "Profils", href: "/settings/profiles" });
     }
     if (settingsLinks.length > 0) {
@@ -352,6 +352,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </span>
             </div>
             <NotificationBell />
+            <CrispHelpButton />
             <ThemeToggle />
             <button
               type="button"

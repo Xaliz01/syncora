@@ -20,6 +20,7 @@ import { useToast } from "@/components/ui/ToastProvider";
 import { usePermissions } from "@/lib/hooks/usePermissions";
 import { useRouter } from "next/navigation";
 import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
+import { AppErrorAlert, ResourceNotFoundPanel } from "@/components/ui/AppErrorAlert";
 
 const TYPE_LABELS: Record<string, string> = {
   camion: "Camion",
@@ -54,7 +55,7 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
 
   const [editType, setEditType] = useState<VehicleType>("camion");
   const [editReg, setEditReg] = useState("");
@@ -98,7 +99,7 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
         setSelectedTeamId("");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur de chargement");
+      setError(err);
     } finally {
       setLoading(false);
     }
@@ -128,7 +129,7 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
       setIsEditing(false);
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Impossible de sauvegarder");
+      setError(err);
     } finally {
       setSaving(false);
     }
@@ -143,7 +144,7 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
       showToast("Équipe affectée au véhicule.");
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Impossible d'affecter l'équipe");
+      setError(err);
     } finally {
       setSaving(false);
     }
@@ -158,7 +159,7 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
       showToast("Équipe désaffectée.");
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Impossible de désaffecter");
+      setError(err);
     } finally {
       setSaving(false);
     }
@@ -178,7 +179,7 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
       showToast("Véhicule supprimé.");
       router.push("/fleet/vehicles");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Impossible de supprimer");
+      setError(err);
     }
   };
 
@@ -192,12 +193,13 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
 
   if (!vehicle) {
     return (
-      <div className="space-y-3">
-        <p className="text-slate-700 dark:text-slate-200">Véhicule introuvable.</p>
-        <Link href="/fleet/vehicles" className="text-brand-600 dark:text-brand-400 hover:underline">
-          Retour à la liste
-        </Link>
-      </div>
+      <ResourceNotFoundPanel
+        error={error}
+        resourceLabel="Véhicule"
+        backHref="/fleet/vehicles"
+        backLabel="Retour à la liste"
+        onRetry={() => void refresh()}
+      />
     );
   }
 
@@ -240,11 +242,7 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
         </div>
       </div>
 
-      {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm p-3">
-          {error}
-        </div>
-      )}
+      {error ? <AppErrorAlert error={error} onRetry={() => void refresh()} /> : null}
 
       {!isEditing ? (
         <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">

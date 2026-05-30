@@ -27,9 +27,13 @@ export class OrganizationSubscriptionDocument extends Document {
   @Prop({ default: false })
   cancelAtPeriodEnd!: boolean;
 
-  /** Addons actifs (codes métier, ex. "team_suggestion"). */
+  /** Addons booléens actifs (codes métier, ex. "team_suggestion"). */
   @Prop({ type: [String], default: [] })
   activeAddons!: string[];
+
+  /** Quantités des addons cumulables (ex. extra_users → 3). */
+  @Prop({ type: Map, of: Number, default: {} })
+  addonQuantities!: Map<string, number>;
 
   /** Map addonCode → stripeSubscriptionId pour pouvoir résilier un addon individuellement. */
   @Prop({ type: Map, of: String, default: {} })

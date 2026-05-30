@@ -10,7 +10,9 @@ import { hasPermission } from "@/lib/auth-permissions";
 import { ModifySubscriptionAddonsDialog } from "@/components/subscription/ModifySubscriptionAddonsDialog";
 import {
   ADDON_CATALOG,
+  BASE_SUBSCRIPTION_INCLUDED_USERS,
   BASE_SUBSCRIPTION_PLAN,
+  formatMoneyFromCents,
   isValidAddonCode,
   type AddonCode,
   type OrganizationSubscriptionResponse,
@@ -340,6 +342,10 @@ function SubscriptionSectionInner({ mode = "full" }: { mode?: "full" | "pitchChe
                       <span className="block sm:inline sm:before:content-['·'] sm:before:mx-1.5 text-slate-500 dark:text-slate-400">
                         {BASE_SUBSCRIPTION_PLAN.commitmentDisplay}
                       </span>
+                      <span className="block text-slate-600 dark:text-slate-300 mt-1">
+                        {BASE_SUBSCRIPTION_INCLUDED_USERS} utilisateurs inclus · jusqu’à{" "}
+                        {subscription.maxUsers} avec les options
+                      </span>
                     </p>
                   </div>
                   {subscription.status !== "none" && (
@@ -356,7 +362,8 @@ function SubscriptionSectionInner({ mode = "full" }: { mode?: "full" | "pitchChe
                     <p className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">
                       Options complémentaires
                     </p>
-                    {subscription.activeAddons.length > 0 ? (
+                    {subscription.activeAddons.length > 0 ||
+                    (subscription.addonQuantities?.extra_users ?? 0) > 0 ? (
                       <ul className="grid gap-2 sm:grid-cols-2">
                         {subscription.activeAddons.map((code) => {
                           const addon = ADDON_CATALOG[code];
@@ -376,10 +383,44 @@ function SubscriptionSectionInner({ mode = "full" }: { mode?: "full" | "pitchChe
                             </li>
                           );
                         })}
+                        {(subscription.addonQuantities?.extra_users ?? 0) > 0 && (
+                          <li className="rounded-xl border border-white/80 dark:border-slate-700 bg-white/80 dark:bg-slate-900/80 px-3 py-2.5 shadow-sm">
+                            <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                              {ADDON_CATALOG.extra_users.label}
+                            </p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                              × {subscription.addonQuantities?.extra_users} —{" "}
+                              {ADDON_CATALOG.extra_users.priceLabel}
+                            </p>
+                          </li>
+                        )}
                       </ul>
                     ) : (
                       <p className="text-sm text-slate-500 dark:text-slate-400">
                         Aucune option activée pour le moment.
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {subscription.status !== "none" && subscription.monthlyTotalCents != null && (
+                  <div className="mt-5 pt-5 border-t border-brand-200/50 dark:border-slate-700/80">
+                    <p className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                      Total mensuel
+                    </p>
+                    <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-50">
+                      {formatMoneyFromCents(
+                        subscription.monthlyTotalCents,
+                        subscription.monthlyTotalCurrency ?? "eur",
+                      )}
+                      <span className="text-base font-normal text-slate-500 dark:text-slate-400">
+                        {" "}
+                        / {BASE_SUBSCRIPTION_PLAN.periodDisplay}
+                      </span>
+                    </p>
+                    {subscription.status === "trialing" && (
+                      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                        Montant facturé à la fin de l&apos;essai gratuit (hors promotions).
                       </p>
                     )}
                   </div>

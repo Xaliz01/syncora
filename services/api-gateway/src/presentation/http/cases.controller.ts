@@ -198,4 +198,14 @@ export class CasesController {
   async getDashboard(@CurrentUser() user: AuthUser) {
     return this.casesService.getDashboard(user);
   }
+
+  @Get("dashboard/todo-cases")
+  @RequirePermissions("cases.read")
+  async getDashboardTodoCases(
+    @CurrentUser() user: AuthUser,
+    @Query("templateId") templateId: string,
+    @Query("todoLabel") todoLabel: string,
+  ) {
+    return this.casesService.getDashboardTodoCases(user, templateId, todoLabel);
+  }
 }

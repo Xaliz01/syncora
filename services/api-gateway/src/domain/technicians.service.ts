@@ -1,18 +1,21 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import { BadRequestException, ConflictException, Injectable } from "@nestjs/common";
 import type {
   AuthUser,
   CreateTechnicianBody,
-  UpdateTechnicianBody,
-  TechnicianResponse,
-  UserResponse,
-  TechnicianStatus,
   CreateTechnicianUserAccountBody,
+  OrganizationSubscriptionResponse,
+  TechnicianResponse,
+  TechnicianStatus,
+  UpdateTechnicianBody,
+  UserResponse,
 } from "@syncora/shared";
+import { BASE_SUBSCRIPTION_PLAN } from "@syncora/shared";
 import { AbstractTechniciansGatewayService } from "./ports/technicians.service.port";
 import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
 
 const TECHNICIANS_URL = process.env.TECHNICIANS_SERVICE_URL ?? "http://localhost:3006";
 const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
+const SUBSCRIPTIONS_URL = process.env.SUBSCRIPTIONS_SERVICE_URL ?? "http://localhost:3008";
 
 @Injectable()
 export class TechniciansGatewayService extends AbstractTechniciansGatewayService {
@@ -48,6 +51,45 @@ export class TechniciansGatewayService extends AbstractTechniciansGatewayService
       organizationId,
       errorLabel: "Users service error",
     });
+  }
+
+  private subscriptionsRequest<T>(
+    organizationId: string,
+    params: Omit<
+      Parameters<OrganizationScopedHttpClient["request"]>[0],
+      "baseUrl" | "organizationId" | "errorLabel"
+    >,
+  ) {
+    return this.scopedHttp.request<T>({
+      ...params,
+      baseUrl: SUBSCRIPTIONS_URL,
+      organizationId,
+      errorLabel: "Subscriptions service error",
+    });
+  }
+
+  private async assertOrganizationUserSeatAvailable(organizationId: string): Promise<void> {
+    const [subscription, users] = await Promise.all([
+      this.subscriptionsRequest<OrganizationSubscriptionResponse>(organizationId, {
+        method: "get",
+        path: "/subscriptions/current",
+      }),
+      this.usersRequest<UserResponse[]>(organizationId, {
+        method: "get",
+        path: "/users",
+      }),
+    ]);
+
+    if (!subscription.hasAccess) {
+      return;
+    }
+
+    if (users.length >= subscription.maxUsers) {
+      throw new ConflictException(
+        `Limite d'utilisateurs atteinte (${subscription.maxUsers} au total, dont ${subscription.includedUsers} inclus dans l'offre ${BASE_SUBSCRIPTION_PLAN.name}). ` +
+          `Ajoutez des utilisateurs supplémentaires depuis la page Abonnement.`,
+      );
+    }
   }
 
   async createTechnician(
@@ -160,6 +202,8 @@ export class TechniciansGatewayService extends AbstractTechniciansGatewayService
     name: string,
     password: string,
   ): Promise<UserResponse> {
+    await this.assertOrganizationUserSeatAvailable(organizationId);
+
     return this.usersRequest<UserResponse>(organizationId, {
       method: "post",
       path: "/users",

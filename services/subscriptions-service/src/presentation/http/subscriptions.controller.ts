@@ -6,7 +6,7 @@ import type {
   CreateCheckoutSessionBody,
   UpdateSubscriptionAddonsBody,
 } from "@syncora/shared";
-import { isValidAddonCode } from "@syncora/shared";
+import { isValidAddonCode, isQuantityAddonCode } from "@syncora/shared";
 
 @Controller("subscriptions")
 export class SubscriptionsController {
@@ -63,10 +63,23 @@ export class SubscriptionsController {
       if (!isValidAddonCode(code)) {
         throw new BadRequestException(`Code addon invalide : ${code}`);
       }
+      if (isQuantityAddonCode(code)) {
+        throw new BadRequestException(
+          `L'option « ${code} » se règle via addonQuantities, pas addonCodes.`,
+        );
+      }
+    }
+    if (body.addonQuantities) {
+      for (const key of Object.keys(body.addonQuantities)) {
+        if (!isQuantityAddonCode(key)) {
+          throw new BadRequestException(`Quantité invalide pour l'addon : ${key}`);
+        }
+      }
     }
     return this.subscriptionsService.updateSubscriptionAddons({
       organizationId: body.organizationId,
       addonCodes: body.addonCodes,
+      addonQuantities: body.addonQuantities,
       successUrl: body.successUrl.trim(),
     });
   }
