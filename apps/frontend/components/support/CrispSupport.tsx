@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/components/auth/AuthContext";
 import { useOrganization } from "@/lib/organization";
@@ -36,10 +36,9 @@ function buildCrispIdentity(
 }
 
 export function CrispSupport() {
-  const { user } = useAuth();
+  const { user, isAuthenticated, isReady } = useAuth();
   const { activeOrganization } = useOrganization();
   const websiteId = getCrispWebsiteId();
-  const boundSessionRef = useRef<string | null>(null);
 
   const { data: subscription } = useQuery({
     queryKey: ["subscription-current"],
@@ -49,53 +48,51 @@ export function CrispSupport() {
   });
 
   useEffect(() => {
-    if (!websiteId || !user) {
+    if (!isReady || !websiteId || !isAuthenticated || !user) {
+      if (isReady && !isAuthenticated) {
+        shutdownCrispSession();
+      }
       return;
     }
 
     let cancelled = false;
 
+    const boot = async (signature?: string) => {
+      await bootCrispWithUser(
+        websiteId,
+        buildCrispIdentity(user, activeOrganization?.name, subscription, signature),
+      );
+    };
+
     void (async () => {
-      let signature: string | undefined;
       try {
-        const identity = await supportApi.getCrispIdentity();
-        signature = identity.signature;
+        await boot();
+        if (cancelled) return;
+
+        try {
+          const identity = await supportApi.getCrispIdentity();
+          if (!cancelled && identity.signature) {
+            await boot(identity.signature);
+          }
+        } catch {
+          /* signature optionnelle si vérification Crisp désactivée */
+        }
       } catch {
-        /* signature optionnelle si vérification Crisp désactivée */
+        /* évite de bloquer l'app si Crisp est indisponible */
       }
-
-      if (cancelled) return;
-
-      const identity = buildCrispIdentity(user, activeOrganization?.name, subscription, signature);
-      const sessionKey = [
-        identity.tokenId,
-        identity.email,
-        identity.signature ?? "",
-        identity.sessionData.organization_id,
-        identity.sessionData.plan,
-        identity.sessionData.subscription_status,
-      ].join(":");
-
-      if (boundSessionRef.current === sessionKey) {
-        return;
-      }
-
-      bootCrispWithUser(websiteId, identity);
-      boundSessionRef.current = sessionKey;
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [websiteId, user, activeOrganization?.name, subscription]);
-
-  useEffect(() => {
-    if (!websiteId) return;
-    if (!user) {
-      boundSessionRef.current = null;
-      shutdownCrispSession();
-    }
-  }, [websiteId, user]);
+  }, [
+    websiteId,
+    isReady,
+    isAuthenticated,
+    user,
+    activeOrganization?.name,
+    subscription,
+  ]);
 
   return null;
 }

@@ -7,7 +7,6 @@ import { usePermissions } from "@/lib/hooks/usePermissions";
 import {
   ListBadge,
   ListCellDefault,
-  ListCellMuted,
   ListCellPrimary,
   ListEmptyState,
   ListLoadingState,

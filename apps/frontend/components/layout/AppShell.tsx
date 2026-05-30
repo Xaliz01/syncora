@@ -14,7 +14,6 @@ import { OrganizationSwitcher } from "@/components/organization/OrganizationSwit
 import { hasPermission } from "@/lib/auth-permissions";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
-import { CrispSupport } from "@/components/support/CrispSupport";
 import { CrispHelpButton } from "@/components/support/CrispHelpButton";
 
 interface MenuLink {
@@ -281,7 +280,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
-      <CrispSupport />
       <header className="sticky top-0 z-30 w-full border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur">
         <div className="flex items-center justify-between px-4 py-3 lg:px-6">
           <div className="flex items-center gap-3">

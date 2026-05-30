@@ -1,8 +1,12 @@
-import { Crisp } from "crisp-sdk-web";
-
 declare global {
   interface Window {
-    $crisp: Array<unknown>;
+    $crisp: Array<unknown> & {
+      is?: (path: string) => boolean;
+      push: (args: unknown[]) => unknown;
+    };
+    CRISP_WEBSITE_ID?: string;
+    CRISP_TOKEN_ID?: string;
+    CRISP_RUNTIME_CONFIG?: { locale?: string };
   }
 }
 
@@ -34,70 +38,119 @@ export type CrispUserIdentity = {
   sessionData: Record<string, string | number | boolean>;
 };
 
-let configuredWebsiteId: string | null = null;
-let crispLoaded = false;
+let loadPromise: Promise<void> | null = null;
+let loadedWebsiteId: string | null = null;
 
-function removeLegacyCrispScript(): void {
-  document
-    .querySelectorAll('script[src*="client.crisp.chat"], script[src*="crisp.chat"]')
-    .forEach((node) => node.remove());
+function crispPush(args: unknown[]): void {
+  if (typeof window === "undefined") return;
+  window.$crisp = window.$crisp || [];
+  window.$crisp.push(args);
 }
 
-function setCrispEmail(email: string, signature?: string): void {
-  if (signature) {
-    Crisp.user.setEmail(email, signature);
-    return;
+function queueUserIdentity(identity: CrispUserIdentity): void {
+  if (identity.signature) {
+    crispPush(["set", "user:email", [identity.email, identity.signature]]);
+  } else {
+    crispPush(["set", "user:email", [identity.email]]);
   }
-  window.$crisp.push(["set", "user:email", [email]]);
+  crispPush(["set", "user:nickname", [identity.nickname]]);
+
+  const sessionData = Object.entries(identity.sessionData)
+    .filter(
+      ([, value]) =>
+        typeof value === "string" || typeof value === "number" || typeof value === "boolean",
+    )
+    .map(([key, value]) => [key, value] as [string, string | number | boolean]);
+
+  if (sessionData.length > 0) {
+    crispPush(["set", "session:data", [sessionData]]);
+  }
 }
 
-function bindCrispUser(identity: CrispUserIdentity): void {
-  setCrispEmail(identity.email, identity.signature);
-  Crisp.user.setNickname(identity.nickname);
-  Crisp.session.setData(identity.sessionData);
+function isCrispAvailable(): boolean {
+  return typeof window.$crisp?.is === "function" && window.$crisp.is("website:available");
 }
 
-function ensureConfigured(websiteId: string): void {
-  if (configuredWebsiteId === websiteId) {
-    return;
+function ensureCrispScript(websiteId: string, tokenId: string): Promise<void> {
+  if (loadPromise && loadedWebsiteId === websiteId) {
+    return loadPromise;
   }
 
-  removeLegacyCrispScript();
-  window.$crisp = [];
-  configuredWebsiteId = websiteId;
-  crispLoaded = false;
+  loadedWebsiteId = websiteId;
+  loadPromise = new Promise<void>((resolve) => {
+    window.$crisp = window.$crisp || [];
+    window.CRISP_WEBSITE_ID = websiteId;
+    window.CRISP_TOKEN_ID = tokenId;
+    window.CRISP_RUNTIME_CONFIG = { locale: "fr" };
 
-  Crisp.configure(websiteId, {
-    autoload: false,
-    locale: "fr",
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      resolve();
+    };
+
+    if (isCrispAvailable()) {
+      finish();
+      return;
+    }
+
+    crispPush([
+      "on",
+      "session:loaded",
+      () => {
+        finish();
+      },
+    ]);
+
+    if (!document.querySelector('script[src*="client.crisp.chat/l.js"]')) {
+      const script = document.createElement("script");
+      script.src = "https://client.crisp.chat/l.js";
+      script.async = true;
+      script.onerror = () => finish();
+      document.head.appendChild(script);
+    }
+
+    const poll = window.setInterval(() => {
+      if (isCrispAvailable()) {
+        window.clearInterval(poll);
+        finish();
+      }
+    }, 250);
+
+    window.setTimeout(() => {
+      window.clearInterval(poll);
+      finish();
+    }, 10_000);
   });
+
+  return loadPromise;
 }
 
 /** Charge Crisp uniquement après avoir lié l'utilisateur connecté (évite visitor1). */
-export function bootCrispWithUser(websiteId: string, identity: CrispUserIdentity): void {
-  ensureConfigured(websiteId);
-  Crisp.setTokenId(identity.tokenId);
+export async function bootCrispWithUser(
+  websiteId: string,
+  identity: CrispUserIdentity,
+): Promise<void> {
+  if (typeof window === "undefined") return;
 
-  const applyIdentity = () => bindCrispUser(identity);
-  Crisp.session.onLoaded(applyIdentity);
+  window.CRISP_TOKEN_ID = identity.tokenId;
+  queueUserIdentity(identity);
 
-  if (!crispLoaded) {
-    applyIdentity();
-    Crisp.load();
-    crispLoaded = true;
-    return;
-  }
+  await ensureCrispScript(websiteId, identity.tokenId);
 
-  applyIdentity();
-  Crisp.session.reset();
+  queueUserIdentity(identity);
+  crispPush(["do", "chat:show"]);
 }
 
 export function shutdownCrispSession(): void {
-  if (!configuredWebsiteId) {
-    return;
-  }
-  Crisp.setTokenId();
-  Crisp.session.reset();
+  if (typeof window === "undefined") return;
+
+  loadPromise = null;
+  loadedWebsiteId = null;
+
+  crispPush(["do", "session:reset", [false]]);
+  crispPush(["do", "chat:hide"]);
 }
 
 /** Ouvre le centre d'aide Crisp. Retourne false si indisponible (non configuré ou erreur SDK). */
@@ -105,15 +158,10 @@ export function openCrispHelpdesk(): boolean {
   if (!isCrispHelpdeskEnabled()) {
     return false;
   }
-  try {
-    Crisp.chat.setHelpdeskView();
-    return true;
-  } catch {
-    openCrispChat();
-    return false;
-  }
+  crispPush(["do", "helpdesk:search"]);
+  return true;
 }
 
 export function openCrispChat(): void {
-  Crisp.chat.open();
+  crispPush(["do", "chat:open"]);
 }
