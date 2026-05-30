@@ -1,7 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { ADDON_CATALOG, BASE_SUBSCRIPTION_PLAN, BASE_SUBSCRIPTION_TRIAL_LABEL } from "@syncora/shared";
+import {
+  ADDON_CATALOG,
+  BASE_SUBSCRIPTION_PLAN,
+  BASE_SUBSCRIPTION_TRIAL_LABEL,
+} from "@syncora/shared";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 const PILLARS = [
