@@ -85,14 +85,7 @@ export function CrispSupport() {
     return () => {
       cancelled = true;
     };
-  }, [
-    websiteId,
-    isReady,
-    isAuthenticated,
-    user,
-    activeOrganization?.name,
-    subscription,
-  ]);
+  }, [websiteId, isReady, isAuthenticated, user, activeOrganization?.name, subscription]);
 
   return null;
 }
