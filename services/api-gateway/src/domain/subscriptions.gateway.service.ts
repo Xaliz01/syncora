@@ -97,6 +97,7 @@ export class SubscriptionsGatewayService extends AbstractSubscriptionsGatewaySer
       body: {
         organizationId: user.organizationId,
         addonCodes: body.addonCodes,
+        addonQuantities: body.addonQuantities,
         successUrl: body.successUrl,
       },
     });

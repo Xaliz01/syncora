@@ -1,12 +1,7 @@
 import { test, expect } from "@playwright/test";
 
-const PROTECTED_PATHS = [
-  "/fleet/vehicles",
-  "/cases",
-  "/users",
-  "/settings/case-templates",
-  "/route-inconnue",
-];
+/** Routes applicatives connues (RequireAuth) — pas le catch-all, qui renvoie vers `/`. */
+const PROTECTED_PATHS = ["/fleet/vehicles", "/cases", "/users", "/settings/case-templates"];
 
 test.describe("Accès invité", () => {
   test("la page d'accueil affiche la landing marketing", async ({ page }) => {

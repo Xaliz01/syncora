@@ -120,6 +120,11 @@ describe("SubscriptionsService", () => {
         planName: "Essentiel",
         planLabel: "9,99 € / mois, sans engagement",
         activeAddons: [],
+        addonQuantities: { extra_users: 0 },
+        includedUsers: 2,
+        maxUsers: 2,
+        monthlyTotalCents: null,
+        monthlyTotalCurrency: null,
       });
     });
 
@@ -220,6 +225,27 @@ describe("SubscriptionsService", () => {
       const result = await service.getByOrganization("org-1");
 
       expect(result.activeAddons).toEqual(["team_suggestion"]);
+    });
+
+    it("should compute monthly total from Stripe subscription items", async () => {
+      const doc = mockSubscriptionDoc({ stripeStatus: "active" });
+      mockSubscriptionModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+      mockSubscriptionsRetrieve.mockResolvedValue({
+        id: "sub_123",
+        items: {
+          data: [
+            { quantity: 1, price: { unit_amount: 999, currency: "eur" } },
+            { quantity: 2, price: { unit_amount: 299, currency: "eur" } },
+          ],
+        },
+      });
+
+      const result = await service.getByOrganization("org-1");
+
+      expect(result.monthlyTotalCents).toBe(999 + 299 * 2);
+      expect(result.monthlyTotalCurrency).toBe("eur");
     });
 
     it("should filter out invalid addon codes from response", async () => {
@@ -463,9 +489,64 @@ describe("SubscriptionsService", () => {
         service.updateSubscriptionAddons({
           organizationId: "org-1",
           addonCodes: [],
+          addonQuantities: { extra_users: 0 },
           successUrl: "https://example.com/success",
         }),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it("should update extra_users quantity on the base subscription", async () => {
+      const doc = mockSubscriptionDoc({ stripeStatus: "active" });
+      mockSubscriptionModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+      process.env.STRIPE_ADDON_EXTRA_USERS_PRICE_ID = "price_extra_users";
+      mockSubscriptionsRetrieve.mockResolvedValue({
+        id: "sub_123",
+        customer: "cus_123",
+        metadata: { organizationId: "org-1" },
+        items: {
+          data: [{ id: "si_base", quantity: 1, price: { id: "price_base" } }],
+        },
+      });
+      mockSubscriptionsUpdate.mockResolvedValue({
+        id: "sub_123",
+        customer: "cus_123",
+        status: "active",
+        items: {
+          data: [
+            { id: "si_base", price: { id: "price_base" } },
+            { id: "si_extra", quantity: 2, price: { id: "price_extra_users" } },
+          ],
+        },
+        latest_invoice: {
+          id: "in_paid",
+          status: "paid",
+          amount_due: 0,
+        },
+      });
+      mockSubscriptionModel.findOneAndUpdate.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+      mockCustomersRetrieve.mockResolvedValue({
+        id: "cus_123",
+        metadata: { organizationId: "org-1" },
+      });
+
+      const result = await service.updateSubscriptionAddons({
+        organizationId: "org-1",
+        addonCodes: [],
+        addonQuantities: { extra_users: 2 },
+        successUrl: "https://example.com/success",
+      });
+
+      expect(result.url).toBe("https://example.com/success");
+      expect(mockSubscriptionsUpdate).toHaveBeenCalledWith(
+        "sub_123",
+        expect.objectContaining({
+          items: expect.arrayContaining([{ price: "price_extra_users", quantity: 2 }]),
+        }),
+      );
     });
   });
 

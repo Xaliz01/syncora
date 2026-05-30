@@ -16,11 +16,12 @@ import type {
   EffectivePermissionsResponse,
   InvitationResponse,
   OrganizationMembershipResponse,
+  OrganizationSubscriptionResponse,
   UpdatePermissionProfileBody,
   UserPermissionAssignmentResponse,
   UserResponse,
 } from "@syncora/shared";
-import { ASSIGNABLE_PERMISSION_CODES } from "@syncora/shared";
+import { ASSIGNABLE_PERMISSION_CODES, BASE_SUBSCRIPTION_PLAN } from "@syncora/shared";
 import {
   assertAnyAssignablePermission,
   assertAssignablePermission,
@@ -35,6 +36,7 @@ import {
 
 const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
 const PERMISSIONS_URL = process.env.PERMISSIONS_SERVICE_URL ?? "http://localhost:3003";
+const SUBSCRIPTIONS_URL = process.env.SUBSCRIPTIONS_SERVICE_URL ?? "http://localhost:3008";
 
 @Injectable()
 export class AdminService extends AbstractAdminService {
@@ -50,6 +52,8 @@ export class AdminService extends AbstractAdminService {
   }
 
   async inviteUser(currentUser: AuthUser, body: InviteOrganizationUserBody) {
+    await this.assertOrganizationUserSeatAvailable(currentUser.organizationId);
+
     const invitedRole = body.role ?? "member";
     if (
       invitedRole === "admin" &&
@@ -321,6 +325,53 @@ export class AdminService extends AbstractAdminService {
       path: "/invitations",
       query: { organizationId: currentUser.organizationId, status },
     });
+  }
+
+  private async assertOrganizationUserSeatAvailable(organizationId: string): Promise<void> {
+    const [subscription, users] = await Promise.all([
+      this.callSubscriptionsService<OrganizationSubscriptionResponse>({
+        method: "get",
+        path: "/subscriptions/current",
+        query: { organizationId },
+      }),
+      this.callUsersService<UserResponse[]>({
+        method: "get",
+        path: "/users",
+        query: { organizationId },
+      }),
+    ]);
+
+    if (!subscription.hasAccess) {
+      return;
+    }
+
+    if (users.length >= subscription.maxUsers) {
+      throw new ConflictException(
+        `Limite d'utilisateurs atteinte (${subscription.maxUsers} au total, dont ${subscription.includedUsers} inclus dans l'offre ${BASE_SUBSCRIPTION_PLAN.name}). ` +
+          `Ajoutez des utilisateurs supplémentaires depuis la page Abonnement.`,
+      );
+    }
+  }
+
+  private async callSubscriptionsService<T>(params: {
+    method: "get" | "post";
+    path: string;
+    body?: unknown;
+    query?: Record<string, unknown>;
+  }): Promise<T> {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.request<T>({
+          method: params.method,
+          url: `${SUBSCRIPTIONS_URL}${params.path}`,
+          data: params.body,
+          params: params.query,
+        }),
+      );
+      return response.data;
+    } catch (err: unknown) {
+      this.rethrowAsHttpException(err);
+    }
   }
 
   private async callUsersService<T>(params: {

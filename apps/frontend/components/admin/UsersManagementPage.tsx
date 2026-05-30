@@ -4,6 +4,7 @@ import Link from "next/link";
 import React, { useCallback, useEffect, useState } from "react";
 import type { InvitationResponse } from "@syncora/shared";
 import * as adminApi from "@/lib/admin.api";
+import * as subscriptionsApi from "@/lib/subscriptions.api";
 import type { ManagedOrganizationUser } from "@/lib/admin.api";
 import { getOrganizationUserStatusLabel } from "@/lib/organization-user-status";
 import { PermissionGate } from "@/components/auth/PermissionGate";
@@ -23,6 +24,7 @@ const INVITATION_STATUS_LABELS: Record<string, string> = {
 export function UsersManagementPage() {
   const [users, setUsers] = useState<ManagedOrganizationUser[]>([]);
   const [invitations, setInvitations] = useState<InvitationResponse[]>([]);
+  const [maxUsers, setMaxUsers] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,12 +32,14 @@ export function UsersManagementPage() {
     setLoading(true);
     setError(null);
     try {
-      const [usersRes, invitationsRes] = await Promise.all([
+      const [usersRes, invitationsRes, subscriptionRes] = await Promise.all([
         adminApi.listOrganizationUsers(),
         adminApi.listInvitations(),
+        subscriptionsApi.getSubscriptionCurrent().catch(() => null),
       ]);
       setUsers(usersRes.users);
       setInvitations(invitationsRes);
+      setMaxUsers(subscriptionRes?.hasAccess ? subscriptionRes.maxUsers : null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur de chargement des utilisateurs");
     } finally {
@@ -54,6 +58,11 @@ export function UsersManagementPage() {
           <h1 className="text-xl sm:text-2xl font-semibold">Utilisateurs</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             Liste des utilisateurs de l&apos;organisation. Cliquez sur un nom pour ouvrir sa fiche.
+            {maxUsers !== null && (
+              <span className="block mt-1 text-slate-600 dark:text-slate-300">
+                {users.length} / {maxUsers} utilisateur{maxUsers > 1 ? "s" : ""} utilisés.
+              </span>
+            )}
           </p>
         </div>
         <PermissionGate permission="users.invite">

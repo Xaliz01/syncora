@@ -3,6 +3,7 @@
 import Link from "next/link";
 import {
   ADDON_CATALOG,
+  BASE_SUBSCRIPTION_INCLUDED_USERS,
   BASE_SUBSCRIPTION_PLAN,
   BASE_SUBSCRIPTION_TRIAL_LABEL,
 } from "@syncora/shared";
@@ -81,6 +82,7 @@ const FEATURE_SECTIONS = [
 ] as const;
 
 const teamSuggestionAddon = ADDON_CATALOG.team_suggestion;
+const extraUsersAddon = ADDON_CATALOG.extra_users;
 
 function LandingHeader() {
   return (
@@ -259,7 +261,7 @@ export function LandingPage() {
               Commencez avec l&apos;abonnement socle, puis ajoutez les options dont vous avez
               besoin.
             </p>
-            <div className="grid gap-6 md:grid-cols-2 max-w-4xl">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 max-w-6xl">
               <article className="rounded-2xl border-2 border-brand-600/30 dark:border-brand-500/40 bg-white dark:bg-slate-900 p-6 shadow-sm dark:shadow-slate-950/20">
                 <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
                   {BASE_SUBSCRIPTION_PLAN.name}
@@ -291,6 +293,12 @@ export function LandingPage() {
                     <span className="text-brand-600" aria-hidden>
                       ✓
                     </span>
+                    {BASE_SUBSCRIPTION_INCLUDED_USERS} utilisateurs inclus
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-brand-600" aria-hidden>
+                      ✓
+                    </span>
                     Permissions et multi-organisation
                   </li>
                 </ul>
@@ -300,6 +308,39 @@ export function LandingPage() {
                 >
                   Essayer Syncora — {BASE_SUBSCRIPTION_PLAN.trialDays} jours gratuits
                 </Link>
+              </article>
+
+              <article className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm dark:shadow-slate-950/20">
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                  {extraUsersAddon.label}
+                </h3>
+                <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">
+                  2,99 €
+                  <span className="text-base font-normal text-slate-500 dark:text-slate-400">
+                    {" "}
+                    / mois / utilisateur
+                  </span>
+                </p>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  En option sur l&apos;abonnement {BASE_SUBSCRIPTION_PLAN.name} (quantité cumulable)
+                </p>
+                <ul className="mt-6 space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                  <li className="flex gap-2">
+                    <span className="text-brand-600" aria-hidden>
+                      ✓
+                    </span>
+                    {BASE_SUBSCRIPTION_INCLUDED_USERS} utilisateurs inclus dans le socle
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-brand-600" aria-hidden>
+                      ✓
+                    </span>
+                    Ajoutez autant de places que nécessaire
+                  </li>
+                </ul>
+                <p className="mt-6 text-sm text-slate-500 dark:text-slate-400">
+                  {extraUsersAddon.pitch}
+                </p>
               </article>
 
               <article className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm dark:shadow-slate-950/20">

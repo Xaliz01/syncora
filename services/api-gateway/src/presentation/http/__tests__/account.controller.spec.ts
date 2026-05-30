@@ -24,6 +24,7 @@ describe("AccountController", () => {
       changePassword: jest.fn(),
       getPreferences: jest.fn(),
       updatePreferences: jest.fn(),
+      getCrispIdentity: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -109,6 +110,22 @@ describe("AccountController", () => {
       const result = await controller.updatePreferences(mockUser, body);
 
       expect(mockAccountService.updatePreferences).toHaveBeenCalledWith(mockUser, body);
+      expect(result).toEqual(expected);
+    });
+  });
+
+  describe("getCrispIdentity", () => {
+    it("should call accountService.getCrispIdentity and return result", async () => {
+      const expected = {
+        email: "user@example.com",
+        nickname: "Test User",
+        signature: "abc123",
+      };
+      mockAccountService.getCrispIdentity.mockResolvedValue(expected);
+
+      const result = await controller.getCrispIdentity(mockUser);
+
+      expect(mockAccountService.getCrispIdentity).toHaveBeenCalledWith(mockUser);
       expect(result).toEqual(expected);
     });
   });

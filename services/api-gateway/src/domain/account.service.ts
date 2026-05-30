@@ -1,9 +1,11 @@
 import { Injectable, BadRequestException, NotFoundException } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
+import { createHmac } from "node:crypto";
 import { firstValueFrom } from "rxjs";
 import type {
   AuthUser,
   ChangePasswordBody,
+  CrispIdentityResponse,
   UpdateUserNameBody,
   UpdateUserPreferencesBody,
   UserPreferencesResponse,
@@ -12,6 +14,10 @@ import type {
 import { AbstractAccountService } from "./ports/account.service.port";
 
 const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
+
+function signCrispEmail(email: string, secret: string): string {
+  return createHmac("sha256", secret).update(email).digest("hex");
+}
 
 @Injectable()
 export class AccountService extends AbstractAccountService {
@@ -50,6 +56,16 @@ export class AccountService extends AbstractAccountService {
       method: "put",
       path: `/users/${user.id}/preferences`,
       body,
+    });
+  }
+
+  getCrispIdentity(user: AuthUser): Promise<CrispIdentityResponse> {
+    const secret = process.env.CRISP_IDENTITY_SECRET?.trim();
+    const signature = secret ? signCrispEmail(user.email, secret) : undefined;
+    return Promise.resolve({
+      email: user.email,
+      nickname: user.name?.trim() || user.email,
+      ...(signature ? { signature } : {}),
     });
   }
 

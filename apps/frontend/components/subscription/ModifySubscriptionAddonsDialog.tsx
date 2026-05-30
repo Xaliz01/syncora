@@ -4,8 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import {
   ADDON_CATALOG,
-  ADDON_CODES,
-  addonRequiresBaseSubscription,
+  BASE_SUBSCRIPTION_INCLUDED_USERS,
+  BASE_SUBSCRIPTION_PLAN,
+  BOOLEAN_CROSS_SELL_ADDON_CODES,
+  QUANTITY_CROSS_SELL_ADDON_CODES,
   type AddonCode,
   type OrganizationSubscriptionResponse,
 } from "@syncora/shared";
@@ -15,8 +17,6 @@ import {
   waitForSubscriptionAddonsSync,
 } from "@/lib/subscription-sync";
 import { useToast } from "@/components/ui/ToastProvider";
-
-const MANAGEABLE_ADDON_CODES = ADDON_CODES.filter((code) => addonRequiresBaseSubscription(code));
 
 export function ModifySubscriptionAddonsDialog({
   open,
@@ -36,7 +36,10 @@ export function ModifySubscriptionAddonsDialog({
   canApplyChanges?: boolean;
 }) {
   const { showToast } = useToast();
-  const [selected, setSelected] = useState<AddonCode[]>(subscription.activeAddons);
+  const [selectedBoolean, setSelectedBoolean] = useState<AddonCode[]>(subscription.activeAddons);
+  const [extraUsersQty, setExtraUsersQty] = useState(
+    subscription.addonQuantities?.extra_users ?? 0,
+  );
 
   useEffect(() => {
     if (open) {
@@ -44,21 +47,26 @@ export function ModifySubscriptionAddonsDialog({
       if (preselectAddon && !next.includes(preselectAddon)) {
         next.push(preselectAddon);
       }
-      setSelected(next);
+      setSelectedBoolean(next.filter((code) => BOOLEAN_CROSS_SELL_ADDON_CODES.includes(code)));
+      setExtraUsersQty(subscription.addonQuantities?.extra_users ?? 0);
     }
-  }, [open, subscription.activeAddons, preselectAddon]);
+  }, [open, subscription.activeAddons, subscription.addonQuantities, preselectAddon]);
 
   const hasChanges = useMemo(() => {
-    const current = [...subscription.activeAddons].sort().join(",");
-    const next = [...selected].sort().join(",");
-    return current !== next;
-  }, [selected, subscription.activeAddons]);
+    const currentBoolean = [...subscription.activeAddons].sort().join(",");
+    const nextBoolean = [...selectedBoolean].sort().join(",");
+    const currentExtra = subscription.addonQuantities?.extra_users ?? 0;
+    return currentBoolean !== nextBoolean || currentExtra !== extraUsersQty;
+  }, [selectedBoolean, subscription.activeAddons, subscription.addonQuantities, extraUsersQty]);
+
+  const maxUsersPreview = BASE_SUBSCRIPTION_INCLUDED_USERS + extraUsersQty;
 
   const updateMutation = useMutation({
     mutationFn: async () => {
       const origin = window.location.origin;
       const res = await subscriptionsApi.updateSubscriptionAddons({
-        addonCodes: selected,
+        addonCodes: selectedBoolean,
+        addonQuantities: { extra_users: extraUsersQty },
         successUrl: `${origin}/subscription?checkout=success`,
       });
 
@@ -66,7 +74,10 @@ export function ModifySubscriptionAddonsDialog({
         return { res, redirectToPayment: true as const };
       }
 
-      const synced = await waitForSubscriptionAddonsSync(selected);
+      const synced = await waitForSubscriptionAddonsSync({
+        booleanAddons: selectedBoolean,
+        addonQuantities: { extra_users: extraUsersQty },
+      });
       return { res, redirectToPayment: false as const, synced };
     },
     onSuccess: ({ res, redirectToPayment, synced }) => {
@@ -108,7 +119,7 @@ export function ModifySubscriptionAddonsDialog({
         onClick={onClose}
         disabled={updateMutation.isPending}
       />
-      <div className="relative w-full max-w-lg rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl p-5 sm:p-6">
+      <div className="relative w-full max-w-lg rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl p-5 sm:p-6 max-h-[min(90vh,40rem)] overflow-y-auto">
         <h2
           id="modify-subscription-title"
           className="text-lg font-semibold text-slate-900 dark:text-slate-100"
@@ -116,8 +127,8 @@ export function ModifySubscriptionAddonsDialog({
           Modifier l’abonnement
         </h2>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          Cochez les options à conserver sur votre offre {subscription.planName}. Décochez une
-          option pour la retirer à la prochaine facturation.
+          Cochez les options à conserver sur votre offre {subscription.planName}. Pour les
+          utilisateurs supplémentaires, indiquez la quantité souhaitée.
         </p>
 
         {!canApplyChanges && (
@@ -128,9 +139,9 @@ export function ModifySubscriptionAddonsDialog({
         )}
 
         <ul className="mt-5 space-y-3">
-          {MANAGEABLE_ADDON_CODES.map((code) => {
+          {BOOLEAN_CROSS_SELL_ADDON_CODES.map((code) => {
             const addon = ADDON_CATALOG[code];
-            const checked = selected.includes(code);
+            const checked = selectedBoolean.includes(code);
             return (
               <li key={code}>
                 <label className="flex cursor-pointer gap-3 rounded-xl border border-slate-200 dark:border-slate-700 p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand-500">
@@ -140,7 +151,7 @@ export function ModifySubscriptionAddonsDialog({
                     checked={checked}
                     disabled={updateMutation.isPending}
                     onChange={() => {
-                      setSelected((prev) =>
+                      setSelectedBoolean((prev) =>
                         checked ? prev.filter((c) => c !== code) : [...prev, code],
                       );
                     }}
@@ -157,6 +168,47 @@ export function ModifySubscriptionAddonsDialog({
                     </span>
                   </span>
                 </label>
+              </li>
+            );
+          })}
+
+          {QUANTITY_CROSS_SELL_ADDON_CODES.map((code) => {
+            const addon = ADDON_CATALOG[code];
+            return (
+              <li key={code}>
+                <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
+                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                    {addon.label}
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    {addon.priceLabel}
+                  </p>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">{addon.pitch}</p>
+                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                    {BASE_SUBSCRIPTION_INCLUDED_USERS} utilisateurs inclus dans l’offre{" "}
+                    {BASE_SUBSCRIPTION_PLAN.name}.
+                  </p>
+                  <label className="mt-3 flex items-center gap-3">
+                    <span className="text-sm text-slate-700 dark:text-slate-200 shrink-0">
+                      Supplémentaires
+                    </span>
+                    <input
+                      type="number"
+                      min={0}
+                      step={1}
+                      value={extraUsersQty}
+                      disabled={updateMutation.isPending}
+                      onChange={(event) => {
+                        const parsed = Number.parseInt(event.target.value, 10);
+                        setExtraUsersQty(Number.isFinite(parsed) ? Math.max(0, parsed) : 0);
+                      }}
+                      className="w-24 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-1.5 text-sm"
+                    />
+                  </label>
+                  <p className="mt-2 text-xs text-brand-700 dark:text-brand-300">
+                    Jusqu’à {maxUsersPreview} utilisateur{maxUsersPreview > 1 ? "s" : ""} au total.
+                  </p>
+                </div>
               </li>
             );
           })}
