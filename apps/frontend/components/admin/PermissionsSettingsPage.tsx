@@ -1,9 +1,16 @@
 "use client";
 
+import Link from "next/link";
 import React, { useCallback, useEffect, useState } from "react";
 import type { PermissionCode } from "@syncora/shared";
 import * as adminApi from "@/lib/admin.api";
 import { getPermissionLabel } from "@/lib/permissions-catalog";
+import {
+  ListLoadingState,
+  ListPageError,
+  ListPageHeader,
+  ListPageRoot,
+} from "@/components/ui/list-page";
 
 export function PermissionsSettingsPage() {
   const [catalog, setCatalog] = useState<PermissionCode[]>([]);
@@ -28,25 +35,32 @@ export function PermissionsSettingsPage() {
   }, [loadCatalog]);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-xl sm:text-2xl font-semibold">Permissions</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Référence des permissions disponibles dans l&apos;application.
-        </p>
-      </div>
+    <ListPageRoot>
+      <ListPageHeader
+        title="Permissions"
+        description="Référence des permissions disponibles dans l'application."
+        action={
+          <Link
+            href="/settings/profiles"
+            className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition self-start flex-shrink-0"
+          >
+            Retour aux profils
+          </Link>
+        }
+      />
 
-      {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm p-3">
-          {error}
-        </div>
-      )}
+      {error ? (
+        <ListPageError
+          message={error}
+          fallbackMessage="Erreur de chargement des permissions"
+          onRetry={() => void loadCatalog()}
+        />
+      ) : null}
 
-      <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
-        <h2 className="font-semibold mb-3">Catalogue des permissions</h2>
-        {loading ? (
-          <p className="text-sm text-slate-500 dark:text-slate-400">Chargement...</p>
-        ) : (
+      {loading ? (
+        <ListLoadingState />
+      ) : (
+        <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
           <div className="grid gap-2 sm:grid-cols-2">
             {catalog.map((permission) => (
               <div
@@ -62,8 +76,8 @@ export function PermissionsSettingsPage() {
               </div>
             ))}
           </div>
-        )}
-      </section>
-    </div>
+        </section>
+      )}
+    </ListPageRoot>
   );
 }
