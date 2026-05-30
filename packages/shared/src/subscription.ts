@@ -92,7 +92,11 @@ export const BASE_SUBSCRIPTION_PLAN = {
   priceDisplay: "9,99 €",
   periodDisplay: "mois",
   commitmentDisplay: "sans engagement",
+  /** Aligné sur STRIPE_TRIAL_DAYS / DEFAULT_TRIAL_DAYS côté subscriptions-service. */
+  trialDays: 15,
 } as const;
+
+export const BASE_SUBSCRIPTION_TRIAL_LABEL = `${BASE_SUBSCRIPTION_PLAN.trialDays} jours d'essai gratuit`;
 
 export const BASE_SUBSCRIPTION_PLAN_LABEL = `${BASE_SUBSCRIPTION_PLAN.priceDisplay} / ${BASE_SUBSCRIPTION_PLAN.periodDisplay}, ${BASE_SUBSCRIPTION_PLAN.commitmentDisplay}`;
 

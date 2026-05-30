@@ -40,7 +40,7 @@ export function RegisterPage() {
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950">
       <header className="border-b border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2">
             <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white font-semibold">
               S
             </span>
@@ -52,7 +52,7 @@ export function RegisterPage() {
                 CRM des opérations terrain
               </div>
             </div>
-          </div>
+          </Link>
           <ThemeToggle />
         </div>
       </header>
