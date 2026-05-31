@@ -7,6 +7,7 @@ alwaysApply: true
 
 Avant toute feature, lire (ou se réaligner sur) :
 
+- `syncora.vision.md` — cible (artisans / TPE), vision, roadmap par phases
 - `syncora.product.config.yml` — métier, entités, auth/permissions
 - `syncora.tech.config.yml` — stack (Nest hexagonal, Mongo, gateway, `@syncora/shared`, CI)
 - `syncora.ui.config.yml` — design (slate + brand violet, cartes, libellés)

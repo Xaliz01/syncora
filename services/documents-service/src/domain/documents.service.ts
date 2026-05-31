@@ -106,7 +106,10 @@ export class DocumentsService extends AbstractDocumentsService {
     const rows = await this.documentModel
       .aggregate<{
         total: number;
-      }>([{ $match: { organizationId, ...activeDocumentFilter } }, { $group: { _id: null, total: { $sum: "$size" } } }])
+      }>([
+        { $match: { organizationId, ...activeDocumentFilter } },
+        { $group: { _id: null, total: { $sum: "$size" } } },
+      ])
       .exec();
     return rows[0]?.total ?? 0;
   }

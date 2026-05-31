@@ -51,6 +51,7 @@ syncora/
   .github/
     workflows/
       ci.yml               # Pipeline CI GitHub Actions
+  syncora.vision.md            # Vision, cible artisans/TPE, roadmap
   syncora.product.config.yml   # Produit + auth/permissions
   syncora.tech.config.yml
   syncora.ui.config.yml
