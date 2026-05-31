@@ -1,5 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { BadRequestException } from "@nestjs/common";
+import { BASE_SUBSCRIPTION_STORAGE_BYTES } from "@syncora/shared";
 import { DocumentsController } from "../documents.controller";
 import { AbstractDocumentsService } from "../../../domain/ports/documents.service.port";
 import { AbstractStorageProvider } from "../../../infrastructure/storage.port";
@@ -11,6 +12,7 @@ describe("DocumentsController", () => {
 
   beforeEach(async () => {
     mockDocumentsService = {
+      getOrganizationStorageUsage: jest.fn(),
       upload: jest.fn(),
       listByEntity: jest.fn(),
       getDownloadUrl: jest.fn(),
@@ -55,7 +57,15 @@ describe("DocumentsController", () => {
     it("should delegate to service with proper params", async () => {
       mockDocumentsService.upload.mockResolvedValue({ id: "doc-1" } as never);
 
-      const result = await controller.upload(mockFile, "org-1", "case", "entity-1", "user-1");
+      const quota = String(BASE_SUBSCRIPTION_STORAGE_BYTES);
+      const result = await controller.upload(
+        mockFile,
+        "org-1",
+        "case",
+        "entity-1",
+        "user-1",
+        quota,
+      );
 
       expect(mockDocumentsService.upload).toHaveBeenCalledWith({
         organizationId: "org-1",
@@ -66,27 +76,49 @@ describe("DocumentsController", () => {
         mimeType: "application/pdf",
         size: 1024,
         buffer: mockFile.buffer,
+        storageQuotaBytes: BASE_SUBSCRIPTION_STORAGE_BYTES,
       });
       expect(result.id).toBe("doc-1");
     });
 
     it("should throw BadRequestException without file", async () => {
       await expect(
-        controller.upload(undefined as never, "org-1", "case", "entity-1", "user-1"),
+        controller.upload(
+          undefined as never,
+          "org-1",
+          "case",
+          "entity-1",
+          "user-1",
+          String(BASE_SUBSCRIPTION_STORAGE_BYTES),
+        ),
       ).rejects.toThrow(BadRequestException);
       expect(mockDocumentsService.upload).not.toHaveBeenCalled();
     });
 
     it("should throw BadRequestException without organizationId", async () => {
       await expect(
-        controller.upload(mockFile, undefined as never, "case", "entity-1", "user-1"),
+        controller.upload(
+          mockFile,
+          undefined as never,
+          "case",
+          "entity-1",
+          "user-1",
+          String(BASE_SUBSCRIPTION_STORAGE_BYTES),
+        ),
       ).rejects.toThrow(BadRequestException);
       expect(mockDocumentsService.upload).not.toHaveBeenCalled();
     });
 
     it("should throw BadRequestException with invalid entityType", async () => {
       await expect(
-        controller.upload(mockFile, "org-1", "invalid", "entity-1", "user-1"),
+        controller.upload(
+          mockFile,
+          "org-1",
+          "invalid",
+          "entity-1",
+          "user-1",
+          String(BASE_SUBSCRIPTION_STORAGE_BYTES),
+        ),
       ).rejects.toThrow(BadRequestException);
       expect(mockDocumentsService.upload).not.toHaveBeenCalled();
     });

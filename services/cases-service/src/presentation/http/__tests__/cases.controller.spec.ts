@@ -27,6 +27,7 @@ describe("CasesController", () => {
       deleteIntervention: jest.fn(),
       getDashboard: jest.fn(),
       getDashboardTodoCases: jest.fn(),
+      getDashboardStatCases: jest.fn(),
       addCaseHistory: jest.fn(),
       listCaseHistory: jest.fn(),
     };
@@ -294,6 +295,34 @@ describe("CasesController", () => {
           undefined as never,
         ),
       ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe("getDashboardStatCases", () => {
+    it("should call casesService.getDashboardStatCases with filter", async () => {
+      mockCasesService.getDashboardStatCases.mockResolvedValue([]);
+
+      const result = await controller.getDashboardStatCases(
+        "org-1",
+        "user-1",
+        "profile-1",
+        "in_progress",
+      );
+
+      expect(mockCasesService.getDashboardStatCases).toHaveBeenCalledWith(
+        "org-1",
+        "user-1",
+        "profile-1",
+        "in_progress",
+      );
+      expect(result).toEqual([]);
+    });
+
+    it("should throw BadRequestException for invalid filter", async () => {
+      await expect(
+        controller.getDashboardStatCases("org-1", "user-1", undefined, "invalid"),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockCasesService.getDashboardStatCases).not.toHaveBeenCalled();
     });
   });
 });

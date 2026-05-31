@@ -7,6 +7,7 @@ import {
   BASE_SUBSCRIPTION_PLAN,
   BASE_SUBSCRIPTION_TRIAL_LABEL,
 } from "@syncora/shared";
+import { ScrollReveal } from "@/components/landing/ScrollReveal";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 const PILLARS = [
@@ -147,48 +148,55 @@ export function LandingPage() {
             aria-hidden
           />
           <div className="relative max-w-6xl mx-auto px-4 py-16 sm:py-24">
-            <p className="text-sm font-medium text-brand-600 dark:text-brand-400 mb-3">
-              CRM des opérations terrain
-            </p>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-slate-900 dark:text-white max-w-3xl">
-              Pilotez vos opérations terrain depuis un seul outil
-            </h1>
-            <p className="mt-5 text-lg text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed">
-              Centralisez dossiers, interventions, clients, flotte et stocks. Standardisez vos
-              processus, planifiez vos équipes et gardez une vision claire de votre activité.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link
-                href="/register"
-                className="inline-flex items-center rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-500 transition shadow-sm shadow-brand-600/20"
-              >
-                Créer mon organisation
-              </Link>
-              <Link
-                href="/login"
-                className="inline-flex items-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
-              >
-                Se connecter
-              </Link>
-            </div>
+            <ScrollReveal when="mount">
+              <p className="text-sm font-medium text-brand-600 dark:text-brand-400 mb-3">
+                CRM des opérations terrain
+              </p>
+            </ScrollReveal>
+            <ScrollReveal when="mount" delayMs={80}>
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-slate-900 dark:text-white max-w-3xl">
+                Pilotez vos opérations terrain depuis un seul outil
+              </h1>
+            </ScrollReveal>
+            <ScrollReveal when="mount" delayMs={160}>
+              <p className="mt-5 text-lg text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed">
+                Centralisez dossiers, interventions, clients, flotte et stocks. Standardisez vos
+                processus, planifiez vos équipes et gardez une vision claire de votre activité.
+              </p>
+            </ScrollReveal>
+            <ScrollReveal when="mount" delayMs={240}>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Link
+                  href="/register"
+                  className="inline-flex items-center rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-500 transition shadow-sm shadow-brand-600/20"
+                >
+                  Créer mon organisation
+                </Link>
+                <Link
+                  href="/login"
+                  className="inline-flex items-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                >
+                  Se connecter
+                </Link>
+              </div>
+            </ScrollReveal>
           </div>
         </section>
 
         {/* Pillars */}
         <section className="max-w-6xl mx-auto px-4 py-14 sm:py-16">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {PILLARS.map((pillar) => (
-              <article
-                key={pillar.title}
-                className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/20"
-              >
-                <h2 className="font-semibold text-slate-900 dark:text-slate-100 mb-2">
-                  {pillar.title}
-                </h2>
-                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                  {pillar.description}
-                </p>
-              </article>
+            {PILLARS.map((pillar, index) => (
+              <ScrollReveal key={pillar.title} delayMs={index * 70}>
+                <article className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/20 h-full">
+                  <h2 className="font-semibold text-slate-900 dark:text-slate-100 mb-2">
+                    {pillar.title}
+                  </h2>
+                  <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                    {pillar.description}
+                  </p>
+                </article>
+              </ScrollReveal>
             ))}
           </div>
         </section>
@@ -199,54 +207,56 @@ export function LandingPage() {
           className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40"
         >
           <div className="max-w-6xl mx-auto px-4 py-14 sm:py-16">
-            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-2">
-              Tout ce dont vous avez besoin sur le terrain
-            </h2>
-            <p className="text-slate-600 dark:text-slate-400 mb-10 max-w-2xl">
-              Des fonctionnalités pensées pour les équipes qui gèrent des interventions, une flotte
-              et des stocks au quotidien.
-            </p>
+            <ScrollReveal>
+              <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-2">
+                Tout ce dont vous avez besoin sur le terrain
+              </h2>
+              <p className="text-slate-600 dark:text-slate-400 mb-10 max-w-2xl">
+                Des fonctionnalités pensées pour les équipes qui gèrent des interventions, une flotte
+                et des stocks au quotidien.
+              </p>
+            </ScrollReveal>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {FEATURE_SECTIONS.map((section) => (
-                <article
-                  key={section.title}
-                  className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-5"
-                >
-                  <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-3">
-                    {section.title}
-                  </h3>
-                  <ul className="space-y-2">
-                    {section.items.map((item) => (
-                      <li
-                        key={item}
-                        className="flex gap-2 text-sm text-slate-600 dark:text-slate-400 leading-relaxed"
-                      >
-                        <span
-                          className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-600"
-                          aria-hidden
-                        />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </article>
+              {FEATURE_SECTIONS.map((section, index) => (
+                <ScrollReveal key={section.title} delayMs={index * 60}>
+                  <article className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-5 h-full">
+                    <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-3">
+                      {section.title}
+                    </h3>
+                    <ul className="space-y-2">
+                      {section.items.map((item) => (
+                        <li
+                          key={item}
+                          className="flex gap-2 text-sm text-slate-600 dark:text-slate-400 leading-relaxed"
+                        >
+                          <span
+                            className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-600"
+                            aria-hidden
+                          />
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </article>
+                </ScrollReveal>
               ))}
 
-              {/* Addon highlight card */}
-              <article className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-gradient-to-br from-emerald-50/80 to-teal-50/50 dark:from-emerald-950/40 dark:to-teal-950/20 p-5 md:col-span-2 lg:col-span-1">
-                <span className="inline-block rounded-full bg-emerald-600 text-white text-[10px] font-semibold px-2 py-0.5 mb-3">
-                  Option premium
-                </span>
-                <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-2">
-                  {teamSuggestionAddon.label}
-                </h3>
-                <p className="text-sm text-slate-600 dark:text-slate-300 mb-3 leading-relaxed">
-                  {teamSuggestionAddon.pitch}
-                </p>
-                <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
-                  {teamSuggestionAddon.priceLabel}
-                </p>
-              </article>
+              <ScrollReveal delayMs={FEATURE_SECTIONS.length * 60}>
+                <article className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-gradient-to-br from-emerald-50/80 to-teal-50/50 dark:from-emerald-950/40 dark:to-teal-950/20 p-5 md:col-span-2 lg:col-span-1 h-full">
+                  <span className="inline-block rounded-full bg-emerald-600 text-white text-[10px] font-semibold px-2 py-0.5 mb-3">
+                    Option premium
+                  </span>
+                  <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-2">
+                    {teamSuggestionAddon.label}
+                  </h3>
+                  <p className="text-sm text-slate-600 dark:text-slate-300 mb-3 leading-relaxed">
+                    {teamSuggestionAddon.pitch}
+                  </p>
+                  <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                    {teamSuggestionAddon.priceLabel}
+                  </p>
+                </article>
+              </ScrollReveal>
             </div>
           </div>
         </section>
@@ -254,15 +264,18 @@ export function LandingPage() {
         {/* Pricing */}
         <section id="tarifs" className="border-t border-slate-200 dark:border-slate-800">
           <div className="max-w-6xl mx-auto px-4 py-14 sm:py-16">
-            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-2">
-              Une offre simple, sans engagement
-            </h2>
-            <p className="text-slate-600 dark:text-slate-400 mb-10 max-w-2xl">
-              Commencez avec l&apos;abonnement socle, puis ajoutez les options dont vous avez
-              besoin.
-            </p>
+            <ScrollReveal>
+              <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-2">
+                Une offre simple, sans engagement
+              </h2>
+              <p className="text-slate-600 dark:text-slate-400 mb-10 max-w-2xl">
+                Commencez avec l&apos;abonnement socle, puis ajoutez les options dont vous avez
+                besoin.
+              </p>
+            </ScrollReveal>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 max-w-6xl">
-              <article className="rounded-2xl border-2 border-brand-600/30 dark:border-brand-500/40 bg-white dark:bg-slate-900 p-6 shadow-sm dark:shadow-slate-950/20">
+              <ScrollReveal delayMs={0}>
+                <article className="rounded-2xl border-2 border-brand-600/30 dark:border-brand-500/40 bg-white dark:bg-slate-900 p-6 shadow-sm dark:shadow-slate-950/20 h-full">
                 <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
                   {BASE_SUBSCRIPTION_PLAN.name}
                 </h3>
@@ -281,6 +294,12 @@ export function LandingPage() {
                     <span className="text-brand-600" aria-hidden>
                       ✓
                     </span>
+                    {BASE_SUBSCRIPTION_INCLUDED_USERS} utilisateurs inclus
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-brand-600" aria-hidden>
+                      ✓
+                    </span>
                     Dossiers, interventions et calendrier
                   </li>
                   <li className="flex gap-2">
@@ -293,13 +312,13 @@ export function LandingPage() {
                     <span className="text-brand-600" aria-hidden>
                       ✓
                     </span>
-                    {BASE_SUBSCRIPTION_INCLUDED_USERS} utilisateurs inclus
+                    Gestion granulaire des permissions
                   </li>
                   <li className="flex gap-2">
                     <span className="text-brand-600" aria-hidden>
                       ✓
                     </span>
-                    Permissions et multi-organisation
+                    10 Go de stockage documents
                   </li>
                 </ul>
                 <Link
@@ -308,42 +327,11 @@ export function LandingPage() {
                 >
                   Essayer Syncora — {BASE_SUBSCRIPTION_PLAN.trialDays} jours gratuits
                 </Link>
-              </article>
+                </article>
+              </ScrollReveal>
 
-              <article className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm dark:shadow-slate-950/20">
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                  {extraUsersAddon.label}
-                </h3>
-                <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">
-                  2,99 €
-                  <span className="text-base font-normal text-slate-500 dark:text-slate-400">
-                    {" "}
-                    / mois / utilisateur
-                  </span>
-                </p>
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  En option sur l&apos;abonnement {BASE_SUBSCRIPTION_PLAN.name} (quantité cumulable)
-                </p>
-                <ul className="mt-6 space-y-2 text-sm text-slate-600 dark:text-slate-300">
-                  <li className="flex gap-2">
-                    <span className="text-brand-600" aria-hidden>
-                      ✓
-                    </span>
-                    {BASE_SUBSCRIPTION_INCLUDED_USERS} utilisateurs inclus dans le socle
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="text-brand-600" aria-hidden>
-                      ✓
-                    </span>
-                    Ajoutez autant de places que nécessaire
-                  </li>
-                </ul>
-                <p className="mt-6 text-sm text-slate-500 dark:text-slate-400">
-                  {extraUsersAddon.pitch}
-                </p>
-              </article>
-
-              <article className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm dark:shadow-slate-950/20">
+              <ScrollReveal delayMs={80}>
+                <article className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm dark:shadow-slate-950/20 h-full">
                 <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
                   {teamSuggestionAddon.label}
                 </h3>
@@ -380,25 +368,55 @@ export function LandingPage() {
                 <p className="mt-6 text-sm text-slate-500 dark:text-slate-400">
                   Activable depuis votre espace abonnement après inscription.
                 </p>
-              </article>
+                </article>
+              </ScrollReveal>
+
+              <ScrollReveal delayMs={160}>
+                <article className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm dark:shadow-slate-950/20 h-full">
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                  {extraUsersAddon.label}
+                </h3>
+                <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">
+                  2,99 €
+                  <span className="text-base font-normal text-slate-500 dark:text-slate-400">
+                    {" "}
+                    / mois / utilisateur
+                  </span>
+                </p>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  En option sur l&apos;abonnement {BASE_SUBSCRIPTION_PLAN.name} (quantité cumulable)
+                </p>
+                <ul className="mt-6 space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                  <li className="flex gap-2">
+                    <span className="text-brand-600" aria-hidden>
+                      ✓
+                    </span>
+                    Ajoutez autant d&apos;utilisateur que nécessaire
+                  </li>
+                </ul>
+                <p className="mt-6 text-sm text-slate-500 dark:text-slate-400">
+                  {extraUsersAddon.pitch}
+                </p>
+                </article>
+              </ScrollReveal>
             </div>
           </div>
         </section>
 
         {/* Final CTA */}
         <section className="border-t border-slate-200 dark:border-slate-800 bg-brand-600 dark:bg-brand-700">
-          <div className="max-w-6xl mx-auto px-4 py-14 sm:py-16 text-center">
+          <ScrollReveal className="max-w-6xl mx-auto px-4 py-14 sm:py-16 text-center">
             <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">
               Prêt à structurer vos opérations terrain ?
             </h2>
-            <p className="text-brand-100 max-w-xl mx-auto mb-8">
+            <p className="max-w-xl mx-auto text-white/80 mb-8">
               Créez votre organisation en quelques minutes et centralisez votre activité dès
               aujourd&apos;hui.
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               <Link
                 href="/register"
-                className="inline-flex rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-brand-700 hover:bg-brand-50 transition"
+                className="inline-flex rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-brand-600 hover:bg-slate-100 transition"
               >
                 Créer mon organisation
               </Link>
@@ -409,7 +427,7 @@ export function LandingPage() {
                 J&apos;ai déjà un compte
               </Link>
             </div>
-          </div>
+          </ScrollReveal>
         </section>
       </main>
 

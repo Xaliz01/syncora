@@ -70,10 +70,26 @@ export interface DashboardTodoItem {
 export interface DashboardTodoCaseItem {
   caseId: string;
   caseTitle: string;
+  customerId?: string;
   customerName?: string;
   status: CaseStatus;
   priority: CasePriority;
   createdAt?: string;
+  dueDate?: string;
+}
+
+/** Filtres des statistiques du tableau de bord (popup liste de dossiers). */
+export const DASHBOARD_STAT_FILTERS = [
+  "assigned",
+  "in_progress",
+  "completed_week",
+  "overdue",
+] as const;
+
+export type DashboardStatFilter = (typeof DASHBOARD_STAT_FILTERS)[number];
+
+export function isDashboardStatFilter(value: string): value is DashboardStatFilter {
+  return (DASHBOARD_STAT_FILTERS as readonly string[]).includes(value);
 }
 
 // ── Case ──

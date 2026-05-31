@@ -9,13 +9,18 @@ import { firstValueFrom } from "rxjs";
 import type { Response } from "express";
 import FormData from "form-data";
 import type { AuthUser, DocumentEntityType, DocumentResponse } from "@syncora/shared";
+import { MAX_DOCUMENT_FILE_SIZE_BYTES } from "@syncora/shared";
 import { AbstractDocumentsGatewayService } from "./ports/documents.service.port";
+import { AbstractSubscriptionsGatewayService } from "./ports/subscriptions.service.port";
 
 const DOCUMENTS_URL = process.env.DOCUMENTS_SERVICE_URL ?? "http://localhost:3011";
 
 @Injectable()
 export class DocumentsGatewayService extends AbstractDocumentsGatewayService {
-  constructor(private readonly httpService: HttpService) {
+  constructor(
+    private readonly httpService: HttpService,
+    private readonly subscriptionsGateway: AbstractSubscriptionsGatewayService,
+  ) {
     super();
   }
 
@@ -31,18 +36,21 @@ export class DocumentsGatewayService extends AbstractDocumentsGatewayService {
       contentType: file.mimetype,
     });
 
+    const subscription = await this.subscriptionsGateway.getCurrentSubscription(currentUser);
+
     const queryParams = new URLSearchParams({
       organizationId: currentUser.organizationId,
       entityType,
       entityId,
       uploadedBy: currentUser.id,
+      storageQuotaBytes: String(subscription.storageQuotaBytes),
     });
 
     const response = await firstValueFrom(
       this.httpService.post<DocumentResponse>(
         `${DOCUMENTS_URL}/documents/upload?${queryParams.toString()}`,
         form,
-        { headers: form.getHeaders(), maxContentLength: 50 * 1024 * 1024 },
+        { headers: form.getHeaders(), maxContentLength: MAX_DOCUMENT_FILE_SIZE_BYTES },
       ),
     );
     return response.data;

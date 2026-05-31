@@ -1,7 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getModelToken } from "@nestjs/mongoose";
-import { NotFoundException } from "@nestjs/common";
-import { activeDocumentFilter } from "@syncora/shared";
+import { BadRequestException, NotFoundException } from "@nestjs/common";
+import { activeDocumentFilter, BASE_SUBSCRIPTION_STORAGE_BYTES } from "@syncora/shared";
 import { DocumentsService } from "../documents.service";
 import { AbstractDocumentsService } from "../ports/documents.service.port";
 import { AbstractStorageProvider } from "../../infrastructure/storage.port";
@@ -12,6 +12,7 @@ describe("DocumentsService", () => {
     create: jest.Mock;
     find: jest.Mock;
     findOne: jest.Mock;
+    aggregate: jest.Mock;
   };
   let mockStorage: jest.Mocked<AbstractStorageProvider>;
 
@@ -41,6 +42,7 @@ describe("DocumentsService", () => {
       create: jest.fn(),
       find: jest.fn().mockReturnValue(findChain),
       findOne: jest.fn().mockReturnValue({ exec: execMock }),
+      aggregate: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue([{ total: 0 }]) }),
     };
 
     mockStorage = {
@@ -64,6 +66,18 @@ describe("DocumentsService", () => {
     expect(service).toBeDefined();
   });
 
+  describe("getOrganizationStorageUsage", () => {
+    it("should return aggregated used bytes", async () => {
+      mockDocumentModel.aggregate.mockReturnValue({
+        exec: jest.fn().mockResolvedValue([{ total: 4096 }]),
+      });
+
+      const result = await service.getOrganizationStorageUsage("org-1");
+
+      expect(result).toEqual({ organizationId: "org-1", usedBytes: 4096 });
+    });
+  });
+
   describe("upload", () => {
     it("should generate key and create document", async () => {
       const doc = mockDocumentDoc();
@@ -78,6 +92,7 @@ describe("DocumentsService", () => {
         mimeType: "application/pdf",
         size: 1024,
         buffer: Buffer.from("test"),
+        storageQuotaBytes: BASE_SUBSCRIPTION_STORAGE_BYTES,
       };
 
       const result = await service.upload(params);
@@ -101,6 +116,29 @@ describe("DocumentsService", () => {
       );
       expect(result.id).toBe("doc-123");
       expect(result.originalName).toBe("file.pdf");
+    });
+
+    it("should reject upload when quota would be exceeded", async () => {
+      mockDocumentModel.aggregate.mockReturnValue({
+        exec: jest.fn().mockResolvedValue([{ total: BASE_SUBSCRIPTION_STORAGE_BYTES - 100 }]),
+      });
+
+      await expect(
+        service.upload({
+          organizationId: "org-1",
+          entityType: "case",
+          entityId: "entity-1",
+          uploadedBy: "user-1",
+          originalName: "big.bin",
+          mimeType: "application/octet-stream",
+          size: 200,
+          buffer: Buffer.alloc(200),
+          storageQuotaBytes: BASE_SUBSCRIPTION_STORAGE_BYTES,
+        }),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(mockStorage.upload).not.toHaveBeenCalled();
+      expect(mockDocumentModel.create).not.toHaveBeenCalled();
     });
   });
 

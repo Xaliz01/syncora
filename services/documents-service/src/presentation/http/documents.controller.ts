@@ -15,7 +15,7 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import type { Response } from "express";
 import * as fs from "fs";
 import * as path from "path";
-import type { DocumentEntityType } from "@syncora/shared";
+import { MAX_DOCUMENT_FILE_SIZE_BYTES, type DocumentEntityType } from "@syncora/shared";
 import { AbstractDocumentsService } from "../../domain/ports/documents.service.port";
 import { LocalStorageProvider } from "../../infrastructure/local-storage.provider";
 import { AbstractStorageProvider } from "../../infrastructure/storage.port";
@@ -36,14 +36,21 @@ export class DocumentsController {
     private readonly storage: AbstractStorageProvider,
   ) {}
 
+  @Get("storage-usage")
+  async getStorageUsage(@Query("organizationId") organizationId: string) {
+    if (!organizationId) throw new BadRequestException("organizationId requis");
+    return this.documentsService.getOrganizationStorageUsage(organizationId);
+  }
+
   @Post("upload")
-  @UseInterceptors(FileInterceptor("file", { limits: { fileSize: 50 * 1024 * 1024 } }))
+  @UseInterceptors(FileInterceptor("file", { limits: { fileSize: MAX_DOCUMENT_FILE_SIZE_BYTES } }))
   async upload(
     @UploadedFile() file: Express.Multer.File,
     @Query("organizationId") organizationId: string,
     @Query("entityType") entityType: string,
     @Query("entityId") entityId: string,
     @Query("uploadedBy") uploadedBy: string,
+    @Query("storageQuotaBytes") storageQuotaBytesRaw: string,
   ) {
     if (!file) throw new BadRequestException("Fichier requis");
     if (!organizationId) throw new BadRequestException("organizationId requis");
@@ -52,6 +59,10 @@ export class DocumentsController {
     }
     if (!entityId) throw new BadRequestException("entityId requis");
     if (!uploadedBy) throw new BadRequestException("uploadedBy requis");
+    const storageQuotaBytes = Number(storageQuotaBytesRaw);
+    if (!Number.isFinite(storageQuotaBytes) || storageQuotaBytes <= 0) {
+      throw new BadRequestException("storageQuotaBytes requis");
+    }
 
     return this.documentsService.upload({
       organizationId,
@@ -62,6 +73,7 @@ export class DocumentsController {
       mimeType: file.mimetype,
       size: file.size,
       buffer: file.buffer,
+      storageQuotaBytes,
     });
   }
 

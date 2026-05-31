@@ -13,6 +13,7 @@ import {
   type CreateInterventionBody,
   type CaseDashboardResponse,
   type CaseTemplateResponse,
+  type DashboardStatFilter,
   type DashboardTodoItem,
   type DashboardTodoCaseItem,
   type InterventionResponse,
@@ -451,14 +452,57 @@ export class CasesService extends AbstractCasesService {
       .sort({ createdAt: 1 })
       .exec();
 
-    return cases.map((c) => ({
-      caseId: c._id.toString(),
-      caseTitle: c.title,
-      customerName: undefined,
-      status: c.status,
-      priority: c.priority,
-      createdAt: c.get("createdAt")?.toISOString(),
-    }));
+    return cases.map((c) => this.toDashboardCaseListItem(c));
+  }
+
+  async getDashboardStatCases(
+    organizationId: string,
+    userId: string,
+    _userProfileId: string | undefined,
+    filter: DashboardStatFilter,
+  ): Promise<DashboardTodoCaseItem[]> {
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay() + 1);
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const assignedBase = {
+      organizationId,
+      ...activeDocumentFilter,
+      $or: [{ assignees: { $elemMatch: { userId } } }, { assigneeId: userId }],
+    };
+
+    let query: Record<string, unknown>;
+    let sort: Record<string, 1 | -1> = { priority: -1, dueDate: 1 };
+
+    switch (filter) {
+      case "assigned":
+        query = { ...assignedBase, status: { $nin: ["completed", "cancelled"] } };
+        break;
+      case "in_progress":
+        query = { ...assignedBase, status: "in_progress" };
+        break;
+      case "completed_week":
+        query = {
+          ...assignedBase,
+          status: "completed",
+          updatedAt: { $gte: startOfWeek },
+        };
+        sort = { updatedAt: -1 };
+        break;
+      case "overdue":
+        query = {
+          ...assignedBase,
+          status: { $nin: ["completed", "cancelled"] },
+          dueDate: { $lt: now },
+        };
+        break;
+      default:
+        return [];
+    }
+
+    const cases = await this.caseModel.find(query).sort(sort).exec();
+    return cases.map((c) => this.toDashboardCaseListItem(c));
   }
 
   async getDashboard(
@@ -557,6 +601,19 @@ export class CasesService extends AbstractCasesService {
   }
 
   // ── Helpers ──
+
+  private toDashboardCaseListItem(doc: CaseDocument): DashboardTodoCaseItem {
+    return {
+      caseId: doc._id.toString(),
+      caseTitle: doc.title,
+      customerId: doc.customerId,
+      customerName: undefined,
+      status: doc.status,
+      priority: doc.priority,
+      createdAt: doc.get("createdAt")?.toISOString(),
+      dueDate: doc.dueDate?.toISOString(),
+    };
+  }
 
   private isTodoVisibleToUser(
     rule: {

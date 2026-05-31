@@ -22,7 +22,9 @@ import {
   BASE_SUBSCRIPTION_INCLUDED_USERS,
   BASE_SUBSCRIPTION_PLAN,
   BASE_SUBSCRIPTION_PLAN_LABEL,
+  BASE_SUBSCRIPTION_STORAGE_BYTES,
   computeMaxOrganizationUsers,
+  computeOrganizationStorageQuotaBytes,
   estimateMonthlySubscriptionCents,
   isBooleanAddonCode,
   isQuantityAddonCode,
@@ -154,6 +156,7 @@ export class SubscriptionsService {
     const addonQuantities = this.readAddonQuantities(doc);
     const includedUsers = BASE_SUBSCRIPTION_INCLUDED_USERS;
     const maxUsers = computeMaxOrganizationUsers(addonQuantities);
+    const storageQuotaBytes = computeOrganizationStorageQuotaBytes(addonQuantities);
     return {
       organizationId: doc.organizationId,
       status,
@@ -167,6 +170,10 @@ export class SubscriptionsService {
       addonQuantities,
       includedUsers,
       maxUsers,
+      storageQuotaBytes,
+      storageUsedBytes: 0,
+      storageWarning: false,
+      includedStorageBytes: BASE_SUBSCRIPTION_STORAGE_BYTES,
       monthlyTotalCents: monthly.monthlyTotalCents,
       monthlyTotalCurrency: monthly.monthlyTotalCurrency,
     };
@@ -186,6 +193,10 @@ export class SubscriptionsService {
       addonQuantities: sanitizeAddonQuantities({}),
       includedUsers: BASE_SUBSCRIPTION_INCLUDED_USERS,
       maxUsers: computeMaxOrganizationUsers({}),
+      storageQuotaBytes: computeOrganizationStorageQuotaBytes({}),
+      storageUsedBytes: 0,
+      storageWarning: false,
+      includedStorageBytes: BASE_SUBSCRIPTION_STORAGE_BYTES,
       monthlyTotalCents: null,
       monthlyTotalCurrency: null,
     };
@@ -668,18 +679,24 @@ export class SubscriptionsService {
     const current = this.parseSubscriptionAddonState(sub);
     const toAddBoolean = desiredBoolean.filter((code) => !current.booleanAddons.includes(code));
     const toRemoveBoolean = current.booleanAddons.filter((code) => !desiredBoolean.includes(code));
-    const extraUsersChanged =
-      (current.quantities.extra_users ?? 0) !== (desiredQuantities.extra_users ?? 0);
+    const changedQuantityCodes = QUANTITY_ADDON_CODES.filter(
+      (code) => (current.quantities[code] ?? 0) !== (desiredQuantities[code] ?? 0),
+    );
 
-    if (toAddBoolean.length === 0 && toRemoveBoolean.length === 0 && !extraUsersChanged) {
+    if (
+      toAddBoolean.length === 0 &&
+      toRemoveBoolean.length === 0 &&
+      changedQuantityCodes.length === 0
+    ) {
       throw new BadRequestException("Aucune modification à appliquer.");
     }
 
     const toRemovePriceIds = new Set(toRemoveBoolean.map((code) => resolveAddonPriceId(code)));
-    const extraUsersPriceId = resolveAddonPriceId("extra_users");
-    const desiredExtraUsers = desiredQuantities.extra_users ?? 0;
+    const quantityPriceByCode = Object.fromEntries(
+      QUANTITY_ADDON_CODES.map((code) => [code, resolveAddonPriceId(code)]),
+    ) as Record<(typeof QUANTITY_ADDON_CODES)[number], string>;
+    const quantityItemIdByCode: Partial<Record<(typeof QUANTITY_ADDON_CODES)[number], string>> = {};
     const items: Stripe.SubscriptionUpdateParams.Item[] = [];
-    let extraUsersItemId: string | undefined;
 
     for (const item of sub.items.data) {
       const priceId = typeof item.price === "string" ? item.price : (item.price?.id ?? undefined);
@@ -687,19 +704,25 @@ export class SubscriptionsService {
         items.push({ id: item.id, deleted: true });
         continue;
       }
-      if (priceId === extraUsersPriceId) {
-        extraUsersItemId = item.id;
-        if (extraUsersChanged) {
-          if (desiredExtraUsers <= 0) {
+
+      const matchedQuantityCode = QUANTITY_ADDON_CODES.find(
+        (code) => priceId === quantityPriceByCode[code],
+      );
+      if (matchedQuantityCode) {
+        quantityItemIdByCode[matchedQuantityCode] = item.id;
+        const desiredQty = desiredQuantities[matchedQuantityCode] ?? 0;
+        if (changedQuantityCodes.includes(matchedQuantityCode)) {
+          if (desiredQty <= 0) {
             items.push({ id: item.id, deleted: true });
           } else {
-            items.push({ id: item.id, quantity: desiredExtraUsers });
+            items.push({ id: item.id, quantity: desiredQty });
           }
         } else {
           items.push({ id: item.id, quantity: item.quantity ?? 1 });
         }
         continue;
       }
+
       items.push({ id: item.id, quantity: item.quantity ?? 1 });
     }
 
@@ -707,8 +730,11 @@ export class SubscriptionsService {
       items.push({ price: resolveAddonPriceId(code), quantity: 1 });
     }
 
-    if (extraUsersChanged && desiredExtraUsers > 0 && !extraUsersItemId) {
-      items.push({ price: extraUsersPriceId, quantity: desiredExtraUsers });
+    for (const code of changedQuantityCodes) {
+      const desiredQty = desiredQuantities[code] ?? 0;
+      if (desiredQty > 0 && !quantityItemIdByCode[code]) {
+        items.push({ price: quantityPriceByCode[code], quantity: desiredQty });
+      }
     }
 
     const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer.id;

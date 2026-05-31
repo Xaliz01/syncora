@@ -2,8 +2,12 @@
 
 import Image from "next/image";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { DocumentEntityType, DocumentResponse } from "@syncora/shared";
+import { MAX_DOCUMENT_FILE_SIZE_BYTES } from "@syncora/shared";
 import * as documentsApi from "@/lib/documents.api";
+import * as subscriptionsApi from "@/lib/subscriptions.api";
+import { StorageUsageBanner } from "@/components/documents/StorageUsageBanner";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 function formatFileSize(bytes: number): string {
@@ -58,6 +62,7 @@ interface Props {
 
 export function DocumentUploadZone({ entityType, entityId }: Props) {
   const confirm = useConfirm();
+  const queryClient = useQueryClient();
   const [documents, setDocuments] = useState<DocumentResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -66,6 +71,11 @@ export function DocumentUploadZone({ entityType, entityId }: Props) {
   const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
   const [previewDoc, setPreviewDoc] = useState<DocumentResponse | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { data: subscription } = useQuery({
+    queryKey: ["subscription-current"],
+    queryFn: () => subscriptionsApi.getSubscriptionCurrent(),
+  });
 
   const loadDocuments = useCallback(async () => {
     try {
@@ -115,15 +125,24 @@ export function DocumentUploadZone({ entityType, entityId }: Props) {
     setError(null);
     try {
       for (const file of Array.from(files)) {
+        if (file.size > MAX_DOCUMENT_FILE_SIZE_BYTES) {
+          throw new Error(
+            `« ${file.name} » dépasse la taille maximale de 10 Mo par fichier.`,
+          );
+        }
         await documentsApi.uploadDocument(entityType, entityId, file);
       }
       await loadDocuments();
+      void queryClient.invalidateQueries({ queryKey: ["subscription-current"] });
     } catch (err) {
       setError((err as Error).message);
     } finally {
       setUploading(false);
     }
   };
+
+  const storageFull =
+    subscription != null && subscription.storageUsedBytes >= subscription.storageQuotaBytes;
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -177,6 +196,7 @@ export function DocumentUploadZone({ entityType, entityId }: Props) {
     try {
       await documentsApi.deleteDocument(doc.id);
       await loadDocuments();
+      void queryClient.invalidateQueries({ queryKey: ["subscription-current"] });
     } catch (err) {
       setError((err as Error).message);
     }
@@ -185,6 +205,10 @@ export function DocumentUploadZone({ entityType, entityId }: Props) {
   return (
     <div className="mt-8 border-t border-slate-200 dark:border-slate-700 pt-6">
       <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4">Documents</h3>
+
+      {subscription && (
+        <StorageUsageBanner subscription={subscription} className="mb-4" showManageLink />
+      )}
 
       {/* Document list */}
       {loading ? (
@@ -343,14 +367,15 @@ export function DocumentUploadZone({ entityType, entityId }: Props) {
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
-        onClick={() => fileInputRef.current?.click()}
+        onClick={() => !storageFull && fileInputRef.current?.click()}
         className={`
-          relative border-2 border-dashed rounded-xl mt-4 p-6 text-center cursor-pointer
-          transition-all duration-200
+          relative border-2 border-dashed rounded-xl mt-4 p-6 text-center transition-all duration-200
           ${
-            dragOver
-              ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-              : "border-slate-300 dark:border-slate-600 hover:border-blue-400 hover:bg-slate-50 dark:hover:bg-slate-800/50"
+            storageFull
+              ? "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 opacity-60 cursor-not-allowed"
+              : dragOver
+                ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 cursor-pointer"
+                : "border-slate-300 dark:border-slate-600 hover:border-blue-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer"
           }
           ${uploading ? "opacity-60 pointer-events-none" : ""}
         `}
@@ -388,7 +413,7 @@ export function DocumentUploadZone({ entityType, entityId }: Props) {
                 </span>{" "}
                 ou glissez-déposez vos fichiers ici
               </p>
-              <p className="text-xs text-slate-400 dark:text-slate-500">Taille maximale : 50 Mo</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500">Taille maximale : 10 Mo</p>
             </>
           )}
         </div>

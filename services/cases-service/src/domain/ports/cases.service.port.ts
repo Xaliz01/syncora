@@ -8,6 +8,7 @@ import type {
   CaseResponse,
   CaseSummaryResponse,
   CaseTemplateResponse,
+  DashboardStatFilter,
   DashboardTodoCaseItem,
   InterventionResponse,
   UpdateCaseBody,
@@ -67,6 +68,12 @@ export abstract class AbstractCasesService {
     userProfileId: string | undefined,
     templateId: string,
     todoLabel: string,
+  ): Promise<DashboardTodoCaseItem[]>;
+  abstract getDashboardStatCases(
+    organizationId: string,
+    userId: string,
+    userProfileId: string | undefined,
+    filter: DashboardStatFilter,
   ): Promise<DashboardTodoCaseItem[]>;
   abstract addCaseHistory(body: CreateCaseHistoryBody): Promise<CaseHistoryEntryResponse>;
   abstract listCaseHistory(

@@ -12,11 +12,11 @@ export type OrganizationSubscriptionStatus =
 // ── Addon catalog ──
 
 /** Codes des addons disponibles à l'achat. Pour ajouter un addon : ajouter une entrée ici + dans ADDON_CATALOG. */
-export const ADDON_CODES = ["team_suggestion", "extra_users"] as const;
+export const ADDON_CODES = ["team_suggestion", "extra_users", "extra_storage"] as const;
 export type AddonCode = (typeof ADDON_CODES)[number];
 
 /** Addons facturés par quantité (vente croisée sur le socle). */
-export const QUANTITY_ADDON_CODES = ["extra_users"] as const;
+export const QUANTITY_ADDON_CODES = ["extra_users", "extra_storage"] as const;
 export type QuantityAddonCode = (typeof QUANTITY_ADDON_CODES)[number];
 
 export type AddonBillingModel = "boolean" | "quantity";
@@ -90,6 +90,20 @@ export const ADDON_CATALOG: Record<AddonCode, AddonDescriptor> = {
     stripeProductEnvVar: "STRIPE_ADDON_EXTRA_USERS_PRODUCT_ID",
     stripeProductDefault: "prod_Uc1VLVdYyOkfy7",
     monthlyPriceCents: 299,
+  },
+  extra_storage: {
+    code: "extra_storage",
+    label: "Stockage supplémentaire",
+    priceLabel: "4,99 € / mois / +50 Go",
+    pitch:
+      "Étendez l'espace de stockage de votre organisation au-delà des 10 Go inclus dans l'offre Essentiel.",
+    billingModel: "quantity",
+    requiresBaseSubscription: true,
+    stripePriceEnvVar: "STRIPE_ADDON_EXTRA_STORAGE_PRICE_ID",
+    stripePriceDefault: "price_1TdFlK159m6jcNWD9jWmXdpD",
+    stripeProductEnvVar: "STRIPE_ADDON_EXTRA_STORAGE_PRODUCT_ID",
+    stripeProductDefault: "prod_addon_extra_storage",
+    monthlyPriceCents: 499,
   },
 };
 
@@ -173,8 +187,11 @@ export function estimateMonthlySubscriptionCents(params: {
       total += ADDON_CATALOG[code].monthlyPriceCents;
     }
   }
-  const extraUsers = sanitizeAddonQuantities(params.addonQuantities).extra_users ?? 0;
+  const quantities = sanitizeAddonQuantities(params.addonQuantities);
+  const extraUsers = quantities.extra_users ?? 0;
   total += extraUsers * ADDON_CATALOG.extra_users.monthlyPriceCents;
+  const extraStorage = quantities.extra_storage ?? 0;
+  total += extraStorage * ADDON_CATALOG.extra_storage.monthlyPriceCents;
   return total;
 }
 
@@ -190,6 +207,52 @@ export function computeMaxOrganizationUsers(addonQuantities?: AddonQuantities): 
   const sanitized = sanitizeAddonQuantities(addonQuantities);
   const extraUsers = sanitized.extra_users ?? 0;
   return BASE_SUBSCRIPTION_INCLUDED_USERS + extraUsers;
+}
+
+// ── Stockage documents ──
+
+export const STORAGE_GIBIBYTE = 1024 ** 3;
+
+/** Quota inclus dans l'offre socle Essentiel. */
+export const BASE_SUBSCRIPTION_STORAGE_BYTES = 10 * STORAGE_GIBIBYTE;
+
+/** Espace ajouté par unité d'addon extra_storage (+50 Go). */
+export const EXTRA_STORAGE_PACK_BYTES = 50 * STORAGE_GIBIBYTE;
+
+export const EXTRA_STORAGE_PACK_GB = 50;
+
+/** Seuil d'avertissement (80 % du quota). */
+export const STORAGE_QUOTA_WARNING_RATIO = 0.8;
+
+export function computeOrganizationStorageQuotaBytes(addonQuantities?: AddonQuantities): number {
+  const sanitized = sanitizeAddonQuantities(addonQuantities);
+  const extraPacks = sanitized.extra_storage ?? 0;
+  return BASE_SUBSCRIPTION_STORAGE_BYTES + extraPacks * EXTRA_STORAGE_PACK_BYTES;
+}
+
+export function isStorageQuotaWarning(usedBytes: number, quotaBytes: number): boolean {
+  if (quotaBytes <= 0) return false;
+  return usedBytes >= quotaBytes * STORAGE_QUOTA_WARNING_RATIO;
+}
+
+export function isStorageQuotaExceeded(
+  usedBytes: number,
+  additionalBytes: number,
+  quotaBytes: number,
+): boolean {
+  return usedBytes + additionalBytes > quotaBytes;
+}
+
+/** Affichage lisible (ex. 3,2 Go, 512 Mo). */
+export function formatStorageBytes(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes < 0) return "0 o";
+  if (bytes < 1024) return `${bytes} o`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} Ko`;
+  if (bytes < STORAGE_GIBIBYTE) return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
+  const gib = bytes / STORAGE_GIBIBYTE;
+  if (gib >= 10) return `${Math.round(gib)} Go`;
+  if (Number.isInteger(gib)) return `${gib} Go`;
+  return `${gib.toFixed(1)} Go`;
 }
 
 export const BASE_SUBSCRIPTION_TRIAL_LABEL = `${BASE_SUBSCRIPTION_PLAN.trialDays} jours d'essai gratuit`;
@@ -218,6 +281,14 @@ export interface OrganizationSubscriptionResponse {
   includedUsers: number;
   /** Plafond d'utilisateurs (inclus + supplémentaires achetés). */
   maxUsers: number;
+  /** Quota de stockage documents (octets), socle + packs extra_storage. */
+  storageQuotaBytes: number;
+  /** Espace documentaire actuellement utilisé (octets, hors fichiers supprimés). */
+  storageUsedBytes: number;
+  /** true si usage ≥ 80 % du quota. */
+  storageWarning: boolean;
+  /** Stockage inclus dans le socle (octets), pour l'affichage. */
+  includedStorageBytes: number;
   /** Total récurrent mensuel en centimes (socle + options), null si non souscrit. */
   monthlyTotalCents: number | null;
   /** Devise ISO du total (ex. eur). */

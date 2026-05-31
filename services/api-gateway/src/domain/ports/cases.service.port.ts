@@ -5,6 +5,7 @@ import type {
   CaseResponse,
   CaseSummaryResponse,
   CaseTemplateResponse,
+  DashboardStatFilter,
   DashboardTodoCaseItem,
   InterventionResponse,
   TodoDashboardVisibility,
@@ -156,6 +157,10 @@ export abstract class AbstractCasesGatewayService {
     user: AuthUser,
     templateId: string,
     todoLabel: string,
+  ): Promise<DashboardTodoCaseItem[]>;
+  abstract getDashboardStatCases(
+    user: AuthUser,
+    filter: DashboardStatFilter,
   ): Promise<DashboardTodoCaseItem[]>;
   abstract listCaseHistory(user: AuthUser, caseId: string): Promise<CaseHistoryEntryResponse[]>;
 }

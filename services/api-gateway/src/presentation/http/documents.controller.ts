@@ -11,7 +11,7 @@ import {
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import type { Response } from "express";
-import type { DocumentEntityType } from "@syncora/shared";
+import { MAX_DOCUMENT_FILE_SIZE_BYTES, type DocumentEntityType } from "@syncora/shared";
 import type { AuthUser } from "@syncora/shared";
 import { AbstractDocumentsGatewayService } from "../../domain/ports/documents.service.port";
 import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
@@ -25,7 +25,7 @@ export class DocumentsController {
   constructor(private readonly documentsService: AbstractDocumentsGatewayService) {}
 
   @Post("upload/:entityType/:entityId")
-  @UseInterceptors(FileInterceptor("file", { limits: { fileSize: 50 * 1024 * 1024 } }))
+  @UseInterceptors(FileInterceptor("file", { limits: { fileSize: MAX_DOCUMENT_FILE_SIZE_BYTES } }))
   @NotifyEntity({ type: "document", labelField: "originalName" })
   async upload(
     @CurrentUser() user: AuthUser,

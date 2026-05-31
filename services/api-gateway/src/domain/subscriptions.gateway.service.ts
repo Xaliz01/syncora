@@ -10,7 +10,7 @@ import {
 import { HttpService } from "@nestjs/axios";
 import axios from "axios";
 import { firstValueFrom } from "rxjs";
-import type { AuthUser } from "@syncora/shared";
+import type { AuthUser, OrganizationStorageUsageResponse } from "@syncora/shared";
 import type {
   CreateAddonCheckoutSessionGatewayBody,
   CreateBillingPortalGatewayBody,
@@ -21,9 +21,15 @@ import type {
   UpdateSubscriptionAddonsGatewayBody,
   UpdateSubscriptionAddonsResponse,
 } from "@syncora/shared";
+import {
+  BASE_SUBSCRIPTION_STORAGE_BYTES,
+  computeOrganizationStorageQuotaBytes,
+  isStorageQuotaWarning,
+} from "@syncora/shared";
 import { AbstractSubscriptionsGatewayService } from "./ports/subscriptions.service.port";
 
 const SUBSCRIPTIONS_URL = process.env.SUBSCRIPTIONS_SERVICE_URL ?? "http://localhost:3008";
+const DOCUMENTS_URL = process.env.DOCUMENTS_SERVICE_URL ?? "http://localhost:3011";
 
 @Injectable()
 export class SubscriptionsGatewayService extends AbstractSubscriptionsGatewayService {
@@ -32,11 +38,33 @@ export class SubscriptionsGatewayService extends AbstractSubscriptionsGatewaySer
   }
 
   async getCurrentSubscription(user: AuthUser): Promise<OrganizationSubscriptionResponse> {
-    return this.callSubscriptions<OrganizationSubscriptionResponse>({
+    const sub = await this.callSubscriptions<OrganizationSubscriptionResponse>({
       method: "get",
       path: "/subscriptions/current",
       query: { organizationId: user.organizationId },
     });
+
+    const storageQuotaBytes = computeOrganizationStorageQuotaBytes(sub.addonQuantities);
+    let storageUsedBytes = sub.storageUsedBytes ?? 0;
+    try {
+      const usage = await firstValueFrom(
+        this.httpService.get<OrganizationStorageUsageResponse>(
+          `${DOCUMENTS_URL}/documents/storage-usage`,
+          { params: { organizationId: user.organizationId } },
+        ),
+      );
+      storageUsedBytes = usage.data.usedBytes;
+    } catch {
+      /* documents-service indisponible : conserver la valeur par défaut */
+    }
+
+    return {
+      ...sub,
+      storageQuotaBytes,
+      storageUsedBytes,
+      storageWarning: isStorageQuotaWarning(storageUsedBytes, storageQuotaBytes),
+      includedStorageBytes: BASE_SUBSCRIPTION_STORAGE_BYTES,
+    };
   }
 
   async createCheckoutSession(

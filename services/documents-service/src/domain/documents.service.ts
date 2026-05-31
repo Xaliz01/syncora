@@ -1,9 +1,14 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import { v4 as uuidv4 } from "uuid";
-import type { DocumentResponse, DocumentEntityType } from "@syncora/shared";
-import { activeDocumentFilter } from "@syncora/shared";
+import type { DocumentResponse, DocumentEntityType, OrganizationStorageUsageResponse } from "@syncora/shared";
+import {
+  activeDocumentFilter,
+  formatStorageBytes,
+  isStorageQuotaExceeded,
+  MAX_DOCUMENT_FILE_SIZE_BYTES,
+} from "@syncora/shared";
 import type { DocumentRecord } from "../persistence/document.schema";
 import { AbstractStorageProvider } from "../infrastructure/storage.port";
 import { AbstractDocumentsService, UploadParams } from "./ports/documents.service.port";
@@ -18,7 +23,28 @@ export class DocumentsService extends AbstractDocumentsService {
     super();
   }
 
+  async getOrganizationStorageUsage(
+    organizationId: string,
+  ): Promise<OrganizationStorageUsageResponse> {
+    const usedBytes = await this.sumActiveStorageBytes(organizationId);
+    return { organizationId, usedBytes };
+  }
+
   async upload(params: UploadParams): Promise<DocumentResponse> {
+    if (params.size > MAX_DOCUMENT_FILE_SIZE_BYTES) {
+      throw new BadRequestException(
+        `Fichier trop volumineux (max ${formatStorageBytes(MAX_DOCUMENT_FILE_SIZE_BYTES)}).`,
+      );
+    }
+
+    const usedBytes = await this.sumActiveStorageBytes(params.organizationId);
+    if (isStorageQuotaExceeded(usedBytes, params.size, params.storageQuotaBytes)) {
+      throw new BadRequestException(
+        `Quota de stockage atteint (${formatStorageBytes(usedBytes)} / ${formatStorageBytes(params.storageQuotaBytes)}). ` +
+          "Supprimez des fichiers ou ajoutez l'option stockage supplémentaire.",
+      );
+    }
+
     const storageKey = `${params.organizationId}/${params.entityType}/${params.entityId}/${uuidv4()}-${params.originalName}`;
 
     await this.storage.upload(storageKey, params.buffer, params.mimeType);
@@ -70,6 +96,16 @@ export class DocumentsService extends AbstractDocumentsService {
     doc.deletedAt = new Date();
     await doc.save();
     return { deleted: true };
+  }
+
+  private async sumActiveStorageBytes(organizationId: string): Promise<number> {
+    const rows = await this.documentModel
+      .aggregate<{ total: number }>([
+        { $match: { organizationId, ...activeDocumentFilter } },
+        { $group: { _id: null, total: { $sum: "$size" } } },
+      ])
+      .exec();
+    return rows[0]?.total ?? 0;
   }
 
   private toResponse(doc: DocumentRecord): DocumentResponse {

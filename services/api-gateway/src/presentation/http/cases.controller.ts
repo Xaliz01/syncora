@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -10,6 +11,7 @@ import {
   Query,
   UseGuards,
 } from "@nestjs/common";
+import { isDashboardStatFilter } from "@syncora/shared";
 import { AbstractCasesGatewayService } from "../../domain/ports/cases.service.port";
 import type {
   CreateCaseForOrgBody,
@@ -207,5 +209,19 @@ export class CasesController {
     @Query("todoLabel") todoLabel: string,
   ) {
     return this.casesService.getDashboardTodoCases(user, templateId, todoLabel);
+  }
+
+  @Get("dashboard/stat-cases")
+  @RequirePermissions("cases.read")
+  async getDashboardStatCases(
+    @CurrentUser() user: AuthUser,
+    @Query("filter") filter: string,
+  ) {
+    if (!filter || !isDashboardStatFilter(filter)) {
+      throw new BadRequestException(
+        "filter query param is required (assigned, in_progress, completed_week, overdue)",
+      );
+    }
+    return this.casesService.getDashboardStatCases(user, filter);
   }
 }

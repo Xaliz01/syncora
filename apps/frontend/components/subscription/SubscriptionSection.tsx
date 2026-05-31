@@ -13,10 +13,12 @@ import {
   BASE_SUBSCRIPTION_INCLUDED_USERS,
   BASE_SUBSCRIPTION_PLAN,
   formatMoneyFromCents,
+  formatStorageBytes,
   isValidAddonCode,
   type AddonCode,
   type OrganizationSubscriptionResponse,
 } from "@syncora/shared";
+import { StorageUsageBanner } from "@/components/documents/StorageUsageBanner";
 
 const STATUS_LABELS: Record<string, string> = {
   none: "Non souscrit",
@@ -346,6 +348,10 @@ function SubscriptionSectionInner({ mode = "full" }: { mode?: "full" | "pitchChe
                         {BASE_SUBSCRIPTION_INCLUDED_USERS} utilisateurs inclus · jusqu’à{" "}
                         {subscription.maxUsers} avec les options
                       </span>
+                      <span className="block text-slate-600 dark:text-slate-300 mt-1">
+                        {formatStorageBytes(subscription.includedStorageBytes)} de documents inclus
+                        · quota actuel {formatStorageBytes(subscription.storageQuotaBytes)}
+                      </span>
                     </p>
                   </div>
                   {subscription.status !== "none" && (
@@ -358,12 +364,19 @@ function SubscriptionSectionInner({ mode = "full" }: { mode?: "full" | "pitchChe
                 </div>
 
                 {subscription.status !== "none" && (
+                  <div className="mt-5">
+                    <StorageUsageBanner subscription={subscription} />
+                  </div>
+                )}
+
+                {subscription.status !== "none" && (
                   <div className="mt-5 pt-5 border-t border-brand-200/50 dark:border-slate-700/80">
                     <p className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">
                       Options complémentaires
                     </p>
                     {subscription.activeAddons.length > 0 ||
-                    (subscription.addonQuantities?.extra_users ?? 0) > 0 ? (
+                    (subscription.addonQuantities?.extra_users ?? 0) > 0 ||
+                    (subscription.addonQuantities?.extra_storage ?? 0) > 0 ? (
                       <ul className="grid gap-2 sm:grid-cols-2">
                         {subscription.activeAddons.map((code) => {
                           const addon = ADDON_CATALOG[code];
@@ -391,6 +404,17 @@ function SubscriptionSectionInner({ mode = "full" }: { mode?: "full" | "pitchChe
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                               × {subscription.addonQuantities?.extra_users} —{" "}
                               {ADDON_CATALOG.extra_users.priceLabel}
+                            </p>
+                          </li>
+                        )}
+                        {(subscription.addonQuantities?.extra_storage ?? 0) > 0 && (
+                          <li className="rounded-xl border border-white/80 dark:border-slate-700 bg-white/80 dark:bg-slate-900/80 px-3 py-2.5 shadow-sm">
+                            <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                              {ADDON_CATALOG.extra_storage.label}
+                            </p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                              × {subscription.addonQuantities?.extra_storage} —{" "}
+                              {ADDON_CATALOG.extra_storage.priceLabel}
                             </p>
                           </li>
                         )}

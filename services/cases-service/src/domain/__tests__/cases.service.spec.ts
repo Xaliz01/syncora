@@ -645,4 +645,43 @@ describe("CasesService", () => {
       expect(mockCaseModel.find).not.toHaveBeenCalled();
     });
   });
+
+  describe("getDashboardStatCases", () => {
+    it("returns assigned active cases for the user", async () => {
+      mockCaseModel.find.mockReturnValue({
+        sort: jest.fn().mockReturnValue({
+          exec: jest.fn().mockResolvedValue([
+            mockCaseDoc({ title: "Dossier actif", status: "open" }),
+          ]),
+        }),
+      });
+
+      const result = await service.getDashboardStatCases("org-1", "user-1", undefined, "assigned");
+
+      expect(mockCaseModel.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          organizationId: "org-1",
+          status: { $nin: ["completed", "cancelled"] },
+        }),
+      );
+      expect(result).toHaveLength(1);
+      expect(result[0].caseTitle).toBe("Dossier actif");
+    });
+
+    it("returns overdue cases with due date", async () => {
+      const past = new Date("2020-01-01");
+      mockCaseModel.find.mockReturnValue({
+        sort: jest.fn().mockReturnValue({
+          exec: jest.fn().mockResolvedValue([
+            mockCaseDoc({ title: "En retard", dueDate: past, status: "open" }),
+          ]),
+        }),
+      });
+
+      const result = await service.getDashboardStatCases("org-1", "user-1", undefined, "overdue");
+
+      expect(result).toHaveLength(1);
+      expect(result[0].dueDate).toBe(past.toISOString());
+    });
+  });
 });

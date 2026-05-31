@@ -4,6 +4,7 @@ import type {
   CaseResponse,
   CaseSummaryResponse,
   CaseTemplateResponse,
+  DashboardStatFilter,
   DashboardTodoCaseItem,
   InterventionResponse,
 } from "@syncora/shared";
@@ -203,5 +204,14 @@ export function getDashboardTodoCases(templateId: string, todoLabel: string) {
   return casesRequest<DashboardTodoCaseItem[]>(
     "GET",
     `/cases/dashboard/todo-cases?${params.toString()}`,
+  );
+}
+
+export function getDashboardStatCases(filter: DashboardStatFilter) {
+  const params = new URLSearchParams();
+  params.set("filter", filter);
+  return casesRequest<DashboardTodoCaseItem[]>(
+    "GET",
+    `/cases/dashboard/stat-cases?${params.toString()}`,
   );
 }

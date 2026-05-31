@@ -1,4 +1,8 @@
-import type { DocumentResponse, DocumentEntityType } from "@syncora/shared";
+import type {
+  DocumentResponse,
+  DocumentEntityType,
+  OrganizationStorageUsageResponse,
+} from "@syncora/shared";
 
 export interface UploadParams {
   organizationId: string;
@@ -9,9 +13,14 @@ export interface UploadParams {
   mimeType: string;
   size: number;
   buffer: Buffer;
+  /** Quota organisation (octets) — contrôle avant écriture stockage. */
+  storageQuotaBytes: number;
 }
 
 export abstract class AbstractDocumentsService {
+  abstract getOrganizationStorageUsage(
+    organizationId: string,
+  ): Promise<OrganizationStorageUsageResponse>;
   abstract upload(params: UploadParams): Promise<DocumentResponse>;
   abstract listByEntity(
     organizationId: string,

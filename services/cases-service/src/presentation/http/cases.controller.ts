@@ -11,6 +11,7 @@ import {
   Query,
 } from "@nestjs/common";
 import { AbstractCasesService } from "../../domain/ports/cases.service.port";
+import { isDashboardStatFilter } from "@syncora/shared";
 import type {
   CreateCaseBody,
   CreateCaseHistoryBody,
@@ -195,6 +196,28 @@ export class CasesController {
       userProfileId,
       templateId,
       todoLabel,
+    );
+  }
+
+  @Get("dashboard/stat-cases")
+  async getDashboardStatCases(
+    @Query("organizationId") organizationId: string,
+    @Query("userId") userId: string,
+    @Query("userProfileId") userProfileId: string | undefined,
+    @Query("filter") filter: string,
+  ) {
+    organizationId = parseOrganizationIdQuery(organizationId);
+    if (!userId) throw new BadRequestException("userId query param is required");
+    if (!filter || !isDashboardStatFilter(filter)) {
+      throw new BadRequestException(
+        "filter query param is required (assigned, in_progress, completed_week, overdue)",
+      );
+    }
+    return this.casesService.getDashboardStatCases(
+      organizationId,
+      userId,
+      userProfileId,
+      filter,
     );
   }
 }

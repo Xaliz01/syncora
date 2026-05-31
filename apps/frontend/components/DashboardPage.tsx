@@ -5,7 +5,13 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/components/auth/AuthContext";
 import * as api from "@/lib/cases.api";
-import type { CaseStatus, CasePriority, DashboardTodoItem } from "@syncora/shared";
+import type {
+  CaseStatus,
+  CasePriority,
+  DashboardStatFilter,
+  DashboardTodoCaseItem,
+  DashboardTodoItem,
+} from "@syncora/shared";
 
 const STATUS_LABELS: Record<CaseStatus, string> = {
   draft: "Brouillon",
@@ -39,12 +45,28 @@ const PRIORITY_COLORS: Record<CasePriority, string> = {
   urgent: "text-red-600",
 };
 
-function TodoCasesModal({ todo, onClose }: { todo: DashboardTodoItem; onClose: () => void }) {
-  const { data: cases, isLoading } = useQuery({
-    queryKey: ["dashboard-todo-cases", todo.templateId, todo.todoLabel],
-    queryFn: () => api.getDashboardTodoCases(todo.templateId, todo.todoLabel),
-  });
+const STAT_MODAL_TITLES: Record<DashboardStatFilter, string> = {
+  assigned: "Dossiers assignés",
+  in_progress: "Dossiers en cours",
+  completed_week: "Dossiers terminés cette semaine",
+  overdue: "Dossiers en retard",
+};
 
+function DashboardCasesModal({
+  title,
+  subtitle,
+  cases,
+  isLoading,
+  showDueDate,
+  onClose,
+}: {
+  title: string;
+  subtitle?: string;
+  cases: DashboardTodoCaseItem[] | undefined;
+  isLoading: boolean;
+  showDueDate?: boolean;
+  onClose: () => void;
+}) {
   return (
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm"
@@ -58,16 +80,16 @@ function TodoCasesModal({ todo, onClose }: { todo: DashboardTodoItem; onClose: (
       >
         <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 px-5 py-4">
           <div>
-            <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-              {todo.todoLabel}
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              {todo.templateName} — {todo.stepName}
-            </p>
+            <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{title}</h3>
+            {subtitle && (
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{subtitle}</p>
+            )}
           </div>
           <button
+            type="button"
             onClick={onClose}
             className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg leading-none"
+            aria-label="Fermer"
           >
             &times;
           </button>
@@ -107,6 +129,11 @@ function TodoCasesModal({ todo, onClose }: { todo: DashboardTodoItem; onClose: (
                         Client : {c.customerName}
                       </div>
                     )}
+                    {showDueDate && c.dueDate && (
+                      <div className="text-xs text-red-600 dark:text-red-400 mt-0.5">
+                        Échéance : {new Date(c.dueDate).toLocaleDateString("fr-FR")}
+                      </div>
+                    )}
                   </div>
                   <div className="ml-3 text-right flex-shrink-0">
                     <span className={`text-[10px] font-medium ${PRIORITY_COLORS[c.priority]}`}>
@@ -126,6 +153,7 @@ function TodoCasesModal({ todo, onClose }: { todo: DashboardTodoItem; onClose: (
 
         <div className="border-t border-slate-200 dark:border-slate-700 px-5 py-3 flex justify-end">
           <button
+            type="button"
             onClick={onClose}
             className="rounded-lg border border-slate-200 dark:border-slate-700 px-4 py-1.5 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
           >
@@ -133,6 +161,78 @@ function TodoCasesModal({ todo, onClose }: { todo: DashboardTodoItem; onClose: (
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function TodoCasesModal({ todo, onClose }: { todo: DashboardTodoItem; onClose: () => void }) {
+  const { data: cases, isLoading } = useQuery({
+    queryKey: ["dashboard-todo-cases", todo.templateId, todo.todoLabel],
+    queryFn: () => api.getDashboardTodoCases(todo.templateId, todo.todoLabel),
+  });
+
+  return (
+    <DashboardCasesModal
+      title={todo.todoLabel}
+      subtitle={`${todo.templateName} — ${todo.stepName}`}
+      cases={cases}
+      isLoading={isLoading}
+      onClose={onClose}
+    />
+  );
+}
+
+function StatCasesModal({
+  filter,
+  onClose,
+}: {
+  filter: DashboardStatFilter;
+  onClose: () => void;
+}) {
+  const { data: cases, isLoading } = useQuery({
+    queryKey: ["dashboard-stat-cases", filter],
+    queryFn: () => api.getDashboardStatCases(filter),
+  });
+
+  return (
+    <DashboardCasesModal
+      title={STAT_MODAL_TITLES[filter]}
+      cases={cases}
+      isLoading={isLoading}
+      showDueDate={filter === "overdue"}
+      onClose={onClose}
+    />
+  );
+}
+
+function DashboardStatCard({
+  label,
+  count,
+  valueClassName,
+  onCountClick,
+}: {
+  label: string;
+  count: number;
+  valueClassName: string;
+  onCountClick: () => void;
+}) {
+  const clickable = count > 0;
+
+  return (
+    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20">
+      <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">{label}</div>
+      {clickable ? (
+        <button
+          type="button"
+          onClick={onCountClick}
+          className={`text-2xl font-bold tabular-nums rounded-md -ml-1 px-1 hover:bg-slate-100 dark:hover:bg-slate-800 transition ${valueClassName}`}
+          aria-label={`${label} : voir les ${count} dossiers`}
+        >
+          {count}
+        </button>
+      ) : (
+        <div className={`text-2xl font-bold tabular-nums ${valueClassName}`}>{count}</div>
+      )}
     </div>
   );
 }
@@ -178,6 +278,7 @@ function DashboardTodoWidgets({ todos }: { todos: DashboardTodoItem[] }) {
 
 export function DashboardPage() {
   const { user } = useAuth();
+  const [selectedStat, setSelectedStat] = useState<DashboardStatFilter | null>(null);
 
   const { data: dashboard, isLoading } = useQuery({
     queryKey: ["dashboard"],
@@ -239,75 +340,39 @@ export function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20">
-          <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">Dossiers assignés</div>
-          <div className="text-2xl font-bold text-slate-800 dark:text-slate-100">
-            {stats?.totalAssigned ?? 0}
-          </div>
-        </div>
-        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20">
-          <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">En cours</div>
-          <div className="text-2xl font-bold text-amber-600">{stats?.inProgress ?? 0}</div>
-        </div>
-        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20">
-          <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">
-            Terminés cette semaine
-          </div>
-          <div className="text-2xl font-bold text-green-600">{stats?.completedThisWeek ?? 0}</div>
-        </div>
-        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20">
-          <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">En retard</div>
-          <div
-            className={`text-2xl font-bold ${(stats?.overdue ?? 0) > 0 ? "text-red-600" : "text-slate-800 dark:text-slate-100"}`}
-          >
-            {stats?.overdue ?? 0}
-          </div>
-        </div>
+        <DashboardStatCard
+          label="Dossiers assignés"
+          count={stats?.totalAssigned ?? 0}
+          valueClassName="text-slate-800 dark:text-slate-100"
+          onCountClick={() => setSelectedStat("assigned")}
+        />
+        <DashboardStatCard
+          label="En cours"
+          count={stats?.inProgress ?? 0}
+          valueClassName="text-amber-600"
+          onCountClick={() => setSelectedStat("in_progress")}
+        />
+        <DashboardStatCard
+          label="Terminés cette semaine"
+          count={stats?.completedThisWeek ?? 0}
+          valueClassName="text-green-600"
+          onCountClick={() => setSelectedStat("completed_week")}
+        />
+        <DashboardStatCard
+          label="En retard"
+          count={stats?.overdue ?? 0}
+          valueClassName={
+            (stats?.overdue ?? 0) > 0 ? "text-red-600" : "text-slate-800 dark:text-slate-100"
+          }
+          onCountClick={() => setSelectedStat("overdue")}
+        />
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
-        {(dashboard?.overdueCases?.length ?? 0) > 0 && (
-          <div className="rounded-xl border border-red-200 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20 lg:col-span-2">
-            <h2 className="text-base font-semibold text-red-700 mb-3 flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-              Dossiers en retard
-            </h2>
-            <div className="space-y-2">
-              {dashboard!.overdueCases.map((c) => (
-                <Link
-                  key={c.id}
-                  href={`/cases/${c.id}`}
-                  className="flex items-center justify-between rounded-lg border border-red-100 bg-red-50/30 p-3 hover:bg-red-50 transition"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">
-                      {c.title}
-                    </div>
-                    {c.customer?.displayName && (
-                      <div className="text-xs text-slate-600 dark:text-slate-300 truncate">
-                        Client : {c.customer.displayName}
-                      </div>
-                    )}
-                    <div className="text-xs text-red-600">
-                      Échéance : {c.dueDate ? new Date(c.dueDate).toLocaleDateString("fr-FR") : "—"}
-                    </div>
-                  </div>
-                  <div className="text-right ml-3 flex-shrink-0">
-                    <div className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-                      {c.progress}%
-                    </div>
-                    {c.nextTodo && (
-                      <div className="text-[10px] text-slate-500 dark:text-slate-400 max-w-[200px] truncate hidden sm:block">
-                        Prochaine : {c.nextTodo}
-                      </div>
-                    )}
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
+      {selectedStat && (
+        <StatCasesModal filter={selectedStat} onClose={() => setSelectedStat(null)} />
+      )}
 
+      <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
         <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">

@@ -16,8 +16,14 @@ describe("subscription seats", () => {
   });
 
   it("should sanitize negative or non-finite quantities", () => {
-    expect(sanitizeAddonQuantities({ extra_users: -2.7 })).toEqual({ extra_users: 0 });
-    expect(sanitizeAddonQuantities({ extra_users: 2.9 })).toEqual({ extra_users: 2 });
+    expect(sanitizeAddonQuantities({ extra_users: -2.7 })).toEqual({
+      extra_users: 0,
+      extra_storage: 0,
+    });
+    expect(sanitizeAddonQuantities({ extra_users: 2.9 })).toEqual({
+      extra_users: 2,
+      extra_storage: 0,
+    });
   });
 
   it("should estimate monthly total from base plan and addons", () => {

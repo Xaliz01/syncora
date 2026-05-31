@@ -17,6 +17,7 @@ import type {
   CaseSummaryResponse,
   CaseTemplateResponse,
   CustomerResponse,
+  DashboardStatFilter,
   DashboardTodoCaseItem,
   InterventionResponse,
   UpdateCaseBody,
@@ -367,7 +368,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     todoLabel: string,
   ): Promise<DashboardTodoCaseItem[]> {
     const userProfileId = await this.resolveUserProfileId(user);
-    return this.callCasesService<DashboardTodoCaseItem[]>(user.organizationId, {
+    const rows = await this.callCasesService<DashboardTodoCaseItem[]>(user.organizationId, {
       method: "get",
       path: "/dashboard/todo-cases",
       query: {
@@ -378,6 +379,50 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
         todoLabel,
       },
     });
+    return this.enrichDashboardCaseListItems(user, rows);
+  }
+
+  async getDashboardStatCases(
+    user: AuthUser,
+    filter: DashboardStatFilter,
+  ): Promise<DashboardTodoCaseItem[]> {
+    const userProfileId = await this.resolveUserProfileId(user);
+    const rows = await this.callCasesService<DashboardTodoCaseItem[]>(user.organizationId, {
+      method: "get",
+      path: "/dashboard/stat-cases",
+      query: {
+        organizationId: user.organizationId,
+        userId: user.id,
+        userProfileId,
+        filter,
+      },
+    });
+    return this.enrichDashboardCaseListItems(user, rows);
+  }
+
+  private async enrichDashboardCaseListItems(
+    user: AuthUser,
+    rows: DashboardTodoCaseItem[],
+  ): Promise<DashboardTodoCaseItem[]> {
+    const summaries: CaseSummaryResponse[] = rows.map((r) => ({
+      id: r.caseId,
+      organizationId: user.organizationId,
+      title: r.caseTitle,
+      status: r.status,
+      priority: r.priority,
+      assignees: [],
+      tags: [],
+      progress: 0,
+      interventionCount: 0,
+      customerId: r.customerId,
+      createdAt: r.createdAt,
+      dueDate: r.dueDate,
+    }));
+    const enriched = await this.enrichCaseSummaries(user, summaries);
+    return rows.map((r, i) => ({
+      ...r,
+      customerName: enriched[i]?.customer?.displayName,
+    }));
   }
 
   private async resolveUserProfileId(user: AuthUser): Promise<string | undefined> {

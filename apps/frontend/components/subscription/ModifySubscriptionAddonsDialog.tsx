@@ -8,8 +8,14 @@ import {
   BASE_SUBSCRIPTION_PLAN,
   BOOLEAN_CROSS_SELL_ADDON_CODES,
   QUANTITY_CROSS_SELL_ADDON_CODES,
+  computeMaxOrganizationUsers,
+  computeOrganizationStorageQuotaBytes,
+  formatStorageBytes,
+  sanitizeAddonQuantities,
   type AddonCode,
+  type AddonQuantities,
   type OrganizationSubscriptionResponse,
+  type QuantityAddonCode,
 } from "@syncora/shared";
 import * as subscriptionsApi from "@/lib/subscriptions.api";
 import {
@@ -17,6 +23,15 @@ import {
   waitForSubscriptionAddonsSync,
 } from "@/lib/subscription-sync";
 import { useToast } from "@/components/ui/ToastProvider";
+
+function quantityAddonHint(code: QuantityAddonCode, quantities: AddonQuantities): string {
+  if (code === "extra_users") {
+    const maxUsers = computeMaxOrganizationUsers(quantities);
+    return `Jusqu’à ${maxUsers} utilisateur${maxUsers > 1 ? "s" : ""} au total.`;
+  }
+  const quota = computeOrganizationStorageQuotaBytes(quantities);
+  return `Quota documentaire : ${formatStorageBytes(quota)} au total.`;
+}
 
 export function ModifySubscriptionAddonsDialog({
   open,
@@ -37,8 +52,8 @@ export function ModifySubscriptionAddonsDialog({
 }) {
   const { showToast } = useToast();
   const [selectedBoolean, setSelectedBoolean] = useState<AddonCode[]>(subscription.activeAddons);
-  const [extraUsersQty, setExtraUsersQty] = useState(
-    subscription.addonQuantities?.extra_users ?? 0,
+  const [quantityAddons, setQuantityAddons] = useState<AddonQuantities>(
+    sanitizeAddonQuantities(subscription.addonQuantities),
   );
 
   useEffect(() => {
@@ -48,25 +63,28 @@ export function ModifySubscriptionAddonsDialog({
         next.push(preselectAddon);
       }
       setSelectedBoolean(next.filter((code) => BOOLEAN_CROSS_SELL_ADDON_CODES.includes(code)));
-      setExtraUsersQty(subscription.addonQuantities?.extra_users ?? 0);
+      setQuantityAddons(sanitizeAddonQuantities(subscription.addonQuantities));
     }
   }, [open, subscription.activeAddons, subscription.addonQuantities, preselectAddon]);
 
   const hasChanges = useMemo(() => {
     const currentBoolean = [...subscription.activeAddons].sort().join(",");
     const nextBoolean = [...selectedBoolean].sort().join(",");
-    const currentExtra = subscription.addonQuantities?.extra_users ?? 0;
-    return currentBoolean !== nextBoolean || currentExtra !== extraUsersQty;
-  }, [selectedBoolean, subscription.activeAddons, subscription.addonQuantities, extraUsersQty]);
-
-  const maxUsersPreview = BASE_SUBSCRIPTION_INCLUDED_USERS + extraUsersQty;
+    const currentQty = sanitizeAddonQuantities(subscription.addonQuantities);
+    const nextQty = sanitizeAddonQuantities(quantityAddons);
+    const qtyChanged = QUANTITY_CROSS_SELL_ADDON_CODES.some(
+      (code) => (currentQty[code] ?? 0) !== (nextQty[code] ?? 0),
+    );
+    return currentBoolean !== nextBoolean || qtyChanged;
+  }, [selectedBoolean, subscription.activeAddons, subscription.addonQuantities, quantityAddons]);
 
   const updateMutation = useMutation({
     mutationFn: async () => {
+      const sanitized = sanitizeAddonQuantities(quantityAddons);
       const origin = window.location.origin;
       const res = await subscriptionsApi.updateSubscriptionAddons({
         addonCodes: selectedBoolean,
-        addonQuantities: { extra_users: extraUsersQty },
+        addonQuantities: sanitized,
         successUrl: `${origin}/subscription?checkout=success`,
       });
 
@@ -76,7 +94,7 @@ export function ModifySubscriptionAddonsDialog({
 
       const synced = await waitForSubscriptionAddonsSync({
         booleanAddons: selectedBoolean,
-        addonQuantities: { extra_users: extraUsersQty },
+        addonQuantities: sanitized,
       });
       return { res, redirectToPayment: false as const, synced };
     },
@@ -127,8 +145,8 @@ export function ModifySubscriptionAddonsDialog({
           Modifier l’abonnement
         </h2>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          Cochez les options à conserver sur votre offre {subscription.planName}. Pour les
-          utilisateurs supplémentaires, indiquez la quantité souhaitée.
+          Cochez les options à conserver sur votre offre {subscription.planName}. Pour les options
+          à quantité, indiquez le nombre de packs souhaité.
         </p>
 
         {!canApplyChanges && (
@@ -174,6 +192,8 @@ export function ModifySubscriptionAddonsDialog({
 
           {QUANTITY_CROSS_SELL_ADDON_CODES.map((code) => {
             const addon = ADDON_CATALOG[code];
+            const qty = quantityAddons[code] ?? 0;
+            const hintQuantities = sanitizeAddonQuantities({ ...quantityAddons, [code]: qty });
             return (
               <li key={code}>
                 <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
@@ -184,29 +204,36 @@ export function ModifySubscriptionAddonsDialog({
                     {addon.priceLabel}
                   </p>
                   <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">{addon.pitch}</p>
-                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                    {BASE_SUBSCRIPTION_INCLUDED_USERS} utilisateurs inclus dans l’offre{" "}
-                    {BASE_SUBSCRIPTION_PLAN.name}.
-                  </p>
+                  {code === "extra_users" && (
+                    <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                      {BASE_SUBSCRIPTION_INCLUDED_USERS} utilisateurs inclus dans l’offre{" "}
+                      {BASE_SUBSCRIPTION_PLAN.name}.
+                    </p>
+                  )}
                   <label className="mt-3 flex items-center gap-3">
                     <span className="text-sm text-slate-700 dark:text-slate-200 shrink-0">
-                      Supplémentaires
+                      {code === "extra_storage" ? "Packs (+50 Go)" : "Supplémentaires"}
                     </span>
                     <input
                       type="number"
                       min={0}
                       step={1}
-                      value={extraUsersQty}
+                      value={qty}
                       disabled={updateMutation.isPending}
                       onChange={(event) => {
                         const parsed = Number.parseInt(event.target.value, 10);
-                        setExtraUsersQty(Number.isFinite(parsed) ? Math.max(0, parsed) : 0);
+                        setQuantityAddons((prev) =>
+                          sanitizeAddonQuantities({
+                            ...prev,
+                            [code]: Number.isFinite(parsed) ? Math.max(0, parsed) : 0,
+                          }),
+                        );
                       }}
                       className="w-24 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-1.5 text-sm"
                     />
                   </label>
-                  <p className="mt-2 text-xs text-brand-700 dark:text-brand-300">
-                    Jusqu’à {maxUsersPreview} utilisateur{maxUsersPreview > 1 ? "s" : ""} au total.
+                  <p className="mt-2 text-xs text-brand-600 dark:text-brand-400">
+                    {quantityAddonHint(code, hintQuantities)}
                   </p>
                 </div>
               </li>
