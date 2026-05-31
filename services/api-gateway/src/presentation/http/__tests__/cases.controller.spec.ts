@@ -40,6 +40,7 @@ describe("CasesController", () => {
       deleteIntervention: jest.fn(),
       getDashboard: jest.fn(),
       getDashboardTodoCases: jest.fn(),
+      getDashboardStatCases: jest.fn(),
       listCaseHistory: jest.fn(),
     };
 
