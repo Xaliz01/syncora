@@ -650,9 +650,9 @@ describe("CasesService", () => {
     it("returns assigned active cases for the user", async () => {
       mockCaseModel.find.mockReturnValue({
         sort: jest.fn().mockReturnValue({
-          exec: jest.fn().mockResolvedValue([
-            mockCaseDoc({ title: "Dossier actif", status: "open" }),
-          ]),
+          exec: jest
+            .fn()
+            .mockResolvedValue([mockCaseDoc({ title: "Dossier actif", status: "open" })]),
         }),
       });
 
@@ -672,9 +672,11 @@ describe("CasesService", () => {
       const past = new Date("2020-01-01");
       mockCaseModel.find.mockReturnValue({
         sort: jest.fn().mockReturnValue({
-          exec: jest.fn().mockResolvedValue([
-            mockCaseDoc({ title: "En retard", dueDate: past, status: "open" }),
-          ]),
+          exec: jest
+            .fn()
+            .mockResolvedValue([
+              mockCaseDoc({ title: "En retard", dueDate: past, status: "open" }),
+            ]),
         }),
       });
 

@@ -126,9 +126,7 @@ export function DocumentUploadZone({ entityType, entityId }: Props) {
     try {
       for (const file of Array.from(files)) {
         if (file.size > MAX_DOCUMENT_FILE_SIZE_BYTES) {
-          throw new Error(
-            `« ${file.name} » dépasse la taille maximale de 10 Mo par fichier.`,
-          );
+          throw new Error(`« ${file.name} » dépasse la taille maximale de 10 Mo par fichier.`);
         }
         await documentsApi.uploadDocument(entityType, entityId, file);
       }

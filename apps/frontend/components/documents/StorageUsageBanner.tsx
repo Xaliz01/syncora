@@ -47,7 +47,8 @@ export function StorageUsageBanner({
       <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
         <span className="font-medium">Espace documents</span>
         <span className="text-xs tabular-nums">
-          {formatStorageBytes(storageUsedBytes)} / {formatStorageBytes(storageQuotaBytes)} ({percent}
+          {formatStorageBytes(storageUsedBytes)} / {formatStorageBytes(storageQuotaBytes)} (
+          {percent}
           %)
         </span>
       </div>

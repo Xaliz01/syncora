@@ -145,8 +145,8 @@ export function ModifySubscriptionAddonsDialog({
           Modifier l’abonnement
         </h2>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          Cochez les options à conserver sur votre offre {subscription.planName}. Pour les options
-          à quantité, indiquez le nombre de packs souhaité.
+          Cochez les options à conserver sur votre offre {subscription.planName}. Pour les options à
+          quantité, indiquez le nombre de packs souhaité.
         </p>
 
         {!canApplyChanges && (

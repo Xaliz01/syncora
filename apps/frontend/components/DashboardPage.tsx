@@ -182,13 +182,7 @@ function TodoCasesModal({ todo, onClose }: { todo: DashboardTodoItem; onClose: (
   );
 }
 
-function StatCasesModal({
-  filter,
-  onClose,
-}: {
-  filter: DashboardStatFilter;
-  onClose: () => void;
-}) {
+function StatCasesModal({ filter, onClose }: { filter: DashboardStatFilter; onClose: () => void }) {
   const { data: cases, isLoading } = useQuery({
     queryKey: ["dashboard-stat-cases", filter],
     queryFn: () => api.getDashboardStatCases(filter),

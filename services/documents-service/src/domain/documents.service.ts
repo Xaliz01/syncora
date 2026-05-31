@@ -2,7 +2,11 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import { v4 as uuidv4 } from "uuid";
-import type { DocumentResponse, DocumentEntityType, OrganizationStorageUsageResponse } from "@syncora/shared";
+import type {
+  DocumentResponse,
+  DocumentEntityType,
+  OrganizationStorageUsageResponse,
+} from "@syncora/shared";
 import {
   activeDocumentFilter,
   formatStorageBytes,
@@ -100,10 +104,9 @@ export class DocumentsService extends AbstractDocumentsService {
 
   private async sumActiveStorageBytes(organizationId: string): Promise<number> {
     const rows = await this.documentModel
-      .aggregate<{ total: number }>([
-        { $match: { organizationId, ...activeDocumentFilter } },
-        { $group: { _id: null, total: { $sum: "$size" } } },
-      ])
+      .aggregate<{
+        total: number;
+      }>([{ $match: { organizationId, ...activeDocumentFilter } }, { $group: { _id: null, total: { $sum: "$size" } } }])
       .exec();
     return rows[0]?.total ?? 0;
   }

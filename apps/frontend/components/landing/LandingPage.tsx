@@ -212,8 +212,8 @@ export function LandingPage() {
                 Tout ce dont vous avez besoin sur le terrain
               </h2>
               <p className="text-slate-600 dark:text-slate-400 mb-10 max-w-2xl">
-                Des fonctionnalités pensées pour les équipes qui gèrent des interventions, une flotte
-                et des stocks au quotidien.
+                Des fonctionnalités pensées pour les équipes qui gèrent des interventions, une
+                flotte et des stocks au quotidien.
               </p>
             </ScrollReveal>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -276,127 +276,128 @@ export function LandingPage() {
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 max-w-6xl">
               <ScrollReveal delayMs={0}>
                 <article className="rounded-2xl border-2 border-brand-600/30 dark:border-brand-500/40 bg-white dark:bg-slate-900 p-6 shadow-sm dark:shadow-slate-950/20 h-full">
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                  {BASE_SUBSCRIPTION_PLAN.name}
-                </h3>
-                <p className="mt-2 text-3xl font-bold text-brand-600 dark:text-brand-400">
-                  {BASE_SUBSCRIPTION_PLAN.priceDisplay}
-                  <span className="text-base font-normal text-slate-500 dark:text-slate-400">
-                    {" "}
-                    / {BASE_SUBSCRIPTION_PLAN.periodDisplay}
-                  </span>
-                </p>
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  {BASE_SUBSCRIPTION_TRIAL_LABEL}, {BASE_SUBSCRIPTION_PLAN.commitmentDisplay}
-                </p>
-                <ul className="mt-6 space-y-2 text-sm text-slate-600 dark:text-slate-300">
-                  <li className="flex gap-2">
-                    <span className="text-brand-600" aria-hidden>
-                      ✓
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                    {BASE_SUBSCRIPTION_PLAN.name}
+                  </h3>
+                  <p className="mt-2 text-3xl font-bold text-brand-600 dark:text-brand-400">
+                    {BASE_SUBSCRIPTION_PLAN.priceDisplay}
+                    <span className="text-base font-normal text-slate-500 dark:text-slate-400">
+                      {" "}
+                      / {BASE_SUBSCRIPTION_PLAN.periodDisplay}
                     </span>
-                    {BASE_SUBSCRIPTION_INCLUDED_USERS} utilisateurs inclus
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="text-brand-600" aria-hidden>
-                      ✓
-                    </span>
-                    Dossiers, interventions et calendrier
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="text-brand-600" aria-hidden>
-                      ✓
-                    </span>
-                    Clients, flotte et stock
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="text-brand-600" aria-hidden>
-                      ✓
-                    </span>
-                    Gestion granulaire des permissions
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="text-brand-600" aria-hidden>
-                      ✓
-                    </span>
-                    10 Go de stockage documents
-                  </li>
-                </ul>
-                <Link
-                  href="/register"
-                  className="mt-6 inline-flex w-full items-center justify-center rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-500 transition"
-                >
-                  Essayer Syncora — {BASE_SUBSCRIPTION_PLAN.trialDays} jours gratuits
-                </Link>
+                  </p>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    {BASE_SUBSCRIPTION_TRIAL_LABEL}, {BASE_SUBSCRIPTION_PLAN.commitmentDisplay}
+                  </p>
+                  <ul className="mt-6 space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                    <li className="flex gap-2">
+                      <span className="text-brand-600" aria-hidden>
+                        ✓
+                      </span>
+                      {BASE_SUBSCRIPTION_INCLUDED_USERS} utilisateurs inclus
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-brand-600" aria-hidden>
+                        ✓
+                      </span>
+                      Dossiers, interventions et calendrier
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-brand-600" aria-hidden>
+                        ✓
+                      </span>
+                      Clients, flotte et stock
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-brand-600" aria-hidden>
+                        ✓
+                      </span>
+                      Gestion granulaire des permissions
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-brand-600" aria-hidden>
+                        ✓
+                      </span>
+                      10 Go de stockage documents
+                    </li>
+                  </ul>
+                  <Link
+                    href="/register"
+                    className="mt-6 inline-flex w-full items-center justify-center rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-500 transition"
+                  >
+                    Essayer Syncora — {BASE_SUBSCRIPTION_PLAN.trialDays} jours gratuits
+                  </Link>
                 </article>
               </ScrollReveal>
 
               <ScrollReveal delayMs={80}>
                 <article className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm dark:shadow-slate-950/20 h-full">
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                  {teamSuggestionAddon.label}
-                </h3>
-                <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">
-                  {teamSuggestionAddon.priceLabel.split(" ")[0]}
-                  <span className="text-base font-normal text-slate-500 dark:text-slate-400">
-                    {" "}
-                    / mois
-                  </span>
-                </p>
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  En option sur l&apos;abonnement {BASE_SUBSCRIPTION_PLAN.name}
-                </p>
-                <ul className="mt-6 space-y-2 text-sm text-slate-600 dark:text-slate-300">
-                  <li className="flex gap-2">
-                    <span className="text-emerald-600" aria-hidden>
-                      ✓
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                    {teamSuggestionAddon.label}
+                  </h3>
+                  <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">
+                    {teamSuggestionAddon.priceLabel.split(" ")[0]}
+                    <span className="text-base font-normal text-slate-500 dark:text-slate-400">
+                      {" "}
+                      / mois
                     </span>
-                    Recommandation de l&apos;équipe la plus proche
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="text-emerald-600" aria-hidden>
-                      ✓
-                    </span>
-                    Distance, temps de trajet et carburant estimés
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="text-emerald-600" aria-hidden>
-                      ✓
-                    </span>
-                    Empreinte CO₂ par intervention
-                  </li>
-                </ul>
-                <p className="mt-6 text-sm text-slate-500 dark:text-slate-400">
-                  Activable depuis votre espace abonnement après inscription.
-                </p>
+                  </p>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    En option sur l&apos;abonnement {BASE_SUBSCRIPTION_PLAN.name}
+                  </p>
+                  <ul className="mt-6 space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                    <li className="flex gap-2">
+                      <span className="text-emerald-600" aria-hidden>
+                        ✓
+                      </span>
+                      Recommandation de l&apos;équipe la plus proche
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-emerald-600" aria-hidden>
+                        ✓
+                      </span>
+                      Distance, temps de trajet et carburant estimés
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-emerald-600" aria-hidden>
+                        ✓
+                      </span>
+                      Empreinte CO₂ par intervention
+                    </li>
+                  </ul>
+                  <p className="mt-6 text-sm text-slate-500 dark:text-slate-400">
+                    Activable depuis votre espace abonnement après inscription.
+                  </p>
                 </article>
               </ScrollReveal>
 
               <ScrollReveal delayMs={160}>
                 <article className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm dark:shadow-slate-950/20 h-full">
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                  {extraUsersAddon.label}
-                </h3>
-                <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">
-                  2,99 €
-                  <span className="text-base font-normal text-slate-500 dark:text-slate-400">
-                    {" "}
-                    / mois / utilisateur
-                  </span>
-                </p>
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  En option sur l&apos;abonnement {BASE_SUBSCRIPTION_PLAN.name} (quantité cumulable)
-                </p>
-                <ul className="mt-6 space-y-2 text-sm text-slate-600 dark:text-slate-300">
-                  <li className="flex gap-2">
-                    <span className="text-brand-600" aria-hidden>
-                      ✓
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                    {extraUsersAddon.label}
+                  </h3>
+                  <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">
+                    2,99 €
+                    <span className="text-base font-normal text-slate-500 dark:text-slate-400">
+                      {" "}
+                      / mois / utilisateur
                     </span>
-                    Ajoutez autant d&apos;utilisateur que nécessaire
-                  </li>
-                </ul>
-                <p className="mt-6 text-sm text-slate-500 dark:text-slate-400">
-                  {extraUsersAddon.pitch}
-                </p>
+                  </p>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    En option sur l&apos;abonnement {BASE_SUBSCRIPTION_PLAN.name} (quantité
+                    cumulable)
+                  </p>
+                  <ul className="mt-6 space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                    <li className="flex gap-2">
+                      <span className="text-brand-600" aria-hidden>
+                        ✓
+                      </span>
+                      Ajoutez autant d&apos;utilisateur que nécessaire
+                    </li>
+                  </ul>
+                  <p className="mt-6 text-sm text-slate-500 dark:text-slate-400">
+                    {extraUsersAddon.pitch}
+                  </p>
                 </article>
               </ScrollReveal>
             </div>

@@ -213,11 +213,6 @@ export class CasesController {
         "filter query param is required (assigned, in_progress, completed_week, overdue)",
       );
     }
-    return this.casesService.getDashboardStatCases(
-      organizationId,
-      userId,
-      userProfileId,
-      filter,
-    );
+    return this.casesService.getDashboardStatCases(organizationId, userId, userProfileId, filter);
   }
 }
