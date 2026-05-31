@@ -19,6 +19,9 @@ export type AddonCode = (typeof ADDON_CODES)[number];
 export const QUANTITY_ADDON_CODES = ["extra_users", "extra_storage"] as const;
 export type QuantityAddonCode = (typeof QUANTITY_ADDON_CODES)[number];
 
+/** Addons facturés en option on/off (hors quantités). */
+export type BooleanAddonCode = Exclude<AddonCode, QuantityAddonCode>;
+
 export type AddonBillingModel = "boolean" | "quantity";
 
 /**
@@ -132,18 +135,20 @@ export function isQuantityAddonCode(code: string): code is QuantityAddonCode {
   return (QUANTITY_ADDON_CODES as readonly string[]).includes(code);
 }
 
-export function isBooleanAddonCode(code: AddonCode): boolean {
+export function isBooleanAddonCode(code: AddonCode): code is BooleanAddonCode {
   return ADDON_CATALOG[code].billingModel === "boolean";
 }
 
 /** Options on/off gérées sur l'abonnement socle (hors quantités). */
-export const BOOLEAN_CROSS_SELL_ADDON_CODES = ADDON_CODES.filter(
-  (code) => addonRequiresBaseSubscription(code) && isBooleanAddonCode(code),
+export const BOOLEAN_CROSS_SELL_ADDON_CODES: BooleanAddonCode[] = ADDON_CODES.filter(
+  (code): code is BooleanAddonCode =>
+    addonRequiresBaseSubscription(code) && isBooleanAddonCode(code),
 );
 
 /** Options à quantité cumulable sur l'abonnement socle. */
-export const QUANTITY_CROSS_SELL_ADDON_CODES = ADDON_CODES.filter(
-  (code) => addonRequiresBaseSubscription(code) && isQuantityAddonCode(code),
+export const QUANTITY_CROSS_SELL_ADDON_CODES: QuantityAddonCode[] = ADDON_CODES.filter(
+  (code): code is QuantityAddonCode =>
+    addonRequiresBaseSubscription(code) && isQuantityAddonCode(code),
 );
 
 export type AddonQuantities = Partial<Record<QuantityAddonCode, number>>;

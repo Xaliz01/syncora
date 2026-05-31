@@ -11,9 +11,11 @@ import {
   computeMaxOrganizationUsers,
   computeOrganizationStorageQuotaBytes,
   formatStorageBytes,
+  isBooleanAddonCode,
   sanitizeAddonQuantities,
   type AddonCode,
   type AddonQuantities,
+  type BooleanAddonCode,
   type OrganizationSubscriptionResponse,
   type QuantityAddonCode,
 } from "@syncora/shared";
@@ -51,7 +53,9 @@ export function ModifySubscriptionAddonsDialog({
   canApplyChanges?: boolean;
 }) {
   const { showToast } = useToast();
-  const [selectedBoolean, setSelectedBoolean] = useState<AddonCode[]>(subscription.activeAddons);
+  const [selectedBoolean, setSelectedBoolean] = useState<BooleanAddonCode[]>(
+    subscription.activeAddons.filter(isBooleanAddonCode),
+  );
   const [quantityAddons, setQuantityAddons] = useState<AddonQuantities>(
     sanitizeAddonQuantities(subscription.addonQuantities),
   );
@@ -62,7 +66,7 @@ export function ModifySubscriptionAddonsDialog({
       if (preselectAddon && !next.includes(preselectAddon)) {
         next.push(preselectAddon);
       }
-      setSelectedBoolean(next.filter((code) => BOOLEAN_CROSS_SELL_ADDON_CODES.includes(code)));
+      setSelectedBoolean(next.filter(isBooleanAddonCode));
       setQuantityAddons(sanitizeAddonQuantities(subscription.addonQuantities));
     }
   }, [open, subscription.activeAddons, subscription.addonQuantities, preselectAddon]);
