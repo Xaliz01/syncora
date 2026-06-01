@@ -29,6 +29,7 @@ export class TechniciansService extends AbstractTechniciansService {
       phone: body.phone,
       speciality: body.speciality,
       status: body.status ?? "actif",
+      isTestData: body.isTestData === true,
     });
     return this.toTechnicianResponse(doc);
   }
@@ -117,6 +118,7 @@ export class TechniciansService extends AbstractTechniciansService {
       userId: doc.userId,
       createdAt: doc.get("createdAt")?.toISOString(),
       updatedAt: doc.get("updatedAt")?.toISOString(),
+      isTestData: doc.isTestData === true,
     };
   }
 }

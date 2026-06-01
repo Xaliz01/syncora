@@ -38,6 +38,9 @@ export class VehicleDocument extends Document {
 
   @Prop({ type: Date })
   deletedAt?: Date | null;
+
+  @Prop({ default: false })
+  isTestData!: boolean;
 }
 
 export const VehicleSchema = SchemaFactory.createForClass(VehicleDocument);

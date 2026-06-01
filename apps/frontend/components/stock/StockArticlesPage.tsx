@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "@/lib/stock.api";
+import { TestDataBadgeIf } from "@/components/test-data/TestDataBadge";
 import { usePermissions } from "@/lib/hooks/usePermissions";
 import {
   ListBadge,
@@ -472,7 +473,12 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
             <ListRow key={article.id} gridTemplateClass={ARTICLES_GRID}>
               <ListCellDefault className="font-mono text-xs">{article.reference}</ListCellDefault>
               <div className="min-w-0">
-                <ListCellPrimary className="block">{article.name}</ListCellPrimary>
+                <ListCellPrimary className="block">
+                  <span className="inline-flex items-center gap-2 min-w-0">
+                    <span className="truncate">{article.name}</span>
+                    <TestDataBadgeIf isTestData={article.isTestData} />
+                  </span>
+                </ListCellPrimary>
                 {!article.isActive && (
                   <span className="text-xs text-slate-400 dark:text-slate-500">Inactif</span>
                 )}

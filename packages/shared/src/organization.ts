@@ -1,5 +1,13 @@
 /** Contrat API organizations-service */
 
+import type { TrialTestDataStatus } from "./test-data";
+
+export interface OrganizationTrialTestData {
+  status: TrialTestDataStatus;
+  injectedAt?: string;
+  errorMessage?: string | null;
+}
+
 export interface CreateOrganizationBody {
   name: string;
 }
@@ -27,6 +35,13 @@ export interface OrganizationResponse {
   country?: string;
   createdAt?: string;
   updatedAt?: string;
+  trialTestData?: OrganizationTrialTestData;
+}
+
+export interface UpdateOrganizationTrialTestDataBody {
+  status: TrialTestDataStatus;
+  injectedAt?: string | null;
+  errorMessage?: string | null;
 }
 
 /** Organisations accessibles pour la session en cours (JWT). Évoluera vers plusieurs entrées par utilisateur. */

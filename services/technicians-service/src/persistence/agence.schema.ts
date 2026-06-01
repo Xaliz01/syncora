@@ -20,6 +20,9 @@ export class AgenceDocument extends Document {
 
   @Prop()
   phone?: string;
+
+  @Prop({ default: false })
+  isTestData!: boolean;
 }
 
 export const AgenceSchema = SchemaFactory.createForClass(AgenceDocument);

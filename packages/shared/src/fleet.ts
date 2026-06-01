@@ -34,6 +34,7 @@ export interface CreateVehicleBody {
   vin?: string;
   mileage?: number;
   status?: VehicleStatus;
+  isTestData?: boolean;
 }
 
 export interface UpdateVehicleBody {
@@ -63,6 +64,7 @@ export interface VehicleResponse {
   assignedTeamId?: string;
   createdAt?: string;
   updatedAt?: string;
+  isTestData?: boolean;
 }
 
 // ── Technicians ──
@@ -75,6 +77,7 @@ export interface CreateTechnicianBody {
   phone?: string;
   speciality?: string;
   status?: TechnicianStatus;
+  isTestData?: boolean;
 }
 
 export interface UpdateTechnicianBody {
@@ -98,6 +101,7 @@ export interface TechnicianResponse {
   userId?: string;
   createdAt?: string;
   updatedAt?: string;
+  isTestData?: boolean;
 }
 
 export interface CreateTechnicianUserAccountBody {
@@ -114,6 +118,7 @@ export interface CreateTeamBody {
   status?: TeamStatus;
   /** Couleur calendrier (#RRGGBB), optionnelle */
   calendarColor?: string;
+  isTestData?: boolean;
 }
 
 export interface UpdateTeamBody {
@@ -137,6 +142,7 @@ export interface TeamResponse {
   calendarColor?: string;
   createdAt?: string;
   updatedAt?: string;
+  isTestData?: boolean;
 }
 
 export interface AssignTeamToVehicleBody {
@@ -152,6 +158,7 @@ export interface CreateAgenceBody {
   city?: string;
   postalCode?: string;
   phone?: string;
+  isTestData?: boolean;
 }
 
 export interface UpdateAgenceBody {
@@ -172,4 +179,5 @@ export interface AgenceResponse {
   phone?: string;
   createdAt?: string;
   updatedAt?: string;
+  isTestData?: boolean;
 }

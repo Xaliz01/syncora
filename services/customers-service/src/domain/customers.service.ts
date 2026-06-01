@@ -47,6 +47,7 @@ export class CustomersService extends AbstractCustomersService {
           }
         : undefined,
       notes: body.notes?.trim() || undefined,
+      isTestData: body.isTestData === true,
     });
     return this.toCustomerResponse(doc);
   }
@@ -161,6 +162,11 @@ export class CustomersService extends AbstractCustomersService {
     return { deleted: true };
   }
 
+  async purgeTestData(organizationId: string): Promise<{ purged: true }> {
+    await this.customerModel.deleteMany({ organizationId, isTestData: true }).exec();
+    return { purged: true };
+  }
+
   private validateCreateCustomer(body: CreateCustomerBody): void {
     if (body.kind === "company") {
       if (!body.companyName?.trim()) {
@@ -225,6 +231,7 @@ export class CustomersService extends AbstractCustomersService {
       notes: doc.notes,
       createdAt: doc.get("createdAt")?.toISOString(),
       updatedAt: doc.get("updatedAt")?.toISOString(),
+      isTestData: doc.isTestData === true,
     };
   }
 }

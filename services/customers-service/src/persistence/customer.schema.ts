@@ -61,6 +61,9 @@ export class CustomerDocument extends Document {
 
   @Prop({ type: Date })
   deletedAt?: Date | null;
+
+  @Prop({ default: false })
+  isTestData!: boolean;
 }
 
 export const CustomerSchema = SchemaFactory.createForClass(CustomerDocument);

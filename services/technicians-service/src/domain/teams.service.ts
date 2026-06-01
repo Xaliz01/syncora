@@ -33,6 +33,7 @@ export class TeamsService extends AbstractTeamsService {
         calendarColor: body.calendarColor?.trim()
           ? this.validateCalendarColor(body.calendarColor)
           : undefined,
+        isTestData: body.isTestData === true,
       });
       return this.toResponse(doc);
     } catch (err: unknown) {
@@ -150,6 +151,7 @@ export class TeamsService extends AbstractTeamsService {
       calendarColor: doc.calendarColor,
       createdAt: doc.get("createdAt")?.toISOString(),
       updatedAt: doc.get("updatedAt")?.toISOString(),
+      isTestData: doc.isTestData === true,
     };
   }
 

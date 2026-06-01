@@ -87,6 +87,7 @@ describe("TechniciansService", () => {
         phone: body.phone,
         speciality: body.speciality,
         status: "actif",
+        isTestData: false,
       });
       expect(result.id).toBe("tech-123");
       expect(result.firstName).toBe("John");

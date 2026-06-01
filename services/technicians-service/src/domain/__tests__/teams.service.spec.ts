@@ -89,6 +89,7 @@ describe("TeamsService", () => {
         technicianIds: ["tech-1", "tech-2"],
         status: "active",
         calendarColor: undefined,
+        isTestData: false,
       });
       expect(result.id).toBe("team-123");
       expect(result.name).toBe("Équipe A");

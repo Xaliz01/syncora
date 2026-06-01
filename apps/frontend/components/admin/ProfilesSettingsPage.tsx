@@ -3,6 +3,7 @@
 import Link from "next/link";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import type { PermissionProfileResponse } from "@syncora/shared";
+import { TestDataBadgeIf } from "@/components/test-data/TestDataBadge";
 import * as adminApi from "@/lib/admin.api";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import {
@@ -127,7 +128,12 @@ export function ProfilesSettingsPage() {
               href={`/settings/profiles/${profile.id}`}
               gridTemplateClass={GRID}
             >
-              <ListCellPrimary>{profile.name}</ListCellPrimary>
+              <ListCellPrimary>
+                <span className="inline-flex items-center gap-2 min-w-0">
+                  <span className="truncate">{profile.name}</span>
+                  <TestDataBadgeIf isTestData={profile.isTestData} />
+                </span>
+              </ListCellPrimary>
               <ListCellMuted>{profile.description ?? "—"}</ListCellMuted>
               <ListCellDefault>{profile.permissions.length}</ListCellDefault>
             </ListRowLink>

@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
 import { FleetController } from "../presentation/http/fleet.controller";
+import { TestDataController } from "../presentation/http/test-data.controller";
 import { VehicleSchema } from "../persistence/vehicle.schema";
 import { AbstractFleetService } from "../domain/ports/fleet.service.port";
 import { FleetService } from "../domain/fleet.service";
@@ -10,7 +11,7 @@ import { FleetService } from "../domain/fleet.service";
     MongooseModule.forRoot(process.env.MONGODB_URI ?? "mongodb://localhost:27017/syncora-fleet"),
     MongooseModule.forFeature([{ name: "Vehicle", schema: VehicleSchema }]),
   ],
-  controllers: [FleetController],
+  controllers: [FleetController, TestDataController],
   providers: [{ provide: AbstractFleetService, useClass: FleetService }],
 })
 export class AppModule {}

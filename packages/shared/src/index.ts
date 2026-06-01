@@ -18,3 +18,4 @@ export * from "./document";
 export * from "./soft-delete";
 export * from "./organization-scope";
 export * from "./support";
+export * from "./test-data";

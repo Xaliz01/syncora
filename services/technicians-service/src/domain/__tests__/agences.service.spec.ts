@@ -76,6 +76,7 @@ describe("AgencesService", () => {
         city: "Paris",
         postalCode: "75001",
         phone: "+33100000000",
+        isTestData: false,
       });
       expect(result.id).toBe("agence-123");
       expect(result.name).toBe("Agence Paris");

@@ -21,6 +21,9 @@ export class TeamDocument extends Document {
   /** Hex #RRGGBB — cartes calendrier */
   @Prop()
   calendarColor?: string;
+
+  @Prop({ default: false })
+  isTestData!: boolean;
 }
 
 export const TeamSchema = SchemaFactory.createForClass(TeamDocument);

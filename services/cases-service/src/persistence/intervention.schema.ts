@@ -44,6 +44,9 @@ export class InterventionDocument extends Document {
 
   @Prop({ type: Date })
   deletedAt?: Date | null;
+
+  @Prop({ default: false })
+  isTestData!: boolean;
 }
 
 export const InterventionSchema = SchemaFactory.createForClass(InterventionDocument);

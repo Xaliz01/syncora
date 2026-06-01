@@ -4,6 +4,7 @@ import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as api from "@/lib/cases.api";
+import { TestDataBadgeIf } from "@/components/test-data/TestDataBadge";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import {
   filterListItems,
@@ -108,12 +109,15 @@ export function TemplatesListPage() {
             return (
               <ListRow key={template.id} gridTemplateClass={GRID}>
                 <ListCellPrimary>
-                  <Link
-                    href={`/settings/case-templates/${template.id}`}
-                    className="hover:underline"
-                  >
-                    {template.name}
-                  </Link>
+                  <span className="inline-flex items-center gap-2 min-w-0">
+                    <Link
+                      href={`/settings/case-templates/${template.id}`}
+                      className="hover:underline truncate"
+                    >
+                      {template.name}
+                    </Link>
+                    <TestDataBadgeIf isTestData={template.isTestData} />
+                  </span>
                 </ListCellPrimary>
                 <ListCellMuted className="line-clamp-2 md:line-clamp-2">
                   {template.description || "—"}

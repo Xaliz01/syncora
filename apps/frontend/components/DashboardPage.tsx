@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/components/auth/AuthContext";
@@ -12,6 +12,7 @@ import type {
   DashboardTodoCaseItem,
   DashboardTodoItem,
 } from "@syncora/shared";
+import { TrialTestDataCard } from "@/components/test-data/TrialTestDataCard";
 
 const STATUS_LABELS: Record<CaseStatus, string> = {
   draft: "Brouillon",
@@ -51,6 +52,73 @@ const STAT_MODAL_TITLES: Record<DashboardStatFilter, string> = {
   completed_week: "Dossiers terminés cette semaine",
   overdue: "Dossiers en retard",
 };
+
+const DASHBOARD_CARD_LIST_PAGE_SIZE = 5;
+
+/** Hauteur minimale commune des lignes (dossiers vs interventions) pour aligner les deux cartes. */
+const DASHBOARD_LIST_ROW_CLASS =
+  "flex items-center justify-between rounded-lg border border-slate-100 dark:border-slate-800 p-3 min-h-[5.5rem] hover:bg-slate-50 dark:hover:bg-slate-800 transition";
+
+function DashboardPaginatedList<T>({
+  items,
+  getKey,
+  children,
+  ariaLabel,
+}: {
+  items: T[];
+  getKey: (item: T) => string;
+  children: (item: T) => React.ReactNode;
+  ariaLabel: string;
+}) {
+  const [page, setPage] = useState(0);
+  const totalPages = Math.max(1, Math.ceil(items.length / DASHBOARD_CARD_LIST_PAGE_SIZE));
+
+  useEffect(() => {
+    setPage(0);
+  }, [items.length]);
+
+  const safePage = Math.min(page, totalPages - 1);
+  const start = safePage * DASHBOARD_CARD_LIST_PAGE_SIZE;
+  const pageItems = items.slice(start, start + DASHBOARD_CARD_LIST_PAGE_SIZE);
+  const showPager = items.length > DASHBOARD_CARD_LIST_PAGE_SIZE;
+
+  return (
+    <div className="flex flex-col flex-1 min-h-0">
+      <div className="flex flex-col gap-2 flex-1 min-h-0">
+        {pageItems.map((item) => (
+          <React.Fragment key={getKey(item)}>{children(item)}</React.Fragment>
+        ))}
+      </div>
+      {showPager ? (
+        <nav
+          className="mt-auto flex shrink-0 items-center justify-between gap-2 pt-3 border-t border-slate-100 dark:border-slate-800"
+          aria-label={ariaLabel}
+        >
+          <button
+            type="button"
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+            disabled={safePage === 0}
+            className="rounded-lg px-2.5 py-1 text-xs font-medium text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-950/40 disabled:opacity-40 disabled:pointer-events-none transition"
+          >
+            Précédent
+          </button>
+          <span className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
+            {start + 1}–{Math.min(start + DASHBOARD_CARD_LIST_PAGE_SIZE, items.length)} sur{" "}
+            {items.length}
+          </span>
+          <button
+            type="button"
+            onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+            disabled={safePage >= totalPages - 1}
+            className="rounded-lg px-2.5 py-1 text-xs font-medium text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-950/40 disabled:opacity-40 disabled:pointer-events-none transition"
+          >
+            Suivant
+          </button>
+        </nav>
+      ) : null}
+    </div>
+  );
+}
 
 function DashboardCasesModal({
   title,
@@ -301,6 +369,8 @@ export function DashboardPage() {
         </p>
       </div>
 
+      <TrialTestDataCard />
+
       <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20">
         <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100 mb-3">
           Actions rapides
@@ -366,9 +436,9 @@ export function DashboardPage() {
         <StatCasesModal filter={selectedStat} onClose={() => setSelectedStat(null)} />
       )}
 
-      <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
-        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20">
-          <div className="flex items-center justify-between mb-3">
+      <div className="grid lg:grid-cols-2 gap-4 sm:gap-6 lg:items-stretch">
+        <div className="flex flex-col rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20">
+          <div className="flex shrink-0 items-center justify-between mb-3">
             <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
               Mes dossiers actifs
             </h2>
@@ -382,54 +452,56 @@ export function DashboardPage() {
           {!dashboard?.assignedCases?.length ? (
             <p className="text-sm text-slate-500 dark:text-slate-400">Aucun dossier assigné.</p>
           ) : (
-            <div className="space-y-2">
-              {dashboard.assignedCases.slice(0, 8).map((c) => (
-                <Link
-                  key={c.id}
-                  href={`/cases/${c.id}`}
-                  className="flex items-center justify-between rounded-lg border border-slate-100 dark:border-slate-800 p-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">
-                        {c.title}
-                      </span>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-[10px] font-medium flex-shrink-0 ${STATUS_COLORS[c.status]}`}
-                      >
-                        {STATUS_LABELS[c.status]}
-                      </span>
-                    </div>
-                    {c.customer?.displayName && (
-                      <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                        Client : {c.customer.displayName}
+            <div className="flex flex-col flex-1 min-h-0">
+              <DashboardPaginatedList
+                items={dashboard.assignedCases}
+                getKey={(c) => c.id}
+                ariaLabel="Pagination des dossiers actifs"
+              >
+                {(c) => (
+                  <Link href={`/cases/${c.id}`} className={DASHBOARD_LIST_ROW_CLASS}>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">
+                          {c.title}
+                        </span>
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-medium flex-shrink-0 ${STATUS_COLORS[c.status]}`}
+                        >
+                          {STATUS_LABELS[c.status]}
+                        </span>
                       </div>
-                    )}
-                    {c.nextTodo && (
-                      <div className="text-xs text-amber-600 mt-0.5 truncate">
-                        A faire : {c.nextTodo}
+                      {c.customer?.displayName && (
+                        <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                          Client : {c.customer.displayName}
+                        </div>
+                      )}
+                      {c.nextTodo && (
+                        <div className="text-xs text-amber-600 mt-0.5 truncate">
+                          A faire : {c.nextTodo}
+                        </div>
+                      )}
+                    </div>
+                    <div className="ml-3 flex flex-col items-end flex-shrink-0">
+                      <div className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                        {c.progress}%
                       </div>
-                    )}
-                  </div>
-                  <div className="ml-3 flex flex-col items-end flex-shrink-0">
-                    <div className="text-xs font-medium text-slate-600 dark:text-slate-300">
-                      {c.progress}%
+                      <div className="w-12 h-1 rounded-full bg-slate-100 dark:bg-slate-800 mt-1">
+                        <div
+                          className="h-full rounded-full bg-brand-600"
+                          style={{ width: `${c.progress}%` }}
+                        />
+                      </div>
                     </div>
-                    <div className="w-12 h-1 rounded-full bg-slate-100 dark:bg-slate-800 mt-1">
-                      <div
-                        className="h-full rounded-full bg-brand-600"
-                        style={{ width: `${c.progress}%` }}
-                      />
-                    </div>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                )}
+              </DashboardPaginatedList>
             </div>
           )}
         </div>
 
-        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20">
-          <div className="flex items-center justify-between mb-3">
+        <div className="flex flex-col rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20">
+          <div className="flex shrink-0 items-center justify-between mb-3">
             <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
               Prochaines interventions
             </h2>
@@ -445,40 +517,42 @@ export function DashboardPage() {
               Aucune intervention à venir.
             </p>
           ) : (
-            <div className="space-y-2">
-              {dashboard.upcomingInterventions.slice(0, 8).map((i) => (
-                <Link
-                  key={i.id}
-                  href={`/cases/${i.caseId}`}
-                  className="flex items-center justify-between rounded-lg border border-slate-100 dark:border-slate-800 p-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">
-                      {i.title}
+            <div className="flex flex-col flex-1 min-h-0">
+              <DashboardPaginatedList
+                items={dashboard.upcomingInterventions}
+                getKey={(i) => i.id}
+                ariaLabel="Pagination des prochaines interventions"
+              >
+                {(i) => (
+                  <Link href={`/cases/${i.caseId}`} className={DASHBOARD_LIST_ROW_CLASS}>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">
+                        {i.title}
+                      </div>
+                      {i.caseTitle && (
+                        <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                          {i.caseTitle}
+                        </div>
+                      )}
                     </div>
-                    {i.caseTitle && (
-                      <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                        {i.caseTitle}
-                      </div>
-                    )}
-                  </div>
-                  <div className="ml-3 text-right flex-shrink-0">
-                    {i.scheduledStart && (
-                      <div className="text-xs text-slate-600 dark:text-slate-300">
-                        {new Date(i.scheduledStart).toLocaleDateString("fr-FR")}
-                      </div>
-                    )}
-                    {i.scheduledStart && (
-                      <div className="text-[10px] text-slate-400 dark:text-slate-500">
-                        {new Date(i.scheduledStart).toLocaleTimeString("fr-FR", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </Link>
-              ))}
+                    <div className="ml-3 text-right flex-shrink-0">
+                      {i.scheduledStart && (
+                        <div className="text-xs text-slate-600 dark:text-slate-300">
+                          {new Date(i.scheduledStart).toLocaleDateString("fr-FR")}
+                        </div>
+                      )}
+                      {i.scheduledStart && (
+                        <div className="text-[10px] text-slate-400 dark:text-slate-500">
+                          {new Date(i.scheduledStart).toLocaleTimeString("fr-FR", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </Link>
+                )}
+              </DashboardPaginatedList>
             </div>
           )}
         </div>

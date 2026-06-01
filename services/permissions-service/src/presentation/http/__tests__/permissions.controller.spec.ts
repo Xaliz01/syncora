@@ -22,6 +22,7 @@ describe("PermissionsController", () => {
       listInvitations: jest.fn(),
       resolveInvitation: jest.fn(),
       acceptInvitation: jest.fn(),
+      purgeTestData: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({

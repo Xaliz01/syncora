@@ -17,6 +17,7 @@ describe("FleetController", () => {
       assignTeam: jest.fn(),
       unassignTeam: jest.fn(),
       unassignTeamFromAllVehicles: jest.fn(),
+      purgeTestData: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({

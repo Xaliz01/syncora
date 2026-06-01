@@ -9,6 +9,8 @@ import { AbstractAgencesService } from "../domain/ports/agences.service.port";
 import { TechniciansService } from "../domain/technicians.service";
 import { TeamsService } from "../domain/teams.service";
 import { AgencesService } from "../domain/agences.service";
+import { TestDataPurgeService } from "../domain/test-data-purge.service";
+import { TestDataController } from "../presentation/http/test-data.controller";
 import { TechnicianSchema } from "../persistence/technician.schema";
 import { TeamSchema } from "../persistence/team.schema";
 import { AgenceSchema } from "../persistence/agence.schema";
@@ -24,11 +26,12 @@ import { AgenceSchema } from "../persistence/agence.schema";
       { name: "Agence", schema: AgenceSchema },
     ]),
   ],
-  controllers: [TechniciansController, TeamsController, AgencesController],
+  controllers: [TechniciansController, TeamsController, AgencesController, TestDataController],
   providers: [
     { provide: AbstractTechniciansService, useClass: TechniciansService },
     { provide: AbstractTeamsService, useClass: TeamsService },
     { provide: AbstractAgencesService, useClass: AgencesService },
+    TestDataPurgeService,
   ],
 })
 export class AppModule {}

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import type { VehicleResponse } from "@syncora/shared";
+import { TestDataBadgeIf } from "@/components/test-data/TestDataBadge";
 import * as fleetApi from "@/lib/fleet.api";
 import {
   filterListItems,
@@ -138,7 +139,12 @@ export function VehiclesListPage() {
               href={`/fleet/vehicles/${vehicle.id}`}
               gridTemplateClass={GRID}
             >
-              <ListCellPrimary>{vehicle.registrationNumber}</ListCellPrimary>
+              <ListCellPrimary>
+                <span className="inline-flex items-center gap-2 min-w-0">
+                  <span className="truncate">{vehicle.registrationNumber}</span>
+                  <TestDataBadgeIf isTestData={vehicle.isTestData} />
+                </span>
+              </ListCellPrimary>
               <ListCellDefault>
                 {[vehicle.brand, vehicle.model].filter(Boolean).join(" ") || "—"}
               </ListCellDefault>

@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
 import { PermissionsController } from "../presentation/http/permissions.controller";
+import { TestDataController } from "../presentation/http/test-data.controller";
 import { AbstractPermissionsService } from "../domain/ports/permissions.service.port";
 import { PermissionsService } from "../domain/permissions.service";
 import { PermissionProfileSchema } from "../persistence/permission-profile.schema";
@@ -18,7 +19,7 @@ import { InvitationSchema } from "../persistence/invitation.schema";
       { name: "Invitation", schema: InvitationSchema },
     ]),
   ],
-  controllers: [PermissionsController],
+  controllers: [PermissionsController, TestDataController],
   providers: [{ provide: AbstractPermissionsService, useClass: PermissionsService }],
 })
 export class AppModule {}

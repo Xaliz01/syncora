@@ -24,6 +24,8 @@ export interface CreateCustomerBody {
   mobile?: string;
   address?: PostalAddress;
   notes?: string;
+  /** Réservé à l’injection de données de démo (essai). */
+  isTestData?: boolean;
 }
 
 export interface UpdateCustomerBody {
@@ -57,4 +59,5 @@ export interface CustomerResponse {
   notes?: string;
   createdAt?: string;
   updatedAt?: string;
+  isTestData?: boolean;
 }

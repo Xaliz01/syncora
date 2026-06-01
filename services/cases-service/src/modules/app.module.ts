@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
 import { CasesController } from "../presentation/http/cases.controller";
+import { TestDataController } from "../presentation/http/test-data.controller";
 import { AbstractCasesService } from "../domain/ports/cases.service.port";
 import { CasesService } from "../domain/cases.service";
 import { CaseTemplateSchema } from "../persistence/case-template.schema";
@@ -18,7 +19,7 @@ import { InterventionSchema } from "../persistence/intervention.schema";
       { name: "Intervention", schema: InterventionSchema },
     ]),
   ],
-  controllers: [CasesController],
+  controllers: [CasesController, TestDataController],
   providers: [{ provide: AbstractCasesService, useClass: CasesService }],
 })
 export class AppModule {}

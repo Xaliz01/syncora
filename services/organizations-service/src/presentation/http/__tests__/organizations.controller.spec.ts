@@ -12,6 +12,9 @@ describe("OrganizationsController", () => {
       create: jest.fn(),
       findById: jest.fn(),
       update: jest.fn(),
+      getTrialTestDataStatus: jest.fn(),
+      updateTrialTestData: jest.fn(),
+      listOrganizationsWithReadyTrialTestData: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({

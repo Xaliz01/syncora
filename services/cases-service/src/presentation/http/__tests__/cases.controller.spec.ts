@@ -30,6 +30,7 @@ describe("CasesController", () => {
       getDashboardStatCases: jest.fn(),
       addCaseHistory: jest.fn(),
       listCaseHistory: jest.fn(),
+      purgeTestData: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import * as api from "@/lib/cases.api";
 import type { CasePriority, CaseStatus } from "@syncora/shared";
+import { TestDataBadgeIf } from "@/components/test-data/TestDataBadge";
 import {
   ListBadge,
   ListCellDefault,
@@ -153,7 +154,12 @@ export function CasesListPage() {
           {cases.map((c) => (
             <ListRowLink key={c.id} href={`/cases/${c.id}`} gridTemplateClass={GRID}>
               <div className="min-w-0">
-                <ListCellPrimary className="block">{c.title}</ListCellPrimary>
+                <ListCellPrimary className="block">
+                  <span className="inline-flex items-center gap-2 min-w-0">
+                    <span className="truncate">{c.title}</span>
+                    <TestDataBadgeIf isTestData={c.isTestData} />
+                  </span>
+                </ListCellPrimary>
                 {c.nextTodo ? (
                   <p className="text-[11px] text-amber-600 mt-0.5 truncate">
                     Prochaine tâche : {c.nextTodo}

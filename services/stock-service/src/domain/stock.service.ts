@@ -62,6 +62,7 @@ export class StockService extends AbstractStockService {
         targetStock,
         isActive: body.isActive ?? true,
         lastMovementAt: initialStock > 0 ? now : undefined,
+        isTestData: body.isTestData === true,
       });
 
       if (initialStock > 0) {
@@ -174,6 +175,19 @@ export class StockService extends AbstractStockService {
       .exec();
     if (!doc) throw new NotFoundException("Article not found");
     return { deleted: true };
+  }
+
+  async purgeTestData(organizationId: string): Promise<{ purged: true }> {
+    const testArticles = await this.articleModel
+      .find({ organizationId, isTestData: true })
+      .select("_id")
+      .exec();
+    const articleIds = testArticles.map((a) => a._id.toString());
+    if (articleIds.length > 0) {
+      await this.stockMovementModel.deleteMany({ organizationId, articleId: { $in: articleIds } });
+    }
+    await this.articleModel.deleteMany({ organizationId, isTestData: true }).exec();
+    return { purged: true };
   }
 
   async createArticleMovement(body: CreateArticleMovementBody): Promise<StockMovementResponse> {
@@ -317,6 +331,7 @@ export class StockService extends AbstractStockService {
       suggestedReorderQuantity: Math.max(doc.targetStock - doc.stockQuantity, 0),
       createdAt: doc.get("createdAt")?.toISOString(),
       updatedAt: doc.get("updatedAt")?.toISOString(),
+      isTestData: doc.isTestData === true,
     };
   }
 

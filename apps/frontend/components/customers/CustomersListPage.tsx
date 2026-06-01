@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import * as customersApi from "@/lib/customers.api";
 import type { CustomerResponse } from "@syncora/shared";
+import { TestDataBadgeIf } from "@/components/test-data/TestDataBadge";
 import { CUSTOMER_KIND_LABELS } from "./customer-kind-labels";
 import {
   filterListItems,
@@ -102,7 +103,12 @@ export function CustomersListPage() {
         >
           {filtered.map((c) => (
             <ListRowLink key={c.id} href={`/customers/${c.id}`} gridTemplateClass={GRID}>
-              <ListCellPrimary>{c.displayName}</ListCellPrimary>
+              <ListCellPrimary>
+                <span className="inline-flex items-center gap-2 min-w-0">
+                  <span className="truncate">{c.displayName}</span>
+                  <TestDataBadgeIf isTestData={c.isTestData} />
+                </span>
+              </ListCellPrimary>
               <ListCellDefault>{CUSTOMER_KIND_LABELS[c.kind] ?? c.kind}</ListCellDefault>
               <ListCellMuted>
                 {[c.email, c.phone ?? c.mobile].filter(Boolean).join(" · ") || "—"}

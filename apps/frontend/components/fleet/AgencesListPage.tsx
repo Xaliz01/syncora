@@ -3,6 +3,7 @@
 import Link from "next/link";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import type { AgenceResponse } from "@syncora/shared";
+import { TestDataBadgeIf } from "@/components/test-data/TestDataBadge";
 import * as fleetApi from "@/lib/fleet.api";
 import {
   filterListItems,
@@ -117,7 +118,12 @@ export function AgencesListPage() {
               href={`/fleet/agences/${agence.id}`}
               gridTemplateClass={GRID}
             >
-              <ListCellPrimary>{agence.name}</ListCellPrimary>
+              <ListCellPrimary>
+                <span className="inline-flex items-center gap-2 min-w-0">
+                  <span className="truncate">{agence.name}</span>
+                  <TestDataBadgeIf isTestData={agence.isTestData} />
+                </span>
+              </ListCellPrimary>
               <ListCellMuted>{agence.city || "—"}</ListCellMuted>
               <ListCellMuted>{agence.postalCode || "—"}</ListCellMuted>
               <ListCellMuted>{agence.phone || "—"}</ListCellMuted>

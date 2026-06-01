@@ -1,5 +1,22 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document } from "mongoose";
+import type { TrialTestDataStatus } from "@syncora/shared";
+
+@Schema({ _id: false })
+export class OrganizationTrialTestDataSubDoc {
+  @Prop({ type: String, required: true, default: "none" })
+  status!: TrialTestDataStatus;
+
+  @Prop({ type: Date })
+  injectedAt?: Date;
+
+  @Prop({ type: String, default: null })
+  errorMessage?: string | null;
+}
+
+export const OrganizationTrialTestDataSubDocSchema = SchemaFactory.createForClass(
+  OrganizationTrialTestDataSubDoc,
+);
 
 @Schema({ timestamps: true, _id: true, collection: "organizations" })
 export class OrganizationDocument extends Document {
@@ -29,6 +46,9 @@ export class OrganizationDocument extends Document {
 
   @Prop({ type: Date })
   deletedAt?: Date | null;
+
+  @Prop({ type: OrganizationTrialTestDataSubDocSchema })
+  trialTestData?: OrganizationTrialTestDataSubDoc;
 }
 
 export const OrganizationSchema = SchemaFactory.createForClass(OrganizationDocument);

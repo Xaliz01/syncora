@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
 import { CustomersController } from "../presentation/http/customers.controller";
+import { TestDataController } from "../presentation/http/test-data.controller";
 import { AbstractCustomersService } from "../domain/ports/customers.service.port";
 import { CustomersService } from "../domain/customers.service";
 import { CustomerSchema } from "../persistence/customer.schema";
@@ -12,7 +13,7 @@ import { CustomerSchema } from "../persistence/customer.schema";
     ),
     MongooseModule.forFeature([{ name: "Customer", schema: CustomerSchema }]),
   ],
-  controllers: [CustomersController],
+  controllers: [CustomersController, TestDataController],
   providers: [{ provide: AbstractCustomersService, useClass: CustomersService }],
 })
 export class AppModule {}

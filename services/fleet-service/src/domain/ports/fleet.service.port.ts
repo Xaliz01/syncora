@@ -17,4 +17,5 @@ export abstract class AbstractFleetService {
   ): Promise<VehicleResponse>;
   abstract unassignTeam(organizationId: string, vehicleId: string): Promise<VehicleResponse>;
   abstract unassignTeamFromAllVehicles(organizationId: string, teamId: string): Promise<void>;
+  abstract purgeTestData(organizationId: string): Promise<{ purged: true }>;
 }

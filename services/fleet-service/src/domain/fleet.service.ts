@@ -43,6 +43,7 @@ export class FleetService extends AbstractFleetService {
       vin: body.vin,
       mileage: body.mileage ?? 0,
       status: body.status ?? "actif",
+      isTestData: body.isTestData === true,
     });
     return this.toVehicleResponse(doc);
   }
@@ -150,6 +151,11 @@ export class FleetService extends AbstractFleetService {
     );
   }
 
+  async purgeTestData(organizationId: string): Promise<{ purged: true }> {
+    await this.vehicleModel.deleteMany({ organizationId, isTestData: true }).exec();
+    return { purged: true };
+  }
+
   private toVehicleResponse(doc: VehicleDocument): VehicleResponse {
     return {
       id: doc._id.toString(),
@@ -166,6 +172,7 @@ export class FleetService extends AbstractFleetService {
       assignedTeamId: doc.assignedTeamId,
       createdAt: doc.get("createdAt")?.toISOString(),
       updatedAt: doc.get("updatedAt")?.toISOString(),
+      isTestData: doc.isTestData === true,
     };
   }
 }

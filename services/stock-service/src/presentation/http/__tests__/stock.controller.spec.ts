@@ -18,6 +18,7 @@ describe("StockController", () => {
       addInterventionArticleUsage: jest.fn(),
       listArticleMovements: jest.fn(),
       getInterventionUsage: jest.fn(),
+      purgeTestData: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({

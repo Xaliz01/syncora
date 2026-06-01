@@ -3,6 +3,7 @@
 import Link from "next/link";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import type { TeamResponse } from "@syncora/shared";
+import { TestDataBadgeIf } from "@/components/test-data/TestDataBadge";
 import * as fleetApi from "@/lib/fleet.api";
 import {
   filterListItems,
@@ -131,7 +132,12 @@ export function TeamsListPage() {
         >
           {filtered.map((team) => (
             <ListRowLink key={team.id} href={`/fleet/teams/${team.id}`} gridTemplateClass={GRID}>
-              <ListCellPrimary>{team.name}</ListCellPrimary>
+              <ListCellPrimary>
+                <span className="inline-flex items-center gap-2 min-w-0">
+                  <span className="truncate">{team.name}</span>
+                  <TestDataBadgeIf isTestData={team.isTestData} />
+                </span>
+              </ListCellPrimary>
               <ListCellMuted>{team.agenceName || "—"}</ListCellMuted>
               <ListCellDefault>{team.technicianIds.length}</ListCellDefault>
               <ListBadge

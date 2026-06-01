@@ -30,4 +30,5 @@ export abstract class AbstractStockService {
     organizationId: string,
     interventionId: string,
   ): Promise<InterventionArticleUsageResponse[]>;
+  abstract purgeTestData(organizationId: string): Promise<{ purged: true }>;
 }

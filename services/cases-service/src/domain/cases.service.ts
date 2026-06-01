@@ -61,6 +61,7 @@ export class CasesService extends AbstractCasesService {
             dashboardRule: t.dashboardRule,
           })),
         })),
+        isTestData: body.isTestData === true,
       });
       return this.toTemplateResponse(doc);
     } catch (err: unknown) {
@@ -172,6 +173,7 @@ export class CasesService extends AbstractCasesService {
       tags: body.tags ?? [],
       steps,
       status: "draft",
+      isTestData: body.isTestData === true,
     });
 
     return this.toCaseResponse(doc);
@@ -306,6 +308,7 @@ export class CasesService extends AbstractCasesService {
       scheduledStart: body.scheduledStart ? new Date(body.scheduledStart) : undefined,
       scheduledEnd: body.scheduledEnd ? new Date(body.scheduledEnd) : undefined,
       status: "planned",
+      isTestData: body.isTestData === true,
     });
 
     await this.caseModel.updateOne(
@@ -765,6 +768,7 @@ export class CasesService extends AbstractCasesService {
       })),
       createdAt: doc.get("createdAt")?.toISOString(),
       updatedAt: doc.get("updatedAt")?.toISOString(),
+      isTestData: doc.isTestData === true,
     };
   }
 
@@ -815,6 +819,7 @@ export class CasesService extends AbstractCasesService {
       interventionCount: doc.interventionCount ?? 0,
       createdAt: doc.get("createdAt")?.toISOString(),
       updatedAt: doc.get("updatedAt")?.toISOString(),
+      isTestData: doc.isTestData === true,
     };
   }
 
@@ -834,7 +839,30 @@ export class CasesService extends AbstractCasesService {
       nextTodo: this.getNextTodo(doc),
       createdAt: doc.get("createdAt")?.toISOString(),
       updatedAt: doc.get("updatedAt")?.toISOString(),
+      isTestData: doc.isTestData === true,
     };
+  }
+
+  async purgeTestData(organizationId: string): Promise<{ purged: true }> {
+    const testCases = await this.caseModel
+      .find({ organizationId, isTestData: true })
+      .select("_id")
+      .exec();
+    const caseIds = testCases.map((c) => c._id.toString());
+    const interventionFilter: Record<string, unknown> = {
+      organizationId,
+      $or: [{ isTestData: true }],
+    };
+    if (caseIds.length > 0) {
+      (interventionFilter.$or as unknown[]).push({ caseId: { $in: caseIds } });
+    }
+    await this.interventionModel.deleteMany(interventionFilter).exec();
+    if (caseIds.length > 0) {
+      await this.caseHistoryModel.deleteMany({ organizationId, caseId: { $in: caseIds } }).exec();
+    }
+    await this.caseModel.deleteMany({ organizationId, isTestData: true }).exec();
+    await this.templateModel.deleteMany({ organizationId, isTestData: true }).exec();
+    return { purged: true };
   }
 
   private toInterventionResponse(
@@ -858,6 +886,7 @@ export class CasesService extends AbstractCasesService {
       notes: doc.notes,
       createdAt: doc.get("createdAt")?.toISOString(),
       updatedAt: doc.get("updatedAt")?.toISOString(),
+      isTestData: doc.isTestData === true,
     };
   }
 

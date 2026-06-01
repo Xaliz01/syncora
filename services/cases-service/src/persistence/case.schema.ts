@@ -104,6 +104,9 @@ export class CaseDocument extends Document {
 
   @Prop({ type: Date })
   deletedAt?: Date | null;
+
+  @Prop({ default: false })
+  isTestData!: boolean;
 }
 
 export const CaseSchema = SchemaFactory.createForClass(CaseDocument);

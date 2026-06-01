@@ -9,4 +9,5 @@ export abstract class AbstractCustomersService {
   abstract getCustomer(id: string, organizationId: string): Promise<CustomerResponse>;
   abstract updateCustomer(id: string, body: UpdateCustomerBody): Promise<CustomerResponse>;
   abstract deleteCustomer(id: string, organizationId: string): Promise<{ deleted: true }>;
+  abstract purgeTestData(organizationId: string): Promise<{ purged: true }>;
 }

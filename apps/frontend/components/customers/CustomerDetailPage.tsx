@@ -12,6 +12,7 @@ import { CustomerEditForm } from "./CustomerEditForm";
 import { CUSTOMER_KIND_LABELS } from "./customer-kind-labels";
 import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
 import { AppErrorAlert } from "@/components/ui/AppErrorAlert";
+import { TestDataBadgeIf } from "@/components/test-data/TestDataBadge";
 
 function formatDate(iso?: string) {
   if (!iso) return null;
@@ -173,8 +174,9 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
       ) : (
         <>
           <div>
-            <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100 sm:text-2xl">
+            <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100 sm:text-2xl inline-flex items-center gap-2 flex-wrap">
               {c.displayName}
+              <TestDataBadgeIf isTestData={c.isTestData} />
             </h1>
             <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
               {CUSTOMER_KIND_LABELS[c.kind]}

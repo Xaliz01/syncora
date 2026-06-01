@@ -38,6 +38,7 @@ const FEATURE_SECTIONS = [
     title: "Pilotage opérationnel",
     items: [
       "Tableau de bord : dossiers assignés, en cours, terminés, en retard",
+      "Injection de données de démonstration pendant l'essai (clients, dossiers, stock, flotte…)",
       "Widgets de tâches à faire par modèle de dossier",
       "Prochaines interventions et accès rapide au calendrier",
       "Recherche globale (dossiers, interventions, flotte, stock, utilisateurs)",
@@ -162,6 +163,8 @@ export function LandingPage() {
               <p className="mt-5 text-lg text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed">
                 Centralisez dossiers, interventions, clients, flotte et stocks. Standardisez vos
                 processus, planifiez vos équipes et gardez une vision claire de votre activité.
+                Pendant l&apos;essai gratuit, injectez en un clic un jeu de données de démonstration
+                pour explorer l&apos;outil sans tout saisir à la main.
               </p>
             </ScrollReveal>
             <ScrollReveal when="mount" delayMs={240}>
@@ -320,6 +323,12 @@ export function LandingPage() {
                       </span>
                       10 Go de stockage documents
                     </li>
+                    <li className="flex gap-2">
+                      <span className="text-brand-600" aria-hidden>
+                        ✓
+                      </span>
+                      Jeu de données de démonstration injectable depuis le tableau de bord (essai)
+                    </li>
                   </ul>
                   <Link
                     href="/register"
@@ -411,8 +420,8 @@ export function LandingPage() {
               Prêt à structurer vos opérations terrain ?
             </h2>
             <p className="max-w-xl mx-auto text-white/80 mb-8">
-              Créez votre organisation en quelques minutes et centralisez votre activité dès
-              aujourd&apos;hui.
+              Créez votre organisation en quelques minutes, injectez des données de démonstration
+              pendant l&apos;essai et centralisez votre activité dès aujourd&apos;hui.
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               <Link

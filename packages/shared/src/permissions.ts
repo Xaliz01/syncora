@@ -85,6 +85,7 @@ export interface PermissionProfileResponse {
   permissions: PermissionCode[];
   createdAt?: string;
   updatedAt?: string;
+  isTestData?: boolean;
 }
 
 export interface CreatePermissionProfileBody {
@@ -92,6 +93,7 @@ export interface CreatePermissionProfileBody {
   name: string;
   description?: string;
   permissions: PermissionCode[];
+  isTestData?: boolean;
 }
 
 export interface UpdatePermissionProfileBody {

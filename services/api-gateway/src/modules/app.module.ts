@@ -20,6 +20,7 @@ import { OrganizationsModule } from "./organizations.module";
 import { NotificationsModule } from "./notifications.module";
 import { DocumentsModule } from "./documents.module";
 import { GatewayHttpModule } from "./gateway-http.module";
+import { TrialTestDataModule } from "./trial-test-data.module";
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { GatewayHttpModule } from "./gateway-http.module";
     SubscriptionsModule,
     NotificationsModule,
     DocumentsModule,
+    TrialTestDataModule,
   ],
   controllers: [AppController],
   providers: [

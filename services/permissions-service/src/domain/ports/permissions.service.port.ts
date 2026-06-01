@@ -36,4 +36,5 @@ export abstract class AbstractPermissionsService {
   ): Promise<InvitationResponse[]>;
   abstract resolveInvitation(invitationToken: string): Promise<InvitationResponse>;
   abstract acceptInvitation(invitationToken: string): Promise<InvitationResponse>;
+  abstract purgeTestData(organizationId: string): Promise<{ purged: true }>;
 }

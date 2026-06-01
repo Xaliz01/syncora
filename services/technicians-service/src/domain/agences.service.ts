@@ -23,6 +23,7 @@ export class AgencesService extends AbstractAgencesService {
         city: body.city,
         postalCode: body.postalCode,
         phone: body.phone,
+        isTestData: body.isTestData === true,
       });
       return this.toResponse(doc);
     } catch (err: unknown) {
@@ -91,6 +92,7 @@ export class AgencesService extends AbstractAgencesService {
       phone: doc.phone,
       createdAt: doc.get("createdAt")?.toISOString(),
       updatedAt: doc.get("updatedAt")?.toISOString(),
+      isTestData: doc.isTestData === true,
     };
   }
 }

@@ -80,4 +80,5 @@ export abstract class AbstractCasesService {
     caseId: string,
     organizationId: string,
   ): Promise<CaseHistoryEntryResponse[]>;
+  abstract purgeTestData(organizationId: string): Promise<{ purged: true }>;
 }

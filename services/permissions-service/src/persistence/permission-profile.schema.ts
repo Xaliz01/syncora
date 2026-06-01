@@ -18,6 +18,9 @@ export class PermissionProfileDocument extends Document {
 
   @Prop({ type: Date })
   deletedAt?: Date | null;
+
+  @Prop({ default: false })
+  isTestData!: boolean;
 }
 
 export const PermissionProfileSchema = SchemaFactory.createForClass(PermissionProfileDocument);

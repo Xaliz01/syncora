@@ -3,6 +3,7 @@
 import Link from "next/link";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import type { TechnicianResponse } from "@syncora/shared";
+import { TestDataBadgeIf } from "@/components/test-data/TestDataBadge";
 import * as fleetApi from "@/lib/fleet.api";
 import {
   filterListItems,
@@ -140,7 +141,12 @@ export function TechniciansListPage() {
               gridTemplateClass={GRID}
             >
               <ListCellPrimary>
-                {tech.firstName} {tech.lastName}
+                <span className="inline-flex items-center gap-2 min-w-0">
+                  <span className="truncate">
+                    {tech.firstName} {tech.lastName}
+                  </span>
+                  <TestDataBadgeIf isTestData={tech.isTestData} />
+                </span>
               </ListCellPrimary>
               <ListCellMuted>{tech.email || "—"}</ListCellMuted>
               <ListCellDefault>{tech.speciality || "—"}</ListCellDefault>

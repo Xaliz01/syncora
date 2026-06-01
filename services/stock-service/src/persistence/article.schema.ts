@@ -37,6 +37,9 @@ export class ArticleDocument extends Document {
 
   @Prop({ type: Date })
   deletedAt?: Date | null;
+
+  @Prop({ default: false })
+  isTestData!: boolean;
 }
 
 export const ArticleSchema = SchemaFactory.createForClass(ArticleDocument);

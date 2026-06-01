@@ -40,6 +40,7 @@ export interface CreateCaseTemplateBody {
   name: string;
   description?: string;
   steps: TemplateStep[];
+  isTestData?: boolean;
 }
 
 export interface UpdateCaseTemplateBody {
@@ -57,6 +58,7 @@ export interface CaseTemplateResponse {
   steps: TemplateStep[];
   createdAt?: string;
   updatedAt?: string;
+  isTestData?: boolean;
 }
 
 export interface DashboardTodoItem {
@@ -138,6 +140,7 @@ export interface CreateCaseBody {
   dueDate?: string;
   tags?: string[];
   customerId?: string;
+  isTestData?: boolean;
 }
 
 export interface UpdateCaseBody {
@@ -170,6 +173,7 @@ export interface CaseResponse {
   interventionCount: number;
   createdAt?: string;
   updatedAt?: string;
+  isTestData?: boolean;
 }
 
 export interface CaseSummaryResponse {
@@ -188,6 +192,7 @@ export interface CaseSummaryResponse {
   nextTodo?: string;
   createdAt?: string;
   updatedAt?: string;
+  isTestData?: boolean;
 }
 
 // ── Intervention ──
@@ -201,6 +206,7 @@ export interface CreateInterventionBody {
   assignedTeamId?: string;
   scheduledStart?: string;
   scheduledEnd?: string;
+  isTestData?: boolean;
 }
 
 export interface UpdateInterventionBody {
@@ -232,6 +238,7 @@ export interface InterventionResponse {
   notes?: string;
   createdAt?: string;
   updatedAt?: string;
+  isTestData?: boolean;
 }
 
 // ── Todo actions ──

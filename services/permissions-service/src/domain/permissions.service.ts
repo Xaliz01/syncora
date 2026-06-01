@@ -53,6 +53,7 @@ export class PermissionsService extends AbstractPermissionsService {
         name: body.name,
         description: body.description,
         permissions,
+        isTestData: body.isTestData === true,
       });
       return this.toProfileResponse(doc);
     } catch (err: unknown) {
@@ -318,7 +319,13 @@ export class PermissionsService extends AbstractPermissionsService {
       permissions: this.normalizePermissions(doc.permissions as PermissionCode[]),
       createdAt: doc.get("createdAt")?.toISOString(),
       updatedAt: doc.get("updatedAt")?.toISOString(),
+      isTestData: doc.isTestData === true,
     };
+  }
+
+  async purgeTestData(organizationId: string): Promise<{ purged: true }> {
+    await this.permissionProfileModel.deleteMany({ organizationId, isTestData: true }).exec();
+    return { purged: true };
   }
 
   private toAssignmentResponse(

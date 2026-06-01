@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import React, { useCallback, useMemo, useState, useRef } from "react";
+import React, { useCallback, useLayoutEffect, useMemo, useState, useRef } from "react";
 import { useIsDarkMode } from "@/lib/use-is-dark-mode";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as api from "@/lib/cases.api";
@@ -126,11 +126,14 @@ function UnscheduledPanel({
   onDropToUnschedule,
   teamsById,
   isDark,
+  calendarHeight,
 }: {
   onDragStart: (e: React.DragEvent, intervention: InterventionResponse) => void;
   onDropToUnschedule: (interventionId: string) => void;
   teamsById: Map<string, TeamResponse>;
   isDark: boolean;
+  /** Hauteur du bloc calendrier (desktop) pour aligner le panneau et activer le scroll. */
+  calendarHeight?: number;
 }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [collapsed, setCollapsed] = useState(false);
@@ -221,20 +224,30 @@ function UnscheduledPanel({
     );
   }
 
+  const panelStyle =
+    calendarHeight != null
+      ? ({ ["--calendar-sync-h" as string]: `${calendarHeight}px` } as React.CSSProperties)
+      : undefined;
+
   return (
     <div
-      className={`flex-shrink-0 self-stretch w-72 xl:w-80 h-full min-h-0 rounded-xl border-2 shadow-sm dark:shadow-slate-950/20 flex flex-col transition-colors ${
+      className={`flex-shrink-0 w-72 xl:w-80 min-h-0 rounded-xl border-2 shadow-sm dark:shadow-slate-950/20 flex flex-col overflow-hidden transition-colors max-lg:max-h-[min(50vh,28rem)] ${
+        calendarHeight != null
+          ? "lg:h-[var(--calendar-sync-h)] lg:max-h-[var(--calendar-sync-h)]"
+          : ""
+      } ${
         dropHover
           ? "border-brand-600 bg-brand-50/30"
           : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900"
       }`}
+      style={panelStyle}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2.5 border-b border-slate-200 dark:border-slate-700">
+      <div className="flex-shrink-0 flex items-center justify-between px-3 py-2.5 border-b border-slate-200 dark:border-slate-700">
         <div className="flex items-center gap-2">
           <div className="flex items-center justify-center w-6 h-6 rounded-md bg-brand-600/10">
             <svg
@@ -278,7 +291,7 @@ function UnscheduledPanel({
       </div>
 
       {/* Search */}
-      <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800">
+      <div className="flex-shrink-0 px-3 py-2 border-b border-slate-100 dark:border-slate-800">
         <div className="relative">
           <svg
             className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 dark:text-slate-500"
@@ -326,7 +339,7 @@ function UnscheduledPanel({
       )}
 
       {/* List */}
-      <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
+      <div className="scrollbar-visible flex-1 min-h-0 overflow-y-scroll overscroll-contain p-2 pr-1 space-y-1.5">
         {isLoading && (
           <div className="flex items-center justify-center py-8">
             <div className="w-5 h-5 border-2 border-slate-200 dark:border-slate-700 border-t-brand-600 rounded-full animate-spin" />
@@ -421,7 +434,7 @@ function UnscheduledPanel({
       </div>
 
       {/* Footer */}
-      <div className="px-3 py-2 border-t border-slate-100 dark:border-slate-800">
+      <div className="flex-shrink-0 px-3 py-2 border-t border-slate-100 dark:border-slate-800">
         <p className="text-[10px] text-slate-400 dark:text-slate-500 text-center">
           Clic pour ouvrir le dossier · glissez depuis/vers le calendrier pour planifier/déplanifier
         </p>
@@ -440,6 +453,8 @@ export function CalendarPage() {
   const [view, setView] = useState<ViewMode>("week");
   const [referenceDate, setReferenceDate] = useState(new Date());
   const dragRef = useRef<{ intervention: InterventionResponse; originDate: Date } | null>(null);
+  const calendarAreaRef = useRef<HTMLDivElement>(null);
+  const [calendarAreaHeight, setCalendarAreaHeight] = useState<number>();
 
   const weekDays = useMemo(() => getWeekDays(referenceDate), [referenceDate]);
   const monthWeeks = useMemo(
@@ -512,6 +527,20 @@ export function CalendarPage() {
       }),
     [interventions],
   );
+
+  useLayoutEffect(() => {
+    const el = calendarAreaRef.current;
+    if (!el) return;
+
+    const syncHeight = () => {
+      setCalendarAreaHeight(el.getBoundingClientRect().height);
+    };
+
+    syncHeight();
+    const observer = new ResizeObserver(syncHeight);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [view, referenceDate, interventions, monthWeeks]);
 
   const handleDragStart = (e: React.DragEvent, intervention: InterventionResponse) => {
     e.dataTransfer.effectAllowed = "move";
@@ -644,8 +673,8 @@ export function CalendarPage() {
         <div className="text-sm font-semibold text-slate-700 dark:text-slate-200">{headerText}</div>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-4 items-stretch">
-        <div className="flex-1 min-w-0 w-full">
+      <div className="flex flex-col lg:flex-row gap-4 lg:items-start">
+        <div ref={calendarAreaRef} className="flex-1 min-w-0 w-full">
           {view === "week" ? (
             <div className="h-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm dark:shadow-slate-950/20 overflow-auto">
               <div className="grid grid-cols-[60px_repeat(7,1fr)] min-w-[800px]">
@@ -812,6 +841,7 @@ export function CalendarPage() {
           onDropToUnschedule={handleDropToUnschedule}
           teamsById={teamsById}
           isDark={isDark}
+          calendarHeight={calendarAreaHeight}
         />
       </div>
 

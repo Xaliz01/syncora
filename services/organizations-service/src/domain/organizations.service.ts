@@ -5,7 +5,10 @@ import type { OrganizationDocument } from "../persistence/organization.schema";
 import {
   activeDocumentFilter,
   type OrganizationResponse,
+  type TrialTestDataStatus,
+  type TrialTestDataStatusResponse,
   type UpdateOrganizationBody,
+  type UpdateOrganizationTrialTestDataBody,
 } from "@syncora/shared";
 import { AbstractOrganizationsService } from "./ports/organizations.service.port";
 
@@ -31,6 +34,13 @@ export class OrganizationsService extends AbstractOrganizationsService {
       country: doc.country,
       createdAt: doc.get("createdAt")?.toISOString(),
       updatedAt: doc.get("updatedAt")?.toISOString(),
+      trialTestData: doc.trialTestData
+        ? {
+            status: doc.trialTestData.status,
+            injectedAt: doc.trialTestData.injectedAt?.toISOString(),
+            errorMessage: doc.trialTestData.errorMessage ?? null,
+          }
+        : undefined,
     };
   }
 
@@ -61,5 +71,65 @@ export class OrganizationsService extends AbstractOrganizationsService {
       .exec();
     if (!doc) return null;
     return this.toResponse(doc);
+  }
+
+  async getTrialTestDataStatus(organizationId: string): Promise<TrialTestDataStatusResponse> {
+    const doc = await this.organizationModel.findOne({
+      _id: organizationId,
+      ...activeDocumentFilter,
+    });
+    if (!doc) {
+      return { status: "none", hasTestData: false, injectedAt: null };
+    }
+    return this.buildTrialTestDataStatus(doc);
+  }
+
+  async updateTrialTestData(
+    organizationId: string,
+    body: UpdateOrganizationTrialTestDataBody,
+  ): Promise<TrialTestDataStatusResponse> {
+    const update: Record<string, unknown> = {
+      "trialTestData.status": body.status,
+    };
+    if (body.injectedAt !== undefined) {
+      update["trialTestData.injectedAt"] =
+        body.injectedAt === null ? null : new Date(body.injectedAt);
+    }
+    if (body.errorMessage !== undefined) {
+      update["trialTestData.errorMessage"] = body.errorMessage;
+    }
+    const doc = await this.organizationModel
+      .findOneAndUpdate(
+        { _id: organizationId, ...activeDocumentFilter },
+        { $set: update },
+        { new: true },
+      )
+      .exec();
+    if (!doc) {
+      return { status: "none", hasTestData: false, injectedAt: null };
+    }
+    return this.buildTrialTestDataStatus(doc);
+  }
+
+  async listOrganizationsWithReadyTrialTestData(): Promise<string[]> {
+    const docs = await this.organizationModel
+      .find({
+        ...activeDocumentFilter,
+        "trialTestData.status": "ready",
+      })
+      .select("_id")
+      .exec();
+    return docs.map((d) => d._id.toString());
+  }
+
+  private buildTrialTestDataStatus(doc: OrganizationDocument): TrialTestDataStatusResponse {
+    const status: TrialTestDataStatus = doc.trialTestData?.status ?? "none";
+    const hasTestData = status === "ready" || status === "injecting";
+    return {
+      status,
+      hasTestData,
+      injectedAt: doc.trialTestData?.injectedAt?.toISOString() ?? null,
+      errorMessage: doc.trialTestData?.errorMessage ?? null,
+    };
   }
 }

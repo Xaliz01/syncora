@@ -35,6 +35,7 @@ export interface CreateArticleBody {
   reorderPoint?: number;
   targetStock?: number;
   isActive?: boolean;
+  isTestData?: boolean;
 }
 
 export interface UpdateArticleBody {
@@ -65,6 +66,7 @@ export interface ArticleResponse {
   suggestedReorderQuantity: number;
   createdAt?: string;
   updatedAt?: string;
+  isTestData?: boolean;
 }
 
 export interface CreateArticleMovementBody {
