@@ -26,7 +26,13 @@ export class DocumentsController {
 
   @Post("upload/:entityType/:entityId")
   @UseInterceptors(FileInterceptor("file", { limits: { fileSize: MAX_DOCUMENT_FILE_SIZE_BYTES } }))
-  @NotifyEntity({ type: "document", labelField: "originalName" })
+  @NotifyEntity({
+    type: "document",
+    labelField: "originalName",
+    relatedEntityTypeField: "entityType",
+    relatedEntityIdField: "entityId",
+    relatedEntityLabelField: "relatedEntityLabel",
+  })
   async upload(
     @CurrentUser() user: AuthUser,
     @Param("entityType") entityType: DocumentEntityType,

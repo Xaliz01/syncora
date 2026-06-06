@@ -48,6 +48,7 @@ export abstract class AbstractCasesService {
       caseId?: string;
       assigneeId?: string;
       assignedTeamId?: string;
+      assignedTeamIds?: string[];
       startDate?: string;
       endDate?: string;
       status?: string;

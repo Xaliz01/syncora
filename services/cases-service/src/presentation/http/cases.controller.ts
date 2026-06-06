@@ -131,6 +131,7 @@ export class CasesController {
     @Query("organizationId") organizationId: string,
     @Query("caseId") caseId?: string,
     @Query("assigneeId") assigneeId?: string,
+    @Query("assignedTeamIds") assignedTeamIds?: string,
     @Query("startDate") startDate?: string,
     @Query("endDate") endDate?: string,
     @Query("status") status?: string,
@@ -140,6 +141,12 @@ export class CasesController {
     return this.casesService.listInterventions(organizationId, {
       caseId,
       assigneeId,
+      assignedTeamIds: assignedTeamIds
+        ? assignedTeamIds
+            .split(",")
+            .map((id) => id.trim())
+            .filter(Boolean)
+        : undefined,
       startDate,
       endDate,
       status,

@@ -138,7 +138,13 @@ export class CasesController {
 
   @Post("interventions")
   @RequirePermissions("interventions.create")
-  @NotifyEntity({ type: "intervention", labelField: "title" })
+  @NotifyEntity({
+    type: "intervention",
+    labelField: "title",
+    relatedEntityType: "case",
+    relatedEntityIdField: "caseId",
+    relatedEntityLabelField: "caseTitle",
+  })
   async createIntervention(
     @CurrentUser() user: AuthUser,
     @Body() body: CreateInterventionForOrgBody,
@@ -156,6 +162,7 @@ export class CasesController {
     @Query("endDate") endDate?: string,
     @Query("status") status?: string,
     @Query("unscheduled") unscheduled?: string,
+    @Query("includeTeamAssignments") includeTeamAssignments?: string,
   ) {
     return this.casesService.listInterventions(user, {
       caseId,
@@ -164,6 +171,7 @@ export class CasesController {
       endDate,
       status,
       unscheduled,
+      includeTeamAssignments,
     });
   }
 
@@ -178,7 +186,13 @@ export class CasesController {
 
   @Patch("interventions/:interventionId")
   @RequirePermissions("interventions.update")
-  @NotifyEntity({ type: "intervention", labelField: "title" })
+  @NotifyEntity({
+    type: "intervention",
+    labelField: "title",
+    relatedEntityType: "case",
+    relatedEntityIdField: "caseId",
+    relatedEntityLabelField: "caseTitle",
+  })
   async updateIntervention(
     @CurrentUser() user: AuthUser,
     @Param("interventionId") interventionId: string,
@@ -199,7 +213,15 @@ export class CasesController {
 
   @Post("interventions/:interventionId/start")
   @RequirePermissions("interventions.update")
-  @NotifyEntity({ type: "intervention", idParam: "interventionId", action: "updated" })
+  @NotifyEntity({
+    type: "intervention",
+    idParam: "interventionId",
+    labelField: "title",
+    relatedEntityType: "case",
+    relatedEntityIdField: "caseId",
+    relatedEntityLabelField: "caseTitle",
+    fixedDetail: "Intervention démarrée",
+  })
   async startIntervention(
     @CurrentUser() user: AuthUser,
     @Param("interventionId") interventionId: string,
@@ -210,7 +232,15 @@ export class CasesController {
 
   @Post("interventions/:interventionId/complete")
   @RequirePermissions("interventions.update")
-  @NotifyEntity({ type: "intervention", idParam: "interventionId", action: "updated" })
+  @NotifyEntity({
+    type: "intervention",
+    idParam: "interventionId",
+    labelField: "title",
+    relatedEntityType: "case",
+    relatedEntityIdField: "caseId",
+    relatedEntityLabelField: "caseTitle",
+    fixedDetail: "Intervention terminée",
+  })
   async completeIntervention(
     @CurrentUser() user: AuthUser,
     @Param("interventionId") interventionId: string,

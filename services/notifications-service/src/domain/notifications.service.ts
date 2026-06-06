@@ -35,6 +35,10 @@ export class NotificationsService extends AbstractNotificationsService {
         entityId: body.entityId,
         entityLabel: body.entityLabel,
         action: body.action,
+        relatedEntityType: body.relatedEntityType,
+        relatedEntityId: body.relatedEntityId,
+        relatedEntityLabel: body.relatedEntityLabel,
+        detail: body.detail,
         read: false,
       })),
     );
@@ -97,6 +101,10 @@ export class NotificationsService extends AbstractNotificationsService {
       entityId: doc.entityId,
       entityLabel: doc.entityLabel,
       action: doc.action,
+      relatedEntityType: doc.relatedEntityType,
+      relatedEntityId: doc.relatedEntityId,
+      relatedEntityLabel: doc.relatedEntityLabel,
+      detail: doc.detail,
       read: doc.read,
       createdAt: doc.get("createdAt")?.toISOString(),
     };

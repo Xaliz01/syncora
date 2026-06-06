@@ -848,4 +848,37 @@ describe("CasesService", () => {
       expect(result[0].dueDate).toBe(past.toISOString());
     });
   });
+
+  describe("listInterventions", () => {
+    it("should query assignee or team assignments when both filters are provided", async () => {
+      mockInterventionModel.find.mockReturnValue({
+        sort: jest.fn().mockReturnValue({
+          exec: jest.fn().mockResolvedValue([]),
+        }),
+      });
+      mockCaseModel.find.mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          exec: jest.fn().mockResolvedValue([]),
+        }),
+      });
+
+      await service.listInterventions("org-1", {
+        assigneeId: "user-1",
+        assignedTeamIds: ["team-a", "team-b"],
+        startDate: "2026-06-06T00:00:00.000Z",
+        endDate: "2026-06-06T23:59:59.999Z",
+      });
+
+      expect(mockInterventionModel.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          organizationId: "org-1",
+          $or: [{ assigneeId: "user-1" }, { assignedTeamId: { $in: ["team-a", "team-b"] } }],
+          scheduledStart: expect.objectContaining({
+            $gte: expect.any(Date),
+            $lte: expect.any(Date),
+          }),
+        }),
+      );
+    });
+  });
 });

@@ -329,6 +329,7 @@ export class CasesService extends AbstractCasesService {
       caseId?: string;
       assigneeId?: string;
       assignedTeamId?: string;
+      assignedTeamIds?: string[];
       startDate?: string;
       endDate?: string;
       status?: string;
@@ -337,8 +338,21 @@ export class CasesService extends AbstractCasesService {
   ): Promise<InterventionResponse[]> {
     const query: Record<string, unknown> = { organizationId, ...activeDocumentFilter };
     if (filters?.caseId) query.caseId = filters.caseId;
-    if (filters?.assigneeId) query.assigneeId = filters.assigneeId;
-    if (filters?.assignedTeamId) query.assignedTeamId = filters.assignedTeamId;
+
+    const teamIds = [
+      ...(filters?.assignedTeamId ? [filters.assignedTeamId] : []),
+      ...(filters?.assignedTeamIds ?? []),
+    ].filter((id, index, all) => id && all.indexOf(id) === index);
+
+    if (filters?.assigneeId && teamIds.length > 0) {
+      query.$or = [{ assigneeId: filters.assigneeId }, { assignedTeamId: { $in: teamIds } }];
+    } else if (filters?.assigneeId) {
+      query.assigneeId = filters.assigneeId;
+    } else if (teamIds.length === 1) {
+      query.assignedTeamId = teamIds[0];
+    } else if (teamIds.length > 1) {
+      query.assignedTeamId = { $in: teamIds };
+    }
     if (filters?.status) query.status = filters.status;
     if (filters?.unscheduled) {
       query.$or = [{ scheduledStart: null }, { scheduledStart: { $exists: false } }];

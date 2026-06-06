@@ -156,6 +156,8 @@ export function listInterventions(filters?: {
   status?: string;
   /** "true" = interventions sans scheduledStart */
   unscheduled?: string;
+  /** "true" = inclure les interventions des équipes du technicien lié à assigneeId */
+  includeTeamAssignments?: string;
 }) {
   const params = new URLSearchParams();
   if (filters?.caseId) params.set("caseId", filters.caseId);
@@ -164,6 +166,9 @@ export function listInterventions(filters?: {
   if (filters?.endDate) params.set("endDate", filters.endDate);
   if (filters?.status) params.set("status", filters.status);
   if (filters?.unscheduled) params.set("unscheduled", filters.unscheduled);
+  if (filters?.includeTeamAssignments) {
+    params.set("includeTeamAssignments", filters.includeTeamAssignments);
+  }
   const qs = params.toString();
   return casesRequest<InterventionResponse[]>("GET", `/cases/interventions${qs ? `?${qs}` : ""}`);
 }

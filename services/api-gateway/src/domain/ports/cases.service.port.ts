@@ -155,6 +155,7 @@ export abstract class AbstractCasesGatewayService {
       endDate?: string;
       status?: string;
       unscheduled?: string;
+      includeTeamAssignments?: string;
     },
   ): Promise<InterventionResponse[]>;
   abstract getIntervention(user: AuthUser, interventionId: string): Promise<InterventionResponse>;

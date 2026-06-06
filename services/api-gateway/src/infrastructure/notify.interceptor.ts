@@ -2,8 +2,9 @@ import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from "@nes
 import { Reflector } from "@nestjs/core";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { tap } from "rxjs";
-import type { JwtPayload, NotificationAction } from "@syncora/shared";
+import type { JwtPayload, NotificationAction, NotificationEntityType } from "@syncora/shared";
 import { NOTIFY_ENTITY_KEY, type NotifyEntityMetadata } from "./notify-entity.decorator";
+import { buildInterventionUpdateDetail, mapDocumentEntityType } from "./notification-event-details";
 
 export interface SyncoraDomainEvent {
   organizationId: string;
@@ -13,6 +14,10 @@ export interface SyncoraDomainEvent {
   entityId: string;
   entityLabel?: string;
   action: NotificationAction;
+  relatedEntityType?: NotificationEntityType;
+  relatedEntityId?: string;
+  relatedEntityLabel?: string;
+  detail?: string;
 }
 
 const METHOD_ACTION_MAP: Record<string, NotificationAction> = {
@@ -40,6 +45,7 @@ export class NotifyInterceptor implements NestInterceptor {
       user?: JwtPayload;
       method: string;
       params: Record<string, string>;
+      body?: Record<string, unknown>;
     }>();
     const jwt = request.user;
     if (!jwt) return next.handle();
@@ -59,6 +65,37 @@ export class NotifyInterceptor implements NestInterceptor {
           ? ((responseBody as Record<string, unknown>)?.[labelField] as string | undefined)
           : undefined;
 
+        const response = responseBody as Record<string, unknown>;
+        let relatedEntityType = meta.relatedEntityType;
+        let relatedEntityId = meta.relatedEntityIdField
+          ? (response[meta.relatedEntityIdField] as string | undefined)
+          : undefined;
+
+        if (meta.relatedEntityTypeField) {
+          const rawType = response[meta.relatedEntityTypeField];
+          if (typeof rawType === "string") {
+            relatedEntityType =
+              meta.type === "document"
+                ? mapDocumentEntityType(rawType)
+                : (rawType as NotificationEntityType);
+          }
+        }
+
+        let detail = meta.fixedDetail;
+        if (
+          !detail &&
+          meta.type === "intervention" &&
+          action === "updated" &&
+          request.method === "PATCH" &&
+          request.body
+        ) {
+          detail = buildInterventionUpdateDetail(request.body);
+        }
+
+        const relatedEntityLabel = meta.relatedEntityLabelField
+          ? (response[meta.relatedEntityLabelField] as string | undefined)
+          : undefined;
+
         const event: SyncoraDomainEvent = {
           organizationId: jwt.organizationId,
           actorId: jwt.sub,
@@ -67,6 +104,10 @@ export class NotifyInterceptor implements NestInterceptor {
           entityId,
           entityLabel,
           action,
+          relatedEntityType,
+          relatedEntityId,
+          relatedEntityLabel,
+          detail,
         };
 
         this.eventEmitter.emit("syncora.entity.changed", event);

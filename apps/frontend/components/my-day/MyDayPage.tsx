@@ -341,6 +341,7 @@ export function MyDayPage() {
         assigneeId: user!.id,
         startDate: today.toISOString(),
         endDate: todayEnd.toISOString(),
+        includeTeamAssignments: "true",
       }),
     enabled: !!user,
     refetchInterval: 30_000,

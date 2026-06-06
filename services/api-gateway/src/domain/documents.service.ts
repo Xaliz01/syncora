@@ -10,10 +10,18 @@ import type { Response } from "express";
 import FormData from "form-data";
 import type { AuthUser, DocumentEntityType, DocumentResponse } from "@syncora/shared";
 import { MAX_DOCUMENT_FILE_SIZE_BYTES } from "@syncora/shared";
-import { AbstractDocumentsGatewayService } from "./ports/documents.service.port";
+import {
+  AbstractDocumentsGatewayService,
+  type DocumentUploadGatewayResponse,
+} from "./ports/documents.service.port";
 import { AbstractSubscriptionsGatewayService } from "./ports/subscriptions.service.port";
 
 const DOCUMENTS_URL = process.env.DOCUMENTS_SERVICE_URL ?? "http://localhost:3011";
+const CASES_URL = process.env.CASES_SERVICE_URL ?? "http://localhost:3004";
+const CUSTOMERS_URL = process.env.CUSTOMERS_SERVICE_URL ?? "http://localhost:3009";
+const FLEET_URL = process.env.FLEET_SERVICE_URL ?? "http://localhost:3005";
+const TECHNICIANS_URL = process.env.TECHNICIANS_SERVICE_URL ?? "http://localhost:3006";
+const ORGANIZATIONS_URL = process.env.ORGANIZATIONS_SERVICE_URL ?? "http://localhost:3001";
 
 @Injectable()
 export class DocumentsGatewayService extends AbstractDocumentsGatewayService {
@@ -29,7 +37,7 @@ export class DocumentsGatewayService extends AbstractDocumentsGatewayService {
     entityType: DocumentEntityType,
     entityId: string,
     file: Express.Multer.File,
-  ): Promise<DocumentResponse> {
+  ): Promise<DocumentUploadGatewayResponse> {
     const form = new FormData();
     form.append("file", file.buffer, {
       filename: file.originalname,
@@ -53,7 +61,79 @@ export class DocumentsGatewayService extends AbstractDocumentsGatewayService {
         { headers: form.getHeaders(), maxContentLength: MAX_DOCUMENT_FILE_SIZE_BYTES },
       ),
     );
-    return response.data;
+    const relatedEntityLabel = await this.resolveDocumentHostLabel(
+      currentUser.organizationId,
+      entityType,
+      entityId,
+    );
+    return { ...response.data, relatedEntityLabel };
+  }
+
+  private async resolveDocumentHostLabel(
+    organizationId: string,
+    entityType: DocumentEntityType,
+    entityId: string,
+  ): Promise<string | undefined> {
+    const params = { organizationId };
+    try {
+      switch (entityType) {
+        case "case": {
+          const res = await firstValueFrom(
+            this.httpService.get<{ title?: string }>(`${CASES_URL}/cases/${entityId}`, { params }),
+          );
+          return res.data.title?.trim() || undefined;
+        }
+        case "customer": {
+          const res = await firstValueFrom(
+            this.httpService.get<{ displayName?: string }>(
+              `${CUSTOMERS_URL}/customers/${entityId}`,
+              { params },
+            ),
+          );
+          return res.data.displayName?.trim() || undefined;
+        }
+        case "vehicle": {
+          const res = await firstValueFrom(
+            this.httpService.get<{ registrationNumber?: string }>(
+              `${FLEET_URL}/vehicles/${entityId}`,
+              { params },
+            ),
+          );
+          return res.data.registrationNumber?.trim() || undefined;
+        }
+        case "technician": {
+          const res = await firstValueFrom(
+            this.httpService.get<{ firstName?: string; lastName?: string }>(
+              `${TECHNICIANS_URL}/technicians/${entityId}`,
+              { params },
+            ),
+          );
+          return (
+            [res.data.firstName, res.data.lastName].filter(Boolean).join(" ").trim() || undefined
+          );
+        }
+        case "team": {
+          const res = await firstValueFrom(
+            this.httpService.get<{ name?: string }>(`${TECHNICIANS_URL}/teams/${entityId}`, {
+              params,
+            }),
+          );
+          return res.data.name?.trim() || undefined;
+        }
+        case "organization": {
+          const res = await firstValueFrom(
+            this.httpService.get<{ name?: string }>(
+              `${ORGANIZATIONS_URL}/organizations/${entityId}`,
+            ),
+          );
+          return res.data.name?.trim() || undefined;
+        }
+        default:
+          return undefined;
+      }
+    } catch {
+      return undefined;
+    }
   }
 
   async listByEntity(

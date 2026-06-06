@@ -77,6 +77,19 @@ export const AVAILABLE_PERMISSION_CODES = [
 
 export type PermissionCode = (typeof AVAILABLE_PERMISSION_CODES)[number];
 
+/** Nom du profil créé automatiquement lors de la création d'un compte depuis un technicien. */
+export const TECHNICIAN_FIELD_PROFILE_NAME = "Technicien terrain";
+
+/** Droits par défaut pour un technicien terrain (Ma journée, dossiers assignés, etc.). */
+export const TECHNICIAN_FIELD_DEFAULT_PERMISSIONS: readonly AssignablePermissionCode[] = [
+  "cases.read",
+  "interventions.read",
+  "interventions.update",
+  "customers.read",
+  "fleet.technicians.read",
+  "teams.read",
+] as const;
+
 export interface PermissionProfileResponse {
   id: string;
   organizationId: string;
