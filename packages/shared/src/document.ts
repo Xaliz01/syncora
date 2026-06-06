@@ -10,6 +10,7 @@ export interface OrganizationStorageUsageResponse {
 
 export type DocumentEntityType =
   | "case"
+  | "intervention"
   | "vehicle"
   | "team"
   | "technician"

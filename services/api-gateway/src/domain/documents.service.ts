@@ -83,6 +83,14 @@ export class DocumentsGatewayService extends AbstractDocumentsGatewayService {
           );
           return res.data.title?.trim() || undefined;
         }
+        case "intervention": {
+          const res = await firstValueFrom(
+            this.httpService.get<{ title?: string }>(`${CASES_URL}/interventions/${entityId}`, {
+              params,
+            }),
+          );
+          return res.data.title?.trim() || undefined;
+        }
         case "customer": {
           const res = await firstValueFrom(
             this.httpService.get<{ displayName?: string }>(

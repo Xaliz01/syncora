@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/components/auth/AuthContext";
 import { useToast } from "@/components/ui/ToastProvider";
 import { PermissionGate } from "@/components/auth/PermissionGate";
+import { InterventionPhotos } from "@/components/interventions/InterventionPhotos";
 import * as api from "@/lib/cases.api";
 import type { GeoLocation, InterventionResponse, InterventionStatus } from "@syncora/shared";
 
@@ -255,6 +256,15 @@ function InterventionCard({
           )}
         </div>
       </PermissionGate>
+
+      {/* Photos terrain */}
+      {(status === "in_progress" || status === "completed") && (
+        <InterventionPhotos
+          interventionId={intervention.id}
+          compact
+          readOnly={status === "completed"}
+        />
+      )}
     </div>
   );
 }

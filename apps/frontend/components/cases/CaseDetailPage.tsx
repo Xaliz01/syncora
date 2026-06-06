@@ -19,6 +19,7 @@ import {
   InterventionArticlesDialog,
   type InterventionArticleUsageItem,
 } from "@/components/cases/InterventionArticlesDialog";
+import { InterventionPhotos } from "@/components/interventions/InterventionPhotos";
 import { CUSTOMER_KIND_LABELS } from "@/components/customers/customer-kind-labels";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { usePermissions } from "@/lib/hooks/usePermissions";
@@ -1294,6 +1295,11 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                               ) : null}
                             </div>
                           )}
+
+                          <InterventionPhotos
+                            interventionId={intervention.id}
+                            readOnly={!can("interventions.update")}
+                          />
                         </>
                       )}
                     </div>
