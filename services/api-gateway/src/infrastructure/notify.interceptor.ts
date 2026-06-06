@@ -67,7 +67,7 @@ export class NotifyInterceptor implements NestInterceptor {
 
         const response = responseBody as Record<string, unknown>;
         let relatedEntityType = meta.relatedEntityType;
-        let relatedEntityId = meta.relatedEntityIdField
+        const relatedEntityId = meta.relatedEntityIdField
           ? (response[meta.relatedEntityIdField] as string | undefined)
           : undefined;
 
