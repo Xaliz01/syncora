@@ -22,4 +22,5 @@ export abstract class AbstractTechniciansService {
     technicianId: string,
     userId: string,
   ): Promise<TechnicianResponse>;
+  abstract findByUserId(organizationId: string, userId: string): Promise<TechnicianResponse | null>;
 }

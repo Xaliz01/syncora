@@ -6,7 +6,10 @@ import type {
   CaseTemplateResponse,
   DashboardStatFilter,
   DashboardTodoCaseItem,
+  CompleteInterventionResponse,
+  GeoLocation,
   InterventionResponse,
+  StartInterventionResponse,
 } from "@syncora/shared";
 import { apiRequestJson, type ApiMethod } from "./api-client";
 

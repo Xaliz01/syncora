@@ -23,6 +23,7 @@ export interface AuthUser {
   status: UserStatus;
   permissions: PermissionCode[];
   name?: string;
+  technicianId?: string;
 }
 
 export type UserRole = "admin" | "member";
@@ -35,6 +36,7 @@ export interface JwtPayload {
   permissions: PermissionCode[];
   email: string;
   name?: string;
+  technicianId?: string;
 }
 
 export interface AuthResponse {

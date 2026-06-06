@@ -15,6 +15,7 @@ describe("TechniciansController", () => {
       listTechnicians: jest.fn(),
       deleteTechnician: jest.fn(),
       linkUserToTechnician: jest.fn(),
+      findByUserId: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({

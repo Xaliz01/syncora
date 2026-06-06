@@ -203,7 +203,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {
           label: "Général",
           links: [
-            ...(hasPermission(user, "cases.read") ? [{ label: "Tableau de bord", href: "/" }] : []),
+            { label: "Tableau de bord", href: "/" },
             ...(user
               ? [
                   { label: "Mon organisation", href: "/organization" },

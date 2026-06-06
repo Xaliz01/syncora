@@ -40,6 +40,15 @@ export class TechniciansController {
     return this.techniciansService.deleteTechnician(organizationId, id);
   }
 
+  @Get("by-user/:userId")
+  async findByUserId(
+    @Param("userId") userId: string,
+    @Query("organizationId") organizationId: string,
+  ) {
+    organizationId = parseOrganizationIdQuery(organizationId);
+    return this.techniciansService.findByUserId(organizationId, userId);
+  }
+
   @Put(":id/link-user")
   async linkUserToTechnician(
     @Param("id") id: string,

@@ -172,6 +172,44 @@ const ACTION_CONFIG: Record<
     ),
     color: "text-blue-600 bg-blue-50 dark:bg-blue-950/30 dark:text-blue-400",
   },
+  intervention_started: {
+    label: "Intervention démarrée",
+    icon: (
+      <svg
+        className="h-4 w-4"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z"
+        />
+      </svg>
+    ),
+    color: "text-amber-600 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400",
+  },
+  intervention_completed: {
+    label: "Intervention terminée",
+    icon: (
+      <svg
+        className="h-4 w-4"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+        />
+      </svg>
+    ),
+    color: "text-green-600 bg-green-50 dark:bg-green-950/30 dark:text-green-400",
+  },
   intervention_deleted: {
     label: "Intervention supprimée",
     icon: (

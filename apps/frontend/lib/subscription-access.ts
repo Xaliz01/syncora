@@ -1,5 +1,4 @@
 import type { AddonCode, AuthUser, PermissionCode } from "@syncora/shared";
-import { hasPermission } from "./auth-permissions";
 
 export const SUBSCRIPTION_ACTIVE_PERMISSION: PermissionCode = "subscription.active";
 
@@ -7,11 +6,10 @@ export function hasActiveSubscriptionAccess(user: AuthUser | null | undefined): 
   return !!user?.permissions?.includes(SUBSCRIPTION_ACTIVE_PERMISSION);
 }
 
-/** Après connexion / inscription : tableau de bord si abonnement actif, sinon page abonnement.
- *  Techniciens sans cases.read → /my-day. */
+/** Après connexion / inscription : techniciens → /my-day, sinon tableau de bord. */
 export function postAuthHomePath(user: AuthUser): string {
   if (!hasActiveSubscriptionAccess(user)) return "/subscription";
-  if (!hasPermission(user, "cases.read")) return "/my-day";
+  if (user.technicianId) return "/my-day";
   return "/";
 }
 
