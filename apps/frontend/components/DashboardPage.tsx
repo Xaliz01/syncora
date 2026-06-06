@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/components/auth/AuthContext";
+import { hasPermission } from "@/lib/auth-permissions";
 import * as api from "@/lib/cases.api";
 import type {
   CaseStatus,
@@ -342,10 +343,13 @@ export function DashboardPage() {
   const { user } = useAuth();
   const [selectedStat, setSelectedStat] = useState<DashboardStatFilter | null>(null);
 
+  const canReadCases = hasPermission(user, "cases.read");
+
   const { data: dashboard, isLoading } = useQuery({
     queryKey: ["dashboard"],
     queryFn: () => api.getDashboard(),
     refetchInterval: 60000,
+    enabled: canReadCases,
   });
 
   if (isLoading) {

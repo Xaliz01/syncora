@@ -203,7 +203,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {
           label: "Général",
           links: [
-            { label: "Tableau de bord", href: "/" },
+            ...(hasPermission(user, "cases.read") ? [{ label: "Tableau de bord", href: "/" }] : []),
             ...(user
               ? [
                   { label: "Mon organisation", href: "/organization" },
@@ -216,6 +216,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {
           label: "Suivi",
           links: [
+            ...(hasPermission(user, "interventions.read")
+              ? [{ label: "Ma journée", href: "/my-day" }]
+              : []),
             ...(hasPermission(user, "cases.read") ? [{ label: "Dossiers", href: "/cases" }] : []),
             ...(hasPermission(user, "customers.read")
               ? [{ label: "Clients", href: "/customers" }]
