@@ -4,10 +4,13 @@ import type {
   CaseHistoryEntryResponse,
   CaseResponse,
   CaseSummaryResponse,
+  CompleteInterventionResponse,
   CaseTemplateResponse,
   DashboardStatFilter,
+  GeoLocation,
   DashboardTodoCaseItem,
   InterventionResponse,
+  StartInterventionResponse,
   TodoDashboardVisibility,
 } from "@syncora/shared";
 
@@ -100,6 +103,15 @@ export interface UpdateTodoForOrgBody {
   status: string;
 }
 
+export interface StartInterventionForOrgBody {
+  location?: GeoLocation;
+}
+
+export interface CompleteInterventionForOrgBody {
+  notes?: string;
+  location?: GeoLocation;
+}
+
 export abstract class AbstractCasesGatewayService {
   abstract createTemplate(
     user: AuthUser,
@@ -143,6 +155,7 @@ export abstract class AbstractCasesGatewayService {
       endDate?: string;
       status?: string;
       unscheduled?: string;
+      includeTeamAssignments?: string;
     },
   ): Promise<InterventionResponse[]>;
   abstract getIntervention(user: AuthUser, interventionId: string): Promise<InterventionResponse>;
@@ -152,6 +165,16 @@ export abstract class AbstractCasesGatewayService {
     body: UpdateInterventionForOrgBody,
   ): Promise<InterventionResponse>;
   abstract deleteIntervention(user: AuthUser, interventionId: string): Promise<{ deleted: true }>;
+  abstract startIntervention(
+    user: AuthUser,
+    interventionId: string,
+    body: StartInterventionForOrgBody,
+  ): Promise<StartInterventionResponse>;
+  abstract completeIntervention(
+    user: AuthUser,
+    interventionId: string,
+    body: CompleteInterventionForOrgBody,
+  ): Promise<CompleteInterventionResponse>;
   abstract getDashboard(user: AuthUser): Promise<CaseDashboardResponse>;
   abstract getDashboardTodoCases(
     user: AuthUser,

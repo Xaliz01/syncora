@@ -1,6 +1,18 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document, Types } from "mongoose";
-import type { InterventionStatus } from "@syncora/shared";
+import type { GeoLocation, InterventionStatus } from "@syncora/shared";
+
+@Schema({ _id: false })
+export class GeoLocationSchema {
+  @Prop({ required: true })
+  latitude!: number;
+
+  @Prop({ required: true })
+  longitude!: number;
+
+  @Prop()
+  accuracy?: number;
+}
 
 @Schema({ timestamps: true, _id: true, collection: "interventions" })
 export class InterventionDocument extends Document {
@@ -38,6 +50,18 @@ export class InterventionDocument extends Document {
 
   @Prop()
   scheduledEnd?: Date;
+
+  @Prop({ type: Date })
+  startedAt?: Date;
+
+  @Prop({ type: Date })
+  completedAt?: Date;
+
+  @Prop({ type: GeoLocationSchema })
+  startLocation?: GeoLocation;
+
+  @Prop({ type: GeoLocationSchema })
+  endLocation?: GeoLocation;
 
   @Prop()
   notes?: string;

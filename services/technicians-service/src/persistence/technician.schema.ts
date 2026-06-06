@@ -35,3 +35,4 @@ export class TechnicianDocument extends Document {
 }
 
 export const TechnicianSchema = SchemaFactory.createForClass(TechnicianDocument);
+TechnicianSchema.index({ organizationId: 1, userId: 1 });

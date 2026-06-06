@@ -6,9 +6,11 @@ export function hasActiveSubscriptionAccess(user: AuthUser | null | undefined): 
   return !!user?.permissions?.includes(SUBSCRIPTION_ACTIVE_PERMISSION);
 }
 
-/** Après connexion / inscription : tableau de bord si abonnement actif, sinon page abonnement. */
+/** Après connexion / inscription : techniciens → /my-day, sinon tableau de bord. */
 export function postAuthHomePath(user: AuthUser): string {
-  return hasActiveSubscriptionAccess(user) ? "/" : "/subscription";
+  if (!hasActiveSubscriptionAccess(user)) return "/subscription";
+  if (user.technicianId) return "/my-day";
+  return "/";
 }
 
 export function isSubscriptionRoute(pathname: string): boolean {

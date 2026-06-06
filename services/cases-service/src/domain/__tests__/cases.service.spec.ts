@@ -459,6 +459,168 @@ describe("CasesService", () => {
     });
   });
 
+  describe("startIntervention", () => {
+    it("should start a planned intervention with timestamp", async () => {
+      const doc = mockInterventionDoc({ status: "planned" });
+      mockInterventionModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+
+      const result = await service.startIntervention("int-123", {
+        organizationId: "org-1",
+      });
+
+      expect(mockInterventionModel.updateOne).toHaveBeenCalledWith(
+        { _id: "int-123" },
+        {
+          $set: expect.objectContaining({
+            status: "in_progress",
+            startedAt: expect.any(Date),
+          }),
+        },
+      );
+      expect(result.status).toBe("in_progress");
+      expect(result.startedAt).toBeDefined();
+    });
+
+    it("should include geolocation when provided", async () => {
+      const doc = mockInterventionDoc({ status: "planned" });
+      mockInterventionModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+      const location = { latitude: 48.856, longitude: 2.352, accuracy: 10 };
+
+      const result = await service.startIntervention("int-123", {
+        organizationId: "org-1",
+        location,
+      });
+
+      expect(mockInterventionModel.updateOne).toHaveBeenCalledWith(
+        { _id: "int-123" },
+        {
+          $set: expect.objectContaining({
+            startLocation: location,
+          }),
+        },
+      );
+      expect(result.startLocation).toEqual(location);
+    });
+
+    it("should throw ConflictException when status is not planned", async () => {
+      const doc = mockInterventionDoc({ status: "in_progress" });
+      mockInterventionModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+
+      await expect(
+        service.startIntervention("int-123", { organizationId: "org-1" }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it("should throw ConflictException when intervention is completed", async () => {
+      const doc = mockInterventionDoc({ status: "completed" });
+      mockInterventionModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+
+      await expect(
+        service.startIntervention("int-123", { organizationId: "org-1" }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it("should throw NotFoundException when intervention not found", async () => {
+      mockInterventionModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null),
+      });
+
+      await expect(
+        service.startIntervention("non-existent", { organizationId: "org-1" }),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe("completeIntervention", () => {
+    it("should complete an in-progress intervention with timestamp", async () => {
+      const doc = mockInterventionDoc({ status: "in_progress" });
+      mockInterventionModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+
+      const result = await service.completeIntervention("int-123", {
+        organizationId: "org-1",
+      });
+
+      expect(mockInterventionModel.updateOne).toHaveBeenCalledWith(
+        { _id: "int-123" },
+        {
+          $set: expect.objectContaining({
+            status: "completed",
+            completedAt: expect.any(Date),
+          }),
+        },
+      );
+      expect(result.status).toBe("completed");
+      expect(result.completedAt).toBeDefined();
+    });
+
+    it("should include notes and geolocation when provided", async () => {
+      const doc = mockInterventionDoc({ status: "in_progress" });
+      mockInterventionModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+      const location = { latitude: 48.856, longitude: 2.352 };
+
+      const result = await service.completeIntervention("int-123", {
+        organizationId: "org-1",
+        notes: "Travaux terminés",
+        location,
+      });
+
+      expect(mockInterventionModel.updateOne).toHaveBeenCalledWith(
+        { _id: "int-123" },
+        {
+          $set: expect.objectContaining({
+            notes: "Travaux terminés",
+            endLocation: location,
+          }),
+        },
+      );
+      expect(result.endLocation).toEqual(location);
+    });
+
+    it("should throw ConflictException when status is not in_progress", async () => {
+      const doc = mockInterventionDoc({ status: "planned" });
+      mockInterventionModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+
+      await expect(
+        service.completeIntervention("int-123", { organizationId: "org-1" }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it("should throw ConflictException when intervention is already completed", async () => {
+      const doc = mockInterventionDoc({ status: "completed" });
+      mockInterventionModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+
+      await expect(
+        service.completeIntervention("int-123", { organizationId: "org-1" }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it("should throw NotFoundException when intervention not found", async () => {
+      mockInterventionModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null),
+      });
+
+      await expect(
+        service.completeIntervention("non-existent", { organizationId: "org-1" }),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
   describe("addCaseHistory", () => {
     it("should create a history entry", async () => {
       const historyDoc = {
@@ -684,6 +846,39 @@ describe("CasesService", () => {
 
       expect(result).toHaveLength(1);
       expect(result[0].dueDate).toBe(past.toISOString());
+    });
+  });
+
+  describe("listInterventions", () => {
+    it("should query assignee or team assignments when both filters are provided", async () => {
+      mockInterventionModel.find.mockReturnValue({
+        sort: jest.fn().mockReturnValue({
+          exec: jest.fn().mockResolvedValue([]),
+        }),
+      });
+      mockCaseModel.find.mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          exec: jest.fn().mockResolvedValue([]),
+        }),
+      });
+
+      await service.listInterventions("org-1", {
+        assigneeId: "user-1",
+        assignedTeamIds: ["team-a", "team-b"],
+        startDate: "2026-06-06T00:00:00.000Z",
+        endDate: "2026-06-06T23:59:59.999Z",
+      });
+
+      expect(mockInterventionModel.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          organizationId: "org-1",
+          $or: [{ assigneeId: "user-1" }, { assignedTeamId: { $in: ["team-a", "team-b"] } }],
+          scheduledStart: expect.objectContaining({
+            $gte: expect.any(Date),
+            $lte: expect.any(Date),
+          }),
+        }),
+      );
     });
   });
 });

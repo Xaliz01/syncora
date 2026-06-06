@@ -24,6 +24,7 @@ import type {
   PermissionCode,
   CreateOrganizationBody,
   SwitchOrganizationBody,
+  TechnicianResponse,
 } from "@syncora/shared";
 import { ASSIGNABLE_PERMISSION_CODES } from "@syncora/shared";
 import { AbstractAuthService } from "./ports/auth.service.port";
@@ -32,6 +33,7 @@ import { AbstractSubscriptionsGatewayService } from "./ports/subscriptions.servi
 const ORGANIZATIONS_URL = process.env.ORGANIZATIONS_SERVICE_URL ?? "http://localhost:3001";
 const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
 const PERMISSIONS_URL = process.env.PERMISSIONS_SERVICE_URL ?? "http://localhost:3003";
+const TECHNICIANS_URL = process.env.TECHNICIANS_SERVICE_URL ?? "http://localhost:3006";
 
 @Injectable()
 export class AuthService extends AbstractAuthService {
@@ -51,6 +53,7 @@ export class AuthService extends AbstractAuthService {
       role,
     );
     const profile = await this.resolveUserProfile(jwt.sub);
+    const technicianId = await this.resolveTechnicianId(jwt.organizationId, jwt.sub);
     return {
       id: jwt.sub,
       email: profile?.email ?? jwt.email,
@@ -59,6 +62,7 @@ export class AuthService extends AbstractAuthService {
       status: profile?.status ?? jwt.status,
       permissions,
       name: profile?.name ?? jwt.name,
+      technicianId,
     };
   }
 
@@ -143,6 +147,7 @@ export class AuthService extends AbstractAuthService {
       user.id,
       user.role,
     );
+    const technicianId = await this.resolveTechnicianId(user.organizationId, user.id);
     const authUser: AuthUser = {
       id: user.id,
       email: user.email,
@@ -151,6 +156,7 @@ export class AuthService extends AbstractAuthService {
       status: user.status,
       permissions,
       name: user.name,
+      technicianId,
     };
     const payload: JwtPayload = {
       sub: user.id,
@@ -160,6 +166,7 @@ export class AuthService extends AbstractAuthService {
       permissions,
       email: user.email,
       name: user.name,
+      technicianId,
     };
     const accessToken = this.jwtService.sign(payload);
     return { accessToken, user: authUser };
@@ -286,6 +293,7 @@ export class AuthService extends AbstractAuthService {
       user.id,
       role,
     );
+    const technicianId = await this.resolveTechnicianId(user.organizationId, user.id);
     const authUser: AuthUser = {
       id: user.id,
       email: user.email,
@@ -294,6 +302,7 @@ export class AuthService extends AbstractAuthService {
       status: user.status,
       permissions,
       name: user.name,
+      technicianId,
     };
     const payload: JwtPayload = {
       sub: user.id,
@@ -303,6 +312,7 @@ export class AuthService extends AbstractAuthService {
       permissions,
       email: user.email,
       name: user.name,
+      technicianId,
     };
     const accessToken = this.jwtService.sign(payload);
     return { accessToken, user: authUser };
@@ -362,6 +372,7 @@ export class AuthService extends AbstractAuthService {
       user.id,
       user.role,
     );
+    const technicianId = await this.resolveTechnicianId(user.organizationId, user.id);
     const authUser: AuthUser = {
       id: user.id,
       email: user.email,
@@ -370,6 +381,7 @@ export class AuthService extends AbstractAuthService {
       status: user.status,
       permissions,
       name: user.name,
+      technicianId,
     };
     const payload: JwtPayload = {
       sub: user.id,
@@ -379,9 +391,27 @@ export class AuthService extends AbstractAuthService {
       permissions,
       email: user.email,
       name: user.name,
+      technicianId,
     };
     const accessToken = this.jwtService.sign(payload);
     return { accessToken, user: authUser };
+  }
+
+  private async resolveTechnicianId(
+    organizationId: string,
+    userId: string,
+  ): Promise<string | undefined> {
+    try {
+      const res = await firstValueFrom(
+        this.httpService.get<TechnicianResponse | null>(
+          `${TECHNICIANS_URL}/technicians/by-user/${userId}`,
+          { params: { organizationId } },
+        ),
+      );
+      return res.data?.id;
+    } catch {
+      return undefined;
+    }
   }
 
   /** Nom / email / statut : rechargés depuis users-service (le JWT peut être obsolète). */

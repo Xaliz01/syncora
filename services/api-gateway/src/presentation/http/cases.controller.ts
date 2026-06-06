@@ -15,9 +15,11 @@ import { isDashboardStatFilter } from "@syncora/shared";
 import { AbstractCasesGatewayService } from "../../domain/ports/cases.service.port";
 import type {
   CreateCaseForOrgBody,
+  CompleteInterventionForOrgBody,
   CreateInterventionForOrgBody,
   CreateTemplateForOrgBody,
   UpdateCaseForOrgBody,
+  StartInterventionForOrgBody,
   UpdateInterventionForOrgBody,
   UpdateTemplateForOrgBody,
   UpdateTodoForOrgBody,
@@ -136,7 +138,13 @@ export class CasesController {
 
   @Post("interventions")
   @RequirePermissions("interventions.create")
-  @NotifyEntity({ type: "intervention", labelField: "title" })
+  @NotifyEntity({
+    type: "intervention",
+    labelField: "title",
+    relatedEntityType: "case",
+    relatedEntityIdField: "caseId",
+    relatedEntityLabelField: "caseTitle",
+  })
   async createIntervention(
     @CurrentUser() user: AuthUser,
     @Body() body: CreateInterventionForOrgBody,
@@ -154,6 +162,7 @@ export class CasesController {
     @Query("endDate") endDate?: string,
     @Query("status") status?: string,
     @Query("unscheduled") unscheduled?: string,
+    @Query("includeTeamAssignments") includeTeamAssignments?: string,
   ) {
     return this.casesService.listInterventions(user, {
       caseId,
@@ -162,6 +171,7 @@ export class CasesController {
       endDate,
       status,
       unscheduled,
+      includeTeamAssignments,
     });
   }
 
@@ -176,7 +186,13 @@ export class CasesController {
 
   @Patch("interventions/:interventionId")
   @RequirePermissions("interventions.update")
-  @NotifyEntity({ type: "intervention", labelField: "title" })
+  @NotifyEntity({
+    type: "intervention",
+    labelField: "title",
+    relatedEntityType: "case",
+    relatedEntityIdField: "caseId",
+    relatedEntityLabelField: "caseTitle",
+  })
   async updateIntervention(
     @CurrentUser() user: AuthUser,
     @Param("interventionId") interventionId: string,
@@ -193,6 +209,44 @@ export class CasesController {
     @Param("interventionId") interventionId: string,
   ) {
     return this.casesService.deleteIntervention(user, interventionId);
+  }
+
+  @Post("interventions/:interventionId/start")
+  @RequirePermissions("interventions.update")
+  @NotifyEntity({
+    type: "intervention",
+    idParam: "interventionId",
+    labelField: "title",
+    relatedEntityType: "case",
+    relatedEntityIdField: "caseId",
+    relatedEntityLabelField: "caseTitle",
+    fixedDetail: "Intervention démarrée",
+  })
+  async startIntervention(
+    @CurrentUser() user: AuthUser,
+    @Param("interventionId") interventionId: string,
+    @Body() body: StartInterventionForOrgBody,
+  ) {
+    return this.casesService.startIntervention(user, interventionId, body);
+  }
+
+  @Post("interventions/:interventionId/complete")
+  @RequirePermissions("interventions.update")
+  @NotifyEntity({
+    type: "intervention",
+    idParam: "interventionId",
+    labelField: "title",
+    relatedEntityType: "case",
+    relatedEntityIdField: "caseId",
+    relatedEntityLabelField: "caseTitle",
+    fixedDetail: "Intervention terminée",
+  })
+  async completeIntervention(
+    @CurrentUser() user: AuthUser,
+    @Param("interventionId") interventionId: string,
+    @Body() body: CompleteInterventionForOrgBody,
+  ) {
+    return this.casesService.completeIntervention(user, interventionId, body);
   }
 
   @Get("dashboard")

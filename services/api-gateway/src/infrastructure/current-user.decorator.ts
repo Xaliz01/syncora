@@ -14,6 +14,7 @@ export const CurrentUser = createParamDecorator(
       status: p.status,
       permissions: p.permissions,
       name: p.name,
+      technicianId: p.technicianId,
     };
   },
 );

@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/components/auth/AuthContext";
+import { hasPermission } from "@/lib/auth-permissions";
 import * as api from "@/lib/cases.api";
 import type {
   CaseStatus,
@@ -342,13 +343,16 @@ export function DashboardPage() {
   const { user } = useAuth();
   const [selectedStat, setSelectedStat] = useState<DashboardStatFilter | null>(null);
 
+  const canReadCases = hasPermission(user, "cases.read");
+
   const { data: dashboard, isLoading } = useQuery({
     queryKey: ["dashboard"],
     queryFn: () => api.getDashboard(),
     refetchInterval: 60000,
+    enabled: canReadCases,
   });
 
-  if (isLoading) {
+  if (canReadCases && isLoading) {
     return (
       <div className="text-sm text-slate-500 dark:text-slate-400">
         Chargement du tableau de bord…
@@ -371,194 +375,200 @@ export function DashboardPage() {
 
       <TrialTestDataCard />
 
-      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20">
-        <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100 mb-3">
-          Actions rapides
-        </h2>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href="/cases/new"
-            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition"
-          >
-            Nouveau dossier
-          </Link>
-          <Link
-            href="/cases"
-            className="rounded-lg border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
-          >
-            Tous les dossiers
-          </Link>
-          <Link
-            href="/cases/calendar"
-            className="rounded-lg border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
-          >
-            Calendrier
-          </Link>
-          <Link
-            href="/settings/case-templates"
-            className="rounded-lg border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
-          >
-            Modèles de dossier
-          </Link>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <DashboardStatCard
-          label="Dossiers assignés"
-          count={stats?.totalAssigned ?? 0}
-          valueClassName="text-slate-800 dark:text-slate-100"
-          onCountClick={() => setSelectedStat("assigned")}
-        />
-        <DashboardStatCard
-          label="En cours"
-          count={stats?.inProgress ?? 0}
-          valueClassName="text-amber-600"
-          onCountClick={() => setSelectedStat("in_progress")}
-        />
-        <DashboardStatCard
-          label="Terminés cette semaine"
-          count={stats?.completedThisWeek ?? 0}
-          valueClassName="text-green-600"
-          onCountClick={() => setSelectedStat("completed_week")}
-        />
-        <DashboardStatCard
-          label="En retard"
-          count={stats?.overdue ?? 0}
-          valueClassName={
-            (stats?.overdue ?? 0) > 0 ? "text-red-600" : "text-slate-800 dark:text-slate-100"
-          }
-          onCountClick={() => setSelectedStat("overdue")}
-        />
-      </div>
-
-      {selectedStat && (
-        <StatCasesModal filter={selectedStat} onClose={() => setSelectedStat(null)} />
-      )}
-
-      <div className="grid lg:grid-cols-2 gap-4 sm:gap-6 lg:items-stretch">
-        <div className="flex flex-col rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20">
-          <div className="flex shrink-0 items-center justify-between mb-3">
-            <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
-              Mes dossiers actifs
-            </h2>
+      {canReadCases && (
+        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20">
+          <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100 mb-3">
+            Actions rapides
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href="/cases/new"
+              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition"
+            >
+              Nouveau dossier
+            </Link>
             <Link
               href="/cases"
-              className="text-xs text-brand-600 dark:text-brand-400 hover:text-brand-500 font-medium"
+              className="rounded-lg border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
             >
-              Voir tout
+              Tous les dossiers
             </Link>
-          </div>
-          {!dashboard?.assignedCases?.length ? (
-            <p className="text-sm text-slate-500 dark:text-slate-400">Aucun dossier assigné.</p>
-          ) : (
-            <div className="flex flex-col flex-1 min-h-0">
-              <DashboardPaginatedList
-                items={dashboard.assignedCases}
-                getKey={(c) => c.id}
-                ariaLabel="Pagination des dossiers actifs"
-              >
-                {(c) => (
-                  <Link href={`/cases/${c.id}`} className={DASHBOARD_LIST_ROW_CLASS}>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">
-                          {c.title}
-                        </span>
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-[10px] font-medium flex-shrink-0 ${STATUS_COLORS[c.status]}`}
-                        >
-                          {STATUS_LABELS[c.status]}
-                        </span>
-                      </div>
-                      {c.customer?.displayName && (
-                        <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                          Client : {c.customer.displayName}
-                        </div>
-                      )}
-                      {c.nextTodo && (
-                        <div className="text-xs text-amber-600 mt-0.5 truncate">
-                          A faire : {c.nextTodo}
-                        </div>
-                      )}
-                    </div>
-                    <div className="ml-3 flex flex-col items-end flex-shrink-0">
-                      <div className="text-xs font-medium text-slate-600 dark:text-slate-300">
-                        {c.progress}%
-                      </div>
-                      <div className="w-12 h-1 rounded-full bg-slate-100 dark:bg-slate-800 mt-1">
-                        <div
-                          className="h-full rounded-full bg-brand-600"
-                          style={{ width: `${c.progress}%` }}
-                        />
-                      </div>
-                    </div>
-                  </Link>
-                )}
-              </DashboardPaginatedList>
-            </div>
-          )}
-        </div>
-
-        <div className="flex flex-col rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20">
-          <div className="flex shrink-0 items-center justify-between mb-3">
-            <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
-              Prochaines interventions
-            </h2>
             <Link
               href="/cases/calendar"
-              className="text-xs text-brand-600 dark:text-brand-400 hover:text-brand-500 font-medium"
+              className="rounded-lg border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
             >
               Calendrier
             </Link>
+            <Link
+              href="/settings/case-templates"
+              className="rounded-lg border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+            >
+              Modèles de dossier
+            </Link>
           </div>
-          {!dashboard?.upcomingInterventions?.length ? (
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Aucune intervention à venir.
-            </p>
-          ) : (
-            <div className="flex flex-col flex-1 min-h-0">
-              <DashboardPaginatedList
-                items={dashboard.upcomingInterventions}
-                getKey={(i) => i.id}
-                ariaLabel="Pagination des prochaines interventions"
-              >
-                {(i) => (
-                  <Link href={`/cases/${i.caseId}`} className={DASHBOARD_LIST_ROW_CLASS}>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">
-                        {i.title}
-                      </div>
-                      {i.caseTitle && (
-                        <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                          {i.caseTitle}
-                        </div>
-                      )}
-                    </div>
-                    <div className="ml-3 text-right flex-shrink-0">
-                      {i.scheduledStart && (
-                        <div className="text-xs text-slate-600 dark:text-slate-300">
-                          {new Date(i.scheduledStart).toLocaleDateString("fr-FR")}
-                        </div>
-                      )}
-                      {i.scheduledStart && (
-                        <div className="text-[10px] text-slate-400 dark:text-slate-500">
-                          {new Date(i.scheduledStart).toLocaleTimeString("fr-FR", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  </Link>
-                )}
-              </DashboardPaginatedList>
-            </div>
-          )}
         </div>
-      </div>
+      )}
 
-      {(dashboard?.todoWidgets?.length ?? 0) > 0 && (
+      {canReadCases && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <DashboardStatCard
+            label="Dossiers assignés"
+            count={stats?.totalAssigned ?? 0}
+            valueClassName="text-slate-800 dark:text-slate-100"
+            onCountClick={() => setSelectedStat("assigned")}
+          />
+          <DashboardStatCard
+            label="En cours"
+            count={stats?.inProgress ?? 0}
+            valueClassName="text-amber-600"
+            onCountClick={() => setSelectedStat("in_progress")}
+          />
+          <DashboardStatCard
+            label="Terminés cette semaine"
+            count={stats?.completedThisWeek ?? 0}
+            valueClassName="text-green-600"
+            onCountClick={() => setSelectedStat("completed_week")}
+          />
+          <DashboardStatCard
+            label="En retard"
+            count={stats?.overdue ?? 0}
+            valueClassName={
+              (stats?.overdue ?? 0) > 0 ? "text-red-600" : "text-slate-800 dark:text-slate-100"
+            }
+            onCountClick={() => setSelectedStat("overdue")}
+          />
+        </div>
+      )}
+
+      {canReadCases && selectedStat && (
+        <StatCasesModal filter={selectedStat} onClose={() => setSelectedStat(null)} />
+      )}
+
+      {canReadCases && (
+        <div className="grid lg:grid-cols-2 gap-4 sm:gap-6 lg:items-stretch">
+          <div className="flex flex-col rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20">
+            <div className="flex shrink-0 items-center justify-between mb-3">
+              <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
+                Mes dossiers actifs
+              </h2>
+              <Link
+                href="/cases"
+                className="text-xs text-brand-600 dark:text-brand-400 hover:text-brand-500 font-medium"
+              >
+                Voir tout
+              </Link>
+            </div>
+            {!dashboard?.assignedCases?.length ? (
+              <p className="text-sm text-slate-500 dark:text-slate-400">Aucun dossier assigné.</p>
+            ) : (
+              <div className="flex flex-col flex-1 min-h-0">
+                <DashboardPaginatedList
+                  items={dashboard.assignedCases}
+                  getKey={(c) => c.id}
+                  ariaLabel="Pagination des dossiers actifs"
+                >
+                  {(c) => (
+                    <Link href={`/cases/${c.id}`} className={DASHBOARD_LIST_ROW_CLASS}>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">
+                            {c.title}
+                          </span>
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[10px] font-medium flex-shrink-0 ${STATUS_COLORS[c.status]}`}
+                          >
+                            {STATUS_LABELS[c.status]}
+                          </span>
+                        </div>
+                        {c.customer?.displayName && (
+                          <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                            Client : {c.customer.displayName}
+                          </div>
+                        )}
+                        {c.nextTodo && (
+                          <div className="text-xs text-amber-600 mt-0.5 truncate">
+                            A faire : {c.nextTodo}
+                          </div>
+                        )}
+                      </div>
+                      <div className="ml-3 flex flex-col items-end flex-shrink-0">
+                        <div className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                          {c.progress}%
+                        </div>
+                        <div className="w-12 h-1 rounded-full bg-slate-100 dark:bg-slate-800 mt-1">
+                          <div
+                            className="h-full rounded-full bg-brand-600"
+                            style={{ width: `${c.progress}%` }}
+                          />
+                        </div>
+                      </div>
+                    </Link>
+                  )}
+                </DashboardPaginatedList>
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-col rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20">
+            <div className="flex shrink-0 items-center justify-between mb-3">
+              <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
+                Prochaines interventions
+              </h2>
+              <Link
+                href="/cases/calendar"
+                className="text-xs text-brand-600 dark:text-brand-400 hover:text-brand-500 font-medium"
+              >
+                Calendrier
+              </Link>
+            </div>
+            {!dashboard?.upcomingInterventions?.length ? (
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Aucune intervention à venir.
+              </p>
+            ) : (
+              <div className="flex flex-col flex-1 min-h-0">
+                <DashboardPaginatedList
+                  items={dashboard.upcomingInterventions}
+                  getKey={(i) => i.id}
+                  ariaLabel="Pagination des prochaines interventions"
+                >
+                  {(i) => (
+                    <Link href={`/cases/${i.caseId}`} className={DASHBOARD_LIST_ROW_CLASS}>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">
+                          {i.title}
+                        </div>
+                        {i.caseTitle && (
+                          <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                            {i.caseTitle}
+                          </div>
+                        )}
+                      </div>
+                      <div className="ml-3 text-right flex-shrink-0">
+                        {i.scheduledStart && (
+                          <div className="text-xs text-slate-600 dark:text-slate-300">
+                            {new Date(i.scheduledStart).toLocaleDateString("fr-FR")}
+                          </div>
+                        )}
+                        {i.scheduledStart && (
+                          <div className="text-[10px] text-slate-400 dark:text-slate-500">
+                            {new Date(i.scheduledStart).toLocaleTimeString("fr-FR", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </Link>
+                  )}
+                </DashboardPaginatedList>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {canReadCases && (dashboard?.todoWidgets?.length ?? 0) > 0 && (
         <DashboardTodoWidgets todos={dashboard!.todoWidgets} />
       )}
     </div>

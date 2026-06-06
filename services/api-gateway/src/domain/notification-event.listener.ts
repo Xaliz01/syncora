@@ -33,6 +33,10 @@ export class NotificationEventListener {
         entityId: event.entityId,
         entityLabel: event.entityLabel,
         action: event.action as NotificationAction,
+        relatedEntityType: event.relatedEntityType,
+        relatedEntityId: event.relatedEntityId,
+        relatedEntityLabel: event.relatedEntityLabel,
+        detail: event.detail,
         userIds,
       };
 

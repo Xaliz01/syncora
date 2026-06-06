@@ -16,7 +16,9 @@ import type {
   CreateCaseBody,
   CreateCaseHistoryBody,
   CreateCaseTemplateBody,
+  CompleteInterventionBody,
   CreateInterventionBody,
+  StartInterventionBody,
   UpdateCaseBody,
   UpdateCaseTemplateBody,
   UpdateInterventionBody,
@@ -129,6 +131,7 @@ export class CasesController {
     @Query("organizationId") organizationId: string,
     @Query("caseId") caseId?: string,
     @Query("assigneeId") assigneeId?: string,
+    @Query("assignedTeamIds") assignedTeamIds?: string,
     @Query("startDate") startDate?: string,
     @Query("endDate") endDate?: string,
     @Query("status") status?: string,
@@ -138,6 +141,12 @@ export class CasesController {
     return this.casesService.listInterventions(organizationId, {
       caseId,
       assigneeId,
+      assignedTeamIds: assignedTeamIds
+        ? assignedTeamIds
+            .split(",")
+            .map((id) => id.trim())
+            .filter(Boolean)
+        : undefined,
       startDate,
       endDate,
       status,
@@ -214,5 +223,15 @@ export class CasesController {
       );
     }
     return this.casesService.getDashboardStatCases(organizationId, userId, userProfileId, filter);
+  }
+
+  @Post("interventions/:id/start")
+  async startIntervention(@Param("id") id: string, @Body() body: StartInterventionBody) {
+    return this.casesService.startIntervention(id, body);
+  }
+
+  @Post("interventions/:id/complete")
+  async completeIntervention(@Param("id") id: string, @Body() body: CompleteInterventionBody) {
+    return this.casesService.completeIntervention(id, body);
   }
 }

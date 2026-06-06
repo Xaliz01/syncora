@@ -1179,9 +1179,10 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                               {intervention.status === "planned" && (
                                 <button
                                   onClick={() =>
-                                    updateInterventionMutation.mutate({
-                                      id: intervention.id,
-                                      payload: { status: "in_progress" },
+                                    api.startIntervention(intervention.id).then(() => {
+                                      void queryClient.invalidateQueries({
+                                        queryKey: ["interventions", caseId],
+                                      });
                                     })
                                   }
                                   className="text-[10px] text-amber-600 hover:text-amber-700 px-1.5 py-0.5 rounded bg-amber-50"
@@ -1192,9 +1193,10 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                               {intervention.status === "in_progress" && (
                                 <button
                                   onClick={() =>
-                                    updateInterventionMutation.mutate({
-                                      id: intervention.id,
-                                      payload: { status: "completed" },
+                                    api.completeIntervention(intervention.id).then(() => {
+                                      void queryClient.invalidateQueries({
+                                        queryKey: ["interventions", caseId],
+                                      });
                                     })
                                   }
                                   className="text-[10px] text-green-600 hover:text-green-700 px-1.5 py-0.5 rounded bg-green-50"

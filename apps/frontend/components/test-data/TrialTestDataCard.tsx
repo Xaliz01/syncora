@@ -11,11 +11,14 @@ import {
 } from "@/lib/trial-test-data.api";
 import * as subscriptionsApi from "@/lib/subscriptions.api";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { useAuth } from "@/components/auth/AuthContext";
 
 export function TrialTestDataCard() {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const confirm = useConfirm();
   const [actionError, setActionError] = useState<string | null>(null);
+  const isOrganizationAdmin = user?.role === "admin";
 
   const { data: subscription } = useQuery({
     queryKey: ["subscription", "current"],
@@ -27,7 +30,7 @@ export function TrialTestDataCard() {
   const { data: status, isLoading: statusLoading } = useQuery({
     queryKey: ["trial-test-data", "status"],
     queryFn: () => getTrialTestDataStatus(),
-    enabled: subscription !== undefined,
+    enabled: isOrganizationAdmin && subscription !== undefined,
     refetchInterval: (query) => (query.state.data?.status === "injecting" ? 2000 : false),
   });
 
@@ -65,7 +68,7 @@ export function TrialTestDataCard() {
     onError: (err: Error) => setActionError(err.message),
   });
 
-  if (subscription === undefined) {
+  if (!isOrganizationAdmin || subscription === undefined) {
     return null;
   }
 

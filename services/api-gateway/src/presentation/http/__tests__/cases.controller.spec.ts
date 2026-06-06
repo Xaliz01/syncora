@@ -38,6 +38,8 @@ describe("CasesController", () => {
       getIntervention: jest.fn(),
       updateIntervention: jest.fn(),
       deleteIntervention: jest.fn(),
+      startIntervention: jest.fn(),
+      completeIntervention: jest.fn(),
       getDashboard: jest.fn(),
       getDashboardTodoCases: jest.fn(),
       getDashboardStatCases: jest.fn(),
@@ -255,6 +257,7 @@ describe("CasesController", () => {
         "2025-12-31",
         "scheduled",
         "false",
+        undefined,
       );
 
       expect(mockCasesService.listInterventions).toHaveBeenCalledWith(mockUser, {
@@ -264,6 +267,7 @@ describe("CasesController", () => {
         endDate: "2025-12-31",
         status: "scheduled",
         unscheduled: "false",
+        includeTeamAssignments: undefined,
       });
       expect(result).toEqual([{ id: "int-1" }]);
     });
@@ -280,6 +284,7 @@ describe("CasesController", () => {
         endDate: undefined,
         status: undefined,
         unscheduled: undefined,
+        includeTeamAssignments: undefined,
       });
       expect(result).toEqual([]);
     });

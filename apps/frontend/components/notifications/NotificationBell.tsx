@@ -28,6 +28,22 @@ const ENTITY_TYPE_LABELS: Record<NotificationEntityType, string> = {
   document: "Document",
 };
 
+/** Libellé avec article défini pour « sur le/la/l' … » */
+const RELATED_ENTITY_PHRASES: Partial<Record<NotificationEntityType, string>> = {
+  case: "le dossier",
+  customer: "le client",
+  vehicle: "le véhicule",
+  technician: "le technicien",
+  team: "l'équipe",
+  agence: "l'agence",
+  organization: "l'organisation",
+  user: "l'utilisateur",
+  case_template: "le modèle de dossier",
+  article: "l'article",
+  stock_movement: "le mouvement de stock",
+  permission_profile: "le profil de permission",
+};
+
 const ACTION_LABELS: Record<NotificationAction, string> = {
   created: "créé",
   updated: "modifié",
@@ -61,8 +77,53 @@ function getEntityRoute(entityType: NotificationEntityType, entityId: string): s
   }
 }
 
+function getNotificationRoute(n: NotificationResponse): string | null {
+  if (n.relatedEntityType && n.relatedEntityId) {
+    return getEntityRoute(n.relatedEntityType, n.relatedEntityId);
+  }
+  return getEntityRoute(n.entityType, n.entityId);
+}
+
+function formatRelatedEntityTarget(n: NotificationResponse): string {
+  if (!n.relatedEntityType || !RELATED_ENTITY_PHRASES[n.relatedEntityType]) return "";
+  const phrase = RELATED_ENTITY_PHRASES[n.relatedEntityType]!;
+  if (n.relatedEntityLabel?.trim()) {
+    return ` sur ${phrase} « ${n.relatedEntityLabel.trim()} »`;
+  }
+  return ` sur ${phrase}`;
+}
+
 function formatNotificationText(n: NotificationResponse): string {
   const actor = n.actorName ?? "Quelqu'un";
+
+  if (n.entityType === "document" && n.action === "created") {
+    const docName = n.entityLabel ? ` « ${n.entityLabel} »` : "";
+    return `${actor} a déposé le document${docName}${formatRelatedEntityTarget(n)}`;
+  }
+
+  if (n.entityType === "intervention") {
+    const title = n.entityLabel ? ` « ${n.entityLabel} »` : "";
+    const dossier = n.relatedEntityLabel?.trim()
+      ? ` (dossier « ${n.relatedEntityLabel.trim()} »)`
+      : "";
+    if (n.detail === "Intervention démarrée") {
+      return `${actor} a démarré l'intervention${title}${dossier}`;
+    }
+    if (n.detail === "Intervention terminée") {
+      return `${actor} a terminé l'intervention${title}${dossier}`;
+    }
+    if (n.action === "created") {
+      return `${actor} a créé l'intervention${title}${dossier}`;
+    }
+    if (n.action === "deleted") {
+      return `${actor} a supprimé l'intervention${title}${dossier}`;
+    }
+    if (n.detail) {
+      return `${actor} a modifié l'intervention${title}${dossier} (${n.detail})`;
+    }
+    return `${actor} a modifié l'intervention${title}${dossier}`;
+  }
+
   const entityType = ENTITY_TYPE_LABELS[n.entityType] ?? n.entityType;
   const action = ACTION_LABELS[n.action] ?? n.action;
   const label = n.entityLabel ? ` « ${n.entityLabel} »` : "";
@@ -141,7 +202,7 @@ export function NotificationBell() {
       if (!n.read) {
         markReadMutation.mutate(n.id);
       }
-      const route = getEntityRoute(n.entityType, n.entityId);
+      const route = getNotificationRoute(n);
       if (route) {
         router.push(route);
         setOpen(false);

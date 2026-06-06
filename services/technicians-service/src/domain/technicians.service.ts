@@ -105,6 +105,13 @@ export class TechniciansService extends AbstractTechniciansService {
     return this.toTechnicianResponse(doc);
   }
 
+  async findByUserId(organizationId: string, userId: string): Promise<TechnicianResponse | null> {
+    const doc = await this.technicianModel
+      .findOne({ organizationId, userId, ...activeDocumentFilter })
+      .exec();
+    return doc ? this.toTechnicianResponse(doc) : null;
+  }
+
   private toTechnicianResponse(doc: TechnicianDocument): TechnicianResponse {
     return {
       id: doc._id.toString(),

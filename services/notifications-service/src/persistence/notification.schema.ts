@@ -30,6 +30,18 @@ export class NotificationDocument extends Document {
   @Prop({ required: true, type: String })
   action!: NotificationAction;
 
+  @Prop({ type: String })
+  relatedEntityType?: NotificationEntityType;
+
+  @Prop()
+  relatedEntityId?: string;
+
+  @Prop()
+  relatedEntityLabel?: string;
+
+  @Prop()
+  detail?: string;
+
   @Prop({ default: false })
   read!: boolean;
 }

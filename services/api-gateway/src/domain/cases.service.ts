@@ -8,6 +8,8 @@ import type {
   CaseHistoryChange,
   CaseHistoryAction,
   CaseHistoryEntryResponse,
+  CompleteInterventionBody,
+  CompleteInterventionResponse,
   CreateCaseBody,
   CreateCaseHistoryBody,
   CreateCaseTemplateBody,
@@ -20,6 +22,10 @@ import type {
   DashboardStatFilter,
   DashboardTodoCaseItem,
   InterventionResponse,
+  StartInterventionBody,
+  StartInterventionResponse,
+  TeamResponse,
+  TechnicianResponse,
   UpdateCaseBody,
   UpdateCaseTemplateBody,
   UpdateInterventionBody,
@@ -36,7 +42,9 @@ import {
   type UpdateCaseForOrgBody,
   type CreateTemplateForOrgBody,
   type UpdateTemplateForOrgBody,
+  type CompleteInterventionForOrgBody,
   type CreateInterventionForOrgBody,
+  type StartInterventionForOrgBody,
   type UpdateInterventionForOrgBody,
   type UpdateTodoForOrgBody,
 } from "./ports/cases.service.port";
@@ -44,6 +52,7 @@ import {
 const CASES_URL = process.env.CASES_SERVICE_URL ?? "http://localhost:3004";
 const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
 const PERMISSIONS_URL = process.env.PERMISSIONS_SERVICE_URL ?? "http://localhost:3003";
+const TECHNICIANS_URL = process.env.TECHNICIANS_SERVICE_URL ?? "http://localhost:3006";
 
 @Injectable()
 export class CasesGatewayService extends AbstractCasesGatewayService {
@@ -269,16 +278,75 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       endDate?: string;
       status?: string;
       unscheduled?: string;
+      includeTeamAssignments?: string;
     },
   ) {
+    let assignedTeamIds: string[] | undefined;
+    if (
+      filters?.includeTeamAssignments === "true" &&
+      filters.assigneeId &&
+      filters.assigneeId === user.id
+    ) {
+      assignedTeamIds = await this.resolveTeamIdsForAssignee(user, filters.assigneeId);
+    }
+
     return this.callCasesService<InterventionResponse[]>(user.organizationId, {
       method: "get",
       path: "/interventions",
       query: {
         organizationId: user.organizationId,
-        ...filters,
+        caseId: filters?.caseId,
+        assigneeId: filters?.assigneeId,
+        assignedTeamIds: assignedTeamIds?.length ? assignedTeamIds.join(",") : undefined,
+        startDate: filters?.startDate,
+        endDate: filters?.endDate,
+        status: filters?.status,
+        unscheduled: filters?.unscheduled,
       },
     });
+  }
+
+  private async resolveTeamIdsForAssignee(user: AuthUser, assigneeId: string): Promise<string[]> {
+    const technicianId =
+      user.id === assigneeId
+        ? (user.technicianId ??
+          (await this.findTechnicianIdByUserId(user.organizationId, assigneeId)))
+        : await this.findTechnicianIdByUserId(user.organizationId, assigneeId);
+    if (!technicianId) return [];
+
+    try {
+      const teams = await this.scopedHttp.request<TeamResponse[]>({
+        baseUrl: TECHNICIANS_URL,
+        organizationId: user.organizationId,
+        method: "get",
+        path: "/teams",
+        errorLabel: "Technicians service error",
+      });
+      return teams
+        .filter((team) => team.technicianIds.includes(technicianId))
+        .map((team) => team.id);
+    } catch {
+      return [];
+    }
+  }
+
+  private async findTechnicianIdByUserId(
+    organizationId: string,
+    userId: string,
+  ): Promise<string | undefined> {
+    try {
+      const technician = await this.scopedHttp.request<TechnicianResponse | null>({
+        baseUrl: TECHNICIANS_URL,
+        organizationId,
+        method: "get",
+        path: `/technicians/by-user/${userId}`,
+        validateResponseScope: false,
+        errorLabel: "Technicians service error",
+      });
+      return technician?.id;
+    } catch {
+      return undefined;
+    }
   }
 
   async getIntervention(user: AuthUser, interventionId: string) {
@@ -340,6 +408,74 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       );
     }
     return result;
+  }
+
+  async startIntervention(
+    user: AuthUser,
+    interventionId: string,
+    body: StartInterventionForOrgBody,
+  ) {
+    const intervention = await this.callCasesService<InterventionResponse>(user.organizationId, {
+      method: "get",
+      path: `/interventions/${interventionId}`,
+      query: { organizationId: user.organizationId },
+    });
+    const result = await this.callCasesService<StartInterventionResponse>(user.organizationId, {
+      method: "post",
+      path: `/interventions/${interventionId}/start`,
+      body: {
+        organizationId: user.organizationId,
+        ...body,
+      } as StartInterventionBody,
+    });
+    this.recordHistory(
+      user.organizationId,
+      intervention.caseId,
+      user.id,
+      user.name ?? user.email,
+      "intervention_started",
+      intervention.title,
+    );
+    return {
+      ...result,
+      title: intervention.title,
+      caseId: intervention.caseId,
+      caseTitle: intervention.caseTitle,
+    };
+  }
+
+  async completeIntervention(
+    user: AuthUser,
+    interventionId: string,
+    body: CompleteInterventionForOrgBody,
+  ) {
+    const intervention = await this.callCasesService<InterventionResponse>(user.organizationId, {
+      method: "get",
+      path: `/interventions/${interventionId}`,
+      query: { organizationId: user.organizationId },
+    });
+    const result = await this.callCasesService<CompleteInterventionResponse>(user.organizationId, {
+      method: "post",
+      path: `/interventions/${interventionId}/complete`,
+      body: {
+        organizationId: user.organizationId,
+        ...body,
+      } as CompleteInterventionBody,
+    });
+    this.recordHistory(
+      user.organizationId,
+      intervention.caseId,
+      user.id,
+      user.name ?? user.email,
+      "intervention_completed",
+      intervention.title,
+    );
+    return {
+      ...result,
+      title: intervention.title,
+      caseId: intervention.caseId,
+      caseTitle: intervention.caseTitle,
+    };
   }
 
   // ── Dashboard ──

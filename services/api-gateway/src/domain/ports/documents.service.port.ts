@@ -1,13 +1,18 @@
 import type { Response } from "express";
 import type { AuthUser, DocumentEntityType, DocumentResponse } from "@syncora/shared";
 
+/** Réponse upload enrichie côté gateway (libellé hôte pour les notifications). */
+export type DocumentUploadGatewayResponse = DocumentResponse & {
+  relatedEntityLabel?: string;
+};
+
 export abstract class AbstractDocumentsGatewayService {
   abstract upload(
     currentUser: AuthUser,
     entityType: DocumentEntityType,
     entityId: string,
     file: Express.Multer.File,
-  ): Promise<DocumentResponse>;
+  ): Promise<DocumentUploadGatewayResponse>;
   abstract listByEntity(
     currentUser: AuthUser,
     entityType: DocumentEntityType,

@@ -26,6 +26,13 @@ export interface CreateNotificationBody {
   entityId: string;
   entityLabel?: string;
   action: NotificationAction;
+  /** Entité cible au clic (ex. dossier parent d'une intervention, entité porteuse d'un document). */
+  relatedEntityType?: NotificationEntityType;
+  relatedEntityId?: string;
+  /** Libellé de l'entité liée (ex. titre du dossier). */
+  relatedEntityLabel?: string;
+  /** Précision affichée (ex. champs modifiés, « intervention démarrée »). */
+  detail?: string;
 }
 
 export interface NotificationResponse {
@@ -38,6 +45,10 @@ export interface NotificationResponse {
   entityId: string;
   entityLabel?: string;
   action: NotificationAction;
+  relatedEntityType?: NotificationEntityType;
+  relatedEntityId?: string;
+  relatedEntityLabel?: string;
+  detail?: string;
   read: boolean;
   createdAt?: string;
 }
