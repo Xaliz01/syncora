@@ -8,6 +8,8 @@ import type {
   CaseHistoryChange,
   CaseHistoryAction,
   CaseHistoryEntryResponse,
+  CompleteInterventionBody,
+  CompleteInterventionResponse,
   CreateCaseBody,
   CreateCaseHistoryBody,
   CreateCaseTemplateBody,
@@ -20,6 +22,8 @@ import type {
   DashboardStatFilter,
   DashboardTodoCaseItem,
   InterventionResponse,
+  StartInterventionBody,
+  StartInterventionResponse,
   UpdateCaseBody,
   UpdateCaseTemplateBody,
   UpdateInterventionBody,
@@ -36,7 +40,9 @@ import {
   type UpdateCaseForOrgBody,
   type CreateTemplateForOrgBody,
   type UpdateTemplateForOrgBody,
+  type CompleteInterventionForOrgBody,
   type CreateInterventionForOrgBody,
+  type StartInterventionForOrgBody,
   type UpdateInterventionForOrgBody,
   type UpdateTodoForOrgBody,
 } from "./ports/cases.service.port";
@@ -339,6 +345,64 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
         intervention.title,
       );
     }
+    return result;
+  }
+
+  async startIntervention(
+    user: AuthUser,
+    interventionId: string,
+    body: StartInterventionForOrgBody,
+  ) {
+    const intervention = await this.callCasesService<InterventionResponse>(user.organizationId, {
+      method: "get",
+      path: `/interventions/${interventionId}`,
+      query: { organizationId: user.organizationId },
+    });
+    const result = await this.callCasesService<StartInterventionResponse>(user.organizationId, {
+      method: "post",
+      path: `/interventions/${interventionId}/start`,
+      body: {
+        organizationId: user.organizationId,
+        ...body,
+      } as StartInterventionBody,
+    });
+    this.recordHistory(
+      user.organizationId,
+      intervention.caseId,
+      user.id,
+      user.name ?? user.email,
+      "intervention_started",
+      intervention.title,
+    );
+    return result;
+  }
+
+  async completeIntervention(
+    user: AuthUser,
+    interventionId: string,
+    body: CompleteInterventionForOrgBody,
+  ) {
+    const intervention = await this.callCasesService<InterventionResponse>(user.organizationId, {
+      method: "get",
+      path: `/interventions/${interventionId}`,
+      query: { organizationId: user.organizationId },
+    });
+    const result = await this.callCasesService<CompleteInterventionResponse>(user.organizationId, {
+      method: "post",
+      path: `/interventions/${interventionId}/complete`,
+      body: {
+        organizationId: user.organizationId,
+        ...body,
+      } as CompleteInterventionBody,
+    });
+    this.recordHistory(
+      user.organizationId,
+      intervention.caseId,
+      user.id,
+      user.name ?? user.email,
+      "intervention_completed",
+      intervention.title,
+    );
     return result;
   }
 

@@ -15,9 +15,11 @@ import { isDashboardStatFilter } from "@syncora/shared";
 import { AbstractCasesGatewayService } from "../../domain/ports/cases.service.port";
 import type {
   CreateCaseForOrgBody,
+  CompleteInterventionForOrgBody,
   CreateInterventionForOrgBody,
   CreateTemplateForOrgBody,
   UpdateCaseForOrgBody,
+  StartInterventionForOrgBody,
   UpdateInterventionForOrgBody,
   UpdateTemplateForOrgBody,
   UpdateTodoForOrgBody,
@@ -193,6 +195,28 @@ export class CasesController {
     @Param("interventionId") interventionId: string,
   ) {
     return this.casesService.deleteIntervention(user, interventionId);
+  }
+
+  @Post("interventions/:interventionId/start")
+  @RequirePermissions("interventions.update")
+  @NotifyEntity({ type: "intervention", idParam: "interventionId", action: "updated" })
+  async startIntervention(
+    @CurrentUser() user: AuthUser,
+    @Param("interventionId") interventionId: string,
+    @Body() body: StartInterventionForOrgBody,
+  ) {
+    return this.casesService.startIntervention(user, interventionId, body);
+  }
+
+  @Post("interventions/:interventionId/complete")
+  @RequirePermissions("interventions.update")
+  @NotifyEntity({ type: "intervention", idParam: "interventionId", action: "updated" })
+  async completeIntervention(
+    @CurrentUser() user: AuthUser,
+    @Param("interventionId") interventionId: string,
+    @Body() body: CompleteInterventionForOrgBody,
+  ) {
+    return this.casesService.completeIntervention(user, interventionId, body);
   }
 
   @Get("dashboard")

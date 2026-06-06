@@ -16,7 +16,9 @@ import type {
   CreateCaseBody,
   CreateCaseHistoryBody,
   CreateCaseTemplateBody,
+  CompleteInterventionBody,
   CreateInterventionBody,
+  StartInterventionBody,
   UpdateCaseBody,
   UpdateCaseTemplateBody,
   UpdateInterventionBody,
@@ -214,5 +216,15 @@ export class CasesController {
       );
     }
     return this.casesService.getDashboardStatCases(organizationId, userId, userProfileId, filter);
+  }
+
+  @Post("interventions/:id/start")
+  async startIntervention(@Param("id") id: string, @Body() body: StartInterventionBody) {
+    return this.casesService.startIntervention(id, body);
+  }
+
+  @Post("interventions/:id/complete")
+  async completeIntervention(@Param("id") id: string, @Body() body: CompleteInterventionBody) {
+    return this.casesService.completeIntervention(id, body);
   }
 }

@@ -7,10 +7,14 @@ import type {
   CaseHistoryEntryResponse,
   CaseResponse,
   CaseSummaryResponse,
+  CompleteInterventionBody,
+  CompleteInterventionResponse,
   CaseTemplateResponse,
   DashboardStatFilter,
   DashboardTodoCaseItem,
   InterventionResponse,
+  StartInterventionBody,
+  StartInterventionResponse,
   UpdateCaseBody,
   UpdateCaseTemplateBody,
   UpdateInterventionBody,
@@ -57,6 +61,14 @@ export abstract class AbstractCasesService {
     body: UpdateInterventionBody,
   ): Promise<InterventionResponse>;
   abstract deleteIntervention(id: string, organizationId: string): Promise<{ deleted: true }>;
+  abstract startIntervention(
+    id: string,
+    body: StartInterventionBody,
+  ): Promise<StartInterventionResponse>;
+  abstract completeIntervention(
+    id: string,
+    body: CompleteInterventionBody,
+  ): Promise<CompleteInterventionResponse>;
   abstract getDashboard(
     organizationId: string,
     userId: string,

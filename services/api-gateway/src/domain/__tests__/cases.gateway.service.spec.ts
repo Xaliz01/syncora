@@ -103,4 +103,136 @@ describe("CasesGatewayService", () => {
       });
     });
   });
+
+  describe("startIntervention", () => {
+    it("calls cases-service start endpoint and records history", async () => {
+      const intervention = {
+        id: "int-1",
+        organizationId: "org-1",
+        caseId: "case-1",
+        title: "Intervention test",
+        status: "planned",
+      };
+      const startResult = {
+        id: "int-1",
+        status: "in_progress",
+        startedAt: "2026-06-06T10:00:00.000Z",
+      };
+      scopedHttp.request
+        .mockResolvedValueOnce(intervention)
+        .mockResolvedValueOnce(startResult)
+        .mockResolvedValueOnce({});
+
+      const result = await service.startIntervention(user, "int-1", {});
+
+      expect(result.status).toBe("in_progress");
+      expect(result.startedAt).toBeDefined();
+      expect(scopedHttp.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: "post",
+          path: "/interventions/int-1/start",
+        }),
+      );
+    });
+
+    it("forwards geolocation to cases-service", async () => {
+      const intervention = {
+        id: "int-1",
+        organizationId: "org-1",
+        caseId: "case-1",
+        title: "Intervention test",
+        status: "planned",
+      };
+      const location = { latitude: 48.856, longitude: 2.352 };
+      scopedHttp.request
+        .mockResolvedValueOnce(intervention)
+        .mockResolvedValueOnce({
+          id: "int-1",
+          status: "in_progress",
+          startedAt: "2026-06-06T10:00:00.000Z",
+          startLocation: location,
+        })
+        .mockResolvedValueOnce({});
+
+      const result = await service.startIntervention(user, "int-1", { location });
+
+      expect(scopedHttp.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: "post",
+          path: "/interventions/int-1/start",
+          body: expect.objectContaining({ location }),
+        }),
+      );
+      expect(result.startLocation).toEqual(location);
+    });
+  });
+
+  describe("completeIntervention", () => {
+    it("calls cases-service complete endpoint and records history", async () => {
+      const intervention = {
+        id: "int-1",
+        organizationId: "org-1",
+        caseId: "case-1",
+        title: "Intervention test",
+        status: "in_progress",
+      };
+      const completeResult = {
+        id: "int-1",
+        status: "completed",
+        completedAt: "2026-06-06T12:00:00.000Z",
+      };
+      scopedHttp.request
+        .mockResolvedValueOnce(intervention)
+        .mockResolvedValueOnce(completeResult)
+        .mockResolvedValueOnce({});
+
+      const result = await service.completeIntervention(user, "int-1", {});
+
+      expect(result.status).toBe("completed");
+      expect(result.completedAt).toBeDefined();
+      expect(scopedHttp.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: "post",
+          path: "/interventions/int-1/complete",
+        }),
+      );
+    });
+
+    it("forwards notes and geolocation to cases-service", async () => {
+      const intervention = {
+        id: "int-1",
+        organizationId: "org-1",
+        caseId: "case-1",
+        title: "Intervention test",
+        status: "in_progress",
+      };
+      const location = { latitude: 48.856, longitude: 2.352 };
+      scopedHttp.request
+        .mockResolvedValueOnce(intervention)
+        .mockResolvedValueOnce({
+          id: "int-1",
+          status: "completed",
+          completedAt: "2026-06-06T12:00:00.000Z",
+          endLocation: location,
+        })
+        .mockResolvedValueOnce({});
+
+      const result = await service.completeIntervention(user, "int-1", {
+        notes: "Travaux terminés",
+        location,
+      });
+
+      expect(scopedHttp.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: "post",
+          path: "/interventions/int-1/complete",
+          body: expect.objectContaining({
+            notes: "Travaux terminés",
+            location,
+          }),
+        }),
+      );
+      expect(result.endLocation).toEqual(location);
+    });
+  });
 });

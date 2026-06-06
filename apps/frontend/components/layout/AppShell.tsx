@@ -28,6 +28,7 @@ interface MenuSection {
 
 function isLinkActive(currentPath: string, href: string): boolean {
   if (href === "/") return currentPath === "/";
+  if (href === "/my-day") return currentPath === "/my-day";
   if (href === "/users") {
     return currentPath === "/users" || currentPath.startsWith("/users/");
   }

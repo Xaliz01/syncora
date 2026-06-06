@@ -56,6 +56,8 @@ function getEntityRoute(entityType: NotificationEntityType, entityId: string): s
       return `/organization`;
     case "user":
       return `/users`;
+    case "intervention":
+      return `/my-day`;
     default:
       return null;
   }

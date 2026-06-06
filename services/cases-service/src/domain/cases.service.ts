@@ -7,6 +7,8 @@ import {
   type CaseHistoryEntryResponse,
   type CaseResponse,
   type CaseSummaryResponse,
+  type CompleteInterventionBody,
+  type CompleteInterventionResponse,
   type CreateCaseBody,
   type CreateCaseHistoryBody,
   type CreateCaseTemplateBody,
@@ -17,6 +19,8 @@ import {
   type DashboardTodoItem,
   type DashboardTodoCaseItem,
   type InterventionResponse,
+  type StartInterventionBody,
+  type StartInterventionResponse,
   type UpdateCaseBody,
   type UpdateCaseTemplateBody,
   type UpdateInterventionBody,
@@ -414,6 +418,57 @@ export class CasesService extends AbstractCasesService {
       { $inc: { interventionCount: -1 } },
     );
     return { deleted: true };
+  }
+
+  async startIntervention(
+    id: string,
+    body: StartInterventionBody,
+  ): Promise<StartInterventionResponse> {
+    const doc = await this.interventionModel
+      .findOne({ _id: id, organizationId: body.organizationId, ...activeDocumentFilter })
+      .exec();
+    if (!doc) throw new NotFoundException("Intervention not found");
+    if (doc.status !== "planned") {
+      throw new ConflictException(
+        `Cannot start intervention in status "${doc.status}" — only "planned" interventions can be started`,
+      );
+    }
+    const now = new Date();
+    const update: Record<string, unknown> = { status: "in_progress", startedAt: now };
+    if (body.location) update.startLocation = body.location;
+    await this.interventionModel.updateOne({ _id: id }, { $set: update });
+    return {
+      id: doc._id.toString(),
+      status: "in_progress",
+      startedAt: now.toISOString(),
+      startLocation: body.location,
+    };
+  }
+
+  async completeIntervention(
+    id: string,
+    body: CompleteInterventionBody,
+  ): Promise<CompleteInterventionResponse> {
+    const doc = await this.interventionModel
+      .findOne({ _id: id, organizationId: body.organizationId, ...activeDocumentFilter })
+      .exec();
+    if (!doc) throw new NotFoundException("Intervention not found");
+    if (doc.status !== "in_progress") {
+      throw new ConflictException(
+        `Cannot complete intervention in status "${doc.status}" — only "in_progress" interventions can be completed`,
+      );
+    }
+    const now = new Date();
+    const update: Record<string, unknown> = { status: "completed", completedAt: now };
+    if (body.notes !== undefined) update.notes = body.notes;
+    if (body.location) update.endLocation = body.location;
+    await this.interventionModel.updateOne({ _id: id }, { $set: update });
+    return {
+      id: doc._id.toString(),
+      status: "completed",
+      completedAt: now.toISOString(),
+      endLocation: body.location,
+    };
   }
 
   // ── Dashboard ──
@@ -883,6 +938,10 @@ export class CasesService extends AbstractCasesService {
       assignedTeamName: doc.assignedTeamName,
       scheduledStart: doc.scheduledStart?.toISOString(),
       scheduledEnd: doc.scheduledEnd?.toISOString(),
+      startedAt: doc.startedAt?.toISOString(),
+      completedAt: doc.completedAt?.toISOString(),
+      startLocation: doc.startLocation,
+      endLocation: doc.endLocation,
       notes: doc.notes,
       createdAt: doc.get("createdAt")?.toISOString(),
       updatedAt: doc.get("updatedAt")?.toISOString(),

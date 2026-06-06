@@ -8,6 +8,13 @@ export type CaseStatus = "draft" | "open" | "in_progress" | "waiting" | "complet
 
 export type InterventionStatus = "planned" | "in_progress" | "completed" | "cancelled";
 
+/** Coordonnées GPS légères (géolocalisation terrain). */
+export interface GeoLocation {
+  latitude: number;
+  longitude: number;
+  accuracy?: number;
+}
+
 export type TodoItemStatus = "pending" | "done" | "skipped";
 export type CasePriority = "low" | "medium" | "high" | "urgent";
 
@@ -235,10 +242,41 @@ export interface InterventionResponse {
   assignedTeamName?: string;
   scheduledStart?: string;
   scheduledEnd?: string;
+  startedAt?: string;
+  completedAt?: string;
+  startLocation?: GeoLocation;
+  endLocation?: GeoLocation;
   notes?: string;
   createdAt?: string;
   updatedAt?: string;
   isTestData?: boolean;
+}
+
+// ── Intervention terrain actions ──
+
+export interface StartInterventionBody {
+  organizationId: string;
+  location?: GeoLocation;
+}
+
+export interface CompleteInterventionBody {
+  organizationId: string;
+  notes?: string;
+  location?: GeoLocation;
+}
+
+export interface StartInterventionResponse {
+  id: string;
+  status: InterventionStatus;
+  startedAt: string;
+  startLocation?: GeoLocation;
+}
+
+export interface CompleteInterventionResponse {
+  id: string;
+  status: InterventionStatus;
+  completedAt: string;
+  endLocation?: GeoLocation;
 }
 
 // ── Todo actions ──
@@ -263,6 +301,8 @@ export type CaseHistoryAction =
   | "intervention_created"
   | "intervention_updated"
   | "intervention_deleted"
+  | "intervention_started"
+  | "intervention_completed"
   | "document_uploaded"
   | "document_deleted"
   | "case_deleted";

@@ -185,6 +185,25 @@ export function deleteIntervention(interventionId: string) {
   return casesRequest<{ deleted: true }>("DELETE", `/cases/interventions/${interventionId}`);
 }
 
+export function startIntervention(interventionId: string, payload?: { location?: GeoLocation }) {
+  return casesRequest<StartInterventionResponse>(
+    "POST",
+    `/cases/interventions/${interventionId}/start`,
+    payload ?? {},
+  );
+}
+
+export function completeIntervention(
+  interventionId: string,
+  payload?: { notes?: string; location?: GeoLocation },
+) {
+  return casesRequest<CompleteInterventionResponse>(
+    "POST",
+    `/cases/interventions/${interventionId}/complete`,
+    payload ?? {},
+  );
+}
+
 // ── History ──
 
 export function listCaseHistory(caseId: string) {
