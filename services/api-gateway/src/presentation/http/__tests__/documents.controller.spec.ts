@@ -74,6 +74,37 @@ describe("DocumentsController", () => {
       );
       expect(result).toEqual({ id: "doc-1", originalName: "report.pdf" });
     });
+
+    it("should upload a photo to an intervention entity", async () => {
+      const entityType = "intervention" as DocumentEntityType;
+      const entityId = "intervention-1";
+      const file = {
+        originalname: "chantier.jpg",
+        size: 2048,
+        mimetype: "image/jpeg",
+      } as Express.Multer.File;
+      mockDocumentsService.upload.mockResolvedValue({
+        id: "doc-2",
+        originalName: "chantier.jpg",
+        entityType: "intervention",
+        entityId: "intervention-1",
+      } as never);
+
+      const result = await controller.upload(mockUser, entityType, entityId, file);
+
+      expect(mockDocumentsService.upload).toHaveBeenCalledWith(
+        mockUser,
+        "intervention",
+        "intervention-1",
+        file,
+      );
+      expect(result).toEqual({
+        id: "doc-2",
+        originalName: "chantier.jpg",
+        entityType: "intervention",
+        entityId: "intervention-1",
+      });
+    });
   });
 
   describe("downloadFile", () => {
@@ -128,6 +159,23 @@ describe("DocumentsController", () => {
         "case-1",
       );
       expect(result).toEqual([{ id: "doc-1" }]);
+    });
+
+    it("should list documents (photos) attached to an intervention", async () => {
+      const entityType = "intervention" as DocumentEntityType;
+      mockDocumentsService.listByEntity.mockResolvedValue([
+        { id: "doc-1", originalName: "photo1.jpg", mimeType: "image/jpeg" },
+        { id: "doc-2", originalName: "photo2.png", mimeType: "image/png" },
+      ] as never);
+
+      const result = await controller.listByEntity(mockUser, entityType, "intervention-1");
+
+      expect(mockDocumentsService.listByEntity).toHaveBeenCalledWith(
+        mockUser,
+        "intervention",
+        "intervention-1",
+      );
+      expect(result).toHaveLength(2);
     });
   });
 });

@@ -122,6 +122,33 @@ describe("DocumentsController", () => {
       ).rejects.toThrow(BadRequestException);
       expect(mockDocumentsService.upload).not.toHaveBeenCalled();
     });
+
+    it("should accept intervention as a valid entityType", async () => {
+      mockDocumentsService.upload.mockResolvedValue({ id: "doc-2" } as never);
+
+      const quota = String(BASE_SUBSCRIPTION_STORAGE_BYTES);
+      const result = await controller.upload(
+        mockFile,
+        "org-1",
+        "intervention",
+        "intervention-1",
+        "user-1",
+        quota,
+      );
+
+      expect(mockDocumentsService.upload).toHaveBeenCalledWith({
+        organizationId: "org-1",
+        entityType: "intervention",
+        entityId: "intervention-1",
+        uploadedBy: "user-1",
+        originalName: "file.pdf",
+        mimeType: "application/pdf",
+        size: 1024,
+        buffer: mockFile.buffer,
+        storageQuotaBytes: BASE_SUBSCRIPTION_STORAGE_BYTES,
+      });
+      expect(result.id).toBe("doc-2");
+    });
   });
 
   describe("listByEntity", () => {
@@ -146,6 +173,21 @@ describe("DocumentsController", () => {
         BadRequestException,
       );
       expect(mockDocumentsService.listByEntity).not.toHaveBeenCalled();
+    });
+
+    it("should list documents for intervention entityType", async () => {
+      mockDocumentsService.listByEntity.mockResolvedValue([
+        { id: "doc-1", originalName: "photo.jpg" },
+      ] as never);
+
+      const result = await controller.listByEntity("org-1", "intervention", "intervention-1");
+
+      expect(mockDocumentsService.listByEntity).toHaveBeenCalledWith(
+        "org-1",
+        "intervention",
+        "intervention-1",
+      );
+      expect(result).toHaveLength(1);
     });
   });
 

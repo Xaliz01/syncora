@@ -22,6 +22,7 @@ import { AbstractStorageProvider } from "../../infrastructure/storage.port";
 
 const VALID_ENTITY_TYPES: DocumentEntityType[] = [
   "case",
+  "intervention",
   "vehicle",
   "team",
   "technician",

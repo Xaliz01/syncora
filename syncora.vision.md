@@ -2,7 +2,7 @@
 
 > Document de référence pour l’équipe et les assistants de développement.  
 > Complète `syncora.product.config.yml` (entités, auth) par le **pourquoi**, la **cible** et le **cap** des évolutions.  
-> Dernière mise à jour : mai 2026.
+> Dernière mise à jour : juin 2026.
 
 ---
 
@@ -81,10 +81,11 @@ Référence technique : landing `apps/frontend/components/landing/LandingPage.ts
 - **Organisations** multi-tenant, utilisateurs, invitations, profils de permissions granulaires.
 - **Clients** : personne physique / morale, adresse, coordonnées, notes.
 - **Dossiers** : statuts, priorités, échéances, modèles paramétrables (étapes, tâches, règles dashboard), historique, assignation.
-- **Interventions** : liées aux dossiers, statuts (`planned`, `in_progress`, `completed`, `cancelled`), calendrier (semaine / mois), drag-and-drop.
+- **Interventions** : liées aux dossiers, statuts (`planned`, `in_progress`, `completed`, `cancelled`), calendrier (semaine / mois), drag-and-drop, actions terrain (démarrer/terminer avec géolocalisation), **photos terrain** rattachées à l'intervention.
+- **Terrain mobile** : vue « Ma journée » (interventions du jour, filtres technicien, auto-refresh), identification automatique du technicien connecté.
 - **Flotte** : véhicules, techniciens, équipes, agences ; lien équipe ↔ véhicule.
 - **Stock** : articles, mouvements, alertes stock bas, consommation sur intervention.
-- **Documents** : pièces jointes dossier (images, PDF), quota 10 Go, addon stockage +50 Go.
+- **Documents** : pièces jointes dossier et intervention (images, PDF), quota 10 Go, addon stockage +50 Go.
 - **Pilotage** : tableau de bord (stats cliquables, tâches à faire), recherche globale, notifications in-app.
 - **Abonnement** : Stripe (essai 15 j, 2 users inclus, addons users / suggestion équipe / stockage).
 - **Addon** : suggestion intelligente d’équipe (distance, trajet, carburant, CO₂ — géocodage adresses).
@@ -97,7 +98,7 @@ Référence technique : landing `apps/frontend/components/landing/LandingPage.ts
 - Pas de **devis / facturation** métier intégrés.
 - Pas de **portail client** ni SMS/email automatiques métier.
 - Stock **global** par organisation (entrepôts multi-sites : entité prévue, non implémentée).
-- Clôture intervention surtout depuis le **bureau** ; pas de signature ni rapport PDF chantier dédié.
+- Clôture intervention depuis le bureau ou le mobile (photos terrain OK) ; pas de signature ni rapport PDF chantier dédié.
 - Pas d’**API publique** partenaires ni d’automatisations type workflow builder.
 
 ---
@@ -129,18 +130,18 @@ Objectif : remplacer Excel + agenda partagé pour le suivi interne.
 - Clients, flotte, stock léger, permissions, abonnement
 - Dashboard, recherche, notifications in-app
 
-### Phase 1 — Terrain TPE (priorité haute) `⬜`
+### Phase 1 — Terrain TPE (priorité haute) `🟡`
 
 Objectif : le technicien clôture sa journée **sur le téléphone** ; le patron a une preuve client.
 
-| #   | Évolution                                                                                 | Pourquoi (TPE)                          |
-| --- | ----------------------------------------------------------------------------------------- | --------------------------------------- |
-| 1.1 | **Vue « Ma journée »** mobile (interventions du jour, filtres technicien)                 | Usage quotidien chantier                |
-| 1.2 | Actions terrain : **Démarrer / Terminer** intervention (horodatage, option géoloc légère) | Traçabilité simple                      |
-| 1.3 | **Photos** rattachées à l’intervention (pas seulement au dossier)                         | Preuve travaux                          |
-| 1.4 | **Signature client** + génération **PDF rapport** d’intervention                          | Confiance client, litiges               |
-| 1.5 | **PWA** (installable, cache minimal des listes du jour)                                   | Artisans sans « app store » obligatoire |
-| 1.6 | Notifications **email** basiques (intervention planifiée / terminée)                      | Rappels sans portail lourd              |
+| #   | Évolution                                                                                 | Pourquoi (TPE)                          | Statut |
+| --- | ----------------------------------------------------------------------------------------- | --------------------------------------- | ------ |
+| 1.1 | **Vue « Ma journée »** mobile (interventions du jour, filtres technicien)                 | Usage quotidien chantier                | ✅     |
+| 1.2 | Actions terrain : **Démarrer / Terminer** intervention (horodatage, option géoloc légère) | Traçabilité simple                      | ✅     |
+| 1.3 | **Photos** rattachées à l'intervention (pas seulement au dossier)                         | Preuve travaux                          | ✅     |
+| 1.4 | **Signature client** + génération **PDF rapport** d'intervention                          | Confiance client, litiges               | ⬜     |
+| 1.5 | **PWA** (installable, cache minimal des listes du jour)                                   | Artisans sans « app store » obligatoire | ⬜     |
+| 1.6 | Notifications **email** basiques (intervention planifiée / terminée)                      | Rappels sans portail lourd              | ⬜     |
 
 _Hors scope phase 1_ : GPS temps réel permanent, portail client self-service.
 
