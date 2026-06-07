@@ -13,6 +13,8 @@ import type {
   DashboardStatFilter,
   DashboardTodoCaseItem,
   InterventionResponse,
+  SignInterventionBody,
+  SignInterventionResponse,
   StartInterventionBody,
   StartInterventionResponse,
   UpdateCaseBody,
@@ -70,6 +72,14 @@ export abstract class AbstractCasesService {
     id: string,
     body: CompleteInterventionBody,
   ): Promise<CompleteInterventionResponse>;
+  abstract signIntervention(
+    id: string,
+    body: SignInterventionBody,
+  ): Promise<SignInterventionResponse>;
+  abstract getInterventionWithSignature(
+    id: string,
+    organizationId: string,
+  ): Promise<{ signatureData?: string; signatoryName?: string }>;
   abstract getDashboard(
     organizationId: string,
     userId: string,

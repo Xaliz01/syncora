@@ -21,7 +21,10 @@ import type {
   CustomerResponse,
   DashboardStatFilter,
   DashboardTodoCaseItem,
+  DocumentResponse,
   InterventionResponse,
+  SignInterventionBody,
+  SignInterventionResponse,
   StartInterventionBody,
   StartInterventionResponse,
   TeamResponse,
@@ -33,6 +36,7 @@ import type {
   UserPermissionAssignmentResponse,
   UserResponse,
 } from "@syncora/shared";
+import PDFDocument from "pdfkit";
 import { assertAnyAssignablePermission } from "../infrastructure/permission-checks";
 import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
 import { AbstractCustomersGatewayService } from "./ports/customers.service.port";
@@ -44,6 +48,7 @@ import {
   type UpdateTemplateForOrgBody,
   type CompleteInterventionForOrgBody,
   type CreateInterventionForOrgBody,
+  type SignInterventionForOrgBody,
   type StartInterventionForOrgBody,
   type UpdateInterventionForOrgBody,
   type UpdateTodoForOrgBody,
@@ -53,6 +58,7 @@ const CASES_URL = process.env.CASES_SERVICE_URL ?? "http://localhost:3004";
 const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
 const PERMISSIONS_URL = process.env.PERMISSIONS_SERVICE_URL ?? "http://localhost:3003";
 const TECHNICIANS_URL = process.env.TECHNICIANS_SERVICE_URL ?? "http://localhost:3006";
+const DOCUMENTS_URL = process.env.DOCUMENTS_SERVICE_URL ?? "http://localhost:3011";
 
 @Injectable()
 export class CasesGatewayService extends AbstractCasesGatewayService {
@@ -476,6 +482,354 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       caseId: intervention.caseId,
       caseTitle: intervention.caseTitle,
     };
+  }
+
+  // ── Signature ──
+
+  async signIntervention(user: AuthUser, interventionId: string, body: SignInterventionForOrgBody) {
+    const intervention = await this.callCasesService<InterventionResponse>(user.organizationId, {
+      method: "get",
+      path: `/interventions/${interventionId}`,
+      query: { organizationId: user.organizationId },
+    });
+    const result = await this.callCasesService<SignInterventionResponse>(user.organizationId, {
+      method: "post",
+      path: `/interventions/${interventionId}/sign`,
+      body: {
+        organizationId: user.organizationId,
+        ...body,
+      } as SignInterventionBody,
+    });
+    this.recordHistory(
+      user.organizationId,
+      intervention.caseId,
+      user.id,
+      user.name ?? user.email,
+      "intervention_signed",
+      `Signé par ${body.signatoryName}`,
+    );
+    return result;
+  }
+
+  // ── Report PDF ──
+
+  async generateInterventionReport(user: AuthUser, interventionId: string): Promise<Buffer> {
+    const [intervention, caseData, signatureResult] = await Promise.all([
+      this.callCasesService<InterventionResponse>(user.organizationId, {
+        method: "get",
+        path: `/interventions/${interventionId}`,
+        query: { organizationId: user.organizationId },
+      }),
+      this.fetchCaseForReport(user, interventionId),
+      this.fetchSignatureData(user.organizationId, interventionId),
+    ]);
+
+    const customer = caseData?.customer;
+    const photos = await this.fetchInterventionPhotos(user, interventionId);
+
+    return this.buildReportPdf(intervention, caseData, customer, photos, signatureResult);
+  }
+
+  private async fetchCaseForReport(
+    user: AuthUser,
+    interventionId: string,
+  ): Promise<CaseResponse | undefined> {
+    try {
+      const intervention = await this.callCasesService<InterventionResponse>(user.organizationId, {
+        method: "get",
+        path: `/interventions/${interventionId}`,
+        query: { organizationId: user.organizationId },
+      });
+      return await this.callCasesService<CaseResponse>(user.organizationId, {
+        method: "get",
+        path: `/cases/${intervention.caseId}`,
+        query: { organizationId: user.organizationId },
+      }).then((c) => this.enrichCaseResponse(user, c));
+    } catch {
+      return undefined;
+    }
+  }
+
+  private async fetchSignatureData(
+    organizationId: string,
+    interventionId: string,
+  ): Promise<{ signatureData?: string; signatoryName?: string }> {
+    try {
+      return await this.callCasesService<{ signatureData?: string; signatoryName?: string }>(
+        organizationId,
+        {
+          method: "get",
+          path: `/interventions/${interventionId}/signature-image`,
+          query: { organizationId },
+        },
+      );
+    } catch {
+      return {};
+    }
+  }
+
+  private async fetchInterventionPhotos(
+    user: AuthUser,
+    interventionId: string,
+  ): Promise<{ data: Buffer; mimeType: string }[]> {
+    try {
+      const docs = await firstValueFrom(
+        this.httpService.get<DocumentResponse[]>(`${DOCUMENTS_URL}/documents`, {
+          params: {
+            organizationId: user.organizationId,
+            entityType: "intervention",
+            entityId: interventionId,
+          },
+        }),
+      ).then((r) => r.data);
+
+      const images = docs.filter((d) => d.mimeType.startsWith("image/"));
+      const results: { data: Buffer; mimeType: string }[] = [];
+
+      for (const img of images.slice(0, 6)) {
+        try {
+          const urlRes = await firstValueFrom(
+            this.httpService.get<{ url: string }>(
+              `${DOCUMENTS_URL}/documents/${img.id}/download-url`,
+              { params: { organizationId: user.organizationId } },
+            ),
+          );
+          let downloadUrl = urlRes.data.url;
+          if (downloadUrl.startsWith("/documents/download/")) {
+            downloadUrl = `${DOCUMENTS_URL}${downloadUrl}`;
+          }
+          const fileRes = await firstValueFrom(
+            this.httpService.get(downloadUrl, { responseType: "arraybuffer" }),
+          );
+          results.push({ data: Buffer.from(fileRes.data), mimeType: img.mimeType });
+        } catch {
+          /* skip photos that fail to download */
+        }
+      }
+      return results;
+    } catch {
+      return [];
+    }
+  }
+
+  private buildReportPdf(
+    intervention: InterventionResponse,
+    caseData: CaseResponse | undefined,
+    customer: CaseCustomerRef | undefined,
+    photos: { data: Buffer; mimeType: string }[],
+    signatureResult: { signatureData?: string; signatoryName?: string },
+  ): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({ size: "A4", margin: 50 });
+      const chunks: Buffer[] = [];
+      doc.on("data", (chunk: Buffer) => chunks.push(chunk));
+      doc.on("end", () => resolve(Buffer.concat(chunks)));
+      doc.on("error", reject);
+
+      const brandColor = "#6d28d9";
+      const textColor = "#1e293b";
+      const mutedColor = "#64748b";
+
+      // Header
+      doc
+        .fontSize(22)
+        .fillColor(brandColor)
+        .text("Syncora", 50, 40)
+        .fontSize(10)
+        .fillColor(mutedColor)
+        .text("Rapport d'intervention", 50, 65);
+
+      doc.moveTo(50, 85).lineTo(545, 85).strokeColor("#e2e8f0").lineWidth(1).stroke();
+
+      doc.y = 100;
+
+      // Intervention title & status
+      doc.fontSize(16).fillColor(textColor).text(intervention.title, 50, doc.y, { width: 495 });
+
+      const statusLabels: Record<string, string> = {
+        planned: "Planifiée",
+        in_progress: "En cours",
+        completed: "Terminée",
+        cancelled: "Annulée",
+      };
+      doc
+        .fontSize(10)
+        .fillColor(mutedColor)
+        .text(
+          `Statut : ${statusLabels[intervention.status] ?? intervention.status}`,
+          50,
+          doc.y + 5,
+        );
+
+      doc.y += 15;
+
+      // Case & customer info
+      if (caseData) {
+        this.pdfSection(doc, "Dossier");
+        this.pdfField(doc, "Titre", caseData.title);
+        if (caseData.description) this.pdfField(doc, "Description", caseData.description);
+      }
+
+      if (customer) {
+        this.pdfSection(doc, "Client");
+        this.pdfField(doc, "Nom", customer.displayName);
+        if (customer.email) this.pdfField(doc, "Email", customer.email);
+        if (customer.phone) this.pdfField(doc, "Téléphone", customer.phone);
+        if (customer.mobile) this.pdfField(doc, "Mobile", customer.mobile);
+        if (customer.address) {
+          const addr = [
+            customer.address.line1,
+            customer.address.line2,
+            [customer.address.postalCode, customer.address.city].filter(Boolean).join(" "),
+            customer.address.country,
+          ]
+            .filter(Boolean)
+            .join(", ");
+          this.pdfField(doc, "Adresse", addr);
+        }
+      }
+
+      // Intervention details
+      this.pdfSection(doc, "Détails de l'intervention");
+      if (intervention.description) {
+        this.pdfField(doc, "Description", intervention.description);
+      }
+      if (intervention.assigneeName) {
+        this.pdfField(doc, "Technicien", intervention.assigneeName);
+      }
+      if (intervention.assignedTeamName) {
+        this.pdfField(doc, "Équipe", intervention.assignedTeamName);
+      }
+      if (intervention.scheduledStart) {
+        this.pdfField(
+          doc,
+          "Planifié",
+          this.formatDateTimeFr(intervention.scheduledStart) +
+            (intervention.scheduledEnd
+              ? ` → ${this.formatDateTimeFr(intervention.scheduledEnd)}`
+              : ""),
+        );
+      }
+      if (intervention.startedAt) {
+        this.pdfField(doc, "Démarré", this.formatDateTimeFr(intervention.startedAt));
+      }
+      if (intervention.completedAt) {
+        this.pdfField(doc, "Terminé", this.formatDateTimeFr(intervention.completedAt));
+      }
+      if (intervention.startedAt && intervention.completedAt) {
+        const ms =
+          new Date(intervention.completedAt).getTime() - new Date(intervention.startedAt).getTime();
+        const hours = Math.floor(ms / 3600000);
+        const minutes = Math.floor((ms % 3600000) / 60000);
+        this.pdfField(
+          doc,
+          "Durée",
+          hours > 0 ? `${hours}h${String(minutes).padStart(2, "0")}` : `${minutes}min`,
+        );
+      }
+      if (intervention.notes) {
+        this.pdfField(doc, "Notes", intervention.notes);
+      }
+
+      // Photos
+      if (photos.length > 0) {
+        this.pdfSection(doc, "Photos terrain");
+        const photoWidth = 150;
+        const photoHeight = 112;
+        const gap = 15;
+        let x = 50;
+
+        for (const photo of photos) {
+          if (doc.y + photoHeight > 750) {
+            doc.addPage();
+            x = 50;
+          }
+          try {
+            doc.image(photo.data, x, doc.y, {
+              fit: [photoWidth, photoHeight],
+            });
+          } catch {
+            /* skip invalid images */
+          }
+          x += photoWidth + gap;
+          if (x + photoWidth > 545) {
+            x = 50;
+            doc.y += photoHeight + gap;
+          }
+        }
+        if (x > 50) {
+          doc.y += photoHeight + gap;
+        }
+      }
+
+      // Signature
+      if (signatureResult.signatureData) {
+        if (doc.y + 120 > 750) doc.addPage();
+        this.pdfSection(doc, "Signature client");
+        if (signatureResult.signatoryName) {
+          this.pdfField(doc, "Nom", signatureResult.signatoryName);
+        }
+        if (intervention.signedAt) {
+          this.pdfField(doc, "Date", this.formatDateTimeFr(intervention.signedAt));
+        }
+        try {
+          const sigBuffer = this.dataUrlToBuffer(signatureResult.signatureData);
+          if (sigBuffer) {
+            doc.image(sigBuffer, 50, doc.y + 5, { fit: [200, 80] });
+            doc.y += 90;
+          }
+        } catch {
+          /* skip invalid signature */
+        }
+      }
+
+      // Footer
+      doc.moveTo(50, 780).lineTo(545, 780).strokeColor("#e2e8f0").lineWidth(0.5).stroke();
+      doc
+        .fontSize(8)
+        .fillColor(mutedColor)
+        .text(`Généré le ${this.formatDateTimeFr(new Date().toISOString())} — Syncora`, 50, 785, {
+          align: "center",
+          width: 495,
+        });
+
+      doc.end();
+    });
+  }
+
+  private pdfSection(doc: PDFKit.PDFDocument, title: string): void {
+    doc.y += 10;
+    doc.fontSize(12).fillColor("#6d28d9").text(title, 50, doc.y, { width: 495 });
+    doc.y += 3;
+    doc.moveTo(50, doc.y).lineTo(545, doc.y).strokeColor("#e2e8f0").lineWidth(0.5).stroke();
+    doc.y += 8;
+  }
+
+  private pdfField(doc: PDFKit.PDFDocument, label: string, value: string): void {
+    doc
+      .fontSize(9)
+      .fillColor("#64748b")
+      .text(`${label} :`, 50, doc.y, { continued: true, width: 100 })
+      .fillColor("#1e293b")
+      .text(` ${value}`, { width: 395 });
+    doc.y += 3;
+  }
+
+  private formatDateTimeFr(iso: string): string {
+    const d = new Date(iso);
+    return d.toLocaleDateString("fr-FR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  private dataUrlToBuffer(dataUrl: string): Buffer | null {
+    const match = dataUrl.match(/^data:[^;]+;base64,(.+)$/);
+    if (!match) return null;
+    return Buffer.from(match[1], "base64");
   }
 
   // ── Dashboard ──

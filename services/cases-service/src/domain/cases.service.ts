@@ -19,6 +19,8 @@ import {
   type DashboardTodoItem,
   type DashboardTodoCaseItem,
   type InterventionResponse,
+  type SignInterventionBody,
+  type SignInterventionResponse,
   type StartInterventionBody,
   type StartInterventionResponse,
   type UpdateCaseBody,
@@ -483,6 +485,52 @@ export class CasesService extends AbstractCasesService {
       completedAt: now.toISOString(),
       endLocation: body.location,
     };
+  }
+
+  async signIntervention(
+    id: string,
+    body: SignInterventionBody,
+  ): Promise<SignInterventionResponse> {
+    const doc = await this.interventionModel
+      .findOne({ _id: id, organizationId: body.organizationId, ...activeDocumentFilter })
+      .exec();
+    if (!doc) throw new NotFoundException("Intervention not found");
+    if (doc.status !== "completed") {
+      throw new ConflictException(
+        `Cannot sign intervention in status "${doc.status}" — only completed interventions can be signed`,
+      );
+    }
+    if (doc.signedAt) {
+      throw new ConflictException("Intervention already signed");
+    }
+    const now = new Date();
+    await this.interventionModel.updateOne(
+      { _id: id },
+      {
+        $set: {
+          signatoryName: body.signatoryName,
+          signatureData: body.signatureData,
+          signedAt: now,
+        },
+      },
+    );
+    return {
+      id: doc._id.toString(),
+      signatoryName: body.signatoryName,
+      signedAt: now.toISOString(),
+    };
+  }
+
+  async getInterventionWithSignature(
+    id: string,
+    organizationId: string,
+  ): Promise<{ signatureData?: string; signatoryName?: string }> {
+    const doc = await this.interventionModel
+      .findOne({ _id: id, organizationId, ...activeDocumentFilter })
+      .select("signatureData signatoryName")
+      .exec();
+    if (!doc) throw new NotFoundException("Intervention not found");
+    return { signatureData: doc.signatureData, signatoryName: doc.signatoryName };
   }
 
   // ── Dashboard ──
@@ -957,6 +1005,8 @@ export class CasesService extends AbstractCasesService {
       startLocation: doc.startLocation,
       endLocation: doc.endLocation,
       notes: doc.notes,
+      signatoryName: doc.signatoryName,
+      signedAt: doc.signedAt?.toISOString(),
       createdAt: doc.get("createdAt")?.toISOString(),
       updatedAt: doc.get("updatedAt")?.toISOString(),
       isTestData: doc.isTestData === true,

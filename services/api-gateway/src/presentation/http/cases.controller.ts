@@ -9,8 +9,10 @@ import {
   Post,
   Put,
   Query,
+  Res,
   UseGuards,
 } from "@nestjs/common";
+import type { Response } from "express";
 import { isDashboardStatFilter } from "@syncora/shared";
 import { AbstractCasesGatewayService } from "../../domain/ports/cases.service.port";
 import type {
@@ -18,6 +20,7 @@ import type {
   CompleteInterventionForOrgBody,
   CreateInterventionForOrgBody,
   CreateTemplateForOrgBody,
+  SignInterventionForOrgBody,
   UpdateCaseForOrgBody,
   StartInterventionForOrgBody,
   UpdateInterventionForOrgBody,
@@ -247,6 +250,37 @@ export class CasesController {
     @Body() body: CompleteInterventionForOrgBody,
   ) {
     return this.casesService.completeIntervention(user, interventionId, body);
+  }
+
+  @Post("interventions/:interventionId/sign")
+  @RequirePermissions("interventions.sign")
+  @NotifyEntity({
+    type: "intervention",
+    idParam: "interventionId",
+    fixedDetail: "Intervention signée par le client",
+  })
+  async signIntervention(
+    @CurrentUser() user: AuthUser,
+    @Param("interventionId") interventionId: string,
+    @Body() body: SignInterventionForOrgBody,
+  ) {
+    return this.casesService.signIntervention(user, interventionId, body);
+  }
+
+  @Get("interventions/:interventionId/report")
+  @RequirePermissions("interventions.read")
+  async generateInterventionReport(
+    @CurrentUser() user: AuthUser,
+    @Param("interventionId") interventionId: string,
+    @Res() res: Response,
+  ) {
+    const pdfBuffer = await this.casesService.generateInterventionReport(user, interventionId);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="rapport-intervention-${interventionId}.pdf"`,
+    );
+    res.send(pdfBuffer);
   }
 
   @Get("dashboard")

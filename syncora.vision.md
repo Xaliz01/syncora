@@ -98,7 +98,7 @@ Référence technique : landing `apps/frontend/components/landing/LandingPage.ts
 - Pas de **devis / facturation** métier intégrés.
 - Pas de **portail client** ni SMS/email automatiques métier.
 - Stock **global** par organisation (entrepôts multi-sites : entité prévue, non implémentée).
-- Clôture intervention depuis le bureau ou le mobile (photos terrain OK) ; pas de signature ni rapport PDF chantier dédié.
+- Clôture intervention depuis le bureau ou le mobile (photos terrain OK) ; **signature client** et **rapport PDF** disponibles sur intervention terminée.
 - Pas d’**API publique** partenaires ni d’automatisations type workflow builder.
 
 ---
@@ -139,7 +139,7 @@ Objectif : le technicien clôture sa journée **sur le téléphone** ; le patron
 | 1.1 | **Vue « Ma journée »** mobile (interventions du jour, filtres technicien)                 | Usage quotidien chantier                | ✅     |
 | 1.2 | Actions terrain : **Démarrer / Terminer** intervention (horodatage, option géoloc légère) | Traçabilité simple                      | ✅     |
 | 1.3 | **Photos** rattachées à l'intervention (pas seulement au dossier)                         | Preuve travaux                          | ✅     |
-| 1.4 | **Signature client** + génération **PDF rapport** d'intervention                          | Confiance client, litiges               | ⬜     |
+| 1.4 | **Signature client** + génération **PDF rapport** d'intervention                          | Confiance client, litiges               | ✅     |
 | 1.5 | **PWA** (installable, cache minimal des listes du jour)                                   | Artisans sans « app store » obligatoire | ⬜     |
 | 1.6 | Notifications **email** basiques (intervention planifiée / terminée)                      | Rappels sans portail lourd              | ⬜     |
 
