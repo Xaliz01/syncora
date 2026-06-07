@@ -1,12 +1,16 @@
 "use client";
 
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/components/auth/AuthContext";
+import { usePermissions } from "@/lib/hooks/usePermissions";
 import { useToast } from "@/components/ui/ToastProvider";
 import { PermissionGate } from "@/components/auth/PermissionGate";
-import { InterventionPhotos } from "@/components/interventions/InterventionPhotos";
+import {
+  InterventionPhotos,
+  type InterventionPhotosHandle,
+} from "@/components/interventions/InterventionPhotos";
 import * as api from "@/lib/cases.api";
 import type { GeoLocation, InterventionResponse, InterventionStatus } from "@syncora/shared";
 
@@ -86,7 +90,12 @@ function InterventionCard({
   onComplete: (id: string) => void;
   isActing: boolean;
 }) {
+  const { can } = usePermissions();
+  const photosRef = useRef<InterventionPhotosHandle>(null);
   const status = intervention.status;
+  const canUpdateIntervention = can("interventions.update");
+  const showPhotos = status === "in_progress" || status === "completed";
+  const photosReadOnly = status === "completed" || !canUpdateIntervention;
   const scheduleDuration = formatDuration(intervention.scheduledStart, intervention.scheduledEnd);
   const actualDuration = formatDuration(intervention.startedAt, intervention.completedAt);
 
@@ -221,22 +230,52 @@ function InterventionCard({
             </button>
           )}
           {status === "in_progress" && (
-            <button
-              onClick={() => onComplete(intervention.id)}
-              disabled={isActing}
-              className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-green-500 hover:bg-green-600 active:bg-green-700 text-white font-medium text-sm py-2.5 px-4 transition disabled:opacity-50 shadow-sm"
-            >
-              <svg
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2.5}
+            <>
+              <button
+                type="button"
+                onClick={() => photosRef.current?.openCamera()}
+                disabled={isActing}
+                aria-label="Prendre une photo"
+                title="Prendre une photo"
+                className="flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 py-2.5 px-4 transition disabled:opacity-50"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-              </svg>
-              {isActing ? "Finalisation…" : "Terminer"}
-            </button>
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z"
+                  />
+                </svg>
+              </button>
+              <button
+                type="button"
+                onClick={() => onComplete(intervention.id)}
+                disabled={isActing}
+                className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-green-500 hover:bg-green-600 active:bg-green-700 text-white font-medium text-sm py-2.5 px-4 transition disabled:opacity-50 shadow-sm"
+              >
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+                {isActing ? "Finalisation…" : "Terminer"}
+              </button>
+            </>
           )}
           {(status === "planned" || status === "in_progress") && (
             <Link
@@ -258,11 +297,13 @@ function InterventionCard({
       </PermissionGate>
 
       {/* Photos terrain */}
-      {(status === "in_progress" || status === "completed") && (
+      {showPhotos && (
         <InterventionPhotos
+          ref={photosRef}
           interventionId={intervention.id}
           compact
-          readOnly={status === "completed"}
+          readOnly={photosReadOnly}
+          showUploadActions={false}
         />
       )}
     </div>
