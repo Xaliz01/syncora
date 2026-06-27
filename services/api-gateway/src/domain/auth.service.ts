@@ -11,10 +11,14 @@ import { firstValueFrom } from "rxjs";
 import type {
   AcceptInvitationBody,
   RegisterBody,
+  RegisterAccountBody,
   LoginBody,
   AuthResponse,
   AuthUser,
   JwtPayload,
+  OnboardingAuthResponse,
+  OnboardingJwtPayload,
+  OnboardingUser,
   EffectivePermissionsResponse,
   InvitationResponse,
   OrganizationMembershipResponse,
@@ -25,8 +29,21 @@ import type {
   CreateOrganizationBody,
   SwitchOrganizationBody,
   TechnicianResponse,
+  AccountUserResponse,
 } from "@syncora/shared";
-import { ASSIGNABLE_PERMISSION_CODES } from "@syncora/shared";
+import { ASSIGNABLE_PERMISSION_CODES, isOnboardingJwtPayload } from "@syncora/shared";
+
+function buildOrganizationCreatePayload(body: CreateOrganizationBody): CreateOrganizationBody {
+  return {
+    name: body.name.trim(),
+    siret: body.siret.trim(),
+    addressLine1: body.addressLine1?.trim() || undefined,
+    addressLine2: body.addressLine2?.trim() || undefined,
+    postalCode: body.postalCode?.trim() || undefined,
+    city: body.city?.trim() || undefined,
+    country: body.country?.trim() || undefined,
+  };
+}
 import { AbstractAuthService } from "./ports/auth.service.port";
 import { AbstractSubscriptionsGatewayService } from "./ports/subscriptions.service.port";
 
@@ -67,12 +84,20 @@ export class AuthService extends AbstractAuthService {
   }
 
   async register(body: RegisterBody): Promise<AuthResponse> {
+    if (!body.organizationSiret?.trim()) {
+      throw new BadRequestException("Le SIRET de l'organisation est requis");
+    }
+
     let org: OrganizationResponse;
     try {
       const res = await firstValueFrom(
-        this.httpService.post<OrganizationResponse>(`${ORGANIZATIONS_URL}/organizations`, {
-          name: body.organizationName,
-        }),
+        this.httpService.post<OrganizationResponse>(
+          `${ORGANIZATIONS_URL}/organizations`,
+          buildOrganizationCreatePayload({
+            name: body.organizationName,
+            siret: body.organizationSiret.trim(),
+          }),
+        ),
       );
       org = res.data;
     } catch (err: unknown) {
@@ -126,7 +151,60 @@ export class AuthService extends AbstractAuthService {
     return { accessToken, user: authUser };
   }
 
-  async login(body: LoginBody): Promise<AuthResponse> {
+  async registerAccount(body: RegisterAccountBody): Promise<OnboardingAuthResponse> {
+    let user: AccountUserResponse;
+    try {
+      const res = await firstValueFrom(
+        this.httpService.post<AccountUserResponse>(`${USERS_URL}/users/accounts`, {
+          email: body.email,
+          password: body.password,
+          name: body.name,
+        }),
+      );
+      user = res.data;
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 409) throw new ConflictException("Un utilisateur avec cet email existe déjà");
+      throw err;
+    }
+
+    return this.issueOnboardingAuth(user);
+  }
+
+  async getOnboardingUser(jwt: OnboardingJwtPayload): Promise<OnboardingUser> {
+    const account = await this.resolveAccountProfile(jwt.sub);
+    if (!account) {
+      throw new UnauthorizedException("Utilisateur introuvable");
+    }
+    return {
+      id: account.id,
+      email: account.email,
+      name: account.name,
+      status: account.status,
+    };
+  }
+
+  private issueOnboardingAuth(user: AccountUserResponse): OnboardingAuthResponse {
+    const payload: OnboardingJwtPayload = {
+      kind: "onboarding",
+      sub: user.id,
+      email: user.email,
+      name: user.name,
+      status: user.status,
+    };
+    const accessToken = this.jwtService.sign(payload, { expiresIn: "1d" });
+    return {
+      accessToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        status: user.status,
+      },
+    };
+  }
+
+  async login(body: LoginBody): Promise<AuthResponse | OnboardingAuthResponse> {
     let user: ValidateCredentialsResponse;
     try {
       const res = await firstValueFrom(
@@ -140,6 +218,15 @@ export class AuthService extends AbstractAuthService {
       const status = (err as { response?: { status?: number } })?.response?.status;
       if (status === 401) throw new UnauthorizedException("Email ou mot de passe incorrect");
       throw err;
+    }
+
+    if (!user.organizationId?.trim() || !user.role) {
+      return this.issueOnboardingAuth({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        status: user.status,
+      });
     }
 
     const permissions = await this.mergePermissionsWithSubscription(
@@ -172,17 +259,39 @@ export class AuthService extends AbstractAuthService {
     return { accessToken, user: authUser };
   }
 
-  async createOrganization(body: CreateOrganizationBody, jwt: JwtPayload): Promise<AuthResponse> {
+  async createOrganization(
+    body: CreateOrganizationBody,
+    actor: JwtPayload | OnboardingJwtPayload,
+  ): Promise<AuthResponse> {
     if (!body.name?.trim()) {
       throw new BadRequestException("Le nom de l’organisation est requis");
+    }
+
+    if (!body.siret?.trim()) {
+      throw new BadRequestException("Le SIRET de l\u2019organisation est requis");
+    }
+
+    const userId = actor.sub;
+    if (isOnboardingJwtPayload(actor)) {
+      const account = await this.resolveAccountProfile(userId);
+      if (!account) {
+        throw new UnauthorizedException("Utilisateur introuvable");
+      }
+      const existingOrgUser = await this.resolveUserProfile(userId);
+      if (existingOrgUser?.organizationId?.trim()) {
+        throw new BadRequestException(
+          "Ce compte est déjà rattaché à une organisation. Connectez-vous pour continuer.",
+        );
+      }
     }
 
     let org: OrganizationResponse;
     try {
       const res = await firstValueFrom(
-        this.httpService.post<OrganizationResponse>(`${ORGANIZATIONS_URL}/organizations`, {
-          name: body.name.trim(),
-        }),
+        this.httpService.post<OrganizationResponse>(
+          `${ORGANIZATIONS_URL}/organizations`,
+          buildOrganizationCreatePayload(body),
+        ),
       );
       org = res.data;
     } catch (err: unknown) {
@@ -193,7 +302,7 @@ export class AuthService extends AbstractAuthService {
 
     await firstValueFrom(
       this.httpService.post<OrganizationMembershipResponse>(
-        `${USERS_URL}/users/${jwt.sub}/organization-memberships`,
+        `${USERS_URL}/users/${userId}/organization-memberships`,
         {
           organizationId: org.id,
           role: "admin",
@@ -205,7 +314,7 @@ export class AuthService extends AbstractAuthService {
     let user: UserResponse;
     try {
       const res = await firstValueFrom(
-        this.httpService.patch<UserResponse>(`${USERS_URL}/users/${jwt.sub}`, {
+        this.httpService.patch<UserResponse>(`${USERS_URL}/users/${userId}`, {
           organizationId: org.id,
         }),
       );
@@ -411,6 +520,18 @@ export class AuthService extends AbstractAuthService {
       return res.data?.id;
     } catch {
       return undefined;
+    }
+  }
+
+  /** Nom / email / statut : rechargés depuis users-service (le JWT peut être obsolète). */
+  private async resolveAccountProfile(userId: string): Promise<AccountUserResponse | null> {
+    try {
+      const res = await firstValueFrom(
+        this.httpService.get<AccountUserResponse>(`${USERS_URL}/users/accounts/${userId}`),
+      );
+      return res.data;
+    } catch {
+      return null;
     }
   }
 

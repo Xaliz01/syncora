@@ -128,7 +128,7 @@ function LandingHeader() {
             href="/register"
             className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-500 transition"
           >
-            Démarrer
+            Essai gratuit
           </Link>
         </div>
       </div>
@@ -150,9 +150,10 @@ export function LandingPage() {
           />
           <div className="relative max-w-6xl mx-auto px-4 py-16 sm:py-24">
             <ScrollReveal when="mount">
-              <p className="text-sm font-medium text-brand-600 dark:text-brand-400 mb-3">
-                CRM des opérations terrain
-              </p>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 dark:border-brand-500/40 bg-brand-50 dark:bg-brand-950/40 px-3 py-1 text-xs font-semibold text-brand-700 dark:text-brand-300 mb-4">
+                <span aria-hidden>✦</span>
+                {BASE_SUBSCRIPTION_PLAN.trialDays} jours d&apos;essai gratuit · sans carte bancaire
+              </span>
             </ScrollReveal>
             <ScrollReveal when="mount" delayMs={80}>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-slate-900 dark:text-white max-w-3xl">
@@ -163,8 +164,12 @@ export function LandingPage() {
               <p className="mt-5 text-lg text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed">
                 Centralisez dossiers, interventions, clients, flotte et stocks. Standardisez vos
                 processus, planifiez vos équipes et gardez une vision claire de votre activité.
-                Pendant l&apos;essai gratuit, injectez en un clic un jeu de données de démonstration
-                pour explorer l&apos;outil sans tout saisir à la main.
+                Essayez Syncora pendant {BASE_SUBSCRIPTION_PLAN.trialDays} jours,{" "}
+                <span className="font-semibold text-slate-900 dark:text-slate-100">
+                  sans aucun moyen de paiement
+                </span>{" "}
+                : injectez en un clic un jeu de données de démonstration pour explorer l&apos;outil
+                sans tout saisir à la main.
               </p>
             </ScrollReveal>
             <ScrollReveal when="mount" delayMs={240}>
@@ -173,7 +178,7 @@ export function LandingPage() {
                   href="/register"
                   className="inline-flex items-center rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-500 transition shadow-sm shadow-brand-600/20"
                 >
-                  Créer mon organisation
+                  Démarrer mon essai gratuit
                 </Link>
                 <Link
                   href="/login"
@@ -182,6 +187,11 @@ export function LandingPage() {
                   Se connecter
                 </Link>
               </div>
+            </ScrollReveal>
+            <ScrollReveal when="mount" delayMs={320}>
+              <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
+                Aucune carte bancaire requise · sans engagement · résiliable à tout moment
+              </p>
             </ScrollReveal>
           </div>
         </section>
@@ -272,8 +282,9 @@ export function LandingPage() {
                 Une offre simple, sans engagement
               </h2>
               <p className="text-slate-600 dark:text-slate-400 mb-10 max-w-2xl">
-                Commencez avec l&apos;abonnement socle, puis ajoutez les options dont vous avez
-                besoin.
+                Démarrez par {BASE_SUBSCRIPTION_PLAN.trialDays} jours d&apos;essai gratuit, sans
+                carte bancaire. Vous ne renseignez un moyen de paiement que si vous décidez de
+                continuer.
               </p>
             </ScrollReveal>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 max-w-6xl">
@@ -293,6 +304,14 @@ export function LandingPage() {
                     {BASE_SUBSCRIPTION_TRIAL_LABEL}, {BASE_SUBSCRIPTION_PLAN.commitmentDisplay}
                   </p>
                   <ul className="mt-6 space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                    <li className="flex gap-2">
+                      <span className="text-brand-600" aria-hidden>
+                        ✓
+                      </span>
+                      <span className="font-medium text-slate-900 dark:text-slate-100">
+                        {BASE_SUBSCRIPTION_PLAN.trialDays} jours gratuits sans carte bancaire
+                      </span>
+                    </li>
                     <li className="flex gap-2">
                       <span className="text-brand-600" aria-hidden>
                         ✓
@@ -336,6 +355,9 @@ export function LandingPage() {
                   >
                     Essayer Syncora — {BASE_SUBSCRIPTION_PLAN.trialDays} jours gratuits
                   </Link>
+                  <p className="mt-2 text-center text-xs text-slate-500 dark:text-slate-400">
+                    Sans carte bancaire
+                  </p>
                 </article>
               </ScrollReveal>
 
@@ -420,15 +442,16 @@ export function LandingPage() {
               Prêt à structurer vos opérations terrain ?
             </h2>
             <p className="max-w-xl mx-auto text-white/80 mb-8">
-              Créez votre organisation en quelques minutes, injectez des données de démonstration
-              pendant l&apos;essai et centralisez votre activité dès aujourd&apos;hui.
+              Créez votre organisation en quelques minutes et lancez votre essai gratuit de{" "}
+              {BASE_SUBSCRIPTION_PLAN.trialDays} jours, sans carte bancaire. Injectez des données de
+              démonstration et centralisez votre activité dès aujourd&apos;hui.
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               <Link
                 href="/register"
                 className="inline-flex rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-brand-600 hover:bg-slate-100 transition"
               >
-                Créer mon organisation
+                Démarrer mon essai gratuit
               </Link>
               <Link
                 href="/login"

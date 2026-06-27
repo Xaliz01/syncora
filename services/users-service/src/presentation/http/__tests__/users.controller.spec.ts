@@ -10,6 +10,8 @@ describe("UsersController", () => {
   beforeEach(async () => {
     mockUsersService = {
       create: jest.fn(),
+      createAccount: jest.fn(),
+      findAccountById: jest.fn(),
       invite: jest.fn(),
       activateInvitedUser: jest.fn(),
       patch: jest.fn(),
@@ -39,6 +41,24 @@ describe("UsersController", () => {
 
   it("should be defined", () => {
     expect(controller).toBeDefined();
+  });
+
+  describe("createAccount", () => {
+    it("should delegate to usersService.createAccount", async () => {
+      const body = { email: "solo@example.com", password: "secret123", name: "Solo" };
+      const expected = {
+        id: "user-1",
+        email: "solo@example.com",
+        name: "Solo",
+        status: "active" as const,
+      };
+      mockUsersService.createAccount.mockResolvedValue(expected);
+
+      const result = await controller.createAccount(body);
+
+      expect(mockUsersService.createAccount).toHaveBeenCalledWith(body);
+      expect(result).toEqual(expected);
+    });
   });
 
   describe("create", () => {

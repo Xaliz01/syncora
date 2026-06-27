@@ -129,6 +129,7 @@ describe("SubscriptionsService", () => {
         includedStorageBytes: 10 * 1024 ** 3,
         monthlyTotalCents: null,
         monthlyTotalCurrency: null,
+        hasStripeSubscription: false,
       });
     });
 
@@ -150,7 +151,10 @@ describe("SubscriptionsService", () => {
     });
 
     it("should return hasAccess true for trialing status", async () => {
-      const doc = mockSubscriptionDoc({ stripeStatus: "trialing" });
+      const doc = mockSubscriptionDoc({
+        stripeStatus: "trialing",
+        trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      });
       mockSubscriptionModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(doc),
       });
@@ -159,6 +163,25 @@ describe("SubscriptionsService", () => {
 
       expect(result.status).toBe("trialing");
       expect(result.hasAccess).toBe(true);
+      expect(result.hasStripeSubscription).toBe(true);
+    });
+
+    it("should return hasAccess false for expired app trial", async () => {
+      const pastDate = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const doc = mockSubscriptionDoc({
+        stripeStatus: "trialing",
+        stripeSubscriptionId: undefined,
+        trialEndsAt: pastDate,
+      });
+      mockSubscriptionModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+
+      const result = await service.getByOrganization("org-1");
+
+      expect(result.status).toBe("trialing");
+      expect(result.hasAccess).toBe(false);
+      expect(result.hasStripeSubscription).toBe(false);
     });
 
     it("should return hasAccess true for past_due status", async () => {
@@ -264,6 +287,70 @@ describe("SubscriptionsService", () => {
       const result = await service.getByOrganization("org-1");
 
       expect(result.activeAddons).toEqual(["team_suggestion"]);
+    });
+  });
+
+  describe("startTrial", () => {
+    it("should create a local trialing subscription without Stripe", async () => {
+      mockSubscriptionModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null),
+      });
+      const trialEndsAt = new Date("2026-07-12T12:00:00.000Z");
+      mockSubscriptionModel.findOneAndUpdate.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(
+          mockSubscriptionDoc({
+            stripeStatus: "trialing",
+            stripeSubscriptionId: undefined,
+            stripeCustomerId: undefined,
+            trialEndsAt,
+          }),
+        ),
+      });
+
+      const result = await service.startTrial("org-1");
+
+      expect(mockSubscriptionModel.findOneAndUpdate).toHaveBeenCalledWith(
+        { organizationId: "org-1" },
+        expect.objectContaining({
+          organizationId: "org-1",
+          stripeStatus: "trialing",
+          trialEndsAt: expect.any(Date),
+        }),
+        { upsert: true, new: true },
+      );
+      expect(result.status).toBe("trialing");
+      expect(result.hasAccess).toBe(true);
+      expect(result.hasStripeSubscription).toBe(false);
+    });
+
+    it("should reject when trial was already used", async () => {
+      mockSubscriptionModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(
+          mockSubscriptionDoc({
+            stripeStatus: "trialing",
+            stripeSubscriptionId: undefined,
+            trialEndsAt: new Date(Date.now() - 86_400_000),
+          }),
+        ),
+      });
+
+      await expect(service.startTrial("org-1")).rejects.toThrow(
+        "L'essai gratuit a déjà été utilisé",
+      );
+    });
+
+    it("should reject when trial is already active", async () => {
+      mockSubscriptionModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(
+          mockSubscriptionDoc({
+            stripeStatus: "trialing",
+            stripeSubscriptionId: undefined,
+            trialEndsAt: new Date(Date.now() + 86_400_000),
+          }),
+        ),
+      });
+
+      await expect(service.startTrial("org-1")).rejects.toThrow("L'essai gratuit est déjà actif");
     });
   });
 

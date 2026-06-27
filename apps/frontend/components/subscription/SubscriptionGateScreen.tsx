@@ -25,7 +25,7 @@ export function SubscriptionGateScreen() {
                 Syncora
               </div>
               <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
-                Activation de l’abonnement
+                Activation de l’essai
               </div>
             </div>
           </div>

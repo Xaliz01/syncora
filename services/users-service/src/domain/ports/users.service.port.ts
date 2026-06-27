@@ -1,6 +1,8 @@
 import type {
+  AccountUserResponse,
   ActivateInvitedUserBody,
   ChangePasswordBody,
+  CreateAccountBody,
   CreateInvitedUserBody,
   CreateOrganizationMembershipBody,
   CreateUserBody,
@@ -15,6 +17,8 @@ import type {
 
 export abstract class AbstractUsersService {
   abstract create(body: CreateUserBody): Promise<UserResponse>;
+  abstract createAccount(body: CreateAccountBody): Promise<AccountUserResponse>;
+  abstract findAccountById(id: string): Promise<AccountUserResponse | null>;
   abstract invite(body: CreateInvitedUserBody): Promise<UserResponse>;
   abstract activateInvitedUser(id: string, body: ActivateInvitedUserBody): Promise<UserResponse>;
   abstract patch(id: string, body: PatchUserBody): Promise<UserResponse>;

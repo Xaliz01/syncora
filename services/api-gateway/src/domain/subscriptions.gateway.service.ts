@@ -18,6 +18,7 @@ import type {
   CreateCheckoutSessionGatewayBody,
   CreateCheckoutSessionResponse,
   OrganizationSubscriptionResponse,
+  StartTrialResponse,
   UpdateSubscriptionAddonsGatewayBody,
   UpdateSubscriptionAddonsResponse,
 } from "@syncora/shared";
@@ -80,6 +81,14 @@ export class SubscriptionsGatewayService extends AbstractSubscriptionsGatewaySer
         successUrl: body.successUrl,
         cancelUrl: body.cancelUrl,
       },
+    });
+  }
+
+  async startTrial(user: AuthUser): Promise<StartTrialResponse> {
+    return this.callSubscriptions<StartTrialResponse>({
+      method: "post",
+      path: "/subscriptions/start-trial",
+      body: { organizationId: user.organizationId },
     });
   }
 

@@ -12,6 +12,21 @@ export interface CreateUserBody {
   role: UserRole;
 }
 
+/** Création d'un compte sans organisation (onboarding étape 1). */
+export interface CreateAccountBody {
+  email: string;
+  password: string;
+  name?: string;
+}
+
+/** Réponse compte sans rattachement organisation. */
+export interface AccountUserResponse {
+  id: string;
+  email: string;
+  name?: string;
+  status: UserStatus;
+}
+
 export interface UserResponse {
   id: string;
   organizationId: string;
@@ -51,10 +66,12 @@ export interface ValidateCredentialsBody {
 
 export interface ValidateCredentialsResponse {
   id: string;
-  organizationId: string;
+  /** Absent tant que l'utilisateur n'a pas créé ou rejoint une organisation. */
+  organizationId?: string;
   email: string;
   name?: string;
-  role: UserRole;
+  /** Absent si organizationId est absent. */
+  role?: UserRole;
   status: UserStatus;
 }
 

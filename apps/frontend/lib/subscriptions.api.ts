@@ -22,6 +22,13 @@ export function getSubscriptionCurrent() {
   return subscriptionsRequest<OrganizationSubscriptionResponse>("GET", "/subscriptions/current");
 }
 
+export function startTrial() {
+  return subscriptionsRequest<OrganizationSubscriptionResponse>(
+    "POST",
+    "/subscriptions/start-trial",
+  );
+}
+
 export function createCheckoutSession(payload: CreateCheckoutSessionGatewayBody) {
   return subscriptionsRequest<CreateCheckoutSessionResponse>(
     "POST",

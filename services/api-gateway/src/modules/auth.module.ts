@@ -7,6 +7,9 @@ import { AuthController } from "../presentation/http/auth.controller";
 import { AbstractAuthService } from "../domain/ports/auth.service.port";
 import { AuthService } from "../domain/auth.service";
 import { RequirePermissionGuard } from "../infrastructure/require-permission.guard";
+import { OnboardingAuthGuard } from "../infrastructure/onboarding-auth.guard";
+import { CreateOrganizationGuard } from "../infrastructure/create-organization.guard";
+import { AuthOrOnboardingGuard } from "../infrastructure/auth-or-onboarding.guard";
 import { SubscriptionsModule } from "./subscriptions.module";
 
 @Module({
@@ -24,6 +27,12 @@ import { SubscriptionsModule } from "./subscriptions.module";
     }),
   ],
   controllers: [AuthController],
-  providers: [{ provide: AbstractAuthService, useClass: AuthService }, RequirePermissionGuard],
+  providers: [
+    { provide: AbstractAuthService, useClass: AuthService },
+    RequirePermissionGuard,
+    OnboardingAuthGuard,
+    CreateOrganizationGuard,
+    AuthOrOnboardingGuard,
+  ],
 })
 export class AuthModule {}

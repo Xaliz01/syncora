@@ -23,6 +23,7 @@ describe("SubscriptionsController", () => {
   beforeEach(async () => {
     mockSubscriptionsService = {
       getCurrentSubscription: jest.fn(),
+      startTrial: jest.fn(),
       createCheckoutSession: jest.fn(),
       createAddonCheckoutSession: jest.fn(),
       createBillingPortalSession: jest.fn(),
@@ -61,6 +62,18 @@ describe("SubscriptionsController", () => {
       const result = controller.getCurrent(mockUser);
 
       expect(mockSubscriptionsService.getCurrentSubscription).toHaveBeenCalledWith(mockUser);
+      expect(result).resolves.toEqual(expected);
+    });
+  });
+
+  describe("startTrial", () => {
+    it("should call subscriptionsService.startTrial with user", () => {
+      const expected = { status: "trialing", hasAccess: true };
+      mockSubscriptionsService.startTrial.mockResolvedValue(expected as never);
+
+      const result = controller.startTrial(mockUser);
+
+      expect(mockSubscriptionsService.startTrial).toHaveBeenCalledWith(mockUser);
       expect(result).resolves.toEqual(expected);
     });
   });

@@ -172,6 +172,38 @@ describe("UsersService", () => {
     });
   });
 
+  describe("createAccount", () => {
+    it("should create an account without organizationId", async () => {
+      mockUserModel.findOne.mockReturnValue({ exec: jest.fn().mockResolvedValue(null) });
+      const doc = mockDoc({
+        email: "solo@example.com",
+        name: "Solo",
+        organizationId: undefined,
+      });
+      mockUserModel.create.mockResolvedValue(doc);
+
+      const result = await service.createAccount({
+        email: "solo@example.com",
+        password: "secret123",
+        name: "Solo",
+      });
+
+      expect(mockUserModel.create).toHaveBeenCalledWith({
+        email: "solo@example.com",
+        passwordHash: "hashed",
+        name: "Solo",
+        status: "active",
+      });
+      expect(mockMembershipModel.findOneAndUpdate).not.toHaveBeenCalled();
+      expect(result).toEqual({
+        id: "user-123",
+        email: "solo@example.com",
+        name: "Solo",
+        status: "active",
+      });
+    });
+  });
+
   describe("patch", () => {
     it("should update organizationId only (role stays on membership)", async () => {
       const execMock = jest.fn().mockResolvedValue(mockDoc({ organizationId: "org-new" }));
@@ -402,6 +434,23 @@ describe("UsersService", () => {
       const result = await service.validateCredentials("user@example.com", "password");
 
       expect(result).toBeNull();
+    });
+
+    it("should return account without organization when user has no org yet", async () => {
+      const doc = mockDoc({ passwordHash: "hashed", organizationId: undefined });
+      mockUserModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+      const result = await service.validateCredentials("solo@example.com", "password");
+
+      expect(result).toEqual({
+        id: "user-123",
+        email: "user@example.com",
+        name: "Test User",
+        status: "active",
+      });
     });
   });
 

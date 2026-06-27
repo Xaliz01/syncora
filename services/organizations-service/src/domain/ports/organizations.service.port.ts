@@ -1,4 +1,5 @@
 import type {
+  CreateOrganizationBody,
   OrganizationResponse,
   TrialTestDataStatusResponse,
   UpdateOrganizationBody,
@@ -6,7 +7,7 @@ import type {
 } from "@syncora/shared";
 
 export abstract class AbstractOrganizationsService {
-  abstract create(name: string): Promise<OrganizationResponse>;
+  abstract create(body: CreateOrganizationBody): Promise<OrganizationResponse>;
   abstract findById(id: string): Promise<OrganizationResponse | null>;
   abstract update(id: string, body: UpdateOrganizationBody): Promise<OrganizationResponse | null>;
   abstract getTrialTestDataStatus(organizationId: string): Promise<TrialTestDataStatusResponse>;

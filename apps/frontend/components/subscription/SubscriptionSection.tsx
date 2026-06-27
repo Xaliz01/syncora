@@ -1,12 +1,14 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/components/auth/AuthContext";
 import { useToast } from "@/components/ui/ToastProvider";
 import * as subscriptionsApi from "@/lib/subscriptions.api";
+import * as authApi from "@/lib/auth.api";
 import { hasPermission } from "@/lib/auth-permissions";
+import { postAuthHomePath } from "@/lib/subscription-access";
 import { ModifySubscriptionAddonsDialog } from "@/components/subscription/ModifySubscriptionAddonsDialog";
 import {
   ADDON_CATALOG,
@@ -80,6 +82,7 @@ const FEATURE_HIGHLIGHTS = [
 
 function SubscriptionSectionInner({ mode = "full" }: { mode?: "full" | "pitchCheckout" }) {
   const pitchCheckout = mode === "pitchCheckout";
+  const router = useRouter();
   const { user, refreshSession } = useAuth();
   const { showToast } = useToast();
   const searchParams = useSearchParams();
@@ -137,6 +140,27 @@ function SubscriptionSectionInner({ mode = "full" }: { mode?: "full" | "pitchChe
     },
   });
 
+  const startTrialMutation = useMutation({
+    mutationFn: () => subscriptionsApi.startTrial(),
+    onSuccess: async () => {
+      showToast(
+        `Essai gratuit activé (${BASE_SUBSCRIPTION_PLAN.trialDays} jours). Aucun moyen de paiement requis.`,
+      );
+      await queryClient.invalidateQueries({ queryKey: ["subscription-current"] });
+      await queryClient.invalidateQueries({ queryKey: ["organizations", "mine"] });
+      await refreshSession();
+      try {
+        const me = await authApi.getMe();
+        router.replace(postAuthHomePath(me));
+      } catch {
+        router.replace("/");
+      }
+    },
+    onError: (err: Error) => {
+      showToast(err.message ?? "Impossible d’activer l’essai gratuit.");
+    },
+  });
+
   const portalMutation = useMutation({
     mutationFn: () => {
       const origin = window.location.origin;
@@ -154,6 +178,7 @@ function SubscriptionSectionInner({ mode = "full" }: { mode?: "full" | "pitchChe
 
   const canModifyAddons =
     !!subscription &&
+    subscription.hasStripeSubscription &&
     subscription.status !== "none" &&
     subscription.status !== "incomplete" &&
     subscription.status !== "incomplete_expired";
@@ -162,11 +187,13 @@ function SubscriptionSectionInner({ mode = "full" }: { mode?: "full" | "pitchChe
       ? STATUS_LABELS[subscription.status]
       : (subscription?.status ?? "—");
 
-  const showPrimaryCheckout =
-    subscription &&
-    (subscription.status === "none" ||
-      subscription.status === "incomplete" ||
-      subscription.status === "incomplete_expired");
+  const showStartTrial = subscription?.status === "none";
+  const showSubscribeCheckout =
+    !!subscription &&
+    (subscription.status === "incomplete" ||
+      subscription.status === "incomplete_expired" ||
+      (subscription.status === "trialing" &&
+        (!subscription.hasStripeSubscription || !subscription.hasAccess)));
 
   useEffect(() => {
     if (isLoading || !subscription || !modifyParam || !isValidAddonCode(modifyParam)) {
@@ -198,7 +225,8 @@ function SubscriptionSectionInner({ mode = "full" }: { mode?: "full" | "pitchChe
           </h2>
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
             Syncora vous aide à mieux organiser vos opérations terrain, réduire les oublis et livrer
-            plus vite. Essayez, mesurez l’impact, puis activez votre abonnement sans engagement.
+            plus vite. Démarrez votre essai gratuit sans moyen de paiement, puis abonnez-vous quand
+            vous êtes prêt.
           </p>
 
           <div className="mt-4">
@@ -265,7 +293,7 @@ function SubscriptionSectionInner({ mode = "full" }: { mode?: "full" | "pitchChe
     <div className="mt-6">
       {isLoading && (
         <p className="text-sm text-slate-500 dark:text-slate-400 text-center sm:text-left">
-          Préparation du paiement…
+          Chargement…
         </p>
       )}
       {error && (
@@ -273,7 +301,25 @@ function SubscriptionSectionInner({ mode = "full" }: { mode?: "full" | "pitchChe
           {(error as Error).message}
         </div>
       )}
-      {!isLoading && !error && subscription && canManageBilling && showPrimaryCheckout && (
+      {!isLoading && !error && subscription && canManageBilling && showStartTrial && (
+        <div className="space-y-3">
+          <div className="flex flex-wrap gap-3 justify-center sm:justify-start">
+            <button
+              type="button"
+              onClick={() => startTrialMutation.mutate()}
+              disabled={startTrialMutation.isPending}
+              className="rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
+            >
+              {startTrialMutation.isPending ? "Activation…" : "Activer l’essai"}
+            </button>
+          </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400 text-center sm:text-left">
+            {BASE_SUBSCRIPTION_PLAN.trialDays} jours gratuits, sans carte bancaire. Vous pourrez
+            vous abonner plus tard depuis Mon abonnement.
+          </p>
+        </div>
+      )}
+      {!isLoading && !error && subscription && canManageBilling && showSubscribeCheckout && (
         <div className="flex flex-wrap gap-3 justify-center sm:justify-start">
           <button
             type="button"
@@ -281,16 +327,16 @@ function SubscriptionSectionInner({ mode = "full" }: { mode?: "full" | "pitchChe
             disabled={checkoutMutation.isPending}
             className="rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
           >
-            {subscription.status === "none"
-              ? "Activer l’essai ou s’abonner"
+            {subscription.status === "trialing" && !subscription.hasAccess
+              ? "S’abonner pour continuer"
               : "Finaliser ou recommencer le paiement"}
           </button>
         </div>
       )}
       {!isLoading && !error && subscription && !canManageBilling && (
         <p className="text-sm text-center sm:text-left text-slate-500 dark:text-slate-400">
-          Seuls les utilisateurs autorisés à gérer la facturation peuvent lancer l’activation ou le
-          paiement.
+          Seuls les utilisateurs autorisés à gérer la facturation peuvent activer l’essai ou gérer
+          l’abonnement.
         </p>
       )}
     </div>
@@ -442,7 +488,13 @@ function SubscriptionSectionInner({ mode = "full" }: { mode?: "full" | "pitchChe
                         / {BASE_SUBSCRIPTION_PLAN.periodDisplay}
                       </span>
                     </p>
-                    {subscription.status === "trialing" && (
+                    {subscription.status === "trialing" && !subscription.hasStripeSubscription && (
+                      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                        Essai gratuit en cours — abonnez-vous avant la fin pour continuer sans
+                        interruption.
+                      </p>
+                    )}
+                    {subscription.status === "trialing" && subscription.hasStripeSubscription && (
                       <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                         Montant facturé à la fin de l&apos;essai gratuit (hors promotions).
                       </p>
@@ -483,18 +535,28 @@ function SubscriptionSectionInner({ mode = "full" }: { mode?: "full" | "pitchChe
 
               {canManageBilling && (
                 <div className="flex flex-wrap gap-3 mt-6">
-                  {(subscription.status === "none" ||
-                    subscription.status === "incomplete" ||
-                    subscription.status === "incomplete_expired") && (
+                  {showStartTrial && (
+                    <button
+                      type="button"
+                      onClick={() => startTrialMutation.mutate()}
+                      disabled={startTrialMutation.isPending}
+                      className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
+                    >
+                      {startTrialMutation.isPending ? "Activation…" : "Activer l’essai"}
+                    </button>
+                  )}
+                  {showSubscribeCheckout && (
                     <button
                       type="button"
                       onClick={() => checkoutMutation.mutate()}
                       disabled={checkoutMutation.isPending}
                       className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
                     >
-                      {subscription.status === "none"
-                        ? "Activer l’essai ou s’abonner"
-                        : "Finaliser ou recommencer le paiement"}
+                      {subscription.status === "trialing" && !subscription.hasStripeSubscription
+                        ? "S’abonner"
+                        : subscription.status === "trialing" && !subscription.hasAccess
+                          ? "S’abonner pour continuer"
+                          : "Finaliser ou recommencer le paiement"}
                     </button>
                   )}
                   {canModifyAddons && (
@@ -509,7 +571,7 @@ function SubscriptionSectionInner({ mode = "full" }: { mode?: "full" | "pitchChe
                       Modifier l’abonnement
                     </button>
                   )}
-                  {subscription.status !== "none" && (
+                  {subscription.hasStripeSubscription && subscription.status !== "none" && (
                     <button
                       type="button"
                       onClick={() => portalMutation.mutate()}

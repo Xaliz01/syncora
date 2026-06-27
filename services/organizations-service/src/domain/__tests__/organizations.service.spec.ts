@@ -43,16 +43,32 @@ describe("OrganizationsService", () => {
   });
 
   describe("create", () => {
-    it("should create an organization and return the response", async () => {
-      const doc = mockDoc({ name: "Acme Corp" });
+    it("should create an organization with name and siret", async () => {
+      const doc = mockDoc({ name: "Acme Corp", siret: "12345678901234" });
       mockOrganizationModel.create.mockResolvedValue(doc);
 
-      const result = await service.create("Acme Corp");
+      const result = await service.create({
+        name: "Acme Corp",
+        siret: "12345678901234",
+        addressLine1: "1 rue de Paris",
+        postalCode: "75001",
+        city: "Paris",
+        country: "FR",
+      });
 
-      expect(mockOrganizationModel.create).toHaveBeenCalledWith({ name: "Acme Corp" });
+      expect(mockOrganizationModel.create).toHaveBeenCalledWith({
+        name: "Acme Corp",
+        siret: "12345678901234",
+        addressLine1: "1 rue de Paris",
+        addressLine2: undefined,
+        postalCode: "75001",
+        city: "Paris",
+        country: "FR",
+      });
       expect(result).toEqual({
         id: "org-123",
         name: "Acme Corp",
+        siret: "12345678901234",
         createdAt: new Date("2025-01-01").toISOString(),
       });
     });
@@ -60,7 +76,7 @@ describe("OrganizationsService", () => {
 
   describe("findById", () => {
     it("should return organization when found", async () => {
-      const doc = mockDoc({ name: "Found Org" });
+      const doc = mockDoc({ name: "Found Org", siret: "11111111111111" });
       mockOrganizationModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(doc),
       });
@@ -74,6 +90,7 @@ describe("OrganizationsService", () => {
       expect(result).toEqual({
         id: "org-123",
         name: "Found Org",
+        siret: "11111111111111",
         createdAt: new Date("2025-01-01").toISOString(),
       });
     });

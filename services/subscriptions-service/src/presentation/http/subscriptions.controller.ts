@@ -4,6 +4,7 @@ import type {
   CreateAddonCheckoutSessionBody,
   CreateBillingPortalBody,
   CreateCheckoutSessionBody,
+  StartTrialBody,
   UpdateSubscriptionAddonsBody,
 } from "@syncora/shared";
 import { isValidAddonCode, isQuantityAddonCode } from "@syncora/shared";
@@ -16,6 +17,12 @@ export class SubscriptionsController {
   getCurrent(@Query("organizationId") organizationId: string) {
     this.ensureOrg(organizationId);
     return this.subscriptionsService.getByOrganization(organizationId);
+  }
+
+  @Post("start-trial")
+  startTrial(@Body() body: StartTrialBody) {
+    this.ensureOrg(body.organizationId);
+    return this.subscriptionsService.startTrial(body.organizationId);
   }
 
   @Post("checkout-session")

@@ -1,11 +1,11 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { Request } from "express";
-import type { JwtPayload, OnboardingJwtPayload } from "@syncora/shared";
+import type { OnboardingJwtPayload } from "@syncora/shared";
 import { isOnboardingJwtPayload } from "@syncora/shared";
 
 @Injectable()
-export class JwtAuthGuard implements CanActivate {
+export class OnboardingAuthGuard implements CanActivate {
   constructor(private readonly jwtService: JwtService) {}
 
   canActivate(context: ExecutionContext): boolean {
@@ -16,14 +16,11 @@ export class JwtAuthGuard implements CanActivate {
     }
     const token = authHeader.slice(7);
     try {
-      const payload = this.jwtService.verify<JwtPayload | OnboardingJwtPayload>(token);
-      if (isOnboardingJwtPayload(payload)) {
-        throw new UnauthorizedException("Session d'onboarding non valide pour cette route");
+      const payload = this.jwtService.verify<OnboardingJwtPayload>(token);
+      if (!isOnboardingJwtPayload(payload)) {
+        throw new UnauthorizedException("Jeton d'onboarding requis");
       }
-      if (!payload.organizationId?.trim()) {
-        throw new UnauthorizedException("Jeton invalide ou expiré");
-      }
-      (request as Request & { user: JwtPayload }).user = payload;
+      (request as Request & { onboardingUser: OnboardingJwtPayload }).onboardingUser = payload;
       return true;
     } catch (err) {
       if (err instanceof UnauthorizedException) throw err;

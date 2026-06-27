@@ -34,6 +34,13 @@ export class SubscriptionsController {
     return this.subscriptionsService.createCheckoutSession(user, body);
   }
 
+  @Post("start-trial")
+  @UseGuards(RequirePermissionGuard)
+  @RequirePermissions("subscriptions.manage_billing")
+  startTrial(@CurrentUser() user: AuthUser) {
+    return this.subscriptionsService.startTrial(user);
+  }
+
   @Post("addon-checkout-session")
   @UseGuards(RequirePermissionGuard)
   @RequirePermissions("subscriptions.manage_billing")

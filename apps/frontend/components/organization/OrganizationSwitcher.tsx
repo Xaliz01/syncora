@@ -1,10 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { SiretLookupResult } from "@syncora/shared";
 import { useAuth } from "@/components/auth/AuthContext";
 import { useOrganization } from "@/lib/organization";
 import { hasPermission } from "@/lib/auth-permissions";
 import { useToast } from "@/components/ui/ToastProvider";
+import { SiretLookupField } from "@/components/organization/SiretLookupField";
+import { PostalAddressFields } from "@/components/address/PostalAddressFields";
+import {
+  EMPTY_ORG_ADDRESS,
+  addressFromSiretLookup,
+  isOrganizationAddressComplete,
+  toCreateOrganizationAddress,
+  type OrganizationAddressForm,
+} from "@/lib/organization-address";
 
 export function OrganizationSwitcher({
   variant = "sidebar",
@@ -28,7 +38,15 @@ export function OrganizationSwitcher({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [orgMenuOpen, setOrgMenuOpen] = useState(false);
   const [newOrgName, setNewOrgName] = useState("");
+  const [newOrgSiret, setNewOrgSiret] = useState("");
+  const [newOrgAddress, setNewOrgAddress] = useState<OrganizationAddressForm>(EMPTY_ORG_ADDRESS);
   const [creating, setCreating] = useState(false);
+
+  const resetNewOrgForm = () => {
+    setNewOrgName("");
+    setNewOrgSiret("");
+    setNewOrgAddress(EMPTY_ORG_ADDRESS);
+  };
 
   useEffect(() => {
     if (!collapsed) {
@@ -49,21 +67,41 @@ export function OrganizationSwitcher({
     return null;
   }
 
+  const handleSiretSelect = (result: SiretLookupResult) => {
+    if (result.nom && !newOrgName.trim()) {
+      setNewOrgName(result.nom);
+    }
+    setNewOrgAddress(addressFromSiretLookup(result));
+  };
+
   const handleCreateOrganization = async () => {
     const name = newOrgName.trim();
     if (!name) {
-      showToast("Indiquez un nom d’organisation.", "error");
+      showToast("Indiquez un nom d\u2019organisation.", "error");
+      return;
+    }
+    const siret = newOrgSiret.trim();
+    if (!siret) {
+      showToast("Indiquez le SIRET de l\u2019organisation.", "error");
+      return;
+    }
+    if (!isOrganizationAddressComplete(newOrgAddress)) {
+      showToast("Renseignez l\u2019adresse postale (rue, code postal et ville).", "error");
       return;
     }
     setCreating(true);
     try {
-      await createOrganization({ name });
+      await createOrganization({
+        name,
+        siret,
+        ...toCreateOrganizationAddress(newOrgAddress),
+      });
       setDialogOpen(false);
-      setNewOrgName("");
-      showToast("Organisation créée. Vous travaillez maintenant dans cet espace.");
+      resetNewOrgForm();
+      showToast("Organisation cr\u00e9\u00e9e. Vous travaillez maintenant dans cet espace.");
       refetchOrganizations();
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Création impossible.", "error");
+      showToast(e instanceof Error ? e.message : "Cr\u00e9ation impossible.", "error");
     } finally {
       setCreating(false);
     }
@@ -94,7 +132,7 @@ export function OrganizationSwitcher({
     <div className={shellClass}>
       {variant === "gate" && (
         <p className="text-[11px] uppercase tracking-wide text-slate-400 dark:text-slate-500">
-          Espace synchronisé
+          Espace synchronis\u00e9
         </p>
       )}
 
@@ -102,7 +140,7 @@ export function OrganizationSwitcher({
         <p className="text-sm text-slate-600 dark:text-slate-300">
           Organisation :{" "}
           <span className="font-medium text-slate-900 dark:text-white">
-            {activeOrganization?.name ?? "—"}
+            {activeOrganization?.name ?? "\u2014"}
           </span>
         </p>
       ) : collapsed && variant === "sidebar" ? (
@@ -160,7 +198,7 @@ export function OrganizationSwitcher({
             disabled={isLoading || isSwitchingOrganization || organizations.length === 0}
             onChange={(e) => void selectOrganization(e.target.value)}
           >
-            {isLoading && <option value={sessionOrganizationId}>Chargement…</option>}
+            {isLoading && <option value={sessionOrganizationId}>Chargement\u2026</option>}
             {!isLoading &&
               organizations.map((org) => (
                 <option key={org.id} value={org.id}>
@@ -170,7 +208,8 @@ export function OrganizationSwitcher({
           </select>
           {variant === "gate" && organizations.length > 1 && (
             <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              Basculez vers un autre espace si vous y avez déjà activé l’abonnement.
+              Basculez vers un autre espace si vous y avez d\u00e9j\u00e0 activ\u00e9
+              l&apos;abonnement.
             </p>
           )}
         </>
@@ -196,7 +235,7 @@ export function OrganizationSwitcher({
           onClick={() => {
             if (creating) return;
             setDialogOpen(false);
-            setNewOrgName("");
+            resetNewOrgForm();
           }}
         >
           <div
@@ -210,31 +249,58 @@ export function OrganizationSwitcher({
               Nouvelle organisation
             </h2>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              Un espace distinct sera créé et votre session y sera associée (nouvelle organisation =
-              nouvel abonnement à activer si besoin).
+              Un espace distinct sera créé et votre session y sera associée.
             </p>
-            <label
-              htmlFor="syncora-new-org-name"
-              className="mt-4 block text-xs font-medium text-slate-600 dark:text-slate-300"
-            >
-              Nom
-            </label>
-            <input
-              id="syncora-new-org-name"
-              type="text"
-              value={newOrgName}
-              onChange={(e) => setNewOrgName(e.target.value)}
-              placeholder="Ex. Ma société"
-              className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-100"
-              disabled={creating}
-              autoFocus
-            />
+            <div className="mt-4 space-y-3">
+              <SiretLookupField
+                value={newOrgSiret}
+                onChange={setNewOrgSiret}
+                onSelect={handleSiretSelect}
+                disabled={creating}
+                labelCls="block text-xs font-medium text-slate-600 dark:text-slate-300"
+                inputCls="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-100"
+              />
+              <div>
+                <label
+                  htmlFor="syncora-new-org-name"
+                  className="block text-xs font-medium text-slate-600 dark:text-slate-300"
+                >
+                  Nom
+                </label>
+                <input
+                  id="syncora-new-org-name"
+                  type="text"
+                  value={newOrgName}
+                  onChange={(e) => setNewOrgName(e.target.value)}
+                  placeholder="Ex. Ma société"
+                  className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-100"
+                  disabled={creating}
+                  autoFocus
+                />
+              </div>
+              <PostalAddressFields
+                legend="Adresse postale"
+                compact
+                line1={newOrgAddress.addressLine1}
+                line2={newOrgAddress.addressLine2}
+                postalCode={newOrgAddress.postalCode}
+                city={newOrgAddress.city}
+                country={newOrgAddress.country}
+                onLine1Change={(v) => setNewOrgAddress((prev) => ({ ...prev, addressLine1: v }))}
+                onLine2Change={(v) => setNewOrgAddress((prev) => ({ ...prev, addressLine2: v }))}
+                onPostalChange={(v) => setNewOrgAddress((prev) => ({ ...prev, postalCode: v }))}
+                onCityChange={(v) => setNewOrgAddress((prev) => ({ ...prev, city: v }))}
+                onCountryChange={(v) => setNewOrgAddress((prev) => ({ ...prev, country: v }))}
+                labelCls="block text-xs font-medium text-slate-600 dark:text-slate-300"
+                inputCls="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-100"
+              />
+            </div>
             <div className="mt-5 flex flex-wrap justify-end gap-2">
               <button
                 type="button"
                 onClick={() => {
                   setDialogOpen(false);
-                  setNewOrgName("");
+                  resetNewOrgForm();
                 }}
                 disabled={creating}
                 className="rounded-lg border border-slate-200 dark:border-slate-600 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50"
@@ -247,7 +313,7 @@ export function OrganizationSwitcher({
                 disabled={creating}
                 className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50"
               >
-                {creating ? "Création…" : "Créer"}
+                {creating ? "Cr\u00e9ation\u2026" : "Cr\u00e9er"}
               </button>
             </div>
           </div>

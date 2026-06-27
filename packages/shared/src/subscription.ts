@@ -298,6 +298,8 @@ export interface OrganizationSubscriptionResponse {
   monthlyTotalCents: number | null;
   /** Devise ISO du total (ex. eur). */
   monthlyTotalCurrency: string | null;
+  /** true si une souscription Stripe est enregistrée (essai Stripe ou abonnement payant). */
+  hasStripeSubscription: boolean;
 }
 
 // ── Checkout / billing DTOs ──
@@ -321,6 +323,13 @@ export interface CreateCheckoutSessionGatewayBody {
 export interface CreateCheckoutSessionResponse {
   url: string;
 }
+
+/** Corps attendu par le microservice (organizationId fourni par la gateway). */
+export interface StartTrialBody {
+  organizationId: string;
+}
+
+export type StartTrialResponse = OrganizationSubscriptionResponse;
 
 /** Flux du portail Stripe : accueil facturation ou modification d'abonnement (vente croisée addons). */
 export type BillingPortalFlow = "default" | "subscription_update";

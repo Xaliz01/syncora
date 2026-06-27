@@ -17,11 +17,13 @@ import {
   DEFAULT_USER_PREFERENCES,
   type ActivateInvitedUserBody,
   type ChangePasswordBody,
+  type CreateAccountBody,
   type CreateInvitedUserBody,
   type CreateOrganizationMembershipBody,
   type CreateUserBody,
   type OrganizationMembershipResponse,
   type PatchUserBody,
+  type AccountUserResponse,
   type UpdateUserNameBody,
   type UpdateUserPreferencesBody,
   type UserPreferencesResponse,
@@ -75,6 +77,29 @@ export class UsersService extends AbstractUsersService {
       { upsert: true, new: true },
     );
     return this.toResponseForOrganization(doc, body.organizationId);
+  }
+
+  async createAccount(body: CreateAccountBody): Promise<AccountUserResponse> {
+    const existing = await this.userModel
+      .findOne({ email: body.email, ...activeDocumentFilter })
+      .exec();
+    if (existing) {
+      throw new ConflictException("User with this email already exists");
+    }
+    const passwordHash = await bcrypt.hash(body.password, SALT_ROUNDS);
+    const doc = await this.userModel.create({
+      email: body.email,
+      passwordHash,
+      name: body.name,
+      status: "active",
+    });
+    return this.toAccountResponse(doc);
+  }
+
+  async findAccountById(id: string): Promise<AccountUserResponse | null> {
+    const doc = await this.userModel.findOne({ _id: id, ...activeDocumentFilter }).exec();
+    if (!doc) return null;
+    return this.toAccountResponse(doc);
   }
 
   async invite(body: CreateInvitedUserBody): Promise<UserResponse> {
@@ -138,7 +163,7 @@ export class UsersService extends AbstractUsersService {
       { $set: { membershipStatus: "active" } },
     );
 
-    return this.toResponseForOrganization(doc, doc.organizationId);
+    return this.toResponseForOrganization(doc, doc.organizationId!);
   }
 
   async patch(id: string, body: PatchUserBody): Promise<UserResponse> {
@@ -159,6 +184,7 @@ export class UsersService extends AbstractUsersService {
   async findById(id: string): Promise<UserResponse | null> {
     const doc = await this.userModel.findOne({ _id: id, ...activeDocumentFilter }).exec();
     if (!doc) return null;
+    if (!doc.organizationId?.trim()) return null;
     await this.ensureMembershipsBackfill(doc);
     return this.toResponseForOrganization(doc, doc.organizationId);
   }
@@ -241,6 +267,9 @@ export class UsersService extends AbstractUsersService {
       )
       .exec();
     if (!doc) throw new NotFoundException("User not found");
+    if (!doc.organizationId?.trim()) {
+      throw new BadRequestException("Organisation requise pour modifier le nom");
+    }
     return this.toResponseForOrganization(doc, doc.organizationId);
   }
 
@@ -325,6 +354,15 @@ export class UsersService extends AbstractUsersService {
     await this.ensureMembershipsBackfill(doc);
 
     const uid = doc._id.toString();
+    if (!doc.organizationId?.trim()) {
+      return {
+        id: uid,
+        email: doc.email,
+        name: doc.name,
+        status: doc.status,
+      };
+    }
+
     const m = await this.membershipModel
       .findOne({
         userId: uid,
@@ -367,6 +405,8 @@ export class UsersService extends AbstractUsersService {
   }
 
   private async ensureMembershipsBackfill(doc: UserDocument): Promise<void> {
+    if (!doc.organizationId?.trim()) return;
+
     const uid = doc._id.toString();
     const count = await this.membershipModel
       .countDocuments({ userId: uid, deletedAt: null })
@@ -438,10 +478,19 @@ export class UsersService extends AbstractUsersService {
     return { ...this.toBaseResponse(doc), role };
   }
 
+  private toAccountResponse(doc: UserDocument): AccountUserResponse {
+    return {
+      id: doc._id.toString(),
+      email: doc.email,
+      name: doc.name,
+      status: doc.status,
+    };
+  }
+
   private toBaseResponse(doc: UserDocument): Omit<UserResponse, "role"> {
     return {
       id: doc._id.toString(),
-      organizationId: doc.organizationId,
+      organizationId: doc.organizationId!,
       email: doc.email,
       name: doc.name,
       status: doc.status,
