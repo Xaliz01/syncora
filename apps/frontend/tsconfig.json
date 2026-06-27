@@ -2,7 +2,8 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": ".next",
-    "lib": ["DOM", "DOM.Iterable", "ES2022"],
+    "types": ["@serwist/next/typings"],
+    "lib": ["DOM", "DOM.Iterable", "ES2022", "WebWorker"],
     "jsx": "preserve",
     "module": "ESNext",
     "moduleResolution": "Bundler",
@@ -21,5 +22,5 @@
     "isolatedModules": true
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "public/sw.js"]
 }

@@ -20,6 +20,7 @@
     "e2e:report": "playwright show-report"
   },
   "dependencies": {
+    "@serwist/next": "^9.5.11",
     "@syncora/shared": "0.1.0",
     "@tanstack/react-query": "^5.0.0",
     "crisp-sdk-web": "^1.1.2",
@@ -40,6 +41,7 @@
     "eslint-plugin-react-hooks": "^5.0.0",
     "postcss": "^8.4.0",
     "prettier": "^3.0.0",
+    "serwist": "^9.5.11",
     "tailwindcss": "^3.4.0",
     "typescript": "^5.6.0"
   }
