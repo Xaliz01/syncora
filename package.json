@@ -19,6 +19,7 @@
     "build": "npm run build --workspaces --if-present",
     "build:shared": "npm run build --workspace @syncora/shared --if-present",
     "e2e": "npm run e2e --workspace @syncora/frontend --if-present",
+    "pwa:preview": "npm run pwa:preview -w @syncora/frontend",
     "backend": "docker compose up -d --wait && npm run backend:run",
     "backend:datadog": "docker compose --profile datadog up -d --wait && npm run backend:run",
     "backend:microservices": "npm run build:shared && TS_NODE_TRANSPILE_ONLY=true concurrently --kill-others-on-fail -n org,users,permissions,fleet,technicians,dossiers,stock,customers,subscriptions,notifications,documents \"npm run start:dev -w @syncora/organizations-service\" \"sleep 1.5 && npm run start:dev -w @syncora/users-service\" \"sleep 3 && npm run start:dev -w @syncora/permissions-service\" \"sleep 4.5 && npm run start:dev -w @syncora/fleet-service\" \"sleep 6 && npm run start:dev -w @syncora/technicians-service\" \"sleep 7.5 && npm run start:dev -w @syncora/cases-service\" \"sleep 9 && npm run start:dev -w @syncora/stock-service\" \"sleep 10.5 && npm run start:dev -w @syncora/customers-service\" \"sleep 12 && npm run start:dev -w @syncora/subscriptions-service\" \"sleep 13.5 && npm run start:dev -w @syncora/notifications-service\" \"sleep 15 && npm run start:dev -w @syncora/documents-service\"",

@@ -93,7 +93,7 @@ Référence technique : landing `apps/frontend/components/landing/LandingPage.ts
 
 ### Limites connues (à assumer dans la com’)
 
-- Application **web** ; pas d’app native ni mode **offline**.
+- Application **web PWA** (installable, cache offline des listes du jour) ; pas d’app native.
 - **Une adresse** par client ; pas de multi-sites ni d’équipements installés.
 - Pas de **devis / facturation** métier intégrés.
 - Pas de **portail client** ni SMS/email automatiques métier.
@@ -140,7 +140,7 @@ Objectif : le technicien clôture sa journée **sur le téléphone** ; le patron
 | 1.2 | Actions terrain : **Démarrer / Terminer** intervention (horodatage, option géoloc légère) | Traçabilité simple                      | ✅     |
 | 1.3 | **Photos** rattachées à l'intervention (pas seulement au dossier)                         | Preuve travaux                          | ✅     |
 | 1.4 | **Signature client** + génération **PDF rapport** d'intervention                          | Confiance client, litiges               | ✅     |
-| 1.5 | **PWA** (installable, cache minimal des listes du jour)                                   | Artisans sans « app store » obligatoire | ⬜     |
+| 1.5 | **PWA** (installable, cache minimal des listes du jour)                                   | Artisans sans « app store » obligatoire | ✅     |
 | 1.6 | Notifications **email** basiques (intervention planifiée / terminée)                      | Rappels sans portail lourd              | ⬜     |
 
 _Hors scope phase 1_ : GPS temps réel permanent, portail client self-service.

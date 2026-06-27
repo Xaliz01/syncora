@@ -31,5 +31,9 @@ playwright-report/
 # Misc
 *.tsbuildinfo
 
+# Serwist (generated service worker)
+**/public/sw*
+**/public/swe-worker*
+
 # Documents upload
 uploads/

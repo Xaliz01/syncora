@@ -8,6 +8,7 @@ import { OrganizationProvider } from "@/lib/organization";
 import { ConfirmProvider } from "@/components/ui/ConfirmDialog";
 import { ToastProvider } from "@/components/ui/ToastProvider";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import { PwaInstallBanner } from "@/components/pwa/PwaInstallBanner";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());
@@ -20,6 +21,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             <AuthProvider>
               <OrganizationProvider>
                 <CrispSupport />
+                <PwaInstallBanner />
                 {children}
               </OrganizationProvider>
             </AuthProvider>
