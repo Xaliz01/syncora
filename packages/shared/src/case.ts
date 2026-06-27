@@ -247,9 +247,26 @@ export interface InterventionResponse {
   startLocation?: GeoLocation;
   endLocation?: GeoLocation;
   notes?: string;
+  signatoryName?: string;
+  signedAt?: string;
   createdAt?: string;
   updatedAt?: string;
   isTestData?: boolean;
+}
+
+// ── Intervention signature ──
+
+export interface SignInterventionBody {
+  organizationId: string;
+  signatoryName: string;
+  /** Base64-encoded PNG data URL of the client signature. */
+  signatureData: string;
+}
+
+export interface SignInterventionResponse {
+  id: string;
+  signatoryName: string;
+  signedAt: string;
 }
 
 // ── Intervention terrain actions ──
@@ -303,6 +320,7 @@ export type CaseHistoryAction =
   | "intervention_deleted"
   | "intervention_started"
   | "intervention_completed"
+  | "intervention_signed"
   | "document_uploaded"
   | "document_deleted"
   | "case_deleted";

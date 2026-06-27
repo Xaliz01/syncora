@@ -27,6 +27,8 @@ describe("CasesController", () => {
       deleteIntervention: jest.fn(),
       startIntervention: jest.fn(),
       completeIntervention: jest.fn(),
+      signIntervention: jest.fn(),
+      getInterventionWithSignature: jest.fn(),
       getDashboard: jest.fn(),
       getDashboardTodoCases: jest.fn(),
       getDashboardStatCases: jest.fn(),

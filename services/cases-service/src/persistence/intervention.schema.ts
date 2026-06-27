@@ -66,6 +66,15 @@ export class InterventionDocument extends Document {
   @Prop()
   notes?: string;
 
+  @Prop()
+  signatoryName?: string;
+
+  @Prop()
+  signatureData?: string;
+
+  @Prop({ type: Date })
+  signedAt?: Date;
+
   @Prop({ type: Date })
   deletedAt?: Date | null;
 

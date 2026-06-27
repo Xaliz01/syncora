@@ -9,9 +9,11 @@ import type {
   CompleteInterventionResponse,
   GeoLocation,
   InterventionResponse,
+  SignInterventionResponse,
   StartInterventionResponse,
 } from "@syncora/shared";
 import { apiRequestJson, type ApiMethod } from "./api-client";
+import { API_BASE, getAccessToken } from "./api-client";
 
 async function casesRequest<TResponse>(
   method: ApiMethod,
@@ -210,6 +212,42 @@ export function completeIntervention(
     `/cases/interventions/${interventionId}/complete`,
     payload ?? {},
   );
+}
+
+export function signIntervention(
+  interventionId: string,
+  payload: { signatoryName: string; signatureData: string },
+) {
+  return casesRequest<SignInterventionResponse>(
+    "POST",
+    `/cases/interventions/${interventionId}/sign`,
+    payload,
+  );
+}
+
+export async function downloadInterventionReport(interventionId: string): Promise<void> {
+  const token = getAccessToken();
+  if (!token) throw new Error("Session expirée");
+
+  const response = await fetch(`${API_BASE}/cases/interventions/${interventionId}/report`, {
+    method: "GET",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(
+      (err as { message?: string }).message ?? "Erreur lors de la génération du rapport",
+    );
+  }
+
+  const blob = await response.blob();
+  const blobUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = blobUrl;
+  anchor.download = `rapport-intervention-${interventionId}.pdf`;
+  anchor.click();
+  URL.revokeObjectURL(blobUrl);
 }
 
 // ── History ──

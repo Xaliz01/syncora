@@ -881,4 +881,108 @@ describe("CasesService", () => {
       );
     });
   });
+
+  describe("signIntervention", () => {
+    it("should sign a completed intervention", async () => {
+      const doc = mockInterventionDoc({ status: "completed" });
+      mockInterventionModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+
+      const result = await service.signIntervention("int-123", {
+        organizationId: "org-1",
+        signatoryName: "Jean Dupont",
+        signatureData: "data:image/png;base64,abc123",
+      });
+
+      expect(result.id).toBe("int-123");
+      expect(result.signatoryName).toBe("Jean Dupont");
+      expect(result.signedAt).toBeDefined();
+      expect(mockInterventionModel.updateOne).toHaveBeenCalledWith(
+        { _id: "int-123" },
+        {
+          $set: expect.objectContaining({
+            signatoryName: "Jean Dupont",
+            signatureData: "data:image/png;base64,abc123",
+            signedAt: expect.any(Date),
+          }),
+        },
+      );
+    });
+
+    it("should reject signing a non-completed intervention", async () => {
+      const doc = mockInterventionDoc({ status: "in_progress" });
+      mockInterventionModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+
+      await expect(
+        service.signIntervention("int-123", {
+          organizationId: "org-1",
+          signatoryName: "Jean Dupont",
+          signatureData: "data:image/png;base64,abc123",
+        }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it("should reject signing an already signed intervention", async () => {
+      const doc = mockInterventionDoc({ status: "completed", signedAt: new Date() });
+      mockInterventionModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+
+      await expect(
+        service.signIntervention("int-123", {
+          organizationId: "org-1",
+          signatoryName: "Jean Dupont",
+          signatureData: "data:image/png;base64,abc123",
+        }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it("should throw NotFoundException for unknown intervention", async () => {
+      mockInterventionModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null),
+      });
+
+      await expect(
+        service.signIntervention("int-unknown", {
+          organizationId: "org-1",
+          signatoryName: "Jean Dupont",
+          signatureData: "data:image/png;base64,abc123",
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe("getInterventionWithSignature", () => {
+    it("should return signature data for a signed intervention", async () => {
+      const doc = mockInterventionDoc({
+        signatureData: "data:image/png;base64,abc123",
+        signatoryName: "Jean Dupont",
+      });
+      mockInterventionModel.findOne.mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          exec: jest.fn().mockResolvedValue(doc),
+        }),
+      });
+
+      const result = await service.getInterventionWithSignature("int-123", "org-1");
+
+      expect(result.signatureData).toBe("data:image/png;base64,abc123");
+      expect(result.signatoryName).toBe("Jean Dupont");
+    });
+
+    it("should throw NotFoundException for unknown intervention", async () => {
+      mockInterventionModel.findOne.mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          exec: jest.fn().mockResolvedValue(null),
+        }),
+      });
+
+      await expect(service.getInterventionWithSignature("int-unknown", "org-1")).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
 });

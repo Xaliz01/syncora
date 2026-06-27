@@ -210,6 +210,12 @@ export const PERMISSION_METADATA: Record<PermissionCode, PermissionMetadata> = {
     label: "Supprimer des interventions",
     description: "Supprimer des interventions.",
   },
+  "interventions.sign": {
+    code: "interventions.sign",
+    label: "Faire signer les interventions",
+    description:
+      "Recueillir la signature du client sur une intervention terminée et générer le rapport PDF.",
+  },
   "vehicles.read": {
     code: "vehicles.read",
     label: "Voir les véhicules",

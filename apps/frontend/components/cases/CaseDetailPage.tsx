@@ -20,6 +20,7 @@ import {
   type InterventionArticleUsageItem,
 } from "@/components/cases/InterventionArticlesDialog";
 import { InterventionPhotos } from "@/components/interventions/InterventionPhotos";
+import { InterventionSignatureDialog } from "@/components/interventions/InterventionSignatureDialog";
 import { CUSTOMER_KIND_LABELS } from "@/components/customers/customer-kind-labels";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { usePermissions } from "@/lib/hooks/usePermissions";
@@ -376,6 +377,8 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   const [articlesDialogInterventionId, setArticlesDialogInterventionId] = useState<string | null>(
     null,
   );
+  const [signDialogInterventionId, setSignDialogInterventionId] = useState<string | null>(null);
+  const [downloadingReportId, setDownloadingReportId] = useState<string | null>(null);
 
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: ["case", caseId] });
@@ -384,6 +387,17 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
     queryClient.invalidateQueries({ queryKey: ["stock-movements", caseId] });
     queryClient.invalidateQueries({ queryKey: ["articles"] });
     queryClient.invalidateQueries({ queryKey: ["case-history", caseId] });
+  };
+
+  const handleDownloadReport = async (interventionId: string) => {
+    setDownloadingReportId(interventionId);
+    try {
+      await api.downloadInterventionReport(interventionId);
+    } catch {
+      /* error is handled silently — toast could be added here */
+    } finally {
+      setDownloadingReportId(null);
+    }
   };
 
   const statusMutation = useMutation({
@@ -1300,6 +1314,75 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                             interventionId={intervention.id}
                             readOnly={!can("interventions.update")}
                           />
+
+                          {/* Signature & report */}
+                          {intervention.status === "completed" && (
+                            <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 dark:border-slate-800 pt-3">
+                              {can("interventions.sign") && !intervention.signedAt && (
+                                <button
+                                  type="button"
+                                  onClick={() => setSignDialogInterventionId(intervention.id)}
+                                  className="inline-flex items-center gap-1 rounded-md border border-brand-200 dark:border-brand-800 bg-brand-50 dark:bg-brand-950/30 px-2 py-1 text-[11px] font-medium text-brand-700 dark:text-brand-300 hover:bg-brand-100 dark:hover:bg-brand-950/50 transition"
+                                >
+                                  <svg
+                                    className="h-3.5 w-3.5"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
+                                    />
+                                  </svg>
+                                  Faire signer
+                                </button>
+                              )}
+                              {intervention.signedAt && (
+                                <span className="inline-flex items-center gap-1 text-[11px] text-green-600 dark:text-green-400 font-medium">
+                                  <svg
+                                    className="h-3.5 w-3.5"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                    />
+                                  </svg>
+                                  Signé par {intervention.signatoryName}
+                                </span>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleDownloadReport(intervention.id)}
+                                disabled={downloadingReportId === intervention.id}
+                                className="inline-flex items-center gap-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition disabled:opacity-50"
+                              >
+                                <svg
+                                  className="h-3.5 w-3.5"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                  strokeWidth={2}
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+                                  />
+                                </svg>
+                                {downloadingReportId === intervention.id
+                                  ? "Génération…"
+                                  : "Rapport PDF"}
+                              </button>
+                            </div>
+                          )}
                         </>
                       )}
                     </div>
@@ -1331,6 +1414,17 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
           articles={articles ?? []}
           canEdit={canAddInterventionArticles}
           onSaved={invalidateAll}
+        />
+      )}
+
+      {signDialogInterventionId && (
+        <InterventionSignatureDialog
+          interventionId={signDialogInterventionId}
+          open={!!signDialogInterventionId}
+          onClose={() => {
+            setSignDialogInterventionId(null);
+            invalidateAll();
+          }}
         />
       )}
 

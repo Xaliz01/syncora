@@ -10,6 +10,7 @@ import type {
   GeoLocation,
   DashboardTodoCaseItem,
   InterventionResponse,
+  SignInterventionResponse,
   StartInterventionResponse,
   TodoDashboardVisibility,
 } from "@syncora/shared";
@@ -112,6 +113,11 @@ export interface CompleteInterventionForOrgBody {
   location?: GeoLocation;
 }
 
+export interface SignInterventionForOrgBody {
+  signatoryName: string;
+  signatureData: string;
+}
+
 export abstract class AbstractCasesGatewayService {
   abstract createTemplate(
     user: AuthUser,
@@ -175,6 +181,12 @@ export abstract class AbstractCasesGatewayService {
     interventionId: string,
     body: CompleteInterventionForOrgBody,
   ): Promise<CompleteInterventionResponse>;
+  abstract signIntervention(
+    user: AuthUser,
+    interventionId: string,
+    body: SignInterventionForOrgBody,
+  ): Promise<SignInterventionResponse>;
+  abstract generateInterventionReport(user: AuthUser, interventionId: string): Promise<Buffer>;
   abstract getDashboard(user: AuthUser): Promise<CaseDashboardResponse>;
   abstract getDashboardTodoCases(
     user: AuthUser,

@@ -18,6 +18,7 @@ import type {
   CreateCaseTemplateBody,
   CompleteInterventionBody,
   CreateInterventionBody,
+  SignInterventionBody,
   StartInterventionBody,
   UpdateCaseBody,
   UpdateCaseTemplateBody,
@@ -233,5 +234,23 @@ export class CasesController {
   @Post("interventions/:id/complete")
   async completeIntervention(@Param("id") id: string, @Body() body: CompleteInterventionBody) {
     return this.casesService.completeIntervention(id, body);
+  }
+
+  @Post("interventions/:id/sign")
+  async signIntervention(@Param("id") id: string, @Body() body: SignInterventionBody) {
+    return this.casesService.signIntervention(id, body);
+  }
+
+  @Get("interventions/:id/signature-image")
+  async getSignatureImage(
+    @Param("id") id: string,
+    @Query("organizationId") organizationId: string,
+  ) {
+    organizationId = parseOrganizationIdQuery(organizationId);
+    const result = await this.casesService.getInterventionWithSignature(id, organizationId);
+    if (!result.signatureData) {
+      throw new BadRequestException("No signature on this intervention");
+    }
+    return result;
   }
 }

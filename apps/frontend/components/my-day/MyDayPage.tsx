@@ -11,6 +11,7 @@ import {
   InterventionPhotos,
   type InterventionPhotosHandle,
 } from "@/components/interventions/InterventionPhotos";
+import { InterventionSignatureDialog } from "@/components/interventions/InterventionSignatureDialog";
 import * as api from "@/lib/cases.api";
 import type { GeoLocation, InterventionResponse, InterventionStatus } from "@syncora/shared";
 
@@ -91,13 +92,29 @@ function InterventionCard({
   isActing: boolean;
 }) {
   const { can } = usePermissions();
+  const { showToast } = useToast();
   const photosRef = useRef<InterventionPhotosHandle>(null);
+  const [showSignDialog, setShowSignDialog] = useState(false);
+  const [downloadingReport, setDownloadingReport] = useState(false);
   const status = intervention.status;
   const canUpdateIntervention = can("interventions.update");
+  const canSign = can("interventions.sign");
+  const isSigned = !!intervention.signedAt;
   const showPhotos = status === "in_progress" || status === "completed";
   const photosReadOnly = status === "completed" || !canUpdateIntervention;
   const scheduleDuration = formatDuration(intervention.scheduledStart, intervention.scheduledEnd);
   const actualDuration = formatDuration(intervention.startedAt, intervention.completedAt);
+
+  const handleDownloadReport = async () => {
+    setDownloadingReport(true);
+    try {
+      await api.downloadInterventionReport(intervention.id);
+    } catch (err) {
+      showToast((err as Error).message || "Erreur lors du téléchargement", "error");
+    } finally {
+      setDownloadingReport(false);
+    }
+  };
 
   return (
     <div className={`rounded-xl border-2 p-4 transition-all ${STATUS_CARD_STYLES[status]}`}>
@@ -295,6 +312,81 @@ function InterventionCard({
           )}
         </div>
       </PermissionGate>
+
+      {/* Signature & report actions */}
+      {status === "completed" && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {canSign && !isSigned && (
+            <button
+              type="button"
+              onClick={() => setShowSignDialog(true)}
+              className="flex items-center gap-1.5 rounded-lg border border-brand-200 dark:border-brand-800 bg-brand-50 dark:bg-brand-950/30 px-3 py-2 text-xs font-medium text-brand-700 dark:text-brand-300 hover:bg-brand-100 dark:hover:bg-brand-950/50 transition"
+            >
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
+                />
+              </svg>
+              Faire signer
+            </button>
+          )}
+          {isSigned && (
+            <span className="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400 font-medium px-2 py-1">
+              <svg
+                className="h-3.5 w-3.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              Signé par {intervention.signatoryName}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={handleDownloadReport}
+            disabled={downloadingReport}
+            className="flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition disabled:opacity-50"
+          >
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+              />
+            </svg>
+            {downloadingReport ? "Génération…" : "Rapport PDF"}
+          </button>
+        </div>
+      )}
+
+      {showSignDialog && (
+        <InterventionSignatureDialog
+          interventionId={intervention.id}
+          open={showSignDialog}
+          onClose={() => setShowSignDialog(false)}
+        />
+      )}
 
       {/* Photos terrain */}
       {showPhotos && (

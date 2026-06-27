@@ -197,6 +197,13 @@ test.describe("Parcours landing publique", () => {
   });
 });
 
+test.describe("Route /my-day protégée", () => {
+  test("la page Ma journée redirige vers /login sans session", async ({ page }) => {
+    await page.goto("/my-day");
+    await expect(page).toHaveURL(/\/login/);
+  });
+});
+
 test.describe("Parcours inter-pages publiques complet", () => {
   test("enchaîne login → register → login → accept-invitation → login", async ({ page }) => {
     await page.goto("/login");
