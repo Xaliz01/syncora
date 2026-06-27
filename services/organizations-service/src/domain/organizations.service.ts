@@ -45,10 +45,8 @@ export class OrganizationsService extends AbstractOrganizationsService {
     };
   }
 
-  async create(name: string, siret?: string): Promise<OrganizationResponse> {
-    const data: Record<string, unknown> = { name };
-    if (siret) data.siret = siret;
-    const doc = await this.organizationModel.create(data);
+  async create(name: string, siret: string): Promise<OrganizationResponse> {
+    const doc = await this.organizationModel.create({ name, siret });
     return this.toResponse(doc);
   }
 

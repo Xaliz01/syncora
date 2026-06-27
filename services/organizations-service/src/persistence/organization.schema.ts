@@ -23,8 +23,8 @@ export class OrganizationDocument extends Document {
   @Prop({ required: true })
   name!: string;
 
-  @Prop({ immutable: true })
-  siret?: string;
+  @Prop({ required: true, immutable: true })
+  siret!: string;
 
   @Prop()
   email?: string;

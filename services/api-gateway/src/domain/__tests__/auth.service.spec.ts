@@ -120,6 +120,7 @@ describe("AuthService", () => {
 
       const body = {
         organizationName: "Test Org",
+        organizationSiret: "12345678901234",
         adminEmail: "admin@example.com",
         adminPassword: "secret123",
         adminName: "Admin User",

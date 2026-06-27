@@ -67,15 +67,17 @@ export class AuthService extends AbstractAuthService {
   }
 
   async register(body: RegisterBody): Promise<AuthResponse> {
+    if (!body.organizationSiret?.trim()) {
+      throw new BadRequestException("Le SIRET de l'organisation est requis");
+    }
+
     let org: OrganizationResponse;
     try {
-      const createPayload: Record<string, string> = { name: body.organizationName };
-      if (body.organizationSiret?.trim()) createPayload.siret = body.organizationSiret.trim();
       const res = await firstValueFrom(
-        this.httpService.post<OrganizationResponse>(
-          `${ORGANIZATIONS_URL}/organizations`,
-          createPayload,
-        ),
+        this.httpService.post<OrganizationResponse>(`${ORGANIZATIONS_URL}/organizations`, {
+          name: body.organizationName,
+          siret: body.organizationSiret.trim(),
+        }),
       );
       org = res.data;
     } catch (err: unknown) {
@@ -180,15 +182,17 @@ export class AuthService extends AbstractAuthService {
       throw new BadRequestException("Le nom de l’organisation est requis");
     }
 
+    if (!body.siret?.trim()) {
+      throw new BadRequestException("Le SIRET de l\u2019organisation est requis");
+    }
+
     let org: OrganizationResponse;
     try {
-      const createPayload: Record<string, string> = { name: body.name.trim() };
-      if (body.siret?.trim()) createPayload.siret = body.siret.trim();
       const res = await firstValueFrom(
-        this.httpService.post<OrganizationResponse>(
-          `${ORGANIZATIONS_URL}/organizations`,
-          createPayload,
-        ),
+        this.httpService.post<OrganizationResponse>(`${ORGANIZATIONS_URL}/organizations`, {
+          name: body.name.trim(),
+          siret: body.siret.trim(),
+        }),
       );
       org = res.data;
     } catch (err: unknown) {

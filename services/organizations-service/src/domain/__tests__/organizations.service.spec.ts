@@ -43,21 +43,7 @@ describe("OrganizationsService", () => {
   });
 
   describe("create", () => {
-    it("should create an organization and return the response", async () => {
-      const doc = mockDoc({ name: "Acme Corp" });
-      mockOrganizationModel.create.mockResolvedValue(doc);
-
-      const result = await service.create("Acme Corp");
-
-      expect(mockOrganizationModel.create).toHaveBeenCalledWith({ name: "Acme Corp" });
-      expect(result).toEqual({
-        id: "org-123",
-        name: "Acme Corp",
-        createdAt: new Date("2025-01-01").toISOString(),
-      });
-    });
-
-    it("should create an organization with siret when provided", async () => {
+    it("should create an organization with name and siret", async () => {
       const doc = mockDoc({ name: "Acme Corp", siret: "12345678901234" });
       mockOrganizationModel.create.mockResolvedValue(doc);
 
@@ -74,20 +60,11 @@ describe("OrganizationsService", () => {
         createdAt: new Date("2025-01-01").toISOString(),
       });
     });
-
-    it("should not include siret in create payload when not provided", async () => {
-      const doc = mockDoc({ name: "Acme Corp" });
-      mockOrganizationModel.create.mockResolvedValue(doc);
-
-      await service.create("Acme Corp");
-
-      expect(mockOrganizationModel.create).toHaveBeenCalledWith({ name: "Acme Corp" });
-    });
   });
 
   describe("findById", () => {
     it("should return organization when found", async () => {
-      const doc = mockDoc({ name: "Found Org" });
+      const doc = mockDoc({ name: "Found Org", siret: "11111111111111" });
       mockOrganizationModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(doc),
       });
@@ -101,6 +78,7 @@ describe("OrganizationsService", () => {
       expect(result).toEqual({
         id: "org-123",
         name: "Found Org",
+        siret: "11111111111111",
         createdAt: new Date("2025-01-01").toISOString(),
       });
     });
@@ -113,22 +91,6 @@ describe("OrganizationsService", () => {
       const result = await service.findById("non-existent");
 
       expect(result).toBeNull();
-    });
-
-    it("should include siret in response when present", async () => {
-      const doc = mockDoc({ name: "Corp with SIRET", siret: "98765432109876" });
-      mockOrganizationModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(doc),
-      });
-
-      const result = await service.findById("org-123");
-
-      expect(result).toEqual({
-        id: "org-123",
-        name: "Corp with SIRET",
-        siret: "98765432109876",
-        createdAt: new Date("2025-01-01").toISOString(),
-      });
     });
   });
 });

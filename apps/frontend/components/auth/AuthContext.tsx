@@ -25,7 +25,7 @@ interface AuthContextValue extends AuthState {
   login: (email: string, password: string) => Promise<AuthUser>;
   register: (payload: {
     organizationName: string;
-    organizationSiret?: string;
+    organizationSiret: string;
     adminEmail: string;
     adminPassword: string;
     adminName?: string;
@@ -38,7 +38,7 @@ interface AuthContextValue extends AuthState {
   /** Recharge l’utilisateur depuis /auth/me (ex. après activation d’un abonnement). */
   refreshSession: () => Promise<void>;
   /** Crée une nouvelle organisation et positionne la session dessus (nouveau JWT). */
-  createOrganization: (payload: { name: string; siret?: string }) => Promise<AuthUser>;
+  createOrganization: (payload: { name: string; siret: string }) => Promise<AuthUser>;
   /** Bascule vers une autre organisation déjà liée au compte (nouveau JWT). */
   switchOrganization: (organizationId: string) => Promise<AuthUser>;
   logout: () => void;
@@ -107,7 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const createOrganization = useCallback(
-    async (payload: { name: string; siret?: string }) => {
+    async (payload: { name: string; siret: string }) => {
       const { accessToken, user } = await authApi.createOrganization(payload);
       persistAuth(accessToken, user);
       return user;
@@ -136,7 +136,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const register = useCallback(
     async (payload: {
       organizationName: string;
-      organizationSiret?: string;
+      organizationSiret: string;
       adminEmail: string;
       adminPassword: string;
       adminName?: string;

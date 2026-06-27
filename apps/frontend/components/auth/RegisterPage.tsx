@@ -26,14 +26,21 @@ export function RegisterPage() {
     }
   };
 
+  const canSubmit =
+    organizationSiret.trim().length > 0 &&
+    organizationName.trim().length > 0 &&
+    adminEmail.trim().length > 0 &&
+    adminPassword.length >= 8;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canSubmit) return;
     setError(null);
     setLoading(true);
     try {
       const user = await register({
         organizationName,
-        organizationSiret: organizationSiret.trim() || undefined,
+        organizationSiret: organizationSiret.trim(),
         adminEmail,
         adminPassword,
         adminName: adminName.trim() || undefined,
@@ -95,7 +102,7 @@ export function RegisterPage() {
                 inputCls="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
               />
               <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                Optionnel — saisissez un SIRET, SIREN ou nom pour pré-remplir.
+                Saisissez un SIRET, SIREN ou nom pour rechercher votre entreprise.
               </p>
             </div>
             <div>
@@ -173,7 +180,7 @@ export function RegisterPage() {
             </div>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !canSubmit}
               className="w-full rounded-lg bg-brand-600 py-2.5 font-medium text-white hover:bg-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-50 transition"
             >
               {loading ? "Création…" : "Créer l'organisation et mon compte"}

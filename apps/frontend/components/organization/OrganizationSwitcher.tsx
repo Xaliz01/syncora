@@ -64,9 +64,14 @@ export function OrganizationSwitcher({
       showToast("Indiquez un nom d\u2019organisation.", "error");
       return;
     }
+    const siret = newOrgSiret.trim();
+    if (!siret) {
+      showToast("Indiquez le SIRET de l\u2019organisation.", "error");
+      return;
+    }
     setCreating(true);
     try {
-      await createOrganization({ name, siret: newOrgSiret.trim() || undefined });
+      await createOrganization({ name, siret });
       setDialogOpen(false);
       setNewOrgName("");
       setNewOrgSiret("");

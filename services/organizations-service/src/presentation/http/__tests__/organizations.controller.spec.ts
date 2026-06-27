@@ -35,22 +35,7 @@ describe("OrganizationsController", () => {
   });
 
   describe("create", () => {
-    it("should call service.create with body.name and return the result", async () => {
-      const body = { name: "New Organization" };
-      const expected = {
-        id: "org-123",
-        name: "New Organization",
-        createdAt: "2025-01-01T00:00:00.000Z",
-      };
-      mockOrganizationsService.create.mockResolvedValue(expected);
-
-      const result = await controller.create(body);
-
-      expect(mockOrganizationsService.create).toHaveBeenCalledWith("New Organization", undefined);
-      expect(result).toEqual(expected);
-    });
-
-    it("should pass siret to service.create when provided", async () => {
+    it("should call service.create with body.name and body.siret", async () => {
       const body = { name: "SARL Test", siret: "12345678901234" };
       const expected = {
         id: "org-456",
@@ -72,6 +57,7 @@ describe("OrganizationsController", () => {
       const org = {
         id: "org-123",
         name: "Test Org",
+        siret: "11111111111111",
         createdAt: "2025-01-01T00:00:00.000Z",
       };
       mockOrganizationsService.findById.mockResolvedValue(org);

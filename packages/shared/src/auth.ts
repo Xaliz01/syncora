@@ -5,7 +5,7 @@ import type { UserStatus } from "./user";
 
 export interface RegisterBody {
   organizationName: string;
-  organizationSiret?: string;
+  organizationSiret: string;
   adminEmail: string;
   adminPassword: string;
   adminName?: string;

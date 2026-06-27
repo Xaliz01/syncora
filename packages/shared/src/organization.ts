@@ -10,7 +10,7 @@ export interface OrganizationTrialTestData {
 
 export interface CreateOrganizationBody {
   name: string;
-  siret?: string;
+  siret: string;
 }
 
 export interface UpdateOrganizationBody {
