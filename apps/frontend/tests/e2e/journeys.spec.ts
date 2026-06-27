@@ -26,7 +26,7 @@ test.describe("Accès invité", () => {
     await expect(page.getByRole("heading", { name: "Connexion" })).toBeVisible();
 
     await page.goto("/register");
-    await expect(page.getByRole("heading", { name: "Créer votre organisation" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Créer votre compte" })).toBeVisible();
 
     await page.goto("/accept-invitation");
     await expect(page.getByRole("heading", { name: "Rejoindre l'organisation" })).toBeVisible();
@@ -111,8 +111,8 @@ test.describe("Formulaires d'authentification", () => {
     await expect(page.getByLabel("Email administrateur")).toBeVisible();
     await expect(page.getByLabel("Mot de passe")).toBeVisible();
     await expect(page.getByRole("button", { name: "Continuer" })).toBeVisible();
-    await expect(page.getByText("Compte")).toBeVisible();
-    await expect(page.getByText("Organisation")).toBeVisible();
+    await expect(page.getByText("Compte", { exact: true })).toBeVisible();
+    await expect(page.getByText("Organisation", { exact: true })).toBeVisible();
   });
 
   test("l'étape organisation n'est pas accessible sans session onboarding", async ({ page }) => {
@@ -153,7 +153,8 @@ test.describe("Soumission formulaire de connexion", () => {
 test.describe("Soumission formulaire d'inscription", () => {
   test("soumettre l'étape 1 vide ne quitte pas la page", async ({ page }) => {
     await page.goto("/register");
-    await page.getByRole("button", { name: "Continuer" }).click();
+    // Le bouton est désactivé tant que l'étape 1 n'est pas valide : aucune navigation possible.
+    await expect(page.getByRole("button", { name: "Continuer" })).toBeDisabled();
     await expect(page).toHaveURL(/\/register/);
   });
 
@@ -197,7 +198,7 @@ test.describe("Parcours landing publique", () => {
       }),
     ).toBeVisible();
 
-    await page.getByRole("link", { name: "Créer mon organisation" }).first().click();
+    await page.getByRole("link", { name: "Démarrer mon essai gratuit" }).first().click();
     await expect(page).toHaveURL(/\/register/);
 
     await page.goto("/");
@@ -220,7 +221,7 @@ test.describe("Parcours inter-pages publiques complet", () => {
 
     await page.getByRole("link", { name: /Créer une organisation/ }).click();
     await expect(page).toHaveURL(/\/register/);
-    await expect(page.getByRole("heading", { name: "Créer votre organisation" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Créer votre compte" })).toBeVisible();
 
     await page.getByRole("link", { name: "Se connecter" }).click();
     await expect(page).toHaveURL(/\/login/);
