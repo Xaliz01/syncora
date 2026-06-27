@@ -2,6 +2,9 @@
 /**
  * Libère les ports utilisés par la gateway et les microservices (évite EADDRINUSE
  * quand un ancien ts-node-dev tourne encore).
+ *
+ * Stratégie : SIGTERM d'abord (arrêt propre), puis SIGKILL pour les survivants
+ * (certains process ts-node-dev ignorent SIGTERM et gardent le port occupé).
  */
 import { execSync } from "node:child_process";
 
@@ -13,33 +16,68 @@ function listListeners(port) {
       encoding: "utf8",
     }).trim();
     if (!out) return [];
-    return [...new Set(out.split("\n").filter(Boolean))];
+    return [...new Set(out.split("\n").filter(Boolean))]
+      .map((pid) => Number(pid))
+      .filter((pid) => Number.isFinite(pid));
   } catch {
     return [];
   }
 }
 
-let freed = 0;
-for (const port of PORTS) {
-  for (const pid of listListeners(port)) {
-    const n = Number(pid);
-    if (!Number.isFinite(n)) continue;
-    console.log(`[backend] Libération du port ${port} (PID ${n})`);
+function sleep(ms) {
+  try {
+    execSync(`sleep ${ms / 1000}`);
+  } catch {
+    /* ignore */
+  }
+}
+
+function killPids(pids, signal) {
+  let count = 0;
+  for (const pid of pids) {
     try {
-      process.kill(n, "SIGTERM");
-      freed += 1;
+      process.kill(pid, signal);
+      count += 1;
     } catch {
       /* déjà terminé */
     }
   }
+  return count;
 }
 
-if (freed > 0) {
-  execSync("sleep 0.5");
+// 1. SIGTERM (arrêt propre) sur tout ce qui écoute.
+let termed = 0;
+for (const port of PORTS) {
+  const pids = listListeners(port);
+  if (pids.length > 0) {
+    console.log(`[backend] Libération du port ${port} (PID ${pids.join(", ")})`);
+    termed += killPids(pids, "SIGTERM");
+  }
 }
 
+if (termed > 0) {
+  sleep(800);
+}
+
+// 2. SIGKILL sur les survivants (process qui ignorent SIGTERM).
+let killed = 0;
+for (const port of PORTS) {
+  const survivors = listListeners(port);
+  if (survivors.length > 0) {
+    console.log(
+      `[backend] Port ${port} toujours occupé après SIGTERM → SIGKILL (PID ${survivors.join(", ")})`,
+    );
+    killed += killPids(survivors, "SIGKILL");
+  }
+}
+
+if (killed > 0) {
+  sleep(300);
+}
+
+const total = termed + killed;
 console.log(
-  freed > 0
-    ? `[backend] ${freed} processus libéré(s) sur les ports backend.`
+  total > 0
+    ? `[backend] ${total} signal(aux) envoyé(s) pour libérer les ports backend (${killed} via SIGKILL).`
     : "[backend] Aucun port backend occupé.",
 );
