@@ -13,7 +13,7 @@ export class OrganizationsController {
 
   @Post()
   async create(@Body() body: CreateOrganizationBody) {
-    return this.organizationsService.create(body.name, body.siret);
+    return this.organizationsService.create(body);
   }
 
   @Get("trial-test-data/ready-organization-ids")

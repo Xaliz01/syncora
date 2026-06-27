@@ -104,16 +104,26 @@ test.describe("Formulaires d'authentification", () => {
     await expect(page.getByRole("button", { name: "Se connecter" })).toBeVisible();
   });
 
-  test("le formulaire d'inscription contient organisation, email, mot de passe et bouton", async ({
+  test("le formulaire d'inscription étape 1 contient email, mot de passe et bouton Continuer", async ({
     page,
   }) => {
     await page.goto("/register");
-    await expect(page.getByLabel("Nom de l'organisation")).toBeVisible();
     await expect(page.getByLabel("Email administrateur")).toBeVisible();
     await expect(page.getByLabel("Mot de passe")).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: "Créer l'organisation et mon compte" }),
-    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "Continuer" })).toBeVisible();
+    await expect(page.getByText("Compte")).toBeVisible();
+    await expect(page.getByText("Organisation")).toBeVisible();
+  });
+
+  test("l'étape organisation n'est pas accessible sans session onboarding", async ({ page }) => {
+    await page.goto("/register?step=organization");
+    await expect(page.getByRole("button", { name: "Créer l'organisation" })).toBeDisabled();
+    await expect(page.getByText("Session expirée")).toBeVisible();
+  });
+
+  test("l'étape organisation affiche les champs d'adresse postale", async ({ page }) => {
+    await page.goto("/register?step=organization");
+    await expect(page.getByText("Adresse postale")).toBeVisible();
   });
 
   test("le formulaire d'invitation contient token, mot de passe et bouton", async ({ page }) => {
@@ -141,18 +151,17 @@ test.describe("Soumission formulaire de connexion", () => {
 });
 
 test.describe("Soumission formulaire d'inscription", () => {
-  test("soumettre le formulaire vide ne quitte pas la page", async ({ page }) => {
+  test("soumettre l'étape 1 vide ne quitte pas la page", async ({ page }) => {
     await page.goto("/register");
-    await page.getByRole("button", { name: "Créer l'organisation et mon compte" }).click();
+    await page.getByRole("button", { name: "Continuer" }).click();
     await expect(page).toHaveURL(/\/register/);
   });
 
-  test("remplir tous les champs et vérifier que le bouton est actif", async ({ page }) => {
+  test("remplir l'étape 1 et vérifier que le bouton est actif", async ({ page }) => {
     await page.goto("/register");
-    await page.getByLabel("Nom de l'organisation").fill("Acme Corp");
     await page.getByLabel("Email administrateur").fill("admin@acme.fr");
     await page.getByLabel("Mot de passe").fill("secret1234");
-    const submitBtn = page.getByRole("button", { name: "Créer l'organisation et mon compte" });
+    const submitBtn = page.getByRole("button", { name: "Continuer" });
     await expect(submitBtn).toBeEnabled();
   });
 });

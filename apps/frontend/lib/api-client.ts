@@ -11,10 +11,22 @@ export function getAccessToken(): string | null {
   return localStorage.getItem("syncora_access_token");
 }
 
+export function getOnboardingToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("syncora_onboarding_token");
+}
+
+/** Token Bearer actif : onboarding en priorité (inscription), sinon session complète. */
+export function getBearerToken(): string | null {
+  return getOnboardingToken() ?? getAccessToken();
+}
+
 export interface ApiRequestOptions {
   body?: unknown;
   /** When true (default), sends Bearer token and requires a session. */
   bearer?: boolean;
+  /** When bearer is true, use onboarding token if present (for SIRET lookup during register). */
+  preferOnboardingToken?: boolean;
   /** When bearer is true and there is no token */
   noTokenMessage?: string;
   /** When response is not OK and body has no usable message */
@@ -40,6 +52,7 @@ export async function apiRequestJson<T>(
   const {
     body,
     bearer = true,
+    preferOnboardingToken = false,
     noTokenMessage = "Session expirée",
     fallbackError = "Erreur API",
   } = options;
@@ -47,7 +60,7 @@ export async function apiRequestJson<T>(
   const headers: Record<string, string> = {};
 
   if (bearer) {
-    const token = getAccessToken();
+    const token = preferOnboardingToken ? getBearerToken() : getAccessToken();
     if (!token) throw new Error(noTokenMessage);
     headers.Authorization = `Bearer ${token}`;
   }

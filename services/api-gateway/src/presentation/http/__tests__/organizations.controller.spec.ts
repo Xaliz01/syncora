@@ -3,6 +3,7 @@ import { NotFoundException } from "@nestjs/common";
 import { OrganizationsController } from "../organizations.controller";
 import { AbstractOrganizationsGatewayService } from "../../../domain/ports/organizations.service.port";
 import { JwtAuthGuard } from "../../../infrastructure/jwt-auth.guard";
+import { AuthOrOnboardingGuard } from "../../../infrastructure/auth-or-onboarding.guard";
 import { RequirePermissionGuard } from "../../../infrastructure/require-permission.guard";
 import { SubscriptionAccessGuard } from "../../../infrastructure/subscription-access.guard";
 import type { AuthUser } from "@syncora/shared";
@@ -39,6 +40,8 @@ describe("OrganizationsController", () => {
       ],
     })
       .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(AuthOrOnboardingGuard)
       .useValue({ canActivate: () => true })
       .overrideGuard(SubscriptionAccessGuard)
       .useValue({ canActivate: () => true })

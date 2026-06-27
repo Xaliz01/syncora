@@ -47,7 +47,7 @@ describe("OrganizationsController", () => {
 
       const result = await controller.create(body);
 
-      expect(mockOrganizationsService.create).toHaveBeenCalledWith("SARL Test", "12345678901234");
+      expect(mockOrganizationsService.create).toHaveBeenCalledWith(body);
       expect(result).toEqual(expected);
     });
   });

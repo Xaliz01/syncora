@@ -4,6 +4,8 @@ import type { AuthResponse, JwtPayload } from "@syncora/shared";
 import { AuthController } from "../auth.controller";
 import { AbstractAuthService } from "../../../domain/ports/auth.service.port";
 import { JwtAuthGuard } from "../../../infrastructure/jwt-auth.guard";
+import { CreateOrganizationGuard } from "../../../infrastructure/create-organization.guard";
+import { OnboardingAuthGuard } from "../../../infrastructure/onboarding-auth.guard";
 
 describe("AuthController", () => {
   let controller: AuthController;
@@ -25,6 +27,8 @@ describe("AuthController", () => {
   beforeEach(async () => {
     mockAuthService = {
       register: jest.fn(),
+      registerAccount: jest.fn(),
+      getOnboardingUser: jest.fn(),
       login: jest.fn(),
       acceptInvitation: jest.fn(),
       createOrganization: jest.fn(),
@@ -49,6 +53,10 @@ describe("AuthController", () => {
     })
       .overrideGuard(JwtAuthGuard)
       .useValue({ canActivate: () => true })
+      .overrideGuard(CreateOrganizationGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(OnboardingAuthGuard)
+      .useValue({ canActivate: () => true })
       .compile();
 
     controller = module.get<AuthController>(AuthController);
@@ -56,6 +64,31 @@ describe("AuthController", () => {
 
   it("should be defined", () => {
     expect(controller).toBeDefined();
+  });
+
+  describe("registerAccount", () => {
+    it("should call authService.registerAccount and return onboarding response", async () => {
+      const body = {
+        email: "admin@example.com",
+        password: "secret123",
+        name: "Admin User",
+      };
+      const onboardingResponse = {
+        accessToken: "onboarding-token",
+        user: {
+          id: "user-123",
+          email: "admin@example.com",
+          name: "Admin User",
+          status: "active" as const,
+        },
+      };
+      mockAuthService.registerAccount.mockResolvedValue(onboardingResponse);
+
+      const result = await controller.registerAccount(body);
+
+      expect(mockAuthService.registerAccount).toHaveBeenCalledWith(body);
+      expect(result).toEqual(onboardingResponse);
+    });
   });
 
   describe("register", () => {

@@ -4,6 +4,7 @@ import { Model } from "mongoose";
 import type { OrganizationDocument } from "../persistence/organization.schema";
 import {
   activeDocumentFilter,
+  type CreateOrganizationBody,
   type OrganizationResponse,
   type TrialTestDataStatus,
   type TrialTestDataStatusResponse,
@@ -45,8 +46,16 @@ export class OrganizationsService extends AbstractOrganizationsService {
     };
   }
 
-  async create(name: string, siret: string): Promise<OrganizationResponse> {
-    const doc = await this.organizationModel.create({ name, siret });
+  async create(body: CreateOrganizationBody): Promise<OrganizationResponse> {
+    const doc = await this.organizationModel.create({
+      name: body.name.trim(),
+      siret: body.siret.trim(),
+      addressLine1: body.addressLine1?.trim() || undefined,
+      addressLine2: body.addressLine2?.trim() || undefined,
+      postalCode: body.postalCode?.trim() || undefined,
+      city: body.city?.trim() || undefined,
+      country: body.country?.trim() || undefined,
+    });
     return this.toResponse(doc);
   }
 

@@ -11,6 +11,11 @@ export interface OrganizationTrialTestData {
 export interface CreateOrganizationBody {
   name: string;
   siret: string;
+  addressLine1?: string;
+  addressLine2?: string;
+  postalCode?: string;
+  city?: string;
+  country?: string;
 }
 
 export interface UpdateOrganizationBody {

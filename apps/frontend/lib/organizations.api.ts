@@ -22,5 +22,10 @@ export function lookupSiret(query: string) {
   return apiRequestJson<SiretLookupResponse>(
     "GET",
     `/organizations/siret-lookup?q=${encodeURIComponent(query)}`,
+    {
+      preferOnboardingToken: true,
+      noTokenMessage: "Session d'inscription expirée",
+      fallbackError: "Recherche SIRET impossible",
+    },
   );
 }

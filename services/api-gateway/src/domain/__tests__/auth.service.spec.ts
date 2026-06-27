@@ -136,6 +136,38 @@ describe("AuthService", () => {
     });
   });
 
+  describe("registerAccount", () => {
+    it("should create account without organization and return onboarding JWT", async () => {
+      jest.spyOn(httpService, "post").mockImplementation((url: string) => {
+        if (url.includes("/users/accounts")) {
+          return of({
+            data: {
+              id: "user-new",
+              email: "new@example.com",
+              name: "New Admin",
+              status: "active",
+            },
+            status: 201,
+          } as AxiosResponse);
+        }
+        return of({ data: {}, status: 200 } as AxiosResponse);
+      });
+
+      const result = await service.registerAccount({
+        email: "new@example.com",
+        password: "secret123",
+        name: "New Admin",
+      });
+
+      expect(result.accessToken).toBe("mock-jwt-token");
+      expect(result.user.email).toBe("new@example.com");
+      expect(jwtSignSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ kind: "onboarding", sub: "user-new" }),
+        expect.objectContaining({ expiresIn: "1d" }),
+      );
+    });
+  });
+
   describe("login", () => {
     it("should successfully login and return auth response with JWT", async () => {
       jest.spyOn(httpService, "post").mockImplementation((url: string) => {
@@ -161,6 +193,35 @@ describe("AuthService", () => {
       expect(result.user.id).toBe("user-123");
       expect(result.user.email).toBe("admin@example.com");
       expect(jwtSignSpy).toHaveBeenCalled();
+    });
+
+    it("should return onboarding JWT when user has no organization yet", async () => {
+      jest.spyOn(httpService, "post").mockImplementation((url: string) => {
+        if (url.includes("validate-credentials")) {
+          return of({
+            data: {
+              id: "user-pending",
+              email: "pending@example.com",
+              status: "active",
+            },
+            status: 200,
+          } as AxiosResponse);
+        }
+        return of({ data: {}, status: 200 } as AxiosResponse);
+      });
+
+      const result = await service.login({
+        email: "pending@example.com",
+        password: "secret123",
+      });
+
+      expect(result.accessToken).toBe("mock-jwt-token");
+      expect(result.user.email).toBe("pending@example.com");
+      expect("organizationId" in result.user).toBe(false);
+      expect(jwtSignSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ kind: "onboarding", sub: "user-pending" }),
+        expect.objectContaining({ expiresIn: "1d" }),
+      );
     });
 
     it("should throw UnauthorizedException on failed login (401)", async () => {

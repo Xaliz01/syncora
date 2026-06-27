@@ -47,11 +47,23 @@ describe("OrganizationsService", () => {
       const doc = mockDoc({ name: "Acme Corp", siret: "12345678901234" });
       mockOrganizationModel.create.mockResolvedValue(doc);
 
-      const result = await service.create("Acme Corp", "12345678901234");
+      const result = await service.create({
+        name: "Acme Corp",
+        siret: "12345678901234",
+        addressLine1: "1 rue de Paris",
+        postalCode: "75001",
+        city: "Paris",
+        country: "FR",
+      });
 
       expect(mockOrganizationModel.create).toHaveBeenCalledWith({
         name: "Acme Corp",
         siret: "12345678901234",
+        addressLine1: "1 rue de Paris",
+        addressLine2: undefined,
+        postalCode: "75001",
+        city: "Paris",
+        country: "FR",
       });
       expect(result).toEqual({
         id: "org-123",

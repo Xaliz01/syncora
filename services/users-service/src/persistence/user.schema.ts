@@ -3,8 +3,8 @@ import { Document } from "mongoose";
 
 @Schema({ timestamps: true, _id: true, collection: "users" })
 export class UserDocument extends Document {
-  @Prop({ required: true })
-  organizationId!: string;
+  @Prop()
+  organizationId?: string;
 
   @Prop({ required: true })
   email!: string;

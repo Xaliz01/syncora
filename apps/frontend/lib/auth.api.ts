@@ -1,33 +1,26 @@
-import { apiRequestJson, getAccessToken } from "./api-client";
+import type {
+  AuthResponse,
+  AuthUser,
+  CreateOrganizationBody,
+  OnboardingAuthResponse,
+  OnboardingUser,
+} from "@syncora/shared";
+import { apiRequestJson, getAccessToken, getOnboardingToken } from "./api-client";
 
 export async function login(email: string, password: string) {
-  return apiRequestJson<{ accessToken: string; user: import("@syncora/shared").AuthUser }>(
-    "POST",
-    "/auth/login",
-    {
-      body: { email, password },
-      bearer: false,
-      fallbackError: "Connexion impossible",
-    },
-  );
+  return apiRequestJson<AuthResponse | OnboardingAuthResponse>("POST", "/auth/login", {
+    body: { email, password },
+    bearer: false,
+    fallbackError: "Connexion impossible",
+  });
 }
 
-export async function register(payload: {
-  organizationName: string;
-  organizationSiret: string;
-  adminEmail: string;
-  adminPassword: string;
-  adminName?: string;
-}) {
-  return apiRequestJson<{ accessToken: string; user: import("@syncora/shared").AuthUser }>(
-    "POST",
-    "/auth/register",
-    {
-      body: payload,
-      bearer: false,
-      fallbackError: "Création de compte impossible",
-    },
-  );
+export async function registerAccount(payload: { email: string; password: string; name?: string }) {
+  return apiRequestJson<OnboardingAuthResponse>("POST", "/auth/register-account", {
+    body: payload,
+    bearer: false,
+    fallbackError: "Création de compte impossible",
+  });
 }
 
 export async function acceptInvitation(payload: {
@@ -35,54 +28,80 @@ export async function acceptInvitation(payload: {
   password: string;
   name?: string;
 }) {
-  return apiRequestJson<{ accessToken: string; user: import("@syncora/shared").AuthUser }>(
-    "POST",
-    "/auth/accept-invitation",
-    {
-      body: payload,
-      bearer: false,
-      fallbackError: "Acceptation impossible",
-    },
-  );
+  return apiRequestJson<AuthResponse>("POST", "/auth/accept-invitation", {
+    body: payload,
+    bearer: false,
+    fallbackError: "Acceptation impossible",
+  });
 }
 
-export async function createOrganization(payload: { name: string; siret: string }) {
-  return apiRequestJson<{ accessToken: string; user: import("@syncora/shared").AuthUser }>(
-    "POST",
-    "/auth/create-organization",
-    {
-      body: payload,
-      fallbackError: "Impossible de créer l’organisation",
-    },
-  );
+export async function createOrganization(payload: CreateOrganizationBody) {
+  return apiRequestJson<AuthResponse>("POST", "/auth/create-organization", {
+    body: payload,
+    preferOnboardingToken: true,
+    noTokenMessage: "Session d'inscription expirée",
+    fallbackError: "Impossible de créer l’organisation",
+  });
+}
+
+export async function createOrganizationAsMember(payload: CreateOrganizationBody) {
+  return apiRequestJson<AuthResponse>("POST", "/auth/create-organization", {
+    body: payload,
+    fallbackError: "Impossible de créer l’organisation",
+  });
 }
 
 export async function switchOrganization(payload: { organizationId: string }) {
-  return apiRequestJson<{ accessToken: string; user: import("@syncora/shared").AuthUser }>(
-    "POST",
-    "/auth/switch-organization",
-    {
-      body: payload,
-      fallbackError: "Impossible de changer d’organisation",
-    },
-  );
+  return apiRequestJson<AuthResponse>("POST", "/auth/switch-organization", {
+    body: payload,
+    fallbackError: "Impossible de changer d’organisation",
+  });
 }
 
 export function setToken(token: string) {
-  if (typeof window !== "undefined") localStorage.setItem("syncora_access_token", token);
+  if (typeof window !== "undefined") {
+    localStorage.setItem("syncora_access_token", token);
+    localStorage.removeItem("syncora_onboarding_token");
+  }
+}
+
+export function setOnboardingToken(token: string) {
+  if (typeof window !== "undefined") {
+    localStorage.setItem("syncora_onboarding_token", token);
+    localStorage.removeItem("syncora_access_token");
+  }
 }
 
 export function clearToken() {
-  if (typeof window !== "undefined") localStorage.removeItem("syncora_access_token");
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("syncora_access_token");
+    localStorage.removeItem("syncora_onboarding_token");
+  }
 }
 
-export async function getMe(): Promise<import("@syncora/shared").AuthUser> {
-  return apiRequestJson<import("@syncora/shared").AuthUser>("GET", "/auth/me", {
+export async function getMe(): Promise<AuthUser> {
+  return apiRequestJson<AuthUser>("GET", "/auth/me", {
     noTokenMessage: "Session non authentifiée",
     fallbackError: "Session expirée",
   });
 }
 
+export async function getOnboardingMe(): Promise<OnboardingUser> {
+  return apiRequestJson<OnboardingUser>("GET", "/auth/onboarding/me", {
+    preferOnboardingToken: true,
+    noTokenMessage: "Session d'inscription expirée",
+    fallbackError: "Session d'inscription expirée",
+  });
+}
+
 export function getToken() {
   return getAccessToken();
+}
+
+export function getOnboardingTokenFromStorage() {
+  return getOnboardingToken();
+}
+
+export function isAuthUser(user: AuthUser | OnboardingUser): user is AuthUser {
+  return "organizationId" in user;
 }

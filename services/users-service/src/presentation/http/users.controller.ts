@@ -17,6 +17,7 @@ import { AbstractUsersService } from "../../domain/ports/users.service.port";
 import type {
   ActivateInvitedUserBody,
   ChangePasswordBody,
+  CreateAccountBody,
   CreateInvitedUserBody,
   CreateOrganizationMembershipBody,
   CreateUserBody,
@@ -30,6 +31,18 @@ import type {
 @Controller("users")
 export class UsersController {
   constructor(private readonly usersService: AbstractUsersService) {}
+
+  @Post("accounts")
+  async createAccount(@Body() body: CreateAccountBody) {
+    return this.usersService.createAccount(body);
+  }
+
+  @Get("accounts/:id")
+  async findAccountById(@Param("id") id: string) {
+    const user = await this.usersService.findAccountById(id);
+    if (!user) throw new NotFoundException("User not found");
+    return user;
+  }
 
   @Post()
   async create(@Body() body: CreateUserBody) {

@@ -20,8 +20,12 @@ export function LoginPage() {
     setError(null);
     setLoading(true);
     try {
-      const user = await login(email, password);
-      router.replace(postAuthHomePath(user));
+      const result = await login(email, password);
+      if (result === "onboarding") {
+        router.replace("/register?step=organization");
+        return;
+      }
+      router.replace(postAuthHomePath(result));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Connexion impossible");
     } finally {
