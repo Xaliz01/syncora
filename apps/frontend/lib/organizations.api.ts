@@ -1,5 +1,6 @@
 import type {
   OrganizationResponse,
+  SiretLookupResponse,
   UpdateOrganizationBody,
   UserOrganizationsListResponse,
 } from "@syncora/shared";
@@ -15,4 +16,11 @@ export function getMineCurrent() {
 
 export function updateMine(body: UpdateOrganizationBody) {
   return apiRequestJson<OrganizationResponse>("PATCH", "/organizations/mine", { body });
+}
+
+export function lookupSiret(query: string) {
+  return apiRequestJson<SiretLookupResponse>(
+    "GET",
+    `/organizations/siret-lookup?q=${encodeURIComponent(query)}`,
+  );
 }

@@ -69,10 +69,13 @@ export class AuthService extends AbstractAuthService {
   async register(body: RegisterBody): Promise<AuthResponse> {
     let org: OrganizationResponse;
     try {
+      const createPayload: Record<string, string> = { name: body.organizationName };
+      if (body.organizationSiret?.trim()) createPayload.siret = body.organizationSiret.trim();
       const res = await firstValueFrom(
-        this.httpService.post<OrganizationResponse>(`${ORGANIZATIONS_URL}/organizations`, {
-          name: body.organizationName,
-        }),
+        this.httpService.post<OrganizationResponse>(
+          `${ORGANIZATIONS_URL}/organizations`,
+          createPayload,
+        ),
       );
       org = res.data;
     } catch (err: unknown) {
@@ -179,10 +182,13 @@ export class AuthService extends AbstractAuthService {
 
     let org: OrganizationResponse;
     try {
+      const createPayload: Record<string, string> = { name: body.name.trim() };
+      if (body.siret?.trim()) createPayload.siret = body.siret.trim();
       const res = await firstValueFrom(
-        this.httpService.post<OrganizationResponse>(`${ORGANIZATIONS_URL}/organizations`, {
-          name: body.name.trim(),
-        }),
+        this.httpService.post<OrganizationResponse>(
+          `${ORGANIZATIONS_URL}/organizations`,
+          createPayload,
+        ),
       );
       org = res.data;
     } catch (err: unknown) {

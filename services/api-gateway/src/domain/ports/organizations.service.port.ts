@@ -1,6 +1,7 @@
 import type {
   AuthUser,
   OrganizationResponse,
+  SiretLookupResponse,
   UpdateOrganizationBody,
   UserOrganizationsListResponse,
 } from "@syncora/shared";
@@ -12,4 +13,5 @@ export abstract class AbstractOrganizationsGatewayService {
     user: AuthUser,
     body: UpdateOrganizationBody,
   ): Promise<OrganizationResponse | null>;
+  abstract lookupSiret(query: string): Promise<SiretLookupResponse>;
 }

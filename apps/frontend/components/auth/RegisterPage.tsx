@@ -3,12 +3,15 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import type { SiretLookupResult } from "@syncora/shared";
 import { useAuth } from "@/components/auth/AuthContext";
 import { postAuthHomePath } from "@/lib/subscription-access";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { SiretLookupField } from "@/components/organization/SiretLookupField";
 
 export function RegisterPage() {
   const [organizationName, setOrganizationName] = useState("");
+  const [organizationSiret, setOrganizationSiret] = useState("");
   const [adminEmail, setAdminEmail] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
   const [adminName, setAdminName] = useState("");
@@ -17,6 +20,12 @@ export function RegisterPage() {
   const { register } = useAuth();
   const router = useRouter();
 
+  const handleSiretSelect = (result: SiretLookupResult) => {
+    if (result.nom && !organizationName.trim()) {
+      setOrganizationName(result.nom);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -24,6 +33,7 @@ export function RegisterPage() {
     try {
       const user = await register({
         organizationName,
+        organizationSiret: organizationSiret.trim() || undefined,
         adminEmail,
         adminPassword,
         adminName: adminName.trim() || undefined,
@@ -75,6 +85,19 @@ export function RegisterPage() {
                 {error}
               </div>
             )}
+            <div>
+              <SiretLookupField
+                value={organizationSiret}
+                onChange={setOrganizationSiret}
+                onSelect={handleSiretSelect}
+                disabled={loading}
+                labelCls="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1"
+                inputCls="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+              />
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                Optionnel — saisissez un SIRET, SIREN ou nom pour pré-remplir.
+              </p>
+            </div>
             <div>
               <label
                 htmlFor="organizationName"

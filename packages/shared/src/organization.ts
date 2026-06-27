@@ -10,6 +10,7 @@ export interface OrganizationTrialTestData {
 
 export interface CreateOrganizationBody {
   name: string;
+  siret?: string;
 }
 
 export interface UpdateOrganizationBody {
@@ -26,6 +27,7 @@ export interface UpdateOrganizationBody {
 export interface OrganizationResponse {
   id: string;
   name: string;
+  siret?: string;
   email?: string;
   phone?: string;
   addressLine1?: string;
@@ -47,4 +49,20 @@ export interface UpdateOrganizationTrialTestDataBody {
 /** Organisations accessibles pour la session en cours (JWT). Évoluera vers plusieurs entrées par utilisateur. */
 export interface UserOrganizationsListResponse {
   organizations: OrganizationResponse[];
+}
+
+/** Résultat renvoyé par la recherche SIRET (API Recherche d'entreprises). */
+export interface SiretLookupResult {
+  siret: string;
+  siren: string;
+  nom: string;
+  addressLine1?: string;
+  addressLine2?: string;
+  postalCode?: string;
+  city?: string;
+  country?: string;
+}
+
+export interface SiretLookupResponse {
+  results: SiretLookupResult[];
 }

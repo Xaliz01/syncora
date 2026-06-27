@@ -158,6 +158,12 @@ export function OrganizationPage() {
                 className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-100"
               />
             </label>
+            <div className="block">
+              <span className="text-xs text-slate-500 dark:text-slate-400">SIRET</span>
+              <p className="mt-1 px-3 py-2 text-sm text-slate-600 dark:text-slate-300 font-mono rounded-lg bg-slate-100 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-600">
+                {activeOrganization?.siret || "\u2014"}
+              </p>
+            </div>
             <label className="block">
               <span className="text-xs text-slate-500 dark:text-slate-400">Email</span>
               <input
@@ -196,10 +202,16 @@ export function OrganizationPage() {
           </div>
         ) : (
           <dl className="grid gap-3 text-sm sm:grid-cols-2">
-            <div className="sm:col-span-2">
+            <div>
               <dt className="text-slate-500 dark:text-slate-400">Nom</dt>
               <dd className="font-medium text-slate-900 dark:text-slate-100 mt-0.5">
                 {formatValue(activeOrganization?.name)}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-slate-500 dark:text-slate-400">SIRET</dt>
+              <dd className="mt-0.5 text-slate-800 dark:text-slate-100 font-mono">
+                {formatValue(activeOrganization?.siret)}
               </dd>
             </div>
             <div>

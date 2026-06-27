@@ -26,6 +26,7 @@ describe("OrganizationsController", () => {
       listMine: jest.fn(),
       getMine: jest.fn(),
       updateMine: jest.fn(),
+      lookupSiret: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -101,6 +102,38 @@ describe("OrganizationsController", () => {
       mockOrganizationsService.updateMine.mockResolvedValue(null);
 
       await expect(controller.updateMine(mockUser, body)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe("lookupSiret", () => {
+    it("should call organizationsService.lookupSiret with query and return results", async () => {
+      const expected = {
+        results: [
+          {
+            siret: "12345678901234",
+            siren: "123456789",
+            nom: "Test Corp",
+            postalCode: "75001",
+            city: "PARIS",
+            country: "FR",
+          },
+        ],
+      };
+      mockOrganizationsService.lookupSiret.mockResolvedValue(expected);
+
+      const result = await controller.lookupSiret("12345678901234");
+
+      expect(mockOrganizationsService.lookupSiret).toHaveBeenCalledWith("12345678901234");
+      expect(result).toEqual(expected);
+    });
+
+    it("should pass empty string when query is undefined", async () => {
+      mockOrganizationsService.lookupSiret.mockResolvedValue({ results: [] });
+
+      const result = await controller.lookupSiret(undefined as unknown as string);
+
+      expect(mockOrganizationsService.lookupSiret).toHaveBeenCalledWith("");
+      expect(result).toEqual({ results: [] });
     });
   });
 });

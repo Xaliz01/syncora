@@ -25,6 +25,7 @@ export class OrganizationsService extends AbstractOrganizationsService {
     return {
       id: doc._id.toString(),
       name: doc.name,
+      siret: doc.siret,
       email: doc.email,
       phone: doc.phone,
       addressLine1: doc.addressLine1,
@@ -44,8 +45,10 @@ export class OrganizationsService extends AbstractOrganizationsService {
     };
   }
 
-  async create(name: string): Promise<OrganizationResponse> {
-    const doc = await this.organizationModel.create({ name });
+  async create(name: string, siret?: string): Promise<OrganizationResponse> {
+    const data: Record<string, unknown> = { name };
+    if (siret) data.siret = siret;
+    const doc = await this.organizationModel.create(data);
     return this.toResponse(doc);
   }
 

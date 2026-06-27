@@ -14,6 +14,7 @@ export async function login(email: string, password: string) {
 
 export async function register(payload: {
   organizationName: string;
+  organizationSiret?: string;
   adminEmail: string;
   adminPassword: string;
   adminName?: string;
@@ -45,7 +46,7 @@ export async function acceptInvitation(payload: {
   );
 }
 
-export async function createOrganization(payload: { name: string }) {
+export async function createOrganization(payload: { name: string; siret?: string }) {
   return apiRequestJson<{ accessToken: string; user: import("@syncora/shared").AuthUser }>(
     "POST",
     "/auth/create-organization",

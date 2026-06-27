@@ -1,4 +1,4 @@
-import { Body, Controller, Get, NotFoundException, Patch, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, NotFoundException, Patch, Query, UseGuards } from "@nestjs/common";
 import { AbstractOrganizationsGatewayService } from "../../domain/ports/organizations.service.port";
 import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
 import {
@@ -7,7 +7,7 @@ import {
 } from "../../infrastructure/require-permission.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
 import { NotifyEntity } from "../../infrastructure/notify-entity.decorator";
-import type { AuthUser, UpdateOrganizationBody } from "@syncora/shared";
+import type { AuthUser, SiretLookupResponse, UpdateOrganizationBody } from "@syncora/shared";
 
 @Controller("organizations")
 @UseGuards(JwtAuthGuard, RequirePermissionGuard)
@@ -34,5 +34,10 @@ export class OrganizationsController {
     const org = await this.organizationsService.updateMine(user, body);
     if (!org) throw new NotFoundException("Organization not found");
     return org;
+  }
+
+  @Get("siret-lookup")
+  async lookupSiret(@Query("q") query: string): Promise<SiretLookupResponse> {
+    return this.organizationsService.lookupSiret(query ?? "");
   }
 }
