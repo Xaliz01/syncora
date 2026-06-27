@@ -1,0 +1,8 @@
+{
+  "preset": "<rootDir>/../../../jest-presets/syncora",
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": "src",
+  "testRegex": ".*\\.spec\\.ts$",
+  "testEnvironment": "node",
+  "passWithNoTests": true
+}

@@ -7,7 +7,7 @@
 import { spawn } from "node:child_process";
 import net from "node:net";
 
-const SERVICE_PORTS = [3001, 3002, 3003, 3004, 3005, 3006, 3007, 3008, 3009, 3010, 3011];
+const SERVICE_PORTS = [3001, 3002, 3003, 3004, 3005, 3006, 3007, 3008, 3009, 3010, 3011, 3012];
 const PORT_LABELS = {
   3001: "organizations",
   3002: "users",
@@ -20,6 +20,7 @@ const PORT_LABELS = {
   3009: "customers",
   3010: "notifications",
   3011: "documents",
+  3012: "exports",
 };
 const WAIT_TIMEOUT_MS = 180_000;
 const PROGRESS_INTERVAL_MS = 3_000;
