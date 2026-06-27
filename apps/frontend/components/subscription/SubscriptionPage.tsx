@@ -17,7 +17,7 @@ export function SubscriptionPage() {
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
           {subscriptionOk
             ? "Votre offre Essentiel, vos options complémentaires et la facturation Stripe."
-            : "Activez Syncora pour votre organisation et choisissez vos options."}
+            : "Activez votre essai gratuit ou gérez votre abonnement."}
         </p>
       </div>
 

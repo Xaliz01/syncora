@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -102,9 +103,16 @@ function mapStripeStatus(stripeStatus: string | undefined): OrganizationSubscrip
 function computeHasAccess(
   status: OrganizationSubscriptionStatus,
   currentPeriodEnd?: Date,
+  trialEndsAt?: Date | null,
 ): boolean {
   const now = Date.now();
-  if (status === "trialing" || status === "active" || status === "past_due") {
+  if (status === "active" || status === "past_due") {
+    return true;
+  }
+  if (status === "trialing") {
+    if (trialEndsAt) {
+      return trialEndsAt.getTime() > now;
+    }
     return true;
   }
   if (status === "canceled" && currentPeriodEnd && currentPeriodEnd.getTime() > now) {
@@ -160,7 +168,8 @@ export class SubscriptionsService {
     return {
       organizationId: doc.organizationId,
       status,
-      hasAccess: computeHasAccess(status, doc.currentPeriodEnd),
+      hasAccess: computeHasAccess(status, doc.currentPeriodEnd, trialEndsAt),
+      hasStripeSubscription: !!doc.stripeSubscriptionId?.trim(),
       trialEndsAt: trialEndsAt ? trialEndsAt.toISOString() : null,
       currentPeriodEnd: currentPeriodEnd ? currentPeriodEnd.toISOString() : null,
       cancelAtPeriodEnd: doc.cancelAtPeriodEnd ?? false,
@@ -199,7 +208,56 @@ export class SubscriptionsService {
       includedStorageBytes: BASE_SUBSCRIPTION_STORAGE_BYTES,
       monthlyTotalCents: null,
       monthlyTotalCurrency: null,
+      hasStripeSubscription: false,
     };
+  }
+
+  async startTrial(organizationId: string): Promise<OrganizationSubscriptionResponse> {
+    const existing = await this.subscriptionModel.findOne({ organizationId }).exec();
+    if (existing) {
+      const status = mapStripeStatus(existing.stripeStatus);
+      if (hasActiveBaseSubscription(existing)) {
+        throw new ConflictException(
+          "Un abonnement Stripe est déjà en cours pour cette organisation.",
+        );
+      }
+      if (status === "active" || status === "past_due") {
+        throw new ConflictException("Un abonnement payant est déjà actif.");
+      }
+      if (
+        status === "trialing" &&
+        computeHasAccess(status, existing.currentPeriodEnd, existing.trialEndsAt ?? null)
+      ) {
+        throw new ConflictException("L'essai gratuit est déjà actif.");
+      }
+      if (existing.trialEndsAt) {
+        throw new ConflictException(
+          "L'essai gratuit a déjà été utilisé. Abonnez-vous pour continuer à utiliser Syncora.",
+        );
+      }
+    }
+
+    const trialDays = Number(process.env.STRIPE_TRIAL_DAYS ?? DEFAULT_TRIAL_DAYS);
+    if (!Number.isFinite(trialDays) || trialDays <= 0) {
+      throw new InternalServerErrorException("Invalid STRIPE_TRIAL_DAYS");
+    }
+
+    const trialEndsAt = new Date();
+    trialEndsAt.setDate(trialEndsAt.getDate() + trialDays);
+
+    const doc = await this.subscriptionModel
+      .findOneAndUpdate(
+        { organizationId },
+        {
+          organizationId,
+          stripeStatus: "trialing",
+          trialEndsAt,
+        },
+        { upsert: true, new: true },
+      )
+      .exec();
+
+    return this.toResponse(doc, { monthlyTotalCents: null, monthlyTotalCurrency: null });
   }
 
   private async resolveMonthlyTotal(
@@ -288,6 +346,11 @@ export class SubscriptionsService {
       throw new InternalServerErrorException("Invalid STRIPE_TRIAL_DAYS");
     }
 
+    const existingDoc = await this.subscriptionModel
+      .findOne({ organizationId: params.organizationId })
+      .exec();
+    const skipStripeTrial = !!existingDoc?.trialEndsAt || hasActiveBaseSubscription(existingDoc);
+
     const stripe = getStripe();
     let stripeCustomerId = await this.resolveStripeCustomerIdForCheckout(
       stripe,
@@ -317,7 +380,7 @@ export class SubscriptionsService {
       client_reference_id: params.organizationId,
       metadata: { organizationId: params.organizationId },
       subscription_data: {
-        trial_period_days: trialDays,
+        ...(trialDays > 0 && !skipStripeTrial ? { trial_period_days: trialDays } : {}),
         metadata: { organizationId: params.organizationId },
       },
       allow_promotion_codes: true,
@@ -521,6 +584,7 @@ export class SubscriptionsService {
     if (!Number.isFinite(trialDays) || trialDays < 0) {
       throw new InternalServerErrorException("Invalid STRIPE_TRIAL_DAYS");
     }
+    const skipStripeTrial = !!doc?.trialEndsAt;
 
     let stripeCustomerId = doc?.stripeCustomerId?.trim();
     if (!stripeCustomerId) {
@@ -560,7 +624,7 @@ export class SubscriptionsService {
         checkoutKind: "base_plus_addon",
       },
       subscription_data: {
-        trial_period_days: trialDays,
+        ...(trialDays > 0 && !skipStripeTrial ? { trial_period_days: trialDays } : {}),
         metadata: { organizationId: params.organizationId },
       },
       allow_promotion_codes: true,
