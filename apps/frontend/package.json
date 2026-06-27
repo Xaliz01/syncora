@@ -9,6 +9,7 @@
     "dev": "next dev -p 5173",
     "build": "next build",
     "start": "next start -p 5173",
+    "pwa:preview": "npm run build && next start -p 5173 -H 0.0.0.0",
     "lint": "eslint \"app/**/*.{ts,tsx}\" \"components/**/*.{ts,tsx}\" \"lib/**/*.ts\"",
     "test": "echo \"No unit tests yet\"",
     "e2e:install": "playwright install chromium",
