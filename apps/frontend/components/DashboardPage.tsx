@@ -14,6 +14,8 @@ import type {
   DashboardTodoItem,
 } from "@syncora/shared";
 import { TrialTestDataCard } from "@/components/test-data/TrialTestDataCard";
+import { ExportButton } from "@/components/ui/ExportButton";
+import * as exportsApi from "@/lib/exports.api";
 
 const STATUS_LABELS: Record<CaseStatus, string> = {
   draft: "Brouillon",
@@ -128,6 +130,7 @@ function DashboardCasesModal({
   isLoading,
   showDueDate,
   onClose,
+  onExport,
 }: {
   title: string;
   subtitle?: string;
@@ -135,6 +138,7 @@ function DashboardCasesModal({
   isLoading: boolean;
   showDueDate?: boolean;
   onClose: () => void;
+  onExport?: (format: "pdf" | "xlsx") => Promise<void>;
 }) {
   return (
     <div
@@ -220,7 +224,12 @@ function DashboardCasesModal({
           )}
         </div>
 
-        <div className="border-t border-slate-200 dark:border-slate-700 px-5 py-3 flex justify-end">
+        <div className="border-t border-slate-200 dark:border-slate-700 px-5 py-3 flex justify-between">
+          <div>
+            {onExport && cases && cases.length > 0 && (
+              <ExportButton onExport={onExport} label="Exporter" size="sm" />
+            )}
+          </div>
           <button
             type="button"
             onClick={onClose}
@@ -247,6 +256,12 @@ function TodoCasesModal({ todo, onClose }: { todo: DashboardTodoItem; onClose: (
       cases={cases}
       isLoading={isLoading}
       onClose={onClose}
+      onExport={(format) =>
+        exportsApi.exportDashboardTodoCases(format, {
+          templateId: todo.templateId,
+          todoLabel: todo.todoLabel,
+        })
+      }
     />
   );
 }

@@ -8,6 +8,8 @@ import * as subscriptionsApi from "@/lib/subscriptions.api";
 import type { ManagedOrganizationUser } from "@/lib/admin.api";
 import { getOrganizationUserStatusLabel } from "@/lib/organization-user-status";
 import { PermissionGate } from "@/components/auth/PermissionGate";
+import { ExportButton } from "@/components/ui/ExportButton";
+import * as exportsApi from "@/lib/exports.api";
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Administrateur",
@@ -65,14 +67,19 @@ export function UsersManagementPage() {
             )}
           </p>
         </div>
-        <PermissionGate permission="users.invite">
-          <Link
-            href="/users/new"
-            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition self-start flex-shrink-0"
-          >
-            Inviter un utilisateur
-          </Link>
-        </PermissionGate>
+        <div className="flex items-center gap-2 self-start flex-shrink-0">
+          <PermissionGate permission="exports.users">
+            <ExportButton onExport={(format) => exportsApi.exportUsersList(format)} />
+          </PermissionGate>
+          <PermissionGate permission="users.invite">
+            <Link
+              href="/users/new"
+              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition"
+            >
+              Inviter un utilisateur
+            </Link>
+          </PermissionGate>
+        </div>
       </div>
 
       {error && (

@@ -24,6 +24,8 @@ import {
   ListToolbar,
 } from "@/components/ui/list-page";
 import { PermissionGate } from "@/components/auth/PermissionGate";
+import { ExportButton } from "@/components/ui/ExportButton";
+import * as exportsApi from "@/lib/exports.api";
 
 const GRID = "md:grid-cols-[1.2fr_0.7fr_1.1fr]";
 
@@ -62,9 +64,14 @@ export function CustomersListPage() {
         title="Clients"
         description="Personnes physiques et morales réutilisables pour vos dossiers."
         action={
-          <PermissionGate permission="customers.create">
-            <ListPrimaryAction href="/customers/new">Nouveau client</ListPrimaryAction>
-          </PermissionGate>
+          <div className="flex items-center gap-2">
+            <PermissionGate permission="exports.customers">
+              <ExportButton onExport={(format) => exportsApi.exportCustomersList(format)} />
+            </PermissionGate>
+            <PermissionGate permission="customers.create">
+              <ListPrimaryAction href="/customers/new">Nouveau client</ListPrimaryAction>
+            </PermissionGate>
+          </div>
         }
       />
 

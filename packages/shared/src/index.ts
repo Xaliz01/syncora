@@ -17,5 +17,6 @@ export * from "./notification";
 export * from "./document";
 export * from "./soft-delete";
 export * from "./organization-scope";
+export * from "./export";
 export * from "./support";
 export * from "./test-data";
