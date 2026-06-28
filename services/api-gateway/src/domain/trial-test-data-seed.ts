@@ -568,7 +568,7 @@ export function buildDemoInterventions(
     const onUserCase = i < userCaseCount;
     const unscheduled = unscheduledIndices.has(i);
     const start = new Date(base);
-    start.setDate(start.getDate() + 1 + (i % 10));
+    start.setDate(start.getDate() + (i % 15));
     start.setHours(8 + (i % 6), 0, 0, 0);
     const end = new Date(start);
     end.setHours(start.getHours() + 2 + (i % 3));

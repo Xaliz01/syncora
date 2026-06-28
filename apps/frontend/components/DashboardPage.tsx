@@ -60,7 +60,7 @@ const DASHBOARD_CARD_LIST_PAGE_SIZE = 5;
 
 /** Hauteur minimale commune des lignes (dossiers vs interventions) pour aligner les deux cartes. */
 const DASHBOARD_LIST_ROW_CLASS =
-  "flex items-center justify-between rounded-lg border border-slate-100 dark:border-slate-800 p-3 min-h-[5.5rem] hover:bg-slate-50 dark:hover:bg-slate-800 transition";
+  "flex items-center justify-between rounded-lg border border-slate-100 dark:border-slate-800 p-2.5 sm:p-3 min-h-[4.5rem] sm:min-h-[5.5rem] hover:bg-slate-50 dark:hover:bg-slate-800 transition";
 
 function DashboardPaginatedList<T>({
   items,
@@ -87,25 +87,25 @@ function DashboardPaginatedList<T>({
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      <div className="flex flex-col gap-2 flex-1 min-h-0">
+      <div className="flex flex-col gap-1.5 sm:gap-2 flex-1 min-h-0">
         {pageItems.map((item) => (
           <React.Fragment key={getKey(item)}>{children(item)}</React.Fragment>
         ))}
       </div>
       {showPager ? (
         <nav
-          className="mt-auto flex shrink-0 items-center justify-between gap-2 pt-3 border-t border-slate-100 dark:border-slate-800"
+          className="mt-auto flex shrink-0 items-center justify-between gap-1 sm:gap-2 pt-2 sm:pt-3 border-t border-slate-100 dark:border-slate-800"
           aria-label={ariaLabel}
         >
           <button
             type="button"
             onClick={() => setPage((p) => Math.max(0, p - 1))}
             disabled={safePage === 0}
-            className="rounded-lg px-2.5 py-1 text-xs font-medium text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-950/40 disabled:opacity-40 disabled:pointer-events-none transition"
+            className="rounded-lg px-2 sm:px-2.5 py-1 text-[11px] sm:text-xs font-medium text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-950/40 disabled:opacity-40 disabled:pointer-events-none transition"
           >
             Précédent
           </button>
-          <span className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
+          <span className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 tabular-nums">
             {start + 1}–{Math.min(start + DASHBOARD_CARD_LIST_PAGE_SIZE, items.length)} sur{" "}
             {items.length}
           </span>
@@ -113,7 +113,7 @@ function DashboardPaginatedList<T>({
             type="button"
             onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
             disabled={safePage >= totalPages - 1}
-            className="rounded-lg px-2.5 py-1 text-xs font-medium text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-950/40 disabled:opacity-40 disabled:pointer-events-none transition"
+            className="rounded-lg px-2 sm:px-2.5 py-1 text-[11px] sm:text-xs font-medium text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-950/40 disabled:opacity-40 disabled:pointer-events-none transition"
           >
             Suivant
           </button>
@@ -460,8 +460,8 @@ export function DashboardPage() {
       )}
 
       {canReadCases && (
-        <div className="grid lg:grid-cols-2 gap-4 sm:gap-6 lg:items-stretch">
-          <div className="flex flex-col rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:items-stretch">
+          <div className="flex flex-col rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 sm:p-4 shadow-sm dark:shadow-slate-950/20 overflow-hidden">
             <div className="flex shrink-0 items-center justify-between mb-3">
               <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
                 Mes dossiers actifs
@@ -485,32 +485,32 @@ export function DashboardPage() {
                   {(c) => (
                     <Link href={`/cases/${c.id}`} className={DASHBOARD_LIST_ROW_CLASS}>
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">
+                        <div className="flex items-center gap-1.5 sm:gap-2">
+                          <span className="text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-100 truncate">
                             {c.title}
                           </span>
                           <span
-                            className={`rounded-full px-2 py-0.5 text-[10px] font-medium flex-shrink-0 ${STATUS_COLORS[c.status]}`}
+                            className={`rounded-full px-1.5 sm:px-2 py-0.5 text-[10px] font-medium flex-shrink-0 ${STATUS_COLORS[c.status]}`}
                           >
                             {STATUS_LABELS[c.status]}
                           </span>
                         </div>
                         {c.customer?.displayName && (
-                          <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                          <div className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
                             Client : {c.customer.displayName}
                           </div>
                         )}
                         {c.nextTodo && (
-                          <div className="text-xs text-amber-600 mt-0.5 truncate">
+                          <div className="text-[11px] sm:text-xs text-amber-600 mt-0.5 truncate">
                             A faire : {c.nextTodo}
                           </div>
                         )}
                       </div>
-                      <div className="ml-3 flex flex-col items-end flex-shrink-0">
-                        <div className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                      <div className="ml-2 sm:ml-3 flex flex-col items-end flex-shrink-0">
+                        <div className="text-[11px] sm:text-xs font-medium text-slate-600 dark:text-slate-300">
                           {c.progress}%
                         </div>
-                        <div className="w-12 h-1 rounded-full bg-slate-100 dark:bg-slate-800 mt-1">
+                        <div className="w-10 sm:w-12 h-1 rounded-full bg-slate-100 dark:bg-slate-800 mt-1">
                           <div
                             className="h-full rounded-full bg-brand-600"
                             style={{ width: `${c.progress}%` }}
@@ -524,7 +524,7 @@ export function DashboardPage() {
             )}
           </div>
 
-          <div className="flex flex-col rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20">
+          <div className="flex flex-col rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 sm:p-4 shadow-sm dark:shadow-slate-950/20 overflow-hidden">
             <div className="flex shrink-0 items-center justify-between mb-3">
               <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
                 Prochaines interventions
@@ -550,18 +550,18 @@ export function DashboardPage() {
                   {(i) => (
                     <Link href={`/cases/${i.caseId}`} className={DASHBOARD_LIST_ROW_CLASS}>
                       <div className="min-w-0 flex-1">
-                        <div className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">
+                        <div className="text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-100 truncate">
                           {i.title}
                         </div>
                         {i.caseTitle && (
-                          <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                          <div className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
                             {i.caseTitle}
                           </div>
                         )}
                       </div>
-                      <div className="ml-3 text-right flex-shrink-0">
+                      <div className="ml-2 sm:ml-3 text-right flex-shrink-0">
                         {i.scheduledStart && (
-                          <div className="text-xs text-slate-600 dark:text-slate-300">
+                          <div className="text-[11px] sm:text-xs text-slate-600 dark:text-slate-300">
                             {new Date(i.scheduledStart).toLocaleDateString("fr-FR")}
                           </div>
                         )}
