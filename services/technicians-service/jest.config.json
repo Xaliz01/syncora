@@ -1,5 +1,5 @@
 {
-  "preset": "<rootDir>/../../../jest-presets/syncora",
+  "preset": "<rootDir>/../../../jest-presets/planwise",
   "moduleFileExtensions": ["js", "json", "ts"],
   "rootDir": "src",
   "testRegex": ".*\\.spec\\.ts$",

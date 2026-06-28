@@ -8,7 +8,7 @@ import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import type { TeamDocument } from "../persistence/team.schema";
 import type { AgenceDocument } from "../persistence/agence.schema";
-import type { CreateTeamBody, UpdateTeamBody, TeamResponse, TeamStatus } from "@syncora/shared";
+import type { CreateTeamBody, UpdateTeamBody, TeamResponse, TeamStatus } from "@planwise/shared";
 import { AbstractTeamsService } from "./ports/teams.service.port";
 
 @Injectable()

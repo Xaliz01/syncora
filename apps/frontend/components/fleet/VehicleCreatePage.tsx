@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
-import type { VehicleType, VehicleStatus } from "@syncora/shared";
+import type { VehicleType, VehicleStatus } from "@planwise/shared";
 
 const VEHICLE_TYPES: VehicleType[] = [
   "camion",

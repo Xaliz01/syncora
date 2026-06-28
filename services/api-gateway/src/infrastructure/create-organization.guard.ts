@@ -7,8 +7,8 @@ import {
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { Request } from "express";
-import type { JwtPayload, OnboardingJwtPayload } from "@syncora/shared";
-import { isOnboardingJwtPayload } from "@syncora/shared";
+import type { JwtPayload, OnboardingJwtPayload } from "@planwise/shared";
+import { isOnboardingJwtPayload } from "@planwise/shared";
 
 type CreateOrgRequest = Request & {
   user?: JwtPayload;

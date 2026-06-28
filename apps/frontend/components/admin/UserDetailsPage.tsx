@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import type { PermissionCode, PermissionProfileResponse } from "@syncora/shared";
+import type { PermissionCode, PermissionProfileResponse } from "@planwise/shared";
 import * as adminApi from "@/lib/admin.api";
 import { getPermissionLabel } from "@/lib/permissions-catalog";
 import type { ManagedOrganizationUser } from "@/lib/admin.api";

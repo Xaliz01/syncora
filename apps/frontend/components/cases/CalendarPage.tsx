@@ -12,7 +12,7 @@ import {
   normalizeCalendarColorHex,
   teamLegendSwatchStyle,
 } from "@/lib/team-calendar-colors";
-import type { InterventionResponse, TeamResponse } from "@syncora/shared";
+import type { InterventionResponse, TeamResponse } from "@planwise/shared";
 
 type ViewMode = "week" | "month";
 

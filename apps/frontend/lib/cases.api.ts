@@ -11,7 +11,7 @@ import type {
   InterventionResponse,
   SignInterventionResponse,
   StartInterventionResponse,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import { apiRequestJson, type ApiMethod } from "./api-client";
 import { API_BASE, getAccessToken } from "./api-client";
 

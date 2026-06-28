@@ -2,7 +2,7 @@ import { ConflictException, Injectable, NotFoundException } from "@nestjs/common
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import type { AgenceDocument } from "../persistence/agence.schema";
-import type { CreateAgenceBody, UpdateAgenceBody, AgenceResponse } from "@syncora/shared";
+import type { CreateAgenceBody, UpdateAgenceBody, AgenceResponse } from "@planwise/shared";
 import { AbstractAgencesService } from "./ports/agences.service.port";
 
 @Injectable()

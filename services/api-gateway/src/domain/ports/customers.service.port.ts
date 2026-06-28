@@ -1,4 +1,4 @@
-import type { AuthUser, CustomerResponse, CustomerKind, PostalAddress } from "@syncora/shared";
+import type { AuthUser, CustomerResponse, CustomerKind, PostalAddress } from "@planwise/shared";
 
 export interface CreateCustomerForOrgBody {
   kind: CustomerKind;

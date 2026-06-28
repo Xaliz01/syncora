@@ -30,7 +30,7 @@ import {
   type UserResponse,
   type UserRole,
   type ValidateCredentialsResponse,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import { AbstractUsersService } from "./ports/users.service.port";
 
 const SALT_ROUNDS = 10;

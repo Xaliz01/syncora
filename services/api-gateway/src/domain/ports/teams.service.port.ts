@@ -1,4 +1,4 @@
-import type { AuthUser, TeamResponse, UpdateTeamBody, TeamStatus } from "@syncora/shared";
+import type { AuthUser, TeamResponse, UpdateTeamBody, TeamStatus } from "@planwise/shared";
 
 export abstract class AbstractTeamsGatewayService {
   abstract createTeam(

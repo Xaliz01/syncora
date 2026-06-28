@@ -8,7 +8,7 @@ import {
   type UpdateTechnicianBody,
   type TechnicianResponse,
   type TechnicianStatus,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import { AbstractTechniciansService } from "./ports/technicians.service.port";
 
 @Injectable()

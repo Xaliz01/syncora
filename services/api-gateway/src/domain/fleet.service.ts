@@ -6,7 +6,7 @@ import type {
   VehicleResponse,
   VehicleStatus,
   VehicleType,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
 import { AbstractFleetGatewayService } from "./ports/fleet.service.port";
 

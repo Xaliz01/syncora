@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Syncora — CRM des opérations terrain",
-    short_name: "Syncora",
+    name: "Planwise — CRM des opérations terrain",
+    short_name: "Planwise",
     description:
       "Gérez vos clients, planifiez vos interventions et pilotez votre activité terrain depuis votre téléphone.",
     start_url: "/",

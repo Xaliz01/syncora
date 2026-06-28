@@ -14,7 +14,7 @@ import {
   scopeRequestBody,
   scopeRequestQuery,
   requireOrganizationId,
-} from "@syncora/shared";
+} from "@planwise/shared";
 
 export interface OrganizationScopedHttpRequest {
   baseUrl: string;

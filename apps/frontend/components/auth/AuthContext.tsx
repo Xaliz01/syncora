@@ -10,7 +10,7 @@ import React, {
   useState,
 } from "react";
 import { useTheme } from "next-themes";
-import type { AuthUser, CreateOrganizationBody, OnboardingUser } from "@syncora/shared";
+import type { AuthUser, CreateOrganizationBody, OnboardingUser } from "@planwise/shared";
 import * as authApi from "@/lib/auth.api";
 import * as accountApi from "@/lib/account.api";
 import { applyUserPreferences } from "@/lib/user-preferences";

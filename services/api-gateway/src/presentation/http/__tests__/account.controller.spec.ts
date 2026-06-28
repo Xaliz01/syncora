@@ -1,5 +1,5 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import type { AuthUser, UserPreferencesResponse, UserResponse } from "@syncora/shared";
+import type { AuthUser, UserPreferencesResponse, UserResponse } from "@planwise/shared";
 import { AccountController } from "../account.controller";
 import { AbstractAccountService } from "../../../domain/ports/account.service.port";
 import { JwtAuthGuard } from "../../../infrastructure/jwt-auth.guard";

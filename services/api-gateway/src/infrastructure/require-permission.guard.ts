@@ -6,7 +6,7 @@ import {
   SetMetadata,
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
-import type { JwtPayload, PermissionCode } from "@syncora/shared";
+import type { JwtPayload, PermissionCode } from "@planwise/shared";
 
 export const REQUIRED_PERMISSIONS_KEY = "requiredPermissions";
 export const RequirePermissions = (...permissions: PermissionCode[]) =>

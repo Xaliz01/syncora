@@ -5,7 +5,7 @@ import {
   hasAnyAssignablePermission,
   hasAssignablePermission,
 } from "../permission-checks";
-import type { AuthUser } from "@syncora/shared";
+import type { AuthUser } from "@planwise/shared";
 
 const member: AuthUser = {
   id: "user-1",

@@ -10,7 +10,7 @@ import {
   type TrialTestDataStatusResponse,
   type UpdateOrganizationBody,
   type UpdateOrganizationTrialTestDataBody,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import { AbstractOrganizationsService } from "./ports/organizations.service.port";
 
 @Injectable()

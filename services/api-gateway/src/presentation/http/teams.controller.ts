@@ -7,8 +7,8 @@ import {
 } from "../../infrastructure/require-permission.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
 import { NotifyEntity } from "../../infrastructure/notify-entity.decorator";
-import type { AuthUser } from "@syncora/shared";
-import type { UpdateTeamBody, TeamStatus } from "@syncora/shared";
+import type { AuthUser } from "@planwise/shared";
+import type { UpdateTeamBody, TeamStatus } from "@planwise/shared";
 
 interface CreateTeamPayload {
   name: string;

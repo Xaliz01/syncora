@@ -9,7 +9,7 @@ import { CustomerSchema } from "../persistence/customer.schema";
 @Module({
   imports: [
     MongooseModule.forRoot(
-      process.env.MONGODB_URI ?? "mongodb://localhost:27017/syncora-customers",
+      process.env.MONGODB_URI ?? "mongodb://localhost:27017/planwise-customers",
     ),
     MongooseModule.forFeature([{ name: "Customer", schema: CustomerSchema }]),
   ],

@@ -1,6 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { JwtModule } from "@nestjs/jwt";
-import type { AuthResponse, JwtPayload } from "@syncora/shared";
+import type { AuthResponse, JwtPayload } from "@planwise/shared";
 import { AuthController } from "../auth.controller";
 import { AbstractAuthService } from "../../../domain/ports/auth.service.port";
 import { JwtAuthGuard } from "../../../infrastructure/jwt-auth.guard";

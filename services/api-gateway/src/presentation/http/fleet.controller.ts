@@ -8,13 +8,13 @@ import {
 import { SubscriptionAccessGuard } from "../../infrastructure/subscription-access.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
 import { NotifyEntity } from "../../infrastructure/notify-entity.decorator";
-import type { AuthUser } from "@syncora/shared";
+import type { AuthUser } from "@planwise/shared";
 import type {
   AssignTeamToVehicleBody,
   UpdateVehicleBody,
   VehicleType,
   VehicleStatus,
-} from "@syncora/shared";
+} from "@planwise/shared";
 
 interface CreateVehiclePayload {
   type: VehicleType;

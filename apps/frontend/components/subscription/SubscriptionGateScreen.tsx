@@ -18,11 +18,11 @@ export function SubscriptionGateScreen() {
         <div className="mx-auto flex max-w-4xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
           <div className="flex items-center gap-2.5">
             <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-white font-semibold text-sm">
-              S
+              P
             </span>
             <div>
               <div className="font-semibold text-sm leading-tight text-slate-900 dark:text-slate-100">
-                Syncora
+                Planwise
               </div>
               <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
                 Activation de l’essai

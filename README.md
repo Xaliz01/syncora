@@ -1,6 +1,6 @@
-# Syncora
+# Planwise
 
-Syncora est un **CRM SaaS orienté opérations terrain**. Il permet de :
+Planwise est un **CRM SaaS orienté opérations terrain**. Il permet de :
 
 - **Gérer un portefeuille client** (clients, sites, contacts, historique)
 - **Planifier des interventions** (création, planification, calendrier)
@@ -15,7 +15,7 @@ Syncora est un **CRM SaaS orienté opérations terrain**. Il permet de :
   - Microservices + **hexagonale**
   - **API REST**
   - **API Gateway** frontale pour exposer les routes sur le web
-  - Package `@syncora/shared` pour partager les **types** et contrats (front/back et inter-microservices)
+  - Package `@planwise/shared` pour partager les **types** et contrats (front/back et inter-microservices)
 
 - **Frontend**
   - React + TypeScript
@@ -37,7 +37,7 @@ Syncora est un **CRM SaaS orienté opérations terrain**. Il permet de :
 ## Structure du repo
 
 ```text
-syncora/
+planwise/
   apps/
     frontend/              # Frontend React/Tailwind/TanStack Query/Playwright
   services/
@@ -46,15 +46,15 @@ syncora/
     users-service/         # Microservice utilisateurs (MongoDB, bcrypt, validation credentials)
     permissions-service/   # Microservice permissions (profils, affectations, invitations)
   packages/
-    shared/                # Types & contrats partagés (@syncora/shared)
+    shared/                # Types & contrats partagés (@planwise/shared)
   docker-compose.yml       # MongoDB pour le dev local
   .github/
     workflows/
       ci.yml               # Pipeline CI GitHub Actions
-  syncora.vision.md            # Vision, cible artisans/TPE, roadmap
-  syncora.product.config.yml   # Produit + auth/permissions
-  syncora.tech.config.yml
-  syncora.ui.config.yml
+  planwise.vision.md            # Vision, cible artisans/TPE, roadmap
+  planwise.product.config.yml   # Produit + auth/permissions
+  planwise.tech.config.yml
+  planwise.ui.config.yml
 ```
 
 ## Auth & permissions
@@ -74,7 +74,7 @@ syncora/
 Depuis la racine du projet :
 
 ```bash
-cd /Users/benoistbabin/Development/syncora
+cd /Users/benoistbabin/Development/planwise
 npm install
 ```
 
@@ -95,7 +95,7 @@ npm run backend
   - **permissions-service** (port 3003)
   - **api-gateway** (port 3000)
 
-Les services se connectent à `localhost:27017` avec leurs bases respectives (`syncora-organizations`, `syncora-users`, `syncora-permissions`). Aucune variable d’environnement requise pour le dev local.
+Les services se connectent à `localhost:27017` avec leurs bases respectives (`planwise-organizations`, `planwise-users`, `planwise-permissions`). Aucune variable d’environnement requise pour le dev local.
 
 Pour arrêter uniquement MongoDB :
 
@@ -122,10 +122,10 @@ Par défaut, l’application sera disponible sur `http://localhost:5173`.
 
 Si besoin (par ex. après `npm run backend:down` pour ne garder que MongoDB) :
 
-- **organizations-service** (3001) : `npm run start:dev -w @syncora/organizations-service`
-- **users-service** (3002) : `npm run start:dev -w @syncora/users-service`
-- **permissions-service** (3003) : `npm run start:dev -w @syncora/permissions-service`
-- **api-gateway** (3000) : `npm run start:dev -w @syncora/api-gateway`
+- **organizations-service** (3001) : `npm run start:dev -w @planwise/organizations-service`
+- **users-service** (3002) : `npm run start:dev -w @planwise/users-service`
+- **permissions-service** (3003) : `npm run start:dev -w @planwise/permissions-service`
+- **api-gateway** (3000) : `npm run start:dev -w @planwise/api-gateway`
 
 Endpoints utiles :
 
@@ -153,7 +153,7 @@ Variables d’environnement optionnelles :
 
 ## Scripts principaux
 
-Depuis la **racine** du monorepo (`syncora/`) :
+Depuis la **racine** du monorepo (`planwise/`) :
 
 - **Lint** (toutes les workspaces qui l’implémentent) :
 
@@ -195,5 +195,5 @@ Le workflow GitHub Actions (`.github/workflows/ci.yml`) :
 ## Prochaines étapes possibles
 
 - Définir les **microservices métier** (clients, interventions, stocks, flotte, intervenants)
-- Enrichir `@syncora/shared` avec les **DTOs, schémas et contrats d’API**
+- Enrichir `@planwise/shared` avec les **DTOs, schémas et contrats d’API**
 - Ajouter la configuration Docker/ECR/ECS concrète (référentiels, services ECS, secrets)

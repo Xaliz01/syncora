@@ -16,7 +16,7 @@ import type {
   PurgeTrialTestDataResponse,
   TrialTestDataStatusResponse,
   UpdateOrganizationTrialTestDataBody,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
 import { AbstractSubscriptionsGatewayService } from "./ports/subscriptions.service.port";
 import { AbstractTrialTestDataService } from "./ports/trial-test-data.service.port";

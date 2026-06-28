@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document } from "mongoose";
-import type { TrialTestDataStatus } from "@syncora/shared";
+import type { TrialTestDataStatus } from "@planwise/shared";
 
 @Schema({ _id: false })
 export class OrganizationTrialTestDataSubDoc {

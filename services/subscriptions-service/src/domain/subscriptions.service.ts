@@ -15,7 +15,7 @@ import type {
   OrganizationSubscriptionResponse,
   OrganizationSubscriptionStatus,
   UpdateSubscriptionAddonsResponse,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import {
   ADDON_CATALOG,
   ADDON_CODES,
@@ -33,7 +33,7 @@ import {
   QUANTITY_ADDON_CODES,
   sanitizeAddonQuantities,
   type AddonQuantities,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import type { OrganizationSubscriptionDocument } from "../persistence/organization-subscription.schema";
 import type { ProcessedStripeEventDocument } from "../persistence/processed-stripe-event.schema";
 
@@ -232,7 +232,7 @@ export class SubscriptionsService {
       }
       if (existing.trialEndsAt) {
         throw new ConflictException(
-          "L'essai gratuit a déjà été utilisé. Abonnez-vous pour continuer à utiliser Syncora.",
+          "L'essai gratuit a déjà été utilisé. Abonnez-vous pour continuer à utiliser Planwise.",
         );
       }
     }

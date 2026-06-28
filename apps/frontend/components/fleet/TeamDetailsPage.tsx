@@ -9,7 +9,7 @@ import type {
   AgenceResponse,
   VehicleResponse,
   TeamStatus,
-} from "@syncora/shared";
+} from "@planwise/shared";
 
 const TEAM_STATUSES: TeamStatus[] = ["active", "inactive"];
 import * as fleetApi from "@/lib/fleet.api";

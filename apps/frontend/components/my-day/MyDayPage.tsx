@@ -13,7 +13,7 @@ import {
 } from "@/components/interventions/InterventionPhotos";
 import { InterventionSignatureDialog } from "@/components/interventions/InterventionSignatureDialog";
 import * as api from "@/lib/cases.api";
-import type { GeoLocation, InterventionResponse, InterventionStatus } from "@syncora/shared";
+import type { GeoLocation, InterventionResponse, InterventionStatus } from "@planwise/shared";
 
 const STATUS_LABELS: Record<InterventionStatus, string> = {
   planned: "Planifiée",

@@ -1,4 +1,4 @@
-import type { CreateVehicleBody, UpdateVehicleBody, VehicleResponse } from "@syncora/shared";
+import type { CreateVehicleBody, UpdateVehicleBody, VehicleResponse } from "@planwise/shared";
 
 export abstract class AbstractFleetService {
   abstract createVehicle(body: CreateVehicleBody): Promise<VehicleResponse>;

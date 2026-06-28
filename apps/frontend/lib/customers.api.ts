@@ -1,4 +1,4 @@
-import type { CustomerKind, CustomerResponse } from "@syncora/shared";
+import type { CustomerKind, CustomerResponse } from "@planwise/shared";
 import { apiRequestJson, type ApiMethod } from "./api-client";
 
 async function customersRequest<TResponse>(

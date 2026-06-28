@@ -5,7 +5,7 @@ import type {
   TeamResponse,
   TeamStatus,
   UpdateTeamBody,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
 import { AbstractTeamsGatewayService } from "./ports/teams.service.port";
 

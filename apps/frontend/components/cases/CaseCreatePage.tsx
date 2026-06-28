@@ -7,7 +7,7 @@ import * as api from "@/lib/cases.api";
 import { listOrganizationUsers } from "@/lib/admin.api";
 import { CaseAssigneesTagsInput } from "@/components/cases/CaseAssigneesTagsInput";
 import { CaseCustomerPicker } from "@/components/cases/CaseCustomerPicker";
-import type { CasePriority } from "@syncora/shared";
+import type { CasePriority } from "@planwise/shared";
 
 export function CaseCreatePage() {
   const router = useRouter();

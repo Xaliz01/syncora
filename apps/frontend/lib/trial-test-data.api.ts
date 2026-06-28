@@ -2,7 +2,7 @@ import type {
   InjectTrialTestDataResponse,
   PurgeTrialTestDataResponse,
   TrialTestDataStatusResponse,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import type { QueryClient } from "@tanstack/react-query";
 import { apiRequestJson, type ApiMethod } from "./api-client";
 

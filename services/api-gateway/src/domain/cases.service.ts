@@ -35,7 +35,7 @@ import type {
   UpdateTodoBody,
   UserPermissionAssignmentResponse,
   UserResponse,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import PDFDocument from "pdfkit";
 import { assertAnyAssignablePermission } from "../infrastructure/permission-checks";
 import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
@@ -634,7 +634,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       doc
         .fontSize(22)
         .fillColor(brandColor)
-        .text("Syncora", 50, 40)
+        .text("Planwise", 50, 40)
         .fontSize(10)
         .fillColor(mutedColor)
         .text("Rapport d'intervention", 50, 65);
@@ -788,7 +788,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       doc
         .fontSize(8)
         .fillColor(mutedColor)
-        .text(`Généré le ${this.formatDateTimeFr(new Date().toISOString())} — Syncora`, 50, 785, {
+        .text(`Généré le ${this.formatDateTimeFr(new Date().toISOString())} — Planwise`, 50, 785, {
           align: "center",
           width: 495,
         });

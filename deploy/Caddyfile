@@ -1,4 +1,4 @@
-# Reverse proxy Syncora — HTTPS automatique (Let's Encrypt).
+# Reverse proxy Planwise — HTTPS automatique (Let's Encrypt).
 # Les domaines et l'email ACME proviennent de variables d'environnement (cf. docker-compose.prod.yml).
 
 {

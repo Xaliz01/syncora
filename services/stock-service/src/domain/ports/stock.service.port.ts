@@ -6,7 +6,7 @@ import type {
   InterventionArticleUsageResponse,
   StockMovementResponse,
   UpdateArticleBody,
-} from "@syncora/shared";
+} from "@planwise/shared";
 
 export abstract class AbstractStockService {
   abstract createArticle(body: CreateArticleBody): Promise<ArticleResponse>;

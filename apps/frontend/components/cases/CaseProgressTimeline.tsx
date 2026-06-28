@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import type { CaseStatus, CaseStep, TodoItemStatus } from "@syncora/shared";
+import type { CaseStatus, CaseStep, TodoItemStatus } from "@planwise/shared";
 
 const STATUS_LABELS: Record<CaseStatus, string> = {
   draft: "Brouillon",

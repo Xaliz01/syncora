@@ -26,7 +26,7 @@ import type {
   UpdateUserPreferencesBody,
   ValidateCredentialsBody,
   ValidateCredentialsResponse,
-} from "@syncora/shared";
+} from "@planwise/shared";
 
 @Controller("users")
 export class UsersController {

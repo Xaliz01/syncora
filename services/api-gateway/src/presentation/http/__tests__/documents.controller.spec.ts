@@ -4,7 +4,7 @@ import { AbstractDocumentsGatewayService } from "../../../domain/ports/documents
 import { JwtAuthGuard } from "../../../infrastructure/jwt-auth.guard";
 import { RequirePermissionGuard } from "../../../infrastructure/require-permission.guard";
 import { SubscriptionAccessGuard } from "../../../infrastructure/subscription-access.guard";
-import type { AuthUser, DocumentEntityType } from "@syncora/shared";
+import type { AuthUser, DocumentEntityType } from "@planwise/shared";
 import type { Response } from "express";
 
 describe("DocumentsController", () => {

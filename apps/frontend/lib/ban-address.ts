@@ -1,4 +1,4 @@
-import type { PostalAddress } from "@syncora/shared";
+import type { PostalAddress } from "@planwise/shared";
 
 const BAN_SEARCH = "https://api-adresse.data.gouv.fr/search/";
 

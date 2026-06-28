@@ -7,7 +7,7 @@ import type {
   CaseSummaryResponse,
   DashboardTodoCaseItem,
   InterventionResponse,
-} from "@syncora/shared";
+} from "@planwise/shared";
 
 describe("ExportsService", () => {
   let service: ExportsService;

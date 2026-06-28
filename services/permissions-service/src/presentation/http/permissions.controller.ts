@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from "@nestjs/common";
-import { parseOrganizationIdQuery } from "@syncora/shared/nest";
+import { parseOrganizationIdQuery } from "@planwise/shared/nest";
 import { AbstractPermissionsService } from "../../domain/ports/permissions.service.port";
 import type {
   AssignUserPermissionsBody,
@@ -7,7 +7,7 @@ import type {
   CreatePermissionProfileBody,
   ResolveEffectivePermissionsBody,
   UpdatePermissionProfileBody,
-} from "@syncora/shared";
+} from "@planwise/shared";
 
 @Controller()
 export class PermissionsController {

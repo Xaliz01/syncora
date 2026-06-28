@@ -2,7 +2,7 @@
 
 import { useTheme } from "next-themes";
 import React, { useCallback, useEffect, useState } from "react";
-import type { ThemePreference } from "@syncora/shared";
+import type { ThemePreference } from "@planwise/shared";
 import { useAuth } from "@/components/auth/AuthContext";
 import * as accountApi from "@/lib/account.api";
 import { notifyThemePreferenceChanged } from "@/lib/user-preferences";

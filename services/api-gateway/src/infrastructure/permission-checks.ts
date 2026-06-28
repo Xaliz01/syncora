@@ -1,5 +1,5 @@
 import { ForbiddenException } from "@nestjs/common";
-import type { AuthUser, JwtPayload, PermissionCode } from "@syncora/shared";
+import type { AuthUser, JwtPayload, PermissionCode } from "@planwise/shared";
 
 type PermissionSubject =
   | Pick<AuthUser, "role" | "permissions">

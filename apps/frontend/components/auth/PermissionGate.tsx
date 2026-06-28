@@ -1,6 +1,6 @@
 "use client";
 
-import type { PermissionCode } from "@syncora/shared";
+import type { PermissionCode } from "@planwise/shared";
 import { usePermissions } from "@/lib/hooks/usePermissions";
 
 interface PermissionGateProps {

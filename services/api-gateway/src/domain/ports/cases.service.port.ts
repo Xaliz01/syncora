@@ -13,7 +13,7 @@ import type {
   SignInterventionResponse,
   StartInterventionResponse,
   TodoDashboardVisibility,
-} from "@syncora/shared";
+} from "@planwise/shared";
 
 export interface CreateCaseForOrgBody {
   templateId?: string;

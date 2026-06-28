@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useId, useRef, useState } from "react";
-import type { PostalAddress } from "@syncora/shared";
+import type { PostalAddress } from "@planwise/shared";
 import { banFeatureToPostalAddress, searchBanAddresses, type BanFeature } from "@/lib/ban-address";
 
 function useDebouncedValue<T>(value: T, ms: number): T {

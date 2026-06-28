@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { buildHealthPayload } from "@syncora/shared";
+import { buildHealthPayload } from "@planwise/shared";
 import { AbstractAppService } from "../domain/ports/app.service.port";
 
 @Injectable()

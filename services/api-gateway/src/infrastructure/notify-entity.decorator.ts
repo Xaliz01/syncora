@@ -1,5 +1,5 @@
 import { SetMetadata } from "@nestjs/common";
-import type { NotificationAction, NotificationEntityType } from "@syncora/shared";
+import type { NotificationAction, NotificationEntityType } from "@planwise/shared";
 
 export const NOTIFY_ENTITY_KEY = "notifyEntity";
 

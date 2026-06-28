@@ -10,7 +10,7 @@ import {
 import { HttpService } from "@nestjs/axios";
 import axios from "axios";
 import { firstValueFrom } from "rxjs";
-import type { AuthUser, OrganizationStorageUsageResponse } from "@syncora/shared";
+import type { AuthUser, OrganizationStorageUsageResponse } from "@planwise/shared";
 import type {
   CreateAddonCheckoutSessionGatewayBody,
   CreateBillingPortalGatewayBody,
@@ -21,12 +21,12 @@ import type {
   StartTrialResponse,
   UpdateSubscriptionAddonsGatewayBody,
   UpdateSubscriptionAddonsResponse,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import {
   BASE_SUBSCRIPTION_STORAGE_BYTES,
   computeOrganizationStorageQuotaBytes,
   isStorageQuotaWarning,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import { AbstractSubscriptionsGatewayService } from "./ports/subscriptions.service.port";
 
 const SUBSCRIPTIONS_URL = process.env.SUBSCRIPTIONS_SERVICE_URL ?? "http://localhost:3008";
@@ -174,7 +174,7 @@ export class SubscriptionsGatewayService extends AbstractSubscriptionsGatewaySer
           netCode === "ENOTFOUND")
       ) {
         throw new ServiceUnavailableException(
-          `Service subscriptions injoignable (${SUBSCRIPTIONS_URL}). Lancez « npm run start:dev -w @syncora/subscriptions-service » (port 3008) ou définissez SUBSCRIPTIONS_SERVICE_URL.`,
+          `Service subscriptions injoignable (${SUBSCRIPTIONS_URL}). Lancez « npm run start:dev -w @planwise/subscriptions-service » (port 3008) ou définissez SUBSCRIPTIONS_SERVICE_URL.`,
         );
       }
 

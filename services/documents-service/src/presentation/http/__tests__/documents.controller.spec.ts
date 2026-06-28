@@ -1,6 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { BadRequestException } from "@nestjs/common";
-import { BASE_SUBSCRIPTION_STORAGE_BYTES } from "@syncora/shared";
+import { BASE_SUBSCRIPTION_STORAGE_BYTES } from "@planwise/shared";
 import { DocumentsController } from "../documents.controller";
 import { AbstractDocumentsService } from "../../../domain/ports/documents.service.port";
 import { AbstractStorageProvider } from "../../../infrastructure/storage.port";

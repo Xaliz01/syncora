@@ -1,10 +1,10 @@
 import { ConflictException } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
-import type { AuthUser, PermissionProfileResponse, UserResponse } from "@syncora/shared";
+import type { AuthUser, PermissionProfileResponse, UserResponse } from "@planwise/shared";
 import {
   TECHNICIAN_FIELD_DEFAULT_PERMISSIONS,
   TECHNICIAN_FIELD_PROFILE_NAME,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import { TechniciansGatewayService } from "../technicians.service";
 import { OrganizationScopedHttpClient } from "../../infrastructure/organization-scoped-http.client";
 

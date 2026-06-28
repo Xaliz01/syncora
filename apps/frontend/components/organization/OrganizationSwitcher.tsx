@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { SiretLookupResult } from "@syncora/shared";
+import type { SiretLookupResult } from "@planwise/shared";
 import { useAuth } from "@/components/auth/AuthContext";
 import { useOrganization } from "@/lib/organization";
 import { hasPermission } from "@/lib/auth-permissions";
@@ -126,7 +126,7 @@ export function OrganizationSwitcher({
         ? "mt-2 flex h-9 w-9 items-center justify-center rounded-lg border border-dashed border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition text-sm font-medium"
         : "mt-2 w-full rounded-lg border border-dashed border-slate-300 dark:border-slate-600 bg-white/60 dark:bg-slate-900/40 px-2.5 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition";
 
-  const switcherId = variant === "gate" ? "syncora-org-switcher-gate" : "syncora-org-switcher";
+  const switcherId = variant === "gate" ? "planwise-org-switcher-gate" : "planwise-org-switcher";
 
   return (
     <div className={shellClass}>
@@ -231,7 +231,7 @@ export function OrganizationSwitcher({
           className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-slate-950/50 p-4"
           role="dialog"
           aria-modal="true"
-          aria-labelledby="syncora-new-org-title"
+          aria-labelledby="planwise-new-org-title"
           onClick={() => {
             if (creating) return;
             setDialogOpen(false);
@@ -243,7 +243,7 @@ export function OrganizationSwitcher({
             onClick={(e) => e.stopPropagation()}
           >
             <h2
-              id="syncora-new-org-title"
+              id="planwise-new-org-title"
               className="text-lg font-semibold text-slate-900 dark:text-slate-100"
             >
               Nouvelle organisation
@@ -262,13 +262,13 @@ export function OrganizationSwitcher({
               />
               <div>
                 <label
-                  htmlFor="syncora-new-org-name"
+                  htmlFor="planwise-new-org-name"
                   className="block text-xs font-medium text-slate-600 dark:text-slate-300"
                 >
                   Nom
                 </label>
                 <input
-                  id="syncora-new-org-name"
+                  id="planwise-new-org-name"
                   type="text"
                   value={newOrgName}
                   onChange={(e) => setNewOrgName(e.target.value)}

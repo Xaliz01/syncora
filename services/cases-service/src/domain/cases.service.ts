@@ -27,7 +27,7 @@ import {
   type UpdateCaseTemplateBody,
   type UpdateInterventionBody,
   type UpdateTodoBody,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import type { CaseTemplateDocument } from "../persistence/case-template.schema";
 import type { CaseDocument } from "../persistence/case.schema";
 import type { CaseHistoryDocument } from "../persistence/case-history.schema";

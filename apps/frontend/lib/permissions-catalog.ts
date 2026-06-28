@@ -1,4 +1,4 @@
-import type { PermissionCode } from "@syncora/shared";
+import type { PermissionCode } from "@planwise/shared";
 
 export interface PermissionMetadata {
   code: PermissionCode;
@@ -162,7 +162,7 @@ export const PERMISSION_METADATA: Record<PermissionCode, PermissionMetadata> = {
   "fleet.technicians.create_user": {
     code: "fleet.technicians.create_user",
     label: "Créer un compte utilisateur pour un technicien",
-    description: "Créer un accès Syncora associé à un technicien.",
+    description: "Créer un accès Planwise associé à un technicien.",
   },
   "subscriptions.manage_billing": {
     code: "subscriptions.manage_billing",

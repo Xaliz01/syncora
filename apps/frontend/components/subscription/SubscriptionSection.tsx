@@ -19,7 +19,7 @@ import {
   isValidAddonCode,
   type AddonCode,
   type OrganizationSubscriptionResponse,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import { StorageUsageBanner } from "@/components/documents/StorageUsageBanner";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -224,9 +224,9 @@ function SubscriptionSectionInner({ mode = "full" }: { mode?: "full" | "pitchChe
             Passez en mode pilotage complet de votre activité
           </h2>
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-            Syncora vous aide à mieux organiser vos opérations terrain, réduire les oublis et livrer
-            plus vite. Démarrez votre essai gratuit sans moyen de paiement, puis abonnez-vous quand
-            vous êtes prêt.
+            Planwise vous aide à mieux organiser vos opérations terrain, réduire les oublis et
+            livrer plus vite. Démarrez votre essai gratuit sans moyen de paiement, puis abonnez-vous
+            quand vous êtes prêt.
           </p>
 
           <div className="mt-4">

@@ -6,7 +6,7 @@ import {
   BASE_SUBSCRIPTION_INCLUDED_USERS,
   BASE_SUBSCRIPTION_PLAN,
   BASE_SUBSCRIPTION_TRIAL_LABEL,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import { ScrollReveal } from "@/components/landing/ScrollReveal";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
@@ -17,9 +17,9 @@ const PILLARS = [
       "Suivez chaque dossier, son avancement, ses tâches et son historique depuis un seul endroit.",
   },
   {
-    title: "Planning terrain fluide",
+    title: "Exécution terrain et preuve d'intervention",
     description:
-      "Planifiez, glissez-déposez et réorganisez les interventions en quelques secondes.",
+      "Vos techniciens démarrent, documentent en photos, font signer le client et génèrent le rapport PDF depuis le terrain.",
   },
   {
     title: "Flotte et équipes alignées",
@@ -56,12 +56,23 @@ const FEATURE_SECTIONS = [
     ],
   },
   {
-    title: "Interventions & planning",
+    title: "Interventions terrain",
     items: [
-      "Interventions liées aux dossiers avec statuts et équipes",
-      "Calendrier semaine / mois avec code couleur par équipe",
-      "Glisser-déposer pour planifier les interventions non planifiées",
+      "Espace « Ma journée » : les techniciens retrouvent leurs interventions du jour",
+      "Démarrage et clôture d'intervention horodatés et géolocalisés",
+      "Photos d'intervention rattachées au dossier",
+      "Signature du client sur l'intervention terminée",
+      "Génération automatique du rapport d'intervention en PDF",
       "Consommation d'articles de stock sur chaque intervention",
+    ],
+  },
+  {
+    title: "Reporting & exports",
+    items: [
+      "Tableau de reporting : dossiers, interventions, techniciens actifs",
+      "Activité par technicien (interventions, heures, taux de complétion)",
+      "Rapport kilométrique : distance, carburant, coût et empreinte CO₂",
+      "Exports PDF et Excel (dossiers, interventions, clients, utilisateurs)",
     ],
   },
   {
@@ -69,6 +80,7 @@ const FEATURE_SECTIONS = [
     items: [
       "Fiches clients personnes physiques et morales",
       "Équipes, techniciens, véhicules et agences opérationnelles",
+      "Calendrier des interventions semaine / mois avec code couleur par équipe",
       "Catalogue articles, alertes stock bas et mouvements (entrées, sorties, ajustements)",
     ],
   },
@@ -92,11 +104,11 @@ function LandingHeader() {
       <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
         <Link href="/" className="flex items-center gap-2.5 shrink-0">
           <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white font-semibold text-sm">
-            S
+            P
           </span>
           <div>
             <div className="font-semibold text-sm leading-tight text-slate-900 dark:text-slate-100">
-              Syncora
+              Planwise
             </div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
               CRM des opérations terrain
@@ -164,7 +176,7 @@ export function LandingPage() {
               <p className="mt-5 text-lg text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed">
                 Centralisez dossiers, interventions, clients, flotte et stocks. Standardisez vos
                 processus, planifiez vos équipes et gardez une vision claire de votre activité.
-                Essayez Syncora pendant {BASE_SUBSCRIPTION_PLAN.trialDays} jours,{" "}
+                Essayez Planwise pendant {BASE_SUBSCRIPTION_PLAN.trialDays} jours,{" "}
                 <span className="font-semibold text-slate-900 dark:text-slate-100">
                   sans aucun moyen de paiement
                 </span>{" "}
@@ -353,7 +365,7 @@ export function LandingPage() {
                     href="/register"
                     className="mt-6 inline-flex w-full items-center justify-center rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-500 transition"
                   >
-                    Essayer Syncora — {BASE_SUBSCRIPTION_PLAN.trialDays} jours gratuits
+                    Essayer Planwise — {BASE_SUBSCRIPTION_PLAN.trialDays} jours gratuits
                   </Link>
                   <p className="mt-2 text-center text-xs text-slate-500 dark:text-slate-400">
                     Sans carte bancaire
@@ -468,9 +480,9 @@ export function LandingPage() {
         <div className="max-w-6xl mx-auto px-4 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-500 dark:text-slate-400">
           <div className="flex items-center gap-2">
             <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-brand-600 text-white font-semibold text-xs">
-              S
+              P
             </span>
-            <span>Syncora — CRM des opérations terrain</span>
+            <span>Planwise — CRM des opérations terrain</span>
           </div>
           <div className="flex flex-wrap justify-center gap-4">
             <Link

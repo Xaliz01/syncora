@@ -11,7 +11,7 @@ import {
   Query,
 } from "@nestjs/common";
 import { AbstractCasesService } from "../../domain/ports/cases.service.port";
-import { isDashboardStatFilter } from "@syncora/shared";
+import { isDashboardStatFilter } from "@planwise/shared";
 import type {
   CreateCaseBody,
   CreateCaseHistoryBody,
@@ -24,8 +24,8 @@ import type {
   UpdateCaseTemplateBody,
   UpdateInterventionBody,
   UpdateTodoBody,
-} from "@syncora/shared";
-import { parseOrganizationIdQuery } from "@syncora/shared/nest";
+} from "@planwise/shared";
+import { parseOrganizationIdQuery } from "@planwise/shared/nest";
 
 @Controller()
 export class CasesController {

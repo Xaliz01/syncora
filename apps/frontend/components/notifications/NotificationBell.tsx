@@ -9,7 +9,7 @@ import type {
   NotificationResponse,
   NotificationEntityType,
   NotificationAction,
-} from "@syncora/shared";
+} from "@planwise/shared";
 
 const ENTITY_TYPE_LABELS: Record<NotificationEntityType, string> = {
   case: "Dossier",

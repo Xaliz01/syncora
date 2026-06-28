@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import type { PermissionProfileResponse } from "@syncora/shared";
+import type { PermissionProfileResponse } from "@planwise/shared";
 import { TestDataBadgeIf } from "@/components/test-data/TestDataBadge";
 import * as adminApi from "@/lib/admin.api";
 import { PermissionGate } from "@/components/auth/PermissionGate";

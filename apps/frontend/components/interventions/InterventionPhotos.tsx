@@ -10,8 +10,8 @@ import React, {
   useState,
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import type { DocumentResponse } from "@syncora/shared";
-import { MAX_DOCUMENT_FILE_SIZE_BYTES } from "@syncora/shared";
+import type { DocumentResponse } from "@planwise/shared";
+import { MAX_DOCUMENT_FILE_SIZE_BYTES } from "@planwise/shared";
 import * as documentsApi from "@/lib/documents.api";
 
 export interface InterventionPhotosHandle {

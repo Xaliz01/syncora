@@ -18,7 +18,7 @@ import {
   type BooleanAddonCode,
   type OrganizationSubscriptionResponse,
   type QuantityAddonCode,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import * as subscriptionsApi from "@/lib/subscriptions.api";
 import {
   isExternalSubscriptionPaymentUrl,

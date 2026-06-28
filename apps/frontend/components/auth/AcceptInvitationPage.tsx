@@ -40,10 +40,10 @@ export function AcceptInvitationPage() {
       <header className="border-b border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center gap-2">
           <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white font-semibold">
-            S
+            P
           </span>
           <div>
-            <div className="font-semibold text-lg text-slate-900 dark:text-slate-100">Syncora</div>
+            <div className="font-semibold text-lg text-slate-900 dark:text-slate-100">Planwise</div>
             <div className="text-xs text-slate-500 dark:text-slate-400">
               Activation de votre invitation
             </div>

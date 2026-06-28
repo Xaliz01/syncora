@@ -1,4 +1,4 @@
-const STORAGE_KEY = "syncora.sidebar.collapsed";
+const STORAGE_KEY = "planwise.sidebar.collapsed";
 
 export function readSidebarCollapsed(): boolean {
   if (typeof window === "undefined") {

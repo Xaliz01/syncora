@@ -2,7 +2,7 @@ import type {
   CreateTechnicianBody,
   UpdateTechnicianBody,
   TechnicianResponse,
-} from "@syncora/shared";
+} from "@planwise/shared";
 
 export abstract class AbstractTechniciansService {
   abstract createTechnician(body: CreateTechnicianBody): Promise<TechnicianResponse>;

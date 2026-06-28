@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "@/lib/cases.api";
 import * as adminApi from "@/lib/admin.api";
-import type { TodoDashboardVisibility } from "@syncora/shared";
+import type { TodoDashboardVisibility } from "@planwise/shared";
 import { AppErrorAlert } from "@/components/ui/AppErrorAlert";
 
 interface TodoDashboardRuleForm {

@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document, Types } from "mongoose";
-import type { CasePriority, CaseStatus, TodoItemStatus } from "@syncora/shared";
+import type { CasePriority, CaseStatus, TodoItemStatus } from "@planwise/shared";
 
 @Schema({ _id: false })
 export class CaseTodoItemSubDoc {

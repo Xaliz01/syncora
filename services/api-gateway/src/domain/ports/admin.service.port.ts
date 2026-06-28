@@ -1,4 +1,4 @@
-import type { AuthUser, PermissionCode } from "@syncora/shared";
+import type { AuthUser, PermissionCode } from "@planwise/shared";
 
 export interface InviteOrganizationUserBody {
   email: string;

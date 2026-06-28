@@ -8,7 +8,7 @@ import type {
   ResolveEffectivePermissionsBody,
   UpdatePermissionProfileBody,
   UserPermissionAssignmentResponse,
-} from "@syncora/shared";
+} from "@planwise/shared";
 
 export abstract class AbstractPermissionsService {
   abstract createProfile(body: CreatePermissionProfileBody): Promise<PermissionProfileResponse>;

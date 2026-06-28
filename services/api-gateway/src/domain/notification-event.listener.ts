@@ -2,13 +2,13 @@ import { Injectable, Logger } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
-import type { SyncoraDomainEvent } from "../infrastructure/notify.interceptor";
+import type { PlanwiseDomainEvent } from "../infrastructure/notify.interceptor";
 import type {
   CreateNotificationBody,
   NotificationEntityType,
   NotificationAction,
   UserResponse,
-} from "@syncora/shared";
+} from "@planwise/shared";
 
 const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
 const NOTIFICATIONS_URL = process.env.NOTIFICATIONS_SERVICE_URL ?? "http://localhost:3010";
@@ -19,8 +19,8 @@ export class NotificationEventListener {
 
   constructor(private readonly httpService: HttpService) {}
 
-  @OnEvent("syncora.entity.changed", { async: true })
-  async handleEntityChanged(event: SyncoraDomainEvent): Promise<void> {
+  @OnEvent("planwise.entity.changed", { async: true })
+  async handleEntityChanged(event: PlanwiseDomainEvent): Promise<void> {
     try {
       const userIds = await this.getOrganizationUserIds(event.organizationId);
       if (userIds.length === 0) return;

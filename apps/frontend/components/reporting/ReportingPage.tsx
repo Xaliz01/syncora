@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import * as exportsApi from "@/lib/exports.api";
 import { useAuth } from "@/components/auth/AuthContext";
 import { hasPermission } from "@/lib/auth-permissions";
-import type { ReportingStatsResponse } from "@syncora/shared";
+import type { ReportingStatsResponse } from "@planwise/shared";
 
 type ExportFormat = "pdf" | "xlsx";
 

@@ -11,7 +11,7 @@ import type {
   OnboardingUser,
   CreateOrganizationBody,
   SwitchOrganizationBody,
-} from "@syncora/shared";
+} from "@planwise/shared";
 
 export abstract class AbstractAuthService {
   abstract register(body: RegisterBody): Promise<AuthResponse>;

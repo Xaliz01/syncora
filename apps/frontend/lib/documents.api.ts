@@ -1,5 +1,5 @@
 import { API_BASE, getAccessToken } from "./api-client";
-import type { DocumentEntityType, DocumentResponse } from "@syncora/shared";
+import type { DocumentEntityType, DocumentResponse } from "@planwise/shared";
 
 /** URL absolue utilisable par fetch (stockage local → /api/documents/download/…). */
 export function resolveDocumentFileUrl(url: string): string {

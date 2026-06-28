@@ -10,7 +10,7 @@ import type {
   UpdateUserPreferencesBody,
   UserPreferencesResponse,
   UserResponse,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import { AbstractAccountService } from "./ports/account.service.port";
 
 const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";

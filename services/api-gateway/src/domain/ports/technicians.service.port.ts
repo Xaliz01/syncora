@@ -4,7 +4,7 @@ import type {
   UpdateTechnicianBody,
   CreateTechnicianUserAccountBody,
   TechnicianStatus,
-} from "@syncora/shared";
+} from "@planwise/shared";
 
 export abstract class AbstractTechniciansGatewayService {
   abstract createTechnician(

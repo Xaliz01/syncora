@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import * as customersApi from "@/lib/customers.api";
-import type { CustomerResponse } from "@syncora/shared";
+import type { CustomerResponse } from "@planwise/shared";
 import { CustomerCreateForm } from "@/components/customers/CustomerCreateForm";
 import { CUSTOMER_KIND_LABELS } from "@/components/customers/customer-kind-labels";
 

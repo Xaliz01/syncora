@@ -11,12 +11,12 @@ import type {
   UpdateTechnicianBody,
   UserPermissionAssignmentResponse,
   UserResponse,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import {
   BASE_SUBSCRIPTION_PLAN,
   TECHNICIAN_FIELD_DEFAULT_PERMISSIONS,
   TECHNICIAN_FIELD_PROFILE_NAME,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import { AbstractTechniciansGatewayService } from "./ports/technicians.service.port";
 import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
 

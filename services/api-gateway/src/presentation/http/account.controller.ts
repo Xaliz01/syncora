@@ -7,7 +7,7 @@ import type {
   ChangePasswordBody,
   UpdateUserNameBody,
   UpdateUserPreferencesBody,
-} from "@syncora/shared";
+} from "@planwise/shared";
 
 @Controller("account")
 @UseGuards(JwtAuthGuard)

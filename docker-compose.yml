@@ -7,11 +7,11 @@
 services:
   mongodb:
     image: mongo:7
-    container_name: syncora-mongodb
+    container_name: planwise-mongodb
     ports:
       - "27017:27017"
     volumes:
-      - syncora-mongodb-data:/data/db
+      - planwise-mongodb-data:/data/db
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 5s
@@ -22,17 +22,17 @@ services:
   datadog-agent:
     profiles: ["datadog"]
     image: gcr.io/datadoghq/agent:7
-    container_name: syncora-datadog-agent
+    container_name: planwise-datadog-agent
     environment:
       DD_API_KEY: ${DD_API_KEY:-}
       DD_SITE: ${DD_SITE:-datadoghq.com}
-      DD_HOSTNAME: syncora-local
+      DD_HOSTNAME: planwise-local
       DD_APM_ENABLED: "true"
       DD_APM_NON_LOCAL_TRAFFIC: "true"
       DD_DOGSTATSD_NON_LOCAL_TRAFFIC: "true"
       DD_LOGS_ENABLED: "false"
       DD_PROCESS_AGENT_ENABLED: "false"
-      DD_CONTAINER_EXCLUDE: "name:syncora-datadog-agent"
+      DD_CONTAINER_EXCLUDE: "name:planwise-datadog-agent"
     ports:
       - "127.0.0.1:8126:8126"
       - "127.0.0.1:8125:8125/udp"
@@ -46,5 +46,5 @@ services:
       start_period: 45s
 
 volumes:
-  syncora-mongodb-data:
-  syncora-documents:
+  planwise-mongodb-data:
+  planwise-documents:

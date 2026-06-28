@@ -17,7 +17,7 @@ import {
   type StockMovementType,
   type StockStatus,
   type UpdateArticleBody,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import type { ArticleDocument } from "../persistence/article.schema";
 import type { StockMovementDocument } from "../persistence/stock-movement.schema";
 import { AbstractStockService } from "./ports/stock.service.port";

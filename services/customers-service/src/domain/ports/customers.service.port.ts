@@ -1,4 +1,4 @@
-import type { CreateCustomerBody, CustomerResponse, UpdateCustomerBody } from "@syncora/shared";
+import type { CreateCustomerBody, CustomerResponse, UpdateCustomerBody } from "@planwise/shared";
 
 export abstract class AbstractCustomersService {
   abstract createCustomer(body: CreateCustomerBody): Promise<CustomerResponse>;

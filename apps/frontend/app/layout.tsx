@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 
-const APP_NAME = "Syncora";
-const APP_TITLE = "Syncora CRM";
+const APP_NAME = "Planwise";
+const APP_TITLE = "Planwise CRM";
 const APP_DESCRIPTION = "CRM des opérations terrain";
 
 export const metadata: Metadata = {

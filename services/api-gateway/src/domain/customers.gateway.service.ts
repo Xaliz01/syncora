@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
-import type { AuthUser } from "@syncora/shared";
-import type { CustomerResponse } from "@syncora/shared";
+import type { AuthUser } from "@planwise/shared";
+import type { CustomerResponse } from "@planwise/shared";
 import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
 import {
   AbstractCustomersGatewayService,

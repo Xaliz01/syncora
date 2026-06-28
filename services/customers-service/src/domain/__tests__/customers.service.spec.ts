@@ -1,7 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getModelToken } from "@nestjs/mongoose";
 import { BadRequestException, NotFoundException } from "@nestjs/common";
-import { activeDocumentFilter } from "@syncora/shared";
+import { activeDocumentFilter } from "@planwise/shared";
 import { CustomersService } from "../customers.service";
 import { AbstractCustomersService } from "../ports/customers.service.port";
 

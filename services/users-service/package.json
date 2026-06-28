@@ -1,5 +1,5 @@
 {
-  "name": "@syncora/users-service",
+  "name": "@planwise/users-service",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -15,7 +15,7 @@
     "@nestjs/core": "^11.0.0",
     "@nestjs/mongoose": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
-    "@syncora/shared": "0.1.0",
+    "@planwise/shared": "0.1.0",
     "bcrypt": "^5.1.0",
     "dd-trace": "^5.0.0",
     "mongoose": "^8.0.0",

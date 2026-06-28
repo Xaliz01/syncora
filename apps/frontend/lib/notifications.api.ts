@@ -1,5 +1,5 @@
 import { apiRequestJson } from "./api-client";
-import type { NotificationListResponse, NotificationResponse } from "@syncora/shared";
+import type { NotificationListResponse, NotificationResponse } from "@planwise/shared";
 
 export async function listNotifications(limit?: number): Promise<NotificationListResponse> {
   const query = limit ? `?limit=${limit}` : "";

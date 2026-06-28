@@ -7,7 +7,7 @@ import {
   UnauthorizedException,
 } from "@nestjs/common";
 import * as bcrypt from "bcrypt";
-import { activeDocumentFilter } from "@syncora/shared";
+import { activeDocumentFilter } from "@planwise/shared";
 import { UsersService } from "../users.service";
 import { AbstractUsersService } from "../ports/users.service.port";
 

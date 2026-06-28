@@ -12,7 +12,7 @@ import type {
   TeamResponse,
   TechnicianResponse,
   UserResponse,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import PDFDocument from "pdfkit";
 import ExcelJS from "exceljs";
 import { AbstractExportsService, type ExportResult } from "./ports/exports.service.port";
@@ -989,7 +989,7 @@ export class ExportsService extends AbstractExportsService {
   // ── PDF Helpers ──
 
   private pdfHeader(doc: PDFKit.PDFDocument, subtitle: string): void {
-    doc.fontSize(22).fillColor("#6d28d9").text("Syncora", 50, 40);
+    doc.fontSize(22).fillColor("#6d28d9").text("Planwise", 50, 40);
     doc.fontSize(10).fillColor("#64748b").text(subtitle, 50, 65);
     doc
       .moveTo(50, 85)
@@ -1005,10 +1005,15 @@ export class ExportsService extends AbstractExportsService {
     doc
       .fontSize(7)
       .fillColor("#94a3b8")
-      .text(`Généré le ${this.formatDateTimeFr(new Date().toISOString())} — Syncora`, 50, bottomY, {
-        align: "center",
-        width: doc.page.width - 100,
-      });
+      .text(
+        `Généré le ${this.formatDateTimeFr(new Date().toISOString())} — Planwise`,
+        50,
+        bottomY,
+        {
+          align: "center",
+          width: doc.page.width - 100,
+        },
+      );
   }
 
   private pdfSectionTitle(doc: PDFKit.PDFDocument, title: string): void {

@@ -7,7 +7,7 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
-const DISMISSED_KEY = "syncora_pwa_install_dismissed";
+const DISMISSED_KEY = "planwise_pwa_install_dismissed";
 const DISMISS_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 
 function wasDismissedRecently(): boolean {

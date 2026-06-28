@@ -1,12 +1,12 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from "@nestjs/common";
-import { parseOrganizationIdQuery } from "@syncora/shared/nest";
+import { parseOrganizationIdQuery } from "@planwise/shared/nest";
 import { AbstractStockService } from "../../domain/ports/stock.service.port";
 import type {
   AddInterventionArticleUsageBody,
   CreateArticleBody,
   CreateArticleMovementBody,
   UpdateArticleBody,
-} from "@syncora/shared";
+} from "@planwise/shared";
 
 @Controller()
 export class StockController {

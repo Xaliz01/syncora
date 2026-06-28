@@ -3,7 +3,7 @@ import type {
   AuthUser,
   InterventionArticleUsageResponse,
   StockMovementResponse,
-} from "@syncora/shared";
+} from "@planwise/shared";
 
 export interface CreateArticleForOrgBody {
   name: string;

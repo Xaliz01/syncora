@@ -4,7 +4,7 @@ import { AbstractSubscriptionsGatewayService } from "../../../domain/ports/subsc
 import { JwtAuthGuard } from "../../../infrastructure/jwt-auth.guard";
 import { RequirePermissionGuard } from "../../../infrastructure/require-permission.guard";
 import { SubscriptionAccessGuard } from "../../../infrastructure/subscription-access.guard";
-import type { AddonCode, AuthUser } from "@syncora/shared";
+import type { AddonCode, AuthUser } from "@planwise/shared";
 
 describe("SubscriptionsController", () => {
   let controller: SubscriptionsController;

@@ -2,7 +2,7 @@ import { Controller, Get, Query, UseGuards } from "@nestjs/common";
 import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
 import { AbstractSearchService } from "../../domain/ports/search.service.port";
-import type { AuthUser } from "@syncora/shared";
+import type { AuthUser } from "@planwise/shared";
 
 @Controller("search")
 @UseGuards(JwtAuthGuard)

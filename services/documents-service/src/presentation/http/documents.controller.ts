@@ -15,7 +15,7 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import type { Response } from "express";
 import * as fs from "fs";
 import * as path from "path";
-import { MAX_DOCUMENT_FILE_SIZE_BYTES, type DocumentEntityType } from "@syncora/shared";
+import { MAX_DOCUMENT_FILE_SIZE_BYTES, type DocumentEntityType } from "@planwise/shared";
 import { AbstractDocumentsService } from "../../domain/ports/documents.service.port";
 import { LocalStorageProvider } from "../../infrastructure/local-storage.provider";
 import { AbstractStorageProvider } from "../../infrastructure/storage.port";

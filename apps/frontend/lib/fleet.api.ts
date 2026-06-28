@@ -11,7 +11,7 @@ import type {
   UpdateTechnicianBody,
   UpdateTeamBody,
   UpdateAgenceBody,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import { apiRequestJson, type ApiMethod } from "./api-client";
 
 export interface CreateVehiclePayload {

@@ -20,8 +20,8 @@ import type {
   UpdatePermissionProfileBody,
   UserPermissionAssignmentResponse,
   UserResponse,
-} from "@syncora/shared";
-import { ASSIGNABLE_PERMISSION_CODES, BASE_SUBSCRIPTION_PLAN } from "@syncora/shared";
+} from "@planwise/shared";
+import { ASSIGNABLE_PERMISSION_CODES, BASE_SUBSCRIPTION_PLAN } from "@planwise/shared";
 import {
   assertAnyAssignablePermission,
   assertAssignablePermission,

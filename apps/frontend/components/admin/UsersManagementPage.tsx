@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import React, { useCallback, useEffect, useState } from "react";
-import type { InvitationResponse } from "@syncora/shared";
+import type { InvitationResponse } from "@planwise/shared";
 import * as adminApi from "@/lib/admin.api";
 import * as subscriptionsApi from "@/lib/subscriptions.api";
 import type { ManagedOrganizationUser } from "@/lib/admin.api";

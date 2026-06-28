@@ -21,7 +21,7 @@ import type {
   UpdateCaseTemplateBody,
   UpdateInterventionBody,
   UpdateTodoBody,
-} from "@syncora/shared";
+} from "@planwise/shared";
 
 export abstract class AbstractCasesService {
   abstract createTemplate(body: CreateCaseTemplateBody): Promise<CaseTemplateResponse>;

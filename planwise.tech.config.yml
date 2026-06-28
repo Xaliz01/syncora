@@ -1,5 +1,5 @@
 tech:
-  name: Syncora
+  name: Planwise
   languages:
     - TypeScript
   frontend:
@@ -31,7 +31,7 @@ tech:
     communication: REST
     api_gateway: true
     shared_package:
-      name: "@syncora/shared"
+      name: "@planwise/shared"
       purpose:
         - Partage des types TypeScript
         - Contrats front/back
@@ -48,7 +48,7 @@ tech:
         - "DD_SERVICE, DD_ENV, DD_VERSION (Datadog)"
         - "STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_PRICE_ID (abonnements ; webhook → subscriptions-service :3008/webhooks/stripe)"
         - "SUBSCRIPTIONS_SERVICE_URL (gateway → microservice abonnements)"
-        - "CUSTOMERS_SERVICE_URL (gateway → microservice clients, défaut localhost:3009 ; Mongo syncora-customers)"
+        - "CUSTOMERS_SERVICE_URL (gateway → microservice clients, défaut localhost:3009 ; Mongo planwise-customers)"
     ci_cd:
       provider: GitHub Actions
       pipeline:

@@ -12,7 +12,7 @@ import type {
   DashboardStatFilter,
   DashboardTodoCaseItem,
   DashboardTodoItem,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import { TrialTestDataCard } from "@/components/test-data/TrialTestDataCard";
 import { ExportButton } from "@/components/ui/ExportButton";
 import * as exportsApi from "@/lib/exports.api";

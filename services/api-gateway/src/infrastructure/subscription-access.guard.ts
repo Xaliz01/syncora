@@ -1,6 +1,6 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
-import type { AuthUser, JwtPayload } from "@syncora/shared";
+import type { AuthUser, JwtPayload } from "@planwise/shared";
 import { AbstractSubscriptionsGatewayService } from "../domain/ports/subscriptions.service.port";
 import { SKIP_SUBSCRIPTION_CHECK_KEY } from "./skip-subscription-check.metadata";
 

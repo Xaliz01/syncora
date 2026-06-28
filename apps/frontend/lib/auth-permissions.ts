@@ -1,4 +1,4 @@
-import type { AuthUser, PermissionCode } from "@syncora/shared";
+import type { AuthUser, PermissionCode } from "@planwise/shared";
 
 /** Aligné sur RequirePermissionGuard côté gateway (admin org = tous les droits). */
 export function hasPermission(user: AuthUser | null | undefined, code: PermissionCode): boolean {

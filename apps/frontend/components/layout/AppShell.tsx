@@ -7,7 +7,7 @@ import { SidebarNavIcon } from "@/components/layout/sidebar-nav-icons";
 import { readSidebarCollapsed, writeSidebarCollapsed } from "@/lib/sidebar-preference";
 import { notifySidebarPreferenceChanged, USER_PREFERENCES_APPLIED } from "@/lib/user-preferences";
 import * as accountApi from "@/lib/account.api";
-import type { SidebarPreference } from "@syncora/shared";
+import type { SidebarPreference } from "@planwise/shared";
 import { useAuth } from "@/components/auth/AuthContext";
 import { hasActiveSubscriptionAccess } from "@/lib/subscription-access";
 import { OrganizationSwitcher } from "@/components/organization/OrganizationSwitcher";
@@ -15,6 +15,7 @@ import { hasPermission } from "@/lib/auth-permissions";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { CrispHelpButton } from "@/components/support/CrispHelpButton";
+import { appVersionLabel, APP_VERSION } from "@/lib/app-version";
 
 interface MenuLink {
   label: string;
@@ -134,34 +135,44 @@ function SidebarContent({
   onNavigate?: () => void;
 }) {
   return (
-    <nav className={`flex-1 space-y-5 py-4 ${collapsed ? "px-2" : "px-3"}`}>
-      {menuSections.map((section, index) => (
-        <section
-          key={section.label}
-          className={
-            collapsed && index > 0 ? "pt-4 border-t border-slate-100 dark:border-slate-800" : ""
-          }
-        >
-          {!collapsed && (
-            <h2 className="mb-1.5 px-3 text-[11px] uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-500">
-              {section.label}
-            </h2>
-          )}
-          <div className="space-y-0.5">
-            {section.links.map((link) => (
-              <NavLink
-                key={link.href}
-                href={link.href}
-                label={link.label}
-                currentPath={pathname}
-                collapsed={collapsed}
-                onClick={onNavigate}
-              />
-            ))}
-          </div>
-        </section>
-      ))}
-    </nav>
+    <div className="flex flex-1 flex-col">
+      <nav className={`flex-1 space-y-5 py-4 ${collapsed ? "px-2" : "px-3"}`}>
+        {menuSections.map((section, index) => (
+          <section
+            key={section.label}
+            className={
+              collapsed && index > 0 ? "pt-4 border-t border-slate-100 dark:border-slate-800" : ""
+            }
+          >
+            {!collapsed && (
+              <h2 className="mb-1.5 px-3 text-[11px] uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-500">
+                {section.label}
+              </h2>
+            )}
+            <div className="space-y-0.5">
+              {section.links.map((link) => (
+                <NavLink
+                  key={link.href}
+                  href={link.href}
+                  label={link.label}
+                  currentPath={pathname}
+                  collapsed={collapsed}
+                  onClick={onNavigate}
+                />
+              ))}
+            </div>
+          </section>
+        ))}
+      </nav>
+      <div
+        className={`border-t border-slate-100 dark:border-slate-800 py-3 text-center text-[11px] text-slate-400 dark:text-slate-500 ${
+          collapsed ? "px-2" : "px-3"
+        }`}
+        title={`Planwise ${appVersionLabel()}`}
+      >
+        {collapsed ? APP_VERSION : `Planwise ${appVersionLabel()}`}
+      </div>
+    </div>
   );
 }
 
@@ -312,10 +323,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </button>
             <Link href="/" className="flex items-center gap-2.5">
               <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white font-semibold text-sm">
-                S
+                P
               </span>
               <div className="hidden sm:block">
-                <div className="font-semibold text-sm leading-tight">Syncora</div>
+                <div className="font-semibold text-sm leading-tight">Planwise</div>
                 <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
                   CRM des opérations terrain
                 </div>
@@ -398,10 +409,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <aside className="absolute top-0 left-0 bottom-0 w-[280px] bg-white dark:bg-slate-900 shadow-xl overflow-y-auto border-r border-slate-200 dark:border-slate-800">
               <div className="flex items-center gap-2.5 border-b border-slate-200 dark:border-slate-800 px-4 py-3">
                 <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white font-semibold text-sm">
-                  S
+                  P
                 </span>
                 <div>
-                  <div className="font-semibold text-sm leading-tight">Syncora</div>
+                  <div className="font-semibold text-sm leading-tight">Planwise</div>
                   <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
                     Espace organisation
                   </div>

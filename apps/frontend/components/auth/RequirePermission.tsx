@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import type { PermissionCode } from "@syncora/shared";
+import type { PermissionCode } from "@planwise/shared";
 import { useAuth } from "./AuthContext";
 import { hasPermission, hasAnyPermission } from "@/lib/auth-permissions";
 

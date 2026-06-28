@@ -67,7 +67,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Build shared package
-        run: npm run build -w @syncora/shared
+        run: npm run build -w @planwise/shared
       - name: Typecheck workspace
         working-directory: ${{ matrix.workspace }}
         run: npx tsc -p tsconfig.json --noEmit
@@ -93,19 +93,19 @@ jobs:
       fail-fast: false
       matrix:
         service:
-          - "@syncora/organizations-service"
-          - "@syncora/users-service"
-          - "@syncora/permissions-service"
-          - "@syncora/fleet-service"
-          - "@syncora/technicians-service"
-          - "@syncora/cases-service"
-          - "@syncora/stock-service"
-          - "@syncora/customers-service"
-          - "@syncora/subscriptions-service"
-          - "@syncora/notifications-service"
-          - "@syncora/documents-service"
-          - "@syncora/exports-service"
-          - "@syncora/api-gateway"
+          - "@planwise/organizations-service"
+          - "@planwise/users-service"
+          - "@planwise/permissions-service"
+          - "@planwise/fleet-service"
+          - "@planwise/technicians-service"
+          - "@planwise/cases-service"
+          - "@planwise/stock-service"
+          - "@planwise/customers-service"
+          - "@planwise/subscriptions-service"
+          - "@planwise/notifications-service"
+          - "@planwise/documents-service"
+          - "@planwise/exports-service"
+          - "@planwise/api-gateway"
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js
@@ -116,7 +116,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Build shared package
-        run: npm run build -w @syncora/shared
+        run: npm run build -w @planwise/shared
       - name: Run unit tests
         run: npm run test -w ${{ matrix.service }}
 
@@ -149,7 +149,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Build shared package
-        run: npm run build -w @syncora/shared
+        run: npm run build -w @planwise/shared
       - name: Install Playwright browsers
         working-directory: apps/frontend
         run: npx playwright install --with-deps chromium

@@ -17,7 +17,7 @@ import type {
   OnboardingUser,
   CreateOrganizationBody,
   SwitchOrganizationBody,
-} from "@syncora/shared";
+} from "@planwise/shared";
 
 type CreateOrgRequest = Request & {
   user?: JwtPayload;
