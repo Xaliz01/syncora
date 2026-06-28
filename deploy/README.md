@@ -44,17 +44,24 @@ les fichiers dans `$DEPLOY_PATH/deploy`).
 
 ## 3. Secrets & variables GitHub (pour la CD)
 
-Secrets (`Settings > Secrets and variables > Actions > Secrets`) :
+Les secrets et variables sont définis dans un **environnement GitHub** nommé
+`syncora-cd` (`Settings > Environments > syncora-cd`). Les jobs `build-frontend` et
+`deploy` déclarent `environment: syncora-cd` pour y accéder. **Important** : s'ils
+étaient créés au niveau dépôt (`Actions > Secrets`) sans environnement, ou dans un
+environnement non référencé par le workflow, les valeurs seraient vides au runtime
+(erreur typique : `can't connect without a private SSH key or password`).
+
+Secrets de l'environnement `syncora-cd` :
 
 | Secret            | Description                                |
 | ----------------- | ------------------------------------------ |
 | `DEPLOY_SSH_HOST` | IP/host de la VM                           |
 | `DEPLOY_SSH_USER` | utilisateur SSH (membre du groupe docker)  |
-| `DEPLOY_SSH_KEY`  | clé privée SSH                             |
+| `DEPLOY_SSH_KEY`  | clé privée SSH (contenu complet, multi-lignes) |
 | `DEPLOY_SSH_PORT` | (optionnel) port SSH, défaut 22            |
 | `DEPLOY_PATH`     | chemin de déploiement (ex. `/opt/syncora`) |
 
-Variables (`Variables`), injectées au build du frontend (bundle client) :
+Variables de l'environnement `syncora-cd`, injectées au build du frontend (bundle client) :
 
 | Variable                             | Exemple                      |
 | ------------------------------------ | ---------------------------- |
