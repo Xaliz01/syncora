@@ -53,13 +53,13 @@ environnement non référencé par le workflow, les valeurs seraient vides au ru
 
 Secrets de l'environnement `syncora-cd` :
 
-| Secret            | Description                                |
-| ----------------- | ------------------------------------------ |
-| `DEPLOY_SSH_HOST` | IP/host de la VM                           |
-| `DEPLOY_SSH_USER` | utilisateur SSH (membre du groupe docker)  |
+| Secret            | Description                                    |
+| ----------------- | ---------------------------------------------- |
+| `DEPLOY_SSH_HOST` | IP/host de la VM                               |
+| `DEPLOY_SSH_USER` | utilisateur SSH (membre du groupe docker)      |
 | `DEPLOY_SSH_KEY`  | clé privée SSH (contenu complet, multi-lignes) |
-| `DEPLOY_SSH_PORT` | (optionnel) port SSH, défaut 22            |
-| `DEPLOY_PATH`     | chemin de déploiement (ex. `/opt/syncora`) |
+| `DEPLOY_SSH_PORT` | (optionnel) port SSH, défaut 22                |
+| `DEPLOY_PATH`     | chemin de déploiement (ex. `/opt/syncora`)     |
 
 Variables de l'environnement `syncora-cd`, injectées au build du frontend (bundle client) :
 
