@@ -41,6 +41,7 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/packages ./packages
 
 ARG SERVICE
+ENV SERVICE=${SERVICE}
 COPY --from=builder /app/services/${SERVICE} ./services/${SERVICE}
 
 # Version applicative (injectée au build par la CD via --build-arg).
