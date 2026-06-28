@@ -50,7 +50,7 @@ export abstract class AbstractExportsService {
   abstract exportDashboardTodoCases(
     organizationId: string,
     format: ExportFormat,
-    params: { templateId: string; todoLabel: string },
+    params: { userId: string; userProfileId?: string; templateId: string; todoLabel: string },
   ): Promise<ExportResult>;
 
   abstract getReportingStats(organizationId: string): Promise<ReportingStatsResponse>;

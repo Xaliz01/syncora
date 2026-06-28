@@ -327,12 +327,19 @@ export class ExportsService extends AbstractExportsService {
   async exportDashboardTodoCases(
     organizationId: string,
     format: ExportFormat,
-    params: { templateId: string; todoLabel: string },
+    params: { userId: string; userProfileId?: string; templateId: string; todoLabel: string },
   ): Promise<ExportResult> {
+    const query: Record<string, string> = {
+      organizationId,
+      userId: params.userId,
+      templateId: params.templateId,
+      todoLabel: params.todoLabel,
+    };
+    if (params.userProfileId) query.userProfileId = params.userProfileId;
     const cases = await this.callService<DashboardTodoCaseItem[]>(
       CASES_URL,
-      "/cases/dashboard/todo-cases",
-      { organizationId, templateId: params.templateId, todoLabel: params.todoLabel },
+      "/dashboard/todo-cases",
+      query,
     );
 
     if (format === "pdf") {
@@ -737,22 +744,30 @@ export class ExportsService extends AbstractExportsService {
     const wb = new ExcelJS.Workbook();
     const period = this.formatPeriodLabel(filters?.startDate, filters?.endDate);
     const ws = wb.addWorksheet("Activité techniciens");
+    ws.columns = [
+      { key: "name", width: 25 },
+      { key: "speciality", width: 20 },
+      { key: "total", width: 20 },
+      { key: "completed", width: 12 },
+      { key: "inProgress", width: 12 },
+      { key: "planned", width: 12 },
+      { key: "hours", width: 18 },
+    ];
 
     if (period) {
       ws.addRow([`Période : ${period}`]);
       ws.addRow([]);
     }
 
-    ws.columns = [
-      { header: "Technicien", key: "name", width: 25 },
-      { header: "Spécialité", key: "speciality", width: 20 },
-      { header: "Interventions totales", key: "total", width: 20 },
-      { header: "Terminées", key: "completed", width: 12 },
-      { header: "En cours", key: "inProgress", width: 12 },
-      { header: "Planifiées", key: "planned", width: 12 },
-      { header: "Heures travaillées", key: "hours", width: 18 },
-    ];
-    this.styleHeaderRow(ws);
+    this.addStyledHeaderRow(ws, [
+      "Technicien",
+      "Spécialité",
+      "Interventions totales",
+      "Terminées",
+      "En cours",
+      "Planifiées",
+      "Heures travaillées",
+    ]);
 
     for (const d of data) {
       ws.addRow({
@@ -809,21 +824,28 @@ export class ExportsService extends AbstractExportsService {
     const wb = new ExcelJS.Workbook();
     const period = this.formatPeriodLabel(filters?.startDate, filters?.endDate);
     const ws = wb.addWorksheet("Rapport kilométrique");
+    ws.columns = [
+      { key: "team", width: 25 },
+      { key: "count", width: 14 },
+      { key: "km", width: 22 },
+      { key: "fuel", width: 14 },
+      { key: "cost", width: 18 },
+      { key: "co2", width: 12 },
+    ];
 
     if (period) {
       ws.addRow([`Période : ${period}`]);
       ws.addRow([]);
     }
 
-    ws.columns = [
-      { header: "Équipe", key: "team", width: 25 },
-      { header: "Interventions", key: "count", width: 14 },
-      { header: "Distance estimée (km)", key: "km", width: 22 },
-      { header: "Carburant (L)", key: "fuel", width: 14 },
-      { header: "Coût carburant (€)", key: "cost", width: 18 },
-      { header: "CO₂ (kg)", key: "co2", width: 12 },
-    ];
-    this.styleHeaderRow(ws);
+    this.addStyledHeaderRow(ws, [
+      "Équipe",
+      "Interventions",
+      "Distance estimée (km)",
+      "Carburant (L)",
+      "Coût carburant (€)",
+      "CO₂ (kg)",
+    ]);
 
     for (const d of data) {
       ws.addRow({
@@ -879,18 +901,17 @@ export class ExportsService extends AbstractExportsService {
   ): Promise<Buffer> {
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet("Dossiers");
+    ws.columns = [
+      { key: "title", width: 35 },
+      { key: "status", width: 15 },
+      { key: "priority", width: 12 },
+      { key: "customer", width: 25 },
+      { key: "dueDate", width: 14 },
+      { key: "createdAt", width: 14 },
+    ];
     ws.addRow([`Tâche : ${todoLabel}`]);
     ws.addRow([]);
-
-    ws.columns = [
-      { header: "Dossier", key: "title", width: 35 },
-      { header: "Statut", key: "status", width: 15 },
-      { header: "Priorité", key: "priority", width: 12 },
-      { header: "Client", key: "customer", width: 25 },
-      { header: "Échéance", key: "dueDate", width: 14 },
-      { header: "Créé le", key: "createdAt", width: 14 },
-    ];
-    this.styleHeaderRow(ws);
+    this.addStyledHeaderRow(ws, ["Dossier", "Statut", "Priorité", "Client", "Échéance", "Créé le"]);
 
     for (const c of cases) {
       ws.addRow({
@@ -928,9 +949,9 @@ export class ExportsService extends AbstractExportsService {
       const colWidth = pageWidth / colCount;
       const startX = 50;
 
-      doc.fontSize(8).fillColor("#ffffff");
       doc.rect(startX, doc.y, pageWidth, 18).fill("#6d28d9");
       const headerY = doc.y + 5;
+      doc.fontSize(8).fillColor("#ffffff");
       headers.forEach((h, i) => {
         doc.text(h, startX + i * colWidth + 4, headerY, { width: colWidth - 8, lineBreak: false });
       });
@@ -1015,6 +1036,18 @@ export class ExportsService extends AbstractExportsService {
 
   private styleHeaderRow(ws: ExcelJS.Worksheet): void {
     const headerRow = ws.getRow(ws.rowCount);
+    headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
+    headerRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF6D28D9" } };
+    headerRow.alignment = { vertical: "middle" };
+  }
+
+  /**
+   * Ajoute une ligne d'en-tête explicite et la stylise. À utiliser quand des lignes
+   * de préambule précèdent le tableau : assigner `ws.columns` avec des `header` après
+   * coup écrase la 1re ligne et décale le style sur une ligne vide.
+   */
+  private addStyledHeaderRow(ws: ExcelJS.Worksheet, headers: string[]): void {
+    const headerRow = ws.addRow(headers);
     headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
     headerRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF6D28D9" } };
     headerRow.alignment = { vertical: "middle" };

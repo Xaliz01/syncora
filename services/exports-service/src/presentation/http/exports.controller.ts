@@ -135,16 +135,23 @@ export class ExportsController {
   async exportDashboardTodoCases(
     @Query("organizationId") organizationId: string,
     @Query("format") format: string,
+    @Query("userId") userId?: string,
+    @Query("userProfileId") userProfileId?: string,
     @Query("templateId") templateId?: string,
     @Query("todoLabel") todoLabel?: string,
     @Res() res?: Response,
   ) {
     const orgId = parseOrganizationIdQuery(organizationId);
+    if (!userId) {
+      throw new BadRequestException("userId est requis");
+    }
     if (!templateId || !todoLabel) {
       throw new BadRequestException("templateId et todoLabel sont requis");
     }
     const exportFormat = this.parseFormat(format);
     const result = await this.exportsService.exportDashboardTodoCases(orgId, exportFormat, {
+      userId,
+      userProfileId,
       templateId,
       todoLabel,
     });

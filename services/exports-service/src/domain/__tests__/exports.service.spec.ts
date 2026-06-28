@@ -1,7 +1,13 @@
 import { ExportsService } from "../exports.service";
 import { HttpService } from "@nestjs/axios";
 import { of } from "rxjs";
-import type { CaseResponse, CaseSummaryResponse, InterventionResponse } from "@syncora/shared";
+import ExcelJS from "exceljs";
+import type {
+  CaseResponse,
+  CaseSummaryResponse,
+  DashboardTodoCaseItem,
+  InterventionResponse,
+} from "@syncora/shared";
 
 describe("ExportsService", () => {
   let service: ExportsService;
@@ -158,6 +164,82 @@ describe("ExportsService", () => {
       );
       expect(result.filename).toBe("liste-utilisateurs.xlsx");
       expect(result.buffer.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe("exportDashboardTodoCases", () => {
+    it("should call the cases dashboard endpoint with userId and forward the todo params", async () => {
+      mockHttpService.get.mockReturnValue(
+        of({ data: [], status: 200, headers: {}, statusText: "OK", config: {} as never }) as never,
+      );
+
+      const result = await service.exportDashboardTodoCases("org-123", "xlsx", {
+        userId: "user-1",
+        userProfileId: "profile-1",
+        templateId: "template-1",
+        todoLabel: "Vérifier le devis",
+      });
+
+      expect(mockHttpService.get).toHaveBeenCalledWith(
+        expect.stringContaining("/dashboard/todo-cases"),
+        {
+          params: {
+            organizationId: "org-123",
+            userId: "user-1",
+            userProfileId: "profile-1",
+            templateId: "template-1",
+            todoLabel: "Vérifier le devis",
+          },
+        },
+      );
+      const calledUrl = mockHttpService.get.mock.calls[0]?.[0] as string;
+      expect(calledUrl).not.toContain("/cases/dashboard/todo-cases");
+      expect(result.contentType).toBe(
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      );
+      expect(result.filename).toBe("taches-dossiers.xlsx");
+      expect(result.buffer).toBeInstanceOf(Buffer);
+    });
+
+    it("should place data directly under the styled header (no empty spacer row)", async () => {
+      const cases: DashboardTodoCaseItem[] = [
+        {
+          caseId: "case-1",
+          caseTitle: "Dossier A",
+          customerName: "Client A",
+          status: "in_progress",
+          priority: "high",
+          createdAt: "2024-01-10T08:00:00Z",
+          dueDate: "2024-02-01T08:00:00Z",
+        },
+      ];
+      mockHttpService.get.mockReturnValue(
+        of({
+          data: cases,
+          status: 200,
+          headers: {},
+          statusText: "OK",
+          config: {} as never,
+        }) as never,
+      );
+
+      const result = await service.exportDashboardTodoCases("org-123", "xlsx", {
+        userId: "user-1",
+        templateId: "template-1",
+        todoLabel: "Vérifier le devis",
+      });
+
+      const wb = new ExcelJS.Workbook();
+      await wb.xlsx.load(result.buffer as unknown as ArrayBuffer);
+      const ws = wb.getWorksheet("Dossiers")!;
+
+      const headerRowNumber = 3;
+      const headerRow = ws.getRow(headerRowNumber);
+      expect(headerRow.getCell(1).value).toBe("Dossier");
+      expect(headerRow.font?.bold).toBe(true);
+
+      const firstDataRow = ws.getRow(headerRowNumber + 1);
+      expect(firstDataRow.getCell(1).value).toBe("Dossier A");
     });
   });
 

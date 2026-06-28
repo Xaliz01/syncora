@@ -1,10 +1,16 @@
 import { Injectable } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
-import type { AuthUser, ExportFormat, ReportingStatsResponse } from "@syncora/shared";
+import type {
+  AuthUser,
+  ExportFormat,
+  ReportingStatsResponse,
+  UserPermissionAssignmentResponse,
+} from "@syncora/shared";
 import { AbstractExportsGatewayService, type ExportResult } from "./ports/exports.service.port";
 
 const EXPORTS_URL = process.env.EXPORTS_SERVICE_URL ?? "http://localhost:3012";
+const PERMISSIONS_URL = process.env.PERMISSIONS_SERVICE_URL ?? "http://localhost:3003";
 
 @Injectable()
 export class ExportsGatewayService extends AbstractExportsGatewayService {
@@ -96,12 +102,29 @@ export class ExportsGatewayService extends AbstractExportsGatewayService {
     format: ExportFormat,
     params: { templateId: string; todoLabel: string },
   ): Promise<ExportResult> {
+    const userProfileId = await this.resolveUserProfileId(user);
     return this.proxyExport(`${EXPORTS_URL}/exports/dashboard-todo-cases`, {
       organizationId: user.organizationId,
       format,
+      userId: user.id,
+      userProfileId,
       templateId: params.templateId,
       todoLabel: params.todoLabel,
     });
+  }
+
+  private async resolveUserProfileId(user: AuthUser): Promise<string | undefined> {
+    try {
+      const res = await firstValueFrom(
+        this.httpService.get<UserPermissionAssignmentResponse>(
+          `${PERMISSIONS_URL}/assignments/${user.id}`,
+          { params: { organizationId: user.organizationId } },
+        ),
+      );
+      return res.data.profileId;
+    } catch {
+      return undefined;
+    }
   }
 
   async getReportingStats(user: AuthUser): Promise<ReportingStatsResponse> {
