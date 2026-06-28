@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useState } from "react";
-import type { TeamStatus, TechnicianResponse, AgenceResponse } from "@syncora/shared";
+import type { TeamStatus, TechnicianResponse, AgenceResponse } from "@planwise/shared";
 import * as fleetApi from "@/lib/fleet.api";
 import { normalizeCalendarColorHex } from "@/lib/team-calendar-colors";
 import { useToast } from "@/components/ui/ToastProvider";

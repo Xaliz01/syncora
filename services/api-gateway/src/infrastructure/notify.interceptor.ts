@@ -2,11 +2,11 @@ import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from "@nes
 import { Reflector } from "@nestjs/core";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { tap } from "rxjs";
-import type { JwtPayload, NotificationAction, NotificationEntityType } from "@syncora/shared";
+import type { JwtPayload, NotificationAction, NotificationEntityType } from "@planwise/shared";
 import { NOTIFY_ENTITY_KEY, type NotifyEntityMetadata } from "./notify-entity.decorator";
 import { buildInterventionUpdateDetail, mapDocumentEntityType } from "./notification-event-details";
 
-export interface SyncoraDomainEvent {
+export interface PlanwiseDomainEvent {
   organizationId: string;
   actorId: string;
   actorName?: string;
@@ -96,7 +96,7 @@ export class NotifyInterceptor implements NestInterceptor {
           ? (response[meta.relatedEntityLabelField] as string | undefined)
           : undefined;
 
-        const event: SyncoraDomainEvent = {
+        const event: PlanwiseDomainEvent = {
           organizationId: jwt.organizationId,
           actorId: jwt.sub,
           actorName: jwt.name ?? jwt.email,
@@ -110,7 +110,7 @@ export class NotifyInterceptor implements NestInterceptor {
           detail,
         };
 
-        this.eventEmitter.emit("syncora.entity.changed", event);
+        this.eventEmitter.emit("planwise.entity.changed", event);
       }),
     );
   }

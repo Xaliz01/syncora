@@ -2,7 +2,7 @@ import type {
   ArticleResponse,
   InterventionArticleUsageResponse,
   StockMovementResponse,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import { apiRequestJson, type ApiMethod } from "./api-client";
 
 async function stockRequest<TResponse>(

@@ -21,7 +21,7 @@ import {
   type UpdatePermissionProfileBody,
   type UserPermissionAssignmentResponse,
   type UserRole,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import type { PermissionProfileDocument } from "../persistence/permission-profile.schema";
 import type { UserPermissionAssignmentDocument } from "../persistence/user-permission-assignment.schema";
 import type { InvitationDocument } from "../persistence/invitation.schema";

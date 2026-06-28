@@ -3,7 +3,7 @@ import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { AppModule } from "./modules/app.module";
-import { createNestLogger } from "@syncora/shared/nest";
+import { createNestLogger } from "@planwise/shared/nest";
 
 /** En local uniquement : CORS_ORIGIN peut lister plusieurs origines séparées par des virgules. */
 function resolveCorsOrigin(): string | string[] {
@@ -31,7 +31,7 @@ async function bootstrap() {
   });
 
   const swaggerPath = process.env.SWAGGER_PATH ?? "api/docs";
-  const swaggerTitle = process.env.SWAGGER_TITLE ?? "Syncora API Gateway";
+  const swaggerTitle = process.env.SWAGGER_TITLE ?? "Planwise API Gateway";
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle(swaggerTitle)

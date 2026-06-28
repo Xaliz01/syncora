@@ -1,4 +1,4 @@
-import type { AuthUser } from "@syncora/shared";
+import type { AuthUser } from "@planwise/shared";
 
 export interface SearchResultItem {
   id: string;

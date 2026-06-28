@@ -2,7 +2,7 @@ import { BadRequestException, ConflictException } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
 import { HttpService } from "@nestjs/axios";
 import { of } from "rxjs";
-import type { AuthUser } from "@syncora/shared";
+import type { AuthUser } from "@planwise/shared";
 import { TrialTestDataService } from "../trial-test-data.service";
 import { AbstractSubscriptionsGatewayService } from "../ports/subscriptions.service.port";
 import { OrganizationScopedHttpClient } from "../../infrastructure/organization-scoped-http.client";

@@ -1,4 +1,4 @@
-import type { CreateAgenceBody, UpdateAgenceBody, AgenceResponse } from "@syncora/shared";
+import type { CreateAgenceBody, UpdateAgenceBody, AgenceResponse } from "@planwise/shared";
 
 export abstract class AbstractAgencesService {
   abstract createAgence(body: CreateAgenceBody): Promise<AgenceResponse>;

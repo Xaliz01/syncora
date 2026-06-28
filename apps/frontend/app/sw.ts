@@ -20,7 +20,7 @@ const apiCaching: RuntimeCaching[] = [
       );
     },
     handler: new NetworkFirst({
-      cacheName: "syncora-interventions",
+      cacheName: "planwise-interventions",
       networkTimeoutSeconds: 5,
       matchOptions: { ignoreSearch: false },
       plugins: [
@@ -37,7 +37,7 @@ const apiCaching: RuntimeCaching[] = [
       return url.pathname.includes("/documents/") && request.method === "GET";
     },
     handler: new StaleWhileRevalidate({
-      cacheName: "syncora-documents",
+      cacheName: "planwise-documents",
       plugins: [
         {
           cacheKeyWillBeUsed: async ({ request }) => {
@@ -52,7 +52,7 @@ const apiCaching: RuntimeCaching[] = [
       return url.pathname.includes("/auth/me") && request.method === "GET";
     },
     handler: new NetworkFirst({
-      cacheName: "syncora-auth",
+      cacheName: "planwise-auth",
       networkTimeoutSeconds: 3,
     }),
   },
@@ -64,7 +64,7 @@ const staticAssetCaching: RuntimeCaching[] = [
       return request.destination === "image";
     },
     handler: new CacheFirst({
-      cacheName: "syncora-images",
+      cacheName: "planwise-images",
       plugins: [
         {
           cacheKeyWillBeUsed: async ({ request }) => {

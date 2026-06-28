@@ -7,7 +7,7 @@ import type {
   TechnicianResponse,
   ArticleResponse,
   UserResponse,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import {
   AbstractSearchService,
   type GlobalSearchResponse,

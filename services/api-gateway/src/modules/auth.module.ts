@@ -22,7 +22,7 @@ import { SubscriptionsModule } from "./subscriptions.module";
     SubscriptionsModule,
     JwtModule.register({
       global: true,
-      secret: process.env.JWT_SECRET ?? "syncora-dev-secret-change-in-production",
+      secret: process.env.JWT_SECRET ?? "planwise-dev-secret-change-in-production",
       signOptions: { expiresIn: "7d" },
     }),
   ],

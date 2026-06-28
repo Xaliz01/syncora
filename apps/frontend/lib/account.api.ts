@@ -4,7 +4,7 @@ import type {
   UpdateUserPreferencesBody,
   UserPreferencesResponse,
   UserResponse,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import { apiRequestJson } from "./api-client";
 
 export function updateName(body: UpdateUserNameBody) {

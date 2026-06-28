@@ -1,4 +1,4 @@
-import type { AuthUser } from "@syncora/shared";
+import type { AuthUser } from "@planwise/shared";
 import type {
   CreateAddonCheckoutSessionGatewayBody,
   CreateBillingPortalGatewayBody,
@@ -9,7 +9,7 @@ import type {
   StartTrialResponse,
   UpdateSubscriptionAddonsGatewayBody,
   UpdateSubscriptionAddonsResponse,
-} from "@syncora/shared";
+} from "@planwise/shared";
 
 export abstract class AbstractSubscriptionsGatewayService {
   abstract getCurrentSubscription(user: AuthUser): Promise<OrganizationSubscriptionResponse>;

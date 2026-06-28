@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import React, { useCallback, useEffect, useState } from "react";
-import type { AgenceResponse, TeamResponse } from "@syncora/shared";
+import type { AgenceResponse, TeamResponse } from "@planwise/shared";
 import { PostalAddressFields } from "@/components/address/PostalAddressFields";
 import * as fleetApi from "@/lib/fleet.api";
 import { useToast } from "@/components/ui/ToastProvider";

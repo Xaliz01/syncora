@@ -1,5 +1,5 @@
 ui:
-  name: Syncora Front Design
+  name: Planwise Front Design
   description: >
     Design sombre moderne, avec accent violet, cartes bordées et mise en page
     centrée sur les opérations terrain (clients, interventions, stocks, flotte).
@@ -51,7 +51,7 @@ ui:
         size: "inline-flex h-8 w-8 items-center justify-center"
         style: "bg-brand-600 text-white font-semibold"
         content: "S"
-      title: "Syncora"
+      title: "Planwise"
       subtitle: "CRM des opérations terrain"
     home_sections:
       - key: "customers"

@@ -1,4 +1,4 @@
-import type { CreateOrganizationBody, SiretLookupResult } from "@syncora/shared";
+import type { CreateOrganizationBody, SiretLookupResult } from "@planwise/shared";
 
 export interface OrganizationAddressForm {
   addressLine1: string;

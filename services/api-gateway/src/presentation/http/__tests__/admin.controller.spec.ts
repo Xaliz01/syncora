@@ -4,7 +4,7 @@ import { AbstractAdminService } from "../../../domain/ports/admin.service.port";
 import { JwtAuthGuard } from "../../../infrastructure/jwt-auth.guard";
 import { RequirePermissionGuard } from "../../../infrastructure/require-permission.guard";
 import { SubscriptionAccessGuard } from "../../../infrastructure/subscription-access.guard";
-import type { AuthUser } from "@syncora/shared";
+import type { AuthUser } from "@planwise/shared";
 
 describe("AdminController", () => {
   let controller: AdminController;

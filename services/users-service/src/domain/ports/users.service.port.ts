@@ -13,7 +13,7 @@ import type {
   UserPreferencesResponse,
   UserResponse,
   ValidateCredentialsResponse,
-} from "@syncora/shared";
+} from "@planwise/shared";
 
 export abstract class AbstractUsersService {
   abstract create(body: CreateUserBody): Promise<UserResponse>;

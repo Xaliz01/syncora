@@ -1,5 +1,5 @@
 {
-  "name": "@syncora/organizations-service",
+  "name": "@planwise/organizations-service",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -17,7 +17,7 @@
     "@nestjs/platform-express": "^11.0.0",
     "@nestjs/axios": "^4.0.0",
     "cron": "3.5.0",
-    "@syncora/shared": "0.1.0",
+    "@planwise/shared": "0.1.0",
     "dd-trace": "^5.0.0",
     "mongoose": "^8.0.0",
     "reflect-metadata": "^0.2.0",

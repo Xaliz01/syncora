@@ -3,7 +3,7 @@ import type {
   InjectTrialTestDataResponse,
   PurgeTrialTestDataResponse,
   TrialTestDataStatusResponse,
-} from "@syncora/shared";
+} from "@planwise/shared";
 
 export abstract class AbstractTrialTestDataService {
   abstract getStatus(user: AuthUser): Promise<TrialTestDataStatusResponse>;

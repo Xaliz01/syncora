@@ -1,5 +1,5 @@
 import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from "@nestjs/common";
-import { readRuntimeVersion } from "@syncora/shared";
+import { readRuntimeVersion } from "@planwise/shared";
 import type { Response } from "express";
 
 /** Expose la version déployée sur chaque réponse HTTP (traçabilité clients / ops). */

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import type { CustomerKind, CustomerResponse } from "@syncora/shared";
+import type { CustomerKind, CustomerResponse } from "@planwise/shared";
 import type { UpdateCustomerPayload } from "@/lib/customers.api";
 import { PostalAddressFields } from "@/components/address/PostalAddressFields";
 import { CUSTOMER_KIND_LABELS } from "./customer-kind-labels";

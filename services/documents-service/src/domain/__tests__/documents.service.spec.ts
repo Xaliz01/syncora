@@ -1,7 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getModelToken } from "@nestjs/mongoose";
 import { BadRequestException, NotFoundException } from "@nestjs/common";
-import { activeDocumentFilter, BASE_SUBSCRIPTION_STORAGE_BYTES } from "@syncora/shared";
+import { activeDocumentFilter, BASE_SUBSCRIPTION_STORAGE_BYTES } from "@planwise/shared";
 import { DocumentsService } from "../documents.service";
 import { AbstractDocumentsService } from "../ports/documents.service.port";
 import { AbstractStorageProvider } from "../../infrastructure/storage.port";

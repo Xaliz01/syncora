@@ -1,4 +1,4 @@
-import type { NotificationEntityType } from "@syncora/shared";
+import type { NotificationEntityType } from "@planwise/shared";
 
 const INTERVENTION_STATUS_LABELS: Record<string, string> = {
   planned: "planifiée",

@@ -1,5 +1,5 @@
-import type { AddonCode, AddonQuantities } from "@syncora/shared";
-import { sanitizeAddonQuantities } from "@syncora/shared";
+import type { AddonCode, AddonQuantities } from "@planwise/shared";
+import { sanitizeAddonQuantities } from "@planwise/shared";
 import * as subscriptionsApi from "@/lib/subscriptions.api";
 
 const DEFAULT_MAX_MS = 45_000;

@@ -1,9 +1,9 @@
 product:
-  name: Syncora
+  name: Planwise
   type: SaaS
   domain: CRM
   description: >
-    Syncora est un CRM orienté opérations terrain qui permet de gérer un
+    Planwise est un CRM orienté opérations terrain qui permet de gérer un
     portefeuille client, planifier et suivre des interventions, piloter les
     stocks et le parc de camions, et gérer les intervenants.
   main_capabilities:

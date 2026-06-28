@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import React, { useCallback, useEffect, useState } from "react";
-import type { VehicleResponse, TeamResponse, VehicleType, VehicleStatus } from "@syncora/shared";
+import type { VehicleResponse, TeamResponse, VehicleType, VehicleStatus } from "@planwise/shared";
 
 const VEHICLE_TYPES: VehicleType[] = [
   "camion",

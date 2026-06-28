@@ -1,7 +1,7 @@
 # Déploiement production MVP — VM unique (OVH) + Docker Compose + Caddy.
 #
 # Seuls Caddy (80/443) est exposé publiquement. Tous les microservices et MongoDB
-# restent sur le réseau interne `syncora` et ne publient aucun port sur l'hôte.
+# restent sur le réseau interne `planwise` et ne publient aucun port sur l'hôte.
 #
 # Usage :
 #   cp deploy/.env.production.example deploy/.env.production   # puis renseigner les secrets
@@ -36,7 +36,7 @@ x-healthcheck: &tcp-healthcheck
 
 x-backend: &backend
   restart: unless-stopped
-  networks: [syncora]
+  networks: [planwise]
   depends_on:
     mongodb:
       condition: service_healthy
@@ -45,9 +45,9 @@ services:
   # ── Base de données ─────────────────────────────────────────
   mongodb:
     image: mongo:7
-    container_name: syncora-mongodb
+    container_name: planwise-mongodb
     restart: unless-stopped
-    networks: [syncora]
+    networks: [planwise]
     volumes:
       - mongodb-data:/data/db
     healthcheck:
@@ -60,75 +60,75 @@ services:
   # ── Microservices internes ──────────────────────────────────
   organizations-service:
     <<: *backend
-    image: ${REGISTRY}/syncora-organizations-service:${IMAGE_TAG:-latest}
+    image: ${REGISTRY}/planwise-organizations-service:${IMAGE_TAG:-latest}
     environment:
       <<: *service-urls
       NODE_ENV: production
       PORT: "3001"
-      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/syncora-organizations
+      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-organizations
     healthcheck: *tcp-healthcheck
 
   users-service:
     <<: *backend
-    image: ${REGISTRY}/syncora-users-service:${IMAGE_TAG:-latest}
+    image: ${REGISTRY}/planwise-users-service:${IMAGE_TAG:-latest}
     environment:
       NODE_ENV: production
       PORT: "3002"
-      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/syncora-users
+      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-users
     healthcheck: *tcp-healthcheck
 
   permissions-service:
     <<: *backend
-    image: ${REGISTRY}/syncora-permissions-service:${IMAGE_TAG:-latest}
+    image: ${REGISTRY}/planwise-permissions-service:${IMAGE_TAG:-latest}
     environment:
       NODE_ENV: production
       PORT: "3003"
-      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/syncora-permissions
+      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-permissions
     healthcheck: *tcp-healthcheck
 
   cases-service:
     <<: *backend
-    image: ${REGISTRY}/syncora-cases-service:${IMAGE_TAG:-latest}
+    image: ${REGISTRY}/planwise-cases-service:${IMAGE_TAG:-latest}
     environment:
       NODE_ENV: production
       PORT: "3004"
-      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/syncora-cases
+      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-cases
     healthcheck: *tcp-healthcheck
 
   fleet-service:
     <<: *backend
-    image: ${REGISTRY}/syncora-fleet-service:${IMAGE_TAG:-latest}
+    image: ${REGISTRY}/planwise-fleet-service:${IMAGE_TAG:-latest}
     environment:
       NODE_ENV: production
       PORT: "3005"
-      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/syncora-fleet
+      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-fleet
     healthcheck: *tcp-healthcheck
 
   technicians-service:
     <<: *backend
-    image: ${REGISTRY}/syncora-technicians-service:${IMAGE_TAG:-latest}
+    image: ${REGISTRY}/planwise-technicians-service:${IMAGE_TAG:-latest}
     environment:
       NODE_ENV: production
       PORT: "3006"
-      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/syncora-technicians
+      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-technicians
     healthcheck: *tcp-healthcheck
 
   stock-service:
     <<: *backend
-    image: ${REGISTRY}/syncora-stock-service:${IMAGE_TAG:-latest}
+    image: ${REGISTRY}/planwise-stock-service:${IMAGE_TAG:-latest}
     environment:
       NODE_ENV: production
       PORT: "3007"
-      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/syncora-stock
+      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-stock
     healthcheck: *tcp-healthcheck
 
   subscriptions-service:
     <<: *backend
-    image: ${REGISTRY}/syncora-subscriptions-service:${IMAGE_TAG:-latest}
+    image: ${REGISTRY}/planwise-subscriptions-service:${IMAGE_TAG:-latest}
     environment:
       NODE_ENV: production
       PORT: "3008"
-      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/syncora-subscriptions
+      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-subscriptions
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_PRICE_ID: ${STRIPE_PRICE_ID:-}
       STRIPE_TRIAL_DAYS: ${STRIPE_TRIAL_DAYS:-}
@@ -140,29 +140,29 @@ services:
 
   customers-service:
     <<: *backend
-    image: ${REGISTRY}/syncora-customers-service:${IMAGE_TAG:-latest}
+    image: ${REGISTRY}/planwise-customers-service:${IMAGE_TAG:-latest}
     environment:
       NODE_ENV: production
       PORT: "3009"
-      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/syncora-customers
+      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-customers
     healthcheck: *tcp-healthcheck
 
   notifications-service:
     <<: *backend
-    image: ${REGISTRY}/syncora-notifications-service:${IMAGE_TAG:-latest}
+    image: ${REGISTRY}/planwise-notifications-service:${IMAGE_TAG:-latest}
     environment:
       NODE_ENV: production
       PORT: "3010"
-      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/syncora-notifications
+      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-notifications
     healthcheck: *tcp-healthcheck
 
   documents-service:
     <<: *backend
-    image: ${REGISTRY}/syncora-documents-service:${IMAGE_TAG:-latest}
+    image: ${REGISTRY}/planwise-documents-service:${IMAGE_TAG:-latest}
     environment:
       NODE_ENV: production
       PORT: "3011"
-      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/syncora-documents
+      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-documents
       # STORAGE_PROVIDER=s3 pour basculer sur un Object Storage (recommandé à terme).
       STORAGE_PROVIDER: ${STORAGE_PROVIDER:-local}
       DOCUMENT_STORAGE_PATH: /data/uploads
@@ -177,7 +177,7 @@ services:
 
   exports-service:
     <<: *backend
-    image: ${REGISTRY}/syncora-exports-service:${IMAGE_TAG:-latest}
+    image: ${REGISTRY}/planwise-exports-service:${IMAGE_TAG:-latest}
     # exports-service n'a pas de base Mongo mais appelle d'autres services.
     depends_on: {}
     environment:
@@ -188,9 +188,9 @@ services:
 
   # ── API Gateway (exposée via Caddy) ─────────────────────────
   api-gateway:
-    image: ${REGISTRY}/syncora-api-gateway:${IMAGE_TAG:-latest}
+    image: ${REGISTRY}/planwise-api-gateway:${IMAGE_TAG:-latest}
     restart: unless-stopped
-    networks: [syncora]
+    networks: [planwise]
     environment:
       <<: *service-urls
       NODE_ENV: production
@@ -199,7 +199,7 @@ services:
       CORS_ORIGIN: ${CORS_ORIGIN:?CORS_ORIGIN requis}
       CRISP_IDENTITY_SECRET: ${CRISP_IDENTITY_SECRET:-}
       SWAGGER_PATH: ${SWAGGER_PATH:-api/docs}
-      SWAGGER_TITLE: ${SWAGGER_TITLE:-Syncora API Gateway}
+      SWAGGER_TITLE: ${SWAGGER_TITLE:-Planwise API Gateway}
     depends_on:
       - organizations-service
       - users-service
@@ -217,9 +217,9 @@ services:
 
   # ── Frontend Next.js (exposé via Caddy) ─────────────────────
   frontend:
-    image: ${REGISTRY}/syncora-frontend:${IMAGE_TAG:-latest}
+    image: ${REGISTRY}/planwise-frontend:${IMAGE_TAG:-latest}
     restart: unless-stopped
-    networks: [syncora]
+    networks: [planwise]
     environment:
       NODE_ENV: production
       PORT: "5173"
@@ -229,9 +229,9 @@ services:
   # ── Reverse proxy (HTTPS automatique Let's Encrypt) ─────────
   caddy:
     image: caddy:2
-    container_name: syncora-caddy
+    container_name: planwise-caddy
     restart: unless-stopped
-    networks: [syncora]
+    networks: [planwise]
     ports:
       - "80:80"
       - "443:443"
@@ -248,8 +248,8 @@ services:
       - frontend
 
 networks:
-  syncora:
-    name: syncora
+  planwise:
+    name: planwise
 
 volumes:
   mongodb-data:

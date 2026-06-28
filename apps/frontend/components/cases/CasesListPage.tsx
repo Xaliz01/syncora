@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import * as api from "@/lib/cases.api";
-import type { CasePriority, CaseStatus } from "@syncora/shared";
+import type { CasePriority, CaseStatus } from "@planwise/shared";
 import { TestDataBadgeIf } from "@/components/test-data/TestDataBadge";
 import {
   ListBadge,

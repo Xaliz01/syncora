@@ -2,7 +2,7 @@ import type {
   DocumentResponse,
   DocumentEntityType,
   OrganizationStorageUsageResponse,
-} from "@syncora/shared";
+} from "@planwise/shared";
 
 export interface UploadParams {
   organizationId: string;

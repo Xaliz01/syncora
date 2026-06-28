@@ -6,7 +6,7 @@ import type {
   UpdateUserPreferencesBody,
   UserPreferencesResponse,
   UserResponse,
-} from "@syncora/shared";
+} from "@planwise/shared";
 
 export abstract class AbstractAccountService {
   abstract updateName(user: AuthUser, body: UpdateUserNameBody): Promise<UserResponse>;

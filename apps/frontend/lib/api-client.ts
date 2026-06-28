@@ -8,12 +8,12 @@ export type ApiMethod = "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
 
 export function getAccessToken(): string | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem("syncora_access_token");
+  return localStorage.getItem("planwise_access_token");
 }
 
 export function getOnboardingToken(): string | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem("syncora_onboarding_token");
+  return localStorage.getItem("planwise_onboarding_token");
 }
 
 /** Token Bearer actif : onboarding en priorité (inscription), sinon session complète. */

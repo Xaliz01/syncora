@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import type { AddonCode } from "@syncora/shared";
-import { ADDON_CATALOG } from "@syncora/shared";
+import type { AddonCode } from "@planwise/shared";
+import { ADDON_CATALOG } from "@planwise/shared";
 import { useAddon } from "@/lib/hooks/useAddon";
 
 interface AddonLockedOverlayProps {

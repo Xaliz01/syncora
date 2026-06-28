@@ -4,7 +4,7 @@ import type {
   PermissionProfileResponse,
   UserPermissionAssignmentResponse,
   UserResponse,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import { apiRequestJson, type ApiMethod } from "./api-client";
 
 export interface ManagedOrganizationUser extends UserResponse {

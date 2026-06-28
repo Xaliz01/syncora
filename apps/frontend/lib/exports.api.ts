@@ -1,4 +1,4 @@
-import type { ReportingStatsResponse } from "@syncora/shared";
+import type { ReportingStatsResponse } from "@planwise/shared";
 import { apiRequestJson } from "./api-client";
 import { API_BASE, getAccessToken } from "./api-client";
 

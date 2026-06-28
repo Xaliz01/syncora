@@ -19,7 +19,7 @@ export function PwaInstallBanner() {
 
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-            Installer Syncora
+            Installer Planwise
           </p>
           <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
             Accédez rapidement à vos interventions depuis l&apos;écran d&apos;accueil, même hors

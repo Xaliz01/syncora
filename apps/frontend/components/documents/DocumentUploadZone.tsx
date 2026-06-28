@@ -3,8 +3,8 @@
 import Image from "next/image";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import type { DocumentEntityType, DocumentResponse } from "@syncora/shared";
-import { MAX_DOCUMENT_FILE_SIZE_BYTES } from "@syncora/shared";
+import type { DocumentEntityType, DocumentResponse } from "@planwise/shared";
+import { MAX_DOCUMENT_FILE_SIZE_BYTES } from "@planwise/shared";
 import * as documentsApi from "@/lib/documents.api";
 import * as subscriptionsApi from "@/lib/subscriptions.api";
 import { StorageUsageBanner } from "@/components/documents/StorageUsageBanner";

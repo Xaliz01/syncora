@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { AgenceResponse, PostalAddress, TeamResponse } from "@syncora/shared";
+import type { AgenceResponse, PostalAddress, TeamResponse } from "@planwise/shared";
 import {
   ESTIMATED_DIESEL_EUR_PER_LITER,
   formatPostalAddress,

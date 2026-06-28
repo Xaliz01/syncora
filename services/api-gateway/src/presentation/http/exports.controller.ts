@@ -1,6 +1,6 @@
 import { BadRequestException, Controller, Get, Param, Query, Res, UseGuards } from "@nestjs/common";
 import type { Response } from "express";
-import type { AuthUser, ExportFormat } from "@syncora/shared";
+import type { AuthUser, ExportFormat } from "@planwise/shared";
 import { AbstractExportsGatewayService } from "../../domain/ports/exports.service.port";
 import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
 import {

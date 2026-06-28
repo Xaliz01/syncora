@@ -1,4 +1,4 @@
-import type { UserResponse } from "@syncora/shared";
+import type { UserResponse } from "@planwise/shared";
 
 const USER_STATUS_LABELS: Record<string, string> = {
   active: "Actif",

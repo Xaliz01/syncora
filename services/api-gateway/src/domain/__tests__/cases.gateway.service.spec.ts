@@ -1,7 +1,7 @@
 import { Test } from "@nestjs/testing";
 import { HttpService } from "@nestjs/axios";
 import { of } from "rxjs";
-import type { AuthUser, CaseResponse, CustomerResponse } from "@syncora/shared";
+import type { AuthUser, CaseResponse, CustomerResponse } from "@planwise/shared";
 import { CasesGatewayService } from "../cases.service";
 import { OrganizationScopedHttpClient } from "../../infrastructure/organization-scoped-http.client";
 import { AbstractCustomersGatewayService } from "../ports/customers.service.port";

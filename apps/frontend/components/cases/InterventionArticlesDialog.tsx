@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import type { ArticleResponse } from "@syncora/shared";
+import type { ArticleResponse } from "@planwise/shared";
 import * as stockApi from "@/lib/stock.api";
 import { useToast } from "@/components/ui/ToastProvider";
 

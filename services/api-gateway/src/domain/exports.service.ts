@@ -6,7 +6,7 @@ import type {
   ExportFormat,
   ReportingStatsResponse,
   UserPermissionAssignmentResponse,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import { AbstractExportsGatewayService, type ExportResult } from "./ports/exports.service.port";
 
 const EXPORTS_URL = process.env.EXPORTS_SERVICE_URL ?? "http://localhost:3012";

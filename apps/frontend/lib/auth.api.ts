@@ -4,7 +4,7 @@ import type {
   CreateOrganizationBody,
   OnboardingAuthResponse,
   OnboardingUser,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import { apiRequestJson, getAccessToken, getOnboardingToken } from "./api-client";
 
 export async function login(email: string, password: string) {
@@ -60,22 +60,22 @@ export async function switchOrganization(payload: { organizationId: string }) {
 
 export function setToken(token: string) {
   if (typeof window !== "undefined") {
-    localStorage.setItem("syncora_access_token", token);
-    localStorage.removeItem("syncora_onboarding_token");
+    localStorage.setItem("planwise_access_token", token);
+    localStorage.removeItem("planwise_onboarding_token");
   }
 }
 
 export function setOnboardingToken(token: string) {
   if (typeof window !== "undefined") {
-    localStorage.setItem("syncora_onboarding_token", token);
-    localStorage.removeItem("syncora_access_token");
+    localStorage.setItem("planwise_onboarding_token", token);
+    localStorage.removeItem("planwise_access_token");
   }
 }
 
 export function clearToken() {
   if (typeof window !== "undefined") {
-    localStorage.removeItem("syncora_access_token");
-    localStorage.removeItem("syncora_onboarding_token");
+    localStorage.removeItem("planwise_access_token");
+    localStorage.removeItem("planwise_onboarding_token");
   }
 }
 

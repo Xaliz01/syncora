@@ -15,10 +15,10 @@ const withSerwist = withSerwistInit({
 });
 
 const nextConfig: NextConfig = {
-  transpilePackages: ["@syncora/shared"],
+  transpilePackages: ["@planwise/shared"],
   // Sortie autonome pour un runtime Docker minimal (serveur Node + deps tracées).
   output: "standalone",
-  // Monorepo : tracer les dépendances depuis la racine du repo (inclut @syncora/shared).
+  // Monorepo : tracer les dépendances depuis la racine du repo (inclut @planwise/shared).
   outputFileTracingRoot: join(__dirname, "../../"),
 };
 

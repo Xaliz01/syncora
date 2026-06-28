@@ -15,7 +15,7 @@ export class S3StorageProvider extends AbstractStorageProvider {
 
   constructor() {
     super();
-    this.bucket = process.env.S3_BUCKET ?? "syncora-documents";
+    this.bucket = process.env.S3_BUCKET ?? "planwise-documents";
     this.client = new S3Client({
       region: process.env.AWS_REGION ?? "eu-west-1",
       ...(process.env.S3_ENDPOINT && {

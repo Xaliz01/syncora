@@ -1,4 +1,4 @@
-import type { CreateTeamBody, UpdateTeamBody, TeamResponse } from "@syncora/shared";
+import type { CreateTeamBody, UpdateTeamBody, TeamResponse } from "@planwise/shared";
 
 export abstract class AbstractTeamsService {
   abstract createTeam(body: CreateTeamBody): Promise<TeamResponse>;

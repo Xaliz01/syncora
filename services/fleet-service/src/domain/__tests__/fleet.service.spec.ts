@@ -1,7 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getModelToken } from "@nestjs/mongoose";
 import { ConflictException, NotFoundException } from "@nestjs/common";
-import { activeDocumentFilter } from "@syncora/shared";
+import { activeDocumentFilter } from "@planwise/shared";
 import { FleetService } from "../fleet.service";
 
 describe("FleetService", () => {

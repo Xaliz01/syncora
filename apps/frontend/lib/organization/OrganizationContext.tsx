@@ -3,7 +3,7 @@
 import React, { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import type { OrganizationResponse } from "@syncora/shared";
+import type { OrganizationResponse } from "@planwise/shared";
 import { useAuth } from "@/components/auth/AuthContext";
 import { OrganizationSwitchOverlay } from "@/components/organization/OrganizationSwitchOverlay";
 import { useToast } from "@/components/ui/ToastProvider";

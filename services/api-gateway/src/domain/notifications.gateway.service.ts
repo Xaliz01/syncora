@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
-import type { AuthUser, NotificationListResponse, NotificationResponse } from "@syncora/shared";
+import type { AuthUser, NotificationListResponse, NotificationResponse } from "@planwise/shared";
 import { AbstractNotificationsGatewayService } from "./ports/notifications.gateway.service.port";
 
 const NOTIFICATIONS_URL = process.env.NOTIFICATIONS_SERVICE_URL ?? "http://localhost:3010";

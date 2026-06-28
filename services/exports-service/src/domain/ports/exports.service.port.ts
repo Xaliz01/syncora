@@ -1,4 +1,4 @@
-import type { ExportFormat, ReportingStatsResponse } from "@syncora/shared";
+import type { ExportFormat, ReportingStatsResponse } from "@planwise/shared";
 
 export interface ExportResult {
   buffer: Buffer;

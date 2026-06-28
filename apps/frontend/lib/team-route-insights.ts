@@ -1,4 +1,4 @@
-import type { AgenceResponse, PostalAddress, TeamResponse } from "@syncora/shared";
+import type { AgenceResponse, PostalAddress, TeamResponse } from "@planwise/shared";
 
 export type GeoPoint = { lon: number; lat: number };
 

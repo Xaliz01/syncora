@@ -14,7 +14,7 @@ import type {
   SiretLookupResult,
   UpdateOrganizationBody,
   UserOrganizationsListResponse,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import { AbstractOrganizationsGatewayService } from "./ports/organizations.service.port";
 
 const ORGANIZATIONS_URL = process.env.ORGANIZATIONS_SERVICE_URL ?? "http://localhost:3001";

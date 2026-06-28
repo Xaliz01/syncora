@@ -1,8 +1,8 @@
 {
-  "name": "syncora",
+  "name": "planwise",
   "version": "0.1.0",
   "private": true,
-  "description": "Syncora - CRM SaaS orienté opérations terrain (monorepo TypeScript).",
+  "description": "Planwise - CRM SaaS orienté opérations terrain (monorepo TypeScript).",
   "workspaces": [
     "apps/*",
     "services/*",
@@ -15,20 +15,20 @@
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run build:shared && node scripts/typecheck-all.mjs",
     "test": "npm run test --workspaces --if-present",
-    "test:e2e": "npm run e2e -w @syncora/frontend",
+    "test:e2e": "npm run e2e -w @planwise/frontend",
     "build": "npm run build --workspaces --if-present",
-    "build:shared": "npm run build --workspace @syncora/shared --if-present",
-    "e2e": "npm run e2e --workspace @syncora/frontend --if-present",
-    "pwa:preview": "npm run pwa:preview -w @syncora/frontend",
+    "build:shared": "npm run build --workspace @planwise/shared --if-present",
+    "e2e": "npm run e2e --workspace @planwise/frontend --if-present",
+    "pwa:preview": "npm run pwa:preview -w @planwise/frontend",
     "backend": "docker compose up -d --wait && npm run backend:run",
     "backend:datadog": "docker compose --profile datadog up -d --wait && npm run backend:run",
-    "backend:microservices": "npm run build:shared && TS_NODE_TRANSPILE_ONLY=true concurrently --kill-others-on-fail -n org,users,permissions,fleet,technicians,dossiers,stock,customers,subscriptions,notifications,documents,exports \"npm run start:dev -w @syncora/organizations-service\" \"sleep 1.5 && npm run start:dev -w @syncora/users-service\" \"sleep 3 && npm run start:dev -w @syncora/permissions-service\" \"sleep 4.5 && npm run start:dev -w @syncora/fleet-service\" \"sleep 6 && npm run start:dev -w @syncora/technicians-service\" \"sleep 7.5 && npm run start:dev -w @syncora/cases-service\" \"sleep 9 && npm run start:dev -w @syncora/stock-service\" \"sleep 10.5 && npm run start:dev -w @syncora/customers-service\" \"sleep 12 && npm run start:dev -w @syncora/subscriptions-service\" \"sleep 13.5 && npm run start:dev -w @syncora/notifications-service\" \"sleep 15 && npm run start:dev -w @syncora/documents-service\" \"sleep 16.5 && npm run start:dev -w @syncora/exports-service\"",
-    "backend:gateway": "npm run start:dev -w @syncora/api-gateway",
+    "backend:microservices": "npm run build:shared && TS_NODE_TRANSPILE_ONLY=true concurrently --kill-others-on-fail -n org,users,permissions,fleet,technicians,dossiers,stock,customers,subscriptions,notifications,documents,exports \"npm run start:dev -w @planwise/organizations-service\" \"sleep 1.5 && npm run start:dev -w @planwise/users-service\" \"sleep 3 && npm run start:dev -w @planwise/permissions-service\" \"sleep 4.5 && npm run start:dev -w @planwise/fleet-service\" \"sleep 6 && npm run start:dev -w @planwise/technicians-service\" \"sleep 7.5 && npm run start:dev -w @planwise/cases-service\" \"sleep 9 && npm run start:dev -w @planwise/stock-service\" \"sleep 10.5 && npm run start:dev -w @planwise/customers-service\" \"sleep 12 && npm run start:dev -w @planwise/subscriptions-service\" \"sleep 13.5 && npm run start:dev -w @planwise/notifications-service\" \"sleep 15 && npm run start:dev -w @planwise/documents-service\" \"sleep 16.5 && npm run start:dev -w @planwise/exports-service\"",
+    "backend:gateway": "npm run start:dev -w @planwise/api-gateway",
     "backend:free-ports": "node scripts/free-backend-ports.mjs",
     "backend:run": "npm run build:shared && wait-on -t 60000 tcp:localhost:27017 && node scripts/free-backend-ports.mjs && node scripts/backend-run.mjs",
     "backend:down": "docker compose down",
     "datadog:up": "docker compose --profile datadog up -d --wait",
-    "datadog:down": "docker rm -f syncora-datadog-agent 2>/dev/null || true"
+    "datadog:down": "docker rm -f planwise-datadog-agent 2>/dev/null || true"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "8.59.3",

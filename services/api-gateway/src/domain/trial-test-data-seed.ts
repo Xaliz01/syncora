@@ -16,7 +16,7 @@ import type {
   PermissionCode,
   TemplateStep,
   TodoDashboardRule,
-} from "@syncora/shared";
+} from "@planwise/shared";
 
 /** Volumes cibles pour l’injection de démo (vs. jeu initial minimal). */
 export const TRIAL_DEMO_COUNTS = {
@@ -433,7 +433,7 @@ function buildCaseBase(
   return {
     organizationId,
     title: `Démo — ${verb} ${object} #${i + 1}`,
-    description: "Dossier généré pour la démonstration Syncora.",
+    description: "Dossier généré pour la démonstration Planwise.",
     priority: pick(CASE_PRIORITIES, i),
     customerId: pick(customerIds, i),
     ...(templateId ? { templateId } : {}),
@@ -516,7 +516,7 @@ export function buildDemoCases(
       create: {
         organizationId,
         title: `Démo — ${verb} ${object} #${i + 1}`,
-        description: "Dossier généré pour la démonstration Syncora.",
+        description: "Dossier généré pour la démonstration Planwise.",
         priority: pick(CASE_PRIORITIES, i),
         customerId: pick(customerIds, i),
         dueDate: dueDate.toISOString(),

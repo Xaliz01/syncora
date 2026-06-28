@@ -1,4 +1,4 @@
-# Déploiement Syncora — VM OVH + Docker Compose
+# Déploiement Planwise — VM OVH + Docker Compose
 
 Cible MVP : une VM unique (VPC OVH) faisant tourner tous les services via Docker
 Compose, derrière Caddy (HTTPS automatique). Seul Caddy est exposé publiquement
@@ -26,10 +26,10 @@ stateless hormis MongoDB et le volume documents).
 
 ## 2. Préparer la configuration (une fois)
 
-Sur la VM, dans le répertoire de déploiement (ex. `/opt/syncora`) :
+Sur la VM, dans le répertoire de déploiement (ex. `/opt/planwise`) :
 
 ```bash
-mkdir -p /opt/syncora/deploy && cd /opt/syncora/deploy
+mkdir -p /opt/planwise/deploy && cd /opt/planwise/deploy
 # Récupérer .env.production.example (via le repo ou copie manuelle), puis :
 cp .env.production.example .env.production
 # Renseigner les secrets (JWT_SECRET, Stripe, Crisp, domaines, REGISTRY…)
@@ -39,19 +39,19 @@ openssl rand -hex 48   # pour JWT_SECRET
 `.env.production` reste **uniquement sur la VM** (jamais commité, jamais transmis
 par la CI). La CI ne fait qu'y surcharger `IMAGE_TAG` / `REGISTRY` au déploiement.
 
-`DEPLOY_PATH` (secret GitHub) doit pointer sur `/opt/syncora` (le workflow copie
+`DEPLOY_PATH` (secret GitHub) doit pointer sur `/opt/planwise` (le workflow copie
 les fichiers dans `$DEPLOY_PATH/deploy`).
 
 ## 3. Secrets & variables GitHub (pour la CD)
 
 Les secrets et variables sont définis dans un **environnement GitHub** nommé
-`syncora-cd` (`Settings > Environments > syncora-cd`). Les jobs `build-frontend` et
-`deploy` déclarent `environment: syncora-cd` pour y accéder. **Important** : s'ils
+`planwise-cd` (`Settings > Environments > planwise-cd`). Les jobs `build-frontend` et
+`deploy` déclarent `environment: planwise-cd` pour y accéder. **Important** : s'ils
 étaient créés au niveau dépôt (`Actions > Secrets`) sans environnement, ou dans un
 environnement non référencé par le workflow, les valeurs seraient vides au runtime
 (erreur typique : `can't connect without a private SSH key or password`).
 
-Secrets de l'environnement `syncora-cd` :
+Secrets de l'environnement `planwise-cd` :
 
 | Secret            | Description                                    |
 | ----------------- | ---------------------------------------------- |
@@ -59,9 +59,9 @@ Secrets de l'environnement `syncora-cd` :
 | `DEPLOY_SSH_USER` | utilisateur SSH (membre du groupe docker)      |
 | `DEPLOY_SSH_KEY`  | clé privée SSH (contenu complet, multi-lignes) |
 | `DEPLOY_SSH_PORT` | (optionnel) port SSH, défaut 22                |
-| `DEPLOY_PATH`     | chemin de déploiement (ex. `/opt/syncora`)     |
+| `DEPLOY_PATH`     | chemin de déploiement (ex. `/opt/planwise`)    |
 
-Variables de l'environnement `syncora-cd`, injectées au build du frontend (bundle client) :
+Variables de l'environnement `planwise-cd`, injectées au build du frontend (bundle client) :
 
 | Variable                             | Exemple                      |
 | ------------------------------------ | ---------------------------- |
@@ -115,20 +115,20 @@ Depuis la racine du repo, sur une machine avec Docker :
 # Exemple pour un service backend
 docker build -f deploy/Dockerfile.backend --build-arg SERVICE=api-gateway \
   --build-arg APP_VERSION=v0.1.0 --build-arg GIT_SHA=$(git rev-parse --short HEAD) \
-  -t ghcr.io/mon-org/syncora-api-gateway:manuel .
+  -t ghcr.io/mon-org/planwise-api-gateway:manuel .
 
 # Frontend (la version est facultative en build manuel)
 docker build -f deploy/Dockerfile.frontend \
   --build-arg NEXT_PUBLIC_API_URL=https://api.exemple.fr/api \
   --build-arg NEXT_PUBLIC_APP_VERSION=v0.1.0 \
   --build-arg NEXT_PUBLIC_GIT_SHA=$(git rev-parse --short HEAD) \
-  -t ghcr.io/mon-org/syncora-frontend:manuel .
+  -t ghcr.io/mon-org/planwise-frontend:manuel .
 ```
 
 Sur la VM :
 
 ```bash
-cd /opt/syncora/deploy
+cd /opt/planwise/deploy
 docker compose -f docker-compose.prod.yml --env-file .env.production pull
 docker compose -f docker-compose.prod.yml --env-file .env.production up -d
 ```

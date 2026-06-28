@@ -4,7 +4,7 @@ import { AbstractExportsGatewayService } from "../../../domain/ports/exports.ser
 import { JwtAuthGuard } from "../../../infrastructure/jwt-auth.guard";
 import { RequirePermissionGuard } from "../../../infrastructure/require-permission.guard";
 import { SubscriptionAccessGuard } from "../../../infrastructure/subscription-access.guard";
-import type { AuthUser } from "@syncora/shared";
+import type { AuthUser } from "@planwise/shared";
 
 describe("ExportsController", () => {
   let controller: ExportsController;

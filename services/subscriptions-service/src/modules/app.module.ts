@@ -9,7 +9,7 @@ import { ProcessedStripeEventSchema } from "../persistence/processed-stripe-even
 @Module({
   imports: [
     MongooseModule.forRoot(
-      process.env.MONGODB_URI ?? "mongodb://localhost:27017/syncora-subscriptions",
+      process.env.MONGODB_URI ?? "mongodb://localhost:27017/planwise-subscriptions",
     ),
     MongooseModule.forFeature([
       { name: "OrganizationSubscription", schema: OrganizationSubscriptionSchema },

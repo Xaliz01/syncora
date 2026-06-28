@@ -8,12 +8,12 @@ import {
 import { SubscriptionAccessGuard } from "../../infrastructure/subscription-access.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
 import { NotifyEntity } from "../../infrastructure/notify-entity.decorator";
-import type { AuthUser } from "@syncora/shared";
+import type { AuthUser } from "@planwise/shared";
 import type {
   CreateTechnicianUserAccountBody,
   UpdateTechnicianBody,
   TechnicianStatus,
-} from "@syncora/shared";
+} from "@planwise/shared";
 
 interface CreateTechnicianPayload {
   firstName: string;

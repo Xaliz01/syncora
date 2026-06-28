@@ -3,7 +3,7 @@ import { TrialTestDataController } from "../trial-test-data.controller";
 import { AbstractTrialTestDataService } from "../../../domain/ports/trial-test-data.service.port";
 import { JwtAuthGuard } from "../../../infrastructure/jwt-auth.guard";
 import { AdminRoleGuard } from "../../../infrastructure/admin-role.guard";
-import type { AuthUser } from "@syncora/shared";
+import type { AuthUser } from "@planwise/shared";
 
 describe("TrialTestDataController", () => {
   let controller: TrialTestDataController;

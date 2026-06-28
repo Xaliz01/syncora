@@ -8,7 +8,7 @@ import {
 } from "../../infrastructure/require-permission.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
 import { NotifyEntity } from "../../infrastructure/notify-entity.decorator";
-import type { AuthUser, UpdateAgenceBody } from "@syncora/shared";
+import type { AuthUser, UpdateAgenceBody } from "@planwise/shared";
 
 interface CreateAgencePayload {
   name: string;

@@ -1,4 +1,4 @@
-import type { CustomerKind } from "@syncora/shared";
+import type { CustomerKind } from "@planwise/shared";
 
 export const CUSTOMER_KIND_LABELS: Record<CustomerKind, string> = {
   individual: "Personne physique",

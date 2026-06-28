@@ -1,5 +1,5 @@
 import { Controller, Delete, Query } from "@nestjs/common";
-import { parseOrganizationIdQuery } from "@syncora/shared/nest";
+import { parseOrganizationIdQuery } from "@planwise/shared/nest";
 import { AbstractFleetService } from "../../domain/ports/fleet.service.port";
 
 @Controller("test-data")

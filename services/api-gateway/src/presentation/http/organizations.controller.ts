@@ -8,7 +8,7 @@ import {
 } from "../../infrastructure/require-permission.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
 import { NotifyEntity } from "../../infrastructure/notify-entity.decorator";
-import type { AuthUser, SiretLookupResponse, UpdateOrganizationBody } from "@syncora/shared";
+import type { AuthUser, SiretLookupResponse, UpdateOrganizationBody } from "@planwise/shared";
 
 @Controller("organizations")
 export class OrganizationsController {

@@ -18,8 +18,8 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "paths": {
-      "@syncora/shared": ["packages/shared/src"],
-      "@syncora/shared/nest": ["packages/shared/src/nest.ts"]
+      "@planwise/shared": ["packages/shared/src"],
+      "@planwise/shared/nest": ["packages/shared/src/nest.ts"]
     }
   }
 }

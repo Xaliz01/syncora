@@ -30,8 +30,8 @@ import type {
   SwitchOrganizationBody,
   TechnicianResponse,
   AccountUserResponse,
-} from "@syncora/shared";
-import { ASSIGNABLE_PERMISSION_CODES, isOnboardingJwtPayload } from "@syncora/shared";
+} from "@planwise/shared";
+import { ASSIGNABLE_PERMISSION_CODES, isOnboardingJwtPayload } from "@planwise/shared";
 
 function buildOrganizationCreatePayload(body: CreateOrganizationBody): CreateOrganizationBody {
   return {

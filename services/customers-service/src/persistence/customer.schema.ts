@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document, Types } from "mongoose";
-import type { CustomerKind } from "@syncora/shared";
+import type { CustomerKind } from "@planwise/shared";
 
 @Schema({ _id: false })
 export class PostalAddressSubDoc {

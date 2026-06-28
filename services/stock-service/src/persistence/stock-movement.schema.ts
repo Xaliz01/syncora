@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document, Types } from "mongoose";
-import type { StockMovementType } from "@syncora/shared";
+import type { StockMovementType } from "@planwise/shared";
 
 @Schema({ timestamps: true, _id: true, collection: "stock_movements" })
 export class StockMovementDocument extends Document {

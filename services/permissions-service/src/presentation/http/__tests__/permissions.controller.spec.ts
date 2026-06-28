@@ -1,6 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { BadRequestException } from "@nestjs/common";
-import type { PermissionCode } from "@syncora/shared";
+import type { PermissionCode } from "@planwise/shared";
 import { PermissionsController } from "../permissions.controller";
 import { AbstractPermissionsService } from "../../../domain/ports/permissions.service.port";
 

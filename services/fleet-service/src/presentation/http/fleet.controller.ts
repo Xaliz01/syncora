@@ -1,11 +1,11 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from "@nestjs/common";
-import { parseOrganizationIdQuery } from "@syncora/shared/nest";
+import { parseOrganizationIdQuery } from "@planwise/shared/nest";
 import { AbstractFleetService } from "../../domain/ports/fleet.service.port";
 import type {
   AssignTeamToVehicleBody,
   CreateVehicleBody,
   UpdateVehicleBody,
-} from "@syncora/shared";
+} from "@planwise/shared";
 
 @Controller("vehicles")
 export class FleetController {

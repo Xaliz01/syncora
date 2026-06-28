@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from "@nestjs/common";
-import { parseOrganizationIdQuery } from "@syncora/shared/nest";
+import { parseOrganizationIdQuery } from "@planwise/shared/nest";
 import { AbstractAgencesService } from "../../domain/ports/agences.service.port";
-import type { CreateAgenceBody, UpdateAgenceBody } from "@syncora/shared";
+import type { CreateAgenceBody, UpdateAgenceBody } from "@planwise/shared";
 
 @Controller("agences")
 export class AgencesController {

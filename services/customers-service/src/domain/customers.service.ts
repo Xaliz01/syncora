@@ -6,12 +6,12 @@ import {
   type CreateCustomerBody,
   type CustomerResponse,
   type UpdateCustomerBody,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import {
   assertOrganizationScopedListNest,
   assertOrganizationScopedResourceNest,
   parseOrganizationIdBody,
-} from "@syncora/shared/nest";
+} from "@planwise/shared/nest";
 import type { CustomerDocument } from "../persistence/customer.schema";
 import { AbstractCustomersService } from "./ports/customers.service.port";
 

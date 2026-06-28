@@ -3,7 +3,7 @@
 # (ex: api-gateway, users-service, cases-service…).
 #
 # Build (depuis la racine du repo) :
-#   docker build -f deploy/Dockerfile.backend --build-arg SERVICE=api-gateway -t syncora-api-gateway .
+#   docker build -f deploy/Dockerfile.backend --build-arg SERVICE=api-gateway -t planwise-api-gateway .
 
 # ─────────────────────────────────────────────────────────────
 # Stage 1 : build (install complet + compilation TS)
@@ -19,11 +19,11 @@ COPY services ./services
 RUN npm ci
 
 # Le package partagé doit être compilé avant les services qui en dépendent.
-RUN npm run build -w @syncora/shared
+RUN npm run build -w @planwise/shared
 
 ARG SERVICE
 RUN test -n "$SERVICE" || (echo "ERREUR: build-arg SERVICE manquant" && exit 1)
-RUN npm run build -w @syncora/${SERVICE}
+RUN npm run build -w @planwise/${SERVICE}
 
 # Supprime les dépendances de dev (nest-cli, ts-node, jest…) pour alléger l'image finale.
 RUN npm prune --omit=dev

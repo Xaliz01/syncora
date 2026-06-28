@@ -11,8 +11,8 @@ import {
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import type { Response } from "express";
-import { MAX_DOCUMENT_FILE_SIZE_BYTES, type DocumentEntityType } from "@syncora/shared";
-import type { AuthUser } from "@syncora/shared";
+import { MAX_DOCUMENT_FILE_SIZE_BYTES, type DocumentEntityType } from "@planwise/shared";
+import type { AuthUser } from "@planwise/shared";
 import { AbstractDocumentsGatewayService } from "../../domain/ports/documents.service.port";
 import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
 import { SubscriptionAccessGuard } from "../../infrastructure/subscription-access.guard";

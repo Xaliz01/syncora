@@ -3,7 +3,7 @@ import { AbstractNotificationsGatewayService } from "../../domain/ports/notifica
 import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
 import { SubscriptionAccessGuard } from "../../infrastructure/subscription-access.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
-import type { AuthUser } from "@syncora/shared";
+import type { AuthUser } from "@planwise/shared";
 
 @Controller("notifications")
 @UseGuards(JwtAuthGuard, SubscriptionAccessGuard)

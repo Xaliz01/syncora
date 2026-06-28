@@ -3,7 +3,7 @@ import type {
   SiretLookupResponse,
   UpdateOrganizationBody,
   UserOrganizationsListResponse,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import { apiRequestJson } from "./api-client";
 
 export function listMine() {

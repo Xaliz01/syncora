@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document, Types } from "mongoose";
-import type { NotificationAction, NotificationEntityType } from "@syncora/shared";
+import type { NotificationAction, NotificationEntityType } from "@planwise/shared";
 
 @Schema({ timestamps: true, _id: true, collection: "notifications" })
 export class NotificationDocument extends Document {

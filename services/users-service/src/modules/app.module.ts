@@ -9,7 +9,7 @@ import { UsersService } from "../domain/users.service";
 
 @Module({
   imports: [
-    MongooseModule.forRoot(process.env.MONGODB_URI ?? "mongodb://localhost:27017/syncora-users"),
+    MongooseModule.forRoot(process.env.MONGODB_URI ?? "mongodb://localhost:27017/planwise-users"),
     MongooseModule.forFeature([
       { name: "User", schema: UserSchema },
       { name: "OrganizationMembership", schema: OrganizationMembershipSchema },

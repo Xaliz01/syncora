@@ -2,7 +2,7 @@ import type {
   CreateNotificationBody,
   NotificationListResponse,
   NotificationResponse,
-} from "@syncora/shared";
+} from "@planwise/shared";
 
 export abstract class AbstractNotificationsService {
   abstract createForOrganization(

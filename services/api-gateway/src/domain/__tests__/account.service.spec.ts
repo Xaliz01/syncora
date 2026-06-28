@@ -2,7 +2,7 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { HttpService } from "@nestjs/axios";
 import { of, throwError } from "rxjs";
 import type { AxiosResponse } from "axios";
-import type { AuthUser, UserPreferencesResponse, UserResponse } from "@syncora/shared";
+import type { AuthUser, UserPreferencesResponse, UserResponse } from "@planwise/shared";
 import { AccountService } from "../account.service";
 import { AbstractAccountService } from "../ports/account.service.port";
 import { BadRequestException, NotFoundException } from "@nestjs/common";

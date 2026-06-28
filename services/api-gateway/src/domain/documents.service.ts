@@ -8,8 +8,8 @@ import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
 import type { Response } from "express";
 import FormData from "form-data";
-import type { AuthUser, DocumentEntityType, DocumentResponse } from "@syncora/shared";
-import { MAX_DOCUMENT_FILE_SIZE_BYTES } from "@syncora/shared";
+import type { AuthUser, DocumentEntityType, DocumentResponse } from "@planwise/shared";
+import { MAX_DOCUMENT_FILE_SIZE_BYTES } from "@planwise/shared";
 import {
   AbstractDocumentsGatewayService,
   type DocumentUploadGatewayResponse,

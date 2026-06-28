@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import type { VehicleResponse } from "@syncora/shared";
+import type { VehicleResponse } from "@planwise/shared";
 import { TestDataBadgeIf } from "@/components/test-data/TestDataBadge";
 import * as fleetApi from "@/lib/fleet.api";
 import {

@@ -3,7 +3,7 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import * as api from "@/lib/cases.api";
-import type { CaseHistoryAction, CaseHistoryChange } from "@syncora/shared";
+import type { CaseHistoryAction, CaseHistoryChange } from "@planwise/shared";
 
 const ACTION_CONFIG: Record<
   CaseHistoryAction,

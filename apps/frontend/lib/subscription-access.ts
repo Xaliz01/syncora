@@ -1,4 +1,4 @@
-import type { AddonCode, AuthUser, PermissionCode } from "@syncora/shared";
+import type { AddonCode, AuthUser, PermissionCode } from "@planwise/shared";
 
 export const SUBSCRIPTION_ACTIVE_PERMISSION: PermissionCode = "subscription.active";
 

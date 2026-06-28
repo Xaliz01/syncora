@@ -7,7 +7,7 @@
 #   docker build -f deploy/Dockerfile.frontend \
 #     --build-arg NEXT_PUBLIC_API_URL=https://api.exemple.fr/api \
 #     --build-arg NEXT_PUBLIC_CRISP_WEBSITE_ID=xxxx \
-#     -t syncora-frontend .
+#     -t planwise-frontend .
 
 # ─────────────────────────────────────────────────────────────
 # Stage 1 : build
@@ -22,7 +22,7 @@ COPY apps ./apps
 COPY services ./services
 
 RUN npm ci
-RUN npm run build -w @syncora/shared
+RUN npm run build -w @planwise/shared
 
 # Variables publiques (baked dans le bundle client).
 ARG NEXT_PUBLIC_API_URL
@@ -37,7 +37,7 @@ ENV NEXT_PUBLIC_APP_VERSION=$NEXT_PUBLIC_APP_VERSION
 ENV NEXT_PUBLIC_GIT_SHA=$NEXT_PUBLIC_GIT_SHA
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN npm run build -w @syncora/frontend
+RUN npm run build -w @planwise/frontend
 
 # ─────────────────────────────────────────────────────────────
 # Stage 2 : runtime
@@ -49,7 +49,7 @@ ENV HOSTNAME=0.0.0.0
 ENV NEXT_TELEMETRY_DISABLED=1
 WORKDIR /app
 
-# Sortie standalone (serveur + node_modules tracés, dont @syncora/shared).
+# Sortie standalone (serveur + node_modules tracés, dont @planwise/shared).
 COPY --from=builder /app/apps/frontend/.next/standalone ./
 # Assets statiques et fichiers publics (non inclus dans standalone).
 COPY --from=builder /app/apps/frontend/.next/static ./apps/frontend/.next/static

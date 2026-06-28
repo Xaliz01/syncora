@@ -9,7 +9,7 @@ import {
   Query,
 } from "@nestjs/common";
 import { AbstractNotificationsService } from "../../domain/ports/notifications.service.port";
-import type { CreateNotificationBody } from "@syncora/shared";
+import type { CreateNotificationBody } from "@planwise/shared";
 
 @Controller()
 export class NotificationsController {

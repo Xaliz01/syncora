@@ -5,7 +5,7 @@ import type {
   TrialTestDataStatusResponse,
   UpdateOrganizationBody,
   UpdateOrganizationTrialTestDataBody,
-} from "@syncora/shared";
+} from "@planwise/shared";
 
 @Controller("organizations")
 export class OrganizationsController {

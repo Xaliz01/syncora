@@ -1,14 +1,14 @@
-# Syncora — Vision produit & roadmap
+# Planwise — Vision produit & roadmap
 
 > Document de référence pour l’équipe et les assistants de développement.  
-> Complète `syncora.product.config.yml` (entités, auth) par le **pourquoi**, la **cible** et le **cap** des évolutions.  
+> Complète `planwise.product.config.yml` (entités, auth) par le **pourquoi**, la **cible** et le **cap** des évolutions.  
 > Dernière mise à jour : juin 2026.
 
 ---
 
 ## 1. Vision
 
-**Syncora** est un outil SaaS qui aide les **artisans et TPE** à organiser leur activité terrain : clients, dossiers, interventions, équipes et stock léger — sans la complexité des gros logiciels FSM ou ERP.
+**Planwise** est un outil SaaS qui aide les **artisans et TPE** à organiser leur activité terrain : clients, dossiers, interventions, équipes et stock léger — sans la complexité des gros logiciels FSM ou ERP.
 
 **Promesse** : _« Je sais quoi faire aujourd’hui, pour qui, avec qui, et je peux le prouver au client. »_
 
@@ -60,7 +60,7 @@ Plomberie, chauffage, électricité, serrurerie, climatisation, maintenance cour
 
 ## 3. Positionnement marché
 
-| Concurrent type            | Exemples                  | Écart Syncora aujourd’hui                 | Opportunité                                  |
+| Concurrent type            | Exemples                  | Écart Planwise aujourd’hui                | Opportunité                                  |
 | -------------------------- | ------------------------- | ----------------------------------------- | -------------------------------------------- |
 | FSM / GMAO lourds          | Praxedo, Commusoft        | Mobile terrain, facturation, intégrations | Simplicité + prix pour 2–8 users             |
 | Outils terrain formulaires | Kizeo Forms               | Dossiers, planning, stock intégré         | Moins de silos qu’« app formulaire + Excel » |
@@ -74,7 +74,7 @@ Plomberie, chauffage, électricité, serrurerie, climatisation, maintenance cour
 
 ## 4. État actuel du produit (baseline)
 
-Référence technique : landing `apps/frontend/components/landing/LandingPage.tsx`, configs `syncora.*.yml`, catalogue `@syncora/shared`.
+Référence technique : landing `apps/frontend/components/landing/LandingPage.tsx`, configs `planwise.*.yml`, catalogue `@planwise/shared`.
 
 ### Déjà livré (socle Essentiel)
 
@@ -112,8 +112,8 @@ Ces principes guident toute évolution ; en cas de doute, ils priment sur « fai
 3. **Valeur jour 1** — Le socle doit rester utile sans addons ni intégrations.
 4. **Addons = levier clair** — Routing intelligent, users, stockage : optionnels, bénéfice explicite sur la landing.
 5. **Ne pas réinventer la compta** — Export / lien vers Pennylane, Sage, Excel plutôt qu’un module compta complet (phase tardive).
-6. **Évolutivité technique** — Contrats `@syncora/shared`, permissions, isolation `organizationId` : ne pas casser pour aller vite sur l’UI.
-7. **Tests sur les parcours** — Nouveau parcours utilisateur → test E2E Playwright (voir `.cursor/rules/syncora.mdc`).
+6. **Évolutivité technique** — Contrats `@planwise/shared`, permissions, isolation `organizationId` : ne pas casser pour aller vite sur l’UI.
+7. **Tests sur les parcours** — Nouveau parcours utilisateur → test E2E Playwright (voir `.cursor/rules/planwise.mdc`).
 
 ---
 
@@ -224,9 +224,9 @@ Aligné sur `packages/shared/src/subscription.ts` :
 1. Lire ce fichier **avant** une feature ou un refactor produit.
 2. Vérifier que la demande correspond à la **phase** courante (éviter le scope enterprise en Phase 1).
 3. Croiser avec :
-   - `syncora.product.config.yml` — entités et auth
-   - `syncora.tech.config.yml` — stack et services
-   - `syncora.ui.config.yml` — design system
+   - `planwise.product.config.yml` — entités et auth
+   - `planwise.tech.config.yml` — stack et services
+   - `planwise.ui.config.yml` — design system
 4. Mettre à jour les sections **État actuel** et **Roadmap** quand une phase est livrée (date + statut `✅`).
 
 ### Definition of Done (feature produit)
@@ -242,12 +242,12 @@ Aligné sur `packages/shared/src/subscription.ts` :
 
 | Fichier                                            | Rôle                          |
 | -------------------------------------------------- | ----------------------------- |
-| `syncora.product.config.yml`                       | Entités cœur, auth, capacités |
-| `syncora.tech.config.yml`                          | Stack, microservices, CI      |
-| `syncora.ui.config.yml`                            | UI slate + brand              |
+| `planwise.product.config.yml`                      | Entités cœur, auth, capacités |
+| `planwise.tech.config.yml`                         | Stack, microservices, CI      |
+| `planwise.ui.config.yml`                           | UI slate + brand              |
 | `packages/shared/src/subscription.ts`              | Catalogue offre & addons      |
 | `apps/frontend/components/landing/LandingPage.tsx` | Message marché public         |
-| `.cursor/rules/syncora.mdc`                        | Règles dev & tests            |
+| `.cursor/rules/planwise.mdc`                       | Règles dev & tests            |
 
 ---
 

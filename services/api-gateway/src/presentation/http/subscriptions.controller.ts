@@ -12,7 +12,7 @@ import type {
   CreateBillingPortalGatewayBody,
   CreateCheckoutSessionGatewayBody,
   UpdateSubscriptionAddonsGatewayBody,
-} from "@syncora/shared";
+} from "@planwise/shared";
 
 @Controller("subscriptions")
 @UseGuards(JwtAuthGuard)

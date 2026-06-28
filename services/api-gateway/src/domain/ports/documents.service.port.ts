@@ -1,5 +1,5 @@
 import type { Response } from "express";
-import type { AuthUser, DocumentEntityType, DocumentResponse } from "@syncora/shared";
+import type { AuthUser, DocumentEntityType, DocumentResponse } from "@planwise/shared";
 
 /** Réponse upload enrichie côté gateway (libellé hôte pour les notifications). */
 export type DocumentUploadGatewayResponse = DocumentResponse & {

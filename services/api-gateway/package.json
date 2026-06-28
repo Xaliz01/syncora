@@ -1,5 +1,5 @@
 {
-  "name": "@syncora/api-gateway",
+  "name": "@planwise/api-gateway",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -19,7 +19,7 @@
     "@nestjs/jwt": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
     "@nestjs/swagger": "^11.2.1",
-    "@syncora/shared": "0.1.0",
+    "@planwise/shared": "0.1.0",
     "axios": "^1.6.0",
     "dd-trace": "^5.0.0",
     "form-data": "^4.0.0",

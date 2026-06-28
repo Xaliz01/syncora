@@ -2,7 +2,7 @@ import { ForbiddenException } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { Test } from "@nestjs/testing";
 import { of } from "rxjs";
-import type { AuthUser } from "@syncora/shared";
+import type { AuthUser } from "@planwise/shared";
 import { AdminService } from "../admin.service";
 
 describe("AdminService", () => {

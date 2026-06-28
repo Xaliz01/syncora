@@ -5,7 +5,7 @@ import type {
   AssignTeamToVehicleBody,
   VehicleType,
   VehicleStatus,
-} from "@syncora/shared";
+} from "@planwise/shared";
 
 export abstract class AbstractFleetGatewayService {
   abstract createVehicle(

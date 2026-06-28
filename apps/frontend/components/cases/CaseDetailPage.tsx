@@ -35,7 +35,7 @@ import type {
   CaseStatus,
   TeamResponse,
   TodoItemStatus,
-} from "@syncora/shared";
+} from "@planwise/shared";
 
 const STATUS_LABELS: Record<CaseStatus, string> = {
   draft: "Brouillon",

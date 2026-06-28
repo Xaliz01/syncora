@@ -1,9 +1,9 @@
-import type { SidebarPreference, ThemePreference, UserPreferences } from "@syncora/shared";
+import type { SidebarPreference, ThemePreference, UserPreferences } from "@planwise/shared";
 import { writeSidebarCollapsed } from "@/lib/sidebar-preference";
 
-export const USER_PREFERENCES_APPLIED = "syncora:user-preferences-applied";
-export const USER_THEME_PREFERENCE_CHANGED = "syncora:user-theme-preference-changed";
-export const USER_SIDEBAR_PREFERENCE_CHANGED = "syncora:user-sidebar-preference-changed";
+export const USER_PREFERENCES_APPLIED = "planwise:user-preferences-applied";
+export const USER_THEME_PREFERENCE_CHANGED = "planwise:user-theme-preference-changed";
+export const USER_SIDEBAR_PREFERENCE_CHANGED = "planwise:user-sidebar-preference-changed";
 
 /** Applique thème + sidebar (localStorage + événement pour AppShell / page compte). */
 export function applyUserPreferences(

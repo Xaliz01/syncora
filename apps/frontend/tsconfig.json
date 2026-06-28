@@ -16,7 +16,7 @@
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      "@syncora/shared": ["../../packages/shared/src"],
+      "@planwise/shared": ["../../packages/shared/src"],
       "@/*": ["./*"]
     },
     "isolatedModules": true

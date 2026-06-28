@@ -7,7 +7,7 @@ import type {
   OrganizationSubscriptionResponse,
   UpdateSubscriptionAddonsGatewayBody,
   UpdateSubscriptionAddonsResponse,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import { apiRequestJson, type ApiMethod } from "./api-client";
 
 async function subscriptionsRequest<TResponse>(

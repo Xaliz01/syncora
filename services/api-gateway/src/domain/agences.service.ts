@@ -1,5 +1,10 @@
 import { Injectable } from "@nestjs/common";
-import type { AgenceResponse, AuthUser, CreateAgenceBody, UpdateAgenceBody } from "@syncora/shared";
+import type {
+  AgenceResponse,
+  AuthUser,
+  CreateAgenceBody,
+  UpdateAgenceBody,
+} from "@planwise/shared";
 import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
 import { AbstractAgencesGatewayService } from "./ports/agences.service.port";
 

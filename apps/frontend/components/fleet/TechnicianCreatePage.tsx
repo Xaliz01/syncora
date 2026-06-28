@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
-import type { TechnicianStatus } from "@syncora/shared";
+import type { TechnicianStatus } from "@planwise/shared";
 
 const TECHNICIAN_STATUSES: TechnicianStatus[] = ["actif", "inactif"];
 import * as fleetApi from "@/lib/fleet.api";

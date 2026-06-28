@@ -1,4 +1,4 @@
-import type { CrispIdentityResponse } from "@syncora/shared";
+import type { CrispIdentityResponse } from "@planwise/shared";
 import { apiRequestJson } from "@/lib/api-client";
 
 export function getCrispIdentity() {

@@ -1,7 +1,7 @@
 import { ForbiddenException } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { RequirePermissionGuard } from "../require-permission.guard";
-import type { JwtPayload } from "@syncora/shared";
+import type { JwtPayload } from "@planwise/shared";
 
 describe("RequirePermissionGuard", () => {
   const reflector = new Reflector();

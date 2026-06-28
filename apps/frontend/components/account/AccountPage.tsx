@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthContext";
 import { useToast } from "@/components/ui/ToastProvider";
 import * as accountApi from "@/lib/account.api";
-import type { ThemePreference, SidebarPreference, UserPreferences } from "@syncora/shared";
+import type { ThemePreference, SidebarPreference, UserPreferences } from "@planwise/shared";
 import { useTheme } from "next-themes";
 import { readSidebarCollapsed } from "@/lib/sidebar-preference";
 import {
@@ -14,7 +14,6 @@ import {
   USER_THEME_PREFERENCE_CHANGED,
 } from "@/lib/user-preferences";
 import { ChangePasswordDialog } from "@/components/account/ChangePasswordDialog";
-import { appVersionLabel } from "@/lib/app-version";
 
 const THEME_LABELS: Record<ThemePreference, string> = {
   light: "Clair",
@@ -482,10 +481,6 @@ export function AccountPage() {
         open={passwordDialogOpen}
         onClose={() => setPasswordDialogOpen(false)}
       />
-
-      <p className="text-center text-xs text-slate-400 dark:text-slate-500">
-        Syncora {appVersionLabel()}
-      </p>
     </div>
   );
 }

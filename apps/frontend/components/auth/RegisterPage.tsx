@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import type { SiretLookupResult } from "@syncora/shared";
+import type { SiretLookupResult } from "@planwise/shared";
 import { useAuth } from "@/components/auth/AuthContext";
 import { postAuthHomePath } from "@/lib/subscription-access";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
@@ -113,11 +113,11 @@ export function RegisterPage() {
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white font-semibold">
-              S
+              P
             </span>
             <div>
               <div className="font-semibold text-lg text-slate-900 dark:text-slate-100">
-                Syncora
+                Planwise
               </div>
               <div className="text-xs text-slate-500 dark:text-slate-400">
                 CRM des opérations terrain

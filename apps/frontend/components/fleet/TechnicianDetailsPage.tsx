@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import React, { useCallback, useEffect, useState } from "react";
-import type { TechnicianResponse, TeamResponse, TechnicianStatus } from "@syncora/shared";
+import type { TechnicianResponse, TeamResponse, TechnicianStatus } from "@planwise/shared";
 
 const TECHNICIAN_STATUSES: TechnicianStatus[] = ["actif", "inactif"];
 import * as fleetApi from "@/lib/fleet.api";

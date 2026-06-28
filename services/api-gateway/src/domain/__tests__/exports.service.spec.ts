@@ -1,7 +1,7 @@
 import { ExportsGatewayService } from "../exports.service";
 import { HttpService } from "@nestjs/axios";
 import { of } from "rxjs";
-import type { AuthUser } from "@syncora/shared";
+import type { AuthUser } from "@planwise/shared";
 
 describe("ExportsGatewayService (proxy)", () => {
   let service: ExportsGatewayService;

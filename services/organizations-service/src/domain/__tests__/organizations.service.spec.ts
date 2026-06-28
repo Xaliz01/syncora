@@ -1,6 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getModelToken } from "@nestjs/mongoose";
-import { activeDocumentFilter } from "@syncora/shared";
+import { activeDocumentFilter } from "@planwise/shared";
 import { OrganizationsService } from "../organizations.service";
 import { AbstractOrganizationsService } from "../ports/organizations.service.port";
 

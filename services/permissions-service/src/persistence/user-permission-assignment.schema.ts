@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document } from "mongoose";
-import type { PermissionCode } from "@syncora/shared";
+import type { PermissionCode } from "@planwise/shared";
 
 @Schema({ timestamps: true, _id: true, collection: "user_permission_assignments" })
 export class UserPermissionAssignmentDocument extends Document {

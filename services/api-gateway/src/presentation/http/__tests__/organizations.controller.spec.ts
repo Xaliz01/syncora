@@ -6,7 +6,7 @@ import { JwtAuthGuard } from "../../../infrastructure/jwt-auth.guard";
 import { AuthOrOnboardingGuard } from "../../../infrastructure/auth-or-onboarding.guard";
 import { RequirePermissionGuard } from "../../../infrastructure/require-permission.guard";
 import { SubscriptionAccessGuard } from "../../../infrastructure/subscription-access.guard";
-import type { AuthUser } from "@syncora/shared";
+import type { AuthUser } from "@planwise/shared";
 
 describe("OrganizationsController", () => {
   let controller: OrganizationsController;

@@ -9,7 +9,7 @@ import {
   type VehicleResponse,
   type VehicleStatus,
   type VehicleType,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import { AbstractFleetService } from "./ports/fleet.service.port";
 
 @Injectable()

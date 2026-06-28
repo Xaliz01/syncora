@@ -95,7 +95,7 @@ export function OrganizationPage() {
             {displayName}
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Coordonnées et identité de votre espace Syncora.
+            Coordonnées et identité de votre espace Planwise.
           </p>
         </div>
         {canUpdateOrganization && !isEditing && (

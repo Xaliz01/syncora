@@ -5,7 +5,7 @@ import type {
   CreateNotificationBody,
   NotificationListResponse,
   NotificationResponse,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import type { NotificationDocument } from "../persistence/notification.schema";
 import { AbstractNotificationsService } from "./ports/notifications.service.port";
 

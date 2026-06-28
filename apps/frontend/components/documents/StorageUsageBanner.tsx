@@ -5,7 +5,7 @@ import {
   formatStorageBytes,
   STORAGE_QUOTA_WARNING_RATIO,
   type OrganizationSubscriptionResponse,
-} from "@syncora/shared";
+} from "@planwise/shared";
 
 type StorageUsageFields = Pick<
   OrganizationSubscriptionResponse,

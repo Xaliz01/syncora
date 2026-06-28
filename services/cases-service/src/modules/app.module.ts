@@ -11,7 +11,7 @@ import { InterventionSchema } from "../persistence/intervention.schema";
 
 @Module({
   imports: [
-    MongooseModule.forRoot(process.env.MONGODB_URI ?? "mongodb://localhost:27017/syncora-cases"),
+    MongooseModule.forRoot(process.env.MONGODB_URI ?? "mongodb://localhost:27017/planwise-cases"),
     MongooseModule.forFeature([
       { name: "CaseTemplate", schema: CaseTemplateSchema },
       { name: "Case", schema: CaseSchema },

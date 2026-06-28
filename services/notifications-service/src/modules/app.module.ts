@@ -8,7 +8,7 @@ import { NotificationSchema } from "../persistence/notification.schema";
 @Module({
   imports: [
     MongooseModule.forRoot(
-      process.env.MONGODB_URI ?? "mongodb://localhost:27017/syncora-notifications",
+      process.env.MONGODB_URI ?? "mongodb://localhost:27017/planwise-notifications",
     ),
     MongooseModule.forFeature([{ name: "Notification", schema: NotificationSchema }]),
   ],

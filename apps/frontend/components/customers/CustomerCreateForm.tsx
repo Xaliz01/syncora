@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import * as customersApi from "@/lib/customers.api";
-import type { CustomerKind, CustomerResponse } from "@syncora/shared";
+import type { CustomerKind, CustomerResponse } from "@planwise/shared";
 import { PostalAddressFields } from "@/components/address/PostalAddressFields";
 import { CUSTOMER_KIND_LABELS } from "./customer-kind-labels";
 

@@ -4,7 +4,7 @@ import type {
   TrialTestDataStatusResponse,
   UpdateOrganizationBody,
   UpdateOrganizationTrialTestDataBody,
-} from "@syncora/shared";
+} from "@planwise/shared";
 
 export abstract class AbstractOrganizationsService {
   abstract create(body: CreateOrganizationBody): Promise<OrganizationResponse>;

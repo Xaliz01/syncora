@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import type { TrialTestDataStatus } from "@syncora/shared";
+import type { TrialTestDataStatus } from "@planwise/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   invalidateQueriesAfterDemoDataChange,
@@ -93,7 +93,7 @@ export function TrialTestDataCard() {
           >
             {showPurgeOnly
               ? "Données de démonstration restantes"
-              : "Explorer Syncora avec des données de démonstration"}
+              : "Explorer Planwise avec des données de démonstration"}
           </h2>
           <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
             {showPurgeOnly ? (

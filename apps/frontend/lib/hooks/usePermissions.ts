@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import type { PermissionCode } from "@syncora/shared";
+import type { PermissionCode } from "@planwise/shared";
 import { useAuth } from "@/components/auth/AuthContext";
 import { hasPermission, hasAnyPermission } from "@/lib/auth-permissions";
 

@@ -1,12 +1,12 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("PWA — manifest et page hors-ligne", () => {
-  test("le manifest est servi avec les métadonnées Syncora", async ({ page }) => {
+  test("le manifest est servi avec les métadonnées Planwise", async ({ page }) => {
     const res = await page.request.get("/manifest.webmanifest");
     expect(res.status()).toBe(200);
     const manifest = await res.json();
 
-    expect(manifest.short_name).toBe("Syncora");
+    expect(manifest.short_name).toBe("Planwise");
     expect(manifest.display).toBe("standalone");
     expect(manifest.theme_color).toBe("#4338ca");
     expect(manifest.start_url).toBe("/");

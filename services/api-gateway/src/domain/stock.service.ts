@@ -8,7 +8,7 @@ import type {
   InterventionArticleUsageResponse,
   StockMovementResponse,
   UpdateArticleBody,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
 import {
   AbstractStockGatewayService,

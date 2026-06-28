@@ -1,8 +1,8 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { Request } from "express";
-import type { OnboardingJwtPayload } from "@syncora/shared";
-import { isOnboardingJwtPayload } from "@syncora/shared";
+import type { OnboardingJwtPayload } from "@planwise/shared";
+import { isOnboardingJwtPayload } from "@planwise/shared";
 
 @Injectable()
 export class OnboardingAuthGuard implements CanActivate {

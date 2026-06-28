@@ -1,6 +1,6 @@
 import { ExecutionContext, ForbiddenException } from "@nestjs/common";
 import { AdminRoleGuard } from "../admin-role.guard";
-import type { JwtPayload } from "@syncora/shared";
+import type { JwtPayload } from "@planwise/shared";
 
 describe("AdminRoleGuard", () => {
   const guard = new AdminRoleGuard();

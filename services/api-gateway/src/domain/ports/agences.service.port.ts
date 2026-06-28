@@ -1,4 +1,4 @@
-import type { AuthUser, AgenceResponse, UpdateAgenceBody } from "@syncora/shared";
+import type { AuthUser, AgenceResponse, UpdateAgenceBody } from "@planwise/shared";
 
 export abstract class AbstractAgencesGatewayService {
   abstract createAgence(

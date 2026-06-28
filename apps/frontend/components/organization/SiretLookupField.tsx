@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useId, useRef, useState } from "react";
-import type { SiretLookupResult } from "@syncora/shared";
+import type { SiretLookupResult } from "@planwise/shared";
 import * as organizationsApi from "@/lib/organizations.api";
 
 function useDebouncedValue<T>(value: T, ms: number): T {

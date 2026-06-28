@@ -1,7 +1,7 @@
 import { BadRequestException, Controller, Get, Param, Query, Res } from "@nestjs/common";
 import type { Response } from "express";
-import type { ExportFormat } from "@syncora/shared";
-import { parseOrganizationIdQuery } from "@syncora/shared/nest";
+import type { ExportFormat } from "@planwise/shared";
+import { parseOrganizationIdQuery } from "@planwise/shared/nest";
 import { AbstractExportsService } from "../../domain/ports/exports.service.port";
 import type { ExportResult } from "../../domain/ports/exports.service.port";
 

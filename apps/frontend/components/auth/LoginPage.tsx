@@ -39,11 +39,11 @@ export function LoginPage() {
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white font-semibold">
-              S
+              P
             </span>
             <div>
               <div className="font-semibold text-lg text-slate-900 dark:text-slate-100">
-                Syncora
+                Planwise
               </div>
               <div className="text-xs text-slate-500 dark:text-slate-400">
                 CRM des opérations terrain
@@ -58,7 +58,7 @@ export function LoginPage() {
         <div className="w-full max-w-6xl grid gap-6 md:grid-cols-[1.2fr_1fr]">
           <section className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 p-6 shadow-sm dark:shadow-slate-950/20">
             <h1 className="text-3xl font-semibold mb-2 text-slate-900 dark:text-slate-100">
-              Bienvenue sur Syncora
+              Bienvenue sur Planwise
             </h1>
             <p className="text-slate-600 dark:text-slate-300 mb-8 max-w-xl">
               Gérez votre portefeuille client, planifiez vos interventions, suivez vos stocks et
@@ -91,7 +91,7 @@ export function LoginPage() {
           <section className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 p-6 shadow-sm dark:shadow-slate-950/20">
             <h2 className="text-2xl font-semibold mb-2">Connexion</h2>
             <p className="text-slate-600 dark:text-slate-300 mb-8 max-w-xl">
-              Accédez à votre espace Syncora avec votre email et mot de passe.
+              Accédez à votre espace Planwise avec votre email et mot de passe.
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">

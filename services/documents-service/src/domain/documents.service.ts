@@ -6,13 +6,13 @@ import type {
   DocumentResponse,
   DocumentEntityType,
   OrganizationStorageUsageResponse,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import {
   activeDocumentFilter,
   formatStorageBytes,
   isStorageQuotaExceeded,
   MAX_DOCUMENT_FILE_SIZE_BYTES,
-} from "@syncora/shared";
+} from "@planwise/shared";
 import type { DocumentRecord } from "../persistence/document.schema";
 import { AbstractStorageProvider } from "../infrastructure/storage.port";
 import { AbstractDocumentsService, UploadParams } from "./ports/documents.service.port";

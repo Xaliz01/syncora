@@ -6,8 +6,8 @@ import type {
   CreateCheckoutSessionBody,
   StartTrialBody,
   UpdateSubscriptionAddonsBody,
-} from "@syncora/shared";
-import { isValidAddonCode, isQuantityAddonCode } from "@syncora/shared";
+} from "@planwise/shared";
+import { isValidAddonCode, isQuantityAddonCode } from "@planwise/shared";
 
 @Controller("subscriptions")
 export class SubscriptionsController {

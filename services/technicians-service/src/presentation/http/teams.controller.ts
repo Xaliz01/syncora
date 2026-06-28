@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from "@nestjs/common";
-import { parseOrganizationIdQuery } from "@syncora/shared/nest";
+import { parseOrganizationIdQuery } from "@planwise/shared/nest";
 import { AbstractTeamsService } from "../../domain/ports/teams.service.port";
-import type { CreateTeamBody, UpdateTeamBody } from "@syncora/shared";
+import type { CreateTeamBody, UpdateTeamBody } from "@planwise/shared";
 
 @Controller("teams")
 export class TeamsController {

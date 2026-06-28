@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import type { AddonCode } from "@syncora/shared";
+import type { AddonCode } from "@planwise/shared";
 import * as subscriptionsApi from "@/lib/subscriptions.api";
 import { useAuth } from "@/components/auth/AuthContext";
 import { hasPermission } from "@/lib/auth-permissions";

@@ -13,7 +13,7 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import type { Response } from "express";
-import { isDashboardStatFilter } from "@syncora/shared";
+import { isDashboardStatFilter } from "@planwise/shared";
 import { AbstractCasesGatewayService } from "../../domain/ports/cases.service.port";
 import type {
   CreateCaseForOrgBody,
@@ -35,7 +35,7 @@ import {
 import { SubscriptionAccessGuard } from "../../infrastructure/subscription-access.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
 import { NotifyEntity } from "../../infrastructure/notify-entity.decorator";
-import type { AuthUser } from "@syncora/shared";
+import type { AuthUser } from "@planwise/shared";
 
 @Controller("cases")
 @UseGuards(JwtAuthGuard, SubscriptionAccessGuard, RequirePermissionGuard)
