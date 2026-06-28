@@ -1,0 +1,53 @@
+# Image générique pour l'API gateway et tous les microservices NestJS.
+# Le service à construire est passé via --build-arg SERVICE=<nom-sans-prefixe>
+# (ex: api-gateway, users-service, cases-service…).
+#
+# Build (depuis la racine du repo) :
+#   docker build -f deploy/Dockerfile.backend --build-arg SERVICE=api-gateway -t syncora-api-gateway .
+
+# ─────────────────────────────────────────────────────────────
+# Stage 1 : build (install complet + compilation TS)
+# ─────────────────────────────────────────────────────────────
+FROM node:20-bookworm-slim AS builder
+WORKDIR /app
+
+# Manifests d'abord pour optimiser le cache de couche npm.
+COPY package.json package-lock.json tsconfig.base.json ./
+COPY packages ./packages
+COPY services ./services
+
+RUN npm ci
+
+# Le package partagé doit être compilé avant les services qui en dépendent.
+RUN npm run build -w @syncora/shared
+
+ARG SERVICE
+RUN test -n "$SERVICE" || (echo "ERREUR: build-arg SERVICE manquant" && exit 1)
+RUN npm run build -w @syncora/${SERVICE}
+
+# Supprime les dépendances de dev (nest-cli, ts-node, jest…) pour alléger l'image finale.
+RUN npm prune --omit=dev
+
+# ─────────────────────────────────────────────────────────────
+# Stage 2 : runtime (image minimale, prod)
+# ─────────────────────────────────────────────────────────────
+FROM node:20-bookworm-slim AS runtime
+ENV NODE_ENV=production
+WORKDIR /app
+
+# node_modules pruné + package partagé compilé + service compilé.
+COPY --from=builder /app/package.json /app/package-lock.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/packages ./packages
+
+ARG SERVICE
+COPY --from=builder /app/services/${SERVICE} ./services/${SERVICE}
+
+# Utilisé par documents-service quand STORAGE_PROVIDER=local.
+RUN mkdir -p /data/uploads && chown -R node:node /data
+
+# Exécution sous un utilisateur non-root.
+USER node
+
+WORKDIR /app/services/${SERVICE}
+CMD ["sh", "-c", "node dist/services/${SERVICE}/src/main.js"]

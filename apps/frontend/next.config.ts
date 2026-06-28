@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { join } from "node:path";
 import withSerwistInit from "@serwist/next";
 import type { NextConfig } from "next";
 
@@ -15,6 +16,10 @@ const withSerwist = withSerwistInit({
 
 const nextConfig: NextConfig = {
   transpilePackages: ["@syncora/shared"],
+  // Sortie autonome pour un runtime Docker minimal (serveur Node + deps tracées).
+  output: "standalone",
+  // Monorepo : tracer les dépendances depuis la racine du repo (inclut @syncora/shared).
+  outputFileTracingRoot: join(__dirname, "../../"),
 };
 
 export default withSerwist(nextConfig);

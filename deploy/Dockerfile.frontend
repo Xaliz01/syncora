@@ -1,0 +1,57 @@
+# Image du frontend Next.js (sortie standalone).
+#
+# IMPORTANT : les variables NEXT_PUBLIC_* sont injectées AU BUILD (incluses dans le
+# bundle client). Elles doivent donc être passées en --build-arg, pas au runtime.
+#
+# Build (depuis la racine du repo) :
+#   docker build -f deploy/Dockerfile.frontend \
+#     --build-arg NEXT_PUBLIC_API_URL=https://api.exemple.fr/api \
+#     --build-arg NEXT_PUBLIC_CRISP_WEBSITE_ID=xxxx \
+#     -t syncora-frontend .
+
+# ─────────────────────────────────────────────────────────────
+# Stage 1 : build
+# ─────────────────────────────────────────────────────────────
+FROM node:20-bookworm-slim AS builder
+WORKDIR /app
+
+COPY package.json package-lock.json tsconfig.base.json ./
+COPY packages ./packages
+COPY apps ./apps
+# Les manifests des services sont requis par npm (workspaces déclarés dans le lockfile).
+COPY services ./services
+
+RUN npm ci
+RUN npm run build -w @syncora/shared
+
+# Variables publiques (baked dans le bundle client).
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_CRISP_WEBSITE_ID
+ARG NEXT_PUBLIC_CRISP_HELPDESK_ENABLED
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_CRISP_WEBSITE_ID=$NEXT_PUBLIC_CRISP_WEBSITE_ID
+ENV NEXT_PUBLIC_CRISP_HELPDESK_ENABLED=$NEXT_PUBLIC_CRISP_HELPDESK_ENABLED
+ENV NEXT_TELEMETRY_DISABLED=1
+
+RUN npm run build -w @syncora/frontend
+
+# ─────────────────────────────────────────────────────────────
+# Stage 2 : runtime
+# ─────────────────────────────────────────────────────────────
+FROM node:20-bookworm-slim AS runtime
+ENV NODE_ENV=production
+ENV PORT=5173
+ENV HOSTNAME=0.0.0.0
+ENV NEXT_TELEMETRY_DISABLED=1
+WORKDIR /app
+
+# Sortie standalone (serveur + node_modules tracés, dont @syncora/shared).
+COPY --from=builder /app/apps/frontend/.next/standalone ./
+# Assets statiques et fichiers publics (non inclus dans standalone).
+COPY --from=builder /app/apps/frontend/.next/static ./apps/frontend/.next/static
+COPY --from=builder /app/apps/frontend/public ./apps/frontend/public
+
+USER node
+
+EXPOSE 5173
+CMD ["node", "apps/frontend/server.js"]

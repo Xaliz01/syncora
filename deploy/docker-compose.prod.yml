@@ -1,0 +1,258 @@
+# Déploiement production MVP — VM unique (OVH) + Docker Compose + Caddy.
+#
+# Seuls Caddy (80/443) est exposé publiquement. Tous les microservices et MongoDB
+# restent sur le réseau interne `syncora` et ne publient aucun port sur l'hôte.
+#
+# Usage :
+#   cp deploy/.env.production.example deploy/.env.production   # puis renseigner les secrets
+#   docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.production pull
+#   docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.production up -d
+
+# ── Ancres réutilisables ──────────────────────────────────────
+x-service-urls: &service-urls
+  ORGANIZATIONS_SERVICE_URL: http://organizations-service:3001
+  USERS_SERVICE_URL: http://users-service:3002
+  PERMISSIONS_SERVICE_URL: http://permissions-service:3003
+  CASES_SERVICE_URL: http://cases-service:3004
+  FLEET_SERVICE_URL: http://fleet-service:3005
+  TECHNICIANS_SERVICE_URL: http://technicians-service:3006
+  STOCK_SERVICE_URL: http://stock-service:3007
+  SUBSCRIPTIONS_SERVICE_URL: http://subscriptions-service:3008
+  CUSTOMERS_SERVICE_URL: http://customers-service:3009
+  NOTIFICATIONS_SERVICE_URL: http://notifications-service:3010
+  DOCUMENTS_SERVICE_URL: http://documents-service:3011
+  EXPORTS_SERVICE_URL: http://exports-service:3012
+
+x-healthcheck: &tcp-healthcheck
+  test:
+    [
+      "CMD-SHELL",
+      'node -e "require(''net'').connect(Number(process.env.PORT),''127.0.0.1'').on(''connect'',()=>process.exit(0)).on(''error'',()=>process.exit(1))"',
+    ]
+  interval: 10s
+  timeout: 5s
+  retries: 5
+  start_period: 20s
+
+x-backend: &backend
+  restart: unless-stopped
+  networks: [syncora]
+  depends_on:
+    mongodb:
+      condition: service_healthy
+
+services:
+  # ── Base de données ─────────────────────────────────────────
+  mongodb:
+    image: mongo:7
+    container_name: syncora-mongodb
+    restart: unless-stopped
+    networks: [syncora]
+    volumes:
+      - mongodb-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ── Microservices internes ──────────────────────────────────
+  organizations-service:
+    <<: *backend
+    image: ${REGISTRY}/syncora-organizations-service:${IMAGE_TAG:-latest}
+    environment:
+      <<: *service-urls
+      NODE_ENV: production
+      PORT: "3001"
+      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/syncora-organizations
+    healthcheck: *tcp-healthcheck
+
+  users-service:
+    <<: *backend
+    image: ${REGISTRY}/syncora-users-service:${IMAGE_TAG:-latest}
+    environment:
+      NODE_ENV: production
+      PORT: "3002"
+      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/syncora-users
+    healthcheck: *tcp-healthcheck
+
+  permissions-service:
+    <<: *backend
+    image: ${REGISTRY}/syncora-permissions-service:${IMAGE_TAG:-latest}
+    environment:
+      NODE_ENV: production
+      PORT: "3003"
+      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/syncora-permissions
+    healthcheck: *tcp-healthcheck
+
+  cases-service:
+    <<: *backend
+    image: ${REGISTRY}/syncora-cases-service:${IMAGE_TAG:-latest}
+    environment:
+      NODE_ENV: production
+      PORT: "3004"
+      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/syncora-cases
+    healthcheck: *tcp-healthcheck
+
+  fleet-service:
+    <<: *backend
+    image: ${REGISTRY}/syncora-fleet-service:${IMAGE_TAG:-latest}
+    environment:
+      NODE_ENV: production
+      PORT: "3005"
+      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/syncora-fleet
+    healthcheck: *tcp-healthcheck
+
+  technicians-service:
+    <<: *backend
+    image: ${REGISTRY}/syncora-technicians-service:${IMAGE_TAG:-latest}
+    environment:
+      NODE_ENV: production
+      PORT: "3006"
+      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/syncora-technicians
+    healthcheck: *tcp-healthcheck
+
+  stock-service:
+    <<: *backend
+    image: ${REGISTRY}/syncora-stock-service:${IMAGE_TAG:-latest}
+    environment:
+      NODE_ENV: production
+      PORT: "3007"
+      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/syncora-stock
+    healthcheck: *tcp-healthcheck
+
+  subscriptions-service:
+    <<: *backend
+    image: ${REGISTRY}/syncora-subscriptions-service:${IMAGE_TAG:-latest}
+    environment:
+      NODE_ENV: production
+      PORT: "3008"
+      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/syncora-subscriptions
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_PRICE_ID: ${STRIPE_PRICE_ID:-}
+      STRIPE_TRIAL_DAYS: ${STRIPE_TRIAL_DAYS:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      STRIPE_BILLING_PORTAL_CONFIGURATION_ID: ${STRIPE_BILLING_PORTAL_CONFIGURATION_ID:-}
+      STRIPE_ADDON_TEAM_SUGGESTION_PRICE_ID: ${STRIPE_ADDON_TEAM_SUGGESTION_PRICE_ID:-}
+      STRIPE_ADDON_EXTRA_USERS_PRICE_ID: ${STRIPE_ADDON_EXTRA_USERS_PRICE_ID:-}
+    healthcheck: *tcp-healthcheck
+
+  customers-service:
+    <<: *backend
+    image: ${REGISTRY}/syncora-customers-service:${IMAGE_TAG:-latest}
+    environment:
+      NODE_ENV: production
+      PORT: "3009"
+      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/syncora-customers
+    healthcheck: *tcp-healthcheck
+
+  notifications-service:
+    <<: *backend
+    image: ${REGISTRY}/syncora-notifications-service:${IMAGE_TAG:-latest}
+    environment:
+      NODE_ENV: production
+      PORT: "3010"
+      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/syncora-notifications
+    healthcheck: *tcp-healthcheck
+
+  documents-service:
+    <<: *backend
+    image: ${REGISTRY}/syncora-documents-service:${IMAGE_TAG:-latest}
+    environment:
+      NODE_ENV: production
+      PORT: "3011"
+      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/syncora-documents
+      # STORAGE_PROVIDER=s3 pour basculer sur un Object Storage (recommandé à terme).
+      STORAGE_PROVIDER: ${STORAGE_PROVIDER:-local}
+      DOCUMENT_STORAGE_PATH: /data/uploads
+      S3_BUCKET: ${S3_BUCKET:-}
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
+      AWS_REGION: ${AWS_REGION:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+    volumes:
+      - documents-data:/data/uploads
+    healthcheck: *tcp-healthcheck
+
+  exports-service:
+    <<: *backend
+    image: ${REGISTRY}/syncora-exports-service:${IMAGE_TAG:-latest}
+    # exports-service n'a pas de base Mongo mais appelle d'autres services.
+    depends_on: {}
+    environment:
+      <<: *service-urls
+      NODE_ENV: production
+      PORT: "3012"
+    healthcheck: *tcp-healthcheck
+
+  # ── API Gateway (exposée via Caddy) ─────────────────────────
+  api-gateway:
+    image: ${REGISTRY}/syncora-api-gateway:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    networks: [syncora]
+    environment:
+      <<: *service-urls
+      NODE_ENV: production
+      PORT: "3000"
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET requis}
+      CORS_ORIGIN: ${CORS_ORIGIN:?CORS_ORIGIN requis}
+      CRISP_IDENTITY_SECRET: ${CRISP_IDENTITY_SECRET:-}
+      SWAGGER_PATH: ${SWAGGER_PATH:-api/docs}
+      SWAGGER_TITLE: ${SWAGGER_TITLE:-Syncora API Gateway}
+    depends_on:
+      - organizations-service
+      - users-service
+      - permissions-service
+      - cases-service
+      - fleet-service
+      - technicians-service
+      - stock-service
+      - subscriptions-service
+      - customers-service
+      - notifications-service
+      - documents-service
+      - exports-service
+    healthcheck: *tcp-healthcheck
+
+  # ── Frontend Next.js (exposé via Caddy) ─────────────────────
+  frontend:
+    image: ${REGISTRY}/syncora-frontend:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    networks: [syncora]
+    environment:
+      NODE_ENV: production
+      PORT: "5173"
+      HOSTNAME: 0.0.0.0
+    healthcheck: *tcp-healthcheck
+
+  # ── Reverse proxy (HTTPS automatique Let's Encrypt) ─────────
+  caddy:
+    image: caddy:2
+    container_name: syncora-caddy
+    restart: unless-stopped
+    networks: [syncora]
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?APP_DOMAIN requis}
+      API_DOMAIN: ${API_DOMAIN:?API_DOMAIN requis}
+      ACME_EMAIL: ${ACME_EMAIL:?ACME_EMAIL requis}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - api-gateway
+      - frontend
+
+networks:
+  syncora:
+    name: syncora
+
+volumes:
+  mongodb-data:
+  documents-data:
+  caddy-data:
+  caddy-config:

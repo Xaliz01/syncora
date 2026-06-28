@@ -1,0 +1,32 @@
+# Reverse proxy Syncora — HTTPS automatique (Let's Encrypt).
+# Les domaines et l'email ACME proviennent de variables d'environnement (cf. docker-compose.prod.yml).
+
+{
+	email {$ACME_EMAIL}
+}
+
+# Frontend (PWA Next.js)
+{$APP_DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+
+	reverse_proxy frontend:5173
+}
+
+# API Gateway
+{$API_DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+	}
+
+	reverse_proxy api-gateway:3000
+}

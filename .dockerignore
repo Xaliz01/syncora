@@ -1,0 +1,40 @@
+# Dépendances et artefacts de build (réinstallés/recompilés dans l'image)
+**/node_modules
+**/dist
+**/.next
+**/out
+**/coverage
+**/.nyc_output
+
+# Tests / E2E
+**/test-results
+**/playwright-report
+**/.playwright
+
+# Git / IDE / OS
+.git
+.gitignore
+.idea
+.vscode
+**/*.swp
+**/.DS_Store
+
+# Logs
+**/*.log
+npm-debug.log*
+
+# Secrets et env locaux (ne jamais copier dans une image)
+**/.env
+**/.env.local
+**/.env.*.local
+deploy/.env.production
+
+# Uploads locaux
+**/uploads
+
+# Service worker généré
+apps/frontend/public/sw*
+apps/frontend/public/swe-worker*
+
+# Divers
+**/*.tsbuildinfo
