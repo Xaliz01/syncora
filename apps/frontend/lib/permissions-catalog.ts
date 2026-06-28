@@ -170,6 +170,12 @@ export const PERMISSION_METADATA: Record<PermissionCode, PermissionMetadata> = {
     description:
       "Lancer le paiement Stripe, ouvrir le portail client (carte, factures, résiliation).",
   },
+  "notifications.manage_preferences": {
+    code: "notifications.manage_preferences",
+    label: "Gérer les préférences de notification",
+    description:
+      "Configurer ses préférences de notification (canaux, rappels) et gérer les abonnements push.",
+  },
   "case_templates.read": {
     code: "case_templates.read",
     label: "Voir les modèles de dossier",

@@ -693,6 +693,30 @@ export class CasesService extends AbstractCasesService {
     };
   }
 
+  // ── Upcoming interventions (cross-org, for reminder scheduler) ──
+
+  async listUpcomingInterventions(from: string, to: string): Promise<InterventionResponse[]> {
+    const docs = await this.interventionModel
+      .find({
+        ...activeDocumentFilter,
+        status: "planned",
+        assigneeId: { $ne: null, $exists: true },
+        scheduledStart: { $gte: new Date(from), $lte: new Date(to) },
+      })
+      .sort({ scheduledStart: 1 })
+      .limit(500)
+      .exec();
+
+    const caseIds = [...new Set(docs.map((d) => d.caseId))];
+    const cases = await this.caseModel
+      .find({ _id: { $in: caseIds }, ...activeDocumentFilter })
+      .select("_id title")
+      .exec();
+    const caseMap = new Map(cases.map((c) => [c._id.toString(), c.title]));
+
+    return docs.map((d) => this.toInterventionResponse(d, caseMap.get(d.caseId)));
+  }
+
   // ── History ──
 
   async addCaseHistory(body: CreateCaseHistoryBody): Promise<CaseHistoryEntryResponse> {

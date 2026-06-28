@@ -26,6 +26,12 @@ describe("NotificationsController", () => {
       markAsRead: jest.fn(),
       markAllAsRead: jest.fn(),
       getUnreadCount: jest.fn(),
+      getPreferences: jest.fn(),
+      updatePreferences: jest.fn(),
+      registerPushSubscription: jest.fn(),
+      unregisterPushSubscription: jest.fn(),
+      listPushSubscriptions: jest.fn(),
+      getVapidPublicKey: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({

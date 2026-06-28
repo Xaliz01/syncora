@@ -99,3 +99,55 @@ const serwist = new Serwist({
 });
 
 serwist.addEventListeners();
+
+/* ── Push notifications ───────────────────────────────────────── */
+
+interface PushPayload {
+  title?: string;
+  body?: string;
+  icon?: string;
+  badge?: string;
+  url?: string;
+}
+
+self.addEventListener("push", (event: PushEvent) => {
+  if (!event.data) return;
+
+  let payload: PushPayload;
+  try {
+    payload = event.data.json() as PushPayload;
+  } catch {
+    payload = { title: "Planwise", body: event.data.text() };
+  }
+
+  const title = payload.title ?? "Planwise";
+  const options: NotificationOptions = {
+    body: payload.body ?? "",
+    icon: payload.icon ?? "/icons/icon-192x192.png",
+    badge: payload.badge ?? "/icons/icon-72x72.png",
+    data: { url: payload.url ?? "/" },
+    tag: `planwise-${Date.now()}`,
+    renotify: false,
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", (event: NotificationEvent) => {
+  event.notification.close();
+
+  const url = (event.notification.data as { url?: string })?.url ?? "/";
+
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if ("focus" in client) {
+          client.focus();
+          client.navigate(url);
+          return;
+        }
+      }
+      return self.clients.openWindow(url);
+    }),
+  );
+});

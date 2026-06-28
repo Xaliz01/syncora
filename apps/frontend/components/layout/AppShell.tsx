@@ -289,6 +289,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (hasPermission(user, "profiles.read")) {
       settingsLinks.push({ label: "Profils", href: "/settings/profiles" });
     }
+    settingsLinks.push({ label: "Notifications", href: "/settings/notifications" });
     if (settingsLinks.length > 0) {
       menuSections.push({ label: "Paramètres", links: settingsLinks });
     }
