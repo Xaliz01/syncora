@@ -127,31 +127,6 @@ function ReportCard({
   );
 }
 
-function DateRangeFilter({
-  onStartChange,
-  onEndChange,
-}: {
-  onStartChange: (v: string) => void;
-  onEndChange: (v: string) => void;
-}) {
-  return (
-    <div className="flex gap-2 w-full">
-      <input
-        type="date"
-        onChange={(e) => onStartChange(e.target.value)}
-        className="rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1 text-xs text-slate-700 dark:text-slate-200 w-full"
-        placeholder="Du"
-      />
-      <input
-        type="date"
-        onChange={(e) => onEndChange(e.target.value)}
-        className="rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1 text-xs text-slate-700 dark:text-slate-200 w-full"
-        placeholder="Au"
-      />
-    </div>
-  );
-}
-
 export function ReportingPage() {
   const { user } = useAuth();
   const canExportCases = hasPermission(user, "exports.cases");
