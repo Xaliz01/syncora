@@ -134,14 +134,14 @@ Objectif : remplacer Excel + agenda partagé pour le suivi interne.
 
 Objectif : le technicien clôture sa journée **sur le téléphone** ; le patron a une preuve client.
 
-| #   | Évolution                                                                                 | Pourquoi (TPE)                          | Statut |
-| --- | ----------------------------------------------------------------------------------------- | --------------------------------------- | ------ |
-| 1.1 | **Vue « Ma journée »** mobile (interventions du jour, filtres technicien)                 | Usage quotidien chantier                | ✅     |
-| 1.2 | Actions terrain : **Démarrer / Terminer** intervention (horodatage, option géoloc légère) | Traçabilité simple                      | ✅     |
-| 1.3 | **Photos** rattachées à l'intervention (pas seulement au dossier)                         | Preuve travaux                          | ✅     |
-| 1.4 | **Signature client** + génération **PDF rapport** d'intervention                          | Confiance client, litiges               | ✅     |
-| 1.5 | **PWA** (installable, cache minimal des listes du jour)                                   | Artisans sans « app store » obligatoire | ✅     |
-| 1.6 | Notifications **email** basiques (intervention planifiée / terminée)                      | Rappels sans portail lourd              | ⬜     |
+| #   | Évolution                                                                                 | Pourquoi (TPE)                           | Statut |
+| --- | ----------------------------------------------------------------------------------------- | ---------------------------------------- | ------ |
+| 1.1 | **Vue « Ma journée »** mobile (interventions du jour, filtres technicien)                 | Usage quotidien chantier                 | ✅     |
+| 1.2 | Actions terrain : **Démarrer / Terminer** intervention (horodatage, option géoloc légère) | Traçabilité simple                       | ✅     |
+| 1.3 | **Photos** rattachées à l'intervention (pas seulement au dossier)                         | Preuve travaux                           | ✅     |
+| 1.4 | **Signature client** + génération **PDF rapport** d'intervention                          | Confiance client, litiges                | ✅     |
+| 1.5 | **PWA** (installable, cache minimal des listes du jour)                                   | Artisans sans « app store » obligatoire  | ✅     |
+| 1.6 | Notifications **push PWA** + préférences multi-canal (in-app, email, push, SMS)           | Rappels terrain, paramétrage utilisateur | 🟡     |
 
 _Hors scope phase 1_ : GPS temps réel permanent, portail client self-service.
 
