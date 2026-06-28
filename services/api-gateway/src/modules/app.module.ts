@@ -19,6 +19,7 @@ import { SubscriptionsModule } from "./subscriptions.module";
 import { OrganizationsModule } from "./organizations.module";
 import { NotificationsModule } from "./notifications.module";
 import { DocumentsModule } from "./documents.module";
+import { ExportsModule } from "./exports.module";
 import { GatewayHttpModule } from "./gateway-http.module";
 import { TrialTestDataModule } from "./trial-test-data.module";
 
@@ -40,6 +41,7 @@ import { TrialTestDataModule } from "./trial-test-data.module";
     SubscriptionsModule,
     NotificationsModule,
     DocumentsModule,
+    ExportsModule,
     TrialTestDataModule,
   ],
   controllers: [AppController],

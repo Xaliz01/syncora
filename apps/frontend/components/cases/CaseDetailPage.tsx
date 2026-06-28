@@ -23,6 +23,8 @@ import { InterventionPhotos } from "@/components/interventions/InterventionPhoto
 import { InterventionSignatureDialog } from "@/components/interventions/InterventionSignatureDialog";
 import { CUSTOMER_KIND_LABELS } from "@/components/customers/customer-kind-labels";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { ExportButton } from "@/components/ui/ExportButton";
+import * as exportsApi from "@/lib/exports.api";
 import { usePermissions } from "@/lib/hooks/usePermissions";
 import { getTeamCalendarCardAppearance } from "@/lib/team-calendar-colors";
 import { useIsDarkMode } from "@/lib/use-is-dark-mode";
@@ -611,6 +613,13 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                 Modifier
               </button>
             ) : null}
+            {can("exports.cases") && (
+              <ExportButton
+                onExport={() => exportsApi.exportCaseSummaryPdf(caseId)}
+                formats={["pdf"]}
+                label="PDF"
+              />
+            )}
             {can("cases.delete") && (
               <button
                 type="button"

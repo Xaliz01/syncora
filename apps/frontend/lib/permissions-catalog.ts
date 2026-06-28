@@ -336,6 +336,32 @@ export const PERMISSION_METADATA: Record<PermissionCode, PermissionMetadata> = {
     label: "Ajouter des consommations d'intervention",
     description: "Associer des articles à une intervention et générer les mouvements.",
   },
+  "exports.cases": {
+    code: "exports.cases",
+    label: "Exporter les dossiers",
+    description: "Exporter les dossiers en PDF ou Excel (liste, récapitulatif, tâches).",
+  },
+  "exports.users": {
+    code: "exports.users",
+    label: "Exporter les utilisateurs",
+    description: "Exporter la liste des utilisateurs en PDF ou Excel.",
+  },
+  "exports.customers": {
+    code: "exports.customers",
+    label: "Exporter les clients",
+    description: "Exporter la liste des clients en PDF ou Excel.",
+  },
+  "exports.interventions": {
+    code: "exports.interventions",
+    label: "Exporter les interventions",
+    description: "Exporter la liste des interventions en PDF ou Excel.",
+  },
+  "exports.reporting": {
+    code: "exports.reporting",
+    label: "Accéder aux rapports",
+    description:
+      "Accéder aux tableaux de reporting et exporter les rapports d'activité (techniciens, kilométrique).",
+  },
 };
 
 export function getPermissionLabel(permissionCode: PermissionCode): string {

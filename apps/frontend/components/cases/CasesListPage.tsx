@@ -23,6 +23,8 @@ import {
   ListToolbar,
 } from "@/components/ui/list-page";
 import { PermissionGate } from "@/components/auth/PermissionGate";
+import { ExportButton } from "@/components/ui/ExportButton";
+import * as exportsApi from "@/lib/exports.api";
 
 const STATUS_LABELS: Record<CaseStatus, string> = {
   draft: "Brouillon",
@@ -82,9 +84,22 @@ export function CasesListPage() {
         title="Dossiers"
         description="Gérez le cycle de vie complet de vos dossiers."
         action={
-          <PermissionGate permission="cases.create">
-            <ListPrimaryAction href="/cases/new">Nouveau dossier</ListPrimaryAction>
-          </PermissionGate>
+          <div className="flex items-center gap-2">
+            <PermissionGate permission="exports.cases">
+              <ExportButton
+                onExport={(format) =>
+                  exportsApi.exportCasesList(format, {
+                    status: statusFilter || undefined,
+                    priority: priorityFilter || undefined,
+                    search: search || undefined,
+                  })
+                }
+              />
+            </PermissionGate>
+            <PermissionGate permission="cases.create">
+              <ListPrimaryAction href="/cases/new">Nouveau dossier</ListPrimaryAction>
+            </PermissionGate>
+          </div>
         }
       />
 

@@ -229,6 +229,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             ...(hasPermission(user, "stock.movements.read")
               ? [{ label: "Mouvements de stock", href: "/stock" }]
               : []),
+            ...(hasPermission(user, "exports.reporting")
+              ? [{ label: "Reporting", href: "/reporting" }]
+              : []),
           ],
         },
       ]

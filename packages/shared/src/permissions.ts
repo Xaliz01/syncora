@@ -66,6 +66,11 @@ export const ASSIGNABLE_PERMISSION_CODES = [
   "stock.interventions.read",
   "stock.interventions.create",
   "subscriptions.manage_billing",
+  "exports.cases",
+  "exports.users",
+  "exports.customers",
+  "exports.interventions",
+  "exports.reporting",
 ] as const;
 
 export type AssignablePermissionCode = (typeof ASSIGNABLE_PERMISSION_CODES)[number];
