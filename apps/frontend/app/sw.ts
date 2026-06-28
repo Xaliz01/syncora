@@ -1,6 +1,6 @@
 import { defaultCache } from "@serwist/next/worker";
 import type { PrecacheEntry, RuntimeCaching, SerwistGlobalConfig } from "serwist";
-import { CacheFirst, NetworkFirst, Serwist, StaleWhileRevalidate } from "serwist";
+import { CacheFirst, NetworkFirst, Serwist } from "serwist";
 
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
@@ -36,8 +36,9 @@ const apiCaching: RuntimeCaching[] = [
     matcher({ url, request }) {
       return url.pathname.includes("/documents/") && request.method === "GET";
     },
-    handler: new StaleWhileRevalidate({
+    handler: new NetworkFirst({
       cacheName: "planwise-documents",
+      networkTimeoutSeconds: 5,
       plugins: [
         {
           cacheKeyWillBeUsed: async ({ request }) => {
