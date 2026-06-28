@@ -70,12 +70,35 @@ Le workflow **CD (déploiement manuel)** se lance à la main, **depuis master un
 
 `Actions > CD (déploiement manuel) > Run workflow` (brancher sur `master`).
 
+Renseigner l'input **`version`** avec la version SemVer à déployer (ex. `v0.1.0`).
+Laisser vide pour un déploiement non versionné (le SHA court du commit sert alors
+de tag d'image et de version applicative).
+
 Étapes automatiques :
 
 1. Garde-fou : refus si la ref n'est pas `master`.
-2. Build & push des 13 images backend + frontend sur GHCR (tag = SHA du commit + `latest`).
-3. Copie de `docker-compose.prod.yml` et `Caddyfile` sur la VM (SCP).
-4. `docker compose pull` + `up -d` sur la VM avec le tag fraîchement construit.
+2. Build & push des 13 images backend + frontend sur GHCR. Chaque image reçoit
+   trois tags : la version (ou SHA si vide), le SHA court du commit, et `latest`.
+3. Le frontend est buildé avec `NEXT_PUBLIC_APP_VERSION` (= version) et
+   `NEXT_PUBLIC_GIT_SHA` (= SHA court) → affichés dans l'app (page « Mon compte »).
+   Les images backend reçoivent `APP_VERSION` / `GIT_SHA` au build : exposés par
+   `GET /api/health` et les en-têtes `X-App-Version` / `X-Git-Sha` sur chaque réponse.
+4. Copie de `docker-compose.prod.yml` et `Caddyfile` sur la VM (SCP).
+5. `docker compose pull` + `up -d` sur la VM avec le tag fraîchement construit.
+6. **Tag Git automatique** : si une `version` a été fournie et que le déploiement
+   a réussi, le workflow crée et pousse le tag Git correspondant (ex. `v0.1.0`)
+   sur le commit déployé. Étape ignorée pour un déploiement sans version (SHA).
+
+### Convention de versioning (SemVer + tag Git)
+
+On suit [SemVer](https://semver.org/lang/fr/) : `MAJEUR.MINEUR.CORRECTIF`
+(ex. `0.1.0`). **Pas besoin de créer le tag à la main** : il suffit de lancer la CD
+avec `version = v0.1.0`. Le workflow tague automatiquement le commit déployé une fois
+le déploiement réussi. Le même libellé sert de tag d'image Docker, de tag Git, et de
+version affichée dans l'application.
+
+La création du tag est **idempotente** : si le tag existe déjà sur `origin` (release
+rejouée), l'étape n'échoue pas et ne le récrée pas.
 
 ## 5. Déploiement manuel (sans CI, dépannage)
 
@@ -84,11 +107,14 @@ Depuis la racine du repo, sur une machine avec Docker :
 ```bash
 # Exemple pour un service backend
 docker build -f deploy/Dockerfile.backend --build-arg SERVICE=api-gateway \
+  --build-arg APP_VERSION=v0.1.0 --build-arg GIT_SHA=$(git rev-parse --short HEAD) \
   -t ghcr.io/mon-org/syncora-api-gateway:manuel .
 
-# Frontend
+# Frontend (la version est facultative en build manuel)
 docker build -f deploy/Dockerfile.frontend \
   --build-arg NEXT_PUBLIC_API_URL=https://api.exemple.fr/api \
+  --build-arg NEXT_PUBLIC_APP_VERSION=v0.1.0 \
+  --build-arg NEXT_PUBLIC_GIT_SHA=$(git rev-parse --short HEAD) \
   -t ghcr.io/mon-org/syncora-frontend:manuel .
 ```
 

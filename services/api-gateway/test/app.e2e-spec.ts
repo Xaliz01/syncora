@@ -24,5 +24,8 @@ describe("AppController (e2e)", () => {
     const response = await request(app.getHttpServer()).get("/api/health");
     expect(response.status).toBe(200);
     expect(response.body.status).toBe("ok");
+    expect(response.body.service).toBe("api-gateway");
+    expect(response.body.version).toBeDefined();
+    expect(response.headers["x-app-version"]).toBeDefined();
   });
 });

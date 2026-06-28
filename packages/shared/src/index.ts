@@ -1,8 +1,4 @@
-export interface HealthPayload {
-  status: "ok" | "degraded" | "down";
-  service: string;
-}
-
+export * from "./runtime-version";
 export * from "./auth";
 export * from "./case";
 export * from "./customer";

@@ -1,3 +1,5 @@
+import type { HealthPayload } from "@syncora/shared";
+
 export abstract class AbstractAppService {
-  abstract getHealth(): { status: string; service: string };
+  abstract getHealth(): HealthPayload;
 }

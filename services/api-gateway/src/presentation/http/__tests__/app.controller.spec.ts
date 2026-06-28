@@ -11,6 +11,8 @@ describe("AppController", () => {
       getHealth: jest.fn().mockReturnValue({
         status: "ok",
         service: "api-gateway",
+        version: "v0.1.0",
+        gitSha: "a1b2c3d",
       }),
     };
 
@@ -39,6 +41,8 @@ describe("AppController", () => {
       expect(result).toEqual({
         status: "ok",
         service: "api-gateway",
+        version: "v0.1.0",
+        gitSha: "a1b2c3d",
       });
     });
   });

@@ -43,6 +43,12 @@ COPY --from=builder /app/packages ./packages
 ARG SERVICE
 COPY --from=builder /app/services/${SERVICE} ./services/${SERVICE}
 
+# Version applicative (injectée au build par la CD via --build-arg).
+ARG APP_VERSION=dev
+ARG GIT_SHA=
+ENV APP_VERSION=$APP_VERSION
+ENV GIT_SHA=$GIT_SHA
+
 # Utilisé par documents-service quand STORAGE_PROVIDER=local.
 RUN mkdir -p /data/uploads && chown -R node:node /data
 

@@ -5,6 +5,7 @@ import { AppController } from "../presentation/http/app.controller";
 import { AbstractAppService } from "../domain/ports/app.service.port";
 import { AppService } from "../services/app.service";
 import { NotifyInterceptor } from "../infrastructure/notify.interceptor";
+import { AppVersionInterceptor } from "../infrastructure/app-version.interceptor";
 import { AuthModule } from "./auth.module";
 import { AccountModule } from "./account.module";
 import { AdminModule } from "./admin.module";
@@ -47,6 +48,7 @@ import { TrialTestDataModule } from "./trial-test-data.module";
   controllers: [AppController],
   providers: [
     { provide: AbstractAppService, useClass: AppService },
+    { provide: APP_INTERCEPTOR, useClass: AppVersionInterceptor },
     { provide: APP_INTERCEPTOR, useClass: NotifyInterceptor },
   ],
 })

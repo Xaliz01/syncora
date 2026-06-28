@@ -5,8 +5,8 @@ name: CD (déploiement manuel)
 on:
   workflow_dispatch:
     inputs:
-      image_tag:
-        description: "Tag d'image à construire/déployer (défaut: SHA du commit)"
+      version:
+        description: "Version applicative à déployer (SemVer, ex: v0.1.0). Vide = SHA court du commit."
         required: false
         default: ""
 
@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 jobs:
@@ -36,15 +36,31 @@ jobs:
     outputs:
       registry: ${{ steps.meta.outputs.registry }}
       tag: ${{ steps.meta.outputs.tag }}
+      version: ${{ steps.meta.outputs.version }}
+      sha: ${{ steps.meta.outputs.sha }}
+      is_release: ${{ steps.meta.outputs.is_release }}
     steps:
       - id: meta
         run: |
           OWNER="${{ github.repository_owner }}"
           REGISTRY="ghcr.io/$(echo "$OWNER" | tr '[:upper:]' '[:lower:]')"
-          TAG="${{ github.event.inputs.image_tag }}"
-          if [ -z "$TAG" ]; then TAG="${{ github.sha }}"; fi
+          SHA="$(echo "${{ github.sha }}" | cut -c1-7)"
+          VERSION_INPUT="${{ github.event.inputs.version }}"
+          # is_release : true seulement si une version explicite est fournie (sinon fallback SHA, pas de tag Git).
+          if [ -n "$VERSION_INPUT" ]; then
+            VERSION="$VERSION_INPUT"
+            IS_RELEASE="true"
+          else
+            VERSION="$SHA"
+            IS_RELEASE="false"
+          fi
+          # Le tag d'image principal suit la version (ou le SHA court à défaut).
+          TAG="$VERSION"
           echo "registry=$REGISTRY" >> "$GITHUB_OUTPUT"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "is_release=$IS_RELEASE" >> "$GITHUB_OUTPUT"
 
   build-backend:
     name: Build ${{ matrix.service }}
@@ -83,9 +99,12 @@ jobs:
           file: deploy/Dockerfile.backend
           build-args: |
             SERVICE=${{ matrix.service }}
+            APP_VERSION=${{ needs.prepare.outputs.version }}
+            GIT_SHA=${{ needs.prepare.outputs.sha }}
           push: true
           tags: |
             ${{ needs.prepare.outputs.registry }}/syncora-${{ matrix.service }}:${{ needs.prepare.outputs.tag }}
+            ${{ needs.prepare.outputs.registry }}/syncora-${{ matrix.service }}:${{ needs.prepare.outputs.sha }}
             ${{ needs.prepare.outputs.registry }}/syncora-${{ matrix.service }}:latest
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
@@ -112,9 +131,12 @@ jobs:
             NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
             NEXT_PUBLIC_CRISP_WEBSITE_ID=${{ vars.NEXT_PUBLIC_CRISP_WEBSITE_ID }}
             NEXT_PUBLIC_CRISP_HELPDESK_ENABLED=${{ vars.NEXT_PUBLIC_CRISP_HELPDESK_ENABLED }}
+            NEXT_PUBLIC_APP_VERSION=${{ needs.prepare.outputs.version }}
+            NEXT_PUBLIC_GIT_SHA=${{ needs.prepare.outputs.sha }}
           push: true
           tags: |
             ${{ needs.prepare.outputs.registry }}/syncora-frontend:${{ needs.prepare.outputs.tag }}
+            ${{ needs.prepare.outputs.registry }}/syncora-frontend:${{ needs.prepare.outputs.sha }}
             ${{ needs.prepare.outputs.registry }}/syncora-frontend:latest
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
@@ -159,3 +181,26 @@ jobs:
             docker compose -f docker-compose.prod.yml --env-file .env.production up -d --remove-orphans
             docker image prune -f
             docker logout ghcr.io
+
+  tag:
+    name: Taguer la release Git
+    runs-on: ubuntu-latest
+    needs: [prepare, deploy]
+    # Seulement si une version explicite a été fournie (pas de tag pour un déploiement SHA).
+    if: needs.prepare.outputs.is_release == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Créer et pousser le tag (idempotent)
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git ls-remote --exit-code --tags origin "refs/tags/$VERSION" >/dev/null 2>&1; then
+            echo "Le tag $VERSION existe déjà sur origin, rien à faire."
+            exit 0
+          fi
+          git tag -a "$VERSION" -m "Release $VERSION"
+          git push origin "$VERSION"
+          echo "Tag $VERSION créé et poussé sur le commit ${{ needs.prepare.outputs.sha }}."
