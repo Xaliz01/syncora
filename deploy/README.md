@@ -34,6 +34,10 @@ mkdir -p /opt/planwise/deploy && cd /opt/planwise/deploy
 cp .env.production.example .env.production
 # Renseigner les secrets (JWT_SECRET, Stripe, Crisp, domaines, REGISTRY…)
 openssl rand -hex 48   # pour JWT_SECRET
+# Pour VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY, si Node/npm est installé :
+npx web-push generate-vapid-keys
+# Sinon, sur la VM Docker :
+docker run --rm node:22-alpine sh -lc "npm exec --yes web-push generate-vapid-keys"
 ```
 
 `.env.production` reste **uniquement sur la VM** (jamais commité, jamais transmis
@@ -156,7 +160,42 @@ OVH compatible S3 : renseigner `S3_BUCKET`, `S3_ENDPOINT`, `AWS_REGION`,
 Configurer dans Stripe l'URL de webhook vers l'API publique
 (`https://api.exemple.fr/api/...`) et renseigner `STRIPE_WEBHOOK_SECRET`.
 
-## 9. Sécurité réseau
+## 9. Notifications push (VAPID)
+
+Les notifications push nécessitent une paire de clés VAPID, gratuite et générée une
+seule fois pour l'environnement de production :
+
+```bash
+npx web-push generate-vapid-keys
+```
+
+Si `npx` n'est pas installé sur la VM, utiliser Docker sans installer Node sur
+l'hôte :
+
+```bash
+docker run --rm node:22-alpine sh -lc "npm exec --yes web-push generate-vapid-keys"
+```
+
+Renseigner ensuite ces valeurs dans `/opt/planwise/deploy/.env.production` :
+
+```env
+VAPID_PUBLIC_KEY=...
+VAPID_PRIVATE_KEY=...
+VAPID_SUBJECT=mailto:contact@planwise.fr
+```
+
+Puis redémarrer uniquement le service de notifications :
+
+```bash
+cd /opt/planwise/deploy
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d notifications-service
+```
+
+La clé publique est exposée au frontend via `GET /api/notifications/vapid-public-key`.
+La clé privée ne doit jamais être commitée. Garder la même paire en production : un
+changement de clés peut obliger les utilisateurs à se réabonner aux notifications.
+
+## 10. Sécurité réseau
 
 - N'exposer publiquement que 80/443 (pare-feu OVH + UFW).
 - Ne jamais publier le port MongoDB (27017) ni les ports des microservices.

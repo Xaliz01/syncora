@@ -226,6 +226,14 @@ export class CasesController {
     return this.casesService.getDashboardStatCases(organizationId, userId, userProfileId, filter);
   }
 
+  @Get("cases/interventions/upcoming")
+  async listUpcomingInterventions(@Query("from") from: string, @Query("to") to: string) {
+    if (!from || !to) {
+      throw new BadRequestException("from and to query params are required");
+    }
+    return this.casesService.listUpcomingInterventions(from, to);
+  }
+
   @Post("interventions/:id/start")
   async startIntervention(@Param("id") id: string, @Body() body: StartInterventionBody) {
     return this.casesService.startIntervention(id, body);

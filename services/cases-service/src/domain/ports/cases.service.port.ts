@@ -98,6 +98,7 @@ export abstract class AbstractCasesService {
     userProfileId: string | undefined,
     filter: DashboardStatFilter,
   ): Promise<DashboardTodoCaseItem[]>;
+  abstract listUpcomingInterventions(from: string, to: string): Promise<InterventionResponse[]>;
   abstract addCaseHistory(body: CreateCaseHistoryBody): Promise<CaseHistoryEntryResponse>;
   abstract listCaseHistory(
     caseId: string,
