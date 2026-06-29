@@ -18,6 +18,42 @@ import {
   type ReminderLeadTime,
 } from "@planwise/shared";
 
+function PushNotificationsBlockedHelp() {
+  return (
+    <div className="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 mb-3 space-y-3">
+      <p className="text-sm font-medium text-red-800 dark:text-red-200">
+        Les notifications sont bloquées par votre navigateur
+      </p>
+      <p className="text-sm text-red-700 dark:text-red-300">
+        Une fois refusées, le navigateur ne redemande plus automatiquement la permission — même
+        dans l&apos;application installée. Il faut les réactiver manuellement dans les réglages du
+        site, puis revenir ici et appuyer sur « Activer les notifications push ».
+      </p>
+      <div className="space-y-2 text-sm text-red-700 dark:text-red-300">
+        <p className="font-medium text-red-800 dark:text-red-200">Comment réactiver :</p>
+        <ul className="list-disc pl-5 space-y-2">
+          <li>
+            <span className="font-medium">Chrome ou Edge (ordinateur)</span> — icône cadenas ou
+            « i » à gauche de l&apos;adresse du site → Autorisations → Notifications → Autoriser.
+          </li>
+          <li>
+            <span className="font-medium">Chrome (Android)</span> — ouvrez Planwise → menu ⋮ →
+            Infos sur le site → Autorisations → Notifications → Autoriser.
+          </li>
+          <li>
+            <span className="font-medium">Safari (iPhone / iPad)</span> — installez d&apos;abord
+            l&apos;app via Partager → « Sur l&apos;écran d&apos;accueil », puis Réglages iOS →
+            Notifications → Planwise → Autoriser les notifications.
+          </li>
+        </ul>
+      </div>
+      <p className="text-xs text-red-600 dark:text-red-400">
+        Après modification, fermez puis rouvrez l&apos;application si le bouton reste désactivé.
+      </p>
+    </div>
+  );
+}
+
 function PushNotificationSection() {
   const [pushSupported, setPushSupported] = useState(false);
   const [pushPermission, setPushPermission] = useState<NotificationPermission>("default");
@@ -136,14 +172,7 @@ function PushNotificationSection() {
         est fermée. Idéal pour les rappels d&apos;interventions.
       </p>
 
-      {pushPermission === "denied" && (
-        <div className="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-3 mb-3">
-          <p className="text-sm text-red-700 dark:text-red-300">
-            Les notifications sont bloquées par votre navigateur. Modifiez les paramètres du site
-            dans votre navigateur pour les autoriser.
-          </p>
-        </div>
-      )}
+      {pushPermission === "denied" && <PushNotificationsBlockedHelp />}
 
       {error && (
         <div className="rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3 mb-3">
