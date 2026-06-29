@@ -25,20 +25,20 @@ function PushNotificationsBlockedHelp() {
         Les notifications sont bloquées par votre navigateur
       </p>
       <p className="text-sm text-red-700 dark:text-red-300">
-        Une fois refusées, le navigateur ne redemande plus automatiquement la permission — même
-        dans l&apos;application installée. Il faut les réactiver manuellement dans les réglages du
-        site, puis revenir ici et appuyer sur « Activer les notifications push ».
+        Une fois refusées, le navigateur ne redemande plus automatiquement la permission — même dans
+        l&apos;application installée. Il faut les réactiver manuellement dans les réglages du site,
+        puis revenir ici et appuyer sur « Activer les notifications push ».
       </p>
       <div className="space-y-2 text-sm text-red-700 dark:text-red-300">
         <p className="font-medium text-red-800 dark:text-red-200">Comment réactiver :</p>
         <ul className="list-disc pl-5 space-y-2">
           <li>
-            <span className="font-medium">Chrome ou Edge (ordinateur)</span> — icône cadenas ou
-            « i » à gauche de l&apos;adresse du site → Autorisations → Notifications → Autoriser.
+            <span className="font-medium">Chrome ou Edge (ordinateur)</span> — icône cadenas ou « i
+            » à gauche de l&apos;adresse du site → Autorisations → Notifications → Autoriser.
           </li>
           <li>
-            <span className="font-medium">Chrome (Android)</span> — ouvrez Planwise → menu ⋮ →
-            Infos sur le site → Autorisations → Notifications → Autoriser.
+            <span className="font-medium">Chrome (Android)</span> — ouvrez Planwise → menu ⋮ → Infos
+            sur le site → Autorisations → Notifications → Autoriser.
           </li>
           <li>
             <span className="font-medium">Safari (iPhone / iPad)</span> — installez d&apos;abord
@@ -219,11 +219,11 @@ function PushNotificationSection() {
   );
 }
 
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
+function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
   const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
+  const outputArray = new Uint8Array(new ArrayBuffer(rawData.length));
   for (let i = 0; i < rawData.length; ++i) {
     outputArray[i] = rawData.charCodeAt(i);
   }

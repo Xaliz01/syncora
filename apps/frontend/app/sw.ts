@@ -127,7 +127,6 @@ self.addEventListener("push", (event: PushEvent) => {
     badge: payload.badge ?? "/icons/icon-72x72.png",
     data: { url: payload.url ?? "/" },
     tag: `planwise-${Date.now()}`,
-    renotify: false,
   };
 
   event.waitUntil(self.registration.showNotification(title, options));

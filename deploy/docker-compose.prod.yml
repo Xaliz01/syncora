@@ -154,6 +154,9 @@ services:
       NODE_ENV: production
       PORT: "3010"
       MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-notifications
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:contact@planwise.fr}
     healthcheck: *tcp-healthcheck
 
   documents-service:
