@@ -735,4 +735,36 @@ describe("SubscriptionsService", () => {
       ).rejects.toThrow(BadRequestException);
     });
   });
+
+  describe("createCheckoutSession", () => {
+    const originalSecret = process.env.STRIPE_SECRET_KEY;
+    const originalPriceId = process.env.STRIPE_PRICE_ID;
+    const originalNodeEnv = process.env.NODE_ENV;
+
+    afterEach(() => {
+      process.env.STRIPE_SECRET_KEY = originalSecret;
+      if (originalPriceId === undefined) {
+        delete process.env.STRIPE_PRICE_ID;
+      } else {
+        process.env.STRIPE_PRICE_ID = originalPriceId;
+      }
+      process.env.NODE_ENV = originalNodeEnv;
+    });
+
+    it("should throw a demo-friendly message when Stripe billing is not configured", async () => {
+      process.env.STRIPE_SECRET_KEY = "";
+      process.env.STRIPE_PRICE_ID = "";
+      process.env.NODE_ENV = "production";
+
+      await expect(
+        service.createCheckoutSession({
+          organizationId: "org-1",
+          successUrl: "https://app.example.com/success",
+          cancelUrl: "https://app.example.com/cancel",
+        }),
+      ).rejects.toThrow(
+        "Les abonnements ne sont pas encore ouverts : cette plateforme est actuellement proposée en version de démonstration.",
+      );
+    });
+  });
 });

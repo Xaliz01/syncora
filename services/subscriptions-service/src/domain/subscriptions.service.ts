@@ -39,6 +39,9 @@ import type { ProcessedStripeEventDocument } from "../persistence/processed-stri
 
 const DEFAULT_TRIAL_DAYS = 15;
 const PLAN_LABEL = BASE_SUBSCRIPTION_PLAN_LABEL;
+const DEMO_BILLING_UNAVAILABLE_MESSAGE =
+  "Les abonnements ne sont pas encore ouverts : cette plateforme est actuellement proposée en version de démonstration.";
+const LOCAL_DEV_FALLBACK_PRICE_ID = "price_1TJBxC159m6jcNWDEmpIfyrE";
 
 /**
  * Résout le Stripe Price ID d'un addon depuis le catalogue partagé + env vars.
@@ -49,14 +52,25 @@ function resolveAddonPriceId(code: AddonCode): string {
   return process.env[descriptor.stripePriceEnvVar] ?? descriptor.stripePriceDefault;
 }
 
-function resolveBasePriceId(): string {
-  const priceId = process.env.STRIPE_PRICE_ID ?? "price_1TJBxC159m6jcNWDEmpIfyrE";
-  if (!priceId?.trim()) {
-    throw new BadRequestException(
-      "STRIPE_PRICE_ID is missing: create a recurring EUR price (9,99 €/month) in Stripe and set its ID.",
-    );
+function isStripeCheckoutConfigured(): boolean {
+  if (!process.env.STRIPE_SECRET_KEY?.trim()) {
+    return false;
   }
-  return priceId;
+
+  const configuredPriceId = process.env.STRIPE_PRICE_ID?.trim();
+  if (configuredPriceId) {
+    return true;
+  }
+
+  return process.env.NODE_ENV !== "production" && process.env.STRIPE_PRICE_ID === undefined;
+}
+
+function resolveBasePriceId(): string {
+  if (!isStripeCheckoutConfigured()) {
+    throw new BadRequestException(DEMO_BILLING_UNAVAILABLE_MESSAGE);
+  }
+
+  return process.env.STRIPE_PRICE_ID?.trim() || LOCAL_DEV_FALLBACK_PRICE_ID;
 }
 
 function hasActiveBaseSubscription(doc: OrganizationSubscriptionDocument | null): boolean {
