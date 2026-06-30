@@ -84,8 +84,8 @@ export function CustomerCreateForm({
     };
   }, [addrLine1, addrLine2, addrPostal, addrCity, addrCountry]);
 
-  const submitCreate = (e: React.FormEvent) => {
-    e.preventDefault();
+  const submitCreate = (e?: React.FormEvent | React.MouseEvent) => {
+    e?.preventDefault();
     setCreateError("");
     const base = {
       kind: newKind,
@@ -273,7 +273,8 @@ export function CustomerCreateForm({
 
       {compact ? (
         <button
-          type="submit"
+          type="button"
+          onClick={() => submitCreate()}
           disabled={createMutation.isPending}
           className="w-full rounded-lg bg-brand-600 py-2 text-sm font-medium text-white transition hover:bg-brand-500 disabled:opacity-50"
         >
@@ -305,15 +306,29 @@ export function CustomerCreateForm({
     </>
   );
 
-  const form = (
-    <form onSubmit={submitCreate} className={compact ? "space-y-3" : "space-y-5"}>
+  if (compact) {
+    return (
+      <div className="max-h-[70vh] overflow-y-auto p-3">
+        <div
+          className="space-y-3"
+          onKeyDown={(e) => {
+            if (e.key !== "Enter") return;
+            const target = e.target as HTMLElement;
+            if (target instanceof HTMLTextAreaElement) return;
+            e.preventDefault();
+            if (target instanceof HTMLInputElement && target.type === "search") return;
+            submitCreate();
+          }}
+        >
+          {formInner}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={submitCreate} className="space-y-5">
       {formInner}
     </form>
   );
-
-  if (compact) {
-    return <div className="max-h-[70vh] overflow-y-auto p-3">{form}</div>;
-  }
-
-  return form;
 }
