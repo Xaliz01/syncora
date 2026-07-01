@@ -17,7 +17,6 @@ import { NotificationSchema } from "../persistence/notification.schema";
 import { NotificationPreferencesSchema } from "../persistence/notification-preferences.schema";
 import { PushSubscriptionSchema } from "../persistence/push-subscription.schema";
 
-
 @Module({
   imports: [
     MongooseModule.forRoot(

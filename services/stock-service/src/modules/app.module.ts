@@ -8,7 +8,6 @@ import { StockService } from "../domain/stock.service";
 import { ArticleSchema } from "../persistence/article.schema";
 import { StockMovementSchema } from "../persistence/stock-movement.schema";
 
-
 @Module({
   imports: [
     MongooseModule.forRoot(process.env.MONGODB_URI ?? "mongodb://localhost:27017/planwise-stock"),
@@ -19,6 +18,8 @@ import { StockMovementSchema } from "../persistence/stock-movement.schema";
   ],
   controllers: [StockController, TestDataController, HealthController],
   providers: [
-    provideHealthServiceName("planwise-stock-service"),{ provide: AbstractStockService, useClass: StockService }],
+    provideHealthServiceName("planwise-stock-service"),
+    { provide: AbstractStockService, useClass: StockService },
+  ],
 })
 export class AppModule {}

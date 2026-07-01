@@ -7,7 +7,6 @@ import { VehicleSchema } from "../persistence/vehicle.schema";
 import { AbstractFleetService } from "../domain/ports/fleet.service.port";
 import { FleetService } from "../domain/fleet.service";
 
-
 @Module({
   imports: [
     MongooseModule.forRoot(process.env.MONGODB_URI ?? "mongodb://localhost:27017/planwise-fleet"),
@@ -15,6 +14,8 @@ import { FleetService } from "../domain/fleet.service";
   ],
   controllers: [FleetController, TestDataController, HealthController],
   providers: [
-    provideHealthServiceName("planwise-fleet-service"),{ provide: AbstractFleetService, useClass: FleetService }],
+    provideHealthServiceName("planwise-fleet-service"),
+    { provide: AbstractFleetService, useClass: FleetService },
+  ],
 })
 export class AppModule {}

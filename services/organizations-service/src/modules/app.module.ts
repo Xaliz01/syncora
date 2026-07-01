@@ -8,7 +8,6 @@ import { AbstractOrganizationsService } from "../domain/ports/organizations.serv
 import { OrganizationsService } from "../domain/organizations.service";
 import { TrialTestDataCleanupScheduler } from "../domain/trial-test-data-cleanup.scheduler";
 
-
 @Module({
   imports: [
     HttpModule.register({ timeout: 10000, maxRedirects: 0 }),

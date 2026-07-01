@@ -9,7 +9,6 @@ import { PermissionProfileSchema } from "../persistence/permission-profile.schem
 import { UserPermissionAssignmentSchema } from "../persistence/user-permission-assignment.schema";
 import { InvitationSchema } from "../persistence/invitation.schema";
 
-
 @Module({
   imports: [
     MongooseModule.forRoot(
@@ -23,6 +22,8 @@ import { InvitationSchema } from "../persistence/invitation.schema";
   ],
   controllers: [PermissionsController, TestDataController, HealthController],
   providers: [
-    provideHealthServiceName("planwise-permissions-service"),{ provide: AbstractPermissionsService, useClass: PermissionsService }],
+    provideHealthServiceName("planwise-permissions-service"),
+    { provide: AbstractPermissionsService, useClass: PermissionsService },
+  ],
 })
 export class AppModule {}

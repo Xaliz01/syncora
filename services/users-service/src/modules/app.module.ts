@@ -8,7 +8,6 @@ import { UserPreferencesSchema } from "../persistence/user-preferences.schema";
 import { AbstractUsersService } from "../domain/ports/users.service.port";
 import { UsersService } from "../domain/users.service";
 
-
 @Module({
   imports: [
     MongooseModule.forRoot(process.env.MONGODB_URI ?? "mongodb://localhost:27017/planwise-users"),
@@ -20,6 +19,8 @@ import { UsersService } from "../domain/users.service";
   ],
   controllers: [UsersController, HealthController],
   providers: [
-    provideHealthServiceName("planwise-users-service"),{ provide: AbstractUsersService, useClass: UsersService }],
+    provideHealthServiceName("planwise-users-service"),
+    { provide: AbstractUsersService, useClass: UsersService },
+  ],
 })
 export class AppModule {}

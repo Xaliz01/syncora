@@ -10,15 +10,15 @@ stateless hormis MongoDB et le volume documents).
 
 ## Contenu du dossier
 
-| Fichier                   | Rôle                                                             |
-| ------------------------- | ---------------------------------------------------------------- |
-| `Dockerfile.backend`      | Image générique gateway + microservices (`--build-arg SERVICE=`) |
-| `Dockerfile.frontend`     | Image Next.js (sortie standalone)                                |
-| `docker-compose.prod.yml` | Orchestration prod (services internes + Caddy)                   |
-| `docker-compose.monitoring.yml` | Stack Grafana/Prometheus (profil `monitoring`, optionnel)  |
-| `monitoring/`             | Config Prometheus, Blackbox, Tempo, OTel Collector, Grafana      |
-| `Caddyfile`               | Reverse proxy + HTTPS (Let's Encrypt)                            |
-| `.env.production.example` | Modèle de configuration (à copier en `.env.production`)          |
+| Fichier                         | Rôle                                                             |
+| ------------------------------- | ---------------------------------------------------------------- |
+| `Dockerfile.backend`            | Image générique gateway + microservices (`--build-arg SERVICE=`) |
+| `Dockerfile.frontend`           | Image Next.js (sortie standalone)                                |
+| `docker-compose.prod.yml`       | Orchestration prod (services internes + Caddy)                   |
+| `docker-compose.monitoring.yml` | Stack Grafana/Prometheus (profil `monitoring`, optionnel)        |
+| `monitoring/`                   | Config Prometheus, Blackbox, Tempo, OTel Collector, Grafana      |
+| `Caddyfile`                     | Reverse proxy + HTTPS (Let's Encrypt)                            |
+| `.env.production.example`       | Modèle de configuration (à copier en `.env.production`)          |
 
 ## 1. Pré-requis sur la VM
 
@@ -204,13 +204,13 @@ consommation par service, disponibilité HTTP de l'API et du frontend.
 
 Composants (profil Docker `monitoring`) :
 
-| Service            | Rôle                                      |
-| ------------------ | ----------------------------------------- |
-| **Prometheus**     | Collecte et stockage des métriques (15 j) |
-| **Grafana**        | Dashboards et visualisation               |
-| **node-exporter**  | Métriques hôte (CPU, RAM, disque)         |
-| **cAdvisor**       | Métriques par conteneur Docker            |
-| **blackbox**       | Sondes HTTP (`/api/health`, frontend)     |
+| Service           | Rôle                                      |
+| ----------------- | ----------------------------------------- |
+| **Prometheus**    | Collecte et stockage des métriques (15 j) |
+| **Grafana**       | Dashboards et visualisation               |
+| **node-exporter** | Métriques hôte (CPU, RAM, disque)         |
+| **cAdvisor**      | Métriques par conteneur Docker            |
+| **blackbox**      | Sondes HTTP (`/api/health`, frontend)     |
 
 ### Activer sur la VM
 

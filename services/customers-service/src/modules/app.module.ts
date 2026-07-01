@@ -7,7 +7,6 @@ import { AbstractCustomersService } from "../domain/ports/customers.service.port
 import { CustomersService } from "../domain/customers.service";
 import { CustomerSchema } from "../persistence/customer.schema";
 
-
 @Module({
   imports: [
     MongooseModule.forRoot(
@@ -17,6 +16,8 @@ import { CustomerSchema } from "../persistence/customer.schema";
   ],
   controllers: [CustomersController, TestDataController, HealthController],
   providers: [
-    provideHealthServiceName("planwise-customers-service"),{ provide: AbstractCustomersService, useClass: CustomersService }],
+    provideHealthServiceName("planwise-customers-service"),
+    { provide: AbstractCustomersService, useClass: CustomersService },
+  ],
 })
 export class AppModule {}

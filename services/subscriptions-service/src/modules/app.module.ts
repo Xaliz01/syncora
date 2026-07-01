@@ -7,7 +7,6 @@ import { StripeWebhookController } from "../presentation/http/stripe-webhook.con
 import { OrganizationSubscriptionSchema } from "../persistence/organization-subscription.schema";
 import { ProcessedStripeEventSchema } from "../persistence/processed-stripe-event.schema";
 
-
 @Module({
   imports: [
     MongooseModule.forRoot(
@@ -19,7 +18,6 @@ import { ProcessedStripeEventSchema } from "../persistence/processed-stripe-even
     ]),
   ],
   controllers: [SubscriptionsController, StripeWebhookController, HealthController],
-  providers: [
-    provideHealthServiceName("planwise-subscriptions-service"),SubscriptionsService],
+  providers: [provideHealthServiceName("planwise-subscriptions-service"), SubscriptionsService],
 })
 export class AppModule {}

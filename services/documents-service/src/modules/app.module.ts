@@ -11,7 +11,6 @@ import { S3StorageProvider } from "../infrastructure/s3-storage.provider";
 
 const isProduction = process.env.STORAGE_PROVIDER === "s3";
 
-
 @Module({
   imports: [
     MongooseModule.forRoot(

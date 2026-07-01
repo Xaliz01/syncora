@@ -16,7 +16,6 @@ import { TechnicianSchema } from "../persistence/technician.schema";
 import { TeamSchema } from "../persistence/team.schema";
 import { AgenceSchema } from "../persistence/agence.schema";
 
-
 @Module({
   imports: [
     MongooseModule.forRoot(
@@ -28,7 +27,13 @@ import { AgenceSchema } from "../persistence/agence.schema";
       { name: "Agence", schema: AgenceSchema },
     ]),
   ],
-  controllers: [TechniciansController, TeamsController, AgencesController, TestDataController, HealthController],
+  controllers: [
+    TechniciansController,
+    TeamsController,
+    AgencesController,
+    TestDataController,
+    HealthController,
+  ],
   providers: [
     provideHealthServiceName("planwise-technicians-service"),
     { provide: AbstractTechniciansService, useClass: TechniciansService },

@@ -10,7 +10,6 @@ import { CaseSchema } from "../persistence/case.schema";
 import { CaseHistorySchema } from "../persistence/case-history.schema";
 import { InterventionSchema } from "../persistence/intervention.schema";
 
-
 @Module({
   imports: [
     MongooseModule.forRoot(process.env.MONGODB_URI ?? "mongodb://localhost:27017/planwise-cases"),
@@ -23,6 +22,8 @@ import { InterventionSchema } from "../persistence/intervention.schema";
   ],
   controllers: [CasesController, TestDataController, HealthController],
   providers: [
-    provideHealthServiceName("planwise-cases-service"),{ provide: AbstractCasesService, useClass: CasesService }],
+    provideHealthServiceName("planwise-cases-service"),
+    { provide: AbstractCasesService, useClass: CasesService },
+  ],
 })
 export class AppModule {}

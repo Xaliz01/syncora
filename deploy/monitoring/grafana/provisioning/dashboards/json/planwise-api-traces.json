@@ -221,7 +221,10 @@
         "overrides": [
           {
             "matcher": { "id": "byName", "options": "duration" },
-            "properties": [{ "id": "unit", "value": "ns" }, { "id": "displayName", "value": "Durée" }]
+            "properties": [
+              { "id": "unit", "value": "ns" },
+              { "id": "displayName", "value": "Durée" }
+            ]
           },
           {
             "matcher": { "id": "byName", "options": "http.method" },
@@ -338,10 +341,26 @@
         "name": "service",
         "options": [
           { "selected": true, "text": "planwise-api-gateway", "value": "planwise-api-gateway" },
-          { "selected": false, "text": "planwise-cases-service", "value": "planwise-cases-service" },
-          { "selected": false, "text": "planwise-users-service", "value": "planwise-users-service" },
-          { "selected": false, "text": "planwise-notifications-service", "value": "planwise-notifications-service" },
-          { "selected": false, "text": "planwise-customers-service", "value": "planwise-customers-service" },
+          {
+            "selected": false,
+            "text": "planwise-cases-service",
+            "value": "planwise-cases-service"
+          },
+          {
+            "selected": false,
+            "text": "planwise-users-service",
+            "value": "planwise-users-service"
+          },
+          {
+            "selected": false,
+            "text": "planwise-notifications-service",
+            "value": "planwise-notifications-service"
+          },
+          {
+            "selected": false,
+            "text": "planwise-customers-service",
+            "value": "planwise-customers-service"
+          },
           { "selected": false, "text": "All", "value": "$__all" }
         ],
         "query": "planwise-api-gateway,planwise-cases-service,planwise-users-service,planwise-notifications-service,planwise-customers-service",
