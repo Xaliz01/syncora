@@ -15,6 +15,8 @@ stateless hormis MongoDB et le volume documents).
 | `Dockerfile.backend`      | Image générique gateway + microservices (`--build-arg SERVICE=`) |
 | `Dockerfile.frontend`     | Image Next.js (sortie standalone)                                |
 | `docker-compose.prod.yml` | Orchestration prod (services internes + Caddy)                   |
+| `docker-compose.monitoring.yml` | Stack Grafana/Prometheus (profil `monitoring`, optionnel)  |
+| `monitoring/`             | Config Prometheus, Blackbox, Tempo, OTel Collector, Grafana      |
 | `Caddyfile`               | Reverse proxy + HTTPS (Let's Encrypt)                            |
 | `.env.production.example` | Modèle de configuration (à copier en `.env.production`)          |
 
@@ -195,7 +197,106 @@ La clé publique est exposée au frontend via `GET /api/notifications/vapid-publ
 La clé privée ne doit jamais être commitée. Garder la même paire en production : un
 changement de clés peut obliger les utilisateurs à se réabonner aux notifications.
 
-## 10. Sécurité réseau
+## 10. Monitoring (Grafana + Prometheus)
+
+Stack open source pour surveiller la VM et les conteneurs Docker : CPU/RAM disque,
+consommation par service, disponibilité HTTP de l'API et du frontend.
+
+Composants (profil Docker `monitoring`) :
+
+| Service            | Rôle                                      |
+| ------------------ | ----------------------------------------- |
+| **Prometheus**     | Collecte et stockage des métriques (15 j) |
+| **Grafana**        | Dashboards et visualisation               |
+| **node-exporter**  | Métriques hôte (CPU, RAM, disque)         |
+| **cAdvisor**       | Métriques par conteneur Docker            |
+| **blackbox**       | Sondes HTTP (`/api/health`, frontend)     |
+
+### Activer sur la VM
+
+1. Renseigner dans `.env.production` :
+
+```env
+GRAFANA_ADMIN_USER=admin
+GRAFANA_ADMIN_PASSWORD=<mot de passe fort>
+GRAFANA_PORT=3030
+```
+
+2. Démarrer (la stack applicative doit déjà tourner) :
+
+```bash
+cd /opt/planwise/deploy
+docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml \
+  --env-file .env.production --profile monitoring up -d
+```
+
+3. Accéder à Grafana via **tunnel SSH** (recommandé — Grafana n'est pas exposé publiquement) :
+
+```bash
+ssh -L 3030:127.0.0.1:3030 ubuntu@<IP_VM>
+```
+
+Puis ouvrir [http://localhost:3030](http://localhost:3030) et se connecter avec
+`GRAFANA_ADMIN_USER` / `GRAFANA_ADMIN_PASSWORD`.
+
+Un dashboard **Planwise — Infra & disponibilité** est provisionné automatiquement.
+
+### Traces APM (OpenTelemetry + Tempo)
+
+Les microservices NestJS envoient des traces OTLP vers `otel-collector` → **Tempo**
+quand `OTEL_TRACES_ENABLED=true` (désactivé par défaut).
+
+1. Dans `.env.production` :
+
+```env
+OTEL_TRACES_ENABLED=true
+OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+```
+
+2. Redémarrer les services backend après activation :
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d
+```
+
+3. Dans Grafana : **Explore** → datasource **Tempo** → rechercher par service
+   (`planwise-api-gateway`, `planwise-cases-service`, etc.) ou par trace ID.
+
+Dashboard **Planwise — API & traces** : endpoint (`http.target`), méthode, statut HTTP,
+débit et latence p95 (métriques dérivées des traces via Tempo → Prometheus).
+
+En local (`npm run backend`) avec le collector Docker :
+
+```bash
+npm run monitoring:local
+export OTEL_TRACES_ENABLED=true
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318
+npm run backend
+```
+
+Grafana local : [http://localhost:3030](http://localhost:3030) (`admin` / `admin` par défaut).
+Dashboards : **Infra & disponibilité**, **API & traces** (endpoints, statuts HTTP, latence).
+Explore → **Tempo** pour l’investigation trace par trace.
+Prometheus : [http://localhost:9090](http://localhost:9090).
+
+Vérifier que toute la stack tourne : `docker ps` doit lister `planwise-prometheus-local`,
+`planwise-grafana-local`, `planwise-tempo-local` et `planwise-otel-collector-local` en **Up**.
+Sinon : `npm run monitoring:local` (le script échoue si un conteneur manque).
+
+**Dépannage Explore** — message « An error occurred within the plugin » : Prometheus n’est
+pas joignable par Grafana (`lookup prometheus … no such host`). Relancer la stack monitoring ;
+ne pas démarrer Grafana seul sans Prometheus.
+
+### Notes
+
+- Prometheus et Grafana restent sur le réseau interne `planwise` (pas de port public).
+- Seul Grafana écoute sur `127.0.0.1:3030` de la VM pour le tunnel SSH.
+- Les traces APM (latence par requête HTTP, waterfall inter-services) passent par
+  OpenTelemetry + Tempo ; activer avec `OTEL_TRACES_ENABLED=true`.
+- Pour exposer Grafana sur un sous-domaine HTTPS, ajouter un bloc Caddy avec
+  authentification (ne pas exposer sans protection).
+
+## 11. Sécurité réseau
 
 - N'exposer publiquement que 80/443 (pare-feu OVH + UFW).
 - Ne jamais publier le port MongoDB (27017) ni les ports des microservices.

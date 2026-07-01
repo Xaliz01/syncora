@@ -4,7 +4,9 @@
     "outDir": "dist",
     "declaration": true,
     "module": "CommonJS",
-    "moduleResolution": "Node"
+    "moduleResolution": "Node",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
   },
   "include": ["src"],
   "exclude": ["dist", "node_modules"]

@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
 import { ScheduleModule } from "@nestjs/schedule";
 import { HttpModule } from "@nestjs/axios";
+import { HealthController, provideHealthServiceName } from "@planwise/shared/nest";
 import { NotificationsController } from "../presentation/http/notifications.controller";
 import { NotificationPreferencesController } from "../presentation/http/notification-preferences.controller";
 import { PushSubscriptionsController } from "../presentation/http/push-subscriptions.controller";
@@ -15,6 +16,7 @@ import { InterventionReminderScheduler } from "../domain/intervention-reminder.s
 import { NotificationSchema } from "../persistence/notification.schema";
 import { NotificationPreferencesSchema } from "../persistence/notification-preferences.schema";
 import { PushSubscriptionSchema } from "../persistence/push-subscription.schema";
+
 
 @Module({
   imports: [
@@ -33,8 +35,10 @@ import { PushSubscriptionSchema } from "../persistence/push-subscription.schema"
     NotificationsController,
     NotificationPreferencesController,
     PushSubscriptionsController,
+    HealthController,
   ],
   providers: [
+    provideHealthServiceName("planwise-notifications-service"),
     { provide: AbstractNotificationsService, useClass: NotificationsService },
     {
       provide: AbstractNotificationPreferencesService,

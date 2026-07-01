@@ -20,6 +20,7 @@ RUN npm ci
 
 # Le package partagé doit être compilé avant les services qui en dépendent.
 RUN npm run build -w @planwise/shared
+RUN npm run build -w @planwise/telemetry
 
 ARG SERVICE
 RUN test -n "$SERVICE" || (echo "ERREUR: build-arg SERVICE manquant" && exit 1)

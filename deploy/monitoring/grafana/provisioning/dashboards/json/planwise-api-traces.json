@@ -1,0 +1,369 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "id": 1,
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "expr": "sum by (http_target, http_method) (rate(traces_spanmetrics_calls_total{service=~\"$service\", http_method!=\"OPTIONS\"}[$__rate_interval]))",
+          "legendFormat": "{{http_method}} {{http_target}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Débit par endpoint (req/s)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "id": 2,
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, http_target, http_method) (rate(traces_spanmetrics_latency_bucket{service=~\"$service\", http_method!=\"OPTIONS\"}[$__rate_interval])))",
+          "legendFormat": "p95 {{http_method}} {{http_target}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Latence p95 par endpoint",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 10 }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 8 },
+      "id": 3,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "expr": "sum(increase(traces_spanmetrics_calls_total{service=~\"$service\", http_method!=\"OPTIONS\", http_status_code=~\"4..|5..\"}[$__range])) or vector(0)",
+          "legendFormat": "erreurs HTTP",
+          "refId": "A"
+        }
+      ],
+      "title": "Requêtes 4xx / 5xx (période)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "decimals": 1,
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 5 },
+              { "color": "red", "value": 15 }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 8 },
+      "id": 4,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "expr": "(100 * sum(rate(traces_spanmetrics_calls_total{service=~\"$service\", http_method!=\"OPTIONS\", http_status_code=~\"4..|5..\"}[$__rate_interval])) / clamp_min(sum(rate(traces_spanmetrics_calls_total{service=~\"$service\", http_method!=\"OPTIONS\"}[$__rate_interval])), 0.001)) or vector(0)",
+          "legendFormat": "taux erreur",
+          "refId": "A"
+        }
+      ],
+      "title": "Taux d'erreur HTTP",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "align": "auto",
+            "cellOptions": { "type": "auto" },
+            "inspect": false
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Value" },
+            "properties": [{ "id": "displayName", "value": "Requêtes" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Statut" },
+            "properties": [
+              {
+                "id": "color",
+                "value": { "mode": "thresholds" }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "green", "value": null },
+                    { "color": "orange", "value": 400 },
+                    { "color": "red", "value": 500 }
+                  ]
+                }
+              },
+              { "id": "custom.cellOptions", "value": { "type": "color-background" } }
+            ]
+          }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "id": 5,
+      "options": {
+        "cellHeight": "sm",
+        "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false },
+        "showHeader": true,
+        "sortBy": [{ "desc": true, "displayName": "Requêtes" }]
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "expr": "topk(15, sum by (http_method, http_target, http_status_code) (increase(traces_spanmetrics_calls_total{service=~\"$service\", http_method!=\"OPTIONS\"}[$__range])))",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "__auto",
+          "refId": "A"
+        }
+      ],
+      "title": "Top endpoints (méthode, chemin, statut)",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true },
+            "renameByName": {
+              "http_method": "Méthode",
+              "http_status_code": "Statut",
+              "http_target": "Endpoint"
+            }
+          }
+        },
+        {
+          "id": "convertFieldType",
+          "options": {
+            "conversions": [{ "destinationType": "number", "targetField": "Statut" }]
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "tempo", "uid": "tempo" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "duration" },
+            "properties": [{ "id": "unit", "value": "ns" }, { "id": "displayName", "value": "Durée" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "http.method" },
+            "properties": [{ "id": "displayName", "value": "Méthode" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "http.target" },
+            "properties": [{ "id": "displayName", "value": "Endpoint" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "http.status_code" },
+            "properties": [
+              { "id": "displayName", "value": "Statut" },
+              {
+                "id": "color",
+                "value": { "mode": "thresholds" }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "green", "value": null },
+                    { "color": "orange", "value": 400 },
+                    { "color": "red", "value": 500 }
+                  ]
+                }
+              },
+              { "id": "custom.cellOptions", "value": { "type": "color-background" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "traceID" },
+            "properties": [
+              { "id": "displayName", "value": "Trace ID" },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Voir le détail",
+                    "url": "/d/planwise-api-traces/planwise-api-traces?var-traceId=${__value.text}&${__url_time_range}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": { "h": 14, "w": 24, "x": 0, "y": 12 },
+      "id": 6,
+      "options": {
+        "cellHeight": "sm",
+        "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false },
+        "showHeader": true,
+        "sortBy": [{ "desc": true, "displayName": "Start time" }]
+      },
+      "targets": [
+        {
+          "datasource": { "type": "tempo", "uid": "tempo" },
+          "limit": 100,
+          "query": "{ resource.service.name=~\"$service\" && span.http.method != \"\" && span.http.method != \"OPTIONS\" } | select(span.http.method, span.http.target, span.http.status_code, span:duration) with (most_recent=true)",
+          "queryType": "traceql",
+          "refId": "A",
+          "tableType": "spans"
+        }
+      ],
+      "title": "Dernières requêtes API (traces)",
+      "transformations": [
+        {
+          "id": "convertFieldType",
+          "options": {
+            "conversions": [{ "destinationType": "number", "targetField": "http.status_code" }]
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "tempo", "uid": "tempo" },
+      "gridPos": { "h": 4, "w": 24, "x": 0, "y": 26 },
+      "id": 7,
+      "options": {
+        "showTime": true,
+        "showTraceId": true
+      },
+      "targets": [
+        {
+          "datasource": { "type": "tempo", "uid": "tempo" },
+          "limit": 1,
+          "query": "${traceId}",
+          "queryType": "traceId",
+          "refId": "A"
+        }
+      ],
+      "title": "Détail trace (sélectionner une ligne ci-dessus → Trace ID)",
+      "type": "traces"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["planwise", "api", "traces"],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": true,
+          "text": "planwise-api-gateway",
+          "value": "planwise-api-gateway"
+        },
+        "hide": 0,
+        "includeAll": true,
+        "label": "Service",
+        "multi": true,
+        "name": "service",
+        "options": [
+          { "selected": true, "text": "planwise-api-gateway", "value": "planwise-api-gateway" },
+          { "selected": false, "text": "planwise-cases-service", "value": "planwise-cases-service" },
+          { "selected": false, "text": "planwise-users-service", "value": "planwise-users-service" },
+          { "selected": false, "text": "planwise-notifications-service", "value": "planwise-notifications-service" },
+          { "selected": false, "text": "planwise-customers-service", "value": "planwise-customers-service" },
+          { "selected": false, "text": "All", "value": "$__all" }
+        ],
+        "query": "planwise-api-gateway,planwise-cases-service,planwise-users-service,planwise-notifications-service,planwise-customers-service",
+        "skipUrlSync": false,
+        "type": "custom"
+      },
+      {
+        "current": { "selected": false, "text": "", "value": "" },
+        "hide": 0,
+        "label": "Trace ID",
+        "name": "traceId",
+        "options": [{ "selected": true, "text": "", "value": "" }],
+        "query": "",
+        "skipUrlSync": false,
+        "type": "textbox"
+      }
+    ]
+  },
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Planwise — API & traces",
+  "uid": "planwise-api-traces",
+  "version": 5
+}

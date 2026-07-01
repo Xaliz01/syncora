@@ -17,11 +17,11 @@
     "@nestjs/platform-express": "^11.0.0",
     "@planwise/shared": "0.1.0",
     "axios": "^1.6.0",
-    "dd-trace": "^5.0.0",
     "exceljs": "^4.4.0",
     "pdfkit": "^0.18.0",
     "reflect-metadata": "^0.2.0",
-    "rxjs": "^7.8.0"
+    "rxjs": "^7.8.0",
+    "@planwise/telemetry": "0.1.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.0",

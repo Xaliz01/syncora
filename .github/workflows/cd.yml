@@ -156,7 +156,7 @@ jobs:
           username: ${{ secrets.DEPLOY_SSH_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_SSH_PORT || 22 }}
-          source: "deploy/docker-compose.prod.yml,deploy/Caddyfile"
+          source: "deploy/docker-compose.prod.yml,deploy/docker-compose.monitoring.yml,deploy/Caddyfile,deploy/monitoring"
           target: ${{ secrets.DEPLOY_PATH }}
           overwrite: true
       - name: Pull & up sur la VM

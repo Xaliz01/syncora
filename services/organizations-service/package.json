@@ -18,10 +18,10 @@
     "@nestjs/axios": "^4.0.0",
     "cron": "3.5.0",
     "@planwise/shared": "0.1.0",
-    "dd-trace": "^5.0.0",
     "mongoose": "^8.0.0",
     "reflect-metadata": "^0.2.0",
-    "rxjs": "^7.8.0"
+    "rxjs": "^7.8.0",
+    "@planwise/telemetry": "0.1.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.0",

@@ -63,6 +63,8 @@ services:
     image: ${REGISTRY}/planwise-organizations-service:${IMAGE_TAG:-latest}
     environment:
       <<: *service-urls
+      OTEL_TRACES_ENABLED: ${OTEL_TRACES_ENABLED:-false}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
       NODE_ENV: production
       PORT: "3001"
       MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-organizations
@@ -72,6 +74,8 @@ services:
     <<: *backend
     image: ${REGISTRY}/planwise-users-service:${IMAGE_TAG:-latest}
     environment:
+      OTEL_TRACES_ENABLED: ${OTEL_TRACES_ENABLED:-false}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
       NODE_ENV: production
       PORT: "3002"
       MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-users
@@ -81,6 +85,8 @@ services:
     <<: *backend
     image: ${REGISTRY}/planwise-permissions-service:${IMAGE_TAG:-latest}
     environment:
+      OTEL_TRACES_ENABLED: ${OTEL_TRACES_ENABLED:-false}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
       NODE_ENV: production
       PORT: "3003"
       MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-permissions
@@ -90,6 +96,8 @@ services:
     <<: *backend
     image: ${REGISTRY}/planwise-cases-service:${IMAGE_TAG:-latest}
     environment:
+      OTEL_TRACES_ENABLED: ${OTEL_TRACES_ENABLED:-false}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
       NODE_ENV: production
       PORT: "3004"
       MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-cases
@@ -99,6 +107,8 @@ services:
     <<: *backend
     image: ${REGISTRY}/planwise-fleet-service:${IMAGE_TAG:-latest}
     environment:
+      OTEL_TRACES_ENABLED: ${OTEL_TRACES_ENABLED:-false}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
       NODE_ENV: production
       PORT: "3005"
       MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-fleet
@@ -108,6 +118,8 @@ services:
     <<: *backend
     image: ${REGISTRY}/planwise-technicians-service:${IMAGE_TAG:-latest}
     environment:
+      OTEL_TRACES_ENABLED: ${OTEL_TRACES_ENABLED:-false}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
       NODE_ENV: production
       PORT: "3006"
       MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-technicians
@@ -117,6 +129,8 @@ services:
     <<: *backend
     image: ${REGISTRY}/planwise-stock-service:${IMAGE_TAG:-latest}
     environment:
+      OTEL_TRACES_ENABLED: ${OTEL_TRACES_ENABLED:-false}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
       NODE_ENV: production
       PORT: "3007"
       MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-stock
@@ -126,6 +140,8 @@ services:
     <<: *backend
     image: ${REGISTRY}/planwise-subscriptions-service:${IMAGE_TAG:-latest}
     environment:
+      OTEL_TRACES_ENABLED: ${OTEL_TRACES_ENABLED:-false}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
       NODE_ENV: production
       PORT: "3008"
       MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-subscriptions
@@ -142,6 +158,8 @@ services:
     <<: *backend
     image: ${REGISTRY}/planwise-customers-service:${IMAGE_TAG:-latest}
     environment:
+      OTEL_TRACES_ENABLED: ${OTEL_TRACES_ENABLED:-false}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
       NODE_ENV: production
       PORT: "3009"
       MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-customers
@@ -151,6 +169,8 @@ services:
     <<: *backend
     image: ${REGISTRY}/planwise-notifications-service:${IMAGE_TAG:-latest}
     environment:
+      OTEL_TRACES_ENABLED: ${OTEL_TRACES_ENABLED:-false}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
       NODE_ENV: production
       PORT: "3010"
       MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-notifications
@@ -163,6 +183,8 @@ services:
     <<: *backend
     image: ${REGISTRY}/planwise-documents-service:${IMAGE_TAG:-latest}
     environment:
+      OTEL_TRACES_ENABLED: ${OTEL_TRACES_ENABLED:-false}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
       NODE_ENV: production
       PORT: "3011"
       MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-documents
@@ -185,6 +207,8 @@ services:
     depends_on: {}
     environment:
       <<: *service-urls
+      OTEL_TRACES_ENABLED: ${OTEL_TRACES_ENABLED:-false}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
       NODE_ENV: production
       PORT: "3012"
     healthcheck: *tcp-healthcheck
@@ -196,6 +220,8 @@ services:
     networks: [planwise]
     environment:
       <<: *service-urls
+      OTEL_TRACES_ENABLED: ${OTEL_TRACES_ENABLED:-false}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
       NODE_ENV: production
       PORT: "3000"
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET requis}

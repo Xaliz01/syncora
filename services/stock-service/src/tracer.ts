@@ -1,10 +1,7 @@
-import tracer from "dd-trace";
+/**
+ * Doit être importé en premier dans main.ts pour instrumenter HTTP, MongoDB, etc.
+ * OpenTelemetry → collector OTLP → Tempo (Grafana).
+ */
+import { initTelemetry } from "@planwise/telemetry";
 
-tracer.init({
-  service: process.env.DD_SERVICE ?? "planwise-stock-service",
-  env: process.env.DD_ENV ?? process.env.NODE_ENV ?? "development",
-  version: process.env.DD_VERSION,
-  logInjection: process.env.NODE_ENV === "production",
-});
-
-export default tracer;
+initTelemetry("planwise-stock-service");

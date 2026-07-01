@@ -1,10 +1,12 @@
 import { Module } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
+import { HealthController, provideHealthServiceName } from "@planwise/shared/nest";
 import { SubscriptionsService } from "../domain/subscriptions.service";
 import { SubscriptionsController } from "../presentation/http/subscriptions.controller";
 import { StripeWebhookController } from "../presentation/http/stripe-webhook.controller";
 import { OrganizationSubscriptionSchema } from "../persistence/organization-subscription.schema";
 import { ProcessedStripeEventSchema } from "../persistence/processed-stripe-event.schema";
+
 
 @Module({
   imports: [
@@ -16,7 +18,8 @@ import { ProcessedStripeEventSchema } from "../persistence/processed-stripe-even
       { name: "ProcessedStripeEvent", schema: ProcessedStripeEventSchema },
     ]),
   ],
-  controllers: [SubscriptionsController, StripeWebhookController],
-  providers: [SubscriptionsService],
+  controllers: [SubscriptionsController, StripeWebhookController, HealthController],
+  providers: [
+    provideHealthServiceName("planwise-subscriptions-service"),SubscriptionsService],
 })
 export class AppModule {}

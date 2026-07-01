@@ -1,11 +1,13 @@
 import { Module } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
+import { HealthController, provideHealthServiceName } from "@planwise/shared/nest";
 import { UsersController } from "../presentation/http/users.controller";
 import { UserSchema } from "../persistence/user.schema";
 import { OrganizationMembershipSchema } from "../persistence/organization-membership.schema";
 import { UserPreferencesSchema } from "../persistence/user-preferences.schema";
 import { AbstractUsersService } from "../domain/ports/users.service.port";
 import { UsersService } from "../domain/users.service";
+
 
 @Module({
   imports: [
@@ -16,7 +18,8 @@ import { UsersService } from "../domain/users.service";
       { name: "UserPreferences", schema: UserPreferencesSchema },
     ]),
   ],
-  controllers: [UsersController],
-  providers: [{ provide: AbstractUsersService, useClass: UsersService }],
+  controllers: [UsersController, HealthController],
+  providers: [
+    provideHealthServiceName("planwise-users-service"),{ provide: AbstractUsersService, useClass: UsersService }],
 })
 export class AppModule {}

@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
+import { HealthController, provideHealthServiceName } from "@planwise/shared/nest";
 import { CasesController } from "../presentation/http/cases.controller";
 import { TestDataController } from "../presentation/http/test-data.controller";
 import { AbstractCasesService } from "../domain/ports/cases.service.port";
@@ -8,6 +9,7 @@ import { CaseTemplateSchema } from "../persistence/case-template.schema";
 import { CaseSchema } from "../persistence/case.schema";
 import { CaseHistorySchema } from "../persistence/case-history.schema";
 import { InterventionSchema } from "../persistence/intervention.schema";
+
 
 @Module({
   imports: [
@@ -19,7 +21,8 @@ import { InterventionSchema } from "../persistence/intervention.schema";
       { name: "Intervention", schema: InterventionSchema },
     ]),
   ],
-  controllers: [CasesController, TestDataController],
-  providers: [{ provide: AbstractCasesService, useClass: CasesService }],
+  controllers: [CasesController, TestDataController, HealthController],
+  providers: [
+    provideHealthServiceName("planwise-cases-service"),{ provide: AbstractCasesService, useClass: CasesService }],
 })
 export class AppModule {}

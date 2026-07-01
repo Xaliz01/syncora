@@ -1,14 +1,7 @@
 /**
- * Doit être importé en premier dans main.ts pour instrumenter correctement
- * les appels HTTP, MongoDB, etc. pour Datadog APM.
+ * Doit être importé en premier dans main.ts pour instrumenter HTTP, MongoDB, etc.
+ * OpenTelemetry → collector OTLP → Tempo (Grafana).
  */
-import tracer from "dd-trace";
+import { initTelemetry } from "@planwise/telemetry";
 
-tracer.init({
-  service: process.env.DD_SERVICE ?? "planwise-api-gateway",
-  env: process.env.DD_ENV ?? process.env.NODE_ENV ?? "development",
-  version: process.env.DD_VERSION,
-  logInjection: process.env.NODE_ENV === "production",
-});
-
-export default tracer;
+initTelemetry("planwise-api-gateway");

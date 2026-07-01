@@ -1,11 +1,13 @@
 import { Module } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
+import { HealthController, provideHealthServiceName } from "@planwise/shared/nest";
 import { StockController } from "../presentation/http/stock.controller";
 import { TestDataController } from "../presentation/http/test-data.controller";
 import { AbstractStockService } from "../domain/ports/stock.service.port";
 import { StockService } from "../domain/stock.service";
 import { ArticleSchema } from "../persistence/article.schema";
 import { StockMovementSchema } from "../persistence/stock-movement.schema";
+
 
 @Module({
   imports: [
@@ -15,7 +17,8 @@ import { StockMovementSchema } from "../persistence/stock-movement.schema";
       { name: "StockMovement", schema: StockMovementSchema },
     ]),
   ],
-  controllers: [StockController, TestDataController],
-  providers: [{ provide: AbstractStockService, useClass: StockService }],
+  controllers: [StockController, TestDataController, HealthController],
+  providers: [
+    provideHealthServiceName("planwise-stock-service"),{ provide: AbstractStockService, useClass: StockService }],
 })
 export class AppModule {}

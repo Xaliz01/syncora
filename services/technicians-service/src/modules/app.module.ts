@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
+import { HealthController, provideHealthServiceName } from "@planwise/shared/nest";
 import { TechniciansController } from "../presentation/http/technicians.controller";
 import { TeamsController } from "../presentation/http/teams.controller";
 import { AgencesController } from "../presentation/http/agences.controller";
@@ -15,6 +16,7 @@ import { TechnicianSchema } from "../persistence/technician.schema";
 import { TeamSchema } from "../persistence/team.schema";
 import { AgenceSchema } from "../persistence/agence.schema";
 
+
 @Module({
   imports: [
     MongooseModule.forRoot(
@@ -26,8 +28,9 @@ import { AgenceSchema } from "../persistence/agence.schema";
       { name: "Agence", schema: AgenceSchema },
     ]),
   ],
-  controllers: [TechniciansController, TeamsController, AgencesController, TestDataController],
+  controllers: [TechniciansController, TeamsController, AgencesController, TestDataController, HealthController],
   providers: [
+    provideHealthServiceName("planwise-technicians-service"),
     { provide: AbstractTechniciansService, useClass: TechniciansService },
     { provide: AbstractTeamsService, useClass: TeamsService },
     { provide: AbstractAgencesService, useClass: AgencesService },

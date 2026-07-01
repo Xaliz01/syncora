@@ -1,8 +1,16 @@
-# Datadog Agent (profil « datadog ») : traces APM et DogStatsD vers ton org Datadog.
-# Démarrage : docker compose --profile datadog up -d --wait
-# Ou : npm run backend:datadog
-# Prérequis : DD_API_KEY (env ou fichier .env à la racine). EU : DD_SITE=datadoghq.eu
-# Les services Node sur la machine hôte ciblent 127.0.0.1:8126 par défaut (dd-trace).
+# MongoDB local + profils optionnels :
+#   monitoring — Grafana, Prometheus, Tempo, OTel Collector (voir npm run monitoring:local)
+#   datadog    — legacy Datadog Agent (remplacé par OpenTelemetry + Grafana)
+#
+# Monitoring local :
+#   npm run monitoring:local
+#   → Grafana http://localhost:3030 (admin / admin par défaut)
+#   → OTel OTLP http://127.0.0.1:4318
+#
+# Backend avec traces :
+#   export OTEL_TRACES_ENABLED=true
+#   export OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318
+#   npm run backend
 
 services:
   mongodb:
@@ -45,6 +53,135 @@ services:
       retries: 5
       start_period: 45s
 
+  tempo:
+    profiles: ["monitoring"]
+    image: grafana/tempo:2.8.4
+    container_name: planwise-tempo-local
+    command: ["-config.file=/etc/tempo/tempo.yml"]
+    volumes:
+      - ./deploy/monitoring/tempo.yml:/etc/tempo/tempo.yml:ro
+      - planwise-tempo-data:/var/tempo
+    ports:
+      - "127.0.0.1:3200:3200"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3200/ready"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  otel-collector:
+    profiles: ["monitoring"]
+    image: otel/opentelemetry-collector-contrib:0.118.0
+    container_name: planwise-otel-collector-local
+    command: ["--config=/etc/otelcol/config.yml"]
+    volumes:
+      - ./deploy/monitoring/otel-collector.yml:/etc/otelcol/config.yml:ro
+    ports:
+      - "127.0.0.1:4317:4317"
+      - "127.0.0.1:4318:4318"
+    depends_on:
+      tempo:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  prometheus:
+    profiles: ["monitoring"]
+    image: prom/prometheus:v3.2.1
+    container_name: planwise-prometheus-local
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=7d
+      - --web.enable-lifecycle
+      - --web.enable-remote-write-receiver
+    volumes:
+      - ./deploy/monitoring/prometheus.local.yml:/etc/prometheus/prometheus.yml:ro
+      - planwise-prometheus-data:/prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  grafana:
+    profiles: ["monitoring"]
+    image: grafana/grafana:11.5.2
+    container_name: planwise-grafana-local
+    ports:
+      - "127.0.0.1:3030:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_ROOT_URL: http://localhost:3030
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    volumes:
+      - planwise-grafana-data:/var/lib/grafana
+      - ./deploy/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      prometheus:
+        condition: service_healthy
+      tempo:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  node-exporter:
+    profiles: ["monitoring"]
+    image: prom/node-exporter:v1.9.0
+    container_name: planwise-node-exporter-local
+    pid: host
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --path.rootfs=/rootfs
+      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+
+  cadvisor:
+    profiles: ["monitoring"]
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: planwise-cadvisor-local
+    privileged: true
+    environment:
+      # Docker Desktop (Mac) exige une version API récente pour le socket monté.
+      DOCKER_API_VERSION: "1.44"
+    volumes:
+      - /:/rootfs:ro
+      # Monter uniquement le socket (pas tout /var/run : sur Mac le lien symbolique serait cassé dans le conteneur).
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    devices:
+      - /dev/kmsg
+
+  blackbox-exporter:
+    profiles: ["monitoring"]
+    image: prom/blackbox-exporter:v0.26.0
+    container_name: planwise-blackbox-exporter-local
+    command:
+      - --config.file=/etc/blackbox/blackbox.yml
+    volumes:
+      - ./deploy/monitoring/blackbox.yml:/etc/blackbox/blackbox.yml:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
 volumes:
   planwise-mongodb-data:
   planwise-documents:
+  planwise-tempo-data:
+  planwise-prometheus-data:
+  planwise-grafana-data:

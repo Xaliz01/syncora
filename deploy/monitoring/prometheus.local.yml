@@ -1,0 +1,90 @@
+# Prometheus — développement local (backend Next/Nest sur la machine hôte).
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: planwise
+    environment: development
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: node
+    static_configs:
+      - targets: ["node-exporter:9100"]
+
+  - job_name: cadvisor
+    static_configs:
+      - targets: ["cadvisor:8080"]
+    metric_relabel_configs:
+      # Nom du service Compose (grafana, mongodb, …)
+      - source_labels: [container_label_com_docker_compose_service]
+        regex: "(.+)"
+        target_label: container
+        replacement: "$1"
+      # Sinon nom du conteneur Docker (planwise-grafana-local, …)
+      - source_labels: [container, name]
+        separator: ";"
+        regex: "^;/?(.+)$"
+        target_label: container
+        replacement: "$1"
+      - source_labels: [id]
+        regex: "/docker/([a-f0-9]+)"
+        target_label: container_id
+        replacement: "$1"
+      # Dernier recours : ID Docker tronqué à 12 caractères
+      - source_labels: [container, container_id]
+        separator: ";"
+        regex: "^;(.+)$"
+        target_label: container
+        replacement: "$1"
+      - source_labels: [container]
+        regex: "^([a-f0-9]{12})[a-f0-9]+$"
+        target_label: container
+        replacement: "$1"
+      - source_labels: [container]
+        regex: "(.+)"
+        action: keep
+
+  - job_name: blackbox_http
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets: [http://host.docker.internal:3000/api/health]
+        labels: { service: api-gateway }
+      - targets: [http://host.docker.internal:3001/health]
+        labels: { service: organizations }
+      - targets: [http://host.docker.internal:3002/health]
+        labels: { service: users }
+      - targets: [http://host.docker.internal:3003/health]
+        labels: { service: permissions }
+      - targets: [http://host.docker.internal:3004/health]
+        labels: { service: cases }
+      - targets: [http://host.docker.internal:3005/health]
+        labels: { service: fleet }
+      - targets: [http://host.docker.internal:3006/health]
+        labels: { service: technicians }
+      - targets: [http://host.docker.internal:3007/health]
+        labels: { service: stock }
+      - targets: [http://host.docker.internal:3008/health]
+        labels: { service: subscriptions }
+      - targets: [http://host.docker.internal:3009/health]
+        labels: { service: customers }
+      - targets: [http://host.docker.internal:3010/health]
+        labels: { service: notifications }
+      - targets: [http://host.docker.internal:3011/health]
+        labels: { service: documents }
+      - targets: [http://host.docker.internal:3012/health]
+        labels: { service: exports }
+      - targets: [http://host.docker.internal:5173/]
+        labels: { service: frontend }
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115

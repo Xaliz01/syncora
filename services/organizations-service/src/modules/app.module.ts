@@ -1,11 +1,13 @@
 import { Module } from "@nestjs/common";
 import { HttpModule } from "@nestjs/axios";
 import { MongooseModule } from "@nestjs/mongoose";
+import { HealthController, provideHealthServiceName } from "@planwise/shared/nest";
 import { OrganizationsController } from "../presentation/http/organizations.controller";
 import { OrganizationSchema } from "../persistence/organization.schema";
 import { AbstractOrganizationsService } from "../domain/ports/organizations.service.port";
 import { OrganizationsService } from "../domain/organizations.service";
 import { TrialTestDataCleanupScheduler } from "../domain/trial-test-data-cleanup.scheduler";
+
 
 @Module({
   imports: [
@@ -15,8 +17,9 @@ import { TrialTestDataCleanupScheduler } from "../domain/trial-test-data-cleanup
     ),
     MongooseModule.forFeature([{ name: "Organization", schema: OrganizationSchema }]),
   ],
-  controllers: [OrganizationsController],
+  controllers: [OrganizationsController, HealthController],
   providers: [
+    provideHealthServiceName("planwise-organizations-service"),
     { provide: AbstractOrganizationsService, useClass: OrganizationsService },
     TrialTestDataCleanupScheduler,
   ],
