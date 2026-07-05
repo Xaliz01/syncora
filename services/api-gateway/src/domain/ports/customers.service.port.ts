@@ -1,4 +1,10 @@
-import type { AuthUser, CustomerResponse, CustomerKind, PostalAddress } from "@planwise/shared";
+import type {
+  AuthUser,
+  CustomerResponse,
+  CustomerSiteResponse,
+  CustomerKind,
+  PostalAddress,
+} from "@planwise/shared";
 
 export interface CreateCustomerForOrgBody {
   kind: CustomerKind;
@@ -26,6 +32,20 @@ export interface UpdateCustomerForOrgBody {
   notes?: string | null;
 }
 
+export interface CreateCustomerSiteForOrgBody {
+  label: string;
+  address: PostalAddress;
+  isDefault?: boolean;
+  notes?: string;
+}
+
+export interface UpdateCustomerSiteForOrgBody {
+  label?: string;
+  address?: PostalAddress;
+  isDefault?: boolean;
+  notes?: string | null;
+}
+
 export abstract class AbstractCustomersGatewayService {
   abstract createCustomer(
     user: AuthUser,
@@ -43,4 +63,21 @@ export abstract class AbstractCustomersGatewayService {
     body: UpdateCustomerForOrgBody,
   ): Promise<CustomerResponse>;
   abstract deleteCustomer(user: AuthUser, customerId: string): Promise<{ deleted: true }>;
+
+  abstract createSite(
+    user: AuthUser,
+    customerId: string,
+    body: CreateCustomerSiteForOrgBody,
+  ): Promise<CustomerSiteResponse>;
+  abstract updateSite(
+    user: AuthUser,
+    customerId: string,
+    siteId: string,
+    body: UpdateCustomerSiteForOrgBody,
+  ): Promise<CustomerSiteResponse>;
+  abstract deleteSite(
+    user: AuthUser,
+    customerId: string,
+    siteId: string,
+  ): Promise<{ deleted: true }>;
 }

@@ -1,4 +1,9 @@
-import type { CustomerKind, CustomerResponse } from "@planwise/shared";
+import type {
+  CustomerKind,
+  CustomerResponse,
+  CustomerSiteResponse,
+  PostalAddress,
+} from "@planwise/shared";
 import { apiRequestJson, type ApiMethod } from "./api-client";
 
 async function customersRequest<TResponse>(
@@ -66,4 +71,40 @@ export function updateCustomer(customerId: string, payload: UpdateCustomerPayloa
 
 export function deleteCustomer(customerId: string) {
   return customersRequest<{ deleted: true }>("DELETE", `/customers/${customerId}`);
+}
+
+// ── Sites ──
+
+export interface CreateCustomerSitePayload {
+  label: string;
+  address: PostalAddress;
+  isDefault?: boolean;
+  notes?: string;
+}
+
+export interface UpdateCustomerSitePayload {
+  label?: string;
+  address?: PostalAddress;
+  isDefault?: boolean;
+  notes?: string | null;
+}
+
+export function createCustomerSite(customerId: string, payload: CreateCustomerSitePayload) {
+  return customersRequest<CustomerSiteResponse>("POST", `/customers/${customerId}/sites`, payload);
+}
+
+export function updateCustomerSite(
+  customerId: string,
+  siteId: string,
+  payload: UpdateCustomerSitePayload,
+) {
+  return customersRequest<CustomerSiteResponse>(
+    "PATCH",
+    `/customers/${customerId}/sites/${siteId}`,
+    payload,
+  );
+}
+
+export function deleteCustomerSite(customerId: string, siteId: string) {
+  return customersRequest<{ deleted: true }>("DELETE", `/customers/${customerId}/sites/${siteId}`);
 }

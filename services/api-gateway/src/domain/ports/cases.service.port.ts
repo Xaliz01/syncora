@@ -24,6 +24,7 @@ export interface CreateCaseForOrgBody {
   dueDate?: string;
   tags?: string[];
   customerId?: string;
+  interventionSiteId?: string;
 }
 
 export interface UpdateCaseForOrgBody {
@@ -35,6 +36,7 @@ export interface UpdateCaseForOrgBody {
   dueDate?: string | null;
   tags?: string[];
   customerId?: string | null;
+  interventionSiteId?: string | null;
 }
 
 export interface CreateTemplateForOrgBody {

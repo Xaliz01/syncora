@@ -1,11 +1,13 @@
 import { Injectable } from "@nestjs/common";
 import type { AuthUser } from "@planwise/shared";
-import type { CustomerResponse } from "@planwise/shared";
+import type { CustomerResponse, CustomerSiteResponse } from "@planwise/shared";
 import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
 import {
   AbstractCustomersGatewayService,
   type CreateCustomerForOrgBody,
+  type CreateCustomerSiteForOrgBody,
   type UpdateCustomerForOrgBody,
+  type UpdateCustomerSiteForOrgBody,
 } from "./ports/customers.service.port";
 
 const CUSTOMERS_URL = process.env.CUSTOMERS_SERVICE_URL ?? "http://localhost:3009";
@@ -71,6 +73,48 @@ export class CustomersGatewayService extends AbstractCustomersGatewayService {
       organizationId: user.organizationId,
       method: "delete",
       path: `/customers/${customerId}`,
+      validateResponseScope: false,
+      errorLabel: "Customers service error",
+    });
+  }
+
+  // ── Sites ──
+
+  async createSite(user: AuthUser, customerId: string, body: CreateCustomerSiteForOrgBody) {
+    return this.scopedHttp.request<CustomerSiteResponse>({
+      baseUrl: CUSTOMERS_URL,
+      organizationId: user.organizationId,
+      method: "post",
+      path: `/customers/${customerId}/sites`,
+      body: { ...body },
+      validateResponseScope: false,
+      errorLabel: "Customers service error",
+    });
+  }
+
+  async updateSite(
+    user: AuthUser,
+    customerId: string,
+    siteId: string,
+    body: UpdateCustomerSiteForOrgBody,
+  ) {
+    return this.scopedHttp.request<CustomerSiteResponse>({
+      baseUrl: CUSTOMERS_URL,
+      organizationId: user.organizationId,
+      method: "patch",
+      path: `/customers/${customerId}/sites/${siteId}`,
+      body: { ...body },
+      validateResponseScope: false,
+      errorLabel: "Customers service error",
+    });
+  }
+
+  async deleteSite(user: AuthUser, customerId: string, siteId: string) {
+    return this.scopedHttp.request<{ deleted: true }>({
+      baseUrl: CUSTOMERS_URL,
+      organizationId: user.organizationId,
+      method: "delete",
+      path: `/customers/${customerId}/sites/${siteId}`,
       validateResponseScope: false,
       errorLabel: "Customers service error",
     });

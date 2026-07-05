@@ -22,6 +22,25 @@ export class PostalAddressSubDoc {
 
 export const PostalAddressSubDocSchema = SchemaFactory.createForClass(PostalAddressSubDoc);
 
+@Schema({ _id: true })
+export class CustomerSiteSubDoc {
+  declare _id: Types.ObjectId;
+
+  @Prop({ required: true })
+  label!: string;
+
+  @Prop({ type: PostalAddressSubDocSchema, required: true })
+  address!: PostalAddressSubDoc;
+
+  @Prop({ default: false })
+  isDefault!: boolean;
+
+  @Prop()
+  notes?: string;
+}
+
+export const CustomerSiteSubDocSchema = SchemaFactory.createForClass(CustomerSiteSubDoc);
+
 @Schema({ timestamps: true, _id: true, collection: "customers" })
 export class CustomerDocument extends Document {
   declare _id: Types.ObjectId;
@@ -55,6 +74,9 @@ export class CustomerDocument extends Document {
 
   @Prop({ type: PostalAddressSubDocSchema })
   address?: PostalAddressSubDoc;
+
+  @Prop({ type: [CustomerSiteSubDocSchema], default: [] })
+  sites!: CustomerSiteSubDoc[];
 
   @Prop()
   notes?: string;

@@ -15,6 +15,9 @@ describe("CustomersController", () => {
       updateCustomer: jest.fn(),
       deleteCustomer: jest.fn(),
       purgeTestData: jest.fn(),
+      createSite: jest.fn(),
+      updateSite: jest.fn(),
+      deleteSite: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({

@@ -76,6 +76,7 @@ export interface CreateCasePayload {
   dueDate?: string;
   tags?: string[];
   customerId?: string;
+  interventionSiteId?: string;
 }
 
 export interface UpdateCasePayload {
@@ -87,6 +88,7 @@ export interface UpdateCasePayload {
   dueDate?: string | null;
   tags?: string[];
   customerId?: string | null;
+  interventionSiteId?: string | null;
 }
 
 export function listCases(filters?: {

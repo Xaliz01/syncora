@@ -1078,7 +1078,17 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       phone: c.phone,
       mobile: c.mobile,
       address: c.address,
+      sites: c.sites,
     };
+  }
+
+  private resolveInterventionAddress(
+    customer: CustomerResponse | undefined,
+    interventionSiteId: string | undefined,
+  ) {
+    if (!customer || !interventionSiteId) return undefined;
+    const site = customer.sites?.find((s) => s.id === interventionSiteId);
+    return site?.address;
   }
 
   private async enrichCaseSummaries(
@@ -1091,7 +1101,12 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     const map = new Map(customers.map((c) => [c.id, c]));
     return rows.map((r) => {
       const c = r.customerId ? map.get(r.customerId) : undefined;
-      return { ...r, customer: c ? this.toCaseCustomerRef(c) : undefined };
+      const interventionAddress = this.resolveInterventionAddress(c, r.interventionSiteId);
+      return {
+        ...r,
+        customer: c ? this.toCaseCustomerRef(c) : undefined,
+        interventionAddress,
+      };
     });
   }
 
@@ -1099,7 +1114,12 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     if (!row.customerId) return { ...row, customer: undefined };
     try {
       const c = await this.customersGateway.getCustomer(user, row.customerId);
-      return { ...row, customer: this.toCaseCustomerRef(c) };
+      const interventionAddress = this.resolveInterventionAddress(c, row.interventionSiteId);
+      return {
+        ...row,
+        customer: this.toCaseCustomerRef(c),
+        interventionAddress,
+      };
     } catch {
       return { ...row, customer: undefined };
     }

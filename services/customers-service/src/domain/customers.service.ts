@@ -4,15 +4,18 @@ import { Model } from "mongoose";
 import {
   organizationScopeFilter,
   type CreateCustomerBody,
+  type CreateCustomerSiteBody,
   type CustomerResponse,
+  type CustomerSiteResponse,
   type UpdateCustomerBody,
+  type UpdateCustomerSiteBody,
 } from "@planwise/shared";
 import {
   assertOrganizationScopedListNest,
   assertOrganizationScopedResourceNest,
   parseOrganizationIdBody,
 } from "@planwise/shared/nest";
-import type { CustomerDocument } from "../persistence/customer.schema";
+import type { CustomerDocument, CustomerSiteSubDoc } from "../persistence/customer.schema";
 import { AbstractCustomersService } from "./ports/customers.service.port";
 
 @Injectable()
@@ -167,6 +170,116 @@ export class CustomersService extends AbstractCustomersService {
     return { purged: true };
   }
 
+  // ── Sites ──
+
+  async createSite(
+    customerId: string,
+    body: CreateCustomerSiteBody,
+  ): Promise<CustomerSiteResponse> {
+    const organizationId = parseOrganizationIdBody(body.organizationId);
+    this.validateSiteAddress(body.address);
+
+    if (!body.label?.trim()) {
+      throw new BadRequestException("Le libellé du site est obligatoire");
+    }
+
+    const update: Record<string, unknown> = {};
+    const newSite = {
+      label: body.label.trim(),
+      address: {
+        line1: body.address.line1.trim(),
+        line2: body.address.line2?.trim() || undefined,
+        postalCode: body.address.postalCode.trim(),
+        city: body.address.city.trim(),
+        country: (body.address.country ?? "FR").trim() || "FR",
+      },
+      isDefault: body.isDefault === true,
+      notes: body.notes?.trim() || undefined,
+    };
+
+    if (body.isDefault) {
+      update.$set = { "sites.$[].isDefault": false };
+    }
+
+    const doc = await this.customerModel
+      .findOneAndUpdate(
+        { _id: customerId, ...organizationScopeFilter(organizationId) },
+        { ...update, $push: { sites: newSite } },
+        { new: true },
+      )
+      .exec();
+
+    if (!doc) throw new NotFoundException("Client introuvable");
+
+    const createdSite = doc.sites[doc.sites.length - 1];
+    return this.toSiteResponse(createdSite);
+  }
+
+  async updateSite(
+    customerId: string,
+    siteId: string,
+    body: UpdateCustomerSiteBody,
+  ): Promise<CustomerSiteResponse> {
+    const organizationId = parseOrganizationIdBody(body.organizationId);
+
+    const doc = await this.customerModel
+      .findOne({ _id: customerId, ...organizationScopeFilter(organizationId) })
+      .exec();
+    if (!doc) throw new NotFoundException("Client introuvable");
+
+    const site = doc.sites.find((s) => s._id.toString() === siteId);
+    if (!site) throw new NotFoundException("Site introuvable");
+
+    if (body.label !== undefined) {
+      if (!body.label?.trim()) {
+        throw new BadRequestException("Le libellé du site est obligatoire");
+      }
+      site.label = body.label.trim();
+    }
+    if (body.address !== undefined) {
+      this.validateSiteAddress(body.address);
+      site.address = {
+        line1: body.address.line1.trim(),
+        line2: body.address.line2?.trim() || undefined,
+        postalCode: body.address.postalCode.trim(),
+        city: body.address.city.trim(),
+        country: (body.address.country ?? "FR").trim() || "FR",
+      } as typeof site.address;
+    }
+    if (body.isDefault !== undefined) {
+      if (body.isDefault) {
+        doc.sites.forEach((s) => {
+          s.isDefault = false;
+        });
+      }
+      site.isDefault = body.isDefault;
+    }
+    if (body.notes !== undefined) {
+      site.notes = body.notes === null ? undefined : body.notes?.trim() || undefined;
+    }
+
+    await doc.save();
+    return this.toSiteResponse(site);
+  }
+
+  async deleteSite(
+    customerId: string,
+    siteId: string,
+    organizationId: string,
+  ): Promise<{ deleted: true }> {
+    const doc = await this.customerModel
+      .findOneAndUpdate(
+        { _id: customerId, ...organizationScopeFilter(organizationId) },
+        { $pull: { sites: { _id: siteId } } },
+        { new: true },
+      )
+      .exec();
+    if (!doc) throw new NotFoundException("Client introuvable");
+    return { deleted: true };
+  }
+
+  // ── Validation ──
+
   private validateCreateCustomer(body: CreateCustomerBody): void {
     if (body.kind === "company") {
       if (!body.companyName?.trim()) {
@@ -180,10 +293,17 @@ export class CustomersService extends AbstractCustomersService {
       }
     }
     if (body.address) {
-      const a = body.address;
-      if (!a.line1?.trim() || !a.postalCode?.trim() || !a.city?.trim()) {
-        throw new BadRequestException("Adresse incomplète (ligne 1, code postal et ville requis)");
-      }
+      this.validateSiteAddress(body.address);
+    }
+  }
+
+  private validateSiteAddress(address: {
+    line1?: string;
+    postalCode?: string;
+    city?: string;
+  }): void {
+    if (!address.line1?.trim() || !address.postalCode?.trim() || !address.city?.trim()) {
+      throw new BadRequestException("Adresse incomplète (ligne 1, code postal et ville requis)");
     }
   }
 
@@ -204,6 +324,22 @@ export class CustomersService extends AbstractCustomersService {
     }
     const parts = [doc.firstName, doc.lastName].filter((p) => p?.trim()).map((p) => p!.trim());
     return parts.length > 0 ? parts.join(" ") : "Client";
+  }
+
+  private toSiteResponse(site: CustomerSiteSubDoc): CustomerSiteResponse {
+    return {
+      id: site._id.toString(),
+      label: site.label,
+      address: {
+        line1: site.address.line1,
+        line2: site.address.line2,
+        postalCode: site.address.postalCode,
+        city: site.address.city,
+        country: site.address.country ?? "FR",
+      },
+      isDefault: site.isDefault || undefined,
+      notes: site.notes,
+    };
   }
 
   private toCustomerResponse(doc: CustomerDocument): CustomerResponse {
@@ -229,6 +365,7 @@ export class CustomersService extends AbstractCustomersService {
           }
         : undefined,
       notes: doc.notes,
+      sites: doc.sites?.length ? doc.sites.map((s) => this.toSiteResponse(s)) : undefined,
       createdAt: doc.get("createdAt")?.toISOString(),
       updatedAt: doc.get("updatedAt")?.toISOString(),
       isTestData: doc.isTestData === true,

@@ -11,6 +11,34 @@ export interface PostalAddress {
   country: string;
 }
 
+// ── Customer Sites (adresses d'intervention multiples) ──
+
+export interface CustomerSiteResponse {
+  id: string;
+  label: string;
+  address: PostalAddress;
+  isDefault?: boolean;
+  notes?: string;
+}
+
+export interface CreateCustomerSiteBody {
+  organizationId: string;
+  label: string;
+  address: PostalAddress;
+  isDefault?: boolean;
+  notes?: string;
+}
+
+export interface UpdateCustomerSiteBody {
+  organizationId: string;
+  label?: string;
+  address?: PostalAddress;
+  isDefault?: boolean;
+  notes?: string | null;
+}
+
+// ── Customer CRUD ──
+
 export interface CreateCustomerBody {
   organizationId: string;
   kind: CustomerKind;
@@ -24,7 +52,7 @@ export interface CreateCustomerBody {
   mobile?: string;
   address?: PostalAddress;
   notes?: string;
-  /** Réservé à l’injection de données de démo (essai). */
+  /** Réservé à l'injection de données de démo (essai). */
   isTestData?: boolean;
 }
 
@@ -57,6 +85,7 @@ export interface CustomerResponse {
   mobile?: string;
   address?: PostalAddress;
   notes?: string;
+  sites?: CustomerSiteResponse[];
   createdAt?: string;
   updatedAt?: string;
   isTestData?: boolean;

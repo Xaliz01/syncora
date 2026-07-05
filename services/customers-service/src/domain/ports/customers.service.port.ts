@@ -1,4 +1,11 @@
-import type { CreateCustomerBody, CustomerResponse, UpdateCustomerBody } from "@planwise/shared";
+import type {
+  CreateCustomerBody,
+  CreateCustomerSiteBody,
+  CustomerResponse,
+  CustomerSiteResponse,
+  UpdateCustomerBody,
+  UpdateCustomerSiteBody,
+} from "@planwise/shared";
 
 export abstract class AbstractCustomersService {
   abstract createCustomer(body: CreateCustomerBody): Promise<CustomerResponse>;
@@ -10,4 +17,19 @@ export abstract class AbstractCustomersService {
   abstract updateCustomer(id: string, body: UpdateCustomerBody): Promise<CustomerResponse>;
   abstract deleteCustomer(id: string, organizationId: string): Promise<{ deleted: true }>;
   abstract purgeTestData(organizationId: string): Promise<{ purged: true }>;
+
+  abstract createSite(
+    customerId: string,
+    body: CreateCustomerSiteBody,
+  ): Promise<CustomerSiteResponse>;
+  abstract updateSite(
+    customerId: string,
+    siteId: string,
+    body: UpdateCustomerSiteBody,
+  ): Promise<CustomerSiteResponse>;
+  abstract deleteSite(
+    customerId: string,
+    siteId: string,
+    organizationId: string,
+  ): Promise<{ deleted: true }>;
 }
