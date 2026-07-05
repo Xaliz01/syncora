@@ -13,6 +13,10 @@ import {
 import { AbstractNotificationsGatewayService } from "../../domain/ports/notifications.gateway.service.port";
 import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
 import { SubscriptionAccessGuard } from "../../infrastructure/subscription-access.guard";
+import {
+  RequirePermissionGuard,
+  RequirePermissions,
+} from "../../infrastructure/require-permission.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
 import type {
   AuthUser,
@@ -49,11 +53,15 @@ export class NotificationsController {
   }
 
   @Get("preferences")
+  @UseGuards(RequirePermissionGuard)
+  @RequirePermissions("notifications.manage_preferences")
   async getPreferences(@CurrentUser() user: AuthUser) {
     return this.notificationsService.getPreferences(user);
   }
 
   @Put("preferences")
+  @UseGuards(RequirePermissionGuard)
+  @RequirePermissions("notifications.manage_preferences")
   async updatePreferences(
     @CurrentUser() user: AuthUser,
     @Body() body: { preferences: NotificationPreferencesData },
@@ -62,6 +70,8 @@ export class NotificationsController {
   }
 
   @Post("push-subscriptions")
+  @UseGuards(RequirePermissionGuard)
+  @RequirePermissions("notifications.manage_preferences")
   async registerPushSubscription(
     @CurrentUser() user: AuthUser,
     @Body() body: RegisterPushSubscriptionBody,
@@ -70,6 +80,8 @@ export class NotificationsController {
   }
 
   @Delete("push-subscriptions")
+  @UseGuards(RequirePermissionGuard)
+  @RequirePermissions("notifications.manage_preferences")
   async unregisterPushSubscription(
     @CurrentUser() user: AuthUser,
     @Query("endpoint") endpoint: string,
@@ -78,6 +90,8 @@ export class NotificationsController {
   }
 
   @Get("push-subscriptions")
+  @UseGuards(RequirePermissionGuard)
+  @RequirePermissions("notifications.manage_preferences")
   async listPushSubscriptions(@CurrentUser() user: AuthUser) {
     return this.notificationsService.listPushSubscriptions(user);
   }
