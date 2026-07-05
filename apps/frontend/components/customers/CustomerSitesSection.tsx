@@ -95,7 +95,7 @@ function SiteForm({
           className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
         />
         <label htmlFor="site-default" className="text-sm text-slate-700 dark:text-slate-200">
-          Site par défaut (adresse d'intervention principale)
+          Site par défaut (adresse d&apos;intervention principale)
         </label>
       </div>
 
