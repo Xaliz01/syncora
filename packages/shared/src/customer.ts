@@ -37,6 +37,38 @@ export interface UpdateCustomerSiteBody {
   notes?: string | null;
 }
 
+// ── Customer Contacts (interlocuteurs) ──
+
+export interface CustomerContactResponse {
+  id: string;
+  name: string;
+  role?: string;
+  phone?: string;
+  mobile?: string;
+  email?: string;
+  notes?: string;
+}
+
+export interface CreateCustomerContactBody {
+  organizationId: string;
+  name: string;
+  role?: string;
+  phone?: string;
+  mobile?: string;
+  email?: string;
+  notes?: string;
+}
+
+export interface UpdateCustomerContactBody {
+  organizationId: string;
+  name?: string;
+  role?: string | null;
+  phone?: string | null;
+  mobile?: string | null;
+  email?: string | null;
+  notes?: string | null;
+}
+
 // ── Customer CRUD ──
 
 export interface CreateCustomerBody {
@@ -86,6 +118,7 @@ export interface CustomerResponse {
   address?: PostalAddress;
   notes?: string;
   sites?: CustomerSiteResponse[];
+  contacts?: CustomerContactResponse[];
   createdAt?: string;
   updatedAt?: string;
   isTestData?: boolean;

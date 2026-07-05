@@ -11,8 +11,10 @@ import {
 } from "@nestjs/common";
 import { AbstractCustomersGatewayService } from "../../domain/ports/customers.service.port";
 import type {
+  CreateCustomerContactForOrgBody,
   CreateCustomerForOrgBody,
   CreateCustomerSiteForOrgBody,
+  UpdateCustomerContactForOrgBody,
   UpdateCustomerForOrgBody,
   UpdateCustomerSiteForOrgBody,
 } from "../../domain/ports/customers.service.port";
@@ -99,5 +101,38 @@ export class CustomersController {
     @Param("siteId") siteId: string,
   ) {
     return this.customersService.deleteSite(user, customerId, siteId);
+  }
+
+  // ── Contacts ──
+
+  @Post(":customerId/contacts")
+  @RequirePermissions("customers.update")
+  async createContact(
+    @CurrentUser() user: AuthUser,
+    @Param("customerId") customerId: string,
+    @Body() body: CreateCustomerContactForOrgBody,
+  ) {
+    return this.customersService.createContact(user, customerId, body);
+  }
+
+  @Patch(":customerId/contacts/:contactId")
+  @RequirePermissions("customers.update")
+  async updateContact(
+    @CurrentUser() user: AuthUser,
+    @Param("customerId") customerId: string,
+    @Param("contactId") contactId: string,
+    @Body() body: UpdateCustomerContactForOrgBody,
+  ) {
+    return this.customersService.updateContact(user, customerId, contactId, body);
+  }
+
+  @Delete(":customerId/contacts/:contactId")
+  @RequirePermissions("customers.update")
+  async deleteContact(
+    @CurrentUser() user: AuthUser,
+    @Param("customerId") customerId: string,
+    @Param("contactId") contactId: string,
+  ) {
+    return this.customersService.deleteContact(user, customerId, contactId);
   }
 }

@@ -1,11 +1,17 @@
 import { Injectable } from "@nestjs/common";
 import type { AuthUser } from "@planwise/shared";
-import type { CustomerResponse, CustomerSiteResponse } from "@planwise/shared";
+import type {
+  CustomerContactResponse,
+  CustomerResponse,
+  CustomerSiteResponse,
+} from "@planwise/shared";
 import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
 import {
   AbstractCustomersGatewayService,
+  type CreateCustomerContactForOrgBody,
   type CreateCustomerForOrgBody,
   type CreateCustomerSiteForOrgBody,
+  type UpdateCustomerContactForOrgBody,
   type UpdateCustomerForOrgBody,
   type UpdateCustomerSiteForOrgBody,
 } from "./ports/customers.service.port";
@@ -115,6 +121,48 @@ export class CustomersGatewayService extends AbstractCustomersGatewayService {
       organizationId: user.organizationId,
       method: "delete",
       path: `/customers/${customerId}/sites/${siteId}`,
+      validateResponseScope: false,
+      errorLabel: "Customers service error",
+    });
+  }
+
+  // ── Contacts ──
+
+  async createContact(user: AuthUser, customerId: string, body: CreateCustomerContactForOrgBody) {
+    return this.scopedHttp.request<CustomerContactResponse>({
+      baseUrl: CUSTOMERS_URL,
+      organizationId: user.organizationId,
+      method: "post",
+      path: `/customers/${customerId}/contacts`,
+      body: { ...body },
+      validateResponseScope: false,
+      errorLabel: "Customers service error",
+    });
+  }
+
+  async updateContact(
+    user: AuthUser,
+    customerId: string,
+    contactId: string,
+    body: UpdateCustomerContactForOrgBody,
+  ) {
+    return this.scopedHttp.request<CustomerContactResponse>({
+      baseUrl: CUSTOMERS_URL,
+      organizationId: user.organizationId,
+      method: "patch",
+      path: `/customers/${customerId}/contacts/${contactId}`,
+      body: { ...body },
+      validateResponseScope: false,
+      errorLabel: "Customers service error",
+    });
+  }
+
+  async deleteContact(user: AuthUser, customerId: string, contactId: string) {
+    return this.scopedHttp.request<{ deleted: true }>({
+      baseUrl: CUSTOMERS_URL,
+      organizationId: user.organizationId,
+      method: "delete",
+      path: `/customers/${customerId}/contacts/${contactId}`,
       validateResponseScope: false,
       errorLabel: "Customers service error",
     });

@@ -145,7 +145,7 @@ Objectif : le technicien clôture sa journée **sur le téléphone** ; le patron
 
 _Hors scope phase 1_ : GPS temps réel permanent, portail client self-service.
 
-### Phase 2 — Clients & adresses (TPE multi-chantiers) `🟡`
+### Phase 2 — Clients & adresses (TPE multi-chantiers) `✅`
 
 Objectif : un client pro avec plusieurs lieux d’intervention.
 

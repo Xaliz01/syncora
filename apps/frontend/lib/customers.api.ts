@@ -1,4 +1,5 @@
 import type {
+  CustomerContactResponse,
   CustomerKind,
   CustomerResponse,
   CustomerSiteResponse,
@@ -107,4 +108,51 @@ export function updateCustomerSite(
 
 export function deleteCustomerSite(customerId: string, siteId: string) {
   return customersRequest<{ deleted: true }>("DELETE", `/customers/${customerId}/sites/${siteId}`);
+}
+
+// ── Contacts ──
+
+export interface CreateCustomerContactPayload {
+  name: string;
+  role?: string;
+  phone?: string;
+  mobile?: string;
+  email?: string;
+  notes?: string;
+}
+
+export interface UpdateCustomerContactPayload {
+  name?: string;
+  role?: string | null;
+  phone?: string | null;
+  mobile?: string | null;
+  email?: string | null;
+  notes?: string | null;
+}
+
+export function createCustomerContact(customerId: string, payload: CreateCustomerContactPayload) {
+  return customersRequest<CustomerContactResponse>(
+    "POST",
+    `/customers/${customerId}/contacts`,
+    payload,
+  );
+}
+
+export function updateCustomerContact(
+  customerId: string,
+  contactId: string,
+  payload: UpdateCustomerContactPayload,
+) {
+  return customersRequest<CustomerContactResponse>(
+    "PATCH",
+    `/customers/${customerId}/contacts/${contactId}`,
+    payload,
+  );
+}
+
+export function deleteCustomerContact(customerId: string, contactId: string) {
+  return customersRequest<{ deleted: true }>(
+    "DELETE",
+    `/customers/${customerId}/contacts/${contactId}`,
+  );
 }

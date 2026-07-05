@@ -1,8 +1,10 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from "@nestjs/common";
 import type {
   CreateCustomerBody,
+  CreateCustomerContactBody,
   CreateCustomerSiteBody,
   UpdateCustomerBody,
+  UpdateCustomerContactBody,
   UpdateCustomerSiteBody,
 } from "@planwise/shared";
 import { parseOrganizationIdQuery } from "@planwise/shared/nest";
@@ -74,5 +76,34 @@ export class CustomersController {
     @Query("organizationId") organizationId: string,
   ) {
     return this.customersService.deleteSite(id, siteId, parseOrganizationIdQuery(organizationId));
+  }
+
+  // ── Contacts ──
+
+  @Post(":id/contacts")
+  async createContact(@Param("id") id: string, @Body() body: CreateCustomerContactBody) {
+    return this.customersService.createContact(id, body);
+  }
+
+  @Patch(":id/contacts/:contactId")
+  async updateContact(
+    @Param("id") id: string,
+    @Param("contactId") contactId: string,
+    @Body() body: UpdateCustomerContactBody,
+  ) {
+    return this.customersService.updateContact(id, contactId, body);
+  }
+
+  @Delete(":id/contacts/:contactId")
+  async deleteContact(
+    @Param("id") id: string,
+    @Param("contactId") contactId: string,
+    @Query("organizationId") organizationId: string,
+  ) {
+    return this.customersService.deleteContact(
+      id,
+      contactId,
+      parseOrganizationIdQuery(organizationId),
+    );
   }
 }

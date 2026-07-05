@@ -4,10 +4,13 @@ import { Model } from "mongoose";
 import {
   organizationScopeFilter,
   type CreateCustomerBody,
+  type CreateCustomerContactBody,
   type CreateCustomerSiteBody,
+  type CustomerContactResponse,
   type CustomerResponse,
   type CustomerSiteResponse,
   type UpdateCustomerBody,
+  type UpdateCustomerContactBody,
   type UpdateCustomerSiteBody,
 } from "@planwise/shared";
 import {
@@ -15,7 +18,11 @@ import {
   assertOrganizationScopedResourceNest,
   parseOrganizationIdBody,
 } from "@planwise/shared/nest";
-import type { CustomerDocument, CustomerSiteSubDoc } from "../persistence/customer.schema";
+import type {
+  CustomerContactSubDoc,
+  CustomerDocument,
+  CustomerSiteSubDoc,
+} from "../persistence/customer.schema";
 import { AbstractCustomersService } from "./ports/customers.service.port";
 
 @Injectable()
@@ -278,6 +285,98 @@ export class CustomersService extends AbstractCustomersService {
     return { deleted: true };
   }
 
+  // ── Contacts ──
+
+  async createContact(
+    customerId: string,
+    body: CreateCustomerContactBody,
+  ): Promise<CustomerContactResponse> {
+    const organizationId = parseOrganizationIdBody(body.organizationId);
+
+    if (!body.name?.trim()) {
+      throw new BadRequestException("Le nom du contact est obligatoire");
+    }
+
+    const newContact = {
+      name: body.name.trim(),
+      role: body.role?.trim() || undefined,
+      phone: body.phone?.trim() || undefined,
+      mobile: body.mobile?.trim() || undefined,
+      email: body.email?.trim() || undefined,
+      notes: body.notes?.trim() || undefined,
+    };
+
+    const doc = await this.customerModel
+      .findOneAndUpdate(
+        { _id: customerId, ...organizationScopeFilter(organizationId) },
+        { $push: { contacts: newContact } },
+        { new: true },
+      )
+      .exec();
+
+    if (!doc) throw new NotFoundException("Client introuvable");
+
+    const created = doc.contacts[doc.contacts.length - 1];
+    return this.toContactResponse(created);
+  }
+
+  async updateContact(
+    customerId: string,
+    contactId: string,
+    body: UpdateCustomerContactBody,
+  ): Promise<CustomerContactResponse> {
+    const organizationId = parseOrganizationIdBody(body.organizationId);
+
+    const doc = await this.customerModel
+      .findOne({ _id: customerId, ...organizationScopeFilter(organizationId) })
+      .exec();
+    if (!doc) throw new NotFoundException("Client introuvable");
+
+    const contact = doc.contacts.find((c) => c._id.toString() === contactId);
+    if (!contact) throw new NotFoundException("Contact introuvable");
+
+    if (body.name !== undefined) {
+      if (!body.name?.trim()) {
+        throw new BadRequestException("Le nom du contact est obligatoire");
+      }
+      contact.name = body.name.trim();
+    }
+    if (body.role !== undefined) {
+      contact.role = body.role === null ? undefined : body.role?.trim() || undefined;
+    }
+    if (body.phone !== undefined) {
+      contact.phone = body.phone === null ? undefined : body.phone?.trim() || undefined;
+    }
+    if (body.mobile !== undefined) {
+      contact.mobile = body.mobile === null ? undefined : body.mobile?.trim() || undefined;
+    }
+    if (body.email !== undefined) {
+      contact.email = body.email === null ? undefined : body.email?.trim() || undefined;
+    }
+    if (body.notes !== undefined) {
+      contact.notes = body.notes === null ? undefined : body.notes?.trim() || undefined;
+    }
+
+    await doc.save();
+    return this.toContactResponse(contact);
+  }
+
+  async deleteContact(
+    customerId: string,
+    contactId: string,
+    organizationId: string,
+  ): Promise<{ deleted: true }> {
+    const doc = await this.customerModel
+      .findOneAndUpdate(
+        { _id: customerId, ...organizationScopeFilter(organizationId) },
+        { $pull: { contacts: { _id: contactId } } },
+        { new: true },
+      )
+      .exec();
+    if (!doc) throw new NotFoundException("Client introuvable");
+    return { deleted: true };
+  }
+
   // ── Validation ──
 
   private validateCreateCustomer(body: CreateCustomerBody): void {
@@ -342,6 +441,18 @@ export class CustomersService extends AbstractCustomersService {
     };
   }
 
+  private toContactResponse(contact: CustomerContactSubDoc): CustomerContactResponse {
+    return {
+      id: contact._id.toString(),
+      name: contact.name,
+      role: contact.role,
+      phone: contact.phone,
+      mobile: contact.mobile,
+      email: contact.email,
+      notes: contact.notes,
+    };
+  }
+
   private toCustomerResponse(doc: CustomerDocument): CustomerResponse {
     return {
       id: doc._id.toString(),
@@ -366,6 +477,9 @@ export class CustomersService extends AbstractCustomersService {
         : undefined,
       notes: doc.notes,
       sites: doc.sites?.length ? doc.sites.map((s) => this.toSiteResponse(s)) : undefined,
+      contacts: doc.contacts?.length
+        ? doc.contacts.map((c) => this.toContactResponse(c))
+        : undefined,
       createdAt: doc.get("createdAt")?.toISOString(),
       updatedAt: doc.get("updatedAt")?.toISOString(),
       isTestData: doc.isTestData === true,

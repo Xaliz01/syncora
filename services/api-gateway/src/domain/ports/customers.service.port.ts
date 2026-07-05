@@ -1,5 +1,6 @@
 import type {
   AuthUser,
+  CustomerContactResponse,
   CustomerResponse,
   CustomerSiteResponse,
   CustomerKind,
@@ -46,6 +47,24 @@ export interface UpdateCustomerSiteForOrgBody {
   notes?: string | null;
 }
 
+export interface CreateCustomerContactForOrgBody {
+  name: string;
+  role?: string;
+  phone?: string;
+  mobile?: string;
+  email?: string;
+  notes?: string;
+}
+
+export interface UpdateCustomerContactForOrgBody {
+  name?: string;
+  role?: string | null;
+  phone?: string | null;
+  mobile?: string | null;
+  email?: string | null;
+  notes?: string | null;
+}
+
 export abstract class AbstractCustomersGatewayService {
   abstract createCustomer(
     user: AuthUser,
@@ -79,5 +98,22 @@ export abstract class AbstractCustomersGatewayService {
     user: AuthUser,
     customerId: string,
     siteId: string,
+  ): Promise<{ deleted: true }>;
+
+  abstract createContact(
+    user: AuthUser,
+    customerId: string,
+    body: CreateCustomerContactForOrgBody,
+  ): Promise<CustomerContactResponse>;
+  abstract updateContact(
+    user: AuthUser,
+    customerId: string,
+    contactId: string,
+    body: UpdateCustomerContactForOrgBody,
+  ): Promise<CustomerContactResponse>;
+  abstract deleteContact(
+    user: AuthUser,
+    customerId: string,
+    contactId: string,
   ): Promise<{ deleted: true }>;
 }
