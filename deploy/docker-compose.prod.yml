@@ -174,9 +174,17 @@ services:
       NODE_ENV: production
       PORT: "3010"
       MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-notifications
+      CASES_SERVICE_URL: http://cases-service:3004
+      USERS_SERVICE_URL: http://users-service:3002
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
       VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:contact@planwise.fr}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-Planwise <notifications@planwise.fr>}
+      APP_URL: ${APP_URL:-https://app.planwise.fr}
     healthcheck: *tcp-healthcheck
 
   documents-service:
