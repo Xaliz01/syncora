@@ -5,6 +5,7 @@ import { firstValueFrom } from "rxjs";
 import type { PlanwiseDomainEvent } from "../infrastructure/notify.interceptor";
 import type {
   CreateNotificationBody,
+  NotificationChannel,
   NotificationEntityType,
   NotificationAction,
   NotificationEventType,
@@ -28,26 +29,40 @@ export class NotificationEventListener {
       const userIds = await this.getOrganizationUserIds(event.organizationId);
       if (userIds.length === 0) return;
 
-      const body: CreateNotificationBody & { userIds: string[] } = {
-        organizationId: event.organizationId,
-        actorId: event.actorId,
-        actorName: event.actorName,
-        entityType: event.entityType as NotificationEntityType,
-        entityId: event.entityId,
-        entityLabel: event.entityLabel,
-        action: event.action as NotificationAction,
-        relatedEntityType: event.relatedEntityType,
-        relatedEntityId: event.relatedEntityId,
-        relatedEntityLabel: event.relatedEntityLabel,
-        detail: event.detail,
-        userIds,
-      };
-
-      await firstValueFrom(this.httpService.post(`${NOTIFICATIONS_URL}/notifications`, body));
+      const recipientIds = userIds.filter((id) => id !== event.actorId);
+      if (recipientIds.length === 0) return;
 
       const eventType = this.mapToNotificationEventType(event);
+
+      const inAppRecipientIds = await this.filterByChannel(
+        recipientIds,
+        event.organizationId,
+        eventType,
+        "in_app",
+      );
+
+      if (inAppRecipientIds.length > 0) {
+        const body: CreateNotificationBody & { userIds: string[] } = {
+          organizationId: event.organizationId,
+          actorId: event.actorId,
+          actorName: event.actorName,
+          entityType: event.entityType as NotificationEntityType,
+          entityId: event.entityId,
+          entityLabel: event.entityLabel,
+          action: event.action as NotificationAction,
+          relatedEntityType: event.relatedEntityType,
+          relatedEntityId: event.relatedEntityId,
+          relatedEntityLabel: event.relatedEntityLabel,
+          detail: event.detail,
+          userIds: inAppRecipientIds,
+        };
+
+        await firstValueFrom(this.httpService.post(`${NOTIFICATIONS_URL}/notifications`, body));
+      }
+
       if (eventType) {
-        await this.sendPushNotifications(event, userIds, eventType);
+        await this.sendPushNotifications(event, recipientIds, eventType);
+        await this.sendEmailNotifications(event, recipientIds, eventType);
       }
     } catch (err) {
       this.logger.warn(
@@ -77,9 +92,7 @@ export class NotificationEventListener {
     userIds: string[],
     eventType: NotificationEventType,
   ): Promise<void> {
-    const recipientIds = userIds.filter((id) => id !== event.actorId);
-
-    for (const userId of recipientIds) {
+    for (const userId of userIds) {
       try {
         const prefs = await this.getUserPreferences(userId, event.organizationId);
         const channels = getEnabledChannels(prefs?.preferences, eventType);
@@ -146,6 +159,59 @@ export class NotificationEventListener {
     if (event.entityType === "case") return `/cases/${event.entityId}`;
     if (event.entityType === "intervention") return "/my-day";
     return "/";
+  }
+
+  private async filterByChannel(
+    userIds: string[],
+    organizationId: string,
+    eventType: NotificationEventType | null,
+    channel: NotificationChannel,
+  ): Promise<string[]> {
+    if (!eventType) return channel === "in_app" ? userIds : [];
+
+    const filtered: string[] = [];
+    for (const userId of userIds) {
+      try {
+        const prefs = await this.getUserPreferences(userId, organizationId);
+        const channels = getEnabledChannels(prefs?.preferences, eventType);
+        if (channels.includes(channel)) {
+          filtered.push(userId);
+        }
+      } catch {
+        if (channel === "in_app") filtered.push(userId);
+      }
+    }
+    return filtered;
+  }
+
+  private async sendEmailNotifications(
+    event: PlanwiseDomainEvent,
+    userIds: string[],
+    eventType: NotificationEventType,
+  ): Promise<void> {
+    for (const userId of userIds) {
+      try {
+        const prefs = await this.getUserPreferences(userId, event.organizationId);
+        const channels = getEnabledChannels(prefs?.preferences, eventType);
+
+        if (channels.includes("email")) {
+          const title = this.buildPushTitle(event);
+          const body = this.buildPushBody(event);
+          await firstValueFrom(
+            this.httpService.post(`${NOTIFICATIONS_URL}/email/send`, {
+              userId,
+              organizationId: event.organizationId,
+              subject: title,
+              body,
+              eventType,
+              url: this.buildPushUrl(event),
+            }),
+          );
+        }
+      } catch (err) {
+        this.logger.debug(`Email notification skipped for user ${userId}`, (err as Error).message);
+      }
+    }
   }
 
   private async getOrganizationUserIds(organizationId: string): Promise<string[]> {
