@@ -40,8 +40,13 @@ Avant toute feature, lire (ou se réaligner sur) :
 - Respecter l’architecture existante ; pas de refactor hors scope.
 - Contrats typés via `@planwise/shared` quand le front et le back partagent un modèle.
 
-## Formatage du code
+## Vérifications avant commit (obligatoires)
 
-- **Avant chaque commit**, exécuter `npm run format` à la racine du projet pour formater tout le code avec Prettier.
-- Vérifier ensuite avec `npm run lint` que le code passe ESLint.
-- Ne jamais pousser du code qui échoue au format check (`npm run format:check`) ou au lint.
+Un hook **husky + lint-staged** pré-commit est configuré et formate/lint automatiquement les fichiers stagés. En complément, **avant chaque push**, exécuter manuellement :
+
+1. `npm run format` — formate tout le code avec Prettier.
+2. `npm run lint` — vérifie ESLint sur tous les workspaces.
+3. `npm run typecheck` — vérifie la compilation TypeScript de tous les services.
+4. `npm run test` — lance les tests unitaires de tous les workspaces.
+
+Ne jamais pousser du code qui échoue à l'une de ces étapes. La CI exécute ces mêmes checks et bloquera le merge.
