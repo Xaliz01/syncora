@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as quotesApi from "@/lib/quotes.api";
+import * as stockApi from "@/lib/stock.api";
 import { usePermissions } from "@/lib/hooks/usePermissions";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
-import type { QuoteStatus, TvaRate } from "@planwise/shared";
+import type { QuoteStatus, TvaRate, ArticleResponse } from "@planwise/shared";
 import { QUOTE_STATUS_LABELS, TVA_RATES } from "@planwise/shared";
 
 const STATUS_COLORS: Record<QuoteStatus, string> = {
@@ -21,6 +22,7 @@ const STATUS_COLORS: Record<QuoteStatus, string> = {
 };
 
 interface QuoteLine {
+  articleId?: string;
   description: string;
   quantity: number;
   unitPrice: number;
@@ -41,6 +43,84 @@ function formatCurrency(value: number): string {
     style: "currency",
     currency: "EUR",
   });
+}
+
+function ArticleAutocomplete({
+  value,
+  articles,
+  onSelect,
+  onChange,
+}: {
+  value: string;
+  articles: ArticleResponse[];
+  onSelect: (article: ArticleResponse) => void;
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filtered = articles.filter(
+    (a) =>
+      a.name.toLowerCase().includes(search.toLowerCase()) ||
+      a.reference.toLowerCase().includes(search.toLowerCase()),
+  );
+
+  return (
+    <div ref={wrapperRef} className="relative">
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => {
+          onChange(e.target.value);
+          setSearch(e.target.value);
+          setOpen(true);
+        }}
+        onFocus={() => {
+          setSearch(value);
+          setOpen(true);
+        }}
+        placeholder="Prestation ou article du stock"
+        className="w-full rounded-md border border-slate-200 dark:border-slate-700 px-2 py-1.5 text-xs focus:border-brand-500 focus:outline-none"
+      />
+      {open && filtered.length > 0 && (
+        <div className="absolute z-50 top-full left-0 right-0 mt-1 max-h-40 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg">
+          {filtered.slice(0, 10).map((article) => (
+            <button
+              key={article.id}
+              type="button"
+              className="w-full text-left px-2 py-1.5 text-xs hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800 last:border-0"
+              onClick={() => {
+                onSelect(article);
+                setOpen(false);
+              }}
+            >
+              <span className="font-medium text-slate-700 dark:text-slate-200">{article.name}</span>
+              <span className="ml-2 text-slate-400">[{article.reference}]</span>
+              {article.defaultPrice !== undefined && (
+                <span className="ml-2 text-brand-600 dark:text-brand-400">
+                  {article.defaultPrice.toLocaleString("fr-FR", {
+                    minimumFractionDigits: 2,
+                  })}{" "}
+                  €
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function QuoteForm({
@@ -70,6 +150,7 @@ function QuoteForm({
   onCancel: () => void;
   isPending: boolean;
 }) {
+  const { can } = usePermissions();
   const [subject, setSubject] = useState(initialSubject ?? "");
   const [notes, setNotes] = useState(initialNotes ?? "");
   const [validUntil, setValidUntil] = useState(initialValidUntil?.split("T")[0] ?? "");
@@ -77,12 +158,28 @@ function QuoteForm({
     initialLines?.length ? initialLines : [{ ...EMPTY_LINE }],
   );
 
+  const { data: articles = [] } = useQuery({
+    queryKey: ["stock-articles-for-quotes"],
+    queryFn: () => stockApi.listArticles({ activeOnly: true }),
+    enabled: can("stock.articles.read"),
+    staleTime: 60_000,
+  });
+
   const updateLine = (idx: number, patch: Partial<QuoteLine>) => {
     setLines((prev) => prev.map((l, i) => (i === idx ? { ...l, ...patch } : l)));
   };
 
   const removeLine = (idx: number) => {
     setLines((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const selectArticle = (idx: number, article: ArticleResponse) => {
+    updateLine(idx, {
+      articleId: article.id,
+      description: article.name,
+      unitPrice: article.defaultPrice ?? 0,
+      unit: article.unit ?? "unité",
+    });
   };
 
   const totalHt = lines.reduce((s, l) => s + l.quantity * l.unitPrice, 0);
@@ -142,13 +239,22 @@ function QuoteForm({
                     Description
                   </span>
                 )}
-                <input
-                  type="text"
-                  value={line.description}
-                  onChange={(e) => updateLine(idx, { description: e.target.value })}
-                  placeholder="Prestation ou article"
-                  className="w-full rounded-md border border-slate-200 dark:border-slate-700 px-2 py-1.5 text-xs focus:border-brand-500 focus:outline-none"
-                />
+                {articles.length > 0 ? (
+                  <ArticleAutocomplete
+                    value={line.description}
+                    articles={articles}
+                    onSelect={(article) => selectArticle(idx, article)}
+                    onChange={(val) => updateLine(idx, { description: val, articleId: undefined })}
+                  />
+                ) : (
+                  <input
+                    type="text"
+                    value={line.description}
+                    onChange={(e) => updateLine(idx, { description: e.target.value })}
+                    placeholder="Prestation ou article"
+                    className="w-full rounded-md border border-slate-200 dark:border-slate-700 px-2 py-1.5 text-xs focus:border-brand-500 focus:outline-none"
+                  />
+                )}
               </div>
               <div>
                 {idx === 0 && (
@@ -373,6 +479,7 @@ export function CaseQuotesSection({ caseId }: { caseId: string }) {
                     initialNotes={editingQuote.notes}
                     initialValidUntil={editingQuote.validUntil}
                     initialLines={editingQuote.lines.map((l) => ({
+                      articleId: l.articleId,
                       description: l.description,
                       quantity: l.quantity,
                       unitPrice: l.unitPrice,
@@ -408,6 +515,15 @@ export function CaseQuotesSection({ caseId }: { caseId: string }) {
                         </span>
                       </div>
                       <div className="flex items-center gap-1">
+                        {can("quotes.read") && (
+                          <button
+                            onClick={() => quotesApi.downloadQuotePdf(quote.id, quote.quoteNumber)}
+                            className="text-[10px] text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                            title="Télécharger le PDF"
+                          >
+                            PDF
+                          </button>
+                        )}
                         {can("quotes.update") && quote.status === "draft" && (
                           <button
                             onClick={() => setEditingQuoteId(quote.id)}

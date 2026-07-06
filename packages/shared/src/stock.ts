@@ -31,6 +31,7 @@ export interface CreateArticleBody {
   reference: string;
   description?: string;
   unit?: string;
+  defaultPrice?: number;
   initialStock?: number;
   reorderPoint?: number;
   targetStock?: number;
@@ -44,6 +45,7 @@ export interface UpdateArticleBody {
   reference?: string;
   description?: string;
   unit?: string;
+  defaultPrice?: number | null;
   reorderPoint?: number;
   targetStock?: number;
   isActive?: boolean;
@@ -56,6 +58,7 @@ export interface ArticleResponse {
   reference: string;
   description?: string;
   unit: string;
+  defaultPrice?: number;
   stockQuantity: number;
   reorderPoint: number;
   targetStock: number;
