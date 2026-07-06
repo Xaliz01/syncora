@@ -8,6 +8,18 @@ export type CaseStatus = "draft" | "open" | "in_progress" | "waiting" | "complet
 
 export type InterventionStatus = "planned" | "in_progress" | "completed" | "cancelled";
 
+// ── Billing status (Phase 3.4) ──
+
+export const BILLING_STATUSES = ["none", "to_invoice", "invoiced", "paid"] as const;
+export type BillingStatus = (typeof BILLING_STATUSES)[number];
+
+export const BILLING_STATUS_LABELS: Record<BillingStatus, string> = {
+  none: "Non applicable",
+  to_invoice: "À facturer",
+  invoiced: "Facturé",
+  paid: "Payé",
+};
+
 /** Coordonnées GPS légères (géolocalisation terrain). */
 export interface GeoLocation {
   latitude: number;
@@ -93,6 +105,7 @@ export const DASHBOARD_STAT_FILTERS = [
   "in_progress",
   "completed_week",
   "overdue",
+  "to_invoice",
 ] as const;
 
 export type DashboardStatFilter = (typeof DASHBOARD_STAT_FILTERS)[number];
@@ -158,6 +171,7 @@ export interface UpdateCaseBody {
   title?: string;
   description?: string;
   status?: CaseStatus;
+  billingStatus?: BillingStatus;
   priority?: CasePriority;
   assignees?: CaseAssignee[];
   dueDate?: string | null;
@@ -179,6 +193,7 @@ export interface CaseResponse {
   title: string;
   description?: string;
   status: CaseStatus;
+  billingStatus: BillingStatus;
   priority: CasePriority;
   assignees: CaseAssignee[];
   dueDate?: string;
@@ -200,6 +215,7 @@ export interface CaseSummaryResponse {
   interventionAddress?: PostalAddress;
   title: string;
   status: CaseStatus;
+  billingStatus: BillingStatus;
   priority: CasePriority;
   assignees: CaseAssignee[];
   dueDate?: string;
@@ -231,6 +247,7 @@ export interface UpdateInterventionBody {
   title?: string;
   description?: string;
   status?: InterventionStatus;
+  billingStatus?: BillingStatus;
   assigneeId?: string | null;
   assignedTeamId?: string | null;
   scheduledStart?: string | null;
@@ -246,6 +263,7 @@ export interface InterventionResponse {
   title: string;
   description?: string;
   status: InterventionStatus;
+  billingStatus: BillingStatus;
   assigneeId?: string;
   assigneeName?: string;
   assignedTeamId?: string;
@@ -321,6 +339,7 @@ export type CaseHistoryAction =
   | "case_created"
   | "case_updated"
   | "status_changed"
+  | "billing_status_changed"
   | "priority_changed"
   | "assignees_changed"
   | "customer_changed"

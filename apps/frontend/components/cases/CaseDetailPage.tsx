@@ -31,6 +31,7 @@ import { getTeamCalendarCardAppearance } from "@/lib/team-calendar-colors";
 import { useIsDarkMode } from "@/lib/use-is-dark-mode";
 import { formatPostalAddress } from "@/lib/team-route-insights";
 import type {
+  BillingStatus,
   CaseCustomerRef,
   CasePriority,
   CaseStatus,
@@ -38,6 +39,7 @@ import type {
   TeamResponse,
   TodoItemStatus,
 } from "@planwise/shared";
+import { BILLING_STATUS_LABELS } from "@planwise/shared";
 
 const STATUS_LABELS: Record<CaseStatus, string> = {
   draft: "Brouillon",
@@ -56,6 +58,15 @@ const STATUS_COLORS: Record<CaseStatus, string> = {
   waiting: "bg-purple-50 text-purple-700 border-purple-200",
   completed: "bg-green-50 text-green-700 border-green-200",
   cancelled: "bg-red-50 text-red-600 border-red-200",
+};
+
+const BILLING_STATUS_COLORS: Record<BillingStatus, string> = {
+  none: "",
+  to_invoice:
+    "bg-yellow-50 dark:bg-yellow-950/30 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800",
+  invoiced:
+    "bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800",
+  paid: "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
 };
 
 const PRIORITY_LABELS: Record<CasePriority, string> = {
@@ -408,6 +419,11 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
 
   const statusMutation = useMutation({
     mutationFn: (status: CaseStatus) => api.updateCase(caseId, { status }),
+    onSuccess: invalidateAll,
+  });
+
+  const billingStatusMutation = useMutation({
+    mutationFn: (billingStatus: string) => api.updateCase(caseId, { billingStatus }),
     onSuccess: invalidateAll,
   });
 
@@ -853,6 +869,13 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                   >
                     {PRIORITY_LABELS[caseData.priority]}
                   </span>
+                  {caseData.billingStatus && caseData.billingStatus !== "none" && (
+                    <span
+                      className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${BILLING_STATUS_COLORS[caseData.billingStatus]}`}
+                    >
+                      {BILLING_STATUS_LABELS[caseData.billingStatus]}
+                    </span>
+                  )}
                   {isOverdue && (
                     <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700">
                       En retard
@@ -911,6 +934,27 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                           {t}
                         </span>
                       ))}
+                    </span>
+                  )}
+                  {canAny(["cases.manage_billing", "cases.update"]) && (
+                    <span className="flex items-center gap-1.5">
+                      <span className="text-slate-500 dark:text-slate-400 text-[11px]">
+                        Facturation :
+                      </span>
+                      <select
+                        value={caseData.billingStatus ?? "none"}
+                        onChange={(e) => billingStatusMutation.mutate(e.target.value)}
+                        disabled={billingStatusMutation.isPending}
+                        className="rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-0.5 text-[11px] font-medium text-slate-700 dark:text-slate-200 focus:border-brand-500 focus:outline-none disabled:opacity-50"
+                      >
+                        {(Object.entries(BILLING_STATUS_LABELS) as [BillingStatus, string][]).map(
+                          ([value, label]) => (
+                            <option key={value} value={value}>
+                              {label}
+                            </option>
+                          ),
+                        )}
+                      </select>
                     </span>
                   )}
                 </>
@@ -1222,6 +1266,14 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                                 {INTERVENTION_STATUS_LABELS[intervention.status] ??
                                   intervention.status}
                               </span>
+                              {intervention.billingStatus &&
+                                intervention.billingStatus !== "none" && (
+                                  <span
+                                    className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${BILLING_STATUS_COLORS[intervention.billingStatus]}`}
+                                  >
+                                    {BILLING_STATUS_LABELS[intervention.billingStatus]}
+                                  </span>
+                                )}
                             </div>
                             <div className="flex items-center gap-1">
                               {can("interventions.update") && (

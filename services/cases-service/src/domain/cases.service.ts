@@ -190,6 +190,7 @@ export class CasesService extends AbstractCasesService {
     organizationId: string,
     filters?: {
       status?: string;
+      billingStatus?: string;
       assigneeId?: string;
       priority?: string;
       search?: string;
@@ -199,6 +200,7 @@ export class CasesService extends AbstractCasesService {
     const query: Record<string, unknown> = { organizationId, ...activeDocumentFilter };
     if (filters?.customerId) query.customerId = filters.customerId;
     if (filters?.status) query.status = filters.status;
+    if (filters?.billingStatus) query.billingStatus = filters.billingStatus;
     if (filters?.assigneeId) {
       query.$or = [
         { assignees: { $elemMatch: { userId: filters.assigneeId } } },
@@ -228,6 +230,7 @@ export class CasesService extends AbstractCasesService {
     if (body.title !== undefined) setUpdate.title = body.title;
     if (body.description !== undefined) setUpdate.description = body.description;
     if (body.status !== undefined) setUpdate.status = body.status;
+    if (body.billingStatus !== undefined) setUpdate.billingStatus = body.billingStatus;
     if (body.priority !== undefined) setUpdate.priority = body.priority;
     if (body.assignees !== undefined) setUpdate.assignees = body.assignees;
     if (body.dueDate !== undefined)
@@ -404,6 +407,7 @@ export class CasesService extends AbstractCasesService {
     if (body.title !== undefined) update.title = body.title;
     if (body.description !== undefined) update.description = body.description;
     if (body.status !== undefined) update.status = body.status;
+    if (body.billingStatus !== undefined) update.billingStatus = body.billingStatus;
     if (body.assigneeId !== undefined) update.assigneeId = body.assigneeId;
     if (body.assignedTeamId !== undefined) update.assignedTeamId = body.assignedTeamId;
     if (body.scheduledStart !== undefined) {
@@ -623,6 +627,14 @@ export class CasesService extends AbstractCasesService {
           status: { $nin: ["completed", "cancelled"] },
           dueDate: { $lt: now },
         };
+        break;
+      case "to_invoice":
+        query = {
+          organizationId,
+          ...activeDocumentFilter,
+          billingStatus: "to_invoice",
+        };
+        sort = { updatedAt: -1 };
         break;
       default:
         return [];
@@ -946,6 +958,7 @@ export class CasesService extends AbstractCasesService {
       title: doc.title,
       description: doc.description,
       status: doc.status,
+      billingStatus: doc.billingStatus ?? "none",
       priority: doc.priority,
       assignees: this.resolveAssignees(doc),
       dueDate: doc.dueDate?.toISOString(),
@@ -980,6 +993,7 @@ export class CasesService extends AbstractCasesService {
       interventionSiteId: doc.interventionSiteId,
       title: doc.title,
       status: doc.status,
+      billingStatus: doc.billingStatus ?? "none",
       priority: doc.priority,
       assignees: this.resolveAssignees(doc),
       dueDate: doc.dueDate?.toISOString(),
@@ -1027,6 +1041,7 @@ export class CasesService extends AbstractCasesService {
       title: doc.title,
       description: doc.description,
       status: doc.status,
+      billingStatus: doc.billingStatus ?? "none",
       assigneeId: doc.assigneeId,
       assigneeName: doc.assigneeName,
       assignedTeamId: doc.assignedTeamId,

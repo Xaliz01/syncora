@@ -19,10 +19,16 @@ describe("InterventionReminderScheduler", () => {
     new Date(Date.now() + minutesFromNow * 60 * 1000).toISOString();
 
   beforeEach(async () => {
-    mockPreferencesModel = { find: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue([]) }) };
+    mockPreferencesModel = {
+      find: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue([]) }),
+    };
     mockNotificationModel = { create: jest.fn().mockResolvedValue({}) };
     mockSentReminderModel = {
-      findOne: jest.fn().mockReturnValue({ lean: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }) }),
+      findOne: jest
+        .fn()
+        .mockReturnValue({
+          lean: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
+        }),
       updateOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue({}) }),
     };
     mockHttpService = { get: jest.fn() };
@@ -103,7 +109,9 @@ describe("InterventionReminderScheduler", () => {
 
     mockSentReminderModel.findOne.mockReturnValue({
       lean: jest.fn().mockReturnValue({
-        exec: jest.fn().mockResolvedValue({ interventionId: "int-2", userId: "user-2", leadTime: 30 }),
+        exec: jest
+          .fn()
+          .mockResolvedValue({ interventionId: "int-2", userId: "user-2", leadTime: 30 }),
       }),
     });
 

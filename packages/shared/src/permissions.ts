@@ -18,6 +18,7 @@ export const ASSIGNABLE_PERMISSION_CODES = [
   "cases.update",
   "cases.delete",
   "cases.assign",
+  "cases.manage_billing",
   "customers.read",
   "customers.create",
   "customers.update",

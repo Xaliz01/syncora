@@ -16,8 +16,5 @@ export class SentReminderDocument extends Document {
 }
 
 export const SentReminderSchema = SchemaFactory.createForClass(SentReminderDocument);
-SentReminderSchema.index(
-  { interventionId: 1, userId: 1, leadTime: 1 },
-  { unique: true },
-);
+SentReminderSchema.index({ interventionId: 1, userId: 1, leadTime: 1 }, { unique: true });
 SentReminderSchema.index({ createdAt: 1 }, { expireAfterSeconds: 2 * 60 * 60 });

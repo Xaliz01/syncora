@@ -93,6 +93,12 @@ export const PERMISSION_METADATA: Record<PermissionCode, PermissionMetadata> = {
     label: "Assigner des dossiers",
     description: "Assigner ou réassigner des dossiers à des utilisateurs.",
   },
+  "cases.manage_billing": {
+    code: "cases.manage_billing",
+    label: "Gérer le statut de facturation",
+    description:
+      "Modifier le statut de facturation des dossiers et des interventions (à facturer, facturé, payé).",
+  },
   "customers.read": {
     code: "customers.read",
     label: "Voir les clients",

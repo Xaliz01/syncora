@@ -34,6 +34,7 @@ export abstract class AbstractCasesService {
     organizationId: string,
     filters?: {
       status?: string;
+      billingStatus?: string;
       assigneeId?: string;
       priority?: string;
       search?: string;

@@ -72,6 +72,7 @@ export class CasesController {
   async listCases(
     @Query("organizationId") organizationId: string,
     @Query("status") status?: string,
+    @Query("billingStatus") billingStatus?: string,
     @Query("assigneeId") assigneeId?: string,
     @Query("priority") priority?: string,
     @Query("search") search?: string,
@@ -80,6 +81,7 @@ export class CasesController {
     organizationId = parseOrganizationIdQuery(organizationId);
     return this.casesService.listCases(organizationId, {
       status,
+      billingStatus,
       assigneeId,
       priority,
       search,
@@ -222,7 +224,7 @@ export class CasesController {
     if (!userId) throw new BadRequestException("userId query param is required");
     if (!filter || !isDashboardStatFilter(filter)) {
       throw new BadRequestException(
-        "filter query param is required (assigned, in_progress, completed_week, overdue)",
+        "filter query param is required (assigned, in_progress, completed_week, overdue, to_invoice)",
       );
     }
     return this.casesService.getDashboardStatCases(organizationId, userId, userProfileId, filter);

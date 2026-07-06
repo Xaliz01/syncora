@@ -70,11 +70,7 @@ export class InterventionReminderScheduler {
         const userLeadTime = userPrefs.reminderLeadTime ?? 30;
 
         if (minutesUntilStart <= userLeadTime && minutesUntilStart > 0) {
-          const alreadySent = await this.hasReminderBeenSent(
-            intervention.id,
-            userId,
-            userLeadTime,
-          );
+          const alreadySent = await this.hasReminderBeenSent(intervention.id, userId, userLeadTime);
           if (alreadySent) continue;
 
           const channels = getEnabledChannels(userPrefs, "intervention_reminder");
@@ -137,7 +133,11 @@ export class InterventionReminderScheduler {
     leadTime: number,
   ): Promise<void> {
     await this.sentReminderModel
-      .updateOne({ interventionId, userId, leadTime }, { $setOnInsert: { interventionId, userId, leadTime } }, { upsert: true })
+      .updateOne(
+        { interventionId, userId, leadTime },
+        { $setOnInsert: { interventionId, userId, leadTime } },
+        { upsert: true },
+      )
       .exec();
   }
 

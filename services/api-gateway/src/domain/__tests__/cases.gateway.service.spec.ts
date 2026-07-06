@@ -43,6 +43,7 @@ describe("CasesGatewayService", () => {
     customerId: customer.id,
     title: "Dossier test",
     status: "open",
+    billingStatus: "none",
     priority: "medium",
     assignees: [],
     tags: [],

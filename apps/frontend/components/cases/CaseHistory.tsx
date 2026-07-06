@@ -62,6 +62,25 @@ const ACTION_CONFIG: Record<
     ),
     color: "text-amber-600 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400",
   },
+  billing_status_changed: {
+    label: "Facturation modifiée",
+    icon: (
+      <svg
+        className="h-4 w-4"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm3 0h.008v.008H18V10.5Zm-12 0h.008v.008H6V10.5Z"
+        />
+      </svg>
+    ),
+    color: "text-yellow-600 bg-yellow-50 dark:bg-yellow-950/30 dark:text-yellow-400",
+  },
   priority_changed: {
     label: "Priorité modifiée",
     icon: (
@@ -329,10 +348,18 @@ const TODO_STATUS_LABELS: Record<string, string> = {
   skipped: "Ignorée",
 };
 
+const BILLING_STATUS_LABELS: Record<string, string> = {
+  none: "Non applicable",
+  to_invoice: "À facturer",
+  invoiced: "Facturé",
+  paid: "Payé",
+};
+
 const FIELD_LABELS: Record<string, string> = {
   title: "Titre",
   description: "Description",
   status: "Statut",
+  billingStatus: "Facturation",
   priority: "Priorité",
   assignees: "Assignés",
   dueDate: "Échéance",
@@ -342,6 +369,7 @@ const FIELD_LABELS: Record<string, string> = {
 function formatFieldValue(field: string, value?: string): string {
   if (!value) return "—";
   if (field === "status") return STATUS_LABELS[value] ?? value;
+  if (field === "billingStatus") return BILLING_STATUS_LABELS[value] ?? value;
   if (field === "priority") return PRIORITY_LABELS[value] ?? value;
   if (field === "status" && TODO_STATUS_LABELS[value]) return TODO_STATUS_LABELS[value];
   return value;

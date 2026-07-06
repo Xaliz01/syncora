@@ -31,6 +31,7 @@ export interface UpdateCaseForOrgBody {
   title?: string;
   description?: string;
   status?: string;
+  billingStatus?: string;
   priority?: string;
   assigneeIds?: string[];
   dueDate?: string | null;
@@ -93,6 +94,7 @@ export interface UpdateInterventionForOrgBody {
   title?: string;
   description?: string;
   status?: string;
+  billingStatus?: string;
   assigneeId?: string | null;
   assignedTeamId?: string | null;
   scheduledStart?: string | null;
@@ -138,6 +140,7 @@ export abstract class AbstractCasesGatewayService {
     user: AuthUser,
     filters?: {
       status?: string;
+      billingStatus?: string;
       assigneeId?: string;
       priority?: string;
       search?: string;

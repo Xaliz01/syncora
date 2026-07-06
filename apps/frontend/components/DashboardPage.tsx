@@ -54,6 +54,7 @@ const STAT_MODAL_TITLES: Record<DashboardStatFilter, string> = {
   in_progress: "Dossiers en cours",
   completed_week: "Dossiers terminés cette semaine",
   overdue: "Dossiers en retard",
+  to_invoice: "Dossiers à facturer",
 };
 
 const DASHBOARD_CARD_LIST_PAGE_SIZE = 5;

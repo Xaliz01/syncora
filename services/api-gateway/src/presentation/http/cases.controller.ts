@@ -91,12 +91,20 @@ export class CasesController {
   async listCases(
     @CurrentUser() user: AuthUser,
     @Query("status") status?: string,
+    @Query("billingStatus") billingStatus?: string,
     @Query("assigneeId") assigneeId?: string,
     @Query("priority") priority?: string,
     @Query("search") search?: string,
     @Query("customerId") customerId?: string,
   ) {
-    return this.casesService.listCases(user, { status, assigneeId, priority, search, customerId });
+    return this.casesService.listCases(user, {
+      status,
+      billingStatus,
+      assigneeId,
+      priority,
+      search,
+      customerId,
+    });
   }
 
   @Get("items/:caseId")

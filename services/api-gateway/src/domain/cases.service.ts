@@ -155,6 +155,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     user: AuthUser,
     filters?: {
       status?: string;
+      billingStatus?: string;
       assigneeId?: string;
       priority?: string;
       search?: string;
@@ -201,6 +202,10 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       organizationId: user.organizationId,
       ...body,
     } as UpdateCaseBody;
+
+    if (body.billingStatus !== undefined) {
+      assertAnyAssignablePermission(user, ["cases.manage_billing", "cases.update"]);
+    }
 
     if (Object.prototype.hasOwnProperty.call(body, "assigneeIds")) {
       assertAnyAssignablePermission(user, ["cases.assign", "cases.update"]);
@@ -374,6 +379,10 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     interventionId: string,
     body: UpdateInterventionForOrgBody,
   ) {
+    if (body.billingStatus !== undefined) {
+      assertAnyAssignablePermission(user, ["cases.manage_billing", "interventions.update"]);
+    }
+
     const result = await this.callCasesService<InterventionResponse>(user.organizationId, {
       method: "patch",
       path: `/interventions/${interventionId}`,
@@ -905,6 +914,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       organizationId: user.organizationId,
       title: r.caseTitle,
       status: r.status,
+      billingStatus: "none" as const,
       priority: r.priority,
       assignees: [],
       tags: [],
@@ -963,6 +973,19 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
         "status_changed",
         undefined,
         [{ field: "status", oldValue: prev.status, newValue: body.status }],
+      );
+      return;
+    }
+
+    if (body.billingStatus !== undefined && prev && body.billingStatus !== prev.billingStatus) {
+      this.recordHistory(
+        user.organizationId,
+        caseId,
+        user.id,
+        actorName,
+        "billing_status_changed",
+        undefined,
+        [{ field: "billingStatus", oldValue: prev.billingStatus, newValue: body.billingStatus }],
       );
       return;
     }

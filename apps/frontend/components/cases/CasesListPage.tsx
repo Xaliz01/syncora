@@ -4,7 +4,8 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import * as api from "@/lib/cases.api";
-import type { CasePriority, CaseStatus } from "@planwise/shared";
+import type { BillingStatus, CasePriority, CaseStatus } from "@planwise/shared";
+import { BILLING_STATUS_LABELS } from "@planwise/shared";
 import { TestDataBadgeIf } from "@/components/test-data/TestDataBadge";
 import {
   ListBadge,
@@ -59,24 +60,37 @@ const PRIORITY_COLORS: Record<CasePriority, string> = {
   urgent: "bg-red-50 text-red-600 border-red-200",
 };
 
-const GRID = "md:grid-cols-[1.4fr_1fr_0.75fr_0.75fr_0.45fr]";
+const BILLING_STATUS_COLORS: Record<BillingStatus, string> = {
+  none: "",
+  to_invoice:
+    "bg-yellow-50 dark:bg-yellow-950/30 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800",
+  invoiced:
+    "bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800",
+  paid: "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
+};
+
+const GRID = "md:grid-cols-[1.2fr_1fr_0.7fr_0.65fr_0.65fr_0.4fr]";
 
 export function CasesListPage() {
   const [statusFilter, setStatusFilter] = useState<string>("");
+  const [billingStatusFilter, setBillingStatusFilter] = useState<string>("");
   const [priorityFilter, setPriorityFilter] = useState<string>("");
   const [search, setSearch] = useState("");
 
   const { data: cases = [], isLoading } = useQuery({
-    queryKey: ["cases", statusFilter, priorityFilter, search],
+    queryKey: ["cases", statusFilter, billingStatusFilter, priorityFilter, search],
     queryFn: () =>
       api.listCases({
         status: statusFilter || undefined,
+        billingStatus: billingStatusFilter || undefined,
         priority: priorityFilter || undefined,
         search: search || undefined,
       }),
   });
 
-  const hasActiveFilters = Boolean(statusFilter || priorityFilter || search.trim());
+  const hasActiveFilters = Boolean(
+    statusFilter || billingStatusFilter || priorityFilter || search.trim(),
+  );
 
   return (
     <ListPageRoot>
@@ -90,6 +104,7 @@ export function CasesListPage() {
                 onExport={(format) =>
                   exportsApi.exportCasesList(format, {
                     status: statusFilter || undefined,
+                    billingStatus: billingStatusFilter || undefined,
                     priority: priorityFilter || undefined,
                     search: search || undefined,
                   })
@@ -120,6 +135,20 @@ export function CasesListPage() {
               {STATUS_LABELS[s]}
             </option>
           ))}
+        </select>
+        <select
+          value={billingStatusFilter}
+          onChange={(e) => setBillingStatusFilter(e.target.value)}
+          className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 w-full sm:w-auto"
+        >
+          <option value="">Facturation</option>
+          {(Object.entries(BILLING_STATUS_LABELS) as [BillingStatus, string][])
+            .filter(([v]) => v !== "none")
+            .map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
         </select>
         <select
           value={priorityFilter}
@@ -161,6 +190,7 @@ export function CasesListPage() {
               <span>Dossier</span>
               <span>Client</span>
               <span>Statut</span>
+              <span>Facturation</span>
               <span>Priorité</span>
               <span>Avancement</span>
             </>
@@ -183,6 +213,13 @@ export function CasesListPage() {
               </div>
               <ListCellMuted>{c.customer?.displayName ?? "—"}</ListCellMuted>
               <ListBadge className={STATUS_COLORS[c.status]}>{STATUS_LABELS[c.status]}</ListBadge>
+              {c.billingStatus && c.billingStatus !== "none" ? (
+                <ListBadge className={BILLING_STATUS_COLORS[c.billingStatus]}>
+                  {BILLING_STATUS_LABELS[c.billingStatus]}
+                </ListBadge>
+              ) : (
+                <ListCellMuted>—</ListCellMuted>
+              )}
               <ListBadge className={PRIORITY_COLORS[c.priority]}>
                 {PRIORITY_LABELS[c.priority]}
               </ListBadge>

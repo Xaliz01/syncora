@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document, Types } from "mongoose";
-import type { GeoLocation, InterventionStatus } from "@planwise/shared";
+import type { BillingStatus, GeoLocation, InterventionStatus } from "@planwise/shared";
 
 @Schema({ _id: false })
 export class GeoLocationSchema {
@@ -32,6 +32,9 @@ export class InterventionDocument extends Document {
 
   @Prop({ type: String, default: "planned" })
   status!: InterventionStatus;
+
+  @Prop({ type: String, default: "none" })
+  billingStatus!: BillingStatus;
 
   @Prop()
   assigneeId?: string;
