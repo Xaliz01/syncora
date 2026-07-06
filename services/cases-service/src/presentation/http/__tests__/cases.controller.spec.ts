@@ -35,6 +35,11 @@ describe("CasesController", () => {
       listUpcomingInterventions: jest.fn(),
       addCaseHistory: jest.fn(),
       listCaseHistory: jest.fn(),
+      createQuote: jest.fn(),
+      listQuotes: jest.fn(),
+      getQuote: jest.fn(),
+      updateQuote: jest.fn(),
+      deleteQuote: jest.fn(),
       purgeTestData: jest.fn(),
     };
 

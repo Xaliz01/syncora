@@ -18,11 +18,13 @@ import type {
   CreateCaseTemplateBody,
   CompleteInterventionBody,
   CreateInterventionBody,
+  CreateQuoteBody,
   SignInterventionBody,
   StartInterventionBody,
   UpdateCaseBody,
   UpdateCaseTemplateBody,
   UpdateInterventionBody,
+  UpdateQuoteBody,
   UpdateTodoBody,
 } from "@planwise/shared";
 import { parseOrganizationIdQuery } from "@planwise/shared/nest";
@@ -177,6 +179,40 @@ export class CasesController {
   ) {
     organizationId = parseOrganizationIdQuery(organizationId);
     return this.casesService.deleteIntervention(id, organizationId);
+  }
+
+  // ── Quotes ──
+
+  @Post("quotes")
+  async createQuote(@Body() body: CreateQuoteBody) {
+    return this.casesService.createQuote(body);
+  }
+
+  @Get("quotes")
+  async listQuotes(
+    @Query("organizationId") organizationId: string,
+    @Query("caseId") caseId?: string,
+    @Query("status") status?: string,
+  ) {
+    organizationId = parseOrganizationIdQuery(organizationId);
+    return this.casesService.listQuotes(organizationId, { caseId, status });
+  }
+
+  @Get("quotes/:id")
+  async getQuote(@Param("id") id: string, @Query("organizationId") organizationId: string) {
+    organizationId = parseOrganizationIdQuery(organizationId);
+    return this.casesService.getQuote(id, organizationId);
+  }
+
+  @Patch("quotes/:id")
+  async updateQuote(@Param("id") id: string, @Body() body: UpdateQuoteBody) {
+    return this.casesService.updateQuote(id, body);
+  }
+
+  @Delete("quotes/:id")
+  async deleteQuote(@Param("id") id: string, @Query("organizationId") organizationId: string) {
+    organizationId = parseOrganizationIdQuery(organizationId);
+    return this.casesService.deleteQuote(id, organizationId);
   }
 
   // ── Dashboard ──

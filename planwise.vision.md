@@ -142,7 +142,7 @@ Objectif : le technicien clôture sa journée **sur le téléphone** ; le patron
 | 1.3 | **Photos** rattachées à l'intervention (pas seulement au dossier)                         | Preuve travaux                           | ✅     |
 | 1.4 | **Signature client** + génération **PDF rapport** d'intervention                          | Confiance client, litiges                | ✅     |
 | 1.5 | **PWA** (installable, cache minimal des listes du jour)                                   | Artisans sans « app store » obligatoire  | ✅     |
-| 1.6 | Notifications **push PWA** + préférences multi-canal (in-app, email, push)                  | Rappels terrain, paramétrage utilisateur | ✅     |
+| 1.6 | Notifications **push PWA** + préférences multi-canal (in-app, email, push)                | Rappels terrain, paramétrage utilisateur | ✅     |
 
 _Hors scope phase 1_ : GPS temps réel permanent, portail client self-service.
 

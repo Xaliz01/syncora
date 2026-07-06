@@ -21,6 +21,10 @@ import type {
   UpdateCaseTemplateBody,
   UpdateInterventionBody,
   UpdateTodoBody,
+  CreateQuoteBody,
+  UpdateQuoteBody,
+  QuoteResponse,
+  QuoteSummaryResponse,
 } from "@planwise/shared";
 
 export abstract class AbstractCasesService {
@@ -106,5 +110,13 @@ export abstract class AbstractCasesService {
     caseId: string,
     organizationId: string,
   ): Promise<CaseHistoryEntryResponse[]>;
+  abstract createQuote(body: CreateQuoteBody): Promise<QuoteResponse>;
+  abstract listQuotes(
+    organizationId: string,
+    filters?: { caseId?: string; status?: string },
+  ): Promise<QuoteSummaryResponse[]>;
+  abstract getQuote(id: string, organizationId: string): Promise<QuoteResponse>;
+  abstract updateQuote(id: string, body: UpdateQuoteBody): Promise<QuoteResponse>;
+  abstract deleteQuote(id: string, organizationId: string): Promise<{ deleted: true }>;
   abstract purgeTestData(organizationId: string): Promise<{ purged: true }>;
 }

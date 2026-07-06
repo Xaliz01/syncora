@@ -17,11 +17,13 @@ import { isDashboardStatFilter } from "@planwise/shared";
 import { AbstractCasesGatewayService } from "../../domain/ports/cases.service.port";
 import type {
   CreateCaseForOrgBody,
+  CreateQuoteForOrgBody,
   CompleteInterventionForOrgBody,
   CreateInterventionForOrgBody,
   CreateTemplateForOrgBody,
   SignInterventionForOrgBody,
   UpdateCaseForOrgBody,
+  UpdateQuoteForOrgBody,
   StartInterventionForOrgBody,
   UpdateInterventionForOrgBody,
   UpdateTemplateForOrgBody,
@@ -290,6 +292,44 @@ export class CasesController {
       `attachment; filename="rapport-intervention-${interventionId}.pdf"`,
     );
     res.send(pdfBuffer);
+  }
+
+  @Post("quotes")
+  @RequirePermissions("quotes.create")
+  async createQuote(@CurrentUser() user: AuthUser, @Body() body: CreateQuoteForOrgBody) {
+    return this.casesService.createQuote(user, body);
+  }
+
+  @Get("quotes")
+  @RequirePermissions("quotes.read")
+  async listQuotes(
+    @CurrentUser() user: AuthUser,
+    @Query("caseId") caseId?: string,
+    @Query("status") status?: string,
+  ) {
+    return this.casesService.listQuotes(user, { caseId, status });
+  }
+
+  @Get("quotes/:quoteId")
+  @RequirePermissions("quotes.read")
+  async getQuote(@CurrentUser() user: AuthUser, @Param("quoteId") quoteId: string) {
+    return this.casesService.getQuote(user, quoteId);
+  }
+
+  @Patch("quotes/:quoteId")
+  @RequirePermissions("quotes.update")
+  async updateQuote(
+    @CurrentUser() user: AuthUser,
+    @Param("quoteId") quoteId: string,
+    @Body() body: UpdateQuoteForOrgBody,
+  ) {
+    return this.casesService.updateQuote(user, quoteId, body);
+  }
+
+  @Delete("quotes/:quoteId")
+  @RequirePermissions("quotes.delete")
+  async deleteQuote(@CurrentUser() user: AuthUser, @Param("quoteId") quoteId: string) {
+    return this.casesService.deleteQuote(user, quoteId);
   }
 
   @Get("dashboard")

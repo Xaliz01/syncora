@@ -35,6 +35,8 @@ import type {
   UpdateTodoBody,
   UserPermissionAssignmentResponse,
   UserResponse,
+  QuoteResponse,
+  QuoteSummaryResponse,
 } from "@planwise/shared";
 import PDFDocument from "pdfkit";
 import { assertAnyAssignablePermission } from "../infrastructure/permission-checks";
@@ -52,6 +54,8 @@ import {
   type StartInterventionForOrgBody,
   type UpdateInterventionForOrgBody,
   type UpdateTodoForOrgBody,
+  type CreateQuoteForOrgBody,
+  type UpdateQuoteForOrgBody,
 } from "./ports/cases.service.port";
 
 const CASES_URL = process.env.CASES_SERVICE_URL ?? "http://localhost:3004";
@@ -523,6 +527,83 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       "intervention_signed",
       `Signé par ${body.signatoryName}`,
     );
+    return result;
+  }
+
+  // ── Quotes ──
+
+  async createQuote(user: AuthUser, body: CreateQuoteForOrgBody) {
+    const result = await this.callCasesService<QuoteResponse>(user.organizationId, {
+      method: "post",
+      path: "/quotes",
+      body: { organizationId: user.organizationId, ...body },
+    });
+    this.recordHistory(
+      user.organizationId,
+      body.caseId,
+      user.id,
+      user.name ?? user.email,
+      "quote_created",
+      result.quoteNumber,
+    );
+    return result;
+  }
+
+  async listQuotes(user: AuthUser, filters?: { caseId?: string; status?: string }) {
+    return this.callCasesService<QuoteSummaryResponse[]>(user.organizationId, {
+      method: "get",
+      path: "/quotes",
+      query: { organizationId: user.organizationId, ...filters },
+    });
+  }
+
+  async getQuote(user: AuthUser, quoteId: string) {
+    return this.callCasesService<QuoteResponse>(user.organizationId, {
+      method: "get",
+      path: `/quotes/${quoteId}`,
+      query: { organizationId: user.organizationId },
+    });
+  }
+
+  async updateQuote(user: AuthUser, quoteId: string, body: UpdateQuoteForOrgBody) {
+    const result = await this.callCasesService<QuoteResponse>(user.organizationId, {
+      method: "patch",
+      path: `/quotes/${quoteId}`,
+      body: { organizationId: user.organizationId, ...body },
+    });
+    this.recordHistory(
+      user.organizationId,
+      result.caseId,
+      user.id,
+      user.name ?? user.email,
+      "quote_updated",
+      result.quoteNumber,
+    );
+    return result;
+  }
+
+  async deleteQuote(user: AuthUser, quoteId: string) {
+    let quote: QuoteResponse | undefined;
+    try {
+      quote = await this.getQuote(user, quoteId);
+    } catch {
+      /* proceed */
+    }
+    const result = await this.callCasesService<{ deleted: true }>(user.organizationId, {
+      method: "delete",
+      path: `/quotes/${quoteId}`,
+      query: { organizationId: user.organizationId },
+    });
+    if (quote) {
+      this.recordHistory(
+        user.organizationId,
+        quote.caseId,
+        user.id,
+        user.name ?? user.email,
+        "quote_deleted",
+        quote.quoteNumber,
+      );
+    }
     return result;
   }
 

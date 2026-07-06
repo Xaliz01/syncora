@@ -10,6 +10,8 @@ import type {
   GeoLocation,
   DashboardTodoCaseItem,
   InterventionResponse,
+  QuoteResponse,
+  QuoteSummaryResponse,
   SignInterventionResponse,
   StartInterventionResponse,
   TodoDashboardVisibility,
@@ -122,6 +124,34 @@ export interface SignInterventionForOrgBody {
   signatureData: string;
 }
 
+export interface CreateQuoteForOrgBody {
+  caseId: string;
+  subject?: string;
+  notes?: string;
+  validUntil?: string;
+  lines: {
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    tvaRate: number;
+    unit?: string;
+  }[];
+}
+
+export interface UpdateQuoteForOrgBody {
+  subject?: string;
+  notes?: string;
+  status?: string;
+  validUntil?: string | null;
+  lines?: {
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    tvaRate: number;
+    unit?: string;
+  }[];
+}
+
 export abstract class AbstractCasesGatewayService {
   abstract createTemplate(
     user: AuthUser,
@@ -209,4 +239,16 @@ export abstract class AbstractCasesGatewayService {
     filter: DashboardStatFilter,
   ): Promise<DashboardTodoCaseItem[]>;
   abstract listCaseHistory(user: AuthUser, caseId: string): Promise<CaseHistoryEntryResponse[]>;
+  abstract createQuote(user: AuthUser, body: CreateQuoteForOrgBody): Promise<QuoteResponse>;
+  abstract listQuotes(
+    user: AuthUser,
+    filters?: { caseId?: string; status?: string },
+  ): Promise<QuoteSummaryResponse[]>;
+  abstract getQuote(user: AuthUser, quoteId: string): Promise<QuoteResponse>;
+  abstract updateQuote(
+    user: AuthUser,
+    quoteId: string,
+    body: UpdateQuoteForOrgBody,
+  ): Promise<QuoteResponse>;
+  abstract deleteQuote(user: AuthUser, quoteId: string): Promise<{ deleted: true }>;
 }

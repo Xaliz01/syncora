@@ -11,6 +11,7 @@ import * as stockApi from "@/lib/stock.api";
 import { listOrganizationUsers } from "@/lib/admin.api";
 import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
 import { CaseHistory } from "@/components/cases/CaseHistory";
+import { CaseQuotesSection } from "@/components/cases/CaseQuotesSection";
 import { CaseAssigneesTagsInput } from "@/components/cases/CaseAssigneesTagsInput";
 import { CaseCustomerPicker } from "@/components/cases/CaseCustomerPicker";
 import { CaseInterventionSitePicker } from "@/components/cases/CaseInterventionSitePicker";
@@ -1520,6 +1521,8 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
           }}
         />
       )}
+
+      <CaseQuotesSection caseId={caseId} />
 
       <DocumentUploadZone entityType="case" entityId={caseId} />
 

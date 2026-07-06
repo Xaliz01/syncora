@@ -24,11 +24,9 @@ describe("InterventionReminderScheduler", () => {
     };
     mockNotificationModel = { create: jest.fn().mockResolvedValue({}) };
     mockSentReminderModel = {
-      findOne: jest
-        .fn()
-        .mockReturnValue({
-          lean: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
-        }),
+      findOne: jest.fn().mockReturnValue({
+        lean: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
+      }),
       updateOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue({}) }),
     };
     mockHttpService = { get: jest.fn() };

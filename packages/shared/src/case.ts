@@ -352,6 +352,9 @@ export type CaseHistoryAction =
   | "intervention_signed"
   | "document_uploaded"
   | "document_deleted"
+  | "quote_created"
+  | "quote_updated"
+  | "quote_deleted"
   | "case_deleted";
 
 export interface CaseHistoryChange {

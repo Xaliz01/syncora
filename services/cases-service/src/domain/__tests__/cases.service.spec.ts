@@ -139,6 +139,17 @@ describe("CasesService", () => {
       }),
     };
 
+    const mockQuoteModel = {
+      create: jest.fn(),
+      find: jest.fn().mockReturnValue({
+        sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue([]) }),
+      }),
+      findOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
+      findOneAndUpdate: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
+      updateOne: jest.fn().mockImplementation(() => updateChain()),
+      countDocuments: jest.fn().mockResolvedValue(0),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         { provide: AbstractCasesService, useClass: CasesService },
@@ -146,6 +157,7 @@ describe("CasesService", () => {
         { provide: getModelToken("Case"), useValue: mockCaseModel },
         { provide: getModelToken("CaseHistory"), useValue: mockCaseHistoryModel },
         { provide: getModelToken("Intervention"), useValue: mockInterventionModel },
+        { provide: getModelToken("Quote"), useValue: mockQuoteModel },
       ],
     }).compile();
 

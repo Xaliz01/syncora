@@ -46,6 +46,11 @@ describe("CasesController", () => {
       getDashboardTodoCases: jest.fn(),
       getDashboardStatCases: jest.fn(),
       listCaseHistory: jest.fn(),
+      createQuote: jest.fn(),
+      listQuotes: jest.fn(),
+      getQuote: jest.fn(),
+      updateQuote: jest.fn(),
+      deleteQuote: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({

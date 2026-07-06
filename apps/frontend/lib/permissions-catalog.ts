@@ -99,6 +99,26 @@ export const PERMISSION_METADATA: Record<PermissionCode, PermissionMetadata> = {
     description:
       "Modifier le statut de facturation des dossiers et des interventions (à facturer, facturé, payé).",
   },
+  "quotes.read": {
+    code: "quotes.read",
+    label: "Voir les devis",
+    description: "Consulter la liste et le détail des devis rattachés aux dossiers.",
+  },
+  "quotes.create": {
+    code: "quotes.create",
+    label: "Créer des devis",
+    description: "Créer de nouveaux devis avec lignes, TVA et conditions.",
+  },
+  "quotes.update": {
+    code: "quotes.update",
+    label: "Modifier les devis",
+    description: "Mettre à jour le contenu, le statut et les conditions d'un devis.",
+  },
+  "quotes.delete": {
+    code: "quotes.delete",
+    label: "Supprimer des devis",
+    description: "Supprimer définitivement un devis.",
+  },
   "customers.read": {
     code: "customers.read",
     label: "Voir les clients",
