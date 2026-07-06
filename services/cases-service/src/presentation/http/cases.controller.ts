@@ -75,6 +75,7 @@ export class CasesController {
     @Query("assigneeId") assigneeId?: string,
     @Query("priority") priority?: string,
     @Query("search") search?: string,
+    @Query("customerId") customerId?: string,
   ) {
     organizationId = parseOrganizationIdQuery(organizationId);
     return this.casesService.listCases(organizationId, {
@@ -82,6 +83,7 @@ export class CasesController {
       assigneeId,
       priority,
       search,
+      customerId,
     });
   }
 

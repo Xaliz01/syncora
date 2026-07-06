@@ -193,9 +193,11 @@ export class CasesService extends AbstractCasesService {
       assigneeId?: string;
       priority?: string;
       search?: string;
+      customerId?: string;
     },
   ): Promise<CaseSummaryResponse[]> {
     const query: Record<string, unknown> = { organizationId, ...activeDocumentFilter };
+    if (filters?.customerId) query.customerId = filters.customerId;
     if (filters?.status) query.status = filters.status;
     if (filters?.assigneeId) {
       query.$or = [

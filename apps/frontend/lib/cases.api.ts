@@ -96,12 +96,14 @@ export function listCases(filters?: {
   assigneeId?: string;
   priority?: string;
   search?: string;
+  customerId?: string;
 }) {
   const params = new URLSearchParams();
   if (filters?.status) params.set("status", filters.status);
   if (filters?.assigneeId) params.set("assigneeId", filters.assigneeId);
   if (filters?.priority) params.set("priority", filters.priority);
   if (filters?.search) params.set("search", filters.search);
+  if (filters?.customerId) params.set("customerId", filters.customerId);
   const qs = params.toString();
   return casesRequest<CaseSummaryResponse[]>("GET", `/cases/items${qs ? `?${qs}` : ""}`);
 }

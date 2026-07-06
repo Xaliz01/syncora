@@ -8,6 +8,7 @@ import * as customersApi from "@/lib/customers.api";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/ToastProvider";
 import { usePermissions } from "@/lib/hooks/usePermissions";
+import { CustomerCasesSection } from "./CustomerCasesSection";
 import { CustomerEditForm } from "./CustomerEditForm";
 import { CustomerContactsSection } from "./CustomerContactsSection";
 import { CustomerSitesSection } from "./CustomerSitesSection";
@@ -306,6 +307,8 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
           </div>
         </>
       )}
+
+      <CustomerCasesSection customerId={customerId} />
 
       <CustomerSitesSection customer={c} />
 
