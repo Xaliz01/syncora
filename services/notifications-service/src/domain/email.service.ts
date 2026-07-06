@@ -4,6 +4,9 @@ import type { Transporter } from "nodemailer";
 import type { SendEmailNotificationResponse } from "@planwise/shared";
 import { AbstractEmailService } from "./ports/email.service.port";
 
+/** En local, seul ce destinataire peut recevoir des e-mails (évite les envois accidentels). */
+const LOCAL_ALLOWED_RECIPIENT = "mail@benoistbabin.fr";
+
 @Injectable()
 export class EmailService extends AbstractEmailService {
   private readonly logger = new Logger(EmailService.name);
@@ -47,6 +50,13 @@ export class EmailService extends AbstractEmailService {
       return { sent: false, reason: "smtp_not_configured" };
     }
 
+    if (!this.isRecipientAllowedInCurrentEnvironment(to)) {
+      this.logger.warn(
+        `Email blocked in local environment for recipient ${to} (only ${LOCAL_ALLOWED_RECIPIENT} allowed)`,
+      );
+      return { sent: false, reason: "local_recipient_not_allowed" };
+    }
+
     try {
       const html = this.buildHtml(subject, body, url);
       await this.transporter.sendMail({
@@ -61,6 +71,13 @@ export class EmailService extends AbstractEmailService {
       this.logger.warn(`Failed to send email to ${to}`, (err as Error).message);
       return { sent: false, reason: (err as Error).message };
     }
+  }
+
+  private isRecipientAllowedInCurrentEnvironment(to: string): boolean {
+    if (process.env.NODE_ENV === "production") {
+      return true;
+    }
+    return to.trim().toLowerCase() === LOCAL_ALLOWED_RECIPIENT;
   }
 
   private buildPlainText(body: string, url?: string): string {

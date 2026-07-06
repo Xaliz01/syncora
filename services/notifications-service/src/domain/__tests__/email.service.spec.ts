@@ -9,6 +9,7 @@ describe("EmailService", () => {
     delete process.env.SMTP_USER;
     delete process.env.SMTP_PASS;
     delete process.env.SMTP_FROM;
+    delete process.env.NODE_ENV;
     service = new EmailService();
   });
 
@@ -41,6 +42,7 @@ describe("EmailService (configured)", () => {
   let mockSendMail: jest.Mock;
 
   beforeEach(() => {
+    process.env.NODE_ENV = "production";
     process.env.SMTP_HOST = "smtp.test.com";
     process.env.SMTP_PORT = "587";
     process.env.SMTP_USER = "user@test.com";
@@ -57,6 +59,7 @@ describe("EmailService (configured)", () => {
   });
 
   afterEach(() => {
+    delete process.env.NODE_ENV;
     delete process.env.SMTP_HOST;
     delete process.env.SMTP_PORT;
     delete process.env.SMTP_USER;
@@ -101,5 +104,56 @@ describe("EmailService (configured)", () => {
     const result = await service.sendNotificationEmail("user@example.com", "Subject", "Body");
 
     expect(result).toEqual({ sent: false, reason: "SMTP connection refused" });
+  });
+});
+
+describe("EmailService (local environment)", () => {
+  let service: EmailService;
+  let mockSendMail: jest.Mock;
+
+  beforeEach(() => {
+    process.env.NODE_ENV = "development";
+    process.env.SMTP_HOST = "smtp.test.com";
+    process.env.SMTP_PORT = "587";
+    process.env.SMTP_USER = "user@test.com";
+    process.env.SMTP_PASS = "password123";
+
+    service = new EmailService();
+
+    mockSendMail = jest.fn().mockResolvedValue({ messageId: "msg-123" });
+    (service as unknown as { transporter: { sendMail: jest.Mock } }).transporter = {
+      sendMail: mockSendMail,
+    } as unknown as typeof service extends { transporter: infer T } ? T : never;
+  });
+
+  afterEach(() => {
+    delete process.env.NODE_ENV;
+    delete process.env.SMTP_HOST;
+    delete process.env.SMTP_PORT;
+    delete process.env.SMTP_USER;
+    delete process.env.SMTP_PASS;
+  });
+
+  it("should block emails to recipients other than the local allowlist address", async () => {
+    const result = await service.sendNotificationEmail("tech@company.fr", "Subject", "Body");
+
+    expect(result).toEqual({ sent: false, reason: "local_recipient_not_allowed" });
+    expect(mockSendMail).not.toHaveBeenCalled();
+  });
+
+  it("should allow emails to the local allowlist address", async () => {
+    const result = await service.sendNotificationEmail("mail@benoistbabin.fr", "Subject", "Body");
+
+    expect(result).toEqual({ sent: true });
+    expect(mockSendMail).toHaveBeenCalledWith(
+      expect.objectContaining({ to: "mail@benoistbabin.fr" }),
+    );
+  });
+
+  it("should match the allowlist address case-insensitively", async () => {
+    const result = await service.sendNotificationEmail("Mail@BenoistBabin.fr", "Subject", "Body");
+
+    expect(result).toEqual({ sent: true });
+    expect(mockSendMail).toHaveBeenCalled();
   });
 });
