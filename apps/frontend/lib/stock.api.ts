@@ -18,6 +18,7 @@ export interface CreateArticlePayload {
   reference: string;
   description?: string;
   unit?: string;
+  defaultPrice?: number;
   initialStock?: number;
   reorderPoint?: number;
   targetStock?: number;
@@ -29,6 +30,7 @@ export interface UpdateArticlePayload {
   reference?: string;
   description?: string;
   unit?: string;
+  defaultPrice?: number | null;
   reorderPoint?: number;
   targetStock?: number;
   isActive?: boolean;

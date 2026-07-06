@@ -7,6 +7,9 @@ export class QuoteLineSubDoc {
   @Prop({ type: String, default: () => new Types.ObjectId().toHexString() })
   id!: string;
 
+  @Prop()
+  articleId?: string;
+
   @Prop({ required: true })
   description!: string;
 

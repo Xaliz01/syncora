@@ -49,6 +49,11 @@ export class StockService extends AbstractStockService {
       throw new BadRequestException("targetStock must be greater than or equal to reorderPoint");
     }
 
+    const defaultPrice =
+      body.defaultPrice !== undefined && body.defaultPrice !== null
+        ? this.ensureNonNegativeNumber(body.defaultPrice, "defaultPrice")
+        : undefined;
+
     try {
       const now = new Date();
       const doc = await this.articleModel.create({
@@ -57,6 +62,7 @@ export class StockService extends AbstractStockService {
         reference,
         description: body.description?.trim() || undefined,
         unit: body.unit?.trim() || "unité",
+        defaultPrice,
         stockQuantity: initialStock,
         reorderPoint,
         targetStock,
@@ -140,6 +146,12 @@ export class StockService extends AbstractStockService {
       const unit = body.unit.trim();
       if (!unit) throw new BadRequestException("Unit cannot be empty");
       doc.unit = unit;
+    }
+    if (body.defaultPrice !== undefined) {
+      doc.defaultPrice =
+        body.defaultPrice === null
+          ? undefined
+          : this.ensureNonNegativeNumber(body.defaultPrice, "defaultPrice");
     }
     if (body.reorderPoint !== undefined) {
       doc.reorderPoint = this.ensureNonNegativeNumber(body.reorderPoint, "reorderPoint");
@@ -321,6 +333,7 @@ export class StockService extends AbstractStockService {
       reference: doc.reference,
       description: doc.description,
       unit: doc.unit,
+      defaultPrice: doc.defaultPrice,
       stockQuantity: doc.stockQuantity,
       reorderPoint: doc.reorderPoint,
       targetStock: doc.targetStock,

@@ -51,6 +51,7 @@ describe("CasesController", () => {
       getQuote: jest.fn(),
       updateQuote: jest.fn(),
       deleteQuote: jest.fn(),
+      generateQuotePdf: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -382,6 +383,54 @@ describe("CasesController", () => {
 
       expect(mockCasesService.listCaseHistory).toHaveBeenCalledWith(mockUser, "case-1");
       expect(result).toEqual(history);
+    });
+  });
+
+  describe("generateQuotePdf", () => {
+    it("should call casesService.generateQuotePdf and set response headers", async () => {
+      const pdfBuffer = Buffer.from("fake-pdf");
+      mockCasesService.generateQuotePdf.mockResolvedValue(pdfBuffer);
+
+      const mockRes = {
+        setHeader: jest.fn(),
+        send: jest.fn(),
+      };
+
+      await controller.generateQuotePdf(mockUser, "quote-1", mockRes as never);
+
+      expect(mockCasesService.generateQuotePdf).toHaveBeenCalledWith(mockUser, "quote-1");
+      expect(mockRes.setHeader).toHaveBeenCalledWith("Content-Type", "application/pdf");
+      expect(mockRes.setHeader).toHaveBeenCalledWith(
+        "Content-Disposition",
+        'attachment; filename="devis-quote-1.pdf"',
+      );
+      expect(mockRes.send).toHaveBeenCalledWith(pdfBuffer);
+    });
+  });
+
+  describe("createQuote", () => {
+    it("should call casesService.createQuote with user and body including articleId", async () => {
+      const body = {
+        caseId: "case-1",
+        subject: "Installation plomberie",
+        lines: [
+          {
+            articleId: "article-123",
+            description: "Tuyau PVC",
+            quantity: 5,
+            unitPrice: 12.5,
+            tvaRate: 20,
+            unit: "mètre",
+          },
+          { description: "Main d'oeuvre", quantity: 2, unitPrice: 45, tvaRate: 20 },
+        ],
+      };
+      mockCasesService.createQuote.mockResolvedValue({ id: "quote-1" } as never);
+
+      const result = await controller.createQuote(mockUser, body);
+
+      expect(mockCasesService.createQuote).toHaveBeenCalledWith(mockUser, body);
+      expect(result).toEqual({ id: "quote-1" });
     });
   });
 });

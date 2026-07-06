@@ -10,6 +10,7 @@ export interface CreateArticleForOrgBody {
   reference: string;
   description?: string;
   unit?: string;
+  defaultPrice?: number;
   initialStock?: number;
   reorderPoint?: number;
   targetStock?: number;
@@ -21,6 +22,7 @@ export interface UpdateArticleForOrgBody {
   reference?: string;
   description?: string;
   unit?: string;
+  defaultPrice?: number | null;
   reorderPoint?: number;
   targetStock?: number;
   isActive?: boolean;

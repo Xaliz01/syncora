@@ -206,6 +206,57 @@ describe("StockService", () => {
         "An article with this reference already exists",
       );
     });
+
+    it("should create article with defaultPrice", async () => {
+      const doc = mockArticleDoc({ defaultPrice: 49.99 });
+      mockArticleModel.create.mockResolvedValue(doc);
+
+      const body = {
+        organizationId: "org-1",
+        name: "Article C",
+        reference: "REF-003",
+        defaultPrice: 49.99,
+      };
+
+      const result = await service.createArticle(body);
+
+      expect(mockArticleModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          defaultPrice: 49.99,
+        }),
+      );
+      expect(result.defaultPrice).toBe(49.99);
+    });
+
+    it("should create article without defaultPrice when not provided", async () => {
+      const doc = mockArticleDoc();
+      mockArticleModel.create.mockResolvedValue(doc);
+
+      const body = {
+        organizationId: "org-1",
+        name: "Article D",
+        reference: "REF-004",
+      };
+
+      await service.createArticle(body);
+
+      expect(mockArticleModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          defaultPrice: undefined,
+        }),
+      );
+    });
+
+    it("should throw BadRequestException for negative defaultPrice", async () => {
+      const body = {
+        organizationId: "org-1",
+        name: "Article E",
+        reference: "REF-005",
+        defaultPrice: -10,
+      };
+
+      await expect(service.createArticle(body)).rejects.toThrow(BadRequestException);
+    });
   });
 
   describe("listArticles", () => {
@@ -313,6 +364,47 @@ describe("StockService", () => {
       await expect(service.updateArticle("article-123", body)).rejects.toThrow(
         "targetStock must be greater than or equal to reorderPoint",
       );
+    });
+
+    it("should update defaultPrice on article", async () => {
+      const doc = mockArticleDoc() as ReturnType<typeof mockArticleDoc> & {
+        defaultPrice?: number;
+      };
+      doc.defaultPrice = undefined;
+      mockArticleModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+
+      const body = {
+        organizationId: "org-1",
+        defaultPrice: 35.5,
+      };
+
+      const result = await service.updateArticle("article-123", body);
+
+      expect(doc.defaultPrice).toBe(35.5);
+      expect(doc.save).toHaveBeenCalled();
+      expect(result).toBeDefined();
+    });
+
+    it("should clear defaultPrice when set to null", async () => {
+      const doc = mockArticleDoc() as ReturnType<typeof mockArticleDoc> & {
+        defaultPrice?: number;
+      };
+      doc.defaultPrice = 50;
+      mockArticleModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+
+      const body = {
+        organizationId: "org-1",
+        defaultPrice: null,
+      };
+
+      const result = await service.updateArticle("article-123", body);
+
+      expect(doc.defaultPrice).toBeUndefined();
+      expect(result).toBeDefined();
     });
   });
 

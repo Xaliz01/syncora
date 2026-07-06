@@ -607,6 +607,194 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     return result;
   }
 
+  async generateQuotePdf(user: AuthUser, quoteId: string): Promise<Buffer> {
+    const quote = await this.getQuote(user, quoteId);
+    const caseData = await this.callCasesService<CaseResponse>(user.organizationId, {
+      method: "get",
+      path: `/cases/${quote.caseId}`,
+      query: { organizationId: user.organizationId },
+    }).then((c) => this.enrichCaseResponse(user, c));
+
+    return this.buildQuotePdf(quote, caseData);
+  }
+
+  private buildQuotePdf(quote: QuoteResponse, caseData: CaseResponse): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({ size: "A4", margin: 50 });
+      const chunks: Buffer[] = [];
+      doc.on("data", (chunk: Buffer) => chunks.push(chunk));
+      doc.on("end", () => resolve(Buffer.concat(chunks)));
+      doc.on("error", reject);
+
+      const brandColor = "#6d28d9";
+      const textColor = "#1e293b";
+      const mutedColor = "#64748b";
+      const customer = caseData.customer;
+
+      // Header
+      doc
+        .fontSize(22)
+        .fillColor(brandColor)
+        .text("Planwise", 50, 40)
+        .fontSize(10)
+        .fillColor(mutedColor)
+        .text("Devis", 50, 65);
+
+      doc.moveTo(50, 85).lineTo(545, 85).strokeColor("#e2e8f0").lineWidth(1).stroke();
+      doc.y = 100;
+
+      // Quote number & status
+      doc
+        .fontSize(16)
+        .fillColor(textColor)
+        .text(`Devis ${quote.quoteNumber}`, 50, doc.y, { width: 495 });
+      if (quote.subject) {
+        doc
+          .fontSize(11)
+          .fillColor(textColor)
+          .text(quote.subject, 50, doc.y + 5, { width: 495 });
+        doc.y += 5;
+      }
+      doc.y += 10;
+
+      // Customer info
+      if (customer) {
+        this.pdfSection(doc, "Client");
+        this.pdfField(doc, "Nom", customer.displayName);
+        if (customer.email) this.pdfField(doc, "Email", customer.email);
+        if (customer.phone) this.pdfField(doc, "Téléphone", customer.phone);
+        if (customer.mobile) this.pdfField(doc, "Mobile", customer.mobile);
+        if (customer.address) {
+          const addr = [
+            customer.address.line1,
+            customer.address.line2,
+            [customer.address.postalCode, customer.address.city].filter(Boolean).join(" "),
+            customer.address.country,
+          ]
+            .filter(Boolean)
+            .join(", ");
+          this.pdfField(doc, "Adresse", addr);
+        }
+      }
+
+      // Case reference
+      this.pdfSection(doc, "Dossier");
+      this.pdfField(doc, "Référence", caseData.title);
+
+      // Quote metadata
+      this.pdfSection(doc, "Informations du devis");
+      if (quote.createdAt) {
+        this.pdfField(doc, "Date", this.formatDateFr(quote.createdAt));
+      }
+      if (quote.validUntil) {
+        this.pdfField(doc, "Valable jusqu'au", this.formatDateFr(quote.validUntil));
+      }
+
+      // Lines table
+      this.pdfSection(doc, "Détail des prestations");
+
+      const colX = { desc: 50, qty: 310, unit: 355, price: 405, tva: 460, total: 500 };
+      const headerY = doc.y;
+      doc
+        .fontSize(8)
+        .fillColor(mutedColor)
+        .text("Description", colX.desc, headerY)
+        .text("Qté", colX.qty, headerY)
+        .text("Unité", colX.unit, headerY)
+        .text("P.U. HT", colX.price, headerY)
+        .text("TVA", colX.tva, headerY)
+        .text("Total HT", colX.total, headerY);
+      doc.y = headerY + 14;
+      doc.moveTo(50, doc.y).lineTo(545, doc.y).strokeColor("#e2e8f0").lineWidth(0.5).stroke();
+      doc.y += 6;
+
+      for (const line of quote.lines) {
+        if (doc.y > 720) {
+          doc.addPage();
+          doc.y = 50;
+        }
+        const lineY = doc.y;
+        doc
+          .fontSize(9)
+          .fillColor(textColor)
+          .text(line.description, colX.desc, lineY, { width: 255 });
+        const descHeight = doc.heightOfString(line.description, { width: 255 });
+        doc
+          .text(String(line.quantity), colX.qty, lineY, { width: 40 })
+          .text(line.unit ?? "unité", colX.unit, lineY, { width: 45 })
+          .text(this.formatNumber(line.unitPrice), colX.price, lineY, { width: 50 })
+          .text(`${line.tvaRate}%`, colX.tva, lineY, { width: 35 })
+          .text(this.formatNumber(line.totalHt), colX.total, lineY, { width: 45 });
+        doc.y = lineY + Math.max(descHeight, 14) + 4;
+      }
+
+      // Totals
+      doc.y += 6;
+      doc.moveTo(380, doc.y).lineTo(545, doc.y).strokeColor("#e2e8f0").lineWidth(0.5).stroke();
+      doc.y += 8;
+
+      doc
+        .fontSize(9)
+        .fillColor(mutedColor)
+        .text("Total HT :", 380, doc.y, { width: 80 })
+        .fillColor(textColor)
+        .text(this.formatCurrencyPdf(quote.totalHt), 460, doc.y, { width: 85, align: "right" });
+      doc.y += 14;
+      doc
+        .fillColor(mutedColor)
+        .text("TVA :", 380, doc.y, { width: 80 })
+        .fillColor(textColor)
+        .text(this.formatCurrencyPdf(quote.totalTva), 460, doc.y, { width: 85, align: "right" });
+      doc.y += 14;
+      doc
+        .fontSize(10)
+        .fillColor(brandColor)
+        .text("Total TTC :", 380, doc.y, { width: 80 })
+        .text(this.formatCurrencyPdf(quote.totalTtc), 460, doc.y, { width: 85, align: "right" });
+      doc.y += 20;
+
+      // Notes
+      if (quote.notes) {
+        this.pdfSection(doc, "Conditions");
+        doc.fontSize(9).fillColor(textColor).text(quote.notes, 50, doc.y, { width: 495 });
+        doc.y += 10;
+      }
+
+      // Footer
+      const footerY = Math.max(doc.y + 30, 780);
+      if (footerY > 780) doc.addPage();
+      doc.moveTo(50, 780).lineTo(545, 780).strokeColor("#e2e8f0").lineWidth(0.5).stroke();
+      doc
+        .fontSize(8)
+        .fillColor(mutedColor)
+        .text(`Généré le ${this.formatDateTimeFr(new Date().toISOString())} — Planwise`, 50, 785, {
+          align: "center",
+          width: 495,
+        });
+
+      doc.end();
+    });
+  }
+
+  private formatDateFr(iso: string): string {
+    return new Date(iso).toLocaleDateString("fr-FR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  }
+
+  private formatNumber(value: number): string {
+    return value.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  private formatCurrencyPdf(value: number): string {
+    return value.toLocaleString("fr-FR", {
+      style: "currency",
+      currency: "EUR",
+    });
+  }
+
   // ── Report PDF ──
 
   async generateInterventionReport(user: AuthUser, interventionId: string): Promise<Buffer> {

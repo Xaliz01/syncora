@@ -20,6 +20,9 @@ export class ArticleDocument extends Document {
   @Prop({ required: true, default: "unité" })
   unit!: string;
 
+  @Prop({ type: Number })
+  defaultPrice?: number;
+
   @Prop({ required: true, default: 0 })
   stockQuantity!: number;
 

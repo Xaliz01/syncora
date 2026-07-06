@@ -788,6 +788,7 @@ export class CasesService extends AbstractCasesService {
       notes: body.notes,
       validUntil: body.validUntil ? new Date(body.validUntil) : undefined,
       lines: (body.lines ?? []).map((l) => ({
+        articleId: l.articleId,
         description: l.description,
         quantity: l.quantity,
         unitPrice: l.unitPrice,
@@ -843,6 +844,7 @@ export class CasesService extends AbstractCasesService {
     }
     if (body.lines !== undefined) {
       update.lines = body.lines.map((l) => ({
+        articleId: l.articleId,
         description: l.description,
         quantity: l.quantity,
         unitPrice: l.unitPrice,
@@ -898,6 +900,7 @@ export class CasesService extends AbstractCasesService {
       const { totalHt, totalTtc } = this.computeLineTotals(l);
       return {
         id: l.id,
+        articleId: l.articleId,
         description: l.description,
         quantity: l.quantity,
         unitPrice: l.unitPrice,

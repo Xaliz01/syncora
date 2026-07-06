@@ -130,6 +130,7 @@ export interface CreateQuoteForOrgBody {
   notes?: string;
   validUntil?: string;
   lines: {
+    articleId?: string;
     description: string;
     quantity: number;
     unitPrice: number;
@@ -144,6 +145,7 @@ export interface UpdateQuoteForOrgBody {
   status?: string;
   validUntil?: string | null;
   lines?: {
+    articleId?: string;
     description: string;
     quantity: number;
     unitPrice: number;
@@ -251,4 +253,5 @@ export abstract class AbstractCasesGatewayService {
     body: UpdateQuoteForOrgBody,
   ): Promise<QuoteResponse>;
   abstract deleteQuote(user: AuthUser, quoteId: string): Promise<{ deleted: true }>;
+  abstract generateQuotePdf(user: AuthUser, quoteId: string): Promise<Buffer>;
 }

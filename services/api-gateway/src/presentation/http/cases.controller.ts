@@ -332,6 +332,19 @@ export class CasesController {
     return this.casesService.deleteQuote(user, quoteId);
   }
 
+  @Get("quotes/:quoteId/pdf")
+  @RequirePermissions("quotes.read")
+  async generateQuotePdf(
+    @CurrentUser() user: AuthUser,
+    @Param("quoteId") quoteId: string,
+    @Res() res: Response,
+  ) {
+    const pdfBuffer = await this.casesService.generateQuotePdf(user, quoteId);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="devis-${quoteId}.pdf"`);
+    res.send(pdfBuffer);
+  }
+
   @Get("dashboard")
   @RequirePermissions("cases.read")
   async getDashboard(@CurrentUser() user: AuthUser) {

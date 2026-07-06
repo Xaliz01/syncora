@@ -29,7 +29,7 @@ const MOVEMENT_TYPE_LABELS: Record<string, string> = {
   adjustment: "Ajustement",
 };
 
-const ARTICLES_GRID = "md:grid-cols-[0.8fr_1.2fr_0.7fr_0.5fr_0.5fr_0.5fr_auto]";
+const ARTICLES_GRID = "md:grid-cols-[0.8fr_1.2fr_0.6fr_0.5fr_0.5fr_0.5fr_0.5fr_auto]";
 
 const STOCK_STATUS_COLORS: Record<string, string> = {
   out: "bg-red-50 text-red-700 border-red-200",
@@ -60,6 +60,7 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
   const [createName, setCreateName] = useState("");
   const [createReference, setCreateReference] = useState("");
   const [createUnit, setCreateUnit] = useState("unité");
+  const [createDefaultPrice, setCreateDefaultPrice] = useState("");
   const [createInitialStock, setCreateInitialStock] = useState("0");
   const [createReorderPoint, setCreateReorderPoint] = useState("0");
   const [createTargetStock, setCreateTargetStock] = useState("0");
@@ -103,6 +104,7 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
       setCreateName("");
       setCreateReference("");
       setCreateUnit("unité");
+      setCreateDefaultPrice("");
       setCreateInitialStock("0");
       setCreateReorderPoint("0");
       setCreateTargetStock("0");
@@ -284,6 +286,23 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
+                Prix par défaut (€ HT)
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={createDefaultPrice}
+                onChange={(e) => setCreateDefaultPrice(e.target.value)}
+                placeholder="Optionnel"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
+              />
+              <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">
+                Pré-rempli automatiquement sur les devis
+              </p>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
                 Stock initial
               </label>
               <input
@@ -345,6 +364,7 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
                   name: createName.trim(),
                   reference: createReference.trim(),
                   unit: createUnit.trim() || "unité",
+                  defaultPrice: createDefaultPrice ? Number(createDefaultPrice) : undefined,
                   initialStock: Number(createInitialStock || 0),
                   reorderPoint: Number(createReorderPoint || 0),
                   targetStock: Number(createTargetStock || 0),
@@ -461,6 +481,7 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
             <>
               <span>Référence</span>
               <span>Nom</span>
+              <span>Prix HT</span>
               <span>Stock</span>
               <span>Seuil</span>
               <span>Cible</span>
@@ -483,6 +504,11 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
                   <span className="text-xs text-slate-400 dark:text-slate-500">Inactif</span>
                 )}
               </div>
+              <ListCellDefault>
+                {article.defaultPrice !== undefined
+                  ? `${article.defaultPrice.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €`
+                  : "—"}
+              </ListCellDefault>
               <ListCellDefault>
                 {article.stockQuantity} {article.unit}
               </ListCellDefault>
