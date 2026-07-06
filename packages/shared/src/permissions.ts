@@ -96,6 +96,7 @@ export const TECHNICIAN_FIELD_DEFAULT_PERMISSIONS: readonly AssignablePermission
   "customers.read",
   "fleet.technicians.read",
   "teams.read",
+  "notifications.manage_preferences",
 ] as const;
 
 export interface PermissionProfileResponse {

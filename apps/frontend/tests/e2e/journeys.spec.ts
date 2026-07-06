@@ -85,6 +85,7 @@ const ALL_PROTECTED_PATHS = [
   "/settings/profiles",
   "/settings/profiles/new",
   "/settings/stock/articles",
+  "/settings/notifications",
 ];
 
 test.describe("Protection exhaustive des routes", () => {
