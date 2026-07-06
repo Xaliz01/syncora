@@ -18,6 +18,11 @@ export const ASSIGNABLE_PERMISSION_CODES = [
   "cases.update",
   "cases.delete",
   "cases.assign",
+  "cases.manage_billing",
+  "quotes.read",
+  "quotes.create",
+  "quotes.update",
+  "quotes.delete",
   "customers.read",
   "customers.create",
   "customers.update",
@@ -96,6 +101,7 @@ export const TECHNICIAN_FIELD_DEFAULT_PERMISSIONS: readonly AssignablePermission
   "customers.read",
   "fleet.technicians.read",
   "teams.read",
+  "notifications.manage_preferences",
 ] as const;
 
 export interface PermissionProfileResponse {

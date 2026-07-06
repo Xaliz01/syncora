@@ -83,6 +83,7 @@ export interface UpdateCasePayload {
   title?: string;
   description?: string;
   status?: string;
+  billingStatus?: string;
   priority?: string;
   assigneeIds?: string[];
   dueDate?: string | null;
@@ -93,6 +94,7 @@ export interface UpdateCasePayload {
 
 export function listCases(filters?: {
   status?: string;
+  billingStatus?: string;
   assigneeId?: string;
   priority?: string;
   search?: string;
@@ -100,6 +102,7 @@ export function listCases(filters?: {
 }) {
   const params = new URLSearchParams();
   if (filters?.status) params.set("status", filters.status);
+  if (filters?.billingStatus) params.set("billingStatus", filters.billingStatus);
   if (filters?.assigneeId) params.set("assigneeId", filters.assigneeId);
   if (filters?.priority) params.set("priority", filters.priority);
   if (filters?.search) params.set("search", filters.search);
@@ -147,6 +150,7 @@ export interface UpdateInterventionPayload {
   title?: string;
   description?: string;
   status?: string;
+  billingStatus?: string;
   assigneeId?: string | null;
   assignedTeamId?: string | null;
   scheduledStart?: string | null;

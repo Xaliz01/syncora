@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document, Types } from "mongoose";
-import type { CasePriority, CaseStatus, TodoItemStatus } from "@planwise/shared";
+import type { BillingStatus, CasePriority, CaseStatus, TodoItemStatus } from "@planwise/shared";
 
 @Schema({ _id: false })
 export class CaseTodoItemSubDoc {
@@ -81,6 +81,9 @@ export class CaseDocument extends Document {
   @Prop({ type: String, default: "draft" })
   status!: CaseStatus;
 
+  @Prop({ type: String, default: "none" })
+  billingStatus!: BillingStatus;
+
   @Prop({ type: String, default: "medium" })
   priority!: CasePriority;
 
@@ -117,3 +120,4 @@ CaseSchema.index({ organizationId: 1, status: 1 });
 CaseSchema.index({ organizationId: 1, assigneeId: 1 });
 CaseSchema.index({ organizationId: 1, "assignees.userId": 1 });
 CaseSchema.index({ organizationId: 1, dueDate: 1 });
+CaseSchema.index({ organizationId: 1, billingStatus: 1 });

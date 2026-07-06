@@ -88,6 +88,7 @@ Référence technique : landing `apps/frontend/components/landing/LandingPage.ts
 - **Documents** : pièces jointes dossier et intervention (images, PDF), quota 10 Go, addon stockage +50 Go.
 - **Pilotage** : tableau de bord (stats cliquables, tâches à faire), recherche globale, notifications in-app.
 - **Abonnement** : Stripe (essai 15 j, 2 users inclus, addons users / suggestion équipe / stockage).
+- **Statut de facturation** : « À facturer » / « Facturé » / « Payé » sur dossiers et interventions, historique, filtre liste et dashboard.
 - **Addon** : suggestion intelligente d’équipe (distance, trajet, carburant, CO₂ — géocodage adresses).
 - **Support** : Crisp (chat).
 
@@ -96,7 +97,7 @@ Référence technique : landing `apps/frontend/components/landing/LandingPage.ts
 - Application **web PWA** (installable, cache offline des listes du jour) ; pas d’app native.
 - **Une adresse** par client ; pas de multi-sites ni d’équipements installés.
 - Pas de **devis / facturation** métier intégrés.
-- Pas de **portail client** ni SMS/email automatiques métier.
+- Pas de **portail client** ni SMS automatiques métier (email et push PWA opérationnels).
 - Stock **global** par organisation (entrepôts multi-sites : entité prévue, non implémentée).
 - Clôture intervention depuis le bureau ou le mobile (photos terrain OK) ; **signature client** et **rapport PDF** disponibles sur intervention terminée.
 - Pas d’**API publique** partenaires ni d’automatisations type workflow builder.
@@ -130,7 +131,7 @@ Objectif : remplacer Excel + agenda partagé pour le suivi interne.
 - Clients, flotte, stock léger, permissions, abonnement
 - Dashboard, recherche, notifications in-app
 
-### Phase 1 — Terrain TPE (priorité haute) `🟡`
+### Phase 1 — Terrain TPE (priorité haute) `✅`
 
 Objectif : le technicien clôture sa journée **sur le téléphone** ; le patron a une preuve client.
 
@@ -141,7 +142,7 @@ Objectif : le technicien clôture sa journée **sur le téléphone** ; le patron
 | 1.3 | **Photos** rattachées à l'intervention (pas seulement au dossier)                         | Preuve travaux                           | ✅     |
 | 1.4 | **Signature client** + génération **PDF rapport** d'intervention                          | Confiance client, litiges                | ✅     |
 | 1.5 | **PWA** (installable, cache minimal des listes du jour)                                   | Artisans sans « app store » obligatoire  | ✅     |
-| 1.6 | Notifications **push PWA** + préférences multi-canal (in-app, email, push, SMS)           | Rappels terrain, paramétrage utilisateur | 🟡     |
+| 1.6 | Notifications **push PWA** + préférences multi-canal (in-app, email, push)                | Rappels terrain, paramétrage utilisateur | ✅     |
 
 _Hors scope phase 1_ : GPS temps réel permanent, portail client self-service.
 
@@ -155,16 +156,16 @@ Objectif : un client pro avec plusieurs lieux d’intervention.
 | 2.2 | **Contacts** optionnels (nom, rôle, téléphone)                                      | Appeler le bon interlocuteur sur site |
 | 2.3 | Enrichir **suggestion d’équipe** avec adresse d’intervention du dossier             | Déjà différenciant ; plus juste       |
 
-### Phase 3 — Revenus légers (sans devenir ERP) `⬜`
+### Phase 3 — Revenus légers (sans devenir ERP) `🟡`
 
 Objectif : boucler avec l’outil compta existant de l’artisan.
 
-| #   | Évolution                                                           | Pourquoi (TPE)        |
-| --- | ------------------------------------------------------------------- | --------------------- |
-| 3.1 | **Devis simple** (lignes, TVA, PDF) lié au dossier                  | Avant intervention    |
-| 3.2 | **Export** dossier / intervention (CSV, PDF)                        | Saisie compta externe |
-| 3.3 | **Intégration** 1ère brique compta FR (à choisir : Pennylane, etc.) | Réduire double saisie |
-| 3.4 | Statut métier « **À facturer** » sur dossier / intervention         | Pont vers compta      |
+| #   | Évolution                                                           | Pourquoi (TPE)        | Statut |
+| --- | ------------------------------------------------------------------- | --------------------- | ------ |
+| 3.1 | **Devis simple** (lignes, TVA, PDF) lié au dossier                  | Avant intervention    | ✅     |
+| 3.2 | **Export** dossier / intervention (CSV, PDF)                        | Saisie compta externe | ⬜     |
+| 3.3 | **Intégration** 1ère brique compta FR (à choisir : Pennylane, etc.) | Réduire double saisie | ⬜     |
+| 3.4 | Statut métier « **À facturer** » sur dossier / intervention         | Pont vers compta      | ✅     |
 
 _Hors scope phase 3_ : gestion complète des paiements, relances, compta générale.
 

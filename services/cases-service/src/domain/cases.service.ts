@@ -27,11 +27,16 @@ import {
   type UpdateCaseTemplateBody,
   type UpdateInterventionBody,
   type UpdateTodoBody,
+  type CreateQuoteBody,
+  type UpdateQuoteBody,
+  type QuoteResponse,
+  type QuoteSummaryResponse,
 } from "@planwise/shared";
 import type { CaseTemplateDocument } from "../persistence/case-template.schema";
 import type { CaseDocument } from "../persistence/case.schema";
 import type { CaseHistoryDocument } from "../persistence/case-history.schema";
 import type { InterventionDocument } from "../persistence/intervention.schema";
+import type { QuoteDocument, QuoteLineSubDoc } from "../persistence/quote.schema";
 import { AbstractCasesService } from "./ports/cases.service.port";
 
 @Injectable()
@@ -45,6 +50,8 @@ export class CasesService extends AbstractCasesService {
     private readonly interventionModel: Model<InterventionDocument>,
     @InjectModel("CaseHistory")
     private readonly caseHistoryModel: Model<CaseHistoryDocument>,
+    @InjectModel("Quote")
+    private readonly quoteModel: Model<QuoteDocument>,
   ) {
     super();
   }
@@ -190,6 +197,7 @@ export class CasesService extends AbstractCasesService {
     organizationId: string,
     filters?: {
       status?: string;
+      billingStatus?: string;
       assigneeId?: string;
       priority?: string;
       search?: string;
@@ -199,6 +207,7 @@ export class CasesService extends AbstractCasesService {
     const query: Record<string, unknown> = { organizationId, ...activeDocumentFilter };
     if (filters?.customerId) query.customerId = filters.customerId;
     if (filters?.status) query.status = filters.status;
+    if (filters?.billingStatus) query.billingStatus = filters.billingStatus;
     if (filters?.assigneeId) {
       query.$or = [
         { assignees: { $elemMatch: { userId: filters.assigneeId } } },
@@ -228,6 +237,7 @@ export class CasesService extends AbstractCasesService {
     if (body.title !== undefined) setUpdate.title = body.title;
     if (body.description !== undefined) setUpdate.description = body.description;
     if (body.status !== undefined) setUpdate.status = body.status;
+    if (body.billingStatus !== undefined) setUpdate.billingStatus = body.billingStatus;
     if (body.priority !== undefined) setUpdate.priority = body.priority;
     if (body.assignees !== undefined) setUpdate.assignees = body.assignees;
     if (body.dueDate !== undefined)
@@ -404,6 +414,7 @@ export class CasesService extends AbstractCasesService {
     if (body.title !== undefined) update.title = body.title;
     if (body.description !== undefined) update.description = body.description;
     if (body.status !== undefined) update.status = body.status;
+    if (body.billingStatus !== undefined) update.billingStatus = body.billingStatus;
     if (body.assigneeId !== undefined) update.assigneeId = body.assigneeId;
     if (body.assignedTeamId !== undefined) update.assignedTeamId = body.assignedTeamId;
     if (body.scheduledStart !== undefined) {
@@ -624,6 +635,14 @@ export class CasesService extends AbstractCasesService {
           dueDate: { $lt: now },
         };
         break;
+      case "to_invoice":
+        query = {
+          organizationId,
+          ...activeDocumentFilter,
+          billingStatus: "to_invoice",
+        };
+        sort = { updatedAt: -1 };
+        break;
       default:
         return [];
     }
@@ -749,6 +768,190 @@ export class CasesService extends AbstractCasesService {
       .limit(200)
       .exec();
     return docs.map((d) => this.toHistoryResponse(d));
+  }
+
+  // ── Quotes ──
+
+  async createQuote(body: CreateQuoteBody): Promise<QuoteResponse> {
+    const caseDoc = await this.caseModel
+      .findOne({ _id: body.caseId, organizationId: body.organizationId, ...activeDocumentFilter })
+      .exec();
+    if (!caseDoc) throw new NotFoundException("Case not found");
+
+    const quoteNumber = await this.generateQuoteNumber(body.organizationId);
+
+    const doc = await this.quoteModel.create({
+      organizationId: body.organizationId,
+      caseId: body.caseId,
+      quoteNumber,
+      subject: body.subject,
+      notes: body.notes,
+      validUntil: body.validUntil ? new Date(body.validUntil) : undefined,
+      lines: (body.lines ?? []).map((l) => ({
+        description: l.description,
+        quantity: l.quantity,
+        unitPrice: l.unitPrice,
+        tvaRate: l.tvaRate,
+        unit: l.unit,
+      })),
+      status: "draft",
+      isTestData: body.isTestData === true,
+    });
+
+    return this.toQuoteResponse(doc, caseDoc.title);
+  }
+
+  async listQuotes(
+    organizationId: string,
+    filters?: { caseId?: string; status?: string },
+  ): Promise<QuoteSummaryResponse[]> {
+    const query: Record<string, unknown> = { organizationId, ...activeDocumentFilter };
+    if (filters?.caseId) query.caseId = filters.caseId;
+    if (filters?.status) query.status = filters.status;
+
+    const docs = await this.quoteModel.find(query).sort({ createdAt: -1 }).exec();
+
+    const caseIds = [...new Set(docs.map((d) => d.caseId))];
+    const cases = await this.caseModel
+      .find({ _id: { $in: caseIds }, ...activeDocumentFilter })
+      .select("_id title")
+      .exec();
+    const caseMap = new Map(cases.map((c) => [c._id.toString(), c.title]));
+
+    return docs.map((d) => this.toQuoteSummary(d, caseMap.get(d.caseId)));
+  }
+
+  async getQuote(id: string, organizationId: string): Promise<QuoteResponse> {
+    const doc = await this.quoteModel
+      .findOne({ _id: id, organizationId, ...activeDocumentFilter })
+      .exec();
+    if (!doc) throw new NotFoundException("Quote not found");
+    const caseDoc = await this.caseModel
+      .findOne({ _id: doc.caseId, ...activeDocumentFilter })
+      .select("title")
+      .exec();
+    return this.toQuoteResponse(doc, caseDoc?.title);
+  }
+
+  async updateQuote(id: string, body: UpdateQuoteBody): Promise<QuoteResponse> {
+    const update: Record<string, unknown> = {};
+    if (body.subject !== undefined) update.subject = body.subject;
+    if (body.notes !== undefined) update.notes = body.notes;
+    if (body.status !== undefined) update.status = body.status;
+    if (body.validUntil !== undefined) {
+      update.validUntil = body.validUntil ? new Date(body.validUntil) : null;
+    }
+    if (body.lines !== undefined) {
+      update.lines = body.lines.map((l) => ({
+        description: l.description,
+        quantity: l.quantity,
+        unitPrice: l.unitPrice,
+        tvaRate: l.tvaRate,
+        unit: l.unit,
+      }));
+    }
+
+    const doc = await this.quoteModel
+      .findOneAndUpdate(
+        { _id: id, organizationId: body.organizationId, ...activeDocumentFilter },
+        { $set: update },
+        { new: true },
+      )
+      .exec();
+    if (!doc) throw new NotFoundException("Quote not found");
+    const caseDoc = await this.caseModel
+      .findOne({ _id: doc.caseId, ...activeDocumentFilter })
+      .select("title")
+      .exec();
+    return this.toQuoteResponse(doc, caseDoc?.title);
+  }
+
+  async deleteQuote(id: string, organizationId: string): Promise<{ deleted: true }> {
+    const result = await this.quoteModel
+      .updateOne(
+        { _id: id, organizationId, ...activeDocumentFilter },
+        { $set: { deletedAt: new Date() } },
+      )
+      .exec();
+    if (!result.matchedCount) throw new NotFoundException("Quote not found");
+    return { deleted: true };
+  }
+
+  private async generateQuoteNumber(organizationId: string): Promise<string> {
+    const year = new Date().getFullYear();
+    const count = await this.quoteModel.countDocuments({
+      organizationId,
+      quoteNumber: { $regex: `^DEV-${year}-` },
+    });
+    const seq = String(count + 1).padStart(4, "0");
+    return `DEV-${year}-${seq}`;
+  }
+
+  private computeLineTotals(line: QuoteLineSubDoc): { totalHt: number; totalTtc: number } {
+    const totalHt = Math.round(line.quantity * line.unitPrice * 100) / 100;
+    const totalTtc = Math.round(totalHt * (1 + line.tvaRate / 100) * 100) / 100;
+    return { totalHt, totalTtc };
+  }
+
+  private toQuoteResponse(doc: QuoteDocument, caseTitle?: string): QuoteResponse {
+    const lines = (doc.lines ?? []).map((l) => {
+      const { totalHt, totalTtc } = this.computeLineTotals(l);
+      return {
+        id: l.id,
+        description: l.description,
+        quantity: l.quantity,
+        unitPrice: l.unitPrice,
+        tvaRate: l.tvaRate,
+        unit: l.unit,
+        totalHt,
+        totalTtc,
+      };
+    });
+
+    const totalHt = Math.round(lines.reduce((s, l) => s + l.totalHt, 0) * 100) / 100;
+    const totalTtc = Math.round(lines.reduce((s, l) => s + l.totalTtc, 0) * 100) / 100;
+    const totalTva = Math.round((totalTtc - totalHt) * 100) / 100;
+
+    return {
+      id: doc._id.toString(),
+      organizationId: doc.organizationId,
+      caseId: doc.caseId,
+      caseTitle,
+      quoteNumber: doc.quoteNumber,
+      subject: doc.subject,
+      notes: doc.notes,
+      status: doc.status,
+      validUntil: doc.validUntil?.toISOString(),
+      lines,
+      totalHt,
+      totalTva,
+      totalTtc,
+      createdAt: doc.get("createdAt")?.toISOString(),
+      updatedAt: doc.get("updatedAt")?.toISOString(),
+      isTestData: doc.isTestData === true,
+    };
+  }
+
+  private toQuoteSummary(doc: QuoteDocument, caseTitle?: string): QuoteSummaryResponse {
+    const lines = (doc.lines ?? []).map((l) => this.computeLineTotals(l));
+    const totalHt = Math.round(lines.reduce((s, l) => s + l.totalHt, 0) * 100) / 100;
+    const totalTtc = Math.round(lines.reduce((s, l) => s + l.totalTtc, 0) * 100) / 100;
+
+    return {
+      id: doc._id.toString(),
+      organizationId: doc.organizationId,
+      caseId: doc.caseId,
+      caseTitle,
+      quoteNumber: doc.quoteNumber,
+      subject: doc.subject,
+      status: doc.status,
+      totalHt,
+      totalTtc,
+      validUntil: doc.validUntil?.toISOString(),
+      createdAt: doc.get("createdAt")?.toISOString(),
+      updatedAt: doc.get("updatedAt")?.toISOString(),
+      isTestData: doc.isTestData === true,
+    };
   }
 
   // ── Helpers ──
@@ -946,6 +1149,7 @@ export class CasesService extends AbstractCasesService {
       title: doc.title,
       description: doc.description,
       status: doc.status,
+      billingStatus: doc.billingStatus ?? "none",
       priority: doc.priority,
       assignees: this.resolveAssignees(doc),
       dueDate: doc.dueDate?.toISOString(),
@@ -980,6 +1184,7 @@ export class CasesService extends AbstractCasesService {
       interventionSiteId: doc.interventionSiteId,
       title: doc.title,
       status: doc.status,
+      billingStatus: doc.billingStatus ?? "none",
       priority: doc.priority,
       assignees: this.resolveAssignees(doc),
       dueDate: doc.dueDate?.toISOString(),
@@ -1027,6 +1232,7 @@ export class CasesService extends AbstractCasesService {
       title: doc.title,
       description: doc.description,
       status: doc.status,
+      billingStatus: doc.billingStatus ?? "none",
       assigneeId: doc.assigneeId,
       assigneeName: doc.assigneeName,
       assignedTeamId: doc.assignedTeamId,

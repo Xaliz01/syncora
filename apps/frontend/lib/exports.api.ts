@@ -42,11 +42,18 @@ export function exportCaseSummaryPdf(caseId: string): Promise<void> {
 
 export function exportCasesList(
   format: "pdf" | "xlsx",
-  filters?: { status?: string; priority?: string; assigneeId?: string; search?: string },
+  filters?: {
+    status?: string;
+    billingStatus?: string;
+    priority?: string;
+    assigneeId?: string;
+    search?: string;
+  },
 ): Promise<void> {
   const params = new URLSearchParams();
   params.set("format", format);
   if (filters?.status) params.set("status", filters.status);
+  if (filters?.billingStatus) params.set("billingStatus", filters.billingStatus);
   if (filters?.priority) params.set("priority", filters.priority);
   if (filters?.assigneeId) params.set("assigneeId", filters.assigneeId);
   if (filters?.search) params.set("search", filters.search);

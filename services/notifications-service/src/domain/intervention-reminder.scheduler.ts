@@ -13,6 +13,7 @@ import type {
 import { buildDefaultNotificationPreferences, getEnabledChannels } from "@planwise/shared";
 import type { NotificationPreferencesDocument } from "../persistence/notification-preferences.schema";
 import type { NotificationDocument } from "../persistence/notification.schema";
+import type { SentReminderDocument } from "../persistence/sent-reminder.schema";
 import { AbstractPushSubscriptionService } from "./ports/push-subscription.service.port";
 import { AbstractEmailService } from "./ports/email.service.port";
 
@@ -22,13 +23,14 @@ const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
 @Injectable()
 export class InterventionReminderScheduler {
   private readonly logger = new Logger(InterventionReminderScheduler.name);
-  private readonly sentReminders = new Map<string, number>();
 
   constructor(
     @InjectModel("NotificationPreferences")
     private readonly preferencesModel: Model<NotificationPreferencesDocument>,
     @InjectModel("Notification")
     private readonly notificationModel: Model<NotificationDocument>,
+    @InjectModel("SentReminder")
+    private readonly sentReminderModel: Model<SentReminderDocument>,
     private readonly pushService: AbstractPushSubscriptionService,
     private readonly emailService: AbstractEmailService,
     private readonly httpService: HttpService,
@@ -68,8 +70,8 @@ export class InterventionReminderScheduler {
         const userLeadTime = userPrefs.reminderLeadTime ?? 30;
 
         if (minutesUntilStart <= userLeadTime && minutesUntilStart > 0) {
-          const reminderKey = `${intervention.id}:${userId}:${userLeadTime}`;
-          if (this.sentReminders.has(reminderKey)) continue;
+          const alreadySent = await this.hasReminderBeenSent(intervention.id, userId, userLeadTime);
+          if (alreadySent) continue;
 
           const channels = getEnabledChannels(userPrefs, "intervention_reminder");
 
@@ -104,15 +106,39 @@ export class InterventionReminderScheduler {
             }
           }
 
-          this.sentReminders.set(reminderKey, Date.now());
+          await this.markReminderSent(intervention.id, userId, userLeadTime);
           this.logger.log(`Reminder sent for intervention ${intervention.id} to user ${userId}`);
         }
       }
-
-      this.cleanupOldReminders();
     } catch (err) {
       this.logger.warn("Reminder check failed", (err as Error).message);
     }
+  }
+
+  private async hasReminderBeenSent(
+    interventionId: string,
+    userId: string,
+    leadTime: number,
+  ): Promise<boolean> {
+    const existing = await this.sentReminderModel
+      .findOne({ interventionId, userId, leadTime })
+      .lean()
+      .exec();
+    return !!existing;
+  }
+
+  private async markReminderSent(
+    interventionId: string,
+    userId: string,
+    leadTime: number,
+  ): Promise<void> {
+    await this.sentReminderModel
+      .updateOne(
+        { interventionId, userId, leadTime },
+        { $setOnInsert: { interventionId, userId, leadTime } },
+        { upsert: true },
+      )
+      .exec();
   }
 
   private async fetchUpcomingInterventions(
@@ -127,7 +153,7 @@ export class InterventionReminderScheduler {
       );
       return response.data;
     } catch {
-      this.logger.debug("Could not fetch upcoming interventions (endpoint may not exist yet)");
+      this.logger.debug("Could not fetch upcoming interventions");
       return [];
     }
   }
@@ -151,15 +177,6 @@ export class InterventionReminderScheduler {
       detail: "Rappel : intervention imminente",
       read: false,
     });
-  }
-
-  private cleanupOldReminders(): void {
-    const twoHoursAgo = Date.now() - 2 * 60 * 60 * 1000;
-    for (const [key, timestamp] of this.sentReminders) {
-      if (timestamp < twoHoursAgo) {
-        this.sentReminders.delete(key);
-      }
-    }
   }
 
   private async resolveUserEmail(userId: string): Promise<string | null> {

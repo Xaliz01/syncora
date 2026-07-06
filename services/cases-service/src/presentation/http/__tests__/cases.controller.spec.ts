@@ -35,6 +35,11 @@ describe("CasesController", () => {
       listUpcomingInterventions: jest.fn(),
       addCaseHistory: jest.fn(),
       listCaseHistory: jest.fn(),
+      createQuote: jest.fn(),
+      listQuotes: jest.fn(),
+      getQuote: jest.fn(),
+      updateQuote: jest.fn(),
+      deleteQuote: jest.fn(),
       purgeTestData: jest.fn(),
     };
 
@@ -110,20 +115,36 @@ describe("CasesController", () => {
     it("should call casesService.listCases with organizationId and filters", async () => {
       mockCasesService.listCases.mockResolvedValue([{ id: "case-1" }] as never);
 
-      const result = await controller.listCases("org-1", "draft", "user-1", "high", "search");
+      const result = await controller.listCases(
+        "org-1",
+        "draft",
+        undefined,
+        "user-1",
+        "high",
+        "search",
+      );
 
       expect(mockCasesService.listCases).toHaveBeenCalledWith("org-1", {
         status: "draft",
+        billingStatus: undefined,
         assigneeId: "user-1",
         priority: "high",
         search: "search",
+        customerId: undefined,
       });
       expect(result).toHaveLength(1);
     });
 
     it("should throw BadRequestException when organizationId is missing", async () => {
       await expect(
-        controller.listCases(undefined as never, undefined, undefined, undefined, undefined),
+        controller.listCases(
+          undefined as never,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+        ),
       ).rejects.toThrow(BadRequestException);
       expect(mockCasesService.listCases).not.toHaveBeenCalled();
     });

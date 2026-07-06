@@ -46,6 +46,11 @@ describe("CasesController", () => {
       getDashboardTodoCases: jest.fn(),
       getDashboardStatCases: jest.fn(),
       listCaseHistory: jest.fn(),
+      createQuote: jest.fn(),
+      listQuotes: jest.fn(),
+      getQuote: jest.fn(),
+      updateQuote: jest.fn(),
+      deleteQuote: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -154,6 +159,7 @@ describe("CasesController", () => {
       const result = await controller.listCases(
         mockUser,
         "open",
+        undefined,
         "assignee-1",
         "high",
         "search-term",
@@ -161,9 +167,11 @@ describe("CasesController", () => {
 
       expect(mockCasesService.listCases).toHaveBeenCalledWith(mockUser, {
         status: "open",
+        billingStatus: undefined,
         assigneeId: "assignee-1",
         priority: "high",
         search: "search-term",
+        customerId: undefined,
       });
       expect(result).toEqual([{ id: "case-1" }]);
     });
@@ -175,9 +183,11 @@ describe("CasesController", () => {
 
       expect(mockCasesService.listCases).toHaveBeenCalledWith(mockUser, {
         status: undefined,
+        billingStatus: undefined,
         assigneeId: undefined,
         priority: undefined,
         search: undefined,
+        customerId: undefined,
       });
       expect(result).toEqual([]);
     });

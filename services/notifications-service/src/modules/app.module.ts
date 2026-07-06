@@ -19,6 +19,7 @@ import { InterventionReminderScheduler } from "../domain/intervention-reminder.s
 import { NotificationSchema } from "../persistence/notification.schema";
 import { NotificationPreferencesSchema } from "../persistence/notification-preferences.schema";
 import { PushSubscriptionSchema } from "../persistence/push-subscription.schema";
+import { SentReminderSchema } from "../persistence/sent-reminder.schema";
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { PushSubscriptionSchema } from "../persistence/push-subscription.schema"
       { name: "Notification", schema: NotificationSchema },
       { name: "NotificationPreferences", schema: NotificationPreferencesSchema },
       { name: "PushSubscription", schema: PushSubscriptionSchema },
+      { name: "SentReminder", schema: SentReminderSchema },
     ]),
     ScheduleModule.forRoot(),
     HttpModule.register({ timeout: 10000, maxRedirects: 0 }),

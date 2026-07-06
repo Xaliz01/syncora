@@ -18,11 +18,13 @@ import type {
   CreateCaseTemplateBody,
   CompleteInterventionBody,
   CreateInterventionBody,
+  CreateQuoteBody,
   SignInterventionBody,
   StartInterventionBody,
   UpdateCaseBody,
   UpdateCaseTemplateBody,
   UpdateInterventionBody,
+  UpdateQuoteBody,
   UpdateTodoBody,
 } from "@planwise/shared";
 import { parseOrganizationIdQuery } from "@planwise/shared/nest";
@@ -72,6 +74,7 @@ export class CasesController {
   async listCases(
     @Query("organizationId") organizationId: string,
     @Query("status") status?: string,
+    @Query("billingStatus") billingStatus?: string,
     @Query("assigneeId") assigneeId?: string,
     @Query("priority") priority?: string,
     @Query("search") search?: string,
@@ -80,6 +83,7 @@ export class CasesController {
     organizationId = parseOrganizationIdQuery(organizationId);
     return this.casesService.listCases(organizationId, {
       status,
+      billingStatus,
       assigneeId,
       priority,
       search,
@@ -177,6 +181,40 @@ export class CasesController {
     return this.casesService.deleteIntervention(id, organizationId);
   }
 
+  // ── Quotes ──
+
+  @Post("quotes")
+  async createQuote(@Body() body: CreateQuoteBody) {
+    return this.casesService.createQuote(body);
+  }
+
+  @Get("quotes")
+  async listQuotes(
+    @Query("organizationId") organizationId: string,
+    @Query("caseId") caseId?: string,
+    @Query("status") status?: string,
+  ) {
+    organizationId = parseOrganizationIdQuery(organizationId);
+    return this.casesService.listQuotes(organizationId, { caseId, status });
+  }
+
+  @Get("quotes/:id")
+  async getQuote(@Param("id") id: string, @Query("organizationId") organizationId: string) {
+    organizationId = parseOrganizationIdQuery(organizationId);
+    return this.casesService.getQuote(id, organizationId);
+  }
+
+  @Patch("quotes/:id")
+  async updateQuote(@Param("id") id: string, @Body() body: UpdateQuoteBody) {
+    return this.casesService.updateQuote(id, body);
+  }
+
+  @Delete("quotes/:id")
+  async deleteQuote(@Param("id") id: string, @Query("organizationId") organizationId: string) {
+    organizationId = parseOrganizationIdQuery(organizationId);
+    return this.casesService.deleteQuote(id, organizationId);
+  }
+
   // ── Dashboard ──
 
   @Get("dashboard")
@@ -222,7 +260,7 @@ export class CasesController {
     if (!userId) throw new BadRequestException("userId query param is required");
     if (!filter || !isDashboardStatFilter(filter)) {
       throw new BadRequestException(
-        "filter query param is required (assigned, in_progress, completed_week, overdue)",
+        "filter query param is required (assigned, in_progress, completed_week, overdue, to_invoice)",
       );
     }
     return this.casesService.getDashboardStatCases(organizationId, userId, userProfileId, filter);
