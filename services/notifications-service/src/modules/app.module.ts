@@ -6,12 +6,15 @@ import { HealthController, provideHealthServiceName } from "@planwise/shared/nes
 import { NotificationsController } from "../presentation/http/notifications.controller";
 import { NotificationPreferencesController } from "../presentation/http/notification-preferences.controller";
 import { PushSubscriptionsController } from "../presentation/http/push-subscriptions.controller";
+import { EmailController } from "../presentation/http/email.controller";
 import { AbstractNotificationsService } from "../domain/ports/notifications.service.port";
 import { NotificationsService } from "../domain/notifications.service";
 import { AbstractNotificationPreferencesService } from "../domain/ports/notification-preferences.service.port";
 import { NotificationPreferencesService } from "../domain/notification-preferences.service";
 import { AbstractPushSubscriptionService } from "../domain/ports/push-subscription.service.port";
 import { PushSubscriptionService } from "../domain/push-subscription.service";
+import { AbstractEmailService } from "../domain/ports/email.service.port";
+import { EmailService } from "../domain/email.service";
 import { InterventionReminderScheduler } from "../domain/intervention-reminder.scheduler";
 import { NotificationSchema } from "../persistence/notification.schema";
 import { NotificationPreferencesSchema } from "../persistence/notification-preferences.schema";
@@ -34,6 +37,7 @@ import { PushSubscriptionSchema } from "../persistence/push-subscription.schema"
     NotificationsController,
     NotificationPreferencesController,
     PushSubscriptionsController,
+    EmailController,
     HealthController,
   ],
   providers: [
@@ -44,6 +48,7 @@ import { PushSubscriptionSchema } from "../persistence/push-subscription.schema"
       useClass: NotificationPreferencesService,
     },
     { provide: AbstractPushSubscriptionService, useClass: PushSubscriptionService },
+    { provide: AbstractEmailService, useClass: EmailService },
     InterventionReminderScheduler,
   ],
 })

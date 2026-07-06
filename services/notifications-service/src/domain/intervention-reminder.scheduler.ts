@@ -8,13 +8,16 @@ import type {
   InterventionResponse,
   NotificationPreferencesData,
   ReminderLeadTime,
+  UserResponse,
 } from "@planwise/shared";
 import { buildDefaultNotificationPreferences, getEnabledChannels } from "@planwise/shared";
 import type { NotificationPreferencesDocument } from "../persistence/notification-preferences.schema";
 import type { NotificationDocument } from "../persistence/notification.schema";
 import { AbstractPushSubscriptionService } from "./ports/push-subscription.service.port";
+import { AbstractEmailService } from "./ports/email.service.port";
 
 const CASES_URL = process.env.CASES_SERVICE_URL ?? "http://localhost:3004";
+const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
 
 @Injectable()
 export class InterventionReminderScheduler {
@@ -27,6 +30,7 @@ export class InterventionReminderScheduler {
     @InjectModel("Notification")
     private readonly notificationModel: Model<NotificationDocument>,
     private readonly pushService: AbstractPushSubscriptionService,
+    private readonly emailService: AbstractEmailService,
     private readonly httpService: HttpService,
   ) {}
 
@@ -85,6 +89,21 @@ export class InterventionReminderScheduler {
             });
           }
 
+          if (channels.includes("email")) {
+            const emailBody = intervention.title
+              ? `Intervention « ${intervention.title} » prévue dans ${Math.round(minutesUntilStart)} minutes.`
+              : `Vous avez une intervention prévue dans ${Math.round(minutesUntilStart)} minutes.`;
+            const userEmail = await this.resolveUserEmail(userId);
+            if (userEmail) {
+              await this.emailService.sendNotificationEmail(
+                userEmail,
+                "Rappel intervention",
+                emailBody,
+                intervention.caseId ? `/cases/${intervention.caseId}` : "/my-day",
+              );
+            }
+          }
+
           this.sentReminders.set(reminderKey, Date.now());
           this.logger.log(`Reminder sent for intervention ${intervention.id} to user ${userId}`);
         }
@@ -140,6 +159,17 @@ export class InterventionReminderScheduler {
       if (timestamp < twoHoursAgo) {
         this.sentReminders.delete(key);
       }
+    }
+  }
+
+  private async resolveUserEmail(userId: string): Promise<string | null> {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get<UserResponse>(`${USERS_URL}/users/${userId}`),
+      );
+      return response.data.email ?? null;
+    } catch {
+      return null;
     }
   }
 }

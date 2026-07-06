@@ -18,18 +18,20 @@
     "@nestjs/platform-express": "^11.0.0",
     "@nestjs/schedule": "^6.1.3",
     "@planwise/shared": "0.1.0",
+    "@planwise/telemetry": "0.1.0",
     "axios": "^1.18.1",
     "mongoose": "^8.0.0",
+    "nodemailer": "^9.0.3",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.0",
-    "web-push": "^3.6.7",
-    "@planwise/telemetry": "0.1.0"
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.0",
     "@nestjs/testing": "^11.0.0",
     "@types/express": "^5.0.0",
     "@types/jest": "^29.5.0",
+    "@types/nodemailer": "^8.0.1",
     "@types/web-push": "^3.6.4",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",

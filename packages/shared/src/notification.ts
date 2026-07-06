@@ -204,3 +204,19 @@ export interface PushSubscriptionResponse {
 export interface VapidPublicKeyResponse {
   publicKey: string;
 }
+
+/* ── Email notifications ───────────────────────────────────── */
+
+export interface SendEmailNotificationBody {
+  userId: string;
+  organizationId: string;
+  subject: string;
+  body: string;
+  eventType: NotificationEventType;
+  url?: string;
+}
+
+export interface SendEmailNotificationResponse {
+  sent: boolean;
+  reason?: string;
+}
