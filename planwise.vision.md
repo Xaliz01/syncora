@@ -162,7 +162,7 @@ Objectif : boucler avec l’outil compta existant de l’artisan.
 
 | #   | Évolution                                                           | Pourquoi (TPE)        | Statut |
 | --- | ------------------------------------------------------------------- | --------------------- | ------ |
-| 3.1 | **Devis simple** (lignes, TVA, PDF) lié au dossier                  | Avant intervention    | ⬜     |
+| 3.1 | **Devis simple** (lignes, TVA, PDF) lié au dossier                  | Avant intervention    | ✅     |
 | 3.2 | **Export** dossier / intervention (CSV, PDF)                        | Saisie compta externe | ⬜     |
 | 3.3 | **Intégration** 1ère brique compta FR (à choisir : Pennylane, etc.) | Réduire double saisie | ⬜     |
 | 3.4 | Statut métier « **À facturer** » sur dossier / intervention         | Pont vers compta      | ✅     |
