@@ -117,6 +117,7 @@ export interface CaseCustomerRef {
   phone?: string;
   mobile?: string;
   address?: PostalAddress;
+  sites?: import("./customer").CustomerSiteResponse[];
 }
 
 export interface CaseTodoItem {
@@ -147,6 +148,8 @@ export interface CreateCaseBody {
   dueDate?: string;
   tags?: string[];
   customerId?: string;
+  /** Site client sélectionné comme adresse d'intervention */
+  interventionSiteId?: string;
   isTestData?: boolean;
 }
 
@@ -160,6 +163,8 @@ export interface UpdateCaseBody {
   dueDate?: string | null;
   tags?: string[];
   customerId?: string | null;
+  /** Site client sélectionné comme adresse d'intervention */
+  interventionSiteId?: string | null;
 }
 
 export interface CaseResponse {
@@ -168,6 +173,9 @@ export interface CaseResponse {
   templateId?: string;
   customerId?: string;
   customer?: CaseCustomerRef;
+  interventionSiteId?: string;
+  /** Adresse d'intervention résolue depuis le site client */
+  interventionAddress?: PostalAddress;
   title: string;
   description?: string;
   status: CaseStatus;
@@ -188,6 +196,8 @@ export interface CaseSummaryResponse {
   organizationId: string;
   customerId?: string;
   customer?: CaseCustomerRef;
+  interventionSiteId?: string;
+  interventionAddress?: PostalAddress;
   title: string;
   status: CaseStatus;
   priority: CasePriority;

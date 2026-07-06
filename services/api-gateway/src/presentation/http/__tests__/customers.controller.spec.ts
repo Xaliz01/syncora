@@ -28,6 +28,12 @@ describe("CustomersController", () => {
       getCustomer: jest.fn(),
       updateCustomer: jest.fn(),
       deleteCustomer: jest.fn(),
+      createSite: jest.fn(),
+      updateSite: jest.fn(),
+      deleteSite: jest.fn(),
+      createContact: jest.fn(),
+      updateContact: jest.fn(),
+      deleteContact: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({

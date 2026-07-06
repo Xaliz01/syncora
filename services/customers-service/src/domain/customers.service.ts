@@ -4,15 +4,25 @@ import { Model } from "mongoose";
 import {
   organizationScopeFilter,
   type CreateCustomerBody,
+  type CreateCustomerContactBody,
+  type CreateCustomerSiteBody,
+  type CustomerContactResponse,
   type CustomerResponse,
+  type CustomerSiteResponse,
   type UpdateCustomerBody,
+  type UpdateCustomerContactBody,
+  type UpdateCustomerSiteBody,
 } from "@planwise/shared";
 import {
   assertOrganizationScopedListNest,
   assertOrganizationScopedResourceNest,
   parseOrganizationIdBody,
 } from "@planwise/shared/nest";
-import type { CustomerDocument } from "../persistence/customer.schema";
+import type {
+  CustomerContactSubDoc,
+  CustomerDocument,
+  CustomerSiteSubDoc,
+} from "../persistence/customer.schema";
 import { AbstractCustomersService } from "./ports/customers.service.port";
 
 @Injectable()
@@ -167,6 +177,208 @@ export class CustomersService extends AbstractCustomersService {
     return { purged: true };
   }
 
+  // ── Sites ──
+
+  async createSite(
+    customerId: string,
+    body: CreateCustomerSiteBody,
+  ): Promise<CustomerSiteResponse> {
+    const organizationId = parseOrganizationIdBody(body.organizationId);
+    this.validateSiteAddress(body.address);
+
+    if (!body.label?.trim()) {
+      throw new BadRequestException("Le libellé du site est obligatoire");
+    }
+
+    const update: Record<string, unknown> = {};
+    const newSite = {
+      label: body.label.trim(),
+      address: {
+        line1: body.address.line1.trim(),
+        line2: body.address.line2?.trim() || undefined,
+        postalCode: body.address.postalCode.trim(),
+        city: body.address.city.trim(),
+        country: (body.address.country ?? "FR").trim() || "FR",
+      },
+      isDefault: body.isDefault === true,
+      notes: body.notes?.trim() || undefined,
+    };
+
+    if (body.isDefault) {
+      update.$set = { "sites.$[].isDefault": false };
+    }
+
+    const doc = await this.customerModel
+      .findOneAndUpdate(
+        { _id: customerId, ...organizationScopeFilter(organizationId) },
+        { ...update, $push: { sites: newSite } },
+        { new: true },
+      )
+      .exec();
+
+    if (!doc) throw new NotFoundException("Client introuvable");
+
+    const createdSite = doc.sites[doc.sites.length - 1];
+    return this.toSiteResponse(createdSite);
+  }
+
+  async updateSite(
+    customerId: string,
+    siteId: string,
+    body: UpdateCustomerSiteBody,
+  ): Promise<CustomerSiteResponse> {
+    const organizationId = parseOrganizationIdBody(body.organizationId);
+
+    const doc = await this.customerModel
+      .findOne({ _id: customerId, ...organizationScopeFilter(organizationId) })
+      .exec();
+    if (!doc) throw new NotFoundException("Client introuvable");
+
+    const site = doc.sites.find((s) => s._id.toString() === siteId);
+    if (!site) throw new NotFoundException("Site introuvable");
+
+    if (body.label !== undefined) {
+      if (!body.label?.trim()) {
+        throw new BadRequestException("Le libellé du site est obligatoire");
+      }
+      site.label = body.label.trim();
+    }
+    if (body.address !== undefined) {
+      this.validateSiteAddress(body.address);
+      site.address = {
+        line1: body.address.line1.trim(),
+        line2: body.address.line2?.trim() || undefined,
+        postalCode: body.address.postalCode.trim(),
+        city: body.address.city.trim(),
+        country: (body.address.country ?? "FR").trim() || "FR",
+      } as typeof site.address;
+    }
+    if (body.isDefault !== undefined) {
+      if (body.isDefault) {
+        doc.sites.forEach((s) => {
+          s.isDefault = false;
+        });
+      }
+      site.isDefault = body.isDefault;
+    }
+    if (body.notes !== undefined) {
+      site.notes = body.notes === null ? undefined : body.notes?.trim() || undefined;
+    }
+
+    await doc.save();
+    return this.toSiteResponse(site);
+  }
+
+  async deleteSite(
+    customerId: string,
+    siteId: string,
+    organizationId: string,
+  ): Promise<{ deleted: true }> {
+    const doc = await this.customerModel
+      .findOneAndUpdate(
+        { _id: customerId, ...organizationScopeFilter(organizationId) },
+        { $pull: { sites: { _id: siteId } } },
+        { new: true },
+      )
+      .exec();
+    if (!doc) throw new NotFoundException("Client introuvable");
+    return { deleted: true };
+  }
+
+  // ── Contacts ──
+
+  async createContact(
+    customerId: string,
+    body: CreateCustomerContactBody,
+  ): Promise<CustomerContactResponse> {
+    const organizationId = parseOrganizationIdBody(body.organizationId);
+
+    if (!body.name?.trim()) {
+      throw new BadRequestException("Le nom du contact est obligatoire");
+    }
+
+    const newContact = {
+      name: body.name.trim(),
+      role: body.role?.trim() || undefined,
+      phone: body.phone?.trim() || undefined,
+      mobile: body.mobile?.trim() || undefined,
+      email: body.email?.trim() || undefined,
+      notes: body.notes?.trim() || undefined,
+    };
+
+    const doc = await this.customerModel
+      .findOneAndUpdate(
+        { _id: customerId, ...organizationScopeFilter(organizationId) },
+        { $push: { contacts: newContact } },
+        { new: true },
+      )
+      .exec();
+
+    if (!doc) throw new NotFoundException("Client introuvable");
+
+    const created = doc.contacts[doc.contacts.length - 1];
+    return this.toContactResponse(created);
+  }
+
+  async updateContact(
+    customerId: string,
+    contactId: string,
+    body: UpdateCustomerContactBody,
+  ): Promise<CustomerContactResponse> {
+    const organizationId = parseOrganizationIdBody(body.organizationId);
+
+    const doc = await this.customerModel
+      .findOne({ _id: customerId, ...organizationScopeFilter(organizationId) })
+      .exec();
+    if (!doc) throw new NotFoundException("Client introuvable");
+
+    const contact = doc.contacts.find((c) => c._id.toString() === contactId);
+    if (!contact) throw new NotFoundException("Contact introuvable");
+
+    if (body.name !== undefined) {
+      if (!body.name?.trim()) {
+        throw new BadRequestException("Le nom du contact est obligatoire");
+      }
+      contact.name = body.name.trim();
+    }
+    if (body.role !== undefined) {
+      contact.role = body.role === null ? undefined : body.role?.trim() || undefined;
+    }
+    if (body.phone !== undefined) {
+      contact.phone = body.phone === null ? undefined : body.phone?.trim() || undefined;
+    }
+    if (body.mobile !== undefined) {
+      contact.mobile = body.mobile === null ? undefined : body.mobile?.trim() || undefined;
+    }
+    if (body.email !== undefined) {
+      contact.email = body.email === null ? undefined : body.email?.trim() || undefined;
+    }
+    if (body.notes !== undefined) {
+      contact.notes = body.notes === null ? undefined : body.notes?.trim() || undefined;
+    }
+
+    await doc.save();
+    return this.toContactResponse(contact);
+  }
+
+  async deleteContact(
+    customerId: string,
+    contactId: string,
+    organizationId: string,
+  ): Promise<{ deleted: true }> {
+    const doc = await this.customerModel
+      .findOneAndUpdate(
+        { _id: customerId, ...organizationScopeFilter(organizationId) },
+        { $pull: { contacts: { _id: contactId } } },
+        { new: true },
+      )
+      .exec();
+    if (!doc) throw new NotFoundException("Client introuvable");
+    return { deleted: true };
+  }
+
+  // ── Validation ──
+
   private validateCreateCustomer(body: CreateCustomerBody): void {
     if (body.kind === "company") {
       if (!body.companyName?.trim()) {
@@ -180,10 +392,17 @@ export class CustomersService extends AbstractCustomersService {
       }
     }
     if (body.address) {
-      const a = body.address;
-      if (!a.line1?.trim() || !a.postalCode?.trim() || !a.city?.trim()) {
-        throw new BadRequestException("Adresse incomplète (ligne 1, code postal et ville requis)");
-      }
+      this.validateSiteAddress(body.address);
+    }
+  }
+
+  private validateSiteAddress(address: {
+    line1?: string;
+    postalCode?: string;
+    city?: string;
+  }): void {
+    if (!address.line1?.trim() || !address.postalCode?.trim() || !address.city?.trim()) {
+      throw new BadRequestException("Adresse incomplète (ligne 1, code postal et ville requis)");
     }
   }
 
@@ -204,6 +423,34 @@ export class CustomersService extends AbstractCustomersService {
     }
     const parts = [doc.firstName, doc.lastName].filter((p) => p?.trim()).map((p) => p!.trim());
     return parts.length > 0 ? parts.join(" ") : "Client";
+  }
+
+  private toSiteResponse(site: CustomerSiteSubDoc): CustomerSiteResponse {
+    return {
+      id: site._id.toString(),
+      label: site.label,
+      address: {
+        line1: site.address.line1,
+        line2: site.address.line2,
+        postalCode: site.address.postalCode,
+        city: site.address.city,
+        country: site.address.country ?? "FR",
+      },
+      isDefault: site.isDefault || undefined,
+      notes: site.notes,
+    };
+  }
+
+  private toContactResponse(contact: CustomerContactSubDoc): CustomerContactResponse {
+    return {
+      id: contact._id.toString(),
+      name: contact.name,
+      role: contact.role,
+      phone: contact.phone,
+      mobile: contact.mobile,
+      email: contact.email,
+      notes: contact.notes,
+    };
   }
 
   private toCustomerResponse(doc: CustomerDocument): CustomerResponse {
@@ -229,6 +476,10 @@ export class CustomersService extends AbstractCustomersService {
           }
         : undefined,
       notes: doc.notes,
+      sites: doc.sites?.length ? doc.sites.map((s) => this.toSiteResponse(s)) : undefined,
+      contacts: doc.contacts?.length
+        ? doc.contacts.map((c) => this.toContactResponse(c))
+        : undefined,
       createdAt: doc.get("createdAt")?.toISOString(),
       updatedAt: doc.get("updatedAt")?.toISOString(),
       isTestData: doc.isTestData === true,

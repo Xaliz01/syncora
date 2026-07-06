@@ -24,6 +24,7 @@ export interface CreateCaseForOrgBody {
   dueDate?: string;
   tags?: string[];
   customerId?: string;
+  interventionSiteId?: string;
 }
 
 export interface UpdateCaseForOrgBody {
@@ -35,6 +36,7 @@ export interface UpdateCaseForOrgBody {
   dueDate?: string | null;
   tags?: string[];
   customerId?: string | null;
+  interventionSiteId?: string | null;
 }
 
 export interface CreateTemplateForOrgBody {
@@ -134,7 +136,13 @@ export abstract class AbstractCasesGatewayService {
   abstract createCase(user: AuthUser, body: CreateCaseForOrgBody): Promise<CaseResponse>;
   abstract listCases(
     user: AuthUser,
-    filters?: { status?: string; assigneeId?: string; priority?: string; search?: string },
+    filters?: {
+      status?: string;
+      assigneeId?: string;
+      priority?: string;
+      search?: string;
+      customerId?: string;
+    },
   ): Promise<CaseSummaryResponse[]>;
   abstract getCase(user: AuthUser, caseId: string): Promise<CaseResponse>;
   abstract updateCase(

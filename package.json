@@ -30,14 +30,26 @@
     "backend:run": "npm run build:shared && wait-on -t 60000 tcp:localhost:27017 && node scripts/free-backend-ports.mjs && node scripts/backend-run.mjs",
     "backend:down": "docker compose down",
     "datadog:up": "docker compose --profile datadog up -d --wait",
-    "datadog:down": "docker rm -f planwise-datadog-agent 2>/dev/null || true"
+    "datadog:down": "docker rm -f planwise-datadog-agent 2>/dev/null || true",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "8.59.3",
     "@typescript-eslint/parser": "8.59.3",
     "concurrently": "^9.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
     "prettier": "^3.0.0",
     "wait-on": "^8.0.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "prettier --write",
+      "eslint --fix"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
   },
   "engines": {
     "node": ">=20.0.0"

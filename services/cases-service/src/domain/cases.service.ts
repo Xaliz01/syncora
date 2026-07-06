@@ -171,6 +171,7 @@ export class CasesService extends AbstractCasesService {
       organizationId: body.organizationId,
       templateId: body.templateId,
       customerId: body.customerId?.trim() || undefined,
+      interventionSiteId: body.interventionSiteId?.trim() || undefined,
       title: body.title,
       description: body.description,
       priority: body.priority ?? "medium",
@@ -192,9 +193,11 @@ export class CasesService extends AbstractCasesService {
       assigneeId?: string;
       priority?: string;
       search?: string;
+      customerId?: string;
     },
   ): Promise<CaseSummaryResponse[]> {
     const query: Record<string, unknown> = { organizationId, ...activeDocumentFilter };
+    if (filters?.customerId) query.customerId = filters.customerId;
     if (filters?.status) query.status = filters.status;
     if (filters?.assigneeId) {
       query.$or = [
@@ -232,6 +235,10 @@ export class CasesService extends AbstractCasesService {
     if (body.tags !== undefined) setUpdate.tags = body.tags;
     if (body.customerId !== undefined) {
       setUpdate.customerId = body.customerId === null ? null : body.customerId.trim() || undefined;
+    }
+    if (body.interventionSiteId !== undefined) {
+      setUpdate.interventionSiteId =
+        body.interventionSiteId === null ? null : body.interventionSiteId.trim() || undefined;
     }
 
     const mongoUpdate: Record<string, unknown> = { $set: setUpdate };
@@ -935,6 +942,7 @@ export class CasesService extends AbstractCasesService {
       organizationId: doc.organizationId,
       templateId: doc.templateId,
       customerId: doc.customerId,
+      interventionSiteId: doc.interventionSiteId,
       title: doc.title,
       description: doc.description,
       status: doc.status,
@@ -969,6 +977,7 @@ export class CasesService extends AbstractCasesService {
       id: doc._id.toString(),
       organizationId: doc.organizationId,
       customerId: doc.customerId,
+      interventionSiteId: doc.interventionSiteId,
       title: doc.title,
       status: doc.status,
       priority: doc.priority,

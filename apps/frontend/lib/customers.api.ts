@@ -1,4 +1,10 @@
-import type { CustomerKind, CustomerResponse } from "@planwise/shared";
+import type {
+  CustomerContactResponse,
+  CustomerKind,
+  CustomerResponse,
+  CustomerSiteResponse,
+  PostalAddress,
+} from "@planwise/shared";
 import { apiRequestJson, type ApiMethod } from "./api-client";
 
 async function customersRequest<TResponse>(
@@ -66,4 +72,87 @@ export function updateCustomer(customerId: string, payload: UpdateCustomerPayloa
 
 export function deleteCustomer(customerId: string) {
   return customersRequest<{ deleted: true }>("DELETE", `/customers/${customerId}`);
+}
+
+// ── Sites ──
+
+export interface CreateCustomerSitePayload {
+  label: string;
+  address: PostalAddress;
+  isDefault?: boolean;
+  notes?: string;
+}
+
+export interface UpdateCustomerSitePayload {
+  label?: string;
+  address?: PostalAddress;
+  isDefault?: boolean;
+  notes?: string | null;
+}
+
+export function createCustomerSite(customerId: string, payload: CreateCustomerSitePayload) {
+  return customersRequest<CustomerSiteResponse>("POST", `/customers/${customerId}/sites`, payload);
+}
+
+export function updateCustomerSite(
+  customerId: string,
+  siteId: string,
+  payload: UpdateCustomerSitePayload,
+) {
+  return customersRequest<CustomerSiteResponse>(
+    "PATCH",
+    `/customers/${customerId}/sites/${siteId}`,
+    payload,
+  );
+}
+
+export function deleteCustomerSite(customerId: string, siteId: string) {
+  return customersRequest<{ deleted: true }>("DELETE", `/customers/${customerId}/sites/${siteId}`);
+}
+
+// ── Contacts ──
+
+export interface CreateCustomerContactPayload {
+  name: string;
+  role?: string;
+  phone?: string;
+  mobile?: string;
+  email?: string;
+  notes?: string;
+}
+
+export interface UpdateCustomerContactPayload {
+  name?: string;
+  role?: string | null;
+  phone?: string | null;
+  mobile?: string | null;
+  email?: string | null;
+  notes?: string | null;
+}
+
+export function createCustomerContact(customerId: string, payload: CreateCustomerContactPayload) {
+  return customersRequest<CustomerContactResponse>(
+    "POST",
+    `/customers/${customerId}/contacts`,
+    payload,
+  );
+}
+
+export function updateCustomerContact(
+  customerId: string,
+  contactId: string,
+  payload: UpdateCustomerContactPayload,
+) {
+  return customersRequest<CustomerContactResponse>(
+    "PATCH",
+    `/customers/${customerId}/contacts/${contactId}`,
+    payload,
+  );
+}
+
+export function deleteCustomerContact(customerId: string, contactId: string) {
+  return customersRequest<{ deleted: true }>(
+    "DELETE",
+    `/customers/${customerId}/contacts/${contactId}`,
+  );
 }

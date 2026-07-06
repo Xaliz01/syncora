@@ -4,10 +4,12 @@ import React, { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "@/lib/cases.api";
+import * as customersApi from "@/lib/customers.api";
 import { listOrganizationUsers } from "@/lib/admin.api";
 import { CaseAssigneesTagsInput } from "@/components/cases/CaseAssigneesTagsInput";
 import { CaseCustomerPicker } from "@/components/cases/CaseCustomerPicker";
-import type { CasePriority } from "@planwise/shared";
+import { CaseInterventionSitePicker } from "@/components/cases/CaseInterventionSitePicker";
+import type { CasePriority, CustomerSiteResponse } from "@planwise/shared";
 
 export function CaseCreatePage() {
   const router = useRouter();
@@ -31,6 +33,8 @@ export function CaseCreatePage() {
   const [dueDate, setDueDate] = useState("");
   const [tagsInput, setTagsInput] = useState("");
   const [customerId, setCustomerId] = useState("");
+  const [interventionSiteId, setInterventionSiteId] = useState("");
+  const [customerSites, setCustomerSites] = useState<CustomerSiteResponse[]>([]);
   const [error, setError] = useState("");
 
   const createMutation = useMutation({
@@ -53,6 +57,20 @@ export function CaseCreatePage() {
     [usersData?.users],
   );
 
+  const handleCustomerChange = (newCustomerId: string) => {
+    setCustomerId(newCustomerId);
+    setInterventionSiteId("");
+    if (newCustomerId) {
+      void customersApi.getCustomer(newCustomerId).then((c) => {
+        setCustomerSites(c.sites ?? []);
+        const defaultSite = c.sites?.find((s) => s.isDefault);
+        if (defaultSite) setInterventionSiteId(defaultSite.id);
+      });
+    } else {
+      setCustomerSites([]);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -72,6 +90,7 @@ export function CaseCreatePage() {
         .map((t) => t.trim())
         .filter(Boolean),
       customerId: customerId.trim() || undefined,
+      interventionSiteId: interventionSiteId || undefined,
     });
   };
 
@@ -198,9 +217,18 @@ export function CaseCreatePage() {
           <CaseCustomerPicker
             idPrefix="case-create-customer"
             value={customerId}
-            onChange={setCustomerId}
+            onChange={handleCustomerChange}
             disabled={createMutation.isPending}
           />
+
+          {customerId && customerSites.length > 0 && (
+            <CaseInterventionSitePicker
+              sites={customerSites}
+              value={interventionSiteId}
+              onChange={setInterventionSiteId}
+              disabled={createMutation.isPending}
+            />
+          )}
 
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">

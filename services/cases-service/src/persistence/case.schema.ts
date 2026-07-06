@@ -69,6 +69,9 @@ export class CaseDocument extends Document {
   @Prop()
   customerId?: string;
 
+  @Prop()
+  interventionSiteId?: string;
+
   @Prop({ required: true })
   title!: string;
 

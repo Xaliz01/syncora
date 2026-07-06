@@ -13,6 +13,7 @@ import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
 import { CaseHistory } from "@/components/cases/CaseHistory";
 import { CaseAssigneesTagsInput } from "@/components/cases/CaseAssigneesTagsInput";
 import { CaseCustomerPicker } from "@/components/cases/CaseCustomerPicker";
+import { CaseInterventionSitePicker } from "@/components/cases/CaseInterventionSitePicker";
 import { TeamSuggestionAddonGate } from "@/components/cases/TeamSuggestionAddonGate";
 import { CaseProgressTimeline } from "@/components/cases/CaseProgressTimeline";
 import {
@@ -33,6 +34,7 @@ import type {
   CaseCustomerRef,
   CasePriority,
   CaseStatus,
+  CustomerSiteResponse,
   TeamResponse,
   TodoItemStatus,
 } from "@planwise/shared";
@@ -369,6 +371,8 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   const [editAssigneeIds, setEditAssigneeIds] = useState<string[]>([]);
   const [editDueDate, setEditDueDate] = useState("");
   const [editCustomerId, setEditCustomerId] = useState("");
+  const [editInterventionSiteId, setEditInterventionSiteId] = useState("");
+  const [editCustomerSites, setEditCustomerSites] = useState<CustomerSiteResponse[]>([]);
   const [editIntTeamId, setEditIntTeamId] = useState("");
   const [editIntAssignee, setEditIntAssignee] = useState("");
   const [editIntTitle, setEditIntTitle] = useState("");
@@ -561,7 +565,23 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
     setEditAssigneeIds(caseData.assignees.map((a) => a.userId));
     setEditDueDate(caseData.dueDate ? caseData.dueDate.split("T")[0] : "");
     setEditCustomerId(caseData.customerId ?? "");
+    setEditInterventionSiteId(caseData.interventionSiteId ?? "");
+    setEditCustomerSites(caseData.customer?.sites ?? []);
     setIsEditing(true);
+  };
+
+  const handleEditCustomerChange = (newCustomerId: string) => {
+    setEditCustomerId(newCustomerId);
+    setEditInterventionSiteId("");
+    if (newCustomerId) {
+      void customersApi.getCustomer(newCustomerId).then((c) => {
+        setEditCustomerSites(c.sites ?? []);
+        const defaultSite = c.sites?.find((s) => s.isDefault);
+        if (defaultSite) setEditInterventionSiteId(defaultSite.id);
+      });
+    } else {
+      setEditCustomerSites([]);
+    }
   };
 
   const handleEditSubmit = () => {
@@ -572,6 +592,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
       assigneeIds: editAssigneeIds,
       dueDate: editDueDate || null,
       customerId: editCustomerId.trim() ? editCustomerId.trim() : null,
+      interventionSiteId: editInterventionSiteId || null,
     });
   };
 
@@ -774,9 +795,18 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                       idPrefix="case-edit-customer"
                       value={editCustomerId}
                       initialDisplayName={caseData.customer?.displayName}
-                      onChange={setEditCustomerId}
+                      onChange={handleEditCustomerChange}
                       disabled={updateMutation.isPending}
                     />
+
+                    {editCustomerId && editCustomerSites.length > 0 && (
+                      <CaseInterventionSitePicker
+                        sites={editCustomerSites}
+                        value={editInterventionSiteId}
+                        onChange={setEditInterventionSiteId}
+                        disabled={updateMutation.isPending}
+                      />
+                    )}
                   </div>
                 </div>
 
@@ -977,7 +1007,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                         agencesLoading={agencesRoutingLoading}
                         agencesError={agencesRoutingError}
                         customerLinked={Boolean(plannerCustomerId)}
-                        customerAddress={plannerCustomer?.address}
+                        customerAddress={caseData.interventionAddress ?? plannerCustomer?.address}
                         selectedTeamId={newIntTeamId}
                         onSelectTeam={setNewIntTeamId}
                       />
@@ -1130,7 +1160,9 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                                   agencesLoading={agencesRoutingLoading}
                                   agencesError={agencesRoutingError}
                                   customerLinked={Boolean(plannerCustomerId)}
-                                  customerAddress={plannerCustomer?.address}
+                                  customerAddress={
+                                    caseData.interventionAddress ?? plannerCustomer?.address
+                                  }
                                   selectedTeamId={editIntTeamId}
                                   onSelectTeam={setEditIntTeamId}
                                 />
