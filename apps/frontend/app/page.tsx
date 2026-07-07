@@ -2,11 +2,12 @@
 
 import { useEffect } from "react";
 import { LandingPage } from "@/components/landing/LandingPage";
+import { LoginPage } from "@/components/auth/LoginPage";
 import { HomePage } from "@/components/HomePage";
 import { AppShell } from "@/components/layout/AppShell";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 import { useAuth } from "@/components/auth/AuthContext";
-import { getAppOrigin, isMarketingHost } from "@/lib/host-routing";
+import { getAppOrigin, isLocalDevHost, isMarketingHost } from "@/lib/host-routing";
 import { postAuthHomePath } from "@/lib/subscription-access";
 
 export default function Home() {
@@ -14,6 +15,8 @@ export default function Home() {
 
   const onMarketingHost =
     typeof window !== "undefined" && isMarketingHost(window.location.hostname);
+
+  const onLocalDev = typeof window !== "undefined" && isLocalDevHost(window.location.hostname);
 
   useEffect(() => {
     if (!isReady || !isAuthenticated || !user || !onMarketingHost) return;
@@ -28,8 +31,12 @@ export default function Home() {
     );
   }
 
-  if (onMarketingHost || !isAuthenticated) {
+  if (onMarketingHost || (!isAuthenticated && onLocalDev)) {
     return <LandingPage />;
+  }
+
+  if (!isAuthenticated) {
+    return <LoginPage />;
   }
 
   return (
