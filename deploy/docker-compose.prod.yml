@@ -273,6 +273,7 @@ services:
       - "80:80"
       - "443:443"
     environment:
+      MARKETING_DOMAIN: ${MARKETING_DOMAIN:?MARKETING_DOMAIN requis}
       APP_DOMAIN: ${APP_DOMAIN:?APP_DOMAIN requis}
       API_DOMAIN: ${API_DOMAIN:?API_DOMAIN requis}
       ACME_EMAIL: ${ACME_EMAIL:?ACME_EMAIL requis}

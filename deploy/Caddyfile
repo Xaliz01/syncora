@@ -5,8 +5,7 @@
 	email {$ACME_EMAIL}
 }
 
-# Frontend (PWA Next.js)
-{$APP_DOMAIN} {
+(frontend_proxy) {
 	encode zstd gzip
 
 	header {
@@ -17,6 +16,21 @@
 	}
 
 	reverse_proxy frontend:5173
+}
+
+# www → apex marketing
+www.{$MARKETING_DOMAIN} {
+	redir https://{$MARKETING_DOMAIN}{uri} permanent
+}
+
+# Landing marketing (planwise.fr)
+{$MARKETING_DOMAIN} {
+	import frontend_proxy
+}
+
+# Application (connexion + PWA)
+{$APP_DOMAIN} {
+	import frontend_proxy
 }
 
 # API Gateway

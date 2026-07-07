@@ -24,7 +24,8 @@ stateless hormis MongoDB et le volume documents).
 
 - Docker + plugin Compose (`docker compose version`)
 - Ports 80 et 443 ouverts (et **seulement** ceux-là côté public)
-- 2 enregistrements DNS A pointant vers la VM : `app.exemple.fr`, `api.exemple.fr`
+- 3 enregistrements DNS A pointant vers la VM : `exemple.fr` (landing), `app.exemple.fr`, `api.exemple.fr`
+- Optionnel : `www.exemple.fr` → même IP (redirigé vers l'apex par Caddy)
 
 ## 2. Préparer la configuration (une fois)
 
@@ -72,6 +73,8 @@ Variables de l'environnement `planwise-cd`, injectées au build du frontend (bun
 | Variable                             | Exemple                      |
 | ------------------------------------ | ---------------------------- |
 | `NEXT_PUBLIC_API_URL`                | `https://api.exemple.fr/api` |
+| `NEXT_PUBLIC_MARKETING_HOST`         | `exemple.fr`                 |
+| `NEXT_PUBLIC_APP_HOST`               | `app.exemple.fr`             |
 | `NEXT_PUBLIC_CRISP_WEBSITE_ID`       | identifiant Crisp            |
 | `NEXT_PUBLIC_CRISP_HELPDESK_ENABLED` | `false`                      |
 
@@ -126,6 +129,8 @@ docker build -f deploy/Dockerfile.backend --build-arg SERVICE=api-gateway \
 # Frontend (la version est facultative en build manuel)
 docker build -f deploy/Dockerfile.frontend \
   --build-arg NEXT_PUBLIC_API_URL=https://api.exemple.fr/api \
+  --build-arg NEXT_PUBLIC_MARKETING_HOST=exemple.fr \
+  --build-arg NEXT_PUBLIC_APP_HOST=app.exemple.fr \
   --build-arg NEXT_PUBLIC_APP_VERSION=v0.1.0 \
   --build-arg NEXT_PUBLIC_GIT_SHA=$(git rev-parse --short HEAD) \
   -t ghcr.io/mon-org/planwise-frontend:manuel .

@@ -151,6 +151,9 @@ jobs:
         run: npm ci
       - name: Build shared packages
         run: npm run build:shared
+      - name: Configure local hostnames for host-routing E2E
+        run: |
+          echo "127.0.0.1 planwise.fr www.planwise.fr app.planwise.fr" | sudo tee -a /etc/hosts
       - name: Install Playwright browsers
         working-directory: apps/frontend
         run: npx playwright install --with-deps chromium

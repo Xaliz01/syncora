@@ -130,6 +130,8 @@ jobs:
           file: deploy/Dockerfile.frontend
           build-args: |
             NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
+            NEXT_PUBLIC_MARKETING_HOST=${{ vars.NEXT_PUBLIC_MARKETING_HOST }}
+            NEXT_PUBLIC_APP_HOST=${{ vars.NEXT_PUBLIC_APP_HOST }}
             NEXT_PUBLIC_CRISP_WEBSITE_ID=${{ vars.NEXT_PUBLIC_CRISP_WEBSITE_ID }}
             NEXT_PUBLIC_CRISP_HELPDESK_ENABLED=${{ vars.NEXT_PUBLIC_CRISP_HELPDESK_ENABLED }}
             NEXT_PUBLIC_APP_VERSION=${{ needs.prepare.outputs.version }}

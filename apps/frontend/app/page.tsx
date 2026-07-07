@@ -1,13 +1,24 @@
 "use client";
 
-import { RequireAuth } from "@/components/auth/RequireAuth";
+import { useEffect } from "react";
+import { LandingPage } from "@/components/landing/LandingPage";
 import { HomePage } from "@/components/HomePage";
 import { AppShell } from "@/components/layout/AppShell";
-import { LandingPage } from "@/components/landing/LandingPage";
+import { RequireAuth } from "@/components/auth/RequireAuth";
 import { useAuth } from "@/components/auth/AuthContext";
+import { getAppOrigin, isMarketingHost } from "@/lib/host-routing";
+import { postAuthHomePath } from "@/lib/subscription-access";
 
 export default function Home() {
-  const { isAuthenticated, isReady } = useAuth();
+  const { isAuthenticated, isReady, user } = useAuth();
+
+  const onMarketingHost =
+    typeof window !== "undefined" && isMarketingHost(window.location.hostname);
+
+  useEffect(() => {
+    if (!isReady || !isAuthenticated || !user || !onMarketingHost) return;
+    window.location.assign(`${getAppOrigin()}${postAuthHomePath(user)}`);
+  }, [isReady, isAuthenticated, user, onMarketingHost]);
 
   if (!isReady) {
     return (
@@ -17,7 +28,7 @@ export default function Home() {
     );
   }
 
-  if (!isAuthenticated) {
+  if (onMarketingHost || !isAuthenticated) {
     return <LandingPage />;
   }
 

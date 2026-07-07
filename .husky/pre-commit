@@ -1,1 +1,15 @@
+#!/bin/sh
+
+# @typescript-eslint (pre-commit) requiert structuredClone → Node >= 18.
+# Le shell Git (Cursor, IDE…) n'hérite pas toujours du Node du terminal : forcer nvm/fnm.
+if [ -f "$HOME/.nvm/nvm.sh" ]; then
+  # shellcheck disable=SC1091
+  . "$HOME/.nvm/nvm.sh"
+  nvm use >/dev/null 2>&1 || nvm use 20 >/dev/null 2>&1 || true
+elif command -v fnm >/dev/null 2>&1; then
+  # shellcheck disable=SC1090
+  eval "$(fnm env)"
+  fnm use >/dev/null 2>&1 || true
+fi
+
 npx lint-staged

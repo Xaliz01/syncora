@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "Planwise",
     description:
       "Gérez vos clients, planifiez vos interventions et pilotez votre activité terrain depuis votre téléphone.",
-    start_url: "/",
+    start_url: "/login",
     display: "standalone",
     orientation: "portrait",
     background_color: "#020617",

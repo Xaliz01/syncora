@@ -9,7 +9,7 @@ test.describe("PWA — manifest et page hors-ligne", () => {
     expect(manifest.short_name).toBe("Planwise");
     expect(manifest.display).toBe("standalone");
     expect(manifest.theme_color).toBe("#4338ca");
-    expect(manifest.start_url).toBe("/");
+    expect(manifest.start_url).toBe("/login");
     expect(manifest.icons.length).toBeGreaterThanOrEqual(4);
 
     const sizes = manifest.icons.map((i: { sizes: string }) => i.sizes);
