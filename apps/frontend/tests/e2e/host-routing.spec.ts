@@ -55,6 +55,12 @@ test.describe("Routage par hostname — redirections middleware", () => {
     const response = await requestWithHost(request, "/", MARKETING_HOST);
     expect(response.status()).toBe(200);
   });
+
+  test("planwise.fr/page-inexistante redirige vers le domaine app", async ({ request }) => {
+    const response = await requestWithHost(request, "/page-inexistante", MARKETING_HOST);
+    expect(response.status()).toBe(308);
+    expect(response.headers().location).toBe(`${appOrigin()}/page-inexistante`);
+  });
 });
 
 test.describe("Domaine marketing (planwise.fr)", () => {
@@ -64,12 +70,6 @@ test.describe("Domaine marketing (planwise.fr)", () => {
 
   test("la racine affiche la landing marketing", async ({ page }) => {
     await page.goto(marketingUrl("/"));
-    await expect(page).toHaveURL(marketingUrl("/"));
-    await expect(page.getByRole("heading", { name: LANDING_HEADING })).toBeVisible();
-  });
-
-  test("une route inconnue revient sur la landing", async ({ page }) => {
-    await page.goto(marketingUrl("/page-inexistante"));
     await expect(page).toHaveURL(marketingUrl("/"));
     await expect(page.getByRole("heading", { name: LANDING_HEADING })).toBeVisible();
   });
