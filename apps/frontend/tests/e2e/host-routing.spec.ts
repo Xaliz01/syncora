@@ -46,15 +46,20 @@ test.describe("Routage par hostname — redirections middleware", () => {
     expect(response.headers().location).toBe(`${appOrigin()}/register?step=organization`);
   });
 
-  test("app.planwise.fr/ redirige vers /login", async ({ request }) => {
+  test("app.planwise.fr/ ne redirige pas (login affiché côté client)", async ({ request }) => {
     const response = await requestWithHost(request, "/", APP_HOST);
-    expect(response.status()).toBe(307);
-    expect(response.headers().location).toMatch(/\/login$/);
+    expect(response.status()).toBe(200);
   });
 
   test("planwise.fr/ ne redirige pas (landing)", async ({ request }) => {
     const response = await requestWithHost(request, "/", MARKETING_HOST);
     expect(response.status()).toBe(200);
+  });
+
+  test("planwise.fr/page-inexistante redirige vers le domaine app", async ({ request }) => {
+    const response = await requestWithHost(request, "/page-inexistante", MARKETING_HOST);
+    expect(response.status()).toBe(308);
+    expect(response.headers().location).toBe(`${appOrigin()}/page-inexistante`);
   });
 });
 
@@ -68,12 +73,6 @@ test.describe("Domaine marketing (planwise.fr)", () => {
     await expect(page).toHaveURL(marketingUrl("/"));
     await expect(page.getByRole("heading", { name: LANDING_HEADING })).toBeVisible();
   });
-
-  test("une route inconnue revient sur la landing", async ({ page }) => {
-    await page.goto(marketingUrl("/page-inexistante"));
-    await expect(page).toHaveURL(marketingUrl("/"));
-    await expect(page.getByRole("heading", { name: LANDING_HEADING })).toBeVisible();
-  });
 });
 
 test.describe("Domaine app (app.planwise.fr)", () => {
@@ -81,9 +80,9 @@ test.describe("Domaine app (app.planwise.fr)", () => {
     await skipUnlessHostsReady(request);
   });
 
-  test("la racine redirige vers la page de connexion", async ({ page }) => {
+  test("la racine affiche le formulaire de connexion", async ({ page }) => {
     await page.goto(appUrl("/"));
-    await expect(page).toHaveURL(appUrl("/login"));
+    await expect(page).toHaveURL(appUrl("/"));
     await expect(page.getByRole("heading", { name: "Connexion" })).toBeVisible();
   });
 

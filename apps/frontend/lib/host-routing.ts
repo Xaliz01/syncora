@@ -53,7 +53,6 @@ export type HostRoutingResult =
  * Règles de routage par hostname (prod) :
  * - planwise.fr / → landing ; autres chemins → app.planwise.fr
  * - www.planwise.fr → planwise.fr
- * - app.planwise.fr / → /login
  * - localhost → comportement dev inchangé
  */
 export function resolveHostRouting(
@@ -86,13 +85,6 @@ export function resolveHostRouting(
       action: "redirect",
       destination: `${getAppOrigin()}${pathname}${search}`,
       permanent: true,
-    };
-  }
-
-  if (normalizedHost === getConfiguredAppHost() && pathname === "/") {
-    return {
-      action: "redirect",
-      destination: `/login${search}`,
     };
   }
 
