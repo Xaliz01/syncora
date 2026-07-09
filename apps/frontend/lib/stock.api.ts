@@ -1,6 +1,8 @@
 import type {
   ArticleResponse,
   InterventionArticleUsageResponse,
+  StockLocationResponse,
+  StockLocationType,
   StockMovementResponse,
 } from "@planwise/shared";
 import { apiRequestJson, type ApiMethod } from "./api-client";
@@ -13,6 +15,8 @@ async function stockRequest<TResponse>(
   return apiRequestJson<TResponse>(method, path, typeof body === "undefined" ? {} : { body });
 }
 
+// ── Article payloads ──
+
 export interface CreateArticlePayload {
   name: string;
   reference: string;
@@ -20,6 +24,7 @@ export interface CreateArticlePayload {
   unit?: string;
   defaultPrice?: number;
   initialStock?: number;
+  locationId?: string;
   reorderPoint?: number;
   targetStock?: number;
   isActive?: boolean;
@@ -42,6 +47,7 @@ export interface CreateArticleMovementPayload {
   quantity: number;
   note?: string;
   reason?: string;
+  locationId?: string;
   interventionId?: string;
   caseId?: string;
 }
@@ -51,13 +57,39 @@ export interface AddInterventionArticleUsagePayload {
   articleId: string;
   quantity: number;
   movementType?: "in" | "out";
+  locationId?: string;
   note?: string;
 }
+
+// ── Location payloads ──
+
+export interface CreateStockLocationPayload {
+  name: string;
+  type: StockLocationType;
+  referenceId?: string;
+  address?: string;
+}
+
+export interface UpdateStockLocationPayload {
+  name?: string;
+  address?: string;
+}
+
+export interface CreateStockTransferPayload {
+  articleId: string;
+  sourceLocationId: string;
+  destinationLocationId: string;
+  quantity: number;
+  note?: string;
+}
+
+// ── Articles ──
 
 export function listArticles(filters?: {
   search?: string;
   lowStockOnly?: boolean;
   activeOnly?: boolean;
+  locationId?: string;
 }) {
   const params = new URLSearchParams();
   if (filters?.search) params.set("search", filters.search);
@@ -67,6 +99,7 @@ export function listArticles(filters?: {
   if (typeof filters?.activeOnly === "boolean") {
     params.set("activeOnly", String(filters.activeOnly));
   }
+  if (filters?.locationId) params.set("locationId", filters.locationId);
   const qs = params.toString();
   return stockRequest<ArticleResponse[]>("GET", `/stock/articles${qs ? `?${qs}` : ""}`);
 }
@@ -87,6 +120,8 @@ export function deleteArticle(articleId: string) {
   return stockRequest<{ deleted: true }>("DELETE", `/stock/articles/${articleId}`);
 }
 
+// ── Movements ──
+
 export function createArticleMovement(payload: CreateArticleMovementPayload) {
   return stockRequest<StockMovementResponse>("POST", "/stock/movements", payload);
 }
@@ -95,16 +130,20 @@ export function listArticleMovements(filters?: {
   articleId?: string;
   interventionId?: string;
   caseId?: string;
+  locationId?: string;
   limit?: number;
 }) {
   const params = new URLSearchParams();
   if (filters?.articleId) params.set("articleId", filters.articleId);
   if (filters?.interventionId) params.set("interventionId", filters.interventionId);
   if (filters?.caseId) params.set("caseId", filters.caseId);
+  if (filters?.locationId) params.set("locationId", filters.locationId);
   if (typeof filters?.limit === "number") params.set("limit", String(filters.limit));
   const qs = params.toString();
   return stockRequest<StockMovementResponse[]>("GET", `/stock/movements${qs ? `?${qs}` : ""}`);
 }
+
+// ── Intervention usage ──
 
 export function addInterventionArticleUsage(
   interventionId: string,
@@ -122,4 +161,32 @@ export function getInterventionUsage(interventionId: string) {
     "GET",
     `/stock/interventions/${interventionId}/usage`,
   );
+}
+
+// ── Stock locations ──
+
+export function listStockLocations() {
+  return stockRequest<StockLocationResponse[]>("GET", "/stock/locations");
+}
+
+export function getStockLocation(locationId: string) {
+  return stockRequest<StockLocationResponse>("GET", `/stock/locations/${locationId}`);
+}
+
+export function createStockLocation(payload: CreateStockLocationPayload) {
+  return stockRequest<StockLocationResponse>("POST", "/stock/locations", payload);
+}
+
+export function updateStockLocation(locationId: string, payload: UpdateStockLocationPayload) {
+  return stockRequest<StockLocationResponse>("PATCH", `/stock/locations/${locationId}`, payload);
+}
+
+export function deleteStockLocation(locationId: string) {
+  return stockRequest<{ deleted: true }>("DELETE", `/stock/locations/${locationId}`);
+}
+
+// ── Transfers ──
+
+export function createStockTransfer(payload: CreateStockTransferPayload) {
+  return stockRequest<StockMovementResponse>("POST", "/stock/transfers", payload);
 }

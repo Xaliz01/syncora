@@ -12,14 +12,20 @@ import {
   type ArticleResponse,
   type CreateArticleBody,
   type CreateArticleMovementBody,
+  type CreateStockLocationBody,
+  type CreateStockTransferBody,
   type InterventionArticleUsageResponse,
+  type LocationStockEntry,
+  type StockLocationResponse,
   type StockMovementResponse,
   type StockMovementType,
   type StockStatus,
   type UpdateArticleBody,
+  type UpdateStockLocationBody,
 } from "@planwise/shared";
 import type { ArticleDocument } from "../persistence/article.schema";
 import type { StockMovementDocument } from "../persistence/stock-movement.schema";
+import type { StockLocationDocument } from "../persistence/stock-location.schema";
 import { AbstractStockService } from "./ports/stock.service.port";
 
 @Injectable()
@@ -29,6 +35,8 @@ export class StockService extends AbstractStockService {
     private readonly articleModel: Model<ArticleDocument>,
     @InjectModel("StockMovement")
     private readonly stockMovementModel: Model<StockMovementDocument>,
+    @InjectModel("StockLocation")
+    private readonly stockLocationModel: Model<StockLocationDocument>,
   ) {
     super();
   }
@@ -54,6 +62,15 @@ export class StockService extends AbstractStockService {
         ? this.ensureNonNegativeNumber(body.defaultPrice, "defaultPrice")
         : undefined;
 
+    const locationId = body.locationId
+      ? await this.resolveLocationId(body.organizationId, body.locationId)
+      : await this.getDefaultLocationId(body.organizationId);
+
+    const locationStocks: { locationId: string; quantity: number }[] = [];
+    if (initialStock > 0 && locationId) {
+      locationStocks.push({ locationId, quantity: initialStock });
+    }
+
     try {
       const now = new Date();
       const doc = await this.articleModel.create({
@@ -68,10 +85,14 @@ export class StockService extends AbstractStockService {
         targetStock,
         isActive: body.isActive ?? true,
         lastMovementAt: initialStock > 0 ? now : undefined,
+        locationStocks,
         isTestData: body.isTestData === true,
       });
 
       if (initialStock > 0) {
+        const locationName = locationId
+          ? await this.getLocationName(body.organizationId, locationId)
+          : undefined;
         await this.stockMovementModel.create({
           organizationId: body.organizationId,
           articleId: doc._id.toString(),
@@ -82,6 +103,8 @@ export class StockService extends AbstractStockService {
           previousStock: 0,
           newStock: initialStock,
           reason: "initial_stock",
+          locationId: locationId || undefined,
+          locationName,
         });
       }
 
@@ -96,7 +119,12 @@ export class StockService extends AbstractStockService {
 
   async listArticles(
     organizationId: string,
-    filters?: { search?: string; lowStockOnly?: boolean; activeOnly?: boolean },
+    filters?: {
+      search?: string;
+      lowStockOnly?: boolean;
+      activeOnly?: boolean;
+      locationId?: string;
+    },
   ): Promise<ArticleResponse[]> {
     const query: Record<string, unknown> = { organizationId, ...activeDocumentFilter };
     const activeOnly = filters?.activeOnly ?? true;
@@ -109,6 +137,9 @@ export class StockService extends AbstractStockService {
     }
     if (filters?.lowStockOnly) {
       query.$expr = { $lte: ["$stockQuantity", "$reorderPoint"] };
+    }
+    if (filters?.locationId) {
+      query["locationStocks.locationId"] = filters.locationId;
     }
 
     const docs = await this.articleModel.find(query).sort({ name: 1 }).exec();
@@ -199,6 +230,7 @@ export class StockService extends AbstractStockService {
       await this.stockMovementModel.deleteMany({ organizationId, articleId: { $in: articleIds } });
     }
     await this.articleModel.deleteMany({ organizationId, isTestData: true }).exec();
+    await this.stockLocationModel.deleteMany({ organizationId, isTestData: true }).exec();
     return { purged: true };
   }
 
@@ -212,6 +244,10 @@ export class StockService extends AbstractStockService {
         ? this.ensureNonNegativeNumber(body.quantity, "quantity")
         : this.ensureStrictlyPositiveNumber(body.quantity, "quantity");
 
+    const locationId = body.locationId
+      ? await this.resolveLocationId(body.organizationId, body.locationId)
+      : await this.getDefaultLocationId(body.organizationId);
+
     const { movement } = await this.applyStockMovement({
       organizationId: body.organizationId,
       articleId: body.articleId,
@@ -219,6 +255,7 @@ export class StockService extends AbstractStockService {
       quantity,
       note: body.note,
       reason: body.reason || "manual",
+      locationId: locationId || undefined,
       interventionId: body.interventionId,
       caseId: body.caseId,
       actorUserId: body.actorUserId,
@@ -250,6 +287,10 @@ export class StockService extends AbstractStockService {
       }
     }
 
+    const locationId = body.locationId
+      ? await this.resolveLocationId(body.organizationId, body.locationId)
+      : await this.getDefaultLocationId(body.organizationId);
+
     const { movement } = await this.applyStockMovement({
       organizationId: body.organizationId,
       articleId: body.articleId,
@@ -257,6 +298,7 @@ export class StockService extends AbstractStockService {
       quantity,
       note: body.note,
       reason: "intervention_usage",
+      locationId: locationId || undefined,
       interventionId,
       caseId: body.caseId,
       actorUserId: body.actorUserId,
@@ -268,12 +310,24 @@ export class StockService extends AbstractStockService {
 
   async listArticleMovements(
     organizationId: string,
-    filters?: { articleId?: string; interventionId?: string; caseId?: string; limit?: number },
+    filters?: {
+      articleId?: string;
+      interventionId?: string;
+      caseId?: string;
+      locationId?: string;
+      limit?: number;
+    },
   ): Promise<StockMovementResponse[]> {
     const query: Record<string, unknown> = { organizationId };
     if (filters?.articleId) query.articleId = filters.articleId;
     if (filters?.interventionId) query.interventionId = filters.interventionId;
     if (filters?.caseId) query.caseId = filters.caseId;
+    if (filters?.locationId) {
+      query.$or = [
+        { locationId: filters.locationId },
+        { destinationLocationId: filters.locationId },
+      ];
+    }
     const limit = Math.min(Math.max(filters?.limit ?? 50, 1), 200);
 
     const docs = await this.stockMovementModel
@@ -326,6 +380,13 @@ export class StockService extends AbstractStockService {
 
   private toArticleResponse(doc: ArticleDocument): ArticleResponse {
     const stockStatus = this.computeStockStatus(doc.stockQuantity, doc.reorderPoint);
+    const locationStocks: LocationStockEntry[] | undefined =
+      doc.locationStocks && doc.locationStocks.length > 0
+        ? doc.locationStocks.map((ls) => ({
+            locationId: ls.locationId,
+            quantity: ls.quantity,
+          }))
+        : undefined;
     return {
       id: doc._id.toString(),
       organizationId: doc.organizationId,
@@ -342,6 +403,7 @@ export class StockService extends AbstractStockService {
       lowStock: stockStatus !== "ok",
       stockStatus,
       suggestedReorderQuantity: Math.max(doc.targetStock - doc.stockQuantity, 0),
+      locationStocks,
       createdAt: doc.get("createdAt")?.toISOString(),
       updatedAt: doc.get("updatedAt")?.toISOString(),
       isTestData: doc.isTestData === true,
@@ -361,6 +423,10 @@ export class StockService extends AbstractStockService {
       newStock: doc.newStock,
       note: doc.note,
       reason: doc.reason,
+      locationId: doc.locationId,
+      locationName: doc.locationName,
+      destinationLocationId: doc.destinationLocationId,
+      destinationLocationName: doc.destinationLocationName,
       interventionId: doc.interventionId,
       caseId: doc.caseId,
       actorUserId: doc.actorUserId,
@@ -400,6 +466,7 @@ export class StockService extends AbstractStockService {
     quantity: number;
     note?: string;
     reason?: string;
+    locationId?: string;
     interventionId?: string;
     caseId?: string;
     actorUserId?: string;
@@ -469,6 +536,20 @@ export class StockService extends AbstractStockService {
       movementQuantity = Math.abs(params.quantity - previousDoc.stockQuantity);
     }
 
+    if (params.locationId) {
+      await this.updateLocationStock(
+        params.organizationId,
+        params.articleId,
+        params.locationId,
+        params.movementType,
+        params.quantity,
+      );
+    }
+
+    const locationName = params.locationId
+      ? await this.getLocationName(params.organizationId, params.locationId)
+      : undefined;
+
     const movementDoc = await this.stockMovementModel.create({
       organizationId: params.organizationId,
       articleId: previousDoc._id.toString(),
@@ -480,6 +561,8 @@ export class StockService extends AbstractStockService {
       newStock,
       note: params.note,
       reason: params.reason,
+      locationId: params.locationId,
+      locationName,
       interventionId: params.interventionId,
       caseId: params.caseId,
       actorUserId: params.actorUserId,
@@ -488,6 +571,277 @@ export class StockService extends AbstractStockService {
 
     return {
       movement: this.toStockMovementResponse(movementDoc),
+    };
+  }
+
+  // ── Stock locations ──
+
+  async createStockLocation(body: CreateStockLocationBody): Promise<StockLocationResponse> {
+    const name = body.name?.trim();
+    if (!name) throw new BadRequestException("Location name is required");
+    if (!["warehouse", "agence", "vehicle"].includes(body.type)) {
+      throw new BadRequestException("Location type must be warehouse, agence, or vehicle");
+    }
+    if ((body.type === "agence" || body.type === "vehicle") && !body.referenceId) {
+      throw new BadRequestException(`referenceId is required for type ${body.type}`);
+    }
+
+    const existingDefault = await this.stockLocationModel
+      .findOne({ organizationId: body.organizationId, isDefault: true })
+      .exec();
+    const isDefault = !existingDefault;
+
+    try {
+      const doc = await this.stockLocationModel.create({
+        organizationId: body.organizationId,
+        name,
+        type: body.type,
+        referenceId: body.referenceId,
+        address: body.address?.trim() || undefined,
+        isDefault,
+      });
+      return this.toStockLocationResponse(doc);
+    } catch (err: unknown) {
+      if (this.isDuplicateKeyError(err)) {
+        throw new ConflictException("A location with this name already exists");
+      }
+      throw err;
+    }
+  }
+
+  async listStockLocations(organizationId: string): Promise<StockLocationResponse[]> {
+    const docs = await this.stockLocationModel
+      .find({ organizationId })
+      .sort({ isDefault: -1, name: 1 })
+      .exec();
+    return docs.map((doc) => this.toStockLocationResponse(doc));
+  }
+
+  async getStockLocation(id: string, organizationId: string): Promise<StockLocationResponse> {
+    const doc = await this.stockLocationModel.findOne({ _id: id, organizationId }).exec();
+    if (!doc) throw new NotFoundException("Stock location not found");
+    return this.toStockLocationResponse(doc);
+  }
+
+  async updateStockLocation(
+    id: string,
+    body: UpdateStockLocationBody,
+  ): Promise<StockLocationResponse> {
+    const doc = await this.stockLocationModel
+      .findOne({ _id: id, organizationId: body.organizationId })
+      .exec();
+    if (!doc) throw new NotFoundException("Stock location not found");
+
+    if (body.name !== undefined) {
+      const name = body.name.trim();
+      if (!name) throw new BadRequestException("Location name cannot be empty");
+      doc.name = name;
+    }
+    if (body.address !== undefined) {
+      doc.address = body.address?.trim() || undefined;
+    }
+
+    try {
+      await doc.save();
+      return this.toStockLocationResponse(doc);
+    } catch (err: unknown) {
+      if (this.isDuplicateKeyError(err)) {
+        throw new ConflictException("A location with this name already exists");
+      }
+      throw err;
+    }
+  }
+
+  async deleteStockLocation(id: string, organizationId: string): Promise<{ deleted: true }> {
+    const doc = await this.stockLocationModel.findOne({ _id: id, organizationId }).exec();
+    if (!doc) throw new NotFoundException("Stock location not found");
+    if (doc.isDefault) {
+      throw new BadRequestException("Cannot delete the default stock location");
+    }
+
+    const articlesAtLocation = await this.articleModel
+      .countDocuments({
+        organizationId,
+        "locationStocks.locationId": id,
+        "locationStocks.quantity": { $gt: 0 },
+        ...activeDocumentFilter,
+      })
+      .exec();
+    if (articlesAtLocation > 0) {
+      throw new ConflictException(
+        "Cannot delete a location that still has stock. Transfer all articles first.",
+      );
+    }
+
+    await this.articleModel.updateMany(
+      { organizationId, "locationStocks.locationId": id },
+      { $pull: { locationStocks: { locationId: id } } },
+    );
+
+    await doc.deleteOne();
+    return { deleted: true };
+  }
+
+  async createStockTransfer(body: CreateStockTransferBody): Promise<StockMovementResponse> {
+    const quantity = this.ensureStrictlyPositiveNumber(body.quantity, "quantity");
+    if (body.sourceLocationId === body.destinationLocationId) {
+      throw new BadRequestException("Source and destination locations must be different");
+    }
+
+    await this.resolveLocationId(body.organizationId, body.sourceLocationId);
+    await this.resolveLocationId(body.organizationId, body.destinationLocationId);
+
+    const baseFilter = {
+      _id: body.articleId,
+      organizationId: body.organizationId,
+      isActive: true,
+      ...activeDocumentFilter,
+    };
+
+    const article = await this.articleModel.findOne(baseFilter).exec();
+    if (!article) throw new NotFoundException("Article not found");
+
+    const sourceEntry = (article.locationStocks ?? []).find(
+      (ls) => ls.locationId === body.sourceLocationId,
+    );
+    const sourceQty = sourceEntry?.quantity ?? 0;
+    if (sourceQty < quantity) {
+      throw new ConflictException("Insufficient stock at source location");
+    }
+
+    await this.articleModel.findOneAndUpdate(
+      { ...baseFilter, "locationStocks.locationId": body.sourceLocationId },
+      {
+        $inc: { "locationStocks.$.quantity": -quantity },
+        $set: { lastMovementAt: new Date() },
+      },
+    );
+
+    const destEntry = (article.locationStocks ?? []).find(
+      (ls) => ls.locationId === body.destinationLocationId,
+    );
+    if (destEntry) {
+      await this.articleModel.findOneAndUpdate(
+        { ...baseFilter, "locationStocks.locationId": body.destinationLocationId },
+        { $inc: { "locationStocks.$.quantity": quantity } },
+      );
+    } else {
+      await this.articleModel.findOneAndUpdate(baseFilter, {
+        $push: { locationStocks: { locationId: body.destinationLocationId, quantity } },
+      });
+    }
+
+    const sourceName = await this.getLocationName(body.organizationId, body.sourceLocationId);
+    const destName = await this.getLocationName(body.organizationId, body.destinationLocationId);
+
+    const movementDoc = await this.stockMovementModel.create({
+      organizationId: body.organizationId,
+      articleId: article._id.toString(),
+      articleName: article.name,
+      articleReference: article.reference,
+      movementType: "transfer",
+      quantity,
+      previousStock: article.stockQuantity,
+      newStock: article.stockQuantity,
+      note: body.note,
+      reason: "transfer",
+      locationId: body.sourceLocationId,
+      locationName: sourceName,
+      destinationLocationId: body.destinationLocationId,
+      destinationLocationName: destName,
+      actorUserId: body.actorUserId,
+      actorUserName: body.actorUserName,
+    });
+
+    return this.toStockMovementResponse(movementDoc);
+  }
+
+  // ── Location helpers ──
+
+  private async resolveLocationId(organizationId: string, locationId: string): Promise<string> {
+    const loc = await this.stockLocationModel.findOne({ _id: locationId, organizationId }).exec();
+    if (!loc) throw new NotFoundException("Stock location not found");
+    return loc._id.toString();
+  }
+
+  private async getDefaultLocationId(organizationId: string): Promise<string | null> {
+    const loc = await this.stockLocationModel.findOne({ organizationId, isDefault: true }).exec();
+    return loc?._id.toString() ?? null;
+  }
+
+  private async getLocationName(
+    organizationId: string,
+    locationId: string,
+  ): Promise<string | undefined> {
+    const loc = await this.stockLocationModel
+      .findOne({ _id: locationId, organizationId })
+      .select("name")
+      .exec();
+    return loc?.name;
+  }
+
+  private async updateLocationStock(
+    organizationId: string,
+    articleId: string,
+    locationId: string,
+    movementType: StockMovementType,
+    quantity: number,
+  ): Promise<void> {
+    const baseFilter = {
+      _id: articleId,
+      organizationId,
+      ...activeDocumentFilter,
+    };
+
+    const article = await this.articleModel.findOne(baseFilter).exec();
+    if (!article) return;
+
+    const existingEntry = (article.locationStocks ?? []).find((ls) => ls.locationId === locationId);
+
+    if (movementType === "out") {
+      if (existingEntry) {
+        await this.articleModel.findOneAndUpdate(
+          { ...baseFilter, "locationStocks.locationId": locationId },
+          { $inc: { "locationStocks.$.quantity": -quantity } },
+        );
+      }
+    } else if (movementType === "in") {
+      if (existingEntry) {
+        await this.articleModel.findOneAndUpdate(
+          { ...baseFilter, "locationStocks.locationId": locationId },
+          { $inc: { "locationStocks.$.quantity": quantity } },
+        );
+      } else {
+        await this.articleModel.findOneAndUpdate(baseFilter, {
+          $push: { locationStocks: { locationId, quantity } },
+        });
+      }
+    } else if (movementType === "adjustment") {
+      if (existingEntry) {
+        await this.articleModel.findOneAndUpdate(
+          { ...baseFilter, "locationStocks.locationId": locationId },
+          { $set: { "locationStocks.$.quantity": quantity } },
+        );
+      } else {
+        await this.articleModel.findOneAndUpdate(baseFilter, {
+          $push: { locationStocks: { locationId, quantity } },
+        });
+      }
+    }
+  }
+
+  private toStockLocationResponse(doc: StockLocationDocument): StockLocationResponse {
+    return {
+      id: doc._id.toString(),
+      organizationId: doc.organizationId,
+      name: doc.name,
+      type: doc.type,
+      referenceId: doc.referenceId,
+      address: doc.address,
+      isDefault: doc.isDefault,
+      createdAt: doc.get("createdAt")?.toISOString(),
+      updatedAt: doc.get("updatedAt")?.toISOString(),
+      isTestData: doc.isTestData === true,
     };
   }
 

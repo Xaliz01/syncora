@@ -1,6 +1,15 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document, Types } from "mongoose";
 
+@Schema({ _id: false })
+export class LocationStockSubdoc {
+  @Prop({ required: true })
+  locationId!: string;
+
+  @Prop({ required: true, default: 0 })
+  quantity!: number;
+}
+
 @Schema({ timestamps: true, _id: true, collection: "articles" })
 export class ArticleDocument extends Document {
   declare _id: Types.ObjectId;
@@ -37,6 +46,9 @@ export class ArticleDocument extends Document {
 
   @Prop()
   lastMovementAt?: Date;
+
+  @Prop({ type: [LocationStockSubdoc], default: [] })
+  locationStocks!: LocationStockSubdoc[];
 
   @Prop({ type: Date })
   deletedAt?: Date | null;

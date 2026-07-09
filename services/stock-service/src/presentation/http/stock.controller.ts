@@ -5,12 +5,17 @@ import type {
   AddInterventionArticleUsageBody,
   CreateArticleBody,
   CreateArticleMovementBody,
+  CreateStockLocationBody,
+  CreateStockTransferBody,
   UpdateArticleBody,
+  UpdateStockLocationBody,
 } from "@planwise/shared";
 
 @Controller()
 export class StockController {
   constructor(private readonly stockService: AbstractStockService) {}
+
+  // ── Articles ──
 
   @Post("articles")
   async createArticle(@Body() body: CreateArticleBody) {
@@ -23,12 +28,14 @@ export class StockController {
     @Query("search") search?: string,
     @Query("lowStockOnly") lowStockOnly?: string,
     @Query("activeOnly") activeOnly?: string,
+    @Query("locationId") locationId?: string,
   ) {
     organizationId = parseOrganizationIdQuery(organizationId);
     return this.stockService.listArticles(organizationId, {
       search,
       lowStockOnly: lowStockOnly === "true",
       activeOnly: activeOnly === undefined ? true : activeOnly === "true",
+      locationId,
     });
   }
 
@@ -49,6 +56,8 @@ export class StockController {
     return this.stockService.deleteArticle(id, organizationId);
   }
 
+  // ── Movements ──
+
   @Post("movements")
   async createArticleMovement(@Body() body: CreateArticleMovementBody) {
     return this.stockService.createArticleMovement(body);
@@ -60,6 +69,7 @@ export class StockController {
     @Query("articleId") articleId?: string,
     @Query("interventionId") interventionId?: string,
     @Query("caseId") caseId?: string,
+    @Query("locationId") locationId?: string,
     @Query("limit") limit?: string,
   ) {
     organizationId = parseOrganizationIdQuery(organizationId);
@@ -67,9 +77,12 @@ export class StockController {
       articleId,
       interventionId,
       caseId,
+      locationId,
       limit: limit ? Number(limit) : undefined,
     });
   }
+
+  // ── Intervention usage ──
 
   @Post("interventions/:interventionId/articles")
   async addInterventionArticleUsage(
@@ -86,5 +99,45 @@ export class StockController {
   ) {
     organizationId = parseOrganizationIdQuery(organizationId);
     return this.stockService.getInterventionUsage(organizationId, interventionId);
+  }
+
+  // ── Stock locations ──
+
+  @Post("locations")
+  async createStockLocation(@Body() body: CreateStockLocationBody) {
+    return this.stockService.createStockLocation(body);
+  }
+
+  @Get("locations")
+  async listStockLocations(@Query("organizationId") organizationId: string) {
+    organizationId = parseOrganizationIdQuery(organizationId);
+    return this.stockService.listStockLocations(organizationId);
+  }
+
+  @Get("locations/:id")
+  async getStockLocation(@Param("id") id: string, @Query("organizationId") organizationId: string) {
+    organizationId = parseOrganizationIdQuery(organizationId);
+    return this.stockService.getStockLocation(id, organizationId);
+  }
+
+  @Patch("locations/:id")
+  async updateStockLocation(@Param("id") id: string, @Body() body: UpdateStockLocationBody) {
+    return this.stockService.updateStockLocation(id, body);
+  }
+
+  @Delete("locations/:id")
+  async deleteStockLocation(
+    @Param("id") id: string,
+    @Query("organizationId") organizationId: string,
+  ) {
+    organizationId = parseOrganizationIdQuery(organizationId);
+    return this.stockService.deleteStockLocation(id, organizationId);
+  }
+
+  // ── Transfers ──
+
+  @Post("transfers")
+  async createStockTransfer(@Body() body: CreateStockTransferBody) {
+    return this.stockService.createStockTransfer(body);
   }
 }

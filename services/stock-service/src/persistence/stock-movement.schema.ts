@@ -43,6 +43,18 @@ export class StockMovementDocument extends Document {
   caseId?: string;
 
   @Prop()
+  locationId?: string;
+
+  @Prop()
+  locationName?: string;
+
+  @Prop()
+  destinationLocationId?: string;
+
+  @Prop()
+  destinationLocationName?: string;
+
+  @Prop()
   actorUserId?: string;
 
   @Prop()
@@ -53,3 +65,4 @@ export const StockMovementSchema = SchemaFactory.createForClass(StockMovementDoc
 StockMovementSchema.index({ organizationId: 1, articleId: 1, createdAt: -1 });
 StockMovementSchema.index({ organizationId: 1, interventionId: 1, createdAt: -1 });
 StockMovementSchema.index({ organizationId: 1, caseId: 1, createdAt: -1 });
+StockMovementSchema.index({ organizationId: 1, locationId: 1, createdAt: -1 });

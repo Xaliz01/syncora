@@ -31,6 +31,12 @@ describe("StockController", () => {
       listArticleMovements: jest.fn(),
       addInterventionArticleUsage: jest.fn(),
       getInterventionUsage: jest.fn(),
+      createStockLocation: jest.fn(),
+      listStockLocations: jest.fn(),
+      getStockLocation: jest.fn(),
+      updateStockLocation: jest.fn(),
+      deleteStockLocation: jest.fn(),
+      createStockTransfer: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -107,12 +113,13 @@ describe("StockController", () => {
         },
       ] as never);
 
-      const result = await controller.listArticles(mockUser, "search", "false", "true");
+      const result = await controller.listArticles(mockUser, "search", "false", "true", undefined);
 
       expect(mockStockService.listArticles).toHaveBeenCalledWith(mockUser, {
         search: "search",
         lowStockOnly: false,
         activeOnly: true,
+        locationId: undefined,
       });
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe("article-1");
@@ -225,6 +232,7 @@ describe("StockController", () => {
         "article-1",
         "int-1",
         "case-1",
+        undefined,
         "50",
       );
 
@@ -232,6 +240,7 @@ describe("StockController", () => {
         articleId: "article-1",
         interventionId: "int-1",
         caseId: "case-1",
+        locationId: undefined,
         limit: 50,
       });
       expect(result).toHaveLength(1);

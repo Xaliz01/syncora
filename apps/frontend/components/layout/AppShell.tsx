@@ -283,6 +283,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (hasPermission(user, "stock.articles.read")) {
       settingsLinks.push({ label: "Catalogue articles", href: "/settings/stock/articles" });
     }
+    if (hasPermission(user, "stock.locations.read")) {
+      settingsLinks.push({ label: "Emplacements de stock", href: "/settings/stock/locations" });
+    }
     if (hasPermission(user, "case_templates.read")) {
       settingsLinks.push({ label: "Modèles de dossier", href: "/settings/case-templates" });
     }
