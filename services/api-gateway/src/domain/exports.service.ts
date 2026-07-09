@@ -27,7 +27,13 @@ export class ExportsGatewayService extends AbstractExportsGatewayService {
   async exportCasesList(
     user: AuthUser,
     format: ExportFormat,
-    filters?: { status?: string; priority?: string; assigneeId?: string; search?: string },
+    filters?: {
+      status?: string;
+      billingStatus?: string;
+      priority?: string;
+      assigneeId?: string;
+      search?: string;
+    },
   ): Promise<ExportResult> {
     return this.proxyExport(`${EXPORTS_URL}/exports/cases`, {
       organizationId: user.organizationId,

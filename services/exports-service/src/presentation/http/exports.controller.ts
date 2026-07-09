@@ -25,6 +25,7 @@ export class ExportsController {
     @Query("organizationId") organizationId: string,
     @Query("format") format: string,
     @Query("status") status?: string,
+    @Query("billingStatus") billingStatus?: string,
     @Query("priority") priority?: string,
     @Query("assigneeId") assigneeId?: string,
     @Query("search") search?: string,
@@ -34,6 +35,7 @@ export class ExportsController {
     const exportFormat = this.parseFormat(format);
     const result = await this.exportsService.exportCasesList(orgId, exportFormat, {
       status,
+      billingStatus,
       priority,
       assigneeId,
       search,

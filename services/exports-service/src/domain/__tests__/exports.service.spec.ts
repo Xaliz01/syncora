@@ -124,6 +124,24 @@ describe("ExportsService", () => {
       expect(result.buffer.length).toBeGreaterThan(0);
     });
 
+    it("should forward billingStatus filter to cases-service", async () => {
+      mockHttpService.get.mockReturnValue(
+        of({ data: [], status: 200, headers: {}, statusText: "OK", config: {} as never }) as never,
+      );
+
+      await service.exportCasesList("org-123", "xlsx", { billingStatus: "to_invoice" });
+
+      expect(mockHttpService.get).toHaveBeenCalledWith(
+        expect.stringContaining("/cases"),
+        expect.objectContaining({
+          params: expect.objectContaining({
+            organizationId: "org-123",
+            billingStatus: "to_invoice",
+          }),
+        }),
+      );
+    });
+
     it("should generate a PDF buffer for cases list", async () => {
       mockHttpService.get.mockReturnValue(
         of({ data: [], status: 200, headers: {}, statusText: "OK", config: {} as never }) as never,

@@ -193,8 +193,26 @@ export function NotificationBell() {
         setOpen(false);
       }
     }
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const isMobile = window.matchMedia("(max-width: 639px)").matches;
+    if (!isMobile) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
   }, [open]);
 
   const handleNotificationClick = useCallback(
@@ -250,66 +268,75 @@ export function NotificationBell() {
       </button>
 
       {open && (
-        <div
-          ref={dropdownRef}
-          className="absolute right-0 top-full mt-2 w-96 max-h-[480px] overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl z-50 flex flex-col"
-        >
-          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-800">
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-              Notifications
-            </h3>
-            {unreadCount > 0 && (
-              <button
-                type="button"
-                onClick={() => markAllReadMutation.mutate()}
-                disabled={markAllReadMutation.isPending}
-                className="text-xs text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 font-medium transition"
-              >
-                Tout marquer comme lu
-              </button>
-            )}
-          </div>
-
-          <div className="overflow-y-auto flex-1">
-            {isLoading && (
-              <div className="px-4 py-8 text-center text-sm text-slate-400">Chargement…</div>
-            )}
-
-            {!isLoading && (!listData?.notifications || listData.notifications.length === 0) && (
-              <div className="px-4 py-8 text-center text-sm text-slate-400 dark:text-slate-500">
-                Aucune notification
-              </div>
-            )}
-
-            {!isLoading &&
-              listData?.notifications?.map((n) => (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-slate-950/40 sm:hidden"
+            onClick={() => setOpen(false)}
+            aria-hidden
+          />
+          <div
+            ref={dropdownRef}
+            role="dialog"
+            aria-label="Notifications"
+            className="fixed left-3 right-3 top-[4.25rem] z-50 flex max-h-[calc(100dvh-5.5rem)] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900 sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96 sm:max-h-[480px]"
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-800">
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                Notifications
+              </h3>
+              {unreadCount > 0 && (
                 <button
-                  key={n.id}
                   type="button"
-                  onClick={() => handleNotificationClick(n)}
-                  className={`w-full text-left px-4 py-3 border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition ${
-                    !n.read ? "bg-brand-50/50 dark:bg-brand-950/20" : ""
-                  }`}
+                  onClick={() => markAllReadMutation.mutate()}
+                  disabled={markAllReadMutation.isPending}
+                  className="text-xs text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 font-medium transition"
                 >
-                  <div className="flex items-start gap-3">
-                    {!n.read && (
-                      <span className="mt-1.5 flex-shrink-0 h-2 w-2 rounded-full bg-brand-600" />
-                    )}
-                    <div className={`flex-1 min-w-0 ${n.read ? "pl-5" : ""}`}>
-                      <p
-                        className={`text-sm leading-snug ${!n.read ? "text-slate-900 dark:text-slate-100 font-medium" : "text-slate-600 dark:text-slate-400"}`}
-                      >
-                        {formatNotificationText(n)}
-                      </p>
-                      <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
-                        {timeAgo(n.createdAt)}
-                      </p>
-                    </div>
-                  </div>
+                  Tout marquer comme lu
                 </button>
-              ))}
+              )}
+            </div>
+
+            <div className="overflow-y-auto flex-1">
+              {isLoading && (
+                <div className="px-4 py-8 text-center text-sm text-slate-400">Chargement…</div>
+              )}
+
+              {!isLoading && (!listData?.notifications || listData.notifications.length === 0) && (
+                <div className="px-4 py-8 text-center text-sm text-slate-400 dark:text-slate-500">
+                  Aucune notification
+                </div>
+              )}
+
+              {!isLoading &&
+                listData?.notifications?.map((n) => (
+                  <button
+                    key={n.id}
+                    type="button"
+                    onClick={() => handleNotificationClick(n)}
+                    className={`w-full text-left px-4 py-3 border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition ${
+                      !n.read ? "bg-brand-50/50 dark:bg-brand-950/20" : ""
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      {!n.read && (
+                        <span className="mt-1.5 flex-shrink-0 h-2 w-2 rounded-full bg-brand-600" />
+                      )}
+                      <div className={`flex-1 min-w-0 ${n.read ? "pl-5" : ""}`}>
+                        <p
+                          className={`text-sm leading-snug ${!n.read ? "text-slate-900 dark:text-slate-100 font-medium" : "text-slate-600 dark:text-slate-400"}`}
+                        >
+                          {formatNotificationText(n)}
+                        </p>
+                        <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
+                          {timeAgo(n.createdAt)}
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

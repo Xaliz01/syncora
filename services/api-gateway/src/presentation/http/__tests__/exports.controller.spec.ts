@@ -100,6 +100,7 @@ describe("ExportsController", () => {
         mockUser,
         "xlsx",
         "in_progress",
+        "to_invoice",
         "high",
         undefined,
         undefined,
@@ -108,6 +109,7 @@ describe("ExportsController", () => {
 
       expect(mockExportsService.exportCasesList).toHaveBeenCalledWith(mockUser, "xlsx", {
         status: "in_progress",
+        billingStatus: "to_invoice",
         priority: "high",
         assigneeId: undefined,
         search: undefined,
@@ -122,6 +124,7 @@ describe("ExportsController", () => {
         controller.exportCasesList(
           mockUser,
           "csv",
+          undefined,
           undefined,
           undefined,
           undefined,

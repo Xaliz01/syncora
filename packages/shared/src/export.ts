@@ -18,6 +18,7 @@ export interface ExportCaseSummaryParams {
 
 export interface ExportCasesListParams {
   status?: string;
+  billingStatus?: string;
   priority?: string;
   assigneeId?: string;
   search?: string;

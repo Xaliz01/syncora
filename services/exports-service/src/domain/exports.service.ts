@@ -70,10 +70,17 @@ export class ExportsService extends AbstractExportsService {
   async exportCasesList(
     organizationId: string,
     format: ExportFormat,
-    filters?: { status?: string; priority?: string; assigneeId?: string; search?: string },
+    filters?: {
+      status?: string;
+      billingStatus?: string;
+      priority?: string;
+      assigneeId?: string;
+      search?: string;
+    },
   ): Promise<ExportResult> {
     const query: Record<string, string> = { organizationId };
     if (filters?.status) query.status = filters.status;
+    if (filters?.billingStatus) query.billingStatus = filters.billingStatus;
     if (filters?.priority) query.priority = filters.priority;
     if (filters?.assigneeId) query.assigneeId = filters.assigneeId;
     if (filters?.search) query.search = filters.search;

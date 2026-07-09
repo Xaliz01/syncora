@@ -33,6 +33,7 @@ export class ExportsController {
     @CurrentUser() user: AuthUser,
     @Query("format") format: string,
     @Query("status") status?: string,
+    @Query("billingStatus") billingStatus?: string,
     @Query("priority") priority?: string,
     @Query("assigneeId") assigneeId?: string,
     @Query("search") search?: string,
@@ -41,6 +42,7 @@ export class ExportsController {
     const exportFormat = this.parseFormat(format);
     const result = await this.exportsService.exportCasesList(user, exportFormat, {
       status,
+      billingStatus,
       priority,
       assigneeId,
       search,

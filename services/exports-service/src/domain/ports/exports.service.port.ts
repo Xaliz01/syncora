@@ -12,7 +12,13 @@ export abstract class AbstractExportsService {
   abstract exportCasesList(
     organizationId: string,
     format: ExportFormat,
-    filters?: { status?: string; priority?: string; assigneeId?: string; search?: string },
+    filters?: {
+      status?: string;
+      billingStatus?: string;
+      priority?: string;
+      assigneeId?: string;
+      search?: string;
+    },
   ): Promise<ExportResult>;
 
   abstract exportUsersList(organizationId: string, format: ExportFormat): Promise<ExportResult>;

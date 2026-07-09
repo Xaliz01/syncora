@@ -72,7 +72,10 @@ describe("ExportsGatewayService (proxy)", () => {
         }) as never,
       );
 
-      const result = await service.exportCasesList(mockUser, "xlsx", { status: "open" });
+      const result = await service.exportCasesList(mockUser, "xlsx", {
+        status: "open",
+        billingStatus: "to_invoice",
+      });
 
       expect(mockHttpService.get).toHaveBeenCalledWith(
         expect.stringContaining("/exports/cases"),
@@ -81,6 +84,7 @@ describe("ExportsGatewayService (proxy)", () => {
             organizationId: "org-123",
             format: "xlsx",
             status: "open",
+            billingStatus: "to_invoice",
           }),
         }),
       );
