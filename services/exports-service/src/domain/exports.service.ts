@@ -92,6 +92,11 @@ export class ExportsService extends AbstractExportsService {
       return { buffer, contentType: "application/pdf", filename: "liste-dossiers.pdf" };
     }
 
+    if (format === "csv") {
+      const buffer = this.buildCasesListCsv(cases);
+      return { buffer, contentType: "text/csv; charset=utf-8", filename: "liste-dossiers.csv" };
+    }
+
     const buffer = await this.buildCasesListXlsx(cases);
     return {
       buffer,
@@ -108,6 +113,11 @@ export class ExportsService extends AbstractExportsService {
     if (format === "pdf") {
       const buffer = await this.buildUsersListPdf(users);
       return { buffer, contentType: "application/pdf", filename: "liste-utilisateurs.pdf" };
+    }
+
+    if (format === "csv") {
+      const buffer = this.buildUsersListCsv(users);
+      return { buffer, contentType: "text/csv; charset=utf-8", filename: "liste-utilisateurs.csv" };
     }
 
     const buffer = await this.buildUsersListXlsx(users);
@@ -138,6 +148,11 @@ export class ExportsService extends AbstractExportsService {
     if (format === "pdf") {
       const buffer = await this.buildCustomersListPdf(customers);
       return { buffer, contentType: "application/pdf", filename: "liste-clients.pdf" };
+    }
+
+    if (format === "csv") {
+      const buffer = this.buildCustomersListCsv(customers);
+      return { buffer, contentType: "text/csv; charset=utf-8", filename: "liste-clients.csv" };
     }
 
     const buffer = await this.buildCustomersListXlsx(customers);
@@ -180,6 +195,15 @@ export class ExportsService extends AbstractExportsService {
     if (format === "pdf") {
       const buffer = await this.buildInterventionsListPdf(interventions);
       return { buffer, contentType: "application/pdf", filename: "liste-interventions.pdf" };
+    }
+
+    if (format === "csv") {
+      const buffer = this.buildInterventionsListCsv(interventions);
+      return {
+        buffer,
+        contentType: "text/csv; charset=utf-8",
+        filename: "liste-interventions.csv",
+      };
     }
 
     const buffer = await this.buildInterventionsListXlsx(interventions);
@@ -245,6 +269,15 @@ export class ExportsService extends AbstractExportsService {
     if (format === "pdf") {
       const buffer = await this.buildTechniciansActivityPdf(activityData, filters);
       return { buffer, contentType: "application/pdf", filename: "activite-techniciens.pdf" };
+    }
+
+    if (format === "csv") {
+      const buffer = this.buildTechniciansActivityCsv(activityData);
+      return {
+        buffer,
+        contentType: "text/csv; charset=utf-8",
+        filename: "activite-techniciens.csv",
+      };
     }
 
     const buffer = await this.buildTechniciansActivityXlsx(activityData, filters);
@@ -321,6 +354,15 @@ export class ExportsService extends AbstractExportsService {
       return { buffer, contentType: "application/pdf", filename: "rapport-kilometrique.pdf" };
     }
 
+    if (format === "csv") {
+      const buffer = this.buildMileageReportCsv(mileageByTeam);
+      return {
+        buffer,
+        contentType: "text/csv; charset=utf-8",
+        filename: "rapport-kilometrique.csv",
+      };
+    }
+
     const buffer = await this.buildMileageReportXlsx(mileageByTeam, filters);
     return {
       buffer,
@@ -352,6 +394,11 @@ export class ExportsService extends AbstractExportsService {
     if (format === "pdf") {
       const buffer = await this.buildTodoCasesPdf(cases, params.todoLabel);
       return { buffer, contentType: "application/pdf", filename: "taches-dossiers.pdf" };
+    }
+
+    if (format === "csv") {
+      const buffer = this.buildTodoCasesCsv(cases);
+      return { buffer, contentType: "text/csv; charset=utf-8", filename: "taches-dossiers.csv" };
     }
 
     const buffer = await this.buildTodoCasesXlsx(cases, params.todoLabel);
@@ -932,6 +979,176 @@ export class ExportsService extends AbstractExportsService {
     }
 
     return Buffer.from(await wb.xlsx.writeBuffer());
+  }
+
+  // ── CSV Builders ──
+
+  private buildCsvBuffer(headers: string[], rows: string[][]): Buffer {
+    const escape = (val: string) => {
+      if (val.includes('"') || val.includes(",") || val.includes("\n") || val.includes(";")) {
+        return `"${val.replace(/"/g, '""')}"`;
+      }
+      return val;
+    };
+    const lines = [headers.map(escape).join(";"), ...rows.map((r) => r.map(escape).join(";"))];
+    const bom = "\uFEFF";
+    return Buffer.from(bom + lines.join("\r\n"), "utf-8");
+  }
+
+  private buildCasesListCsv(cases: CaseSummaryResponse[]): Buffer {
+    const headers = [
+      "Dossier",
+      "Statut",
+      "Priorité",
+      "Client",
+      "Avancement (%)",
+      "Interventions",
+      "Échéance",
+      "Créé le",
+    ];
+    const rows = cases.map((c) => [
+      c.title,
+      this.translateStatus(c.status),
+      this.translatePriority(c.priority),
+      c.customer?.displayName ?? "",
+      c.progress.toString(),
+      c.interventionCount.toString(),
+      c.dueDate ? this.formatDateFr(c.dueDate) : "",
+      c.createdAt ? this.formatDateFr(c.createdAt) : "",
+    ]);
+    return this.buildCsvBuffer(headers, rows);
+  }
+
+  private buildUsersListCsv(users: UserResponse[]): Buffer {
+    const headers = ["Nom", "Email", "Rôle", "Statut"];
+    const rows = users.map((u) => [
+      u.name ?? "",
+      u.email,
+      u.role === "admin" ? "Administrateur" : "Membre",
+      u.status === "active" ? "Actif" : "Invité",
+    ]);
+    return this.buildCsvBuffer(headers, rows);
+  }
+
+  private buildCustomersListCsv(customers: CustomerResponse[]): Buffer {
+    const headers = ["Nom", "Type", "Email", "Téléphone", "Mobile", "Ville", "Code postal"];
+    const rows = customers.map((c) => [
+      c.displayName,
+      c.kind === "individual" ? "Particulier" : "Société",
+      c.email ?? "",
+      c.phone ?? "",
+      c.mobile ?? "",
+      c.address?.city ?? "",
+      c.address?.postalCode ?? "",
+    ]);
+    return this.buildCsvBuffer(headers, rows);
+  }
+
+  private buildInterventionsListCsv(interventions: InterventionResponse[]): Buffer {
+    const headers = [
+      "Titre",
+      "Dossier",
+      "Statut",
+      "Technicien",
+      "Équipe",
+      "Date planifiée",
+      "Démarré",
+      "Terminé",
+      "Durée (h)",
+    ];
+    const rows = interventions.map((i) => {
+      let duration = "";
+      if (i.startedAt && i.completedAt) {
+        const h = (new Date(i.completedAt).getTime() - new Date(i.startedAt).getTime()) / 3600000;
+        duration = (Math.round(h * 10) / 10).toString();
+      }
+      return [
+        i.title,
+        i.caseTitle ?? "",
+        this.translateInterventionStatus(i.status),
+        i.assigneeName ?? "",
+        i.assignedTeamName ?? "",
+        i.scheduledStart ? this.formatDateTimeFr(i.scheduledStart) : "",
+        i.startedAt ? this.formatDateTimeFr(i.startedAt) : "",
+        i.completedAt ? this.formatDateTimeFr(i.completedAt) : "",
+        duration,
+      ];
+    });
+    return this.buildCsvBuffer(headers, rows);
+  }
+
+  private buildTechniciansActivityCsv(
+    data: Array<{
+      name: string;
+      speciality: string;
+      totalInterventions: number;
+      completed: number;
+      inProgress: number;
+      planned: number;
+      totalHours: number;
+    }>,
+  ): Buffer {
+    const headers = [
+      "Technicien",
+      "Spécialité",
+      "Interventions totales",
+      "Terminées",
+      "En cours",
+      "Planifiées",
+      "Heures travaillées",
+    ];
+    const rows = data.map((d) => [
+      d.name,
+      d.speciality,
+      d.totalInterventions.toString(),
+      d.completed.toString(),
+      d.inProgress.toString(),
+      d.planned.toString(),
+      d.totalHours.toString(),
+    ]);
+    return this.buildCsvBuffer(headers, rows);
+  }
+
+  private buildMileageReportCsv(
+    data: Array<{
+      teamName: string;
+      interventionCount: number;
+      estimatedKm: number;
+      fuelLiters: number;
+      fuelCostEur: number;
+      co2Kg: number;
+    }>,
+  ): Buffer {
+    const headers = [
+      "Équipe",
+      "Interventions",
+      "Distance estimée (km)",
+      "Carburant (L)",
+      "Coût carburant (€)",
+      "CO₂ (kg)",
+    ];
+    const rows = data.map((d) => [
+      d.teamName,
+      d.interventionCount.toString(),
+      d.estimatedKm.toString(),
+      d.fuelLiters.toString(),
+      d.fuelCostEur.toFixed(2),
+      d.co2Kg.toString(),
+    ]);
+    return this.buildCsvBuffer(headers, rows);
+  }
+
+  private buildTodoCasesCsv(cases: DashboardTodoCaseItem[]): Buffer {
+    const headers = ["Dossier", "Statut", "Priorité", "Client", "Échéance", "Créé le"];
+    const rows = cases.map((c) => [
+      c.caseTitle,
+      this.translateStatus(c.status),
+      this.translatePriority(c.priority),
+      c.customerName ?? "",
+      c.dueDate ? this.formatDateFr(c.dueDate) : "",
+      c.createdAt ? this.formatDateFr(c.createdAt) : "",
+    ]);
+    return this.buildCsvBuffer(headers, rows);
   }
 
   // ── Generic PDF table builder ──

@@ -2,9 +2,11 @@
 
 import React, { useState } from "react";
 
+type ExportFormatOption = "pdf" | "xlsx" | "csv";
+
 interface ExportButtonProps {
-  onExport: (format: "pdf" | "xlsx") => Promise<void>;
-  formats?: ("pdf" | "xlsx")[];
+  onExport: (format: ExportFormatOption) => Promise<void>;
+  formats?: ExportFormatOption[];
   label?: string;
   className?: string;
   size?: "sm" | "md";
@@ -12,7 +14,7 @@ interface ExportButtonProps {
 
 export function ExportButton({
   onExport,
-  formats = ["xlsx", "pdf"],
+  formats = ["xlsx", "csv", "pdf"],
   label = "Exporter",
   className = "",
   size = "sm",
@@ -20,7 +22,7 @@ export function ExportButton({
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
 
-  const handleExport = async (format: "pdf" | "xlsx") => {
+  const handleExport = async (format: ExportFormatOption) => {
     setOpen(false);
     setLoading(true);
     try {
@@ -84,6 +86,16 @@ export function ExportButton({
                 Excel (.xlsx)
               </button>
             )}
+            {formats.includes("csv") && (
+              <button
+                type="button"
+                onClick={() => handleExport("csv")}
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700"
+              >
+                <CsvIcon />
+                CSV
+              </button>
+            )}
             {formats.includes("pdf") && (
               <button
                 type="button"
@@ -126,6 +138,24 @@ function SpreadsheetIcon() {
         strokeLinecap="round"
         strokeLinejoin="round"
         d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"
+      />
+    </svg>
+  );
+}
+
+function CsvIcon() {
+  return (
+    <svg
+      className="h-4 w-4 text-blue-600"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
       />
     </svg>
   );

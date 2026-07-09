@@ -264,6 +264,185 @@ describe("ExportsService", () => {
     });
   });
 
+  describe("exportCasesList (CSV)", () => {
+    it("should generate a CSV buffer with BOM and semicolons", async () => {
+      const cases: CaseSummaryResponse[] = [
+        {
+          id: "case-1",
+          organizationId: "org-123",
+          title: "Dossier A",
+          status: "open",
+          billingStatus: "none",
+          priority: "medium",
+          assignees: [],
+          tags: [],
+          progress: 25,
+          interventionCount: 1,
+          createdAt: "2024-01-10T08:00:00Z",
+          customer: { id: "cust-x", displayName: "Client X", kind: "company" as const },
+        },
+        {
+          id: "case-2",
+          organizationId: "org-123",
+          title: 'Dossier "B"',
+          status: "in_progress",
+          billingStatus: "to_invoice",
+          priority: "high",
+          assignees: [],
+          tags: [],
+          progress: 75,
+          interventionCount: 3,
+          createdAt: "2024-02-15T10:00:00Z",
+        },
+      ];
+
+      mockHttpService.get.mockReturnValue(
+        of({
+          data: cases,
+          status: 200,
+          headers: {},
+          statusText: "OK",
+          config: {} as never,
+        }) as never,
+      );
+
+      const result = await service.exportCasesList("org-123", "csv");
+
+      expect(result.contentType).toBe("text/csv; charset=utf-8");
+      expect(result.filename).toBe("liste-dossiers.csv");
+      expect(result.buffer).toBeInstanceOf(Buffer);
+
+      const content = result.buffer.toString("utf-8");
+      expect(content.startsWith("\uFEFF")).toBe(true);
+      expect(content).toContain("Dossier;Statut;Priorité;Client");
+      expect(content).toContain("Dossier A;Ouvert;Moyenne;Client X");
+      expect(content).toContain('"Dossier ""B""";En cours;Haute;');
+    });
+  });
+
+  describe("exportInterventionsList (CSV)", () => {
+    it("should generate a CSV buffer for interventions", async () => {
+      const interventions: InterventionResponse[] = [
+        {
+          id: "int-1",
+          organizationId: "org-123",
+          caseId: "case-1",
+          caseTitle: "Dossier A",
+          title: "Intervention 1",
+          status: "completed",
+          billingStatus: "none",
+          assigneeName: "Jean Dupont",
+          assignedTeamName: "Équipe Nord",
+          scheduledStart: "2024-03-01T09:00:00Z",
+          startedAt: "2024-03-01T09:15:00Z",
+          completedAt: "2024-03-01T11:15:00Z",
+        },
+        {
+          id: "int-2",
+          organizationId: "org-123",
+          caseId: "case-1",
+          title: "Intervention 2",
+          status: "planned",
+          billingStatus: "none",
+        },
+      ];
+
+      mockHttpService.get.mockReturnValue(
+        of({
+          data: interventions,
+          status: 200,
+          headers: {},
+          statusText: "OK",
+          config: {} as never,
+        }) as never,
+      );
+
+      const result = await service.exportInterventionsList("org-123", "csv", {
+        startDate: "2024-03-01",
+        endDate: "2024-03-31",
+      });
+
+      expect(result.contentType).toBe("text/csv; charset=utf-8");
+      expect(result.filename).toBe("liste-interventions.csv");
+
+      const content = result.buffer.toString("utf-8");
+      expect(content).toContain("Titre;Dossier;Statut;Technicien");
+      expect(content).toContain("Intervention 1;Dossier A;Terminée;Jean Dupont");
+      expect(content).toContain("2");
+    });
+  });
+
+  describe("exportCustomersList (CSV)", () => {
+    it("should generate a CSV buffer for customers", async () => {
+      const customers = [
+        {
+          id: "cust-1",
+          organizationId: "org-123",
+          displayName: "Dupont SARL",
+          kind: "company" as const,
+          email: "contact@dupont.fr",
+          phone: "01 23 45 67 89",
+          mobile: "06 12 34 56 78",
+          address: { city: "Paris", postalCode: "75001" },
+        },
+      ];
+
+      mockHttpService.get.mockReturnValue(
+        of({
+          data: customers,
+          status: 200,
+          headers: {},
+          statusText: "OK",
+          config: {} as never,
+        }) as never,
+      );
+
+      const result = await service.exportCustomersList("org-123", "csv");
+
+      expect(result.contentType).toBe("text/csv; charset=utf-8");
+      expect(result.filename).toBe("liste-clients.csv");
+
+      const content = result.buffer.toString("utf-8");
+      expect(content).toContain("Nom;Type;Email;Téléphone;Mobile;Ville;Code postal");
+      expect(content).toContain("Dupont SARL;Société;contact@dupont.fr");
+      expect(content).toContain("Paris;75001");
+    });
+  });
+
+  describe("exportUsersList (CSV)", () => {
+    it("should generate a CSV buffer for users", async () => {
+      const users = [
+        {
+          id: "u1",
+          organizationId: "org-123",
+          email: "alice@example.com",
+          name: "Alice",
+          role: "admin",
+          status: "active",
+        },
+      ];
+
+      mockHttpService.get.mockReturnValue(
+        of({
+          data: users,
+          status: 200,
+          headers: {},
+          statusText: "OK",
+          config: {} as never,
+        }) as never,
+      );
+
+      const result = await service.exportUsersList("org-123", "csv");
+
+      expect(result.contentType).toBe("text/csv; charset=utf-8");
+      expect(result.filename).toBe("liste-utilisateurs.csv");
+
+      const content = result.buffer.toString("utf-8");
+      expect(content).toContain("Nom;Email;Rôle;Statut");
+      expect(content).toContain("Alice;alice@example.com;Administrateur;Actif");
+    });
+  });
+
   describe("getReportingStats", () => {
     it("should aggregate stats from multiple services", async () => {
       const cases: CaseSummaryResponse[] = [

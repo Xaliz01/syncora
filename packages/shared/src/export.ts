@@ -1,6 +1,6 @@
 /** Contrats API exports (types de rapport, formats, filtres). */
 
-export type ExportFormat = "pdf" | "xlsx";
+export type ExportFormat = "pdf" | "xlsx" | "csv";
 
 export type ExportType =
   | "case_summary"

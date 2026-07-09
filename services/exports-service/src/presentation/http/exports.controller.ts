@@ -167,8 +167,8 @@ export class ExportsController {
   }
 
   private parseFormat(format: string): ExportFormat {
-    if (format === "pdf" || format === "xlsx") return format;
-    throw new BadRequestException(`Format invalide : ${format}. Utilisez "pdf" ou "xlsx".`);
+    if (format === "pdf" || format === "xlsx" || format === "csv") return format;
+    throw new BadRequestException(`Format invalide : ${format}. Utilisez "pdf", "xlsx" ou "csv".`);
   }
 
   private sendExport(res: Response, result: ExportResult): void {
