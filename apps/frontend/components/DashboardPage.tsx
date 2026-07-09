@@ -139,7 +139,7 @@ function DashboardCasesModal({
   isLoading: boolean;
   showDueDate?: boolean;
   onClose: () => void;
-  onExport?: (format: "pdf" | "xlsx") => Promise<void>;
+  onExport?: (format: "pdf" | "xlsx" | "csv") => Promise<void>;
 }) {
   return (
     <div

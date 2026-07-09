@@ -41,7 +41,7 @@ export function exportCaseSummaryPdf(caseId: string): Promise<void> {
 }
 
 export function exportCasesList(
-  format: "pdf" | "xlsx",
+  format: "pdf" | "xlsx" | "csv",
   filters?: {
     status?: string;
     billingStatus?: string;
@@ -62,14 +62,14 @@ export function exportCasesList(
 
 // ── Users export ──
 
-export function exportUsersList(format: "pdf" | "xlsx"): Promise<void> {
+export function exportUsersList(format: "pdf" | "xlsx" | "csv"): Promise<void> {
   return downloadExport(`/exports/users?format=${format}`, `liste-utilisateurs.${format}`);
 }
 
 // ── Customers export ──
 
 export function exportCustomersList(
-  format: "pdf" | "xlsx",
+  format: "pdf" | "xlsx" | "csv",
   filters?: { search?: string; kind?: string },
 ): Promise<void> {
   const params = new URLSearchParams();
@@ -82,7 +82,7 @@ export function exportCustomersList(
 // ── Interventions export ──
 
 export function exportInterventionsList(
-  format: "pdf" | "xlsx",
+  format: "pdf" | "xlsx" | "csv",
   filters?: {
     startDate?: string;
     endDate?: string;
@@ -107,7 +107,7 @@ export function exportInterventionsList(
 // ── Technicians activity export ──
 
 export function exportTechniciansActivity(
-  format: "pdf" | "xlsx",
+  format: "pdf" | "xlsx" | "csv",
   filters?: { startDate?: string; endDate?: string; technicianId?: string },
 ): Promise<void> {
   const params = new URLSearchParams();
@@ -124,7 +124,7 @@ export function exportTechniciansActivity(
 // ── Mileage report export ──
 
 export function exportMileageReport(
-  format: "pdf" | "xlsx",
+  format: "pdf" | "xlsx" | "csv",
   filters?: { startDate?: string; endDate?: string; teamId?: string },
 ): Promise<void> {
   const params = new URLSearchParams();
@@ -141,7 +141,7 @@ export function exportMileageReport(
 // ── Dashboard TODO cases export ──
 
 export function exportDashboardTodoCases(
-  format: "pdf" | "xlsx",
+  format: "pdf" | "xlsx" | "csv",
   params: { templateId: string; todoLabel: string },
 ): Promise<void> {
   const qs = new URLSearchParams();

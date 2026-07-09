@@ -6,12 +6,15 @@ import { useIsDarkMode } from "@/lib/use-is-dark-mode";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as api from "@/lib/cases.api";
 import * as fleetApi from "@/lib/fleet.api";
+import * as exportsApi from "@/lib/exports.api";
 import {
   getTeamCalendarCardAppearance,
   getTeamCalendarCardClasses,
   normalizeCalendarColorHex,
   teamLegendSwatchStyle,
 } from "@/lib/team-calendar-colors";
+import { PermissionGate } from "@/components/auth/PermissionGate";
+import { ExportButton } from "@/components/ui/ExportButton";
 import type { InterventionResponse, TeamResponse } from "@planwise/shared";
 
 type ViewMode = "week" | "month";
@@ -624,6 +627,16 @@ export function CalendarPage() {
           </p>
         </div>
         <div className="flex items-center gap-2 self-start">
+          <PermissionGate permission="exports.interventions">
+            <ExportButton
+              onExport={(format) =>
+                exportsApi.exportInterventionsList(format, {
+                  startDate: rangeStart.toISOString(),
+                  endDate: rangeEnd.toISOString(),
+                })
+              }
+            />
+          </PermissionGate>
           <div className="flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
             <button
               onClick={() => setView("week")}
