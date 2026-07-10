@@ -117,13 +117,43 @@ describe("ExportsController", () => {
       expect(res.send).toHaveBeenCalledWith(exportResult.buffer);
     });
 
+    it("should accept csv format", async () => {
+      const exportResult = {
+        buffer: Buffer.from("csv-content"),
+        contentType: "text/csv; charset=utf-8",
+        filename: "liste-dossiers.csv",
+      };
+      mockExportsService.exportCasesList.mockResolvedValue(exportResult);
+      const res = mockResponse();
+
+      await controller.exportCasesList(
+        mockUser,
+        "csv",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        res,
+      );
+
+      expect(mockExportsService.exportCasesList).toHaveBeenCalledWith(mockUser, "csv", {
+        status: undefined,
+        billingStatus: undefined,
+        priority: undefined,
+        assigneeId: undefined,
+        search: undefined,
+      });
+      expect(res.send).toHaveBeenCalledWith(exportResult.buffer);
+    });
+
     it("should reject invalid format", async () => {
       const res = mockResponse();
 
       await expect(
         controller.exportCasesList(
           mockUser,
-          "csv",
+          "docx",
           undefined,
           undefined,
           undefined,
