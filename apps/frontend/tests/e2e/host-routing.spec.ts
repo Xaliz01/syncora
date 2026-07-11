@@ -56,6 +56,11 @@ test.describe("Routage par hostname — redirections middleware", () => {
     expect(response.status()).toBe(200);
   });
 
+  test("planwise.fr/mentions-legales reste sur le domaine marketing", async ({ request }) => {
+    const response = await requestWithHost(request, "/mentions-legales", MARKETING_HOST);
+    expect(response.status()).toBe(200);
+  });
+
   test("planwise.fr/page-inexistante redirige vers le domaine app", async ({ request }) => {
     const response = await requestWithHost(request, "/page-inexistante", MARKETING_HOST);
     expect(response.status()).toBe(308);

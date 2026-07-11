@@ -20,6 +20,30 @@ const nextConfig: NextConfig = {
   output: "standalone",
   // Monorepo : tracer les dépendances depuis la racine du repo (inclut @planwise/shared).
   outputFileTracingRoot: join(__dirname, "../../"),
+  async headers() {
+    return [
+      {
+        source: "/mentions-legales",
+        headers: [{ key: "Cache-Control", value: "no-store" }],
+      },
+      {
+        source: "/politique-confidentialite",
+        headers: [{ key: "Cache-Control", value: "no-store" }],
+      },
+      {
+        source: "/cgu",
+        headers: [{ key: "Cache-Control", value: "no-store" }],
+      },
+      {
+        source: "/cgv",
+        headers: [{ key: "Cache-Control", value: "no-store" }],
+      },
+      {
+        source: "/politique-cookies",
+        headers: [{ key: "Cache-Control", value: "no-store" }],
+      },
+    ];
+  },
 };
 
 export default withSerwist(nextConfig);

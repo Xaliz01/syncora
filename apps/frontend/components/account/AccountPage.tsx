@@ -14,6 +14,7 @@ import {
   USER_THEME_PREFERENCE_CHANGED,
 } from "@/lib/user-preferences";
 import { ChangePasswordDialog } from "@/components/account/ChangePasswordDialog";
+import { LegalLinks } from "@/components/legal/LegalFooter";
 
 const THEME_LABELS: Record<ThemePreference, string> = {
   light: "Clair",
@@ -475,6 +476,17 @@ export function AccountPage() {
             </button>
           </form>
         )}
+      </section>
+
+      <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-3">
+          Informations légales
+        </h2>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">
+          Consultez nos documents légaux ou contactez-nous pour exercer vos droits sur vos données
+          personnelles.
+        </p>
+        <LegalLinks />
       </section>
 
       <ChangePasswordDialog

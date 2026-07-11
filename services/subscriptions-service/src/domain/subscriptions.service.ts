@@ -36,6 +36,7 @@ import {
 } from "@planwise/shared";
 import type { OrganizationSubscriptionDocument } from "../persistence/organization-subscription.schema";
 import type { ProcessedStripeEventDocument } from "../persistence/processed-stripe-event.schema";
+import { buildStripeCheckoutLegalParams } from "./stripe-legal-params";
 
 const DEFAULT_TRIAL_DAYS = 15;
 const PLAN_LABEL = BASE_SUBSCRIPTION_PLAN_LABEL;
@@ -398,6 +399,7 @@ export class SubscriptionsService {
         metadata: { organizationId: params.organizationId },
       },
       allow_promotion_codes: true,
+      ...buildStripeCheckoutLegalParams(),
     };
 
     if (stripeCustomerId) {
@@ -477,6 +479,7 @@ export class SubscriptionsService {
           addonCode: params.addonCode,
         },
       },
+      ...buildStripeCheckoutLegalParams(),
     });
 
     if (!session.url) {
@@ -642,6 +645,7 @@ export class SubscriptionsService {
         metadata: { organizationId: params.organizationId },
       },
       allow_promotion_codes: true,
+      ...buildStripeCheckoutLegalParams(),
     };
 
     if (stripeCustomerId) {

@@ -9,6 +9,7 @@ import { ConfirmProvider } from "@/components/ui/ConfirmDialog";
 import { ToastProvider } from "@/components/ui/ToastProvider";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { PwaInstallBanner } from "@/components/pwa/PwaInstallBanner";
+import { CookieConsentBanner } from "@/components/legal/CookieConsentBanner";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());
@@ -22,6 +23,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
               <OrganizationProvider>
                 <CrispSupport />
                 <PwaInstallBanner />
+                <CookieConsentBanner />
                 {children}
               </OrganizationProvider>
             </AuthProvider>

@@ -45,6 +45,8 @@ export function isMarketingHost(host: string): boolean {
   return getMarketingHosts().includes(normalized);
 }
 
+import { isLegalPath } from "@/lib/legal/routes";
+
 export type HostRoutingResult =
   | { action: "next" }
   | { action: "redirect"; destination: string; permanent?: boolean };
@@ -78,7 +80,7 @@ export function resolveHostRouting(
   }
 
   if (isMarketingHost(normalizedHost)) {
-    if (pathname === "/") {
+    if (pathname === "/" || isLegalPath(pathname)) {
       return { action: "next" };
     }
     return {

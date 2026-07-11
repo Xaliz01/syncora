@@ -16,6 +16,7 @@ import {
   toCreateOrganizationAddress,
   type OrganizationAddressForm,
 } from "@/lib/organization-address";
+import { LegalConsentCheckbox } from "@/components/legal/LegalConsentCheckbox";
 
 type RegisterStep = "account" | "organization";
 
@@ -34,6 +35,7 @@ export function RegisterPage() {
     useState<OrganizationAddressForm>(EMPTY_ORG_ADDRESS);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [legalConsent, setLegalConsent] = useState(false);
   const { registerAccount, completeOrganization, isOnboarding, isAuthenticated } = useAuth();
   const router = useRouter();
 
@@ -56,7 +58,8 @@ export function RegisterPage() {
     setOrganizationAddress(addressFromSiretLookup(result));
   };
 
-  const canSubmitAccount = adminEmail.trim().length > 0 && adminPassword.length >= 8;
+  const canSubmitAccount =
+    adminEmail.trim().length > 0 && adminPassword.length >= 8 && legalConsent;
 
   const canSubmitOrganization =
     organizationSiret.trim().length > 0 &&
@@ -239,6 +242,7 @@ export function RegisterPage() {
                   Minimum 8 caractères
                 </p>
               </div>
+              <LegalConsentCheckbox checked={legalConsent} onChange={setLegalConsent} />
               <button
                 type="submit"
                 disabled={loading || !canSubmitAccount}

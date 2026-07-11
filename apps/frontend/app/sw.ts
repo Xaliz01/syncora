@@ -1,6 +1,6 @@
 import { defaultCache } from "@serwist/next/worker";
 import type { PrecacheEntry, RuntimeCaching, SerwistGlobalConfig } from "serwist";
-import { CacheFirst, NetworkFirst, Serwist } from "serwist";
+import { CacheFirst, NetworkFirst, NetworkOnly, Serwist } from "serwist";
 
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
@@ -77,7 +77,30 @@ const staticAssetCaching: RuntimeCaching[] = [
   },
 ];
 
-const runtimeCaching: RuntimeCaching[] = [...apiCaching, ...staticAssetCaching, ...defaultCache];
+const LEGAL_DOCUMENT_PATHS = new Set([
+  "/mentions-legales",
+  "/politique-confidentialite",
+  "/cgu",
+  "/cgv",
+  "/politique-cookies",
+]);
+
+/** Pages légales : toujours réseau (évite cache SW obsolète → redirect dashboard). */
+const legalDocumentCaching: RuntimeCaching[] = [
+  {
+    matcher({ url, request }) {
+      return request.mode === "navigate" && LEGAL_DOCUMENT_PATHS.has(url.pathname);
+    },
+    handler: new NetworkOnly(),
+  },
+];
+
+const runtimeCaching: RuntimeCaching[] = [
+  ...legalDocumentCaching,
+  ...apiCaching,
+  ...staticAssetCaching,
+  ...defaultCache,
+];
 
 const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
