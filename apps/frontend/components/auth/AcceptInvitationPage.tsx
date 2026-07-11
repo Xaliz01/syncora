@@ -4,6 +4,7 @@ import React, { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthContext";
 import { postAuthHomePath } from "@/lib/subscription-access";
+import { LegalConsentCheckbox } from "@/components/legal/LegalConsentCheckbox";
 
 export function AcceptInvitationPage() {
   const searchParams = useSearchParams();
@@ -16,6 +17,7 @@ export function AcceptInvitationPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [legalConsent, setLegalConsent] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,9 +122,14 @@ export function AcceptInvitationPage() {
                 placeholder="••••••••"
               />
             </div>
+            <LegalConsentCheckbox
+              id="invitation-legal-consent"
+              checked={legalConsent}
+              onChange={setLegalConsent}
+            />
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !legalConsent}
               className="w-full rounded-lg bg-brand-600 py-2.5 font-medium text-white hover:bg-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-50 transition"
             >
               {loading ? "Activation…" : "Activer mon compte"}

@@ -23,13 +23,18 @@ import type {
   AddInterventionArticleUsageForOrgBody,
   CreateArticleForOrgBody,
   CreateArticleMovementForOrgBody,
+  CreateStockLocationForOrgBody,
+  CreateStockTransferForOrgBody,
   UpdateArticleForOrgBody,
+  UpdateStockLocationForOrgBody,
 } from "../../domain/ports/stock.service.port";
 
 @Controller("stock")
 @UseGuards(JwtAuthGuard, SubscriptionAccessGuard, RequirePermissionGuard)
 export class StockController {
   constructor(private readonly stockService: AbstractStockGatewayService) {}
+
+  // ── Articles ──
 
   @Post("articles")
   @RequirePermissions("stock.articles.create")
@@ -45,11 +50,13 @@ export class StockController {
     @Query("search") search?: string,
     @Query("lowStockOnly") lowStockOnly?: string,
     @Query("activeOnly") activeOnly?: string,
+    @Query("locationId") locationId?: string,
   ) {
     return this.stockService.listArticles(user, {
       search,
       lowStockOnly: lowStockOnly === "true",
       activeOnly: activeOnly === undefined ? true : activeOnly === "true",
+      locationId,
     });
   }
 
@@ -77,6 +84,8 @@ export class StockController {
     return this.stockService.deleteArticle(user, articleId);
   }
 
+  // ── Movements ──
+
   @Post("movements")
   @RequirePermissions("stock.movements.create")
   @NotifyEntity({ type: "stock_movement", labelField: "articleName" })
@@ -94,15 +103,19 @@ export class StockController {
     @Query("articleId") articleId?: string,
     @Query("interventionId") interventionId?: string,
     @Query("caseId") caseId?: string,
+    @Query("locationId") locationId?: string,
     @Query("limit") limit?: string,
   ) {
     return this.stockService.listArticleMovements(user, {
       articleId,
       interventionId,
       caseId,
+      locationId,
       limit: limit ? Number(limit) : undefined,
     });
   }
+
+  // ── Intervention usage ──
 
   @Post("interventions/:interventionId/articles")
   @RequirePermissions("stock.interventions.create")
@@ -122,5 +135,62 @@ export class StockController {
     @Param("interventionId") interventionId: string,
   ) {
     return this.stockService.getInterventionUsage(user, interventionId);
+  }
+
+  // ── Stock locations ──
+
+  @Post("locations")
+  @RequirePermissions("stock.locations.create")
+  @NotifyEntity({ type: "stock_location", labelField: "name" })
+  async createStockLocation(
+    @CurrentUser() user: AuthUser,
+    @Body() body: CreateStockLocationForOrgBody,
+  ) {
+    return this.stockService.createStockLocation(user, body);
+  }
+
+  @Get("locations")
+  @RequirePermissions("stock.locations.read")
+  async listStockLocations(@CurrentUser() user: AuthUser) {
+    return this.stockService.listStockLocations(user);
+  }
+
+  @Get("locations/:locationId")
+  @RequirePermissions("stock.locations.read")
+  async getStockLocation(@CurrentUser() user: AuthUser, @Param("locationId") locationId: string) {
+    return this.stockService.getStockLocation(user, locationId);
+  }
+
+  @Patch("locations/:locationId")
+  @RequirePermissions("stock.locations.update")
+  @NotifyEntity({ type: "stock_location", labelField: "name" })
+  async updateStockLocation(
+    @CurrentUser() user: AuthUser,
+    @Param("locationId") locationId: string,
+    @Body() body: UpdateStockLocationForOrgBody,
+  ) {
+    return this.stockService.updateStockLocation(user, locationId, body);
+  }
+
+  @Delete("locations/:locationId")
+  @RequirePermissions("stock.locations.delete")
+  @NotifyEntity({ type: "stock_location", idParam: "locationId" })
+  async deleteStockLocation(
+    @CurrentUser() user: AuthUser,
+    @Param("locationId") locationId: string,
+  ) {
+    return this.stockService.deleteStockLocation(user, locationId);
+  }
+
+  // ── Transfers ──
+
+  @Post("transfers")
+  @RequirePermissions("stock.transfers.create")
+  @NotifyEntity({ type: "stock_transfer", labelField: "articleName" })
+  async createStockTransfer(
+    @CurrentUser() user: AuthUser,
+    @Body() body: CreateStockTransferForOrgBody,
+  ) {
+    return this.stockService.createStockTransfer(user, body);
   }
 }

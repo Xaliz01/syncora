@@ -27,6 +27,7 @@ const MOVEMENT_TYPE_LABELS: Record<string, string> = {
   in: "Entrée",
   out: "Sortie",
   adjustment: "Ajustement",
+  transfer: "Transfert",
 };
 
 const ARTICLES_GRID = "md:grid-cols-[0.8fr_1.2fr_0.6fr_0.5fr_0.5fr_0.5fr_0.5fr_auto]";
@@ -69,20 +70,40 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
   const [movementType, setMovementType] = useState<"in" | "out" | "adjustment">("out");
   const [movementQuantity, setMovementQuantity] = useState("1");
   const [movementNote, setMovementNote] = useState("");
+  const [selectedLocationId, setSelectedLocationId] = useState("");
+
+  const [showTransferForm, setShowTransferForm] = useState(false);
+  const [transferArticleId, setTransferArticleId] = useState("");
+  const [transferSourceId, setTransferSourceId] = useState("");
+  const [transferDestId, setTransferDestId] = useState("");
+  const [transferQuantity, setTransferQuantity] = useState("1");
+  const [transferNote, setTransferNote] = useState("");
+
+  const { data: stockLocations } = useQuery({
+    queryKey: ["stock-locations"],
+    queryFn: () => api.listStockLocations(),
+  });
+
+  const hasLocations = (stockLocations ?? []).length > 0;
 
   const { data: articles, isLoading } = useQuery({
-    queryKey: ["articles", search, lowStockOnly, showInactive],
+    queryKey: ["articles", search, lowStockOnly, showInactive, selectedLocationId],
     queryFn: () =>
       api.listArticles({
         search: search || undefined,
         lowStockOnly,
         activeOnly: !showInactive,
+        locationId: selectedLocationId || undefined,
       }),
   });
 
   const { data: recentMovements } = useQuery({
-    queryKey: ["article-movements"],
-    queryFn: () => api.listArticleMovements({ limit: 20 }),
+    queryKey: ["article-movements", selectedLocationId],
+    queryFn: () =>
+      api.listArticleMovements({
+        limit: 20,
+        locationId: selectedLocationId || undefined,
+      }),
     enabled: showMovementActions,
   });
 
@@ -94,6 +115,7 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
   const invalidateStockQueries = () => {
     queryClient.invalidateQueries({ queryKey: ["articles"] });
     queryClient.invalidateQueries({ queryKey: ["article-movements"] });
+    queryClient.invalidateQueries({ queryKey: ["stock-locations"] });
   };
 
   const createArticleMutation = useMutation({
@@ -135,6 +157,21 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
     onError: (err: Error) => setError(err.message),
   });
 
+  const transferMutation = useMutation({
+    mutationFn: (payload: api.CreateStockTransferPayload) => api.createStockTransfer(payload),
+    onSuccess: () => {
+      invalidateStockQueries();
+      setShowTransferForm(false);
+      setTransferArticleId("");
+      setTransferSourceId("");
+      setTransferDestId("");
+      setTransferQuantity("1");
+      setTransferNote("");
+      setError("");
+    },
+    onError: (err: Error) => setError(err.message),
+  });
+
   const selectedMovementArticle = (articles ?? []).find(
     (article) => article.id === movementArticleId,
   );
@@ -152,7 +189,10 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
         : "Gérez vos consommables, suivez les mouvements et anticipez les ruptures.";
 
   const hasActiveFilters =
-    search.trim() !== "" || lowStockOnly || (showCatalogActions && showInactive);
+    search.trim() !== "" ||
+    lowStockOnly ||
+    (showCatalogActions && showInactive) ||
+    !!selectedLocationId;
 
   return (
     <ListPageRoot>
@@ -176,6 +216,20 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
 
       <ListToolbar>
         <ListSearchField value={search} onChange={setSearch} placeholder="Rechercher un article…" />
+        {hasLocations && (
+          <select
+            value={selectedLocationId}
+            onChange={(e) => setSelectedLocationId(e.target.value)}
+            className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
+          >
+            <option value="">Tous les emplacements</option>
+            {(stockLocations ?? []).map((loc) => (
+              <option key={loc.id} value={loc.id}>
+                {loc.name}
+              </option>
+            ))}
+          </select>
+        )}
         <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
           <input
             type="checkbox"
@@ -453,6 +507,106 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
         </div>
       )}
 
+      {hasLocations && showMovementActions && can("stock.transfers.create") && (
+        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold text-slate-900 dark:text-slate-100">
+              Transfert entre emplacements
+            </h2>
+            <button
+              type="button"
+              onClick={() => setShowTransferForm((prev) => !prev)}
+              className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium"
+            >
+              {showTransferForm ? "Masquer" : "Nouveau transfert"}
+            </button>
+          </div>
+          {showTransferForm && (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                <select
+                  value={transferArticleId}
+                  onChange={(e) => setTransferArticleId(e.target.value)}
+                  className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
+                >
+                  <option value="">Choisir un article</option>
+                  {(articles ?? []).map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.reference} — {a.name}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={transferSourceId}
+                  onChange={(e) => setTransferSourceId(e.target.value)}
+                  className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
+                >
+                  <option value="">Source</option>
+                  {(stockLocations ?? []).map((loc) => (
+                    <option key={loc.id} value={loc.id}>
+                      {loc.name}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={transferDestId}
+                  onChange={(e) => setTransferDestId(e.target.value)}
+                  className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
+                >
+                  <option value="">Destination</option>
+                  {(stockLocations ?? [])
+                    .filter((loc) => loc.id !== transferSourceId)
+                    .map((loc) => (
+                      <option key={loc.id} value={loc.id}>
+                        {loc.name}
+                      </option>
+                    ))}
+                </select>
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={transferQuantity}
+                  onChange={(e) => setTransferQuantity(e.target.value)}
+                  placeholder="Quantité"
+                  className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
+                />
+                <input
+                  value={transferNote}
+                  onChange={(e) => setTransferNote(e.target.value)}
+                  placeholder="Note (optionnelle)"
+                  className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
+                />
+              </div>
+              <button
+                onClick={() => {
+                  if (!transferArticleId || !transferSourceId || !transferDestId) {
+                    setError("Sélectionnez un article, une source et une destination");
+                    return;
+                  }
+                  const qty = Number(transferQuantity);
+                  if (!Number.isFinite(qty) || qty <= 0) {
+                    setError("Quantité invalide");
+                    return;
+                  }
+                  transferMutation.mutate({
+                    articleId: transferArticleId,
+                    sourceLocationId: transferSourceId,
+                    destinationLocationId: transferDestId,
+                    quantity: qty,
+                    note: transferNote.trim() || undefined,
+                  });
+                }}
+                disabled={transferMutation.isPending}
+                className="rounded-lg bg-brand-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
+              >
+                Transférer
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
       {isLoading ? (
         <ListLoadingState />
       ) : !(articles ?? []).length ? (
@@ -586,7 +740,13 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
                   </div>
                   <div className="text-xs text-slate-600 dark:text-slate-300">
                     {MOVEMENT_TYPE_LABELS[movement.movementType] ?? movement.movementType}{" "}
-                    {movement.quantity} — {movement.previousStock} → {movement.newStock}
+                    {movement.quantity}
+                    {movement.movementType === "transfer"
+                      ? ` — ${movement.locationName ?? "?"} → ${movement.destinationLocationName ?? "?"}`
+                      : ` — ${movement.previousStock} → ${movement.newStock}`}
+                    {movement.locationName && movement.movementType !== "transfer" && (
+                      <span className="ml-1 text-slate-400">({movement.locationName})</span>
+                    )}
                   </div>
                 </div>
               ))}

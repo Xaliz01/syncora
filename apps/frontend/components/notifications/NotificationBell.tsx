@@ -22,6 +22,8 @@ const ENTITY_TYPE_LABELS: Record<NotificationEntityType, string> = {
   agence: "Agence",
   article: "Article",
   stock_movement: "Mouvement de stock",
+  stock_location: "Emplacement de stock",
+  stock_transfer: "Transfert de stock",
   organization: "Organisation",
   user: "Utilisateur",
   permission_profile: "Profil de permission",

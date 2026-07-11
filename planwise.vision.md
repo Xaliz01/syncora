@@ -163,21 +163,21 @@ Objectif : boucler avec l’outil compta existant de l’artisan.
 | #   | Évolution                                                           | Pourquoi (TPE)        | Statut |
 | --- | ------------------------------------------------------------------- | --------------------- | ------ |
 | 3.1 | **Devis simple** (lignes, TVA, PDF) lié au dossier                  | Avant intervention    | ✅     |
-| 3.2 | **Export** dossier / intervention (CSV, PDF)                        | Saisie compta externe | ⬜     |
+| 3.2 | **Export** dossier / intervention (CSV, PDF)                        | Saisie compta externe | ✅     |
 | 3.3 | **Intégration** 1ère brique compta FR (à choisir : Pennylane, etc.) | Réduire double saisie | ⬜     |
 | 3.4 | Statut métier « **À facturer** » sur dossier / intervention         | Pont vers compta      | ✅     |
 
 _Hors scope phase 3_ : gestion complète des paiements, relances, compta générale.
 
-### Phase 4 — Stock & logistique artisan `⬜`
+### Phase 4 — Stock & logistique artisan `🟡`
 
 Objectif : stock utile sans WMS enterprise.
 
-| #   | Évolution                                              | Pourquoi (TPE)        |
-| --- | ------------------------------------------------------ | --------------------- |
-| 4.1 | Stock par **agence** ou **véhicule** (simplifié)       | Pièces dans le camion |
-| 4.2 | Liste de **pièces fréquentes** par type d’intervention | Saisie rapide         |
-| 4.3 | _(Optionnel)_ scan code-barres                         | Gros volumes pièces   |
+| #   | Évolution                                              | Pourquoi (TPE)        | Statut |
+| --- | ------------------------------------------------------ | --------------------- | ------ |
+| 4.1 | Stock par **agence** ou **véhicule** (simplifié)       | Pièces dans le camion | 🟡     |
+| 4.2 | Liste de **pièces fréquentes** par type d’intervention | Saisie rapide         | ⬜     |
+| 4.3 | _(Optionnel)_ scan code-barres                         | Gros volumes pièces   | ⬜     |
 
 ### Phase 5 — Croissance & différenciation `⬜`
 

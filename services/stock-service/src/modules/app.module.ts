@@ -7,6 +7,7 @@ import { AbstractStockService } from "../domain/ports/stock.service.port";
 import { StockService } from "../domain/stock.service";
 import { ArticleSchema } from "../persistence/article.schema";
 import { StockMovementSchema } from "../persistence/stock-movement.schema";
+import { StockLocationSchema } from "../persistence/stock-location.schema";
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { StockMovementSchema } from "../persistence/stock-movement.schema";
     MongooseModule.forFeature([
       { name: "Article", schema: ArticleSchema },
       { name: "StockMovement", schema: StockMovementSchema },
+      { name: "StockLocation", schema: StockLocationSchema },
     ]),
   ],
   controllers: [StockController, TestDataController, HealthController],

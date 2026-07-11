@@ -18,6 +18,12 @@ describe("StockController", () => {
       addInterventionArticleUsage: jest.fn(),
       listArticleMovements: jest.fn(),
       getInterventionUsage: jest.fn(),
+      createStockLocation: jest.fn(),
+      listStockLocations: jest.fn(),
+      getStockLocation: jest.fn(),
+      updateStockLocation: jest.fn(),
+      deleteStockLocation: jest.fn(),
+      createStockTransfer: jest.fn(),
       purgeTestData: jest.fn(),
     };
 
@@ -87,12 +93,13 @@ describe("StockController", () => {
         },
       ] as never);
 
-      const result = await controller.listArticles("org-1", "search", "false", "true");
+      const result = await controller.listArticles("org-1", "search", "false", "true", undefined);
 
       expect(mockStockService.listArticles).toHaveBeenCalledWith("org-1", {
         search: "search",
         lowStockOnly: false,
         activeOnly: true,
+        locationId: undefined,
       });
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe("article-1");
@@ -100,10 +107,10 @@ describe("StockController", () => {
 
     it("should throw BadRequestException when organizationId is missing", async () => {
       await expect(
-        controller.listArticles(undefined as never, undefined, undefined, undefined),
+        controller.listArticles(undefined as never, undefined, undefined, undefined, undefined),
       ).rejects.toThrow(BadRequestException);
       await expect(
-        controller.listArticles(undefined as never, undefined, undefined, undefined),
+        controller.listArticles(undefined as never, undefined, undefined, undefined, undefined),
       ).rejects.toThrow("organizationId query param is required");
       expect(mockStockService.listArticles).not.toHaveBeenCalled();
     });
@@ -235,6 +242,7 @@ describe("StockController", () => {
         "article-1",
         "int-1",
         "case-1",
+        undefined,
         "50",
       );
 
@@ -242,6 +250,7 @@ describe("StockController", () => {
         articleId: "article-1",
         interventionId: "int-1",
         caseId: "case-1",
+        locationId: undefined,
         limit: 50,
       });
       expect(result).toHaveLength(1);
@@ -252,6 +261,7 @@ describe("StockController", () => {
       await expect(
         controller.listArticleMovements(
           undefined as never,
+          undefined,
           undefined,
           undefined,
           undefined,

@@ -504,6 +504,32 @@ export function LandingPage() {
               Invitation
             </Link>
           </div>
+          <div className="w-full border-t border-slate-100 dark:border-slate-800 pt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 text-xs">
+            <Link
+              href="/mentions-legales"
+              className="hover:text-brand-600 dark:hover:text-brand-400 transition"
+            >
+              Mentions légales
+            </Link>
+            <Link
+              href="/politique-confidentialite"
+              className="hover:text-brand-600 dark:hover:text-brand-400 transition"
+            >
+              Confidentialité
+            </Link>
+            <Link href="/cgu" className="hover:text-brand-600 dark:hover:text-brand-400 transition">
+              CGU
+            </Link>
+            <Link href="/cgv" className="hover:text-brand-600 dark:hover:text-brand-400 transition">
+              CGV
+            </Link>
+            <Link
+              href="/politique-cookies"
+              className="hover:text-brand-600 dark:hover:text-brand-400 transition"
+            >
+              Cookies
+            </Link>
+          </div>
         </div>
       </footer>
     </div>

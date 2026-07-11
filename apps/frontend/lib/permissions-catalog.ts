@@ -368,6 +368,31 @@ export const PERMISSION_METADATA: Record<PermissionCode, PermissionMetadata> = {
     label: "Ajouter des consommations d'intervention",
     description: "Associer des articles à une intervention et générer les mouvements.",
   },
+  "stock.locations.read": {
+    code: "stock.locations.read",
+    label: "Voir les emplacements de stock",
+    description: "Consulter les emplacements de stock (entrepôts, agences, véhicules).",
+  },
+  "stock.locations.create": {
+    code: "stock.locations.create",
+    label: "Créer des emplacements de stock",
+    description: "Créer de nouveaux emplacements de stock.",
+  },
+  "stock.locations.update": {
+    code: "stock.locations.update",
+    label: "Modifier des emplacements de stock",
+    description: "Modifier les informations des emplacements de stock.",
+  },
+  "stock.locations.delete": {
+    code: "stock.locations.delete",
+    label: "Supprimer des emplacements de stock",
+    description: "Supprimer des emplacements de stock.",
+  },
+  "stock.transfers.create": {
+    code: "stock.transfers.create",
+    label: "Transférer du stock",
+    description: "Transférer des articles entre emplacements de stock.",
+  },
   "exports.cases": {
     code: "exports.cases",
     label: "Exporter les dossiers",

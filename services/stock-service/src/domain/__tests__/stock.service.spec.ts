@@ -16,6 +16,12 @@ describe("StockService", () => {
     create: jest.Mock;
     find: jest.Mock;
   };
+  let mockStockLocationModel: {
+    create: jest.Mock;
+    findOne: jest.Mock;
+    find: jest.Mock;
+    deleteMany: jest.Mock;
+  };
 
   const mockArticleDoc = (overrides: Record<string, unknown> = {}) => ({
     _id: { toString: () => "article-123" },
@@ -76,11 +82,24 @@ describe("StockService", () => {
       }),
     };
 
+    const locationExecMock = jest.fn();
+    const locationSortExecMock = jest.fn();
+
+    mockStockLocationModel = {
+      create: jest.fn(),
+      findOne: jest.fn().mockReturnValue({ exec: locationExecMock }),
+      find: jest.fn().mockReturnValue({
+        sort: jest.fn().mockReturnValue({ exec: locationSortExecMock }),
+      }),
+      deleteMany: jest.fn().mockReturnValue({ exec: jest.fn() }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         StockService,
         { provide: getModelToken("Article"), useValue: mockArticleModel },
         { provide: getModelToken("StockMovement"), useValue: mockStockMovementModel },
+        { provide: getModelToken("StockLocation"), useValue: mockStockLocationModel },
       ],
     }).compile();
 
@@ -560,6 +579,204 @@ describe("StockService", () => {
       expect(mockStockMovementModel.find().sort).toHaveBeenCalledWith({ createdAt: -1 });
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe("movement-123");
+    });
+  });
+
+  describe("createStockLocation", () => {
+    const mockLocationDoc = (overrides: Record<string, unknown> = {}) => ({
+      _id: { toString: () => "loc-123" },
+      organizationId: "org-1",
+      name: "Entrepôt principal",
+      type: "warehouse",
+      isDefault: true,
+      get: jest.fn((key: string) =>
+        key === "createdAt"
+          ? new Date("2025-01-01")
+          : key === "updatedAt"
+            ? new Date("2025-01-02")
+            : undefined,
+      ),
+      ...overrides,
+    });
+
+    it("should create a warehouse location successfully", async () => {
+      mockStockLocationModel.findOne.mockReturnValue({ exec: jest.fn().mockResolvedValue(null) });
+      const doc = mockLocationDoc();
+      mockStockLocationModel.create.mockResolvedValue(doc);
+
+      const result = await service.createStockLocation({
+        organizationId: "org-1",
+        name: "Entrepôt principal",
+        type: "warehouse",
+      });
+
+      expect(result.id).toBe("loc-123");
+      expect(result.name).toBe("Entrepôt principal");
+      expect(result.type).toBe("warehouse");
+      expect(result.isDefault).toBe(true);
+    });
+
+    it("should throw BadRequestException when name is empty", async () => {
+      await expect(
+        service.createStockLocation({
+          organizationId: "org-1",
+          name: "  ",
+          type: "warehouse",
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("should throw BadRequestException for agence type without referenceId", async () => {
+      await expect(
+        service.createStockLocation({
+          organizationId: "org-1",
+          name: "Agence Nord",
+          type: "agence",
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("should throw BadRequestException for vehicle type without referenceId", async () => {
+      await expect(
+        service.createStockLocation({
+          organizationId: "org-1",
+          name: "Camion 1",
+          type: "vehicle",
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("should throw ConflictException on duplicate name", async () => {
+      mockStockLocationModel.findOne.mockReturnValue({ exec: jest.fn().mockResolvedValue(null) });
+      mockStockLocationModel.create.mockRejectedValue({ code: 11000 });
+
+      await expect(
+        service.createStockLocation({
+          organizationId: "org-1",
+          name: "Duplicate",
+          type: "warehouse",
+        }),
+      ).rejects.toThrow(ConflictException);
+    });
+  });
+
+  describe("listStockLocations", () => {
+    it("should list locations sorted by default first then name", async () => {
+      const docs = [
+        {
+          _id: { toString: () => "loc-1" },
+          organizationId: "org-1",
+          name: "Entrepôt",
+          type: "warehouse",
+          isDefault: true,
+          isTestData: false,
+          get: jest.fn(() => new Date()),
+        },
+        {
+          _id: { toString: () => "loc-2" },
+          organizationId: "org-1",
+          name: "Camion A",
+          type: "vehicle",
+          referenceId: "veh-1",
+          isDefault: false,
+          isTestData: false,
+          get: jest.fn(() => new Date()),
+        },
+      ];
+      mockStockLocationModel.find.mockReturnValue({
+        sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(docs) }),
+      });
+
+      const result = await service.listStockLocations("org-1");
+
+      expect(result).toHaveLength(2);
+      expect(result[0].name).toBe("Entrepôt");
+      expect(result[1].name).toBe("Camion A");
+    });
+  });
+
+  describe("getStockLocation", () => {
+    it("should return a location by id", async () => {
+      const doc = {
+        _id: { toString: () => "loc-1" },
+        organizationId: "org-1",
+        name: "Entrepôt",
+        type: "warehouse",
+        isDefault: true,
+        isTestData: false,
+        get: jest.fn(() => new Date()),
+      };
+      mockStockLocationModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+
+      const result = await service.getStockLocation("loc-1", "org-1");
+
+      expect(result.id).toBe("loc-1");
+      expect(result.name).toBe("Entrepôt");
+    });
+
+    it("should throw NotFoundException when location not found", async () => {
+      mockStockLocationModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null),
+      });
+
+      await expect(service.getStockLocation("unknown", "org-1")).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe("deleteStockLocation", () => {
+    it("should throw NotFoundException when location not found", async () => {
+      mockStockLocationModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null),
+      });
+
+      await expect(service.deleteStockLocation("unknown", "org-1")).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it("should throw BadRequestException when deleting default location", async () => {
+      const doc = {
+        _id: { toString: () => "loc-1" },
+        organizationId: "org-1",
+        name: "Default",
+        type: "warehouse",
+        isDefault: true,
+      };
+      mockStockLocationModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+
+      await expect(service.deleteStockLocation("loc-1", "org-1")).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+  });
+
+  describe("createStockTransfer", () => {
+    it("should throw BadRequestException when source equals destination", async () => {
+      await expect(
+        service.createStockTransfer({
+          organizationId: "org-1",
+          articleId: "article-1",
+          sourceLocationId: "loc-1",
+          destinationLocationId: "loc-1",
+          quantity: 5,
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("should throw BadRequestException when quantity is zero or negative", async () => {
+      await expect(
+        service.createStockTransfer({
+          organizationId: "org-1",
+          articleId: "article-1",
+          sourceLocationId: "loc-1",
+          destinationLocationId: "loc-2",
+          quantity: 0,
+        }),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 });

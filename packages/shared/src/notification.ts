@@ -11,6 +11,8 @@ export type NotificationEntityType =
   | "agence"
   | "article"
   | "stock_movement"
+  | "stock_location"
+  | "stock_transfer"
   | "organization"
   | "user"
   | "permission_profile"

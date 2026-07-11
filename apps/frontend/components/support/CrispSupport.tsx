@@ -12,6 +12,7 @@ import {
   shutdownCrispSession,
   type CrispUserIdentity,
 } from "@/lib/crisp-client";
+import { useCookieConsentSupport } from "@/components/legal/CookieConsentBanner";
 
 function buildCrispIdentity(
   user: NonNullable<ReturnType<typeof useAuth>["user"]>,
@@ -39,6 +40,7 @@ export function CrispSupport() {
   const { user, isAuthenticated, isReady } = useAuth();
   const { activeOrganization } = useOrganization();
   const websiteId = getCrispWebsiteId();
+  const supportConsent = useCookieConsentSupport();
 
   const { data: subscription } = useQuery({
     queryKey: ["subscription-current"],
@@ -48,8 +50,8 @@ export function CrispSupport() {
   });
 
   useEffect(() => {
-    if (!isReady || !websiteId || !isAuthenticated || !user) {
-      if (isReady && !isAuthenticated) {
+    if (!isReady || !websiteId || !isAuthenticated || !user || !supportConsent) {
+      if (isReady && (!isAuthenticated || !supportConsent)) {
         shutdownCrispSession();
       }
       return;
@@ -85,7 +87,15 @@ export function CrispSupport() {
     return () => {
       cancelled = true;
     };
-  }, [websiteId, isReady, isAuthenticated, user, activeOrganization?.name, subscription]);
+  }, [
+    websiteId,
+    isReady,
+    isAuthenticated,
+    user,
+    activeOrganization?.name,
+    subscription,
+    supportConsent,
+  ]);
 
   return null;
 }
