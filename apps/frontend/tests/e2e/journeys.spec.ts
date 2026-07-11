@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { acceptLegalConsent, expect, test } from "./fixtures";
 
 /** Routes applicatives connues (RequireAuth) — pas le catch-all, qui renvoie vers `/`. */
 const PROTECTED_PATHS = ["/fleet/vehicles", "/cases", "/users", "/settings/case-templates"];
@@ -163,6 +163,7 @@ test.describe("Soumission formulaire d'inscription", () => {
     await page.goto("/register");
     await page.getByLabel("Email administrateur").fill("admin@acme.fr");
     await page.getByLabel("Mot de passe").fill("secret1234");
+    await acceptLegalConsent(page);
     const submitBtn = page.getByRole("button", { name: "Continuer" });
     await expect(submitBtn).toBeEnabled();
   });
