@@ -1,9 +1,5 @@
 import Link from "next/link";
-import {
-  getLegalContractPartyName,
-  getLegalPublisherConfig,
-  isEntrepreneurIndividuel,
-} from "@/lib/legal/config";
+import { getLegalContractPartyName, getLegalPublisherConfig } from "@/lib/legal/config";
 import { LegalList, LegalParagraph, LegalSection } from "@/components/legal/LegalDocument";
 
 export function PolitiqueConfidentialiteContent() {
