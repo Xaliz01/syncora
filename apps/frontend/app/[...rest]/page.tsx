@@ -6,8 +6,9 @@ function marketingOrigin(): string {
   return `https://${host}`;
 }
 
-export default function CatchAll({ params }: { params: { rest: string[] } }) {
-  const pathname = `/${params.rest.join("/")}`;
+export default async function CatchAll({ params }: { params: Promise<{ rest: string[] }> }) {
+  const { rest } = await params;
+  const pathname = `/${rest.join("/")}`;
 
   // Filet de sécurité : ne jamais renvoyer les URLs légales vers le dashboard (/).
   if (isLegalPath(pathname)) {
