@@ -64,6 +64,9 @@ describe("InterventionReminderScheduler", () => {
     };
 
     mockHttpService.get.mockImplementation((url: string) => {
+      if (url.includes("/subscriptions/current")) {
+        return of({ data: { hasAccess: true } });
+      }
       if (url.includes("/upcoming")) {
         return of({ data: [intervention] });
       }
@@ -99,6 +102,9 @@ describe("InterventionReminderScheduler", () => {
     };
 
     mockHttpService.get.mockImplementation((url: string) => {
+      if (url.includes("/subscriptions/current")) {
+        return of({ data: { hasAccess: true } });
+      }
       if (url.includes("/upcoming")) {
         return of({ data: [intervention] });
       }
@@ -162,6 +168,35 @@ describe("InterventionReminderScheduler", () => {
     await scheduler.checkUpcomingInterventions();
 
     expect(mockNotificationModel.create).not.toHaveBeenCalled();
+  });
+
+  it("should not send reminder when organization has no active subscription", async () => {
+    const intervention = {
+      id: "int-expired",
+      organizationId: "org-expired",
+      caseId: "case-expired",
+      title: "Intervention expirée",
+      status: "planned",
+      assigneeId: "user-expired",
+      scheduledStart: futureDate(20),
+    };
+
+    mockHttpService.get.mockImplementation((url: string) => {
+      if (url.includes("/subscriptions/current")) {
+        return of({ data: { hasAccess: false } });
+      }
+      if (url.includes("/upcoming")) {
+        return of({ data: [intervention] });
+      }
+      return of({ data: { email: "tech@example.com" } });
+    });
+
+    await scheduler.checkUpcomingInterventions();
+
+    expect(mockNotificationModel.create).not.toHaveBeenCalled();
+    expect(mockPushService.sendPushToUser).not.toHaveBeenCalled();
+    expect(mockEmailService.sendNotificationEmail).not.toHaveBeenCalled();
+    expect(mockSentReminderModel.updateOne).not.toHaveBeenCalled();
   });
 
   it("should gracefully handle upstream fetch failure", async () => {

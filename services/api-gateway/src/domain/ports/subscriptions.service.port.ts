@@ -7,6 +7,7 @@ import type {
   CreateCheckoutSessionResponse,
   OrganizationSubscriptionResponse,
   StartTrialResponse,
+  ExtendTrialResponse,
   UpdateSubscriptionAddonsGatewayBody,
   UpdateSubscriptionAddonsResponse,
 } from "@planwise/shared";
@@ -20,6 +21,8 @@ export abstract class AbstractSubscriptionsGatewayService {
   ): Promise<CreateCheckoutSessionResponse>;
 
   abstract startTrial(user: AuthUser): Promise<StartTrialResponse>;
+
+  abstract extendTrial(user: AuthUser): Promise<ExtendTrialResponse>;
 
   abstract createAddonCheckoutSession(
     user: AuthUser,

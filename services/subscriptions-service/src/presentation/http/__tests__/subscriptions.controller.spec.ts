@@ -8,6 +8,7 @@ describe("SubscriptionsController", () => {
   let mockSubscriptionsService: {
     getByOrganization: jest.Mock;
     startTrial: jest.Mock;
+    extendTrial: jest.Mock;
     createCheckoutSession: jest.Mock;
     createAddonCheckoutSession: jest.Mock;
     createBillingPortalSession: jest.Mock;
@@ -18,6 +19,7 @@ describe("SubscriptionsController", () => {
     mockSubscriptionsService = {
       getByOrganization: jest.fn(),
       startTrial: jest.fn(),
+      extendTrial: jest.fn(),
       createCheckoutSession: jest.fn(),
       createAddonCheckoutSession: jest.fn(),
       createBillingPortalSession: jest.fn(),
@@ -80,6 +82,22 @@ describe("SubscriptionsController", () => {
     it("should throw BadRequestException when organizationId is missing", () => {
       expect(() => controller.startTrial({ organizationId: "" })).toThrow(BadRequestException);
       expect(mockSubscriptionsService.startTrial).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("extendTrial", () => {
+    it("should delegate to service.extendTrial", async () => {
+      const response = {
+        organizationId: "org-1",
+        status: "trialing",
+        hasAccess: true,
+      };
+      mockSubscriptionsService.extendTrial.mockResolvedValue(response);
+
+      const result = await controller.extendTrial({ organizationId: "org-1" });
+
+      expect(mockSubscriptionsService.extendTrial).toHaveBeenCalledWith("org-1");
+      expect(result).toEqual(response);
     });
   });
 

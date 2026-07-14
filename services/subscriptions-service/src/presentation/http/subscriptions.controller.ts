@@ -25,6 +25,12 @@ export class SubscriptionsController {
     return this.subscriptionsService.startTrial(body.organizationId);
   }
 
+  @Post("extend-trial")
+  extendTrial(@Body() body: StartTrialBody) {
+    this.ensureOrg(body.organizationId);
+    return this.subscriptionsService.extendTrial(body.organizationId);
+  }
+
   @Post("checkout-session")
   createCheckoutSession(@Body() body: CreateCheckoutSessionBody) {
     this.ensureOrg(body.organizationId);

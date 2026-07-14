@@ -136,6 +136,21 @@ function computeHasAccess(
   return false;
 }
 
+function computeSubscriptionMeta(
+  doc: OrganizationSubscriptionDocument | null,
+  status: OrganizationSubscriptionStatus,
+  hasAccess: boolean,
+): { billingOpen: boolean; canExtendTrial: boolean } {
+  const billingOpen = isStripeCheckoutConfigured();
+  const canExtendTrial =
+    !billingOpen &&
+    !!doc?.trialEndsAt &&
+    !hasAccess &&
+    !hasActiveBaseSubscription(doc) &&
+    (status === "trialing" || status === "none");
+  return { billingOpen, canExtendTrial };
+}
+
 @Injectable()
 export class SubscriptionsService {
   constructor(
@@ -180,11 +195,15 @@ export class SubscriptionsService {
     const includedUsers = BASE_SUBSCRIPTION_INCLUDED_USERS;
     const maxUsers = computeMaxOrganizationUsers(addonQuantities);
     const storageQuotaBytes = computeOrganizationStorageQuotaBytes(addonQuantities);
+    const hasAccess = computeHasAccess(status, doc.currentPeriodEnd, trialEndsAt);
+    const { billingOpen, canExtendTrial } = computeSubscriptionMeta(doc, status, hasAccess);
     return {
       organizationId: doc.organizationId,
       status,
-      hasAccess: computeHasAccess(status, doc.currentPeriodEnd, trialEndsAt),
+      hasAccess,
       hasStripeSubscription: !!doc.stripeSubscriptionId?.trim(),
+      billingOpen,
+      canExtendTrial,
       trialEndsAt: trialEndsAt ? trialEndsAt.toISOString() : null,
       currentPeriodEnd: currentPeriodEnd ? currentPeriodEnd.toISOString() : null,
       cancelAtPeriodEnd: doc.cancelAtPeriodEnd ?? false,
@@ -204,10 +223,13 @@ export class SubscriptionsService {
   }
 
   private buildNoneResponse(organizationId: string): OrganizationSubscriptionResponse {
+    const billingOpen = isStripeCheckoutConfigured();
     return {
       organizationId,
       status: "none",
       hasAccess: false,
+      billingOpen,
+      canExtendTrial: false,
       trialEndsAt: null,
       currentPeriodEnd: null,
       cancelAtPeriodEnd: false,
@@ -271,6 +293,55 @@ export class SubscriptionsService {
         { upsert: true, new: true },
       )
       .exec();
+
+    return this.toResponse(doc, { monthlyTotalCents: null, monthlyTotalCurrency: null });
+  }
+
+  async extendTrial(organizationId: string): Promise<OrganizationSubscriptionResponse> {
+    if (isStripeCheckoutConfigured()) {
+      throw new BadRequestException(
+        "Les abonnements sont ouverts au public : la prolongation d'essai n'est plus disponible.",
+      );
+    }
+
+    const existing = await this.subscriptionModel.findOne({ organizationId }).exec();
+    if (!existing?.trialEndsAt) {
+      throw new BadRequestException("Aucun essai à prolonger pour cette organisation.");
+    }
+
+    if (hasActiveBaseSubscription(existing)) {
+      throw new ConflictException(
+        "Un abonnement Stripe est déjà en cours pour cette organisation.",
+      );
+    }
+
+    const status = mapStripeStatus(existing.stripeStatus);
+    if (computeHasAccess(status, existing.currentPeriodEnd, existing.trialEndsAt)) {
+      throw new ConflictException("L'essai gratuit est encore actif.");
+    }
+
+    const trialDays = Number(process.env.STRIPE_TRIAL_DAYS ?? DEFAULT_TRIAL_DAYS);
+    if (!Number.isFinite(trialDays) || trialDays <= 0) {
+      throw new InternalServerErrorException("Invalid STRIPE_TRIAL_DAYS");
+    }
+
+    const trialEndsAt = new Date();
+    trialEndsAt.setDate(trialEndsAt.getDate() + trialDays);
+
+    const doc = await this.subscriptionModel
+      .findOneAndUpdate(
+        { organizationId },
+        {
+          stripeStatus: "trialing",
+          trialEndsAt,
+        },
+        { new: true },
+      )
+      .exec();
+
+    if (!doc) {
+      throw new NotFoundException("Abonnement introuvable pour cette organisation.");
+    }
 
     return this.toResponse(doc, { monthlyTotalCents: null, monthlyTotalCurrency: null });
   }

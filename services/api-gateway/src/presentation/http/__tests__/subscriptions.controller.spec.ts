@@ -24,6 +24,7 @@ describe("SubscriptionsController", () => {
     mockSubscriptionsService = {
       getCurrentSubscription: jest.fn(),
       startTrial: jest.fn(),
+      extendTrial: jest.fn(),
       createCheckoutSession: jest.fn(),
       createAddonCheckoutSession: jest.fn(),
       createBillingPortalSession: jest.fn(),
@@ -74,6 +75,18 @@ describe("SubscriptionsController", () => {
       const result = controller.startTrial(mockUser);
 
       expect(mockSubscriptionsService.startTrial).toHaveBeenCalledWith(mockUser);
+      expect(result).resolves.toEqual(expected);
+    });
+  });
+
+  describe("extendTrial", () => {
+    it("should call subscriptionsService.extendTrial with user", () => {
+      const expected = { status: "trialing", hasAccess: true };
+      mockSubscriptionsService.extendTrial.mockResolvedValue(expected as never);
+
+      const result = controller.extendTrial(mockUser);
+
+      expect(mockSubscriptionsService.extendTrial).toHaveBeenCalledWith(mockUser);
       expect(result).resolves.toEqual(expected);
     });
   });

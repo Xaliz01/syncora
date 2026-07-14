@@ -4,6 +4,7 @@ import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
 import type { PlanwiseDomainEvent } from "../infrastructure/notify.interceptor";
 import type {
+  AuthUser,
   CreateNotificationBody,
   NotificationChannel,
   NotificationEntityType,
@@ -13,6 +14,7 @@ import type {
   UserResponse,
 } from "@planwise/shared";
 import { getEnabledChannels } from "@planwise/shared";
+import { AbstractSubscriptionsGatewayService } from "./ports/subscriptions.service.port";
 
 const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
 const NOTIFICATIONS_URL = process.env.NOTIFICATIONS_SERVICE_URL ?? "http://localhost:3010";
@@ -21,11 +23,17 @@ const NOTIFICATIONS_URL = process.env.NOTIFICATIONS_SERVICE_URL ?? "http://local
 export class NotificationEventListener {
   private readonly logger = new Logger(NotificationEventListener.name);
 
-  constructor(private readonly httpService: HttpService) {}
+  constructor(
+    private readonly httpService: HttpService,
+    private readonly subscriptionsGateway: AbstractSubscriptionsGatewayService,
+  ) {}
 
   @OnEvent("planwise.entity.changed", { async: true })
   async handleEntityChanged(event: PlanwiseDomainEvent): Promise<void> {
     try {
+      const hasAccess = await this.organizationHasActiveSubscription(event.organizationId);
+      if (!hasAccess) return;
+
       const userIds = await this.getOrganizationUserIds(event.organizationId);
       if (userIds.length === 0) return;
 
@@ -211,6 +219,27 @@ export class NotificationEventListener {
       } catch (err) {
         this.logger.debug(`Email notification skipped for user ${userId}`, (err as Error).message);
       }
+    }
+  }
+
+  private async organizationHasActiveSubscription(organizationId: string): Promise<boolean> {
+    try {
+      const user: AuthUser = {
+        id: "system",
+        email: "",
+        organizationId,
+        role: "admin",
+        status: "active",
+        permissions: [],
+      };
+      const sub = await this.subscriptionsGateway.getCurrentSubscription(user);
+      return sub.hasAccess;
+    } catch (err) {
+      this.logger.debug(
+        `Notifications skipped for organization ${organizationId} (subscription check failed)`,
+        (err as Error).message,
+      );
+      return false;
     }
   }
 

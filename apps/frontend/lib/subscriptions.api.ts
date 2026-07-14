@@ -29,6 +29,13 @@ export function startTrial() {
   );
 }
 
+export function extendTrial() {
+  return subscriptionsRequest<OrganizationSubscriptionResponse>(
+    "POST",
+    "/subscriptions/extend-trial",
+  );
+}
+
 export function createCheckoutSession(payload: CreateCheckoutSessionGatewayBody) {
   return subscriptionsRequest<CreateCheckoutSessionResponse>(
     "POST",

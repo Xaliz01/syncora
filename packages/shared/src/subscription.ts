@@ -300,6 +300,10 @@ export interface OrganizationSubscriptionResponse {
   monthlyTotalCurrency: string | null;
   /** true si une souscription Stripe est enregistrée (essai Stripe ou abonnement payant). */
   hasStripeSubscription: boolean;
+  /** Paiement Stripe Checkout disponible (abonnements ouverts au public). */
+  billingOpen: boolean;
+  /** Prolongation d'essai locale (phase démo, avant ouverture des abonnements). */
+  canExtendTrial: boolean;
 }
 
 // ── Checkout / billing DTOs ──
@@ -330,6 +334,13 @@ export interface StartTrialBody {
 }
 
 export type StartTrialResponse = OrganizationSubscriptionResponse;
+
+/** Corps attendu par le microservice (organizationId fourni par la gateway). */
+export interface ExtendTrialBody {
+  organizationId: string;
+}
+
+export type ExtendTrialResponse = OrganizationSubscriptionResponse;
 
 /** Flux du portail Stripe : accueil facturation ou modification d'abonnement (vente croisée addons). */
 export type BillingPortalFlow = "default" | "subscription_update";

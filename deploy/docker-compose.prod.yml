@@ -176,6 +176,7 @@ services:
       MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-notifications
       CASES_SERVICE_URL: http://cases-service:3004
       USERS_SERVICE_URL: http://users-service:3002
+      SUBSCRIPTIONS_SERVICE_URL: http://subscriptions-service:3008
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
       VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:contact@planwise.fr}

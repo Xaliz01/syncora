@@ -19,6 +19,7 @@ import type {
   CreateCheckoutSessionResponse,
   OrganizationSubscriptionResponse,
   StartTrialResponse,
+  ExtendTrialResponse,
   UpdateSubscriptionAddonsGatewayBody,
   UpdateSubscriptionAddonsResponse,
 } from "@planwise/shared";
@@ -88,6 +89,14 @@ export class SubscriptionsGatewayService extends AbstractSubscriptionsGatewaySer
     return this.callSubscriptions<StartTrialResponse>({
       method: "post",
       path: "/subscriptions/start-trial",
+      body: { organizationId: user.organizationId },
+    });
+  }
+
+  async extendTrial(user: AuthUser): Promise<ExtendTrialResponse> {
+    return this.callSubscriptions<ExtendTrialResponse>({
+      method: "post",
+      path: "/subscriptions/extend-trial",
       body: { organizationId: user.organizationId },
     });
   }

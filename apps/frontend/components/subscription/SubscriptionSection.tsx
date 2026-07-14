@@ -161,6 +161,27 @@ function SubscriptionSectionInner({ mode = "full" }: { mode?: "full" | "pitchChe
     },
   });
 
+  const extendTrialMutation = useMutation({
+    mutationFn: () => subscriptionsApi.extendTrial(),
+    onSuccess: async () => {
+      showToast(
+        `Essai prolongé de ${BASE_SUBSCRIPTION_PLAN.trialDays} jours. Les abonnements ne sont pas encore ouverts au public.`,
+      );
+      await queryClient.invalidateQueries({ queryKey: ["subscription-current"] });
+      await queryClient.invalidateQueries({ queryKey: ["organizations", "mine"] });
+      await refreshSession();
+      try {
+        const me = await authApi.getMe();
+        router.replace(postAuthHomePath(me));
+      } catch {
+        router.replace("/");
+      }
+    },
+    onError: (err: Error) => {
+      showToast(err.message ?? "Impossible de prolonger l’essai.");
+    },
+  });
+
   const portalMutation = useMutation({
     mutationFn: () => {
       const origin = window.location.origin;
@@ -194,6 +215,7 @@ function SubscriptionSectionInner({ mode = "full" }: { mode?: "full" | "pitchChe
       subscription.status === "incomplete_expired" ||
       (subscription.status === "trialing" &&
         (!subscription.hasStripeSubscription || !subscription.hasAccess)));
+  const showExtendTrial = subscription?.canExtendTrial === true;
 
   useEffect(() => {
     if (isLoading || !subscription || !modifyParam || !isValidAddonCode(modifyParam)) {
@@ -320,17 +342,35 @@ function SubscriptionSectionInner({ mode = "full" }: { mode?: "full" | "pitchChe
         </div>
       )}
       {!isLoading && !error && subscription && canManageBilling && showSubscribeCheckout && (
-        <div className="flex flex-wrap gap-3 justify-center sm:justify-start">
-          <button
-            type="button"
-            onClick={() => checkoutMutation.mutate()}
-            disabled={checkoutMutation.isPending}
-            className="rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
-          >
-            {subscription.status === "trialing" && !subscription.hasAccess
-              ? "S’abonner pour continuer"
-              : "Finaliser ou recommencer le paiement"}
-          </button>
+        <div className="space-y-3">
+          <div className="flex flex-wrap gap-3 justify-center sm:justify-start">
+            <button
+              type="button"
+              onClick={() => checkoutMutation.mutate()}
+              disabled={checkoutMutation.isPending}
+              className="rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
+            >
+              {subscription.status === "trialing" && !subscription.hasAccess
+                ? "S’abonner pour continuer"
+                : "Finaliser ou recommencer le paiement"}
+            </button>
+            {showExtendTrial && (
+              <button
+                type="button"
+                onClick={() => extendTrialMutation.mutate()}
+                disabled={extendTrialMutation.isPending}
+                className="rounded-lg border border-brand-200 dark:border-brand-600 bg-white dark:bg-slate-900 px-5 py-2.5 text-sm font-medium text-brand-700 dark:text-brand-200 hover:bg-brand-50 dark:hover:bg-brand-950/40 disabled:opacity-50 transition"
+              >
+                {extendTrialMutation.isPending ? "Prolongation…" : "Prolonger l’essai"}
+              </button>
+            )}
+          </div>
+          {showExtendTrial && (
+            <p className="text-xs text-slate-500 dark:text-slate-400 text-center sm:text-left">
+              Les abonnements ne sont pas encore ouverts au public. Prolongez votre essai de{" "}
+              {BASE_SUBSCRIPTION_PLAN.trialDays} jours le temps de finaliser l’ouverture.
+            </p>
+          )}
         </div>
       )}
       {!isLoading && !error && subscription && !canManageBilling && (
@@ -557,6 +597,16 @@ function SubscriptionSectionInner({ mode = "full" }: { mode?: "full" | "pitchChe
                         : subscription.status === "trialing" && !subscription.hasAccess
                           ? "S’abonner pour continuer"
                           : "Finaliser ou recommencer le paiement"}
+                    </button>
+                  )}
+                  {showExtendTrial && (
+                    <button
+                      type="button"
+                      onClick={() => extendTrialMutation.mutate()}
+                      disabled={extendTrialMutation.isPending}
+                      className="rounded-lg border border-brand-200 dark:border-brand-600 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-medium text-brand-700 dark:text-brand-200 hover:bg-brand-50 dark:hover:bg-brand-950/40 disabled:opacity-50 transition"
+                    >
+                      {extendTrialMutation.isPending ? "Prolongation…" : "Prolonger l’essai"}
                     </button>
                   )}
                   {canModifyAddons && (

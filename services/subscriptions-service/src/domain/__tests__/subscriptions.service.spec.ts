@@ -110,10 +110,12 @@ describe("SubscriptionsService", () => {
       const result = await service.getByOrganization("org-1");
 
       expect(mockSubscriptionModel.findOne).toHaveBeenCalledWith({ organizationId: "org-1" });
-      expect(result).toEqual({
+      expect(result).toMatchObject({
         organizationId: "org-1",
         status: "none",
         hasAccess: false,
+        billingOpen: expect.any(Boolean),
+        canExtendTrial: false,
         trialEndsAt: null,
         currentPeriodEnd: null,
         cancelAtPeriodEnd: false,
@@ -295,7 +297,7 @@ describe("SubscriptionsService", () => {
       mockSubscriptionModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(null),
       });
-      const trialEndsAt = new Date("2026-07-12T12:00:00.000Z");
+      const trialEndsAt = new Date(Date.now() + 15 * 86_400_000);
       mockSubscriptionModel.findOneAndUpdate.mockReturnValue({
         exec: jest.fn().mockResolvedValue(
           mockSubscriptionDoc({
@@ -351,6 +353,93 @@ describe("SubscriptionsService", () => {
       });
 
       await expect(service.startTrial("org-1")).rejects.toThrow("L'essai gratuit est déjà actif");
+    });
+  });
+
+  describe("extendTrial", () => {
+    const originalSecret = process.env.STRIPE_SECRET_KEY;
+    const originalPriceId = process.env.STRIPE_PRICE_ID;
+    const originalNodeEnv = process.env.NODE_ENV;
+
+    afterEach(() => {
+      process.env.STRIPE_SECRET_KEY = originalSecret;
+      if (originalPriceId === undefined) {
+        delete process.env.STRIPE_PRICE_ID;
+      } else {
+        process.env.STRIPE_PRICE_ID = originalPriceId;
+      }
+      process.env.NODE_ENV = originalNodeEnv;
+    });
+
+    it("should extend an expired local trial when billing is not open", async () => {
+      process.env.STRIPE_SECRET_KEY = "";
+      process.env.STRIPE_PRICE_ID = "";
+      process.env.NODE_ENV = "production";
+
+      const expiredDoc = mockSubscriptionDoc({
+        stripeStatus: "trialing",
+        stripeSubscriptionId: undefined,
+        stripeCustomerId: undefined,
+        trialEndsAt: new Date(Date.now() - 86_400_000),
+      });
+      mockSubscriptionModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(expiredDoc),
+      });
+      mockSubscriptionModel.findOneAndUpdate.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(
+          mockSubscriptionDoc({
+            stripeStatus: "trialing",
+            stripeSubscriptionId: undefined,
+            stripeCustomerId: undefined,
+            trialEndsAt: new Date(Date.now() + 15 * 86_400_000),
+          }),
+        ),
+      });
+
+      const result = await service.extendTrial("org-1");
+
+      expect(mockSubscriptionModel.findOneAndUpdate).toHaveBeenCalledWith(
+        { organizationId: "org-1" },
+        expect.objectContaining({
+          stripeStatus: "trialing",
+          trialEndsAt: expect.any(Date),
+        }),
+        { new: true },
+      );
+      expect(result.status).toBe("trialing");
+      expect(result.hasAccess).toBe(true);
+      expect(result.canExtendTrial).toBe(false);
+      expect(result.billingOpen).toBe(false);
+    });
+
+    it("should reject extension when billing is open", async () => {
+      process.env.STRIPE_SECRET_KEY = "sk_test";
+      process.env.STRIPE_PRICE_ID = "price_123";
+      process.env.NODE_ENV = "production";
+
+      await expect(service.extendTrial("org-1")).rejects.toThrow(BadRequestException);
+    });
+
+    it("should expose canExtendTrial when trial expired and billing closed", async () => {
+      process.env.STRIPE_SECRET_KEY = "";
+      process.env.STRIPE_PRICE_ID = "";
+      process.env.NODE_ENV = "production";
+
+      const expiredDoc = mockSubscriptionDoc({
+        stripeStatus: "trialing",
+        stripeSubscriptionId: undefined,
+        stripeCustomerId: undefined,
+        trialEndsAt: new Date(Date.now() - 86_400_000),
+      });
+      mockSubscriptionModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(expiredDoc),
+      });
+
+      const result = await service.getByOrganization("org-1");
+
+      expect(result.billingOpen).toBe(false);
+      expect(result.canExtendTrial).toBe(true);
+      expect(result.hasAccess).toBe(false);
     });
   });
 

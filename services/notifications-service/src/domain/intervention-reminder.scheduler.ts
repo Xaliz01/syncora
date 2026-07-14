@@ -7,6 +7,7 @@ import { firstValueFrom } from "rxjs";
 import type {
   InterventionResponse,
   NotificationPreferencesData,
+  OrganizationSubscriptionResponse,
   ReminderLeadTime,
   UserResponse,
 } from "@planwise/shared";
@@ -19,6 +20,7 @@ import { AbstractEmailService } from "./ports/email.service.port";
 
 const CASES_URL = process.env.CASES_SERVICE_URL ?? "http://localhost:3004";
 const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
+const SUBSCRIPTIONS_URL = process.env.SUBSCRIPTIONS_SERVICE_URL ?? "http://localhost:3008";
 
 @Injectable()
 export class InterventionReminderScheduler {
@@ -56,14 +58,23 @@ export class InterventionReminderScheduler {
         windowEnd.toISOString(),
       );
 
+      const accessByOrganization = new Map<string, boolean>();
+
       for (const intervention of interventions) {
         if (!intervention.scheduledStart || !intervention.assigneeId) continue;
+
+        const orgId = intervention.organizationId;
+        let hasAccess = accessByOrganization.get(orgId);
+        if (hasAccess === undefined) {
+          hasAccess = await this.organizationHasActiveSubscription(orgId);
+          accessByOrganization.set(orgId, hasAccess);
+        }
+        if (!hasAccess) continue;
 
         const scheduledStart = new Date(intervention.scheduledStart);
         const minutesUntilStart = (scheduledStart.getTime() - now.getTime()) / (60 * 1000);
 
         const userId = intervention.assigneeId;
-        const orgId = intervention.organizationId;
         const userPrefs =
           prefsMap.get(`${userId}:${orgId}`) ?? buildDefaultNotificationPreferences();
 
@@ -139,6 +150,24 @@ export class InterventionReminderScheduler {
         { upsert: true },
       )
       .exec();
+  }
+
+  private async organizationHasActiveSubscription(organizationId: string): Promise<boolean> {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get<OrganizationSubscriptionResponse>(
+          `${SUBSCRIPTIONS_URL}/subscriptions/current`,
+          { params: { organizationId } },
+        ),
+      );
+      return response.data.hasAccess;
+    } catch (err) {
+      this.logger.debug(
+        `Reminder skipped for organization ${organizationId} (subscription check failed)`,
+        (err as Error).message,
+      );
+      return false;
+    }
   }
 
   private async fetchUpcomingInterventions(
