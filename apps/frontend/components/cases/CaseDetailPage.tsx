@@ -25,6 +25,7 @@ import { InterventionPhotos } from "@/components/interventions/InterventionPhoto
 import { InterventionSignatureDialog } from "@/components/interventions/InterventionSignatureDialog";
 import { CUSTOMER_KIND_LABELS } from "@/components/customers/customer-kind-labels";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { ResourceNotFoundPanel } from "@/components/ui/AppErrorAlert";
 import { ExportButton } from "@/components/ui/ExportButton";
 import * as exportsApi from "@/lib/exports.api";
 import { usePermissions } from "@/lib/hooks/usePermissions";
@@ -316,7 +317,13 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   const [showNewIntervention, setShowNewIntervention] = useState(false);
   const [editingInterventionId, setEditingInterventionId] = useState<string | null>(null);
 
-  const { data: caseData, isLoading } = useQuery({
+  const {
+    data: caseData,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: ["case", caseId],
     queryFn: () => api.getCase(caseId),
   });
@@ -560,8 +567,20 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
     return [...map.entries()].map(([id, label]) => ({ id, label }));
   }, [caseData, usersData?.users]);
 
-  if (isLoading || !caseData) {
+  if (isLoading) {
     return <div className="text-sm text-slate-500 dark:text-slate-400">Chargement…</div>;
+  }
+
+  if (isError || !caseData) {
+    return (
+      <ResourceNotFoundPanel
+        error={isError ? error : undefined}
+        resourceLabel="Dossier"
+        backHref="/cases"
+        backLabel="← Retour aux dossiers"
+        onRetry={() => void refetch()}
+      />
+    );
   }
 
   const articlesDialogIntervention = interventions?.find(

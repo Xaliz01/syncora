@@ -268,6 +268,10 @@ export class CasesController {
   @NotifyEntity({
     type: "intervention",
     idParam: "interventionId",
+    labelField: "title",
+    relatedEntityType: "case",
+    relatedEntityIdField: "caseId",
+    relatedEntityLabelField: "caseTitle",
     fixedDetail: "Intervention signée par le client",
   })
   async signIntervention(

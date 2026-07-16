@@ -83,6 +83,10 @@ function getNotificationRoute(n: NotificationResponse): string | null {
   if (n.relatedEntityType && n.relatedEntityId) {
     return getEntityRoute(n.relatedEntityType, n.relatedEntityId);
   }
+  // Interventions sans dossier lié : Ma journée (pas de fiche dédiée).
+  if (n.entityType === "intervention") {
+    return "/my-day";
+  }
   return getEntityRoute(n.entityType, n.entityId);
 }
 

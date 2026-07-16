@@ -158,14 +158,17 @@ self.addEventListener("push", (event: PushEvent) => {
 self.addEventListener("notificationclick", (event: NotificationEvent) => {
   event.notification.close();
 
-  const url = (event.notification.data as { url?: string })?.url ?? "/";
+  const rawUrl = (event.notification.data as { url?: string })?.url ?? "/";
+  const url = new URL(rawUrl, self.location.origin).href;
 
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
         if ("focus" in client) {
           client.focus();
-          client.navigate(url);
+          if ("navigate" in client) {
+            return (client as WindowClient).navigate(url);
+          }
           return;
         }
       }
