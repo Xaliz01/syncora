@@ -6,7 +6,6 @@ import type { StockLocationType } from "@planwise/shared";
 import * as stockApi from "@/lib/stock.api";
 import * as fleetApi from "@/lib/fleet.api";
 import { usePermissions } from "@/lib/hooks/usePermissions";
-import { useConfirm } from "@/components/ui/ConfirmDialog";
 import {
   ListBadge,
   ListCellDefault,
@@ -16,7 +15,7 @@ import {
   ListPageError,
   ListPageHeader,
   ListPageRoot,
-  ListRow,
+  ListRowLink,
   ListTableShell,
 } from "@/components/ui/list-page";
 
@@ -32,7 +31,7 @@ const LOCATION_TYPE_COLORS: Record<StockLocationType, string> = {
   vehicle: "bg-amber-50 text-amber-700 border-amber-200",
 };
 
-const GRID = "md:grid-cols-[1.2fr_0.8fr_0.8fr_1fr_auto]";
+const GRID = "md:grid-cols-[1.2fr_0.8fr_0.8fr_1fr]";
 
 const PRIMARY_BUTTON_CLASS =
   "rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition self-start flex-shrink-0";
@@ -40,7 +39,6 @@ const PRIMARY_BUTTON_CLASS =
 export function StockLocationsPage() {
   const { can } = usePermissions();
   const queryClient = useQueryClient();
-  const confirm = useConfirm();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [error, setError] = useState("");
 
@@ -77,15 +75,6 @@ export function StockLocationsPage() {
       invalidate();
       setShowCreateForm(false);
       resetForm();
-      setError("");
-    },
-    onError: (err: Error) => setError(err.message),
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => stockApi.deleteStockLocation(id),
-    onSuccess: () => {
-      invalidate();
       setError("");
     },
     onError: (err: Error) => setError(err.message),
@@ -176,7 +165,21 @@ export function StockLocationsPage() {
                 </label>
                 <select
                   value={createReferenceId}
-                  onChange={(e) => setCreateReferenceId(e.target.value)}
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    setCreateReferenceId(id);
+                    const agence = (agences ?? []).find((a) => a.id === id);
+                    if (agence) {
+                      const parts = [
+                        agence.address,
+                        [agence.postalCode, agence.city].filter(Boolean).join(" "),
+                      ].filter((p) => p && String(p).trim().length > 0);
+                      setCreateAddress(parts.join(", "));
+                      if (!createName.trim()) {
+                        setCreateName(agence.name);
+                      }
+                    }
+                  }}
                   className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
                 >
                   <option value="">Choisir une agence</option>
@@ -257,12 +260,15 @@ export function StockLocationsPage() {
               <span>Type</span>
               <span>Référence</span>
               <span>Adresse</span>
-              <span className="text-right md:text-left">Actions</span>
             </>
           }
         >
           {locations!.map((loc) => (
-            <ListRow key={loc.id} gridTemplateClass={GRID}>
+            <ListRowLink
+              key={loc.id}
+              href={`/settings/stock/locations/${loc.id}`}
+              gridTemplateClass={GRID}
+            >
               <ListCellPrimary>
                 {loc.name}
                 {loc.isDefault && <span className="ml-2 text-xs text-slate-400">(par défaut)</span>}
@@ -276,27 +282,7 @@ export function StockLocationsPage() {
               <ListCellDefault className="text-xs text-slate-500">
                 {loc.address ?? "—"}
               </ListCellDefault>
-              <div className="flex gap-2 justify-end md:justify-start">
-                {can("stock.locations.delete") && !loc.isDefault && (
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      const ok = await confirm({
-                        title: "Supprimer l\u2019emplacement",
-                        description: `Supprimer l\u2019emplacement \u00ab ${loc.name} \u00bb ? Tout le stock doit avoir \u00e9t\u00e9 transf\u00e9r\u00e9 au pr\u00e9alable.`,
-                        confirmLabel: "Supprimer",
-                        variant: "danger",
-                      });
-                      if (ok) deleteMutation.mutate(loc.id);
-                    }}
-                    disabled={deleteMutation.isPending}
-                    className="text-xs text-red-600 dark:text-red-400 hover:text-red-500 font-medium disabled:opacity-50"
-                  >
-                    Supprimer
-                  </button>
-                )}
-              </div>
-            </ListRow>
+            </ListRowLink>
           ))}
         </ListTableShell>
       )}

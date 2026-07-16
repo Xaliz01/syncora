@@ -457,6 +457,7 @@ describe("ExportsService", () => {
           tags: [],
           progress: 100,
           interventionCount: 1,
+          createdAt: "2024-06-15T10:00:00Z",
         },
         {
           id: "c2",
@@ -470,6 +471,7 @@ describe("ExportsService", () => {
           progress: 50,
           interventionCount: 2,
           dueDate: "2020-01-01T00:00:00Z",
+          createdAt: "2024-06-20T10:00:00Z",
         },
       ];
 
@@ -540,6 +542,93 @@ describe("ExportsService", () => {
       expect(result.interventionsCompleted).toBe(1);
       expect(result.techniciansActive).toBe(1);
       expect(result.customersTotal).toBe(1);
+    });
+
+    it("should filter cases by period and forward date range to interventions", async () => {
+      const cases: CaseSummaryResponse[] = [
+        {
+          id: "c1",
+          organizationId: "org-123",
+          title: "In range",
+          status: "completed",
+          billingStatus: "none",
+          priority: "medium",
+          assignees: [],
+          tags: [],
+          progress: 100,
+          interventionCount: 1,
+          createdAt: "2024-06-15T10:00:00Z",
+        },
+        {
+          id: "c2",
+          organizationId: "org-123",
+          title: "Out of range",
+          status: "in_progress",
+          billingStatus: "none",
+          priority: "high",
+          assignees: [],
+          tags: [],
+          progress: 50,
+          interventionCount: 0,
+          createdAt: "2024-01-01T10:00:00Z",
+        },
+      ];
+
+      mockHttpService.get
+        .mockReturnValueOnce(
+          of({
+            data: cases,
+            status: 200,
+            headers: {},
+            statusText: "OK",
+            config: {} as never,
+          }) as never,
+        )
+        .mockReturnValueOnce(
+          of({
+            data: [],
+            status: 200,
+            headers: {},
+            statusText: "OK",
+            config: {} as never,
+          }) as never,
+        )
+        .mockReturnValueOnce(
+          of({
+            data: [],
+            status: 200,
+            headers: {},
+            statusText: "OK",
+            config: {} as never,
+          }) as never,
+        )
+        .mockReturnValueOnce(
+          of({
+            data: [],
+            status: 200,
+            headers: {},
+            statusText: "OK",
+            config: {} as never,
+          }) as never,
+        );
+
+      const result = await service.getReportingStats("org-123", {
+        startDate: "2024-06-01",
+        endDate: "2024-06-30",
+      });
+
+      expect(result.casesTotal).toBe(1);
+      expect(result.casesCompleted).toBe(1);
+      expect(mockHttpService.get).toHaveBeenCalledWith(
+        expect.stringContaining("/interventions"),
+        expect.objectContaining({
+          params: expect.objectContaining({
+            organizationId: "org-123",
+            startDate: "2024-06-01T00:00:00.000",
+            endDate: "2024-06-30T23:59:59.999",
+          }),
+        }),
+      );
     });
   });
 });

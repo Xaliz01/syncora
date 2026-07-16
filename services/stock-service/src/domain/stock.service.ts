@@ -796,15 +796,26 @@ export class StockService extends AbstractStockService {
     const article = await this.articleModel.findOne(baseFilter).exec();
     if (!article) return;
 
-    const existingEntry = (article.locationStocks ?? []).find((ls) => ls.locationId === locationId);
+    const locationStocks = article.locationStocks ?? [];
+    const existingEntry = locationStocks.find((ls) => ls.locationId === locationId);
+    const tracksLocations = locationStocks.length > 0;
 
     if (movementType === "out") {
-      if (existingEntry) {
-        await this.articleModel.findOneAndUpdate(
-          { ...baseFilter, "locationStocks.locationId": locationId },
-          { $inc: { "locationStocks.$.quantity": -quantity } },
-        );
+      // Articles déjà ventilés par emplacement : exiger le stock local (comme un transfert).
+      // Articles legacy (stock global seul) : ne pas bloquer tant qu'aucune ligne d'emplacement n'existe.
+      if (!tracksLocations) return;
+      const available = existingEntry?.quantity ?? 0;
+      if (available < quantity) {
+        throw new ConflictException("Stock insuffisant à cet emplacement");
       }
+      await this.articleModel.findOneAndUpdate(
+        {
+          ...baseFilter,
+          "locationStocks.locationId": locationId,
+          "locationStocks.quantity": { $gte: quantity },
+        },
+        { $inc: { "locationStocks.$.quantity": -quantity } },
+      );
     } else if (movementType === "in") {
       if (existingEntry) {
         await this.articleModel.findOneAndUpdate(

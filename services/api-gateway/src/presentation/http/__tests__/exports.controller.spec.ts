@@ -104,6 +104,8 @@ describe("ExportsController", () => {
         "high",
         undefined,
         undefined,
+        undefined,
+        undefined,
         res,
       );
 
@@ -113,6 +115,8 @@ describe("ExportsController", () => {
         priority: "high",
         assigneeId: undefined,
         search: undefined,
+        startDate: undefined,
+        endDate: undefined,
       });
       expect(res.send).toHaveBeenCalledWith(exportResult.buffer);
     });
@@ -134,6 +138,8 @@ describe("ExportsController", () => {
         undefined,
         undefined,
         undefined,
+        undefined,
+        undefined,
         res,
       );
 
@@ -143,6 +149,8 @@ describe("ExportsController", () => {
         priority: undefined,
         assigneeId: undefined,
         search: undefined,
+        startDate: undefined,
+        endDate: undefined,
       });
       expect(res.send).toHaveBeenCalledWith(exportResult.buffer);
     });
@@ -154,6 +162,8 @@ describe("ExportsController", () => {
         controller.exportCasesList(
           mockUser,
           "docx",
+          undefined,
+          undefined,
           undefined,
           undefined,
           undefined,
@@ -261,9 +271,12 @@ describe("ExportsController", () => {
       };
       mockExportsService.getReportingStats.mockResolvedValue(stats);
 
-      const result = await controller.getReportingStats(mockUser);
+      const result = await controller.getReportingStats(mockUser, "2024-01-01", "2024-01-31");
 
-      expect(mockExportsService.getReportingStats).toHaveBeenCalledWith(mockUser);
+      expect(mockExportsService.getReportingStats).toHaveBeenCalledWith(mockUser, {
+        startDate: "2024-01-01",
+        endDate: "2024-01-31",
+      });
       expect(result).toEqual(stats);
     });
   });

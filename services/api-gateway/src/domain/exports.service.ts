@@ -1,6 +1,7 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, BadRequestException, ServiceUnavailableException } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
+import axios from "axios";
 import type {
   AuthUser,
   ExportFormat,
@@ -33,6 +34,8 @@ export class ExportsGatewayService extends AbstractExportsGatewayService {
       priority?: string;
       assigneeId?: string;
       search?: string;
+      startDate?: string;
+      endDate?: string;
     },
   ): Promise<ExportResult> {
     return this.proxyExport(`${EXPORTS_URL}/exports/cases`, {
@@ -133,37 +136,89 @@ export class ExportsGatewayService extends AbstractExportsGatewayService {
     }
   }
 
-  async getReportingStats(user: AuthUser): Promise<ReportingStatsResponse> {
-    const response = await firstValueFrom(
-      this.httpService.get<ReportingStatsResponse>(`${EXPORTS_URL}/exports/reporting/stats`, {
-        params: { organizationId: user.organizationId },
-      }),
-    );
-    return response.data;
+  async getReportingStats(
+    user: AuthUser,
+    filters?: { startDate?: string; endDate?: string },
+  ): Promise<ReportingStatsResponse> {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get<ReportingStatsResponse>(`${EXPORTS_URL}/exports/reporting/stats`, {
+          params: {
+            organizationId: user.organizationId,
+            ...this.cleanFilters(filters),
+          },
+        }),
+      );
+      return response.data;
+    } catch (err) {
+      this.rethrowAsHttpException(err);
+    }
   }
 
   private async proxyExport(
     url: string,
     params: Record<string, string | undefined>,
   ): Promise<ExportResult> {
-    const response = await firstValueFrom(
-      this.httpService.get(url, {
-        params: this.cleanFilters(params),
-        responseType: "arraybuffer",
-        timeout: 60000,
-      }),
-    );
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get(url, {
+          params: this.cleanFilters(params),
+          responseType: "arraybuffer",
+          timeout: 60000,
+        }),
+      );
 
-    const contentType = (response.headers["content-type"] as string) ?? "application/octet-stream";
-    const disposition = (response.headers["content-disposition"] as string) ?? "";
-    const filenameMatch = disposition.match(/filename="?([^";\n]+)"?/);
-    const filename = filenameMatch?.[1] ?? "export";
+      const contentType =
+        (response.headers["content-type"] as string) ?? "application/octet-stream";
+      const disposition = (response.headers["content-disposition"] as string) ?? "";
+      const filenameMatch = disposition.match(/filename="?([^";\n]+)"?/);
+      const filename = filenameMatch?.[1] ?? "export";
 
-    return {
-      buffer: Buffer.from(response.data),
-      contentType,
-      filename,
-    };
+      return {
+        buffer: Buffer.from(response.data),
+        contentType,
+        filename,
+      };
+    } catch (err) {
+      this.rethrowAsHttpException(err);
+    }
+  }
+
+  private rethrowAsHttpException(err: unknown): never {
+    if (axios.isAxiosError(err)) {
+      if (!err.response) {
+        throw new ServiceUnavailableException(
+          "Service d’exports indisponible. Réessayez dans un instant.",
+        );
+      }
+      const status = err.response.status;
+      const data = this.parseAxiosErrorData(err.response.data);
+      const raw = data?.message;
+      const message = Array.isArray(raw)
+        ? raw.join(", ")
+        : (raw ?? "Erreur lors de la génération de l'export");
+      if (status === 400) throw new BadRequestException(message);
+      throw new ServiceUnavailableException(message);
+    }
+    throw err;
+  }
+
+  private parseAxiosErrorData(data: unknown): { message?: string | string[] } | undefined {
+    if (!data) return undefined;
+    if (typeof data === "object" && !(data instanceof ArrayBuffer) && !Buffer.isBuffer(data)) {
+      return data as { message?: string | string[] };
+    }
+    try {
+      const text =
+        typeof data === "string"
+          ? data
+          : Buffer.isBuffer(data)
+            ? data.toString("utf8")
+            : Buffer.from(data as ArrayBuffer).toString("utf8");
+      return JSON.parse(text) as { message?: string | string[] };
+    } catch {
+      return undefined;
+    }
   }
 
   private cleanFilters(filters?: Record<string, string | undefined>): Record<string, string> {

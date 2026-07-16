@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import type { SiretLookupResult } from "@planwise/shared";
 import { useAuth } from "@/components/auth/AuthContext";
 import { useOrganization } from "@/lib/organization";
@@ -41,6 +42,20 @@ export function OrganizationSwitcher({
   const [newOrgSiret, setNewOrgSiret] = useState("");
   const [newOrgAddress, setNewOrgAddress] = useState<OrganizationAddressForm>(EMPTY_ORG_ADDRESS);
   const [creating, setCreating] = useState(false);
+  const [portalReady, setPortalReady] = useState(false);
+
+  useEffect(() => {
+    setPortalReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!dialogOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [dialogOpen]);
 
   const resetNewOrgForm = () => {
     setNewOrgName("");
@@ -226,99 +241,102 @@ export function OrganizationSwitcher({
         </button>
       )}
 
-      {dialogOpen && (
-        <div
-          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-slate-950/50 p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="planwise-new-org-title"
-          onClick={() => {
-            if (creating) return;
-            setDialogOpen(false);
-            resetNewOrgForm();
-          }}
-        >
+      {portalReady &&
+        dialogOpen &&
+        createPortal(
           <div
-            className="w-full max-w-md rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl p-5"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-[200] flex items-start sm:items-center justify-center overflow-y-auto bg-slate-950/50 p-4 pt-16 sm:pt-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="planwise-new-org-title"
+            onClick={() => {
+              if (creating) return;
+              setDialogOpen(false);
+              resetNewOrgForm();
+            }}
           >
-            <h2
-              id="planwise-new-org-title"
-              className="text-lg font-semibold text-slate-900 dark:text-slate-100"
+            <div
+              className="my-auto w-full max-w-md max-h-[calc(100dvh-5rem)] sm:max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl p-5"
+              onClick={(e) => e.stopPropagation()}
             >
-              Nouvelle organisation
-            </h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              Un espace distinct sera créé et votre session y sera associée.
-            </p>
-            <div className="mt-4 space-y-3">
-              <SiretLookupField
-                value={newOrgSiret}
-                onChange={setNewOrgSiret}
-                onSelect={handleSiretSelect}
-                disabled={creating}
-                labelCls="block text-xs font-medium text-slate-600 dark:text-slate-300"
-                inputCls="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-100"
-              />
-              <div>
-                <label
-                  htmlFor="planwise-new-org-name"
-                  className="block text-xs font-medium text-slate-600 dark:text-slate-300"
-                >
-                  Nom
-                </label>
-                <input
-                  id="planwise-new-org-name"
-                  type="text"
-                  value={newOrgName}
-                  onChange={(e) => setNewOrgName(e.target.value)}
-                  placeholder="Ex. Ma société"
-                  className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-100"
+              <h2
+                id="planwise-new-org-title"
+                className="text-lg font-semibold text-slate-900 dark:text-slate-100"
+              >
+                Nouvelle organisation
+              </h2>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                Un espace distinct sera créé et votre session y sera associée.
+              </p>
+              <div className="mt-4 space-y-3">
+                <SiretLookupField
+                  value={newOrgSiret}
+                  onChange={setNewOrgSiret}
+                  onSelect={handleSiretSelect}
                   disabled={creating}
-                  autoFocus
+                  labelCls="block text-xs font-medium text-slate-600 dark:text-slate-300"
+                  inputCls="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-100"
+                />
+                <div>
+                  <label
+                    htmlFor="planwise-new-org-name"
+                    className="block text-xs font-medium text-slate-600 dark:text-slate-300"
+                  >
+                    Nom
+                  </label>
+                  <input
+                    id="planwise-new-org-name"
+                    type="text"
+                    value={newOrgName}
+                    onChange={(e) => setNewOrgName(e.target.value)}
+                    placeholder="Ex. Ma société"
+                    className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-100"
+                    disabled={creating}
+                    autoFocus
+                  />
+                </div>
+                <PostalAddressFields
+                  legend="Adresse postale"
+                  compact
+                  line1={newOrgAddress.addressLine1}
+                  line2={newOrgAddress.addressLine2}
+                  postalCode={newOrgAddress.postalCode}
+                  city={newOrgAddress.city}
+                  country={newOrgAddress.country}
+                  onLine1Change={(v) => setNewOrgAddress((prev) => ({ ...prev, addressLine1: v }))}
+                  onLine2Change={(v) => setNewOrgAddress((prev) => ({ ...prev, addressLine2: v }))}
+                  onPostalChange={(v) => setNewOrgAddress((prev) => ({ ...prev, postalCode: v }))}
+                  onCityChange={(v) => setNewOrgAddress((prev) => ({ ...prev, city: v }))}
+                  onCountryChange={(v) => setNewOrgAddress((prev) => ({ ...prev, country: v }))}
+                  labelCls="block text-xs font-medium text-slate-600 dark:text-slate-300"
+                  inputCls="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-100"
                 />
               </div>
-              <PostalAddressFields
-                legend="Adresse postale"
-                compact
-                line1={newOrgAddress.addressLine1}
-                line2={newOrgAddress.addressLine2}
-                postalCode={newOrgAddress.postalCode}
-                city={newOrgAddress.city}
-                country={newOrgAddress.country}
-                onLine1Change={(v) => setNewOrgAddress((prev) => ({ ...prev, addressLine1: v }))}
-                onLine2Change={(v) => setNewOrgAddress((prev) => ({ ...prev, addressLine2: v }))}
-                onPostalChange={(v) => setNewOrgAddress((prev) => ({ ...prev, postalCode: v }))}
-                onCityChange={(v) => setNewOrgAddress((prev) => ({ ...prev, city: v }))}
-                onCountryChange={(v) => setNewOrgAddress((prev) => ({ ...prev, country: v }))}
-                labelCls="block text-xs font-medium text-slate-600 dark:text-slate-300"
-                inputCls="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-100"
-              />
+              <div className="mt-5 flex flex-wrap justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDialogOpen(false);
+                    resetNewOrgForm();
+                  }}
+                  disabled={creating}
+                  className="rounded-lg border border-slate-200 dark:border-slate-600 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleCreateOrganization()}
+                  disabled={creating}
+                  className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50"
+                >
+                  {creating ? "Cr\u00e9ation\u2026" : "Cr\u00e9er"}
+                </button>
+              </div>
             </div>
-            <div className="mt-5 flex flex-wrap justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setDialogOpen(false);
-                  resetNewOrgForm();
-                }}
-                disabled={creating}
-                className="rounded-lg border border-slate-200 dark:border-slate-600 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50"
-              >
-                Annuler
-              </button>
-              <button
-                type="button"
-                onClick={() => void handleCreateOrganization()}
-                disabled={creating}
-                className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50"
-              >
-                {creating ? "Cr\u00e9ation\u2026" : "Cr\u00e9er"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

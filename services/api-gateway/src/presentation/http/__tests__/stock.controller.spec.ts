@@ -254,6 +254,7 @@ describe("StockController", () => {
         articleId: "article-1",
         quantity: 5,
         caseId: "case-1",
+        locationId: "loc-van",
       };
       mockStockService.addInterventionArticleUsage.mockResolvedValue({
         id: "movement-1",

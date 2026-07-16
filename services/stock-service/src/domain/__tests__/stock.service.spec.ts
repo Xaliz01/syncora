@@ -779,4 +779,148 @@ describe("StockService", () => {
       ).rejects.toThrow(BadRequestException);
     });
   });
+
+  describe("addInterventionArticleUsage", () => {
+    it("should consume stock from an explicit location", async () => {
+      mockStockMovementModel.find.mockReturnValue({
+        sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue([]) }),
+      });
+      mockStockLocationModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({
+          _id: { toString: () => "loc-van" },
+          organizationId: "org-1",
+          name: "Camion 1",
+        }),
+        select: jest.fn().mockReturnValue({
+          exec: jest.fn().mockResolvedValue({ name: "Camion 1" }),
+        }),
+      });
+
+      const previousDoc = mockArticleDoc({
+        stockQuantity: 10,
+        locationStocks: [{ locationId: "loc-van", quantity: 4 }],
+      });
+      mockArticleModel.findOneAndUpdate
+        .mockReturnValueOnce({ exec: jest.fn().mockResolvedValue(previousDoc) })
+        .mockReturnValueOnce({ exec: jest.fn().mockResolvedValue(previousDoc) });
+      mockArticleModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(previousDoc),
+      });
+      mockStockMovementModel.create.mockResolvedValue(
+        mockStockMovementDoc({
+          movementType: "out",
+          quantity: 2,
+          previousStock: 10,
+          newStock: 8,
+          reason: "intervention_usage",
+          locationId: "loc-van",
+          locationName: "Camion 1",
+        }),
+      );
+
+      const result = await service.addInterventionArticleUsage("int-1", {
+        organizationId: "org-1",
+        articleId: "article-123",
+        quantity: 2,
+        locationId: "loc-van",
+        caseId: "case-1",
+      });
+
+      expect(mockArticleModel.findOneAndUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          stockQuantity: { $gte: 2 },
+        }),
+        expect.objectContaining({ $inc: { stockQuantity: -2 } }),
+        expect.anything(),
+      );
+      expect(result.movementType).toBe("out");
+      expect(result.locationId).toBe("loc-van");
+      expect(mockStockMovementModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          reason: "intervention_usage",
+          locationId: "loc-van",
+          interventionId: "int-1",
+        }),
+      );
+    });
+
+    it("should reject when location stock is insufficient", async () => {
+      mockStockMovementModel.find.mockReturnValue({
+        sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue([]) }),
+      });
+      mockStockLocationModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({
+          _id: { toString: () => "loc-van" },
+          organizationId: "org-1",
+          name: "Camion 1",
+        }),
+        select: jest.fn().mockReturnValue({
+          exec: jest.fn().mockResolvedValue({ name: "Camion 1" }),
+        }),
+      });
+
+      const previousDoc = mockArticleDoc({
+        stockQuantity: 10,
+        locationStocks: [{ locationId: "loc-van", quantity: 1 }],
+      });
+      mockArticleModel.findOneAndUpdate.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(previousDoc),
+      });
+      mockArticleModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(previousDoc),
+      });
+
+      await expect(
+        service.addInterventionArticleUsage("int-1", {
+          organizationId: "org-1",
+          articleId: "article-123",
+          quantity: 3,
+          locationId: "loc-van",
+        }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it("should fall back to default location when locationId is omitted", async () => {
+      mockStockMovementModel.find.mockReturnValue({
+        sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue([]) }),
+      });
+      mockStockLocationModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({
+          _id: { toString: () => "loc-default" },
+          organizationId: "org-1",
+          name: "Entrepôt",
+          isDefault: true,
+        }),
+        select: jest.fn().mockReturnValue({
+          exec: jest.fn().mockResolvedValue({ name: "Entrepôt" }),
+        }),
+      });
+
+      const previousDoc = mockArticleDoc({ stockQuantity: 5, locationStocks: [] });
+      mockArticleModel.findOneAndUpdate.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(previousDoc),
+      });
+      mockArticleModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(previousDoc),
+      });
+      mockStockMovementModel.create.mockResolvedValue(
+        mockStockMovementDoc({
+          movementType: "out",
+          quantity: 1,
+          previousStock: 5,
+          newStock: 4,
+          reason: "intervention_usage",
+          locationId: "loc-default",
+        }),
+      );
+
+      const result = await service.addInterventionArticleUsage("int-1", {
+        organizationId: "org-1",
+        articleId: "article-123",
+        quantity: 1,
+      });
+
+      expect(result.locationId).toBe("loc-default");
+    });
+  });
 });

@@ -76,6 +76,8 @@ export class ExportsService extends AbstractExportsService {
       priority?: string;
       assigneeId?: string;
       search?: string;
+      startDate?: string;
+      endDate?: string;
     },
   ): Promise<ExportResult> {
     const query: Record<string, string> = { organizationId };
@@ -85,7 +87,8 @@ export class ExportsService extends AbstractExportsService {
     if (filters?.assigneeId) query.assigneeId = filters.assigneeId;
     if (filters?.search) query.search = filters.search;
 
-    const cases = await this.callService<CaseSummaryResponse[]>(CASES_URL, "/cases", query);
+    let cases = await this.callService<CaseSummaryResponse[]>(CASES_URL, "/cases", query);
+    cases = this.filterCasesByPeriod(cases, filters?.startDate, filters?.endDate);
 
     if (format === "pdf") {
       const buffer = await this.buildCasesListPdf(cases);
@@ -176,9 +179,10 @@ export class ExportsService extends AbstractExportsService {
       status?: string;
     },
   ): Promise<ExportResult> {
-    const query: Record<string, string> = { organizationId };
-    if (filters?.startDate) query.startDate = filters.startDate;
-    if (filters?.endDate) query.endDate = filters.endDate;
+    const query: Record<string, string> = {
+      organizationId,
+      ...this.toServiceDateRange(filters),
+    };
     if (filters?.assigneeId) query.assigneeId = filters.assigneeId;
     if (filters?.status) query.status = filters.status;
 
@@ -411,13 +415,32 @@ export class ExportsService extends AbstractExportsService {
 
   // ── Reporting stats ──
 
-  async getReportingStats(organizationId: string): Promise<ReportingStatsResponse> {
-    const [cases, interventions, technicians, customers] = await Promise.all([
-      this.callService<CaseSummaryResponse[]>(CASES_URL, "/cases", { organizationId }),
-      this.callService<InterventionResponse[]>(CASES_URL, "/interventions", { organizationId }),
-      this.callService<TechnicianResponse[]>(TECHNICIANS_URL, "/technicians", { organizationId }),
-      this.callService<CustomerResponse[]>(CUSTOMERS_URL, "/customers", { organizationId }),
-    ]);
+  async getReportingStats(
+    organizationId: string,
+    filters?: { startDate?: string; endDate?: string },
+  ): Promise<ReportingStatsResponse> {
+    const interventionQuery: Record<string, string> = {
+      organizationId,
+      ...this.toServiceDateRange(filters),
+    };
+
+    const [casesResult, interventionsResult, techniciansResult, customersResult] =
+      await Promise.allSettled([
+        this.callService<CaseSummaryResponse[]>(CASES_URL, "/cases", { organizationId }),
+        this.callService<InterventionResponse[]>(CASES_URL, "/interventions", interventionQuery),
+        this.callService<TechnicianResponse[]>(TECHNICIANS_URL, "/technicians", {
+          organizationId,
+        }),
+        this.callService<CustomerResponse[]>(CUSTOMERS_URL, "/customers", { organizationId }),
+      ]);
+
+    const allCases = casesResult.status === "fulfilled" ? casesResult.value : [];
+    const interventions =
+      interventionsResult.status === "fulfilled" ? interventionsResult.value : [];
+    const technicians = techniciansResult.status === "fulfilled" ? techniciansResult.value : [];
+    const customers = customersResult.status === "fulfilled" ? customersResult.value : [];
+
+    const cases = this.filterCasesByPeriod(allCases, filters?.startDate, filters?.endDate);
 
     const now = new Date();
     const completedCases = cases.filter((c) => c.status === "completed");
@@ -454,6 +477,47 @@ export class ExportsService extends AbstractExportsService {
       techniciansActive: technicians.filter((t) => t.status === "actif").length,
       customersTotal: customers.length,
     };
+  }
+
+  private filterCasesByPeriod(
+    cases: CaseSummaryResponse[],
+    startDate?: string,
+    endDate?: string,
+  ): CaseSummaryResponse[] {
+    if (!startDate && !endDate) return cases;
+    const startMs = startDate != null ? this.periodBoundMs(startDate, false) : null;
+    const endMs = endDate != null ? this.periodBoundMs(endDate, true) : null;
+    return cases.filter((c) => {
+      if (!c.createdAt) return false;
+      const t = new Date(c.createdAt).getTime();
+      if (startMs != null && t < startMs) return false;
+      if (endMs != null && t > endMs) return false;
+      return true;
+    });
+  }
+
+  private periodBoundMs(date: string, endOfDay: boolean): number {
+    if (date.includes("T")) return new Date(date).getTime();
+    return new Date(endOfDay ? `${date}T23:59:59.999` : `${date}T00:00:00.000`).getTime();
+  }
+
+  /** Normalize YYYY-MM-DD period bounds for downstream date filters. */
+  private toServiceDateRange(filters?: { startDate?: string; endDate?: string }): {
+    startDate?: string;
+    endDate?: string;
+  } {
+    const range: { startDate?: string; endDate?: string } = {};
+    if (filters?.startDate) {
+      range.startDate = filters.startDate.includes("T")
+        ? filters.startDate
+        : `${filters.startDate}T00:00:00.000`;
+    }
+    if (filters?.endDate) {
+      range.endDate = filters.endDate.includes("T")
+        ? filters.endDate
+        : `${filters.endDate}T23:59:59.999`;
+    }
+    return range;
   }
 
   // ── PDF Builders ──
@@ -1172,34 +1236,55 @@ export class ExportsService extends AbstractExportsService {
       const pageWidth = doc.page.width - 100;
       const colWidth = pageWidth / colCount;
       const startX = 50;
+      const cellPadX = 4;
+      const cellPadY = 4;
+      const minRowHeight = 18;
 
-      doc.rect(startX, doc.y, pageWidth, 18).fill("#6d28d9");
-      const headerY = doc.y + 5;
+      doc.rect(startX, doc.y, pageWidth, 20).fill("#6d28d9");
+      const headerY = doc.y + 6;
       doc.fontSize(8).fillColor("#ffffff");
       headers.forEach((h, i) => {
-        doc.text(h, startX + i * colWidth + 4, headerY, { width: colWidth - 8, lineBreak: false });
+        doc.text(h, startX + i * colWidth + cellPadX, headerY, {
+          width: colWidth - cellPadX * 2,
+          lineBreak: false,
+        });
       });
-      doc.y = headerY + 18;
+      doc.y = headerY + 16;
 
       doc.fillColor("#1e293b");
       for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
-        if (doc.y > doc.page.height - 80) {
+        const row = rows[rowIdx]!;
+        doc.fontSize(8);
+        const cellTextWidth = colWidth - cellPadX * 2;
+        const heights = row.map((cell) =>
+          doc.heightOfString(String(cell ?? ""), { width: cellTextWidth }),
+        );
+        const contentHeight = Math.max(10, ...heights);
+        const rowHeight = Math.max(minRowHeight, contentHeight + cellPadY * 2);
+
+        if (doc.y + rowHeight > doc.page.height - 70) {
           doc.addPage();
           doc.y = 50;
         }
-        const row = rows[rowIdx];
+
         const rowY = doc.y;
         if (rowIdx % 2 === 0) {
-          doc.rect(startX, rowY - 2, pageWidth, 16).fill("#f8fafc");
+          doc.rect(startX, rowY, pageWidth, rowHeight).fill("#f8fafc");
           doc.fillColor("#1e293b");
         }
         row.forEach((cell, i) => {
-          doc.fontSize(8).text(cell, startX + i * colWidth + 4, rowY, {
-            width: colWidth - 8,
-            lineBreak: false,
-          });
+          doc
+            .fontSize(8)
+            .fillColor("#1e293b")
+            .text(String(cell ?? ""), startX + i * colWidth + cellPadX, rowY + cellPadY, {
+              width: cellTextWidth,
+              height: rowHeight - cellPadY * 2,
+              lineBreak: true,
+              ellipsis: false,
+            });
         });
-        doc.y = rowY + 16;
+        // PDFKit advances doc.y when drawing multi-line cell text — pin the next row.
+        doc.y = rowY + rowHeight;
       }
 
       doc.y += 10;

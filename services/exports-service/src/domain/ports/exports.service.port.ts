@@ -18,6 +18,8 @@ export abstract class AbstractExportsService {
       priority?: string;
       assigneeId?: string;
       search?: string;
+      startDate?: string;
+      endDate?: string;
     },
   ): Promise<ExportResult>;
 
@@ -59,5 +61,8 @@ export abstract class AbstractExportsService {
     params: { userId: string; userProfileId?: string; templateId: string; todoLabel: string },
   ): Promise<ExportResult>;
 
-  abstract getReportingStats(organizationId: string): Promise<ReportingStatsResponse>;
+  abstract getReportingStats(
+    organizationId: string,
+    filters?: { startDate?: string; endDate?: string },
+  ): Promise<ReportingStatsResponse>;
 }

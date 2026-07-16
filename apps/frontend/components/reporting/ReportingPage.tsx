@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import * as exportsApi from "@/lib/exports.api";
 import { useAuth } from "@/components/auth/AuthContext";
+import { useToast } from "@/components/ui/ToastProvider";
 import { hasPermission } from "@/lib/auth-permissions";
 import type { ReportingStatsResponse } from "@planwise/shared";
 
@@ -150,6 +151,7 @@ function ReportCard({
 
 export function ReportingPage() {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const canExportCases = hasPermission(user, "exports.cases");
   const canExportInterventions = hasPermission(user, "exports.interventions");
   const canExportReporting = hasPermission(user, "exports.reporting");
@@ -159,11 +161,33 @@ export function ReportingPage() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
-  const { data: stats } = useQuery<ReportingStatsResponse>({
-    queryKey: ["reporting-stats"],
-    queryFn: () => exportsApi.getReportingStats(),
+  const periodFilters = {
+    startDate: startDate || undefined,
+    endDate: endDate || undefined,
+  };
+
+  const {
+    data: stats,
+    isLoading: statsLoading,
+    isError: statsError,
+    refetch: refetchStats,
+  } = useQuery<ReportingStatsResponse>({
+    queryKey: ["reporting-stats", startDate, endDate],
+    queryFn: () => exportsApi.getReportingStats(periodFilters),
     staleTime: 60_000,
+    retry: 2,
   });
+
+  const runExport = async (fn: () => Promise<void>) => {
+    try {
+      await fn();
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Erreur lors de la génération de l'export";
+      showToast(message, "error");
+      throw err;
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -175,6 +199,25 @@ export function ReportingPage() {
           Tableaux de bord et exports pour piloter votre activité.
         </p>
       </div>
+
+      {statsLoading && (
+        <div className="text-sm text-slate-500 dark:text-slate-400">
+          Chargement des indicateurs…
+        </div>
+      )}
+
+      {statsError && (
+        <div className="rounded-lg border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/30 px-3 py-2 text-sm text-amber-800 dark:text-amber-200 flex flex-wrap items-center gap-2">
+          <span>Impossible de charger les indicateurs (service d’exports indisponible).</span>
+          <button
+            type="button"
+            onClick={() => void refetchStats()}
+            className="underline font-medium hover:no-underline"
+          >
+            Réessayer
+          </button>
+        </div>
+      )}
 
       {stats && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
@@ -218,9 +261,7 @@ export function ReportingPage() {
             description="Export complet des dossiers avec statut, priorité, client et avancement."
             icon={<FolderIcon />}
             onExport={(format) =>
-              exportsApi.exportCasesList(format, {
-                ...(startDate ? {} : {}),
-              })
+              runExport(() => exportsApi.exportCasesList(format, periodFilters))
             }
           />
         )}
@@ -231,10 +272,12 @@ export function ReportingPage() {
             description="Toutes les interventions avec technicien, équipe, durée et statut."
             icon={<CalendarIcon />}
             onExport={(format) =>
-              exportsApi.exportInterventionsList(format, {
-                startDate: startDate || undefined,
-                endDate: endDate || undefined,
-              })
+              runExport(() =>
+                exportsApi.exportInterventionsList(format, {
+                  startDate: startDate || undefined,
+                  endDate: endDate || undefined,
+                }),
+              )
             }
           />
         )}
@@ -245,10 +288,12 @@ export function ReportingPage() {
             description="Rapport d'activité par technicien : interventions, heures travaillées, taux de complétion."
             icon={<UsersIcon />}
             onExport={(format) =>
-              exportsApi.exportTechniciansActivity(format, {
-                startDate: startDate || undefined,
-                endDate: endDate || undefined,
-              })
+              runExport(() =>
+                exportsApi.exportTechniciansActivity(format, {
+                  startDate: startDate || undefined,
+                  endDate: endDate || undefined,
+                }),
+              )
             }
           />
         )}
@@ -259,10 +304,12 @@ export function ReportingPage() {
             description="Distance estimée, consommation de carburant, coût et empreinte CO₂ par équipe."
             icon={<TruckIcon />}
             onExport={(format) =>
-              exportsApi.exportMileageReport(format, {
-                startDate: startDate || undefined,
-                endDate: endDate || undefined,
-              })
+              runExport(() =>
+                exportsApi.exportMileageReport(format, {
+                  startDate: startDate || undefined,
+                  endDate: endDate || undefined,
+                }),
+              )
             }
           />
         )}
@@ -272,7 +319,7 @@ export function ReportingPage() {
             title="Liste des clients"
             description="Export des clients avec coordonnées, type et localisation."
             icon={<ContactIcon />}
-            onExport={(format) => exportsApi.exportCustomersList(format)}
+            onExport={(format) => runExport(() => exportsApi.exportCustomersList(format))}
           />
         )}
 
@@ -281,7 +328,7 @@ export function ReportingPage() {
             title="Liste des utilisateurs"
             description="Export des utilisateurs avec rôle et statut."
             icon={<ShieldIcon />}
-            onExport={(format) => exportsApi.exportUsersList(format)}
+            onExport={(format) => runExport(() => exportsApi.exportUsersList(format))}
           />
         )}
       </div>

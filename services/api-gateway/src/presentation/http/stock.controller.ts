@@ -13,6 +13,7 @@ import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
 import {
   RequirePermissionGuard,
   RequirePermissions,
+  RequireAnyPermissions,
 } from "../../infrastructure/require-permission.guard";
 import { SubscriptionAccessGuard } from "../../infrastructure/subscription-access.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
@@ -150,7 +151,11 @@ export class StockController {
   }
 
   @Get("locations")
-  @RequirePermissions("stock.locations.read")
+  @RequireAnyPermissions(
+    "stock.locations.read",
+    "stock.interventions.read",
+    "stock.interventions.create",
+  )
   async listStockLocations(@CurrentUser() user: AuthUser) {
     return this.stockService.listStockLocations(user);
   }

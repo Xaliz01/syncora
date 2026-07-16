@@ -85,6 +85,7 @@ const ALL_PROTECTED_PATHS = [
   "/settings/profiles",
   "/settings/profiles/new",
   "/settings/stock/articles",
+  "/settings/stock/locations",
   "/settings/notifications",
 ];
 

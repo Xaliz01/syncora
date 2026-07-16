@@ -53,7 +53,7 @@ export function PostalAddressFields({
   showLine2 = true,
   showCountry = true,
   compact = false,
-  labelCls: labelClsProp,
+  labelCls: _labelClsProp,
   inputCls: inputClsProp,
   legend,
   idPrefix,
@@ -64,11 +64,6 @@ export function PostalAddressFields({
   const searchId = `${baseId}-ban-search`;
   const listId = `${baseId}-ban-list`;
 
-  const labelCls =
-    labelClsProp ??
-    (compact
-      ? "mb-0.5 block text-xs font-medium text-slate-600 dark:text-slate-300"
-      : "mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200");
   const inputCls =
     inputClsProp ??
     (compact
@@ -139,22 +134,19 @@ export function PostalAddressFields({
     });
   };
 
+  const fieldLabelCls = compact
+    ? "mb-0.5 block text-[11px] font-medium text-slate-500 dark:text-slate-400"
+    : "mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400";
+  const sectionLegendCls = compact
+    ? "text-sm font-semibold text-slate-800 dark:text-slate-100"
+    : "text-base font-semibold text-slate-800 dark:text-slate-100";
+
   return (
-    <div className="space-y-3">
-      {legend && (
-        <p
-          className={
-            compact
-              ? "text-xs font-medium text-slate-600 dark:text-slate-300"
-              : "text-sm font-medium text-slate-700 dark:text-slate-200"
-          }
-        >
-          {legend}
-        </p>
-      )}
+    <fieldset className="space-y-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-900/40 p-3 sm:p-4">
+      {legend && <legend className={`${sectionLegendCls} px-0.5`}>{legend}</legend>}
 
       <div ref={wrapRef} className="relative">
-        <label htmlFor={searchId} className={labelCls}>
+        <label htmlFor={searchId} className={fieldLabelCls}>
           Rechercher une adresse (France)
         </label>
         <input
@@ -261,7 +253,7 @@ export function PostalAddressFields({
       )}
 
       <div>
-        <label className={labelCls}>Rue et numéro</label>
+        <label className={fieldLabelCls}>Rue et numéro</label>
         <input
           id={`${baseId}-line1`}
           value={line1}
@@ -275,7 +267,7 @@ export function PostalAddressFields({
 
       {showLine2 && (
         <div>
-          <label className={labelCls}>Complément (optionnel)</label>
+          <label className={fieldLabelCls}>Complément (optionnel)</label>
           <input
             id={`${baseId}-line2`}
             value={line2}
@@ -288,7 +280,7 @@ export function PostalAddressFields({
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className={labelCls}>Code postal</label>
+          <label className={fieldLabelCls}>Code postal</label>
           <input
             id={`${baseId}-postal`}
             value={postalCode}
@@ -301,7 +293,7 @@ export function PostalAddressFields({
           />
         </div>
         <div>
-          <label className={labelCls}>Ville</label>
+          <label className={fieldLabelCls}>Ville</label>
           <input
             id={`${baseId}-city`}
             value={city}
@@ -316,7 +308,7 @@ export function PostalAddressFields({
 
       {showCountry && (
         <div>
-          <label className={labelCls}>Pays (code ISO)</label>
+          <label className={fieldLabelCls}>Pays (code ISO)</label>
           <input
             id={`${baseId}-country`}
             value={country}
@@ -328,6 +320,6 @@ export function PostalAddressFields({
           />
         </div>
       )}
-    </div>
+    </fieldset>
   );
 }

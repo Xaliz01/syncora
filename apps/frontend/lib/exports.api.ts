@@ -48,6 +48,8 @@ export function exportCasesList(
     priority?: string;
     assigneeId?: string;
     search?: string;
+    startDate?: string;
+    endDate?: string;
   },
 ): Promise<void> {
   const params = new URLSearchParams();
@@ -57,6 +59,8 @@ export function exportCasesList(
   if (filters?.priority) params.set("priority", filters.priority);
   if (filters?.assigneeId) params.set("assigneeId", filters.assigneeId);
   if (filters?.search) params.set("search", filters.search);
+  if (filters?.startDate) params.set("startDate", filters.startDate);
+  if (filters?.endDate) params.set("endDate", filters.endDate);
   return downloadExport(`/exports/cases?${params.toString()}`, `liste-dossiers.${format}`);
 }
 
@@ -156,6 +160,16 @@ export function exportDashboardTodoCases(
 
 // ── Reporting stats ──
 
-export function getReportingStats(): Promise<ReportingStatsResponse> {
-  return apiRequestJson<ReportingStatsResponse>("GET", "/exports/reporting/stats");
+export function getReportingStats(filters?: {
+  startDate?: string;
+  endDate?: string;
+}): Promise<ReportingStatsResponse> {
+  const params = new URLSearchParams();
+  if (filters?.startDate) params.set("startDate", filters.startDate);
+  if (filters?.endDate) params.set("endDate", filters.endDate);
+  const qs = params.toString();
+  return apiRequestJson<ReportingStatsResponse>(
+    "GET",
+    `/exports/reporting/stats${qs ? `?${qs}` : ""}`,
+  );
 }

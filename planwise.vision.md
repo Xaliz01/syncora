@@ -84,7 +84,7 @@ Référence technique : landing `apps/frontend/components/landing/LandingPage.ts
 - **Interventions** : liées aux dossiers, statuts (`planned`, `in_progress`, `completed`, `cancelled`), calendrier (semaine / mois), drag-and-drop, actions terrain (démarrer/terminer avec géolocalisation), **photos terrain** rattachées à l'intervention.
 - **Terrain mobile** : vue « Ma journée » (interventions du jour, filtres technicien, auto-refresh), identification automatique du technicien connecté.
 - **Flotte** : véhicules, techniciens, équipes, agences ; lien équipe ↔ véhicule.
-- **Stock** : articles, mouvements, alertes stock bas, consommation sur intervention.
+- **Stock** : articles, mouvements, alertes stock bas, consommation sur intervention ; **emplacements** entrepôt / agence / véhicule avec transferts et prélèvement depuis le camion (défaut équipe → véhicule).
 - **Documents** : pièces jointes dossier et intervention (images, PDF), quota 10 Go, addon stockage +50 Go.
 - **Pilotage** : tableau de bord (stats cliquables, tâches à faire), recherche globale, notifications in-app.
 - **Abonnement** : Stripe (essai 15 j, 2 users inclus, addons users / suggestion équipe / stockage).
@@ -98,7 +98,7 @@ Référence technique : landing `apps/frontend/components/landing/LandingPage.ts
 - **Une adresse** par client ; pas de multi-sites ni d’équipements installés.
 - Pas de **devis / facturation** métier intégrés.
 - Pas de **portail client** ni SMS automatiques métier (email et push PWA opérationnels).
-- Stock **global** par organisation (entrepôts multi-sites : entité prévue, non implémentée).
+- Pas de listes de **pièces fréquentes** par type d’intervention (phase 4.2) ni scan code-barres.
 - Clôture intervention depuis le bureau ou le mobile (photos terrain OK) ; **signature client** et **rapport PDF** disponibles sur intervention terminée.
 - Pas d’**API publique** partenaires ni d’automatisations type workflow builder.
 
@@ -175,7 +175,7 @@ Objectif : stock utile sans WMS enterprise.
 
 | #   | Évolution                                              | Pourquoi (TPE)        | Statut |
 | --- | ------------------------------------------------------ | --------------------- | ------ |
-| 4.1 | Stock par **agence** ou **véhicule** (simplifié)       | Pièces dans le camion | 🟡     |
+| 4.1 | Stock par **agence** ou **véhicule** (simplifié)       | Pièces dans le camion | ✅     |
 | 4.2 | Liste de **pièces fréquentes** par type d’intervention | Saisie rapide         | ⬜     |
 | 4.3 | _(Optionnel)_ scan code-barres                         | Gros volumes pièces   | ⬜     |
 

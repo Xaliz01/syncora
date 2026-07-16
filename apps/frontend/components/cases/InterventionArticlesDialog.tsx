@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import type { ArticleResponse } from "@planwise/shared";
+import type { ArticleResponse, StockLocationResponse, StockLocationType } from "@planwise/shared";
 import * as stockApi from "@/lib/stock.api";
 import { useToast } from "@/components/ui/ToastProvider";
 
@@ -22,6 +22,20 @@ type ArticleLineDraft = {
   articleReference?: string;
   unit: string;
   quantity: string;
+  locationId: string;
+};
+
+type UsageAdjustment = {
+  articleId: string;
+  movementType: "in" | "out";
+  quantity: number;
+  locationId?: string;
+};
+
+const LOCATION_TYPE_LABELS: Record<StockLocationType, string> = {
+  warehouse: "Entrepôt",
+  agence: "Agence",
+  vehicle: "Véhicule",
 };
 
 const inputClassName =
@@ -30,9 +44,10 @@ const inputClassName =
 function buildUsageAdjustments(
   current: InterventionArticleUsageItem[],
   lines: ArticleLineDraft[],
-): Array<{ articleId: string; movementType: "in" | "out"; quantity: number }> {
+  fallbackLocationId: string,
+): UsageAdjustment[] {
   const currentById = new Map(current.map((item) => [item.articleId, item.netQuantity]));
-  const targetById = new Map<string, number>();
+  const targetById = new Map<string, { quantity: number; locationId: string }>();
 
   for (const line of lines) {
     if (!line.articleId) continue;
@@ -40,28 +55,35 @@ function buildUsageAdjustments(
     if (!Number.isFinite(qty) || qty < 0) {
       throw new Error(`Quantité invalide pour ${line.articleName || "l'article sélectionné"}`);
     }
-    targetById.set(line.articleId, qty);
+    targetById.set(line.articleId, {
+      quantity: qty,
+      locationId: line.locationId || fallbackLocationId,
+    });
   }
 
-  const adjustments: Array<{ articleId: string; movementType: "in" | "out"; quantity: number }> =
-    [];
+  const adjustments: UsageAdjustment[] = [];
   const allIds = new Set([...currentById.keys(), ...targetById.keys()]);
 
   for (const articleId of allIds) {
     const currentNet = currentById.get(articleId) ?? 0;
-    const targetNet = targetById.get(articleId) ?? 0;
+    const target = targetById.get(articleId);
+    const targetNet = target?.quantity ?? 0;
+    const locationId = target?.locationId || fallbackLocationId || undefined;
     const delta = targetNet - currentNet;
     if (delta > 0.000_001) {
-      adjustments.push({ articleId, movementType: "out", quantity: delta });
+      adjustments.push({ articleId, movementType: "out", quantity: delta, locationId });
     } else if (delta < -0.000_001) {
-      adjustments.push({ articleId, movementType: "in", quantity: -delta });
+      adjustments.push({ articleId, movementType: "in", quantity: -delta, locationId });
     }
   }
 
   return adjustments;
 }
 
-function linesFromUsage(usage: InterventionArticleUsageItem[]): ArticleLineDraft[] {
+function linesFromUsage(
+  usage: InterventionArticleUsageItem[],
+  defaultLocationId: string,
+): ArticleLineDraft[] {
   return usage
     .filter((item) => item.netQuantity > 0)
     .map((item) => ({
@@ -71,7 +93,48 @@ function linesFromUsage(usage: InterventionArticleUsageItem[]): ArticleLineDraft
       articleReference: item.articleReference,
       unit: item.unit,
       quantity: String(item.netQuantity),
+      locationId: defaultLocationId,
     }));
+}
+
+function stockAtLocation(article: ArticleResponse | undefined, locationId: string): number | null {
+  if (!article) return null;
+  const entry = article.locationStocks?.find((ls) => ls.locationId === locationId);
+  if (entry) return entry.quantity;
+  if ((article.locationStocks?.length ?? 0) > 0) return 0;
+  return article.stockQuantity;
+}
+
+function formatLocationOption(loc: StockLocationResponse): string {
+  const typeLabel = loc.type ? ` · ${LOCATION_TYPE_LABELS[loc.type]}` : "";
+  const defaultLabel = loc.isDefault ? " (défaut)" : "";
+  return `${loc.name}${typeLabel}${defaultLabel}`;
+}
+
+export function resolvePreferredStockLocationId(
+  locations: StockLocationResponse[],
+  options?: {
+    preferredLocationId?: string | null;
+    assignedTeamId?: string | null;
+    vehicleIdsByTeamId?: Map<string, string>;
+  },
+): string {
+  if (locations.length === 0) return "";
+  if (options?.preferredLocationId && locations.some((l) => l.id === options.preferredLocationId)) {
+    return options.preferredLocationId;
+  }
+  const teamId = options?.assignedTeamId?.trim();
+  if (teamId && options?.vehicleIdsByTeamId) {
+    const vehicleId = options.vehicleIdsByTeamId.get(teamId);
+    if (vehicleId) {
+      const vehicleLocation = locations.find(
+        (l) => l.type === "vehicle" && l.referenceId === vehicleId,
+      );
+      if (vehicleLocation) return vehicleLocation.id;
+    }
+  }
+  const defaultLocation = locations.find((l) => l.isDefault);
+  return defaultLocation?.id ?? locations[0]!.id;
 }
 
 export function InterventionArticlesDialog({
@@ -82,6 +145,8 @@ export function InterventionArticlesDialog({
   caseId,
   currentUsage,
   articles,
+  locations = [],
+  preferredLocationId,
   canEdit,
   onSaved,
 }: {
@@ -92,6 +157,8 @@ export function InterventionArticlesDialog({
   caseId: string;
   currentUsage: InterventionArticleUsageItem[];
   articles: ArticleResponse[];
+  locations?: StockLocationResponse[];
+  preferredLocationId?: string | null;
   canEdit: boolean;
   onSaved: () => void;
 }) {
@@ -99,14 +166,17 @@ export function InterventionArticlesDialog({
   const [lines, setLines] = useState<ArticleLineDraft[]>([]);
   const [saving, setSaving] = useState(false);
 
+  const defaultLocationId = useMemo(
+    () => resolvePreferredStockLocationId(locations, { preferredLocationId }),
+    [locations, preferredLocationId],
+  );
+
   useEffect(() => {
     if (!open) return;
-    const initial = linesFromUsage(currentUsage);
+    const initial = linesFromUsage(currentUsage, defaultLocationId);
     if (initial.length > 0) {
       setLines(initial);
-      return;
-    }
-    if (canEdit) {
+    } else if (canEdit) {
       setLines([
         {
           key: `new-${Date.now()}`,
@@ -114,12 +184,13 @@ export function InterventionArticlesDialog({
           articleName: "",
           unit: "unité",
           quantity: "1",
+          locationId: defaultLocationId,
         },
       ]);
-      return;
+    } else {
+      setLines([]);
     }
-    setLines([]);
-  }, [open, currentUsage, canEdit]);
+  }, [open, currentUsage, canEdit, defaultLocationId]);
 
   const usedArticleIds = useMemo(
     () => new Set(lines.map((line) => line.articleId).filter(Boolean)),
@@ -145,9 +216,10 @@ export function InterventionArticlesDialog({
         articleName: "",
         unit: "unité",
         quantity: "1",
+        locationId: defaultLocationId,
       },
     ]);
-  }, []);
+  }, [defaultLocationId]);
 
   const updateLine = useCallback((key: string, patch: Partial<ArticleLineDraft>) => {
     setLines((prev) => prev.map((line) => (line.key === key ? { ...line, ...patch } : line)));
@@ -179,15 +251,20 @@ export function InterventionArticlesDialog({
       showToast("Choisissez un article pour chaque ligne ou supprimez les lignes vides", "error");
       return;
     }
+    if (locations.length > 0 && lines.some((line) => !line.locationId)) {
+      showToast("Choisissez un emplacement pour chaque article", "error");
+      return;
+    }
     setSaving(true);
     try {
-      const adjustments = buildUsageAdjustments(currentUsage, lines);
+      const adjustments = buildUsageAdjustments(currentUsage, lines, defaultLocationId);
       for (const adjustment of adjustments) {
         await stockApi.addInterventionArticleUsage(interventionId, {
           caseId,
           articleId: adjustment.articleId,
           movementType: adjustment.movementType,
           quantity: adjustment.quantity,
+          ...(adjustment.locationId ? { locationId: adjustment.locationId } : {}),
         });
       }
       showToast(
@@ -200,7 +277,18 @@ export function InterventionArticlesDialog({
     } finally {
       setSaving(false);
     }
-  }, [canEdit, lines, currentUsage, interventionId, caseId, showToast, onSaved, onClose]);
+  }, [
+    canEdit,
+    lines,
+    currentUsage,
+    interventionId,
+    caseId,
+    defaultLocationId,
+    locations.length,
+    showToast,
+    onSaved,
+    onClose,
+  ]);
 
   if (!open) return null;
 
@@ -226,9 +314,14 @@ export function InterventionArticlesDialog({
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 truncate">
             {interventionTitle}
           </p>
+          {locations.length > 1 && (
+            <p className="mt-1 text-[11px] text-slate-400 dark:text-slate-500">
+              Chaque article peut être prélevé depuis un emplacement différent.
+            </p>
+          )}
         </div>
 
-        <div className="flex-1 overflow-y-auto px-5 py-4 min-h-0">
+        <div className="flex-1 overflow-y-auto px-5 py-4 min-h-0 space-y-4">
           {lines.length === 0 ? (
             <p className="text-sm text-slate-500 dark:text-slate-400">
               Aucun article pour le moment. Ajoutez les pièces ou consommables utilisés sur
@@ -238,6 +331,11 @@ export function InterventionArticlesDialog({
             <ul className="space-y-2">
               {lines.map((line) => {
                 const articleMeta = articles.find((a) => a.id === line.articleId);
+                const lineLocation = locations.find((l) => l.id === line.locationId);
+                const atLocation =
+                  line.locationId && articleMeta
+                    ? stockAtLocation(articleMeta, line.locationId)
+                    : articleMeta?.stockQuantity;
                 return (
                   <li
                     key={line.key}
@@ -256,9 +354,13 @@ export function InterventionArticlesDialog({
                                 </span>
                               ) : null}
                             </p>
-                            {articleMeta && (
+                            {articleMeta && atLocation != null && (
                               <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                                Stock disponible : {articleMeta.stockQuantity} {articleMeta.unit}
+                                {line.locationId && lineLocation
+                                  ? `Stock à « ${lineLocation.name} »`
+                                  : "Stock disponible"}
+                                {" : "}
+                                {atLocation} {articleMeta.unit}
                               </p>
                             )}
                           </div>
@@ -277,6 +379,27 @@ export function InterventionArticlesDialog({
                             ))}
                           </select>
                         )}
+
+                        {locations.length > 0 && (
+                          <label className="block">
+                            <span className="mb-1 block text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                              Emplacement
+                            </span>
+                            <select
+                              value={line.locationId}
+                              onChange={(e) => updateLine(line.key, { locationId: e.target.value })}
+                              disabled={!canEdit || saving}
+                              className={inputClassName}
+                            >
+                              {locations.map((loc) => (
+                                <option key={loc.id} value={loc.id}>
+                                  {formatLocationOption(loc)}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        )}
+
                         <label className="block">
                           <span className="mb-1 block text-[11px] font-medium text-slate-500 dark:text-slate-400">
                             Quantité utilisée ({line.unit})
@@ -328,7 +451,7 @@ export function InterventionArticlesDialog({
               type="button"
               onClick={addLine}
               disabled={saving}
-              className="mt-3 w-full rounded-lg border border-dashed border-slate-300 dark:border-slate-600 px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:border-brand-400 hover:text-brand-600 dark:hover:text-brand-400 disabled:opacity-50 transition"
+              className="mt-1 w-full rounded-lg border border-dashed border-slate-300 dark:border-slate-600 px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:border-brand-400 hover:text-brand-600 dark:hover:text-brand-400 disabled:opacity-50 transition"
             >
               + Ajouter un article
             </button>

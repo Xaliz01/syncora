@@ -29,6 +29,8 @@ export class ExportsController {
     @Query("priority") priority?: string,
     @Query("assigneeId") assigneeId?: string,
     @Query("search") search?: string,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
     @Res() res?: Response,
   ) {
     const orgId = parseOrganizationIdQuery(organizationId);
@@ -39,6 +41,8 @@ export class ExportsController {
       priority,
       assigneeId,
       search,
+      startDate,
+      endDate,
     });
     this.sendExport(res!, result);
   }
@@ -161,9 +165,13 @@ export class ExportsController {
   }
 
   @Get("exports/reporting/stats")
-  async getReportingStats(@Query("organizationId") organizationId: string) {
+  async getReportingStats(
+    @Query("organizationId") organizationId: string,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+  ) {
     const orgId = parseOrganizationIdQuery(organizationId);
-    return this.exportsService.getReportingStats(orgId);
+    return this.exportsService.getReportingStats(orgId, { startDate, endDate });
   }
 
   private parseFormat(format: string): ExportFormat {

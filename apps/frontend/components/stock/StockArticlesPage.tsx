@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "@/lib/stock.api";
 import { TestDataBadgeIf } from "@/components/test-data/TestDataBadge";
@@ -15,7 +16,7 @@ import {
   ListPageError,
   ListPageHeader,
   ListPageRoot,
-  ListRow,
+  ListRowLink,
   ListSearchField,
   ListTableShell,
   ListToolbar,
@@ -30,7 +31,7 @@ const MOVEMENT_TYPE_LABELS: Record<string, string> = {
   transfer: "Transfert",
 };
 
-const ARTICLES_GRID = "md:grid-cols-[0.8fr_1.2fr_0.6fr_0.5fr_0.5fr_0.5fr_0.5fr_auto]";
+const ARTICLES_GRID = "md:grid-cols-[0.8fr_1.4fr_0.6fr_0.5fr_0.5fr_0.5fr_0.6fr]";
 
 const STOCK_STATUS_COLORS: Record<string, string> = {
   out: "bg-red-50 text-red-700 border-red-200",
@@ -142,12 +143,6 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
       setMovementNote("");
       setError("");
     },
-    onError: (err: Error) => setError(err.message),
-  });
-
-  const deactivateMutation = useMutation({
-    mutationFn: (articleId: string) => api.deleteArticle(articleId),
-    onSuccess: invalidateStockQueries,
     onError: (err: Error) => setError(err.message),
   });
 
@@ -640,12 +635,15 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
               <span>Seuil</span>
               <span>Cible</span>
               <span>Statut</span>
-              <span className="text-right md:text-left">Actions</span>
             </>
           }
         >
           {articles!.map((article) => (
-            <ListRow key={article.id} gridTemplateClass={ARTICLES_GRID}>
+            <ListRowLink
+              key={article.id}
+              href={`/settings/stock/articles/${article.id}`}
+              gridTemplateClass={ARTICLES_GRID}
+            >
               <ListCellDefault className="font-mono text-xs">{article.reference}</ListCellDefault>
               <div className="min-w-0">
                 <ListCellPrimary className="block">
@@ -676,40 +674,7 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
               >
                 {STOCK_STATUS_LABELS[article.stockStatus] ?? article.stockStatus}
               </ListBadge>
-              <div className="flex flex-wrap gap-2 justify-end md:justify-start">
-                {showMovementActions && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      restockToTargetMutation.mutate({
-                        articleId: article.id,
-                        movementType: "adjustment",
-                        quantity: article.targetStock,
-                        reason: "restock",
-                        note: "Réassort au stock cible",
-                      })
-                    }
-                    disabled={
-                      restockToTargetMutation.isPending ||
-                      article.targetStock <= article.stockQuantity
-                    }
-                    className="text-xs text-brand-600 dark:text-brand-400 hover:text-brand-500 font-medium disabled:opacity-50"
-                  >
-                    Réassort
-                  </button>
-                )}
-                {showCatalogActions && article.isActive && can("stock.articles.delete") && (
-                  <button
-                    type="button"
-                    onClick={() => deactivateMutation.mutate(article.id)}
-                    disabled={deactivateMutation.isPending}
-                    className="text-xs text-slate-600 dark:text-slate-300 hover:text-slate-800 dark:hover:text-slate-100 disabled:opacity-50"
-                  >
-                    Désactiver
-                  </button>
-                )}
-              </div>
-            </ListRow>
+            </ListRowLink>
           ))}
         </ListTableShell>
       )}
@@ -731,9 +696,12 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
                   className="flex flex-col sm:flex-row sm:items-center sm:justify-between rounded-lg border border-slate-100 dark:border-slate-800 p-2 gap-1"
                 >
                   <div className="text-sm">
-                    <span className="font-medium text-slate-800 dark:text-slate-100">
+                    <Link
+                      href={`/settings/stock/articles/${movement.articleId}`}
+                      className="font-medium text-brand-600 dark:text-brand-400 hover:underline"
+                    >
                       {movement.articleName}
-                    </span>
+                    </Link>
                     <span className="ml-2 text-xs text-slate-500 dark:text-slate-400">
                       ({movement.articleReference ?? "sans ref"})
                     </span>

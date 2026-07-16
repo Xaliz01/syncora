@@ -115,12 +115,19 @@ describe("ExportsGatewayService (proxy)", () => {
         }) as never,
       );
 
-      const result = await service.getReportingStats(mockUser);
+      const result = await service.getReportingStats(mockUser, {
+        startDate: "2024-01-01",
+        endDate: "2024-01-31",
+      });
 
       expect(mockHttpService.get).toHaveBeenCalledWith(
         expect.stringContaining("/exports/reporting/stats"),
         expect.objectContaining({
-          params: { organizationId: "org-123" },
+          params: {
+            organizationId: "org-123",
+            startDate: "2024-01-01",
+            endDate: "2024-01-31",
+          },
         }),
       );
       expect(result).toEqual(stats);

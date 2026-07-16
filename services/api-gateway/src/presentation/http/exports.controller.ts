@@ -37,6 +37,8 @@ export class ExportsController {
     @Query("priority") priority?: string,
     @Query("assigneeId") assigneeId?: string,
     @Query("search") search?: string,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
     @Res() res?: Response,
   ) {
     const exportFormat = this.parseFormat(format);
@@ -46,6 +48,8 @@ export class ExportsController {
       priority,
       assigneeId,
       search,
+      startDate,
+      endDate,
     });
     this.sendExport(res!, result);
   }
@@ -162,8 +166,12 @@ export class ExportsController {
 
   @Get("reporting/stats")
   @RequireAnyPermissions("exports.reporting", "exports.cases")
-  async getReportingStats(@CurrentUser() user: AuthUser) {
-    return this.exportsService.getReportingStats(user);
+  async getReportingStats(
+    @CurrentUser() user: AuthUser,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+  ) {
+    return this.exportsService.getReportingStats(user, { startDate, endDate });
   }
 
   private parseFormat(format: string): ExportFormat {

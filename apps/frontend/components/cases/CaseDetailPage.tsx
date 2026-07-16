@@ -19,6 +19,7 @@ import { TeamSuggestionAddonGate } from "@/components/cases/TeamSuggestionAddonG
 import { CaseProgressTimeline } from "@/components/cases/CaseProgressTimeline";
 import {
   InterventionArticlesDialog,
+  resolvePreferredStockLocationId,
   type InterventionArticleUsageItem,
 } from "@/components/cases/InterventionArticlesDialog";
 import { InterventionPhotos } from "@/components/interventions/InterventionPhotos";
@@ -364,6 +365,29 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
     queryFn: () => stockApi.listArticles({ activeOnly: true }),
     enabled: canAddInterventionArticles,
   });
+
+  const { data: stockLocations = [] } = useQuery({
+    queryKey: ["stock-locations", "intervention-usage"],
+    queryFn: () => stockApi.listStockLocations(),
+    enabled: showInterventionArticles,
+  });
+
+  const canReadVehicles = canAny(["fleet.vehicles.read", "vehicles.read"]);
+  const { data: vehicles = [] } = useQuery({
+    queryKey: ["vehicles", "intervention-stock-default"],
+    queryFn: () => fleetApi.listVehicles(),
+    enabled: showInterventionArticles && canReadVehicles && stockLocations.length > 0,
+  });
+
+  const vehicleIdsByTeamId = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const vehicle of vehicles) {
+      if (vehicle.assignedTeamId) {
+        map.set(vehicle.assignedTeamId, vehicle.id);
+      }
+    }
+    return map;
+  }, [vehicles]);
 
   const { data: stockMovements } = useQuery({
     queryKey: ["stock-movements", caseId],
@@ -1525,6 +1549,11 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
               []) as InterventionArticleUsageItem[]
           }
           articles={articles ?? []}
+          locations={stockLocations}
+          preferredLocationId={resolvePreferredStockLocationId(stockLocations, {
+            assignedTeamId: articlesDialogIntervention.assignedTeamId,
+            vehicleIdsByTeamId,
+          })}
           canEdit={canAddInterventionArticles}
           onSaved={invalidateAll}
         />
