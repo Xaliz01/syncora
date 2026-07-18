@@ -24,7 +24,7 @@ stateless hormis MongoDB et le volume documents).
 
 - Docker + plugin Compose (`docker compose version`)
 - Ports 80 et 443 ouverts (et **seulement** ceux-là côté public)
-- 3 enregistrements DNS A pointant vers la VM : `exemple.fr` (landing), `app.exemple.fr`, `api.exemple.fr`
+- 4 enregistrements DNS A pointant vers la VM : `exemple.fr` (landing), `app.exemple.fr`, `api.exemple.fr`, `monitoring.exemple.fr` (Grafana)
 - Optionnel : `www.exemple.fr` → même IP (redirigé vers l'apex par Caddy)
 
 ## 2. Préparer la configuration (une fois)
@@ -219,30 +219,35 @@ Composants (profil Docker `monitoring`) :
 
 ### Activer sur la VM
 
-1. Renseigner dans `.env.production` :
+1. DNS : enregistrement A `monitoring.exemple.fr` (ou `MONITORING_DOMAIN`) → IP de la VM.
+
+2. Renseigner dans `.env.production` :
 
 ```env
+MONITORING_DOMAIN=monitoring.exemple.fr
 GRAFANA_ADMIN_USER=admin
 GRAFANA_ADMIN_PASSWORD=<mot de passe fort>
+GRAFANA_ROOT_URL=https://monitoring.exemple.fr
 GRAFANA_PORT=3030
 ```
 
-2. Démarrer (la stack applicative doit déjà tourner) :
+3. Redémarrer Caddy (pour le certificat HTTPS du sous-domaine) puis la stack monitoring :
 
 ```bash
 cd /opt/planwise/deploy
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d caddy
 docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml \
   --env-file .env.production --profile monitoring up -d
 ```
 
-3. Accéder à Grafana via **tunnel SSH** (recommandé — Grafana n'est pas exposé publiquement) :
+4. Accéder à Grafana : [https://monitoring.exemple.fr](https://monitoring.exemple.fr)
+   (login `GRAFANA_ADMIN_USER` / `GRAFANA_ADMIN_PASSWORD`).
+
+Secours tunnel SSH si besoin :
 
 ```bash
 ssh -L 3030:127.0.0.1:3030 ubuntu@<IP_VM>
 ```
-
-Puis ouvrir [http://localhost:3030](http://localhost:3030) et se connecter avec
-`GRAFANA_ADMIN_USER` / `GRAFANA_ADMIN_PASSWORD`.
 
 Un dashboard **Planwise — Infra & disponibilité** est provisionné automatiquement.
 
@@ -294,12 +299,12 @@ ne pas démarrer Grafana seul sans Prometheus.
 
 ### Notes
 
-- Prometheus et Grafana restent sur le réseau interne `planwise` (pas de port public).
-- Seul Grafana écoute sur `127.0.0.1:3030` de la VM pour le tunnel SSH.
+- Prometheus, Tempo et les exporters restent sur le réseau interne `planwise` (pas de port public).
+- Grafana est exposé via Caddy sur `MONITORING_DOMAIN` (HTTPS Let's Encrypt) ; l'auth
+  Grafana (mot de passe admin, signup désactivé) est obligatoire.
+- Le port `127.0.0.1:3030` reste disponible pour un tunnel SSH de secours.
 - Les traces APM (latence par requête HTTP, waterfall inter-services) passent par
   OpenTelemetry + Tempo ; activer avec `OTEL_TRACES_ENABLED=true`.
-- Pour exposer Grafana sur un sous-domaine HTTPS, ajouter un bloc Caddy avec
-  authentification (ne pas exposer sans protection).
 
 ## 11. Sécurité réseau
 

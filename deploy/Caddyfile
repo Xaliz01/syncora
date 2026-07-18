@@ -44,3 +44,17 @@ www.{$MARKETING_DOMAIN} {
 
 	reverse_proxy api-gateway:3000
 }
+
+# Grafana (monitoring) — auth Grafana obligatoire ; ne pas désactiver GF_AUTH
+{$MONITORING_DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+
+	reverse_proxy grafana:3000
+}

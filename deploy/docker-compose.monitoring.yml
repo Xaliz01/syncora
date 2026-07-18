@@ -9,10 +9,16 @@
 #   docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml \
 #     --env-file .env.production --profile monitoring up -d
 #
-# Accès Grafana (tunnel SSH recommandé) :
-#   ssh -L 3030:127.0.0.1:3030 ubuntu@<IP_VM>
-#   → http://localhost:3030  (Explore → Tempo pour les traces)
-
+# Accès Grafana : https://$MONITORING_DOMAIN (Caddy) ou tunnel SSH sur :3030
+#   → Explore → Tempo pour les traces
+#
+# Prérequis .env.production :
+#   MONITORING_DOMAIN=monitoring.planwise.fr
+#   GRAFANA_ROOT_URL=https://monitoring.planwise.fr
+#   GRAFANA_ADMIN_PASSWORD=...
+#   OTEL_TRACES_ENABLED=true
+#
+# DNS : enregistrement A MONITORING_DOMAIN → IP de la VM.
 services:
   prometheus:
     profiles: ["monitoring"]
@@ -78,13 +84,17 @@ services:
     container_name: planwise-grafana
     restart: unless-stopped
     networks: [planwise]
+    # Tunnel SSH de secours (accès principal via Caddy → MONITORING_DOMAIN)
     ports:
       - "127.0.0.1:${GRAFANA_PORT:-3030}:3000"
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD requis pour activer le monitoring}
       GF_USERS_ALLOW_SIGN_UP: "false"
-      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://localhost:3030}
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:?GRAFANA_ROOT_URL requis (ex. https://monitoring.planwise.fr)}
+      GF_SERVER_DOMAIN: ${MONITORING_DOMAIN:?MONITORING_DOMAIN requis}
+      GF_SECURITY_COOKIE_SECURE: "true"
+      GF_SECURITY_COOKIE_SAMESITE: lax
       GF_AUTH_ANONYMOUS_ENABLED: "false"
     volumes:
       - grafana-data:/var/lib/grafana
