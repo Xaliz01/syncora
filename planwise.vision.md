@@ -96,7 +96,7 @@ Référence technique : landing `apps/frontend/components/landing/LandingPage.ts
 
 - Application **web PWA** (installable, cache offline des listes du jour) ; pas d’app native.
 - **Une adresse** par client ; pas de multi-sites ni d’équipements installés.
-- Pas de **devis / facturation** métier intégrés.
+- Pas de **facturation** métier intégrée (devis léger + pont Pennylane / export).
 - Pas de **portail client** ni SMS automatiques métier (email et push PWA opérationnels).
 - Pas de listes de **pièces fréquentes** par type d’intervention (phase 4.2) ni scan code-barres.
 - Clôture intervention depuis le bureau ou le mobile (photos terrain OK) ; **signature client** et **rapport PDF** disponibles sur intervention terminée.
@@ -160,12 +160,12 @@ Objectif : un client pro avec plusieurs lieux d’intervention.
 
 Objectif : boucler avec l’outil compta existant de l’artisan.
 
-| #   | Évolution                                                           | Pourquoi (TPE)        | Statut |
-| --- | ------------------------------------------------------------------- | --------------------- | ------ |
-| 3.1 | **Devis simple** (lignes, TVA, PDF) lié au dossier                  | Avant intervention    | ✅     |
-| 3.2 | **Export** dossier / intervention (CSV, PDF)                        | Saisie compta externe | ✅     |
-| 3.3 | **Intégration** 1ère brique compta FR (à choisir : Pennylane, etc.) | Réduire double saisie | ⬜     |
-| 3.4 | Statut métier « **À facturer** » sur dossier / intervention         | Pont vers compta      | ✅     |
+| #   | Évolution                                                   | Pourquoi (TPE)        | Statut |
+| --- | ----------------------------------------------------------- | --------------------- | ------ |
+| 3.1 | **Devis simple** (lignes, TVA, PDF) lié au dossier          | Avant intervention    | ✅     |
+| 3.2 | **Export** dossier / intervention (CSV, PDF)                | Saisie compta externe | ✅     |
+| 3.3 | **Intégration** 1ère brique compta FR (**Pennylane**)       | Réduire double saisie | ✅     |
+| 3.4 | Statut métier « **À facturer** » sur dossier / intervention | Pont vers compta      | ✅     |
 
 _Hors scope phase 3_ : gestion complète des paiements, relances, compta générale.
 

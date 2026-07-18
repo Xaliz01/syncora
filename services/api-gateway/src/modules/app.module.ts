@@ -21,6 +21,7 @@ import { OrganizationsModule } from "./organizations.module";
 import { NotificationsModule } from "./notifications.module";
 import { DocumentsModule } from "./documents.module";
 import { ExportsModule } from "./exports.module";
+import { IntegrationsModule } from "./integrations.module";
 import { GatewayHttpModule } from "./gateway-http.module";
 import { TrialTestDataModule } from "./trial-test-data.module";
 
@@ -43,6 +44,7 @@ import { TrialTestDataModule } from "./trial-test-data.module";
     NotificationsModule,
     DocumentsModule,
     ExportsModule,
+    IntegrationsModule,
     TrialTestDataModule,
   ],
   controllers: [AppController],

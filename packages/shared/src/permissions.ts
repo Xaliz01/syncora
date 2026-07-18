@@ -82,6 +82,9 @@ export const ASSIGNABLE_PERMISSION_CODES = [
   "exports.customers",
   "exports.interventions",
   "exports.reporting",
+  "integrations.pennylane.read",
+  "integrations.pennylane.configure",
+  "integrations.pennylane.sync",
 ] as const;
 
 export type AssignablePermissionCode = (typeof ASSIGNABLE_PERMISSION_CODES)[number];

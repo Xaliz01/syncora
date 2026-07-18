@@ -419,6 +419,21 @@ export const PERMISSION_METADATA: Record<PermissionCode, PermissionMetadata> = {
     description:
       "Accéder aux tableaux de reporting et exporter les rapports d'activité (techniciens, kilométrique).",
   },
+  "integrations.pennylane.read": {
+    code: "integrations.pennylane.read",
+    label: "Voir la connexion Pennylane",
+    description: "Consulter l’état de la connexion à Pennylane.",
+  },
+  "integrations.pennylane.configure": {
+    code: "integrations.pennylane.configure",
+    label: "Configurer Pennylane",
+    description: "Connecter ou déconnecter le compte Pennylane de l’organisation.",
+  },
+  "integrations.pennylane.sync": {
+    code: "integrations.pennylane.sync",
+    label: "Envoyer vers Pennylane",
+    description: "Créer une facture brouillon dans Pennylane depuis un dossier à facturer.",
+  },
 };
 
 export function getPermissionLabel(permissionCode: PermissionCode): string {

@@ -295,6 +295,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (hasPermission(user, "notifications.manage_preferences")) {
       settingsLinks.push({ label: "Notifications", href: "/settings/notifications" });
     }
+    if (hasPermission(user, "integrations.pennylane.read")) {
+      settingsLinks.push({ label: "Intégrations", href: "/settings/integrations" });
+    }
     if (settingsLinks.length > 0) {
       menuSections.push({ label: "Paramètres", links: settingsLinks });
     }

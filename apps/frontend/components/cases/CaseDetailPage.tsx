@@ -26,9 +26,11 @@ import { InterventionPhotos } from "@/components/interventions/InterventionPhoto
 import { InterventionSignatureDialog } from "@/components/interventions/InterventionSignatureDialog";
 import { CUSTOMER_KIND_LABELS } from "@/components/customers/customer-kind-labels";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { useToast } from "@/components/ui/ToastProvider";
 import { ResourceNotFoundPanel } from "@/components/ui/AppErrorAlert";
 import { ExportButton } from "@/components/ui/ExportButton";
 import * as exportsApi from "@/lib/exports.api";
+import * as integrationsApi from "@/lib/integrations.api";
 import { usePermissions } from "@/lib/hooks/usePermissions";
 import { getTeamCalendarCardAppearance } from "@/lib/team-calendar-colors";
 import { useIsDarkMode } from "@/lib/use-is-dark-mode";
@@ -310,8 +312,10 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const confirm = useConfirm();
+  const { showToast } = useToast();
   const { can, canAny } = usePermissions();
   const canAssignCase = canAny(["cases.assign", "cases.update"]);
+  const canSyncPennylane = can("integrations.pennylane.sync");
   const canViewInterventionArticles = can("stock.interventions.read");
   const canAddInterventionArticles = can("stock.interventions.create");
   const showInterventionArticles = canViewInterventionArticles || canAddInterventionArticles;
@@ -457,6 +461,17 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   const billingStatusMutation = useMutation({
     mutationFn: (billingStatus: string) => api.updateCase(caseId, { billingStatus }),
     onSuccess: invalidateAll,
+  });
+
+  const pennylaneSyncMutation = useMutation({
+    mutationFn: () => integrationsApi.syncCaseToPennylane(caseId),
+    onSuccess: (result) => {
+      invalidateAll();
+      showToast(
+        result.draft ? "Facture brouillon créée dans Pennylane." : "Facture créée dans Pennylane.",
+      );
+    },
+    onError: (err: Error) => showToast(err.message, "error"),
   });
 
   const updateMutation = useMutation({
@@ -1000,6 +1015,18 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                         )}
                       </select>
                     </span>
+                  )}
+                  {canSyncPennylane && caseData.billingStatus === "to_invoice" && (
+                    <button
+                      type="button"
+                      disabled={pennylaneSyncMutation.isPending}
+                      onClick={() => pennylaneSyncMutation.mutate()}
+                      className="rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-0.5 text-[11px] font-medium text-brand-700 dark:text-brand-300 hover:bg-brand-50 dark:hover:bg-brand-950/40 disabled:opacity-50"
+                    >
+                      {pennylaneSyncMutation.isPending
+                        ? "Envoi Pennylane…"
+                        : "Envoyer vers Pennylane"}
+                    </button>
                   )}
                 </>
               }

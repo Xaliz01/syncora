@@ -15,5 +15,6 @@ export * from "./soft-delete";
 export * from "./organization-scope";
 export * from "./export";
 export * from "./quote";
+export * from "./integrations";
 export * from "./support";
 export * from "./test-data";

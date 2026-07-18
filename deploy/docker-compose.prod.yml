@@ -22,6 +22,7 @@ x-service-urls: &service-urls
   NOTIFICATIONS_SERVICE_URL: http://notifications-service:3010
   DOCUMENTS_SERVICE_URL: http://documents-service:3011
   EXPORTS_SERVICE_URL: http://exports-service:3012
+  INTEGRATIONS_SERVICE_URL: http://integrations-service:3013
 
 x-healthcheck: &tcp-healthcheck
   test:
@@ -222,6 +223,25 @@ services:
       PORT: "3012"
     healthcheck: *tcp-healthcheck
 
+  integrations-service:
+    <<: *backend
+    image: ${REGISTRY}/planwise-integrations-service:${IMAGE_TAG:-latest}
+    environment:
+      <<: *service-urls
+      OTEL_TRACES_ENABLED: ${OTEL_TRACES_ENABLED:-false}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
+      NODE_ENV: production
+      PORT: "3013"
+      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-integrations
+      INTEGRATIONS_ENCRYPTION_KEY: ${INTEGRATIONS_ENCRYPTION_KEY:?INTEGRATIONS_ENCRYPTION_KEY requis (64 hex)}
+      PENNYLANE_API_BASE_URL: ${PENNYLANE_API_BASE_URL:-https://app.pennylane.com/api/external/v2}
+      PENNYLANE_CLIENT_ID: ${PENNYLANE_CLIENT_ID:-}
+      PENNYLANE_CLIENT_SECRET: ${PENNYLANE_CLIENT_SECRET:-}
+      PENNYLANE_OAUTH_REDIRECT_URI: ${PENNYLANE_OAUTH_REDIRECT_URI:-}
+      PENNYLANE_OAUTH_SCOPES: ${PENNYLANE_OAUTH_SCOPES:-customers:all customer_invoices:all}
+      APP_URL: ${APP_URL:-https://app.planwise.fr}
+    healthcheck: *tcp-healthcheck
+
   # ── API Gateway (exposée via Caddy) ─────────────────────────
   api-gateway:
     image: ${REGISTRY}/planwise-api-gateway:${IMAGE_TAG:-latest}
@@ -251,6 +271,7 @@ services:
       - notifications-service
       - documents-service
       - exports-service
+      - integrations-service
     healthcheck: *tcp-healthcheck
 
   # ── Frontend Next.js (exposé via Caddy) ─────────────────────

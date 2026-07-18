@@ -18,5 +18,6 @@ import { SubscriptionsModule } from "./subscriptions.module";
     { provide: AbstractCasesGatewayService, useClass: CasesGatewayService },
     RequirePermissionGuard,
   ],
+  exports: [AbstractCasesGatewayService],
 })
 export class CasesModule {}

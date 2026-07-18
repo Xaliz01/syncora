@@ -58,6 +58,7 @@ jobs:
           - services/notifications-service
           - services/documents-service
           - services/exports-service
+          - services/integrations-service
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js
@@ -106,6 +107,7 @@ jobs:
           - "@planwise/notifications-service"
           - "@planwise/documents-service"
           - "@planwise/exports-service"
+          - "@planwise/integrations-service"
           - "@planwise/api-gateway"
     steps:
       - uses: actions/checkout@v4

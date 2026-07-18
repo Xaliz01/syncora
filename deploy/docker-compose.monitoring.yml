@@ -5,9 +5,20 @@
 #
 # Activer les traces dans .env.production : OTEL_TRACES_ENABLED=true
 #
-# Démarrage monitoring :
+# Relancer uniquement le monitoring (sans recréer l'app) :
 #   docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml \
-#     --env-file .env.production --profile monitoring up -d
+#     --env-file .env.production --profile monitoring up -d \
+#     prometheus tempo otel-collector grafana node-exporter cadvisor blackbox-exporter
+#
+# Deploy CD (app + monitoring) — IMAGE_TAG est exporté puis persisté dans .env.production :
+#   docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml \
+#     --env-file .env.production --profile monitoring up -d --remove-orphans
+#
+# Ne pas lancer uniquement docker-compose.prod.yml avec --remove-orphans :
+# cela arrête Grafana et provoque un 502 sur MONITORING_DOMAIN.
+#
+# Ne pas faire un `up` global sans le IMAGE_TAG de la dernière CD : Compose
+# recréerait l'app avec le tag du .env (souvent ancien / latest).
 #
 # Accès Grafana : https://$MONITORING_DOMAIN (Caddy) ou tunnel SSH sur :3030
 #   → Explore → Tempo pour les traces

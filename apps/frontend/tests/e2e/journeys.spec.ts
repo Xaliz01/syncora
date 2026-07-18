@@ -87,6 +87,7 @@ const ALL_PROTECTED_PATHS = [
   "/settings/stock/articles",
   "/settings/stock/locations",
   "/settings/notifications",
+  "/settings/integrations",
 ];
 
 test.describe("Protection exhaustive des routes", () => {

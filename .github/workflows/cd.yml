@@ -83,6 +83,7 @@ jobs:
           - notifications-service
           - documents-service
           - exports-service
+          - integrations-service
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
@@ -182,7 +183,25 @@ jobs:
             # IMAGE_TAG/REGISTRY surchargent les valeurs du .env.production (secrets locaux conservés sur la VM).
             export REGISTRY IMAGE_TAG
             docker compose -f docker-compose.prod.yml --env-file .env.production pull
-            docker compose -f docker-compose.prod.yml --env-file .env.production up -d --remove-orphans
+            # Un seul `up` avec les deux fichiers + profil monitoring : évite que
+            # `--remove-orphans` (prod seul) tue Grafana/Prometheus et provoque un 502
+            # sur MONITORING_DOMAIN.
+            docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml \
+              --env-file .env.production --profile monitoring pull
+            docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml \
+              --env-file .env.production --profile monitoring up -d --remove-orphans
+            # Persister le tag déployé : un `compose up` manuel sans export IMAGE_TAG
+            # ne doit pas recréer l'app avec un ancien tag du .env.production.
+            if grep -q '^IMAGE_TAG=' .env.production; then
+              sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=${IMAGE_TAG}/" .env.production
+            else
+              printf '\nIMAGE_TAG=%s\n' "$IMAGE_TAG" >> .env.production
+            fi
+            if grep -q '^REGISTRY=' .env.production; then
+              sed -i "s|^REGISTRY=.*|REGISTRY=${REGISTRY}|" .env.production
+            else
+              printf 'REGISTRY=%s\n' "$REGISTRY" >> .env.production
+            fi
             docker image prune -f
             docker logout ghcr.io
 

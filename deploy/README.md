@@ -231,14 +231,23 @@ GRAFANA_ROOT_URL=https://monitoring.exemple.fr
 GRAFANA_PORT=3030
 ```
 
-3. Redémarrer Caddy (pour le certificat HTTPS du sous-domaine) puis la stack monitoring :
+3. La CD démarre automatiquement l’app **et** le profil monitoring, et **persiste**
+   `IMAGE_TAG` / `REGISTRY` dans `.env.production`.
+
+   Pour (re)démarrer **uniquement** le monitoring sans toucher aux images app :
 
 ```bash
 cd /opt/planwise/deploy
-docker compose -f docker-compose.prod.yml --env-file .env.production up -d caddy
 docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml \
-  --env-file .env.production --profile monitoring up -d
+  --env-file .env.production --profile monitoring up -d \
+  prometheus tempo otel-collector grafana node-exporter cadvisor blackbox-exporter
 ```
+
+Éviter un `up` global sans le bon `IMAGE_TAG` : Compose recréerait l’app avec le
+tag du `.env.production` (souvent `latest` ou une ancienne version).
+
+Prérequis `.env.production` : `MONITORING_DOMAIN`, `GRAFANA_ADMIN_PASSWORD`, `GRAFANA_ROOT_URL`
+(sinon le deploy CD échoue au démarrage de Grafana).
 
 4. Accéder à Grafana : [https://monitoring.exemple.fr](https://monitoring.exemple.fr)
    (login `GRAFANA_ADMIN_USER` / `GRAFANA_ADMIN_PASSWORD`).

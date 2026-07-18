@@ -48,7 +48,11 @@ tech:
         - "DD_SERVICE, DD_ENV, DD_VERSION (Datadog)"
         - "STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_PRICE_ID (abonnements ; webhook → subscriptions-service :3008/webhooks/stripe)"
         - "SUBSCRIPTIONS_SERVICE_URL (gateway → microservice abonnements)"
-        - "CUSTOMERS_SERVICE_URL (gateway → microservice clients, défaut localhost:3009 ; Mongo planwise-customers)"
+        - "EXPORTS_SERVICE_URL (gateway → microservice exports, défaut localhost:3012)"
+        - "INTEGRATIONS_SERVICE_URL (gateway → microservice intégrations / Pennylane, défaut localhost:3013)"
+        - "INTEGRATIONS_ENCRYPTION_KEY (chiffrement des tokens API partenaires, 64 hex)"
+        - "PENNYLANE_CLIENT_ID / PENNYLANE_CLIENT_SECRET (OAuth app Partnerships ; bouton Connecter avec Pennylane)"
+        - "PENNYLANE_OAUTH_REDIRECT_URI ou APP_URL (callback /settings/integrations/pennylane/callback)"
     ci_cd:
       provider: GitHub Actions
       pipeline:
