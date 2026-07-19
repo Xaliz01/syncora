@@ -528,7 +528,7 @@ export class ExportsService extends AbstractExportsService {
     interventions: InterventionResponse[],
   ): Promise<Buffer> {
     return new Promise((resolve, reject) => {
-      const doc = new PDFDocument({ size: "A4", margin: 50 });
+      const doc = new PDFDocument({ size: "A4", margin: 50, bufferPages: true });
       const chunks: Buffer[] = [];
       doc.on("data", (chunk: Buffer) => chunks.push(chunk));
       doc.on("end", () => resolve(Buffer.concat(chunks)));
@@ -621,7 +621,7 @@ export class ExportsService extends AbstractExportsService {
           cancelled: "Annulée",
         };
         for (const intv of interventions) {
-          if (doc.y > 700) doc.addPage();
+          if (doc.y > doc.page.height - 70) doc.addPage();
           doc
             .fontSize(10)
             .fillColor("#1e293b")
@@ -1222,6 +1222,7 @@ export class ExportsService extends AbstractExportsService {
       const doc = new PDFDocument({
         size: "A4",
         margin: 50,
+        bufferPages: true,
         layout: rows[0]?.length > 5 ? "landscape" : "portrait",
       });
       const chunks: Buffer[] = [];
@@ -1239,6 +1240,7 @@ export class ExportsService extends AbstractExportsService {
       const cellPadX = 4;
       const cellPadY = 4;
       const minRowHeight = 18;
+      const contentBottom = () => doc.page.height - 70;
 
       doc.rect(startX, doc.y, pageWidth, 20).fill("#6d28d9");
       const headerY = doc.y + 6;
@@ -1252,41 +1254,53 @@ export class ExportsService extends AbstractExportsService {
       doc.y = headerY + 16;
 
       doc.fillColor("#1e293b");
-      for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
-        const row = rows[rowIdx]!;
-        doc.fontSize(8);
-        const cellTextWidth = colWidth - cellPadX * 2;
-        const heights = row.map((cell) =>
-          doc.heightOfString(String(cell ?? ""), { width: cellTextWidth }),
+      rows.forEach((row, rowIndex) => {
+        const cellHeights = row.map((cell) =>
+          Math.max(
+            minRowHeight,
+            doc.heightOfString(String(cell ?? ""), {
+              width: colWidth - cellPadX * 2,
+            }) +
+              cellPadY * 2,
+          ),
         );
-        const contentHeight = Math.max(10, ...heights);
-        const rowHeight = Math.max(minRowHeight, contentHeight + cellPadY * 2);
+        const rowHeight = Math.max(...cellHeights, minRowHeight);
 
-        if (doc.y + rowHeight > doc.page.height - 70) {
+        if (doc.y + rowHeight > contentBottom()) {
           doc.addPage();
           doc.y = 50;
-        }
-
-        const rowY = doc.y;
-        if (rowIdx % 2 === 0) {
-          doc.rect(startX, rowY, pageWidth, rowHeight).fill("#f8fafc");
+          doc.rect(startX, doc.y, pageWidth, 20).fill("#6d28d9");
+          const hY = doc.y + 6;
+          doc.fontSize(8).fillColor("#ffffff");
+          headers.forEach((h, i) => {
+            doc.text(h, startX + i * colWidth + cellPadX, hY, {
+              width: colWidth - cellPadX * 2,
+              lineBreak: false,
+            });
+          });
+          doc.y = hY + 16;
           doc.fillColor("#1e293b");
         }
-        row.forEach((cell, i) => {
-          doc
-            .fontSize(8)
-            .fillColor("#1e293b")
-            .text(String(cell ?? ""), startX + i * colWidth + cellPadX, rowY + cellPadY, {
-              width: cellTextWidth,
-              height: rowHeight - cellPadY * 2,
-              lineBreak: true,
-              ellipsis: false,
-            });
-        });
-        // PDFKit advances doc.y when drawing multi-line cell text — pin the next row.
-        doc.y = rowY + rowHeight;
-      }
 
+        if (rowIndex % 2 === 0) {
+          doc.rect(startX, doc.y, pageWidth, rowHeight).fill("#f8fafc");
+          doc.fillColor("#1e293b");
+        }
+
+        const rowY = doc.y + cellPadY;
+        doc.fontSize(8);
+        row.forEach((cell, i) => {
+          doc.text(String(cell ?? ""), startX + i * colWidth + cellPadX, rowY, {
+            width: colWidth - cellPadX * 2,
+          });
+        });
+        doc.y += rowHeight;
+      });
+
+      if (doc.y + 20 > contentBottom()) {
+        doc.addPage();
+        doc.y = 50;
+      }
       doc.y += 10;
       doc.fontSize(8).fillColor("#94a3b8").text(`${rows.length} enregistrement(s)`, 50, doc.y);
 
@@ -1310,19 +1324,35 @@ export class ExportsService extends AbstractExportsService {
   }
 
   private pdfFooter(doc: PDFKit.PDFDocument): void {
-    const bottomY = doc.page.height - 40;
-    doc
-      .fontSize(7)
-      .fillColor("#94a3b8")
-      .text(
-        `Généré le ${this.formatDateTimeFr(new Date().toISOString())} — Planwise`,
-        50,
-        bottomY,
-        {
-          align: "center",
-          width: doc.page.width - 100,
-        },
-      );
+    const label = `Généré le ${this.formatDateTimeFr(new Date().toISOString())} — Planwise`;
+    const range = doc.bufferedPageRange();
+    for (let i = range.start; i < range.start + range.count; i++) {
+      doc.switchToPage(i);
+      // Éviter un addPage auto si le texte est sous margin.bottom.
+      const margins = doc.page.margins;
+      const prevBottom = margins.bottom;
+      margins.bottom = 0;
+      try {
+        const lineY = doc.page.height - 44;
+        const textY = doc.page.height - 36;
+        doc
+          .moveTo(50, lineY)
+          .lineTo(doc.page.width - 50, lineY)
+          .strokeColor("#e2e8f0")
+          .lineWidth(0.5)
+          .stroke();
+        doc
+          .fontSize(7)
+          .fillColor("#94a3b8")
+          .text(label, 50, textY, {
+            align: "center",
+            width: doc.page.width - 100,
+            lineBreak: false,
+          });
+      } finally {
+        margins.bottom = prevBottom;
+      }
+    }
   }
 
   private pdfSectionTitle(doc: PDFKit.PDFDocument, title: string): void {

@@ -12,6 +12,7 @@ import { listOrganizationUsers } from "@/lib/admin.api";
 import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
 import { CaseHistory } from "@/components/cases/CaseHistory";
 import { CaseQuotesSection } from "@/components/cases/CaseQuotesSection";
+import { CaseBillingBanner } from "@/components/cases/CaseBillingBanner";
 import { CaseAssigneesTagsInput } from "@/components/cases/CaseAssigneesTagsInput";
 import { CaseCustomerPicker } from "@/components/cases/CaseCustomerPicker";
 import { CaseInterventionSitePicker } from "@/components/cases/CaseInterventionSitePicker";
@@ -995,39 +996,6 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                       ))}
                     </span>
                   )}
-                  {canAny(["cases.manage_billing", "cases.update"]) && (
-                    <span className="flex items-center gap-1.5">
-                      <span className="text-slate-500 dark:text-slate-400 text-[11px]">
-                        Facturation :
-                      </span>
-                      <select
-                        value={caseData.billingStatus ?? "none"}
-                        onChange={(e) => billingStatusMutation.mutate(e.target.value)}
-                        disabled={billingStatusMutation.isPending}
-                        className="rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-0.5 text-[11px] font-medium text-slate-700 dark:text-slate-200 focus:border-brand-500 focus:outline-none disabled:opacity-50"
-                      >
-                        {(Object.entries(BILLING_STATUS_LABELS) as [BillingStatus, string][]).map(
-                          ([value, label]) => (
-                            <option key={value} value={value}>
-                              {label}
-                            </option>
-                          ),
-                        )}
-                      </select>
-                    </span>
-                  )}
-                  {canSyncPennylane && caseData.billingStatus === "to_invoice" && (
-                    <button
-                      type="button"
-                      disabled={pennylaneSyncMutation.isPending}
-                      onClick={() => pennylaneSyncMutation.mutate()}
-                      className="rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-0.5 text-[11px] font-medium text-brand-700 dark:text-brand-300 hover:bg-brand-50 dark:hover:bg-brand-950/40 disabled:opacity-50"
-                    >
-                      {pennylaneSyncMutation.isPending
-                        ? "Envoi Pennylane…"
-                        : "Envoyer vers Pennylane"}
-                    </button>
-                  )}
                 </>
               }
               progress={caseData.progress}
@@ -1044,6 +1012,28 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
           )}
         </div>
       </div>
+
+      {(canAny(["cases.manage_billing", "cases.update"]) ||
+        (caseData.billingStatus && caseData.billingStatus !== "none")) && (
+        <CaseBillingBanner
+          status={caseData.billingStatus ?? "none"}
+          canEdit={canAny(["cases.manage_billing", "cases.update"])}
+          pending={billingStatusMutation.isPending}
+          onChange={(billingStatus) => billingStatusMutation.mutate(billingStatus)}
+          pennylaneAction={
+            canSyncPennylane && caseData.billingStatus === "to_invoice" ? (
+              <button
+                type="button"
+                disabled={pennylaneSyncMutation.isPending}
+                onClick={() => pennylaneSyncMutation.mutate()}
+                className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 shadow-sm"
+              >
+                {pennylaneSyncMutation.isPending ? "Envoi Pennylane…" : "Envoyer vers Pennylane"}
+              </button>
+            ) : undefined
+          }
+        />
+      )}
 
       {!isEditing && (
         <>

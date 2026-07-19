@@ -47,6 +47,10 @@ export class OrganizationDocument extends Document {
   @Prop()
   country?: string;
 
+  /** ID document (image) utilisé comme logo sur les devis. */
+  @Prop()
+  logoDocumentId?: string;
+
   @Prop({ type: Date })
   deletedAt?: Date | null;
 

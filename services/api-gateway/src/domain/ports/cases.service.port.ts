@@ -254,4 +254,6 @@ export abstract class AbstractCasesGatewayService {
   ): Promise<QuoteResponse>;
   abstract deleteQuote(user: AuthUser, quoteId: string): Promise<{ deleted: true }>;
   abstract generateQuotePdf(user: AuthUser, quoteId: string): Promise<Buffer>;
+
+  abstract previewQuotePdf(user: AuthUser, body: CreateQuoteForOrgBody): Promise<Buffer>;
 }

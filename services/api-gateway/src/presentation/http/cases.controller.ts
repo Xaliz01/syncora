@@ -336,6 +336,19 @@ export class CasesController {
     return this.casesService.deleteQuote(user, quoteId);
   }
 
+  @Post("quotes/preview-pdf")
+  @RequirePermissions("quotes.read")
+  async previewQuotePdf(
+    @CurrentUser() user: AuthUser,
+    @Body() body: CreateQuoteForOrgBody,
+    @Res() res: Response,
+  ) {
+    const pdfBuffer = await this.casesService.previewQuotePdf(user, body);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", 'inline; filename="devis-apercu.pdf"');
+    res.send(pdfBuffer);
+  }
+
   @Get("quotes/:quoteId/pdf")
   @RequirePermissions("quotes.read")
   async generateQuotePdf(

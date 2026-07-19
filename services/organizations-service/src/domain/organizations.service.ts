@@ -34,6 +34,7 @@ export class OrganizationsService extends AbstractOrganizationsService {
       postalCode: doc.postalCode,
       city: doc.city,
       country: doc.country,
+      logoDocumentId: doc.logoDocumentId || undefined,
       createdAt: doc.get("createdAt")?.toISOString(),
       updatedAt: doc.get("updatedAt")?.toISOString(),
       trialTestData: doc.trialTestData
@@ -75,6 +76,9 @@ export class OrganizationsService extends AbstractOrganizationsService {
     if (body.postalCode !== undefined) update.postalCode = body.postalCode || null;
     if (body.city !== undefined) update.city = body.city || null;
     if (body.country !== undefined) update.country = body.country || null;
+    if (body.logoDocumentId !== undefined) {
+      update.logoDocumentId = body.logoDocumentId?.trim() || null;
+    }
 
     const doc = await this.organizationModel
       .findOneAndUpdate({ _id: id, ...activeDocumentFilter }, { $set: update }, { new: true })

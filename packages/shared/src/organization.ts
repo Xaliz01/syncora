@@ -27,6 +27,8 @@ export interface UpdateOrganizationBody {
   postalCode?: string | null;
   city?: string | null;
   country?: string | null;
+  /** Document image (documents-service) servant de logo — null pour retirer. */
+  logoDocumentId?: string | null;
 }
 
 export interface OrganizationResponse {
@@ -40,6 +42,7 @@ export interface OrganizationResponse {
   postalCode?: string;
   city?: string;
   country?: string;
+  logoDocumentId?: string;
   createdAt?: string;
   updatedAt?: string;
   trialTestData?: OrganizationTrialTestData;

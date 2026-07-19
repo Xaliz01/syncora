@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/ToastProvider";
 import { PostalAddressFields } from "@/components/address/PostalAddressFields";
 import * as organizationsApi from "@/lib/organizations.api";
 import { hasPermission } from "@/lib/auth-permissions";
+import { OrganizationLogoSection } from "@/components/organization/OrganizationLogoSection";
 function formatValue(value: string | undefined | null) {
   const v = value?.trim();
   return v && v.length > 0 ? v : "—";
@@ -263,6 +264,8 @@ export function OrganizationPage() {
           </dl>
         )}
       </section>
+
+      <OrganizationLogoSection />
     </div>
   );
 }

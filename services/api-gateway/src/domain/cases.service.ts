@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, Injectable } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
 import type {
@@ -35,6 +35,7 @@ import type {
   UpdateTodoBody,
   UserPermissionAssignmentResponse,
   UserResponse,
+  OrganizationResponse,
   QuoteResponse,
   QuoteSummaryResponse,
 } from "@planwise/shared";
@@ -63,6 +64,7 @@ const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
 const PERMISSIONS_URL = process.env.PERMISSIONS_SERVICE_URL ?? "http://localhost:3003";
 const TECHNICIANS_URL = process.env.TECHNICIANS_SERVICE_URL ?? "http://localhost:3006";
 const DOCUMENTS_URL = process.env.DOCUMENTS_SERVICE_URL ?? "http://localhost:3011";
+const ORGANIZATIONS_URL = process.env.ORGANIZATIONS_SERVICE_URL ?? "http://localhost:3001";
 
 @Injectable()
 export class CasesGatewayService extends AbstractCasesGatewayService {
@@ -615,12 +617,84 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       query: { organizationId: user.organizationId },
     }).then((c) => this.enrichCaseResponse(user, c));
 
-    return this.buildQuotePdf(quote, caseData);
+    const org = await this.fetchOrganization(user.organizationId);
+    const logo = org?.logoDocumentId
+      ? await this.fetchDocumentImageBuffer(user.organizationId, org.logoDocumentId)
+      : null;
+
+    return this.buildQuotePdf(quote, caseData, { logo, organizationName: org?.name });
   }
 
-  private buildQuotePdf(quote: QuoteResponse, caseData: CaseResponse): Promise<Buffer> {
+  async previewQuotePdf(user: AuthUser, body: CreateQuoteForOrgBody): Promise<Buffer> {
+    if (!body.caseId?.trim()) {
+      throw new BadRequestException("caseId est requis.");
+    }
+    if (!body.lines?.length) {
+      throw new BadRequestException("Au moins une ligne est requise pour la prévisualisation.");
+    }
+    const caseData = await this.callCasesService<CaseResponse>(user.organizationId, {
+      method: "get",
+      path: `/cases/${body.caseId}`,
+      query: { organizationId: user.organizationId },
+    }).then((c) => this.enrichCaseResponse(user, c));
+
+    const quote = this.buildPreviewQuote(user.organizationId, body);
+    const org = await this.fetchOrganization(user.organizationId);
+    const logo = org?.logoDocumentId
+      ? await this.fetchDocumentImageBuffer(user.organizationId, org.logoDocumentId)
+      : null;
+
+    return this.buildQuotePdf(quote, caseData, { logo, organizationName: org?.name });
+  }
+
+  private buildPreviewQuote(organizationId: string, body: CreateQuoteForOrgBody): QuoteResponse {
+    const lines = body.lines
+      .filter((l) => l.description?.trim())
+      .map((l, index) => {
+        const quantity = Number(l.quantity) || 0;
+        const unitPrice = Number(l.unitPrice) || 0;
+        const tvaRate = Number(l.tvaRate) as QuoteResponse["lines"][0]["tvaRate"];
+        const totalHt = Math.round(quantity * unitPrice * 100) / 100;
+        const totalTtc = Math.round(totalHt * (1 + tvaRate / 100) * 100) / 100;
+        return {
+          id: `preview-${index}`,
+          articleId: l.articleId,
+          description: l.description.trim(),
+          quantity,
+          unitPrice,
+          tvaRate,
+          unit: l.unit,
+          totalHt,
+          totalTtc,
+        };
+      });
+    const totalHt = Math.round(lines.reduce((s, l) => s + l.totalHt, 0) * 100) / 100;
+    const totalTtc = Math.round(lines.reduce((s, l) => s + l.totalTtc, 0) * 100) / 100;
+    const totalTva = Math.round((totalTtc - totalHt) * 100) / 100;
+    return {
+      id: "preview",
+      organizationId,
+      caseId: body.caseId,
+      quoteNumber: "BROUILLON",
+      subject: body.subject?.trim() || undefined,
+      notes: body.notes?.trim() || undefined,
+      status: "draft",
+      validUntil: body.validUntil || undefined,
+      lines,
+      totalHt,
+      totalTva,
+      totalTtc,
+      createdAt: new Date().toISOString(),
+    };
+  }
+
+  private buildQuotePdf(
+    quote: QuoteResponse,
+    caseData: CaseResponse,
+    options?: { logo?: Buffer | null; organizationName?: string },
+  ): Promise<Buffer> {
     return new Promise((resolve, reject) => {
-      const doc = new PDFDocument({ size: "A4", margin: 50 });
+      const doc = new PDFDocument({ size: "A4", margin: 50, bufferPages: true });
       const chunks: Buffer[] = [];
       doc.on("data", (chunk: Buffer) => chunks.push(chunk));
       doc.on("end", () => resolve(Buffer.concat(chunks)));
@@ -630,18 +704,44 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       const textColor = "#1e293b";
       const mutedColor = "#64748b";
       const customer = caseData.customer;
+      const contentBottom = () => doc.page.height - 80;
+      const logo = options?.logo;
 
-      // Header
+      // Header — logo org en haut à gauche, titre Devis à droite / en dessous
+      let headerBottom = 72;
+      if (logo) {
+        try {
+          doc.image(logo, 50, 28, { fit: [120, 48] });
+          doc.fontSize(20).fillColor(brandColor).text("Devis", 185, 36, { width: 310 });
+          if (options?.organizationName) {
+            doc
+              .fontSize(9)
+              .fillColor(mutedColor)
+              .text(options.organizationName, 185, 58, { width: 310 });
+          }
+          headerBottom = 88;
+        } catch {
+          doc.fontSize(22).fillColor(brandColor).text("Devis", 50, 40);
+          headerBottom = 72;
+        }
+      } else {
+        doc.fontSize(22).fillColor(brandColor).text("Devis", 50, 40);
+        if (options?.organizationName) {
+          doc
+            .fontSize(9)
+            .fillColor(mutedColor)
+            .text(options.organizationName, 50, 64, { width: 495 });
+          headerBottom = 82;
+        }
+      }
+
       doc
-        .fontSize(22)
-        .fillColor(brandColor)
-        .text("Planwise", 50, 40)
-        .fontSize(10)
-        .fillColor(mutedColor)
-        .text("Devis", 50, 65);
-
-      doc.moveTo(50, 85).lineTo(545, 85).strokeColor("#e2e8f0").lineWidth(1).stroke();
-      doc.y = 100;
+        .moveTo(50, headerBottom)
+        .lineTo(545, headerBottom)
+        .strokeColor("#e2e8f0")
+        .lineWidth(1)
+        .stroke();
+      doc.y = headerBottom + 18;
 
       // Quote number & status
       doc
@@ -709,7 +809,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       doc.y += 6;
 
       for (const line of quote.lines) {
-        if (doc.y > 720) {
+        if (doc.y > contentBottom()) {
           doc.addPage();
           doc.y = 50;
         }
@@ -729,6 +829,10 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       }
 
       // Totals
+      if (doc.y + 80 > contentBottom()) {
+        doc.addPage();
+        doc.y = 50;
+      }
       doc.y += 6;
       doc.moveTo(380, doc.y).lineTo(545, doc.y).strokeColor("#e2e8f0").lineWidth(0.5).stroke();
       doc.y += 8;
@@ -755,23 +859,16 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
 
       // Notes
       if (quote.notes) {
+        if (doc.y + 60 > contentBottom()) {
+          doc.addPage();
+          doc.y = 50;
+        }
         this.pdfSection(doc, "Conditions");
         doc.fontSize(9).fillColor(textColor).text(quote.notes, 50, doc.y, { width: 495 });
         doc.y += 10;
       }
 
-      // Footer
-      const footerY = Math.max(doc.y + 30, 780);
-      if (footerY > 780) doc.addPage();
-      doc.moveTo(50, 780).lineTo(545, 780).strokeColor("#e2e8f0").lineWidth(0.5).stroke();
-      doc
-        .fontSize(8)
-        .fillColor(mutedColor)
-        .text(`Généré le ${this.formatDateTimeFr(new Date().toISOString())} — Planwise`, 50, 785, {
-          align: "center",
-          width: 495,
-        });
-
+      this.stampGeneratedByFooter(doc);
       doc.end();
     });
   }
@@ -852,6 +949,43 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     }
   }
 
+  private async fetchOrganization(organizationId: string): Promise<OrganizationResponse | null> {
+    try {
+      const res = await firstValueFrom(
+        this.httpService.get<OrganizationResponse>(
+          `${ORGANIZATIONS_URL}/organizations/${organizationId}`,
+        ),
+      );
+      return res.data;
+    } catch {
+      return null;
+    }
+  }
+
+  private async fetchDocumentImageBuffer(
+    organizationId: string,
+    documentId: string,
+  ): Promise<Buffer | null> {
+    try {
+      const urlRes = await firstValueFrom(
+        this.httpService.get<{ url: string }>(
+          `${DOCUMENTS_URL}/documents/${documentId}/download-url`,
+          { params: { organizationId } },
+        ),
+      );
+      let downloadUrl = urlRes.data.url;
+      if (downloadUrl.startsWith("/documents/download/")) {
+        downloadUrl = `${DOCUMENTS_URL}${downloadUrl}`;
+      }
+      const fileRes = await firstValueFrom(
+        this.httpService.get(downloadUrl, { responseType: "arraybuffer", timeout: 15000 }),
+      );
+      return Buffer.from(fileRes.data);
+    } catch {
+      return null;
+    }
+  }
+
   private async fetchInterventionPhotos(
     user: AuthUser,
     interventionId: string,
@@ -904,7 +1038,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     signatureResult: { signatureData?: string; signatoryName?: string },
   ): Promise<Buffer> {
     return new Promise((resolve, reject) => {
-      const doc = new PDFDocument({ size: "A4", margin: 50 });
+      const doc = new PDFDocument({ size: "A4", margin: 50, bufferPages: true });
       const chunks: Buffer[] = [];
       doc.on("data", (chunk: Buffer) => chunks.push(chunk));
       doc.on("end", () => resolve(Buffer.concat(chunks)));
@@ -913,6 +1047,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       const brandColor = "#6d28d9";
       const textColor = "#1e293b";
       const mutedColor = "#64748b";
+      const contentBottom = () => doc.page.height - 70;
 
       // Header
       doc
@@ -1024,9 +1159,10 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
         let x = 50;
 
         for (const photo of photos) {
-          if (doc.y + photoHeight > 750) {
+          if (doc.y + photoHeight > contentBottom()) {
             doc.addPage();
             x = 50;
+            doc.y = 50;
           }
           try {
             doc.image(photo.data, x, doc.y, {
@@ -1048,7 +1184,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
 
       // Signature
       if (signatureResult.signatureData) {
-        if (doc.y + 120 > 750) doc.addPage();
+        if (doc.y + 120 > contentBottom()) doc.addPage();
         this.pdfSection(doc, "Signature client");
         if (signatureResult.signatoryName) {
           this.pdfField(doc, "Nom", signatureResult.signatoryName);
@@ -1067,18 +1203,42 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
         }
       }
 
-      // Footer
-      doc.moveTo(50, 780).lineTo(545, 780).strokeColor("#e2e8f0").lineWidth(0.5).stroke();
-      doc
-        .fontSize(8)
-        .fillColor(mutedColor)
-        .text(`Généré le ${this.formatDateTimeFr(new Date().toISOString())} — Planwise`, 50, 785, {
-          align: "center",
-          width: 495,
-        });
-
+      this.stampGeneratedByFooter(doc);
       doc.end();
     });
+  }
+
+  /** Pied de page sur chaque page, sans créer de page blanche. */
+  private stampGeneratedByFooter(doc: PDFKit.PDFDocument): void {
+    const label = `Généré le ${this.formatDateTimeFr(new Date().toISOString())} — Planwise`;
+    const range = doc.bufferedPageRange();
+    for (let i = range.start; i < range.start + range.count; i++) {
+      doc.switchToPage(i);
+      // PDFKit déclenche un addPage si on écrit sous margin.bottom — on le désactive le temps du tampon.
+      const margins = doc.page.margins;
+      const prevBottom = margins.bottom;
+      margins.bottom = 0;
+      try {
+        const lineY = doc.page.height - 44;
+        const textY = doc.page.height - 36;
+        doc
+          .moveTo(50, lineY)
+          .lineTo(doc.page.width - 50, lineY)
+          .strokeColor("#e2e8f0")
+          .lineWidth(0.5)
+          .stroke();
+        doc
+          .fontSize(7)
+          .fillColor("#94a3b8")
+          .text(label, 50, textY, {
+            align: "center",
+            width: doc.page.width - 100,
+            lineBreak: false,
+          });
+      } finally {
+        margins.bottom = prevBottom;
+      }
+    }
   }
 
   private pdfSection(doc: PDFKit.PDFDocument, title: string): void {

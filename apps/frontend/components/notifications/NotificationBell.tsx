@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthContext";
+import { hasActiveSubscriptionAccess } from "@/lib/subscription-access";
 import * as notificationsApi from "@/lib/notifications.api";
 import type {
   NotificationResponse,
@@ -156,19 +157,22 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const subscriptionOk = hasActiveSubscriptionAccess(user);
 
   const { data: countData } = useQuery({
     queryKey: ["notifications", "unread-count"],
     queryFn: () => notificationsApi.getUnreadCount(),
     refetchInterval: 30_000,
-    enabled: !!user,
+    enabled: !!user && subscriptionOk,
+    retry: false,
   });
 
   const { data: listData, isLoading } = useQuery({
     queryKey: ["notifications", "list"],
     queryFn: () => notificationsApi.listNotifications(50),
     refetchInterval: 30_000,
-    enabled: !!user && open,
+    enabled: !!user && subscriptionOk && open,
+    retry: false,
   });
 
   const markReadMutation = useMutation({
@@ -235,7 +239,7 @@ export function NotificationBell() {
     [markReadMutation, router],
   );
 
-  if (!user) return null;
+  if (!user || !subscriptionOk) return null;
 
   return (
     <div className="relative">

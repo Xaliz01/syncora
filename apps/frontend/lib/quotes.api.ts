@@ -85,3 +85,25 @@ export async function downloadQuotePdf(quoteId: string, quoteNumber: string): Pr
   anchor.click();
   URL.revokeObjectURL(blobUrl);
 }
+
+/** Génère un aperçu PDF (sans sauvegarder) et retourne un blob URL. */
+export async function previewQuotePdf(payload: CreateQuotePayload): Promise<string> {
+  const token = getAccessToken();
+  if (!token) throw new Error("Session expirée");
+
+  const response = await fetch(`${API_BASE}/cases/quotes/preview-pdf`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error("Impossible de prévisualiser le PDF du devis");
+  }
+
+  const blob = await response.blob();
+  return URL.createObjectURL(blob);
+}

@@ -52,6 +52,7 @@ describe("CasesController", () => {
       updateQuote: jest.fn(),
       deleteQuote: jest.fn(),
       generateQuotePdf: jest.fn(),
+      previewQuotePdf: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -403,6 +404,27 @@ describe("CasesController", () => {
       expect(mockRes.setHeader).toHaveBeenCalledWith(
         "Content-Disposition",
         'attachment; filename="devis-quote-1.pdf"',
+      );
+      expect(mockRes.send).toHaveBeenCalledWith(pdfBuffer);
+    });
+  });
+
+  describe("previewQuotePdf", () => {
+    it("should call casesService.previewQuotePdf and set inline disposition", async () => {
+      const pdfBuffer = Buffer.from("preview-pdf");
+      mockCasesService.previewQuotePdf.mockResolvedValue(pdfBuffer);
+      const body = {
+        caseId: "case-1",
+        lines: [{ description: "Ligne", quantity: 1, unitPrice: 10, tvaRate: 20 }],
+      };
+      const mockRes = { setHeader: jest.fn(), send: jest.fn() };
+
+      await controller.previewQuotePdf(mockUser, body, mockRes as never);
+
+      expect(mockCasesService.previewQuotePdf).toHaveBeenCalledWith(mockUser, body);
+      expect(mockRes.setHeader).toHaveBeenCalledWith(
+        "Content-Disposition",
+        'inline; filename="devis-apercu.pdf"',
       );
       expect(mockRes.send).toHaveBeenCalledWith(pdfBuffer);
     });
