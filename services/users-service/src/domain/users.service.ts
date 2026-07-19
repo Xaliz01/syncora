@@ -15,6 +15,7 @@ import type { UserPreferencesDocument } from "../persistence/user-preferences.sc
 import {
   activeDocumentFilter,
   DEFAULT_USER_PREFERENCES,
+  normalizeQuickActionIds,
   type ActivateInvitedUserBody,
   type ChangePasswordBody,
   type CreateAccountBody,
@@ -26,6 +27,7 @@ import {
   type AccountUserResponse,
   type UpdateUserNameBody,
   type UpdateUserPreferencesBody,
+  type UserPreferences,
   type UserPreferencesResponse,
   type UserResponse,
   type UserRole,
@@ -297,10 +299,7 @@ export class UsersService extends AbstractUsersService {
     }
     return {
       userId: doc.userId,
-      preferences: {
-        theme: doc.theme,
-        sidebarCollapsed: doc.sidebarCollapsed,
-      },
+      preferences: this.toPreferences(doc),
     };
   }
 
@@ -314,6 +313,15 @@ export class UsersService extends AbstractUsersService {
     const $set: Record<string, unknown> = {};
     if (body.theme !== undefined) $set.theme = body.theme;
     if (body.sidebarCollapsed !== undefined) $set.sidebarCollapsed = body.sidebarCollapsed;
+    if (body.quickActionIds !== undefined) {
+      const normalized = normalizeQuickActionIds(body.quickActionIds);
+      if (!normalized) {
+        throw new BadRequestException(
+          `quickActionIds must contain between 2 and 6 valid unique action ids`,
+        );
+      }
+      $set.quickActionIds = normalized;
+    }
 
     const doc = await this.preferencesModel
       .findOneAndUpdate(
@@ -326,6 +334,9 @@ export class UsersService extends AbstractUsersService {
             ...(body.sidebarCollapsed === undefined
               ? { sidebarCollapsed: DEFAULT_USER_PREFERENCES.sidebarCollapsed }
               : {}),
+            ...(body.quickActionIds === undefined
+              ? { quickActionIds: [...DEFAULT_USER_PREFERENCES.quickActionIds] }
+              : {}),
           },
         },
         { upsert: true, new: true },
@@ -334,10 +345,18 @@ export class UsersService extends AbstractUsersService {
 
     return {
       userId: doc!.userId,
-      preferences: {
-        theme: doc!.theme,
-        sidebarCollapsed: doc!.sidebarCollapsed,
-      },
+      preferences: this.toPreferences(doc!),
+    };
+  }
+
+  private toPreferences(doc: UserPreferencesDocument): UserPreferences {
+    const quickActionIds = normalizeQuickActionIds(doc.quickActionIds) ?? [
+      ...DEFAULT_USER_PREFERENCES.quickActionIds,
+    ];
+    return {
+      theme: doc.theme,
+      sidebarCollapsed: doc.sidebarCollapsed,
+      quickActionIds,
     };
   }
 

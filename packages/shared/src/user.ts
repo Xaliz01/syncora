@@ -1,6 +1,8 @@
 /** Contrat API users-service (création + validation credentials) */
 
 import type { UserRole } from "./auth";
+import type { QuickActionId } from "./quick-actions";
+import { DEFAULT_QUICK_ACTION_IDS } from "./quick-actions";
 
 export type UserStatus = "active" | "invited";
 
@@ -83,11 +85,14 @@ export type SidebarPreference = "expanded" | "collapsed";
 export interface UserPreferences {
   theme: ThemePreference;
   sidebarCollapsed: SidebarPreference;
+  /** Actions rapides du tableau de bord (ordre d'affichage). */
+  quickActionIds: QuickActionId[];
 }
 
 export const DEFAULT_USER_PREFERENCES: UserPreferences = {
   theme: "light",
   sidebarCollapsed: "expanded",
+  quickActionIds: [...DEFAULT_QUICK_ACTION_IDS],
 };
 
 export interface UpdateUserNameBody {
@@ -102,6 +107,7 @@ export interface ChangePasswordBody {
 export interface UpdateUserPreferencesBody {
   theme?: ThemePreference;
   sidebarCollapsed?: SidebarPreference;
+  quickActionIds?: QuickActionId[];
 }
 
 export interface UserPreferencesResponse {

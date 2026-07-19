@@ -1,5 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { NotFoundException, BadRequestException, UnauthorizedException } from "@nestjs/common";
+import type { UserPreferencesResponse } from "@planwise/shared";
 import { UsersController } from "../users.controller";
 import { AbstractUsersService } from "../../../domain/ports/users.service.port";
 
@@ -229,9 +230,13 @@ describe("UsersController", () => {
 
   describe("getPreferences", () => {
     it("should call service.getPreferences and return the result", async () => {
-      const expected = {
+      const expected: UserPreferencesResponse = {
         userId: "user-123",
-        preferences: { theme: "light" as const, sidebarCollapsed: "expanded" as const },
+        preferences: {
+          theme: "light",
+          sidebarCollapsed: "expanded",
+          quickActionIds: ["case_new", "cases_list", "calendar", "case_templates"],
+        },
       };
       mockUsersService.getPreferences.mockResolvedValue(expected);
 
@@ -245,9 +250,13 @@ describe("UsersController", () => {
   describe("updatePreferences", () => {
     it("should call service.updatePreferences and return the result", async () => {
       const body = { theme: "dark" as const };
-      const expected = {
+      const expected: UserPreferencesResponse = {
         userId: "user-123",
-        preferences: { theme: "dark" as const, sidebarCollapsed: "expanded" as const },
+        preferences: {
+          theme: "dark",
+          sidebarCollapsed: "expanded",
+          quickActionIds: ["case_new", "cases_list", "calendar", "case_templates"],
+        },
       };
       mockUsersService.updatePreferences.mockResolvedValue(expected);
 

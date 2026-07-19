@@ -6,6 +6,7 @@ export * from "./organization";
 export * from "./organization-membership";
 export * from "./permissions";
 export * from "./user";
+export * from "./quick-actions";
 export * from "./fleet";
 export * from "./stock";
 export * from "./subscription";

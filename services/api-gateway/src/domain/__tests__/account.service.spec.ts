@@ -100,7 +100,11 @@ describe("AccountService", () => {
     it("should call users-service GET /users/:id/preferences", async () => {
       const expected: UserPreferencesResponse = {
         userId: "user-123",
-        preferences: { theme: "light", sidebarCollapsed: "expanded" },
+        preferences: {
+          theme: "light",
+          sidebarCollapsed: "expanded",
+          quickActionIds: ["case_new", "cases_list", "calendar", "case_templates"],
+        },
       };
       mockHttpService.request.mockReturnValue(of({ data: expected, status: 200 } as AxiosResponse));
 
@@ -120,7 +124,11 @@ describe("AccountService", () => {
     it("should call users-service PUT /users/:id/preferences", async () => {
       const expected: UserPreferencesResponse = {
         userId: "user-123",
-        preferences: { theme: "dark", sidebarCollapsed: "collapsed" },
+        preferences: {
+          theme: "dark",
+          sidebarCollapsed: "collapsed",
+          quickActionIds: ["case_new", "cases_list", "calendar", "case_templates"],
+        },
       };
       mockHttpService.request.mockReturnValue(of({ data: expected, status: 200 } as AxiosResponse));
 

@@ -87,7 +87,11 @@ describe("AccountController", () => {
     it("should call accountService.getPreferences and return result", async () => {
       const expected: UserPreferencesResponse = {
         userId: "user-123",
-        preferences: { theme: "light", sidebarCollapsed: "expanded" },
+        preferences: {
+          theme: "light",
+          sidebarCollapsed: "expanded",
+          quickActionIds: ["case_new", "cases_list", "calendar", "case_templates"],
+        },
       };
       mockAccountService.getPreferences.mockResolvedValue(expected);
 
@@ -103,7 +107,11 @@ describe("AccountController", () => {
       const body = { theme: "dark" as const };
       const expected: UserPreferencesResponse = {
         userId: "user-123",
-        preferences: { theme: "dark", sidebarCollapsed: "expanded" },
+        preferences: {
+          theme: "dark",
+          sidebarCollapsed: "expanded",
+          quickActionIds: ["case_new", "cases_list", "calendar", "case_templates"],
+        },
       };
       mockAccountService.updatePreferences.mockResolvedValue(expected);
 

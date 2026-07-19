@@ -548,7 +548,11 @@ describe("UsersService", () => {
 
       expect(result).toEqual({
         userId: "user-123",
-        preferences: { theme: "light", sidebarCollapsed: "expanded" },
+        preferences: {
+          theme: "light",
+          sidebarCollapsed: "expanded",
+          quickActionIds: ["case_new", "cases_list", "calendar", "case_templates"],
+        },
       });
     });
 
@@ -558,6 +562,7 @@ describe("UsersService", () => {
           userId: "user-123",
           theme: "dark",
           sidebarCollapsed: "collapsed",
+          quickActionIds: ["my_day", "calendar"],
         }),
       });
 
@@ -565,8 +570,32 @@ describe("UsersService", () => {
 
       expect(result).toEqual({
         userId: "user-123",
-        preferences: { theme: "dark", sidebarCollapsed: "collapsed" },
+        preferences: {
+          theme: "dark",
+          sidebarCollapsed: "collapsed",
+          quickActionIds: ["my_day", "calendar"],
+        },
       });
+    });
+
+    it("should fall back to default quickActionIds when stored list is invalid", async () => {
+      mockPreferencesModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({
+          userId: "user-123",
+          theme: "light",
+          sidebarCollapsed: "expanded",
+          quickActionIds: ["case_new"],
+        }),
+      });
+
+      const result = await service.getPreferences("user-123");
+
+      expect(result.preferences.quickActionIds).toEqual([
+        "case_new",
+        "cases_list",
+        "calendar",
+        "case_templates",
+      ]);
     });
   });
 
@@ -581,6 +610,7 @@ describe("UsersService", () => {
           userId: "user-123",
           theme: "dark",
           sidebarCollapsed: "expanded",
+          quickActionIds: ["case_new", "cases_list", "calendar", "case_templates"],
         }),
       });
 
@@ -588,8 +618,53 @@ describe("UsersService", () => {
 
       expect(result).toEqual({
         userId: "user-123",
-        preferences: { theme: "dark", sidebarCollapsed: "expanded" },
+        preferences: {
+          theme: "dark",
+          sidebarCollapsed: "expanded",
+          quickActionIds: ["case_new", "cases_list", "calendar", "case_templates"],
+        },
       });
+    });
+
+    it("should update quickActionIds", async () => {
+      const doc = mockDoc();
+      mockUserModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+      mockPreferencesModel.findOneAndUpdate.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({
+          userId: "user-123",
+          theme: "light",
+          sidebarCollapsed: "expanded",
+          quickActionIds: ["my_day", "customers", "stock"],
+        }),
+      });
+
+      const result = await service.updatePreferences("user-123", {
+        quickActionIds: ["my_day", "customers", "stock"],
+      });
+
+      expect(mockPreferencesModel.findOneAndUpdate).toHaveBeenCalledWith(
+        { userId: "user-123" },
+        expect.objectContaining({
+          $set: expect.objectContaining({
+            quickActionIds: ["my_day", "customers", "stock"],
+          }),
+        }),
+        expect.any(Object),
+      );
+      expect(result.preferences.quickActionIds).toEqual(["my_day", "customers", "stock"]);
+    });
+
+    it("should reject invalid quickActionIds", async () => {
+      const doc = mockDoc();
+      mockUserModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+
+      await expect(
+        service.updatePreferences("user-123", { quickActionIds: ["case_new"] }),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it("should throw NotFoundException when user does not exist", async () => {

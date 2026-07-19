@@ -14,6 +14,7 @@ import type {
   DashboardTodoItem,
 } from "@planwise/shared";
 import { TrialTestDataCard } from "@/components/test-data/TrialTestDataCard";
+import { QuickActionsSection } from "@/components/dashboard/QuickActionsSection";
 import { ExportButton } from "@/components/ui/ExportButton";
 import * as exportsApi from "@/lib/exports.api";
 
@@ -391,39 +392,7 @@ export function DashboardPage() {
 
       <TrialTestDataCard />
 
-      {canReadCases && (
-        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20">
-          <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100 mb-3">
-            Actions rapides
-          </h2>
-          <div className="flex flex-wrap gap-2">
-            <Link
-              href="/cases/new"
-              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition"
-            >
-              Nouveau dossier
-            </Link>
-            <Link
-              href="/cases"
-              className="rounded-lg border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
-            >
-              Tous les dossiers
-            </Link>
-            <Link
-              href="/cases/calendar"
-              className="rounded-lg border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
-            >
-              Calendrier
-            </Link>
-            <Link
-              href="/settings/case-templates"
-              className="rounded-lg border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
-            >
-              Modèles de dossier
-            </Link>
-          </div>
-        </div>
-      )}
+      <QuickActionsSection />
 
       {canReadCases && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
