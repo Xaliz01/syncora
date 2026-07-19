@@ -454,6 +454,21 @@ export const PERMISSION_METADATA: Record<PermissionCode, PermissionMetadata> = {
     label: "Envoyer vers Pennylane",
     description: "Créer une facture brouillon dans Pennylane depuis un dossier à facturer.",
   },
+  "integrations.qonto.read": {
+    code: "integrations.qonto.read",
+    label: "Voir l’intégration Qonto",
+    description: "Consulter le statut de connexion Qonto.",
+  },
+  "integrations.qonto.configure": {
+    code: "integrations.qonto.configure",
+    label: "Configurer Qonto",
+    description: "Connecter ou déconnecter le compte Qonto de l’organisation.",
+  },
+  "integrations.qonto.sync": {
+    code: "integrations.qonto.sync",
+    label: "Envoyer vers Qonto",
+    description: "Créer une facture brouillon dans Qonto depuis un dossier à facturer.",
+  },
 };
 
 export function getPermissionLabel(permissionCode: PermissionCode): string {

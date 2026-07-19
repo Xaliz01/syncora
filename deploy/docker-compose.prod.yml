@@ -239,6 +239,15 @@ services:
       PENNYLANE_CLIENT_SECRET: ${PENNYLANE_CLIENT_SECRET:-}
       PENNYLANE_OAUTH_REDIRECT_URI: ${PENNYLANE_OAUTH_REDIRECT_URI:-}
       PENNYLANE_OAUTH_SCOPES: ${PENNYLANE_OAUTH_SCOPES:-customers:all customer_invoices:all}
+      QONTO_API_BASE_URL: ${QONTO_API_BASE_URL:-https://thirdparty.qonto.com/v2}
+      QONTO_CLIENT_ID: ${QONTO_CLIENT_ID:-}
+      QONTO_CLIENT_SECRET: ${QONTO_CLIENT_SECRET:-}
+      QONTO_OAUTH_REDIRECT_URI: ${QONTO_OAUTH_REDIRECT_URI:-}
+      QONTO_OAUTH_SCOPES: ${QONTO_OAUTH_SCOPES:-organization.read offline_access client.read client.write client_invoice.read client_invoice.write}
+      # Sandbox only — ne pas définir en production
+      QONTO_STAGING_TOKEN: ${QONTO_STAGING_TOKEN:-}
+      QONTO_OAUTH_AUTHORIZE_URL: ${QONTO_OAUTH_AUTHORIZE_URL:-}
+      QONTO_OAUTH_TOKEN_URL: ${QONTO_OAUTH_TOKEN_URL:-}
       APP_URL: ${APP_URL:-https://app.planwise.fr}
     healthcheck: *tcp-healthcheck
 

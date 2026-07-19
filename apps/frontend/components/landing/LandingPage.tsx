@@ -31,6 +31,11 @@ const PILLARS = [
     description:
       "Retrouvez vos clients rapidement et sécurisez l'accès via des permissions adaptées.",
   },
+  {
+    title: "Facturation sans double saisie",
+    description:
+      "Envoyez vos dossiers à facturer vers Pennylane ou Qonto : des factures brouillon prêtes à valider.",
+  },
 ] as const;
 
 const FEATURE_SECTIONS = [
@@ -82,6 +87,14 @@ const FEATURE_SECTIONS = [
       "Équipes, techniciens, véhicules et agences opérationnelles",
       "Calendrier des interventions semaine / mois avec code couleur par équipe",
       "Catalogue articles, alertes stock bas et mouvements (entrées, sorties, ajustements)",
+    ],
+  },
+  {
+    title: "Facturation & intégrations",
+    items: [
+      "Connexion Pennylane (OAuth ou token API) pour créer des factures brouillon",
+      "Connexion Qonto (OAuth ou clé API) pour créer des factures brouillon",
+      "Envoi depuis un dossier « À facturer » sans ressaisir client ni lignes",
     ],
   },
   {

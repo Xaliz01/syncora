@@ -49,10 +49,13 @@ tech:
         - "STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_PRICE_ID (abonnements ; webhook → subscriptions-service :3008/webhooks/stripe)"
         - "SUBSCRIPTIONS_SERVICE_URL (gateway → microservice abonnements)"
         - "EXPORTS_SERVICE_URL (gateway → microservice exports, défaut localhost:3012)"
-        - "INTEGRATIONS_SERVICE_URL (gateway → microservice intégrations / Pennylane, défaut localhost:3013)"
+        - "INTEGRATIONS_SERVICE_URL (gateway → microservice intégrations / Pennylane & Qonto, défaut localhost:3013)"
         - "INTEGRATIONS_ENCRYPTION_KEY (chiffrement des tokens API partenaires, 64 hex)"
         - "PENNYLANE_CLIENT_ID / PENNYLANE_CLIENT_SECRET (OAuth app Partnerships ; bouton Connecter avec Pennylane)"
         - "PENNYLANE_OAUTH_REDIRECT_URI ou APP_URL (callback /settings/integrations/pennylane/callback)"
+        - "QONTO_CLIENT_ID / QONTO_CLIENT_SECRET (OAuth app Qonto ; bouton Connecter avec Qonto)"
+        - "QONTO_OAUTH_REDIRECT_URI ou APP_URL (callback /settings/integrations/qonto/callback)"
+        - "QONTO_STAGING_TOKEN + URLs sandbox (dev local uniquement ; header X-Qonto-Staging-Token)"
     ci_cd:
       provider: GitHub Actions
       pipeline:

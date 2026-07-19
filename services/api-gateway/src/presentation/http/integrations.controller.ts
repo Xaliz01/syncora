@@ -61,4 +61,62 @@ export class IntegrationsController {
       quoteId: body?.quoteId || quoteIdQuery,
     });
   }
+
+  // ── Qonto ──
+
+  @Get("qonto")
+  @RequirePermissions("integrations.qonto.read")
+  getQontoStatus(@CurrentUser() user: AuthUser) {
+    return this.integrationsService.getQontoStatus(user);
+  }
+
+  @Post("qonto/oauth/start")
+  @RequirePermissions("integrations.qonto.configure")
+  startQontoOAuth(@CurrentUser() user: AuthUser) {
+    return this.integrationsService.startQontoOAuth(user);
+  }
+
+  @Post("qonto/oauth/complete")
+  @RequirePermissions("integrations.qonto.configure")
+  completeQontoOAuth(
+    @CurrentUser() user: AuthUser,
+    @Body() body: { code?: string; state?: string },
+  ) {
+    return this.integrationsService.completeQontoOAuth(user, {
+      code: body.code ?? "",
+      state: body.state ?? "",
+    });
+  }
+
+  @Post("qonto/connect")
+  @RequirePermissions("integrations.qonto.configure")
+  connectQonto(
+    @CurrentUser() user: AuthUser,
+    @Body() body: { login?: string; secretKey?: string },
+  ) {
+    return this.integrationsService.connectQonto(user, {
+      login: body.login ?? "",
+      secretKey: body.secretKey ?? "",
+    });
+  }
+
+  @Delete("qonto")
+  @RequirePermissions("integrations.qonto.configure")
+  disconnectQonto(@CurrentUser() user: AuthUser) {
+    return this.integrationsService.disconnectQonto(user);
+  }
+
+  @Post("qonto/cases/:caseId/sync")
+  @RequirePermissions("integrations.qonto.sync")
+  syncCaseToQonto(
+    @CurrentUser() user: AuthUser,
+    @Param("caseId") caseId: string,
+    @Body() body?: { quoteId?: string; invoiceNumber?: string },
+    @Query("quoteId") quoteIdQuery?: string,
+  ) {
+    return this.integrationsService.syncCaseToQonto(user, caseId, {
+      quoteId: body?.quoteId || quoteIdQuery,
+      invoiceNumber: body?.invoiceNumber,
+    });
+  }
 }

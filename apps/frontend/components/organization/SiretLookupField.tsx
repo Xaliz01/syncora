@@ -19,6 +19,7 @@ export interface SiretLookupFieldProps {
   onSelect?: (result: SiretLookupResult) => void;
   disabled?: boolean;
   readOnly?: boolean;
+  label?: string;
   labelCls?: string;
   inputCls?: string;
 }
@@ -29,6 +30,7 @@ export function SiretLookupField({
   onSelect,
   disabled = false,
   readOnly = false,
+  label = "SIRET",
   labelCls,
   inputCls,
 }: SiretLookupFieldProps) {
@@ -92,7 +94,7 @@ export function SiretLookupField({
   if (readOnly) {
     return (
       <div>
-        <label className={defaultLabelCls}>SIRET</label>
+        <label className={defaultLabelCls}>{label}</label>
         <p className="mt-1 text-sm text-slate-800 dark:text-slate-100 font-mono">{value || "—"}</p>
       </div>
     );
@@ -101,7 +103,7 @@ export function SiretLookupField({
   return (
     <div ref={wrapRef} className="relative">
       <label htmlFor={`${baseId}-siret`} className={defaultLabelCls}>
-        SIRET
+        {label}
       </label>
       <input
         id={`${baseId}-siret`}

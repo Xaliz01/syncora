@@ -26,6 +26,7 @@ import {
 } from "@/components/cases/InterventionArticlesDialog";
 import { InterventionPhotos } from "@/components/interventions/InterventionPhotos";
 import { InterventionSignatureDialog } from "@/components/interventions/InterventionSignatureDialog";
+import { QontoInvoiceNumberDialog } from "@/components/cases/QontoInvoiceNumberDialog";
 import { CUSTOMER_KIND_LABELS } from "@/components/customers/customer-kind-labels";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/ToastProvider";
@@ -37,6 +38,7 @@ import { usePermissions } from "@/lib/hooks/usePermissions";
 import { getTeamCalendarCardAppearance } from "@/lib/team-calendar-colors";
 import { useIsDarkMode } from "@/lib/use-is-dark-mode";
 import { formatPostalAddress } from "@/lib/team-route-insights";
+import { QONTO_INVOICE_NUMBER_REQUIRED_MESSAGE } from "@planwise/shared";
 import type {
   BillingStatus,
   CaseCustomerRef,
@@ -318,6 +320,15 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   const { can, canAny } = usePermissions();
   const canAssignCase = canAny(["cases.assign", "cases.update"]);
   const canSyncPennylane = can("integrations.pennylane.sync");
+  const canSyncQonto = can("integrations.qonto.sync");
+  const canReadPennylane = can("integrations.pennylane.read");
+  const canReadQonto = can("integrations.qonto.read");
+  const canOpenIntegrations = canAny([
+    "integrations.pennylane.read",
+    "integrations.qonto.read",
+    "integrations.pennylane.configure",
+    "integrations.qonto.configure",
+  ]);
   const canViewInterventionArticles = can("stock.interventions.read");
   const canAddInterventionArticles = can("stock.interventions.create");
   const showInterventionArticles = canViewInterventionArticles || canAddInterventionArticles;
@@ -333,6 +344,18 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   } = useQuery({
     queryKey: ["case", caseId],
     queryFn: () => api.getCase(caseId),
+  });
+
+  const { data: pennylaneStatus, isLoading: pennylaneStatusLoading } = useQuery({
+    queryKey: ["integrations", "pennylane"],
+    queryFn: () => integrationsApi.getPennylaneStatus(),
+    enabled: canReadPennylane,
+  });
+
+  const { data: qontoStatus, isLoading: qontoStatusLoading } = useQuery({
+    queryKey: ["integrations", "qonto"],
+    queryFn: () => integrationsApi.getQontoStatus(),
+    enabled: canReadQonto,
   });
 
   const { data: interventions } = useQuery({
@@ -433,6 +456,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
     null,
   );
   const [signDialogInterventionId, setSignDialogInterventionId] = useState<string | null>(null);
+  const [qontoInvoiceNumberDialogOpen, setQontoInvoiceNumberDialogOpen] = useState(false);
   const [downloadingReportId, setDownloadingReportId] = useState<string | null>(null);
 
   const invalidateAll = () => {
@@ -474,6 +498,23 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
       );
     },
     onError: (err: Error) => showToast(err.message, "error"),
+  });
+
+  const qontoSyncMutation = useMutation({
+    mutationFn: (options: { invoiceNumber?: string } = {}) =>
+      integrationsApi.syncCaseToQonto(caseId, options),
+    onSuccess: (result) => {
+      setQontoInvoiceNumberDialogOpen(false);
+      invalidateAll();
+      showToast(result.draft ? "Facture brouillon créée dans Qonto." : "Facture créée dans Qonto.");
+    },
+    onError: (err: Error) => {
+      if (err.message === QONTO_INVOICE_NUMBER_REQUIRED_MESSAGE) {
+        setQontoInvoiceNumberDialogOpen(true);
+        return;
+      }
+      showToast(err.message, "error");
+    },
   });
 
   const updateMutation = useMutation({
@@ -627,6 +668,54 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   const articlesDialogIntervention = interventions?.find(
     (i) => i.id === articlesDialogInterventionId,
   );
+
+  const integrationsStatusLoading =
+    (canReadPennylane && pennylaneStatusLoading) || (canReadQonto && qontoStatusLoading);
+  const showPennylaneSend =
+    canSyncPennylane && Boolean(pennylaneStatus?.connected) && !integrationsStatusLoading;
+  const showQontoSend =
+    canSyncQonto && Boolean(qontoStatus?.connected) && !integrationsStatusLoading;
+  const showConnectBillingTool =
+    caseData.billingStatus === "to_invoice" &&
+    !integrationsStatusLoading &&
+    !showPennylaneSend &&
+    !showQontoSend &&
+    (canOpenIntegrations || canSyncPennylane || canSyncQonto);
+
+  const billingActions =
+    caseData.billingStatus === "to_invoice" && !integrationsStatusLoading ? (
+      showPennylaneSend || showQontoSend ? (
+        <>
+          {showPennylaneSend ? (
+            <button
+              type="button"
+              disabled={pennylaneSyncMutation.isPending || qontoSyncMutation.isPending}
+              onClick={() => pennylaneSyncMutation.mutate()}
+              className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 shadow-sm"
+            >
+              {pennylaneSyncMutation.isPending ? "Envoi Pennylane…" : "Envoyer vers Pennylane"}
+            </button>
+          ) : null}
+          {showQontoSend ? (
+            <button
+              type="button"
+              disabled={qontoSyncMutation.isPending || pennylaneSyncMutation.isPending}
+              onClick={() => qontoSyncMutation.mutate({})}
+              className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-medium text-slate-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 shadow-sm"
+            >
+              {qontoSyncMutation.isPending ? "Envoi Qonto…" : "Envoyer vers Qonto"}
+            </button>
+          ) : null}
+        </>
+      ) : showConnectBillingTool ? (
+        <Link
+          href="/settings/integrations"
+          className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-500 shadow-sm"
+        >
+          Connecter son outil de facturation
+        </Link>
+      ) : undefined
+    ) : undefined;
 
   const allowedTransitions = STATUS_TRANSITIONS[caseData.status] ?? [];
   const isOverdue =
@@ -1021,18 +1110,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
           canEdit={canAny(["cases.manage_billing", "cases.update"])}
           pending={billingStatusMutation.isPending}
           onChange={(billingStatus) => billingStatusMutation.mutate(billingStatus)}
-          pennylaneAction={
-            canSyncPennylane && caseData.billingStatus === "to_invoice" ? (
-              <button
-                type="button"
-                disabled={pennylaneSyncMutation.isPending}
-                onClick={() => pennylaneSyncMutation.mutate()}
-                className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 shadow-sm"
-              >
-                {pennylaneSyncMutation.isPending ? "Envoi Pennylane…" : "Envoyer vers Pennylane"}
-              </button>
-            ) : undefined
-          }
+          actions={billingActions}
         />
       )}
 
@@ -1595,6 +1673,13 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
           }}
         />
       )}
+
+      <QontoInvoiceNumberDialog
+        open={qontoInvoiceNumberDialogOpen}
+        pending={qontoSyncMutation.isPending}
+        onClose={() => setQontoInvoiceNumberDialogOpen(false)}
+        onSubmit={(invoiceNumber) => qontoSyncMutation.mutate({ invoiceNumber })}
+      />
 
       <CaseQuotesSection caseId={caseId} />
 

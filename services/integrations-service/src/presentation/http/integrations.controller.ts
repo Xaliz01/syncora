@@ -2,8 +2,11 @@ import { Body, Controller, Delete, Get, Param, Post, Query } from "@nestjs/commo
 import { parseOrganizationIdBody, parseOrganizationIdQuery } from "@planwise/shared/nest";
 import type {
   CompletePennylaneOAuthBody,
+  CompleteQontoOAuthBody,
   ConnectPennylaneBody,
+  ConnectQontoBody,
   SyncCaseToPennylaneBody,
+  SyncCaseToQontoBody,
 } from "@planwise/shared";
 import { AbstractIntegrationsService } from "../../domain/ports/integrations.service.port";
 
@@ -54,6 +57,54 @@ export class IntegrationsController {
   ) {
     const organizationId = parseOrganizationIdBody(body.organizationId);
     return this.integrationsService.syncCaseToPennylane({
+      ...body,
+      organizationId,
+      caseId,
+    });
+  }
+
+  // ── Qonto ──
+
+  @Get("integrations/qonto")
+  getQontoStatus(@Query("organizationId") organizationId: string) {
+    return this.integrationsService.getQontoStatus(parseOrganizationIdQuery(organizationId));
+  }
+
+  @Post("integrations/qonto/oauth/start")
+  startQontoOAuth(@Body() body: { organizationId?: string }) {
+    return this.integrationsService.startQontoOAuth(parseOrganizationIdBody(body.organizationId));
+  }
+
+  @Post("integrations/qonto/oauth/complete")
+  completeQontoOAuth(@Body() body: CompleteQontoOAuthBody) {
+    const organizationId = parseOrganizationIdBody(body.organizationId);
+    return this.integrationsService.completeQontoOAuth({ ...body, organizationId });
+  }
+
+  @Post("integrations/qonto/connect")
+  connectQonto(@Body() body: ConnectQontoBody) {
+    const organizationId = parseOrganizationIdBody(body.organizationId);
+    return this.integrationsService.connectQonto({ ...body, organizationId });
+  }
+
+  @Delete("integrations/qonto")
+  disconnectQonto(@Query("organizationId") organizationId: string) {
+    return this.integrationsService.disconnectQonto(parseOrganizationIdQuery(organizationId));
+  }
+
+  @Post("integrations/qonto/sync-case")
+  syncCaseToQonto(@Body() body: SyncCaseToQontoBody) {
+    const organizationId = parseOrganizationIdBody(body.organizationId);
+    return this.integrationsService.syncCaseToQonto({ ...body, organizationId });
+  }
+
+  @Post("integrations/qonto/cases/:caseId/sync")
+  syncCaseToQontoByParam(
+    @Param("caseId") caseId: string,
+    @Body() body: Omit<SyncCaseToQontoBody, "caseId"> & { caseId?: string },
+  ) {
+    const organizationId = parseOrganizationIdBody(body.organizationId);
+    return this.integrationsService.syncCaseToQonto({
       ...body,
       organizationId,
       caseId,

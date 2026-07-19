@@ -89,6 +89,9 @@ export const ASSIGNABLE_PERMISSION_CODES = [
   "integrations.pennylane.read",
   "integrations.pennylane.configure",
   "integrations.pennylane.sync",
+  "integrations.qonto.read",
+  "integrations.qonto.configure",
+  "integrations.qonto.sync",
 ] as const;
 
 export type AssignablePermissionCode = (typeof ASSIGNABLE_PERMISSION_CODES)[number];

@@ -39,7 +39,7 @@ const CHIP_ACTIVE: Record<BillingStatus, string> = {
 const HINTS: Record<BillingStatus, string> = {
   none: "Ce dossier n’entre pas dans le circuit de facturation.",
   to_invoice: "Prêt à facturer — devis accepté ou travaux terminés.",
-  invoiced: "Une facture a été émise (Pennylane ou hors outil).",
+  invoiced: "Une facture a été émise (Pennylane, Qonto ou hors outil).",
   paid: "Paiement reçu pour ce dossier.",
 };
 
@@ -48,13 +48,14 @@ export function CaseBillingBanner({
   canEdit,
   pending,
   onChange,
-  pennylaneAction,
+  actions,
 }: {
   status: BillingStatus;
   canEdit: boolean;
   pending?: boolean;
   onChange: (status: BillingStatus) => void;
-  pennylaneAction?: ReactNode;
+  /** Boutons d’envoi vers un outil de facturation (Pennylane, Qonto, …). */
+  actions?: ReactNode;
 }) {
   const styles = BANNER_STYLES[status];
 
@@ -74,8 +75,8 @@ export function CaseBillingBanner({
           <p className={`mt-1 text-sm ${styles.hint}`}>{HINTS[status]}</p>
         </div>
 
-        {pennylaneAction ? (
-          <div className="shrink-0 flex items-center">{pennylaneAction}</div>
+        {actions ? (
+          <div className="shrink-0 flex flex-wrap items-center gap-2">{actions}</div>
         ) : null}
       </div>
 

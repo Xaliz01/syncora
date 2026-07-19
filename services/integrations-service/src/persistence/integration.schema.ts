@@ -57,9 +57,11 @@ export class IntegrationSyncDocument extends Document {
   @Prop({ required: true })
   externalReference!: string;
 
+  /** ID client distant (Pennylane ou Qonto selon `provider`). */
   @Prop({ required: true })
   pennylaneCustomerId!: string;
 
+  /** ID facture distante (Pennylane ou Qonto selon `provider`). */
   @Prop({ required: true })
   pennylaneInvoiceId!: string;
 

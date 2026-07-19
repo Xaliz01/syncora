@@ -11,7 +11,7 @@ import type { SidebarPreference } from "@planwise/shared";
 import { useAuth } from "@/components/auth/AuthContext";
 import { hasActiveSubscriptionAccess } from "@/lib/subscription-access";
 import { OrganizationSwitcher } from "@/components/organization/OrganizationSwitcher";
-import { hasPermission } from "@/lib/auth-permissions";
+import { hasAnyPermission, hasPermission } from "@/lib/auth-permissions";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { CrispHelpButton } from "@/components/support/CrispHelpButton";
@@ -295,7 +295,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (hasPermission(user, "notifications.manage_preferences")) {
       settingsLinks.push({ label: "Notifications", href: "/settings/notifications" });
     }
-    if (hasPermission(user, "integrations.pennylane.read")) {
+    if (hasAnyPermission(user, ["integrations.pennylane.read", "integrations.qonto.read"])) {
       settingsLinks.push({ label: "Intégrations", href: "/settings/integrations" });
     }
     if (settingsLinks.length > 0) {

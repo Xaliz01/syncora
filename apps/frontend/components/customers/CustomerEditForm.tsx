@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import type { CustomerKind, CustomerResponse } from "@planwise/shared";
+import type { CustomerKind, CustomerResponse, SiretLookupResult } from "@planwise/shared";
 import type { UpdateCustomerPayload } from "@/lib/customers.api";
 import { PostalAddressFields } from "@/components/address/PostalAddressFields";
+import { SiretLookupField } from "@/components/organization/SiretLookupField";
 import { CUSTOMER_KIND_LABELS } from "./customer-kind-labels";
 
 type Props = {
@@ -30,6 +31,7 @@ export function CustomerEditForm({ customer, onSubmit, onCancel, isPending, erro
   const [addrPostal, setAddrPostal] = useState(customer.address?.postalCode ?? "");
   const [addrCity, setAddrCity] = useState(customer.address?.city ?? "");
   const [addrCountry, setAddrCountry] = useState(customer.address?.country ?? "FR");
+  const [addressOpen, setAddressOpen] = useState(Boolean(customer.address?.line1));
 
   useEffect(() => {
     setKind(customer.kind);
@@ -46,7 +48,21 @@ export function CustomerEditForm({ customer, onSubmit, onCancel, isPending, erro
     setAddrPostal(customer.address?.postalCode ?? "");
     setAddrCity(customer.address?.city ?? "");
     setAddrCountry(customer.address?.country ?? "FR");
+    setAddressOpen(Boolean(customer.address?.line1));
   }, [customer]);
+
+  const handleSiretSelect = (result: SiretLookupResult) => {
+    setLegalId(result.siret);
+    if (result.nom) setCompanyName(result.nom);
+    setAddrLine1(result.addressLine1 ?? "");
+    setAddrLine2(result.addressLine2 ?? "");
+    setAddrPostal(result.postalCode ?? "");
+    setAddrCity(result.city ?? "");
+    setAddrCountry(result.country || "FR");
+    if (result.addressLine1 || result.postalCode || result.city) {
+      setAddressOpen(true);
+    }
+  };
 
   const addressPayload = useMemo((): UpdateCustomerPayload["address"] => {
     if (!addrLine1.trim() || !addrPostal.trim() || !addrCity.trim()) return null;
@@ -150,25 +166,24 @@ export function CustomerEditForm({ customer, onSubmit, onCancel, isPending, erro
           </div>
         </div>
       ) : (
-        <div>
-          <label className={labelCls}>Raison sociale</label>
-          <input
-            value={companyName}
-            onChange={(e) => setCompanyName(e.target.value)}
-            className={inputCls}
-          />
-        </div>
-      )}
-
-      {kind === "company" && (
-        <div>
-          <label className={labelCls}>SIRET / identifiant (optionnel)</label>
-          <input
+        <>
+          <SiretLookupField
+            label="SIRET (optionnel)"
             value={legalId}
-            onChange={(e) => setLegalId(e.target.value)}
-            className={inputCls}
+            onChange={setLegalId}
+            onSelect={handleSiretSelect}
+            labelCls={labelCls}
+            inputCls={inputCls}
           />
-        </div>
+          <div>
+            <label className={labelCls}>Raison sociale</label>
+            <input
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              className={inputCls}
+            />
+          </div>
+        </>
       )}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -202,13 +217,17 @@ export function CustomerEditForm({ customer, onSubmit, onCancel, isPending, erro
         />
       </div>
 
-      <details className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80 px-3 py-2">
+      <details
+        open={addressOpen}
+        onToggle={(e) => setAddressOpen((e.target as HTMLDetailsElement).open)}
+        className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80 px-3 py-2"
+      >
         <summary className="cursor-pointer text-sm font-medium text-slate-700 dark:text-slate-200">
           Adresse postale (optionnel)
         </summary>
         <div className="mt-3">
           <PostalAddressFields
-            legend="Saisie guidée par la Base Adresse Nationale (France)."
+            legend="Saisie guidée par la Base Adresse Nationale (France). Préremplie via le SIRET si disponible."
             line1={addrLine1}
             line2={addrLine2}
             postalCode={addrPostal}

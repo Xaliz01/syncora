@@ -2,9 +2,10 @@
 
 import React, { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { CustomerKind, CustomerResponse, SiretLookupResult } from "@planwise/shared";
 import * as customersApi from "@/lib/customers.api";
-import type { CustomerKind, CustomerResponse } from "@planwise/shared";
 import { PostalAddressFields } from "@/components/address/PostalAddressFields";
+import { SiretLookupField } from "@/components/organization/SiretLookupField";
 import { CUSTOMER_KIND_LABELS } from "./customer-kind-labels";
 
 type Props = {
@@ -37,6 +38,7 @@ export function CustomerCreateForm({
   const [addrPostal, setAddrPostal] = useState("");
   const [addrCity, setAddrCity] = useState("");
   const [addrCountry, setAddrCountry] = useState("FR");
+  const [addressOpen, setAddressOpen] = useState(false);
 
   const labelCls = compact
     ? "mb-0.5 block text-xs font-medium text-slate-600 dark:text-slate-300"
@@ -59,7 +61,21 @@ export function CustomerCreateForm({
     setAddrPostal("");
     setAddrCity("");
     setAddrCountry("FR");
+    setAddressOpen(false);
     setCreateError("");
+  };
+
+  const handleSiretSelect = (result: SiretLookupResult) => {
+    setNewLegalId(result.siret);
+    if (result.nom) setNewCompanyName(result.nom);
+    setAddrLine1(result.addressLine1 ?? "");
+    setAddrLine2(result.addressLine2 ?? "");
+    setAddrPostal(result.postalCode ?? "");
+    setAddrCity(result.city ?? "");
+    setAddrCountry(result.country || "FR");
+    if (result.addressLine1 || result.postalCode || result.city) {
+      setAddressOpen(true);
+    }
   };
 
   const createMutation = useMutation({
@@ -92,7 +108,7 @@ export function CustomerCreateForm({
       email: newEmail.trim() || undefined,
       phone: newPhone.trim() || undefined,
       mobile: newMobile.trim() || undefined,
-      legalIdentifier: newLegalId.trim() || undefined,
+      legalIdentifier: newKind === "company" ? newLegalId.trim() || undefined : undefined,
       address: addressPayload,
       notes: undefined,
     };
@@ -190,25 +206,24 @@ export function CustomerCreateForm({
           </div>
         </div>
       ) : (
-        <div>
-          <label className={labelCls}>Raison sociale</label>
-          <input
-            value={newCompanyName}
-            onChange={(e) => setNewCompanyName(e.target.value)}
-            className={inputCls}
-          />
-        </div>
-      )}
-
-      {newKind === "company" && (
-        <div>
-          <label className={labelCls}>SIRET / identifiant (optionnel)</label>
-          <input
+        <>
+          <SiretLookupField
+            label="SIRET (optionnel)"
             value={newLegalId}
-            onChange={(e) => setNewLegalId(e.target.value)}
-            className={inputCls}
+            onChange={setNewLegalId}
+            onSelect={handleSiretSelect}
+            labelCls={labelCls}
+            inputCls={inputCls}
           />
-        </div>
+          <div>
+            <label className={labelCls}>Raison sociale</label>
+            <input
+              value={newCompanyName}
+              onChange={(e) => setNewCompanyName(e.target.value)}
+              className={inputCls}
+            />
+          </div>
+        </>
       )}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -240,6 +255,8 @@ export function CustomerCreateForm({
       </div>
 
       <details
+        open={addressOpen}
+        onToggle={(e) => setAddressOpen((e.target as HTMLDetailsElement).open)}
         className={
           compact
             ? "rounded-md border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/80 px-2 py-2"
@@ -253,7 +270,7 @@ export function CustomerCreateForm({
         </summary>
         <div className="mt-2">
           <PostalAddressFields
-            legend="Saisie guidée par la Base Adresse Nationale (France)."
+            legend="Saisie guidée par la Base Adresse Nationale (France). Préremplie via le SIRET si disponible."
             line1={addrLine1}
             line2={addrLine2}
             postalCode={addrPostal}
