@@ -38,7 +38,7 @@ export class QuoteDocument extends Document {
   @Prop({ required: true, index: true })
   caseId!: string;
 
-  @Prop({ required: true, unique: true })
+  @Prop({ required: true })
   quoteNumber!: string;
 
   @Prop()
@@ -66,3 +66,8 @@ export class QuoteDocument extends Document {
 export const QuoteSchema = SchemaFactory.createForClass(QuoteDocument);
 QuoteSchema.index({ organizationId: 1, caseId: 1 });
 QuoteSchema.index({ organizationId: 1, status: 1 });
+/** Numéro unique par organisation (pas globalement). */
+QuoteSchema.index(
+  { organizationId: 1, quoteNumber: 1 },
+  { unique: true, partialFilterExpression: { deletedAt: null } },
+);

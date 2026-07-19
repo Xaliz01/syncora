@@ -39,6 +39,12 @@ import type {
   QuoteResponse,
   QuoteSummaryResponse,
 } from "@planwise/shared";
+import type {
+  CommentEntityType,
+  CommentResponse,
+  CreateCommentBody,
+  UpdateCommentBody,
+} from "@planwise/shared";
 import PDFDocument from "pdfkit";
 import { assertAnyAssignablePermission } from "../infrastructure/permission-checks";
 import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
@@ -57,6 +63,8 @@ import {
   type UpdateTodoForOrgBody,
   type CreateQuoteForOrgBody,
   type UpdateQuoteForOrgBody,
+  type CreateCommentForOrgBody,
+  type UpdateCommentForOrgBody,
 } from "./ports/cases.service.port";
 
 const CASES_URL = process.env.CASES_SERVICE_URL ?? "http://localhost:3004";
@@ -725,7 +733,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
           headerBottom = 72;
         }
       } else {
-        doc.fontSize(22).fillColor(brandColor).text("Devis", 50, 40);
+        doc.fontSize(22).fillColor(brandColor).text(`Devis ${quote.quoteNumber}`, 50, 40);
         if (options?.organizationName) {
           doc
             .fontSize(9)
@@ -743,11 +751,6 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
         .stroke();
       doc.y = headerBottom + 18;
 
-      // Quote number & status
-      doc
-        .fontSize(16)
-        .fillColor(textColor)
-        .text(`Devis ${quote.quoteNumber}`, 50, doc.y, { width: 495 });
       if (quote.subject) {
         doc
           .fontSize(11)
@@ -1382,6 +1385,111 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       path: `/cases/${caseId}/history`,
       query: { organizationId: user.organizationId },
     });
+  }
+
+  // ── Comments ──
+
+  async createComment(user: AuthUser, body: CreateCommentForOrgBody): Promise<CommentResponse> {
+    const payload: CreateCommentBody = {
+      organizationId: user.organizationId,
+      entityType: body.entityType,
+      entityId: body.entityId,
+      body: body.body,
+      authorId: user.id,
+      authorName: user.name ?? user.email,
+    };
+    const created = await this.callCasesService<CommentResponse>(user.organizationId, {
+      method: "post",
+      path: "/comments",
+      body: payload,
+    });
+    const detail =
+      created.entityType === "intervention"
+        ? `Commentaire sur intervention`
+        : `Commentaire sur le dossier`;
+    this.recordHistory(
+      user.organizationId,
+      created.caseId,
+      user.id,
+      user.name ?? user.email,
+      "comment_added",
+      detail,
+    );
+    return created;
+  }
+
+  async listComments(
+    user: AuthUser,
+    entityType: CommentEntityType,
+    entityId: string,
+  ): Promise<CommentResponse[]> {
+    return this.callCasesService<CommentResponse[]>(user.organizationId, {
+      method: "get",
+      path: "/comments",
+      query: {
+        organizationId: user.organizationId,
+        entityType,
+        entityId,
+      },
+    });
+  }
+
+  async updateComment(
+    user: AuthUser,
+    commentId: string,
+    body: UpdateCommentForOrgBody,
+  ): Promise<CommentResponse> {
+    const existing = await this.callCasesService<CommentResponse>(user.organizationId, {
+      method: "get",
+      path: `/comments/${commentId}`,
+      query: { organizationId: user.organizationId },
+    });
+    this.assertCanModifyComment(user, existing);
+    const payload: UpdateCommentBody = {
+      organizationId: user.organizationId,
+      body: body.body,
+    };
+    const updated = await this.callCasesService<CommentResponse>(user.organizationId, {
+      method: "patch",
+      path: `/comments/${commentId}`,
+      body: payload,
+    });
+    this.recordHistory(
+      user.organizationId,
+      updated.caseId,
+      user.id,
+      user.name ?? user.email,
+      "comment_updated",
+    );
+    return updated;
+  }
+
+  async deleteComment(user: AuthUser, commentId: string): Promise<{ deleted: true }> {
+    const existing = await this.callCasesService<CommentResponse>(user.organizationId, {
+      method: "get",
+      path: `/comments/${commentId}`,
+      query: { organizationId: user.organizationId },
+    });
+    this.assertCanModifyComment(user, existing);
+    const result = await this.callCasesService<{ deleted: true }>(user.organizationId, {
+      method: "delete",
+      path: `/comments/${commentId}`,
+      query: { organizationId: user.organizationId },
+    });
+    this.recordHistory(
+      user.organizationId,
+      existing.caseId,
+      user.id,
+      user.name ?? user.email,
+      "comment_deleted",
+    );
+    return result;
+  }
+
+  private assertCanModifyComment(user: AuthUser, comment: CommentResponse): void {
+    if (user.role === "admin") return;
+    if (comment.authorId === user.id) return;
+    throw new ForbiddenException("You can only modify your own comments");
   }
 
   private emitCaseUpdateHistory(

@@ -10,6 +10,7 @@ import { CaseSchema } from "../persistence/case.schema";
 import { CaseHistorySchema } from "../persistence/case-history.schema";
 import { InterventionSchema } from "../persistence/intervention.schema";
 import { QuoteSchema } from "../persistence/quote.schema";
+import { CommentSchema } from "../persistence/comment.schema";
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { QuoteSchema } from "../persistence/quote.schema";
       { name: "CaseHistory", schema: CaseHistorySchema },
       { name: "Intervention", schema: InterventionSchema },
       { name: "Quote", schema: QuoteSchema },
+      { name: "Comment", schema: CommentSchema },
     ]),
   ],
   controllers: [CasesController, TestDataController, HealthController],

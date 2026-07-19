@@ -53,6 +53,10 @@ describe("CasesController", () => {
       deleteQuote: jest.fn(),
       generateQuotePdf: jest.fn(),
       previewQuotePdf: jest.fn(),
+      createComment: jest.fn(),
+      listComments: jest.fn(),
+      updateComment: jest.fn(),
+      deleteComment: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -453,6 +457,47 @@ describe("CasesController", () => {
 
       expect(mockCasesService.createQuote).toHaveBeenCalledWith(mockUser, body);
       expect(result).toEqual({ id: "quote-1" });
+    });
+  });
+
+  describe("comments", () => {
+    it("should create a comment", async () => {
+      const body = { entityType: "case" as const, entityId: "case-1", body: "Hello" };
+      mockCasesService.createComment.mockResolvedValue({ id: "c-1", ...body } as never);
+
+      const result = await controller.createComment(mockUser, body);
+
+      expect(mockCasesService.createComment).toHaveBeenCalledWith(mockUser, body);
+      expect(result).toEqual(expect.objectContaining({ id: "c-1" }));
+    });
+
+    it("should list comments", async () => {
+      mockCasesService.listComments.mockResolvedValue([{ id: "c-1" }] as never);
+
+      const result = await controller.listComments(mockUser, "intervention", "int-1");
+
+      expect(mockCasesService.listComments).toHaveBeenCalledWith(mockUser, "intervention", "int-1");
+      expect(result).toHaveLength(1);
+    });
+
+    it("should update a comment", async () => {
+      mockCasesService.updateComment.mockResolvedValue({ id: "c-1", body: "Updated" } as never);
+
+      const result = await controller.updateComment(mockUser, "c-1", { body: "Updated" });
+
+      expect(mockCasesService.updateComment).toHaveBeenCalledWith(mockUser, "c-1", {
+        body: "Updated",
+      });
+      expect(result).toEqual({ id: "c-1", body: "Updated" });
+    });
+
+    it("should delete a comment", async () => {
+      mockCasesService.deleteComment.mockResolvedValue({ deleted: true });
+
+      const result = await controller.deleteComment(mockUser, "c-1");
+
+      expect(mockCasesService.deleteComment).toHaveBeenCalledWith(mockUser, "c-1");
+      expect(result).toEqual({ deleted: true });
     });
   });
 });

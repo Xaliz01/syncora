@@ -105,5 +105,6 @@ export async function previewQuotePdf(payload: CreateQuotePayload): Promise<stri
   }
 
   const blob = await response.blob();
-  return URL.createObjectURL(blob);
+  // Force application/pdf — certains navigateurs mobiles (iOS) ignorent les blobs sans type.
+  return URL.createObjectURL(new Blob([blob], { type: "application/pdf" }));
 }

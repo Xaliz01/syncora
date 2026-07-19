@@ -11,6 +11,7 @@ export * from "./stock";
 export * from "./subscription";
 export * from "./notification";
 export * from "./document";
+export * from "./comment";
 export * from "./soft-delete";
 export * from "./organization-scope";
 export * from "./export";

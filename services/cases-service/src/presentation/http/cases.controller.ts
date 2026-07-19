@@ -26,6 +26,9 @@ import type {
   UpdateInterventionBody,
   UpdateQuoteBody,
   UpdateTodoBody,
+  CreateCommentBody,
+  UpdateCommentBody,
+  CommentEntityType,
 } from "@planwise/shared";
 import { parseOrganizationIdQuery } from "@planwise/shared/nest";
 
@@ -124,6 +127,47 @@ export class CasesController {
   async listCaseHistory(@Param("id") id: string, @Query("organizationId") organizationId: string) {
     organizationId = parseOrganizationIdQuery(organizationId);
     return this.casesService.listCaseHistory(id, organizationId);
+  }
+
+  // ── Comments ──
+
+  @Post("comments")
+  async createComment(@Body() body: CreateCommentBody) {
+    return this.casesService.createComment(body);
+  }
+
+  @Get("comments")
+  async listComments(
+    @Query("organizationId") organizationId: string,
+    @Query("entityType") entityType: string,
+    @Query("entityId") entityId: string,
+  ) {
+    organizationId = parseOrganizationIdQuery(organizationId);
+    if (!entityType || !entityId) {
+      throw new BadRequestException("entityType and entityId query params are required");
+    }
+    return this.casesService.listComments(
+      organizationId,
+      entityType as CommentEntityType,
+      entityId,
+    );
+  }
+
+  @Get("comments/:id")
+  async getComment(@Param("id") id: string, @Query("organizationId") organizationId: string) {
+    organizationId = parseOrganizationIdQuery(organizationId);
+    return this.casesService.getComment(id, organizationId);
+  }
+
+  @Patch("comments/:id")
+  async updateComment(@Param("id") id: string, @Body() body: UpdateCommentBody) {
+    return this.casesService.updateComment(id, body);
+  }
+
+  @Delete("comments/:id")
+  async deleteComment(@Param("id") id: string, @Query("organizationId") organizationId: string) {
+    organizationId = parseOrganizationIdQuery(organizationId);
+    return this.casesService.deleteComment(id, organizationId);
   }
 
   // ── Interventions ──

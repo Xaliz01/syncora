@@ -11,6 +11,7 @@ import * as stockApi from "@/lib/stock.api";
 import { listOrganizationUsers } from "@/lib/admin.api";
 import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
 import { CaseHistory } from "@/components/cases/CaseHistory";
+import { CommentsSection } from "@/components/comments/CommentsSection";
 import { CaseQuotesSection } from "@/components/cases/CaseQuotesSection";
 import { CaseBillingBanner } from "@/components/cases/CaseBillingBanner";
 import { CaseAssigneesTagsInput } from "@/components/cases/CaseAssigneesTagsInput";
@@ -1537,6 +1538,14 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                               </button>
                             </div>
                           )}
+
+                          <CommentsSection
+                            entityType="intervention"
+                            entityId={intervention.id}
+                            caseId={caseId}
+                            compact
+                            title="Commentaires"
+                          />
                         </>
                       )}
                     </div>
@@ -1588,6 +1597,8 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
       )}
 
       <CaseQuotesSection caseId={caseId} />
+
+      <CommentsSection entityType="case" entityId={caseId} />
 
       <DocumentUploadZone entityType="case" entityId={caseId} />
 

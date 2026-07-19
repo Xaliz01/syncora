@@ -7,6 +7,8 @@ import type {
   DashboardStatFilter,
   DashboardTodoCaseItem,
   CompleteInterventionResponse,
+  CommentEntityType,
+  CommentResponse,
   GeoLocation,
   InterventionResponse,
   SignInterventionResponse,
@@ -262,6 +264,31 @@ export async function downloadInterventionReport(interventionId: string): Promis
 
 export function listCaseHistory(caseId: string) {
   return casesRequest<CaseHistoryEntryResponse[]>("GET", `/cases/items/${caseId}/history`);
+}
+
+// ── Comments ──
+
+export function listComments(entityType: CommentEntityType, entityId: string) {
+  const params = new URLSearchParams();
+  params.set("entityType", entityType);
+  params.set("entityId", entityId);
+  return casesRequest<CommentResponse[]>("GET", `/cases/comments?${params.toString()}`);
+}
+
+export function createComment(payload: {
+  entityType: CommentEntityType;
+  entityId: string;
+  body: string;
+}) {
+  return casesRequest<CommentResponse>("POST", "/cases/comments", payload);
+}
+
+export function updateComment(commentId: string, body: string) {
+  return casesRequest<CommentResponse>("PATCH", `/cases/comments/${commentId}`, { body });
+}
+
+export function deleteComment(commentId: string) {
+  return casesRequest<{ deleted: true }>("DELETE", `/cases/comments/${commentId}`);
 }
 
 // ── Dashboard ──

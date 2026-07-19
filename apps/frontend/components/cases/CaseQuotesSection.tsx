@@ -22,6 +22,19 @@ const STATUS_COLORS: Record<QuoteStatus, string> = {
     "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700",
 };
 
+/** iOS / iPadOS ne rendent pas les PDF dans un iframe (blob URL). */
+function useInlinePdfPreviewSupported(): boolean {
+  const [supported, setSupported] = useState(true);
+  useEffect(() => {
+    const ua = navigator.userAgent;
+    const iOS =
+      /iPad|iPhone|iPod/.test(ua) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    setSupported(!iOS);
+  }, []);
+  return supported;
+}
+
 interface QuoteLine {
   articleId?: string;
   description: string;
@@ -162,6 +175,7 @@ function QuoteForm({
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const previewUrlRef = useRef<string | null>(null);
+  const inlinePdfSupported = useInlinePdfPreviewSupported();
 
   const { data: articles = [] } = useQuery({
     queryKey: ["stock-articles-for-quotes"],
@@ -246,8 +260,8 @@ function QuoteForm({
   }, []);
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 h-full min-h-0">
-      <div className="space-y-4 min-w-0 overflow-y-auto pr-1">
+    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 xl:h-full xl:min-h-0">
+      <div className="space-y-4 min-w-0 xl:overflow-y-auto xl:pr-1">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="sm:col-span-2">
             <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
@@ -443,18 +457,50 @@ function QuoteForm({
         </div>
       </div>
 
-      <div className="min-w-0 min-h-[45vh] xl:min-h-0 flex flex-col h-full">
-        <div className="flex items-center justify-between mb-2 shrink-0">
+      <div className="min-w-0 min-h-[50vh] sm:min-h-[55vh] xl:min-h-0 flex flex-col xl:h-full">
+        <div className="flex items-center justify-between gap-2 mb-2 shrink-0">
           <h4 className="text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase tracking-wide">
             Aperçu PDF
           </h4>
-          {previewLoading && <span className="text-[11px] text-slate-400">Mise à jour…</span>}
+          <div className="flex items-center gap-2">
+            {previewLoading && <span className="text-[11px] text-slate-400">Mise à jour…</span>}
+            {previewUrl && (
+              <a
+                href={previewUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 px-2.5 py-1 text-[11px] font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+              >
+                Ouvrir
+              </a>
+            )}
+          </div>
         </div>
-        <div className="flex-1 min-h-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-950 overflow-hidden">
+        <div className="flex-1 min-h-[45vh] xl:min-h-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-950 overflow-hidden">
           {previewUrl ? (
-            <iframe title="Aperçu du devis" src={previewUrl} className="h-full w-full bg-white" />
+            inlinePdfSupported ? (
+              <iframe
+                title="Aperçu du devis"
+                src={previewUrl}
+                className="h-full w-full min-h-[45vh] xl:min-h-0 bg-white"
+              />
+            ) : (
+              <div className="flex h-full min-h-[45vh] flex-col items-center justify-center gap-3 px-6 text-center">
+                <p className="text-sm text-slate-600 dark:text-slate-300">
+                  L&apos;aperçu intégré n&apos;est pas disponible sur cet appareil.
+                </p>
+                <a
+                  href={previewUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-500 transition"
+                >
+                  Ouvrir l&apos;aperçu PDF
+                </a>
+              </div>
+            )
           ) : (
-            <div className="flex h-full items-center justify-center px-6 text-center text-sm text-slate-500 dark:text-slate-400">
+            <div className="flex h-full min-h-[45vh] items-center justify-center px-6 text-center text-sm text-slate-500 dark:text-slate-400">
               {previewError ? previewError : "Ajoutez une ligne pour prévisualiser le devis."}
             </div>
           )}
@@ -514,7 +560,7 @@ function QuoteEditorOverlay({
           Fermer
         </button>
       </header>
-      <div className="flex-1 min-h-0 overflow-hidden p-4 sm:p-6">{children}</div>
+      <div className="flex-1 min-h-0 overflow-y-auto xl:overflow-hidden p-4 sm:p-6">{children}</div>
     </div>,
     document.body,
   );

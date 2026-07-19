@@ -12,6 +12,7 @@ import {
   type InterventionPhotosHandle,
 } from "@/components/interventions/InterventionPhotos";
 import { InterventionSignatureDialog } from "@/components/interventions/InterventionSignatureDialog";
+import { CommentsSection } from "@/components/comments/CommentsSection";
 import * as api from "@/lib/cases.api";
 import type { GeoLocation, InterventionResponse, InterventionStatus } from "@planwise/shared";
 
@@ -398,6 +399,14 @@ function InterventionCard({
           showUploadActions={false}
         />
       )}
+
+      <CommentsSection
+        entityType="intervention"
+        entityId={intervention.id}
+        caseId={intervention.caseId}
+        compact
+        title="Commentaire"
+      />
     </div>
   );
 }

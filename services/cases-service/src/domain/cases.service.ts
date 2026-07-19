@@ -1,4 +1,9 @@
-import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model, Types } from "mongoose";
 import {
@@ -31,12 +36,18 @@ import {
   type UpdateQuoteBody,
   type QuoteResponse,
   type QuoteSummaryResponse,
+  type CreateCommentBody,
+  type UpdateCommentBody,
+  type CommentResponse,
+  type CommentEntityType,
+  MAX_COMMENT_BODY_LENGTH,
 } from "@planwise/shared";
 import type { CaseTemplateDocument } from "../persistence/case-template.schema";
 import type { CaseDocument } from "../persistence/case.schema";
 import type { CaseHistoryDocument } from "../persistence/case-history.schema";
 import type { InterventionDocument } from "../persistence/intervention.schema";
 import type { QuoteDocument, QuoteLineSubDoc } from "../persistence/quote.schema";
+import type { CommentDocument } from "../persistence/comment.schema";
 import { AbstractCasesService } from "./ports/cases.service.port";
 
 @Injectable()
@@ -52,6 +63,8 @@ export class CasesService extends AbstractCasesService {
     private readonly caseHistoryModel: Model<CaseHistoryDocument>,
     @InjectModel("Quote")
     private readonly quoteModel: Model<QuoteDocument>,
+    @InjectModel("Comment")
+    private readonly commentModel: Model<CommentDocument>,
   ) {
     super();
   }
@@ -279,6 +292,12 @@ export class CasesService extends AbstractCasesService {
         { $set: { deletedAt: now } },
       )
       .exec();
+    await this.commentModel
+      .updateMany(
+        { caseId: id, organizationId, ...activeDocumentFilter },
+        { $set: { deletedAt: now } },
+      )
+      .exec();
     return { deleted: true };
   }
 
@@ -447,6 +466,17 @@ export class CasesService extends AbstractCasesService {
     if (!doc) throw new NotFoundException("Intervention not found");
     const now = new Date();
     await this.interventionModel.updateOne({ _id: id }, { $set: { deletedAt: now } });
+    await this.commentModel
+      .updateMany(
+        {
+          organizationId,
+          entityType: "intervention",
+          entityId: id,
+          ...activeDocumentFilter,
+        },
+        { $set: { deletedAt: now } },
+      )
+      .exec();
     await this.caseModel.updateOne(
       { _id: doc.caseId, ...activeDocumentFilter },
       { $inc: { interventionCount: -1 } },
@@ -1201,6 +1231,133 @@ export class CasesService extends AbstractCasesService {
     };
   }
 
+  // ── Comments ──
+
+  async createComment(body: CreateCommentBody): Promise<CommentResponse> {
+    const trimmed = body.body?.trim() ?? "";
+    if (!trimmed) throw new BadRequestException("Comment body is required");
+    if (trimmed.length > MAX_COMMENT_BODY_LENGTH) {
+      throw new BadRequestException(
+        `Comment body must be at most ${MAX_COMMENT_BODY_LENGTH} characters`,
+      );
+    }
+    if (body.entityType !== "case" && body.entityType !== "intervention") {
+      throw new BadRequestException("entityType must be case or intervention");
+    }
+
+    const caseId = await this.resolveCommentCaseId(
+      body.organizationId,
+      body.entityType,
+      body.entityId,
+    );
+
+    const doc = await this.commentModel.create({
+      organizationId: body.organizationId,
+      entityType: body.entityType,
+      entityId: body.entityId,
+      caseId,
+      body: trimmed,
+      authorId: body.authorId,
+      authorName: body.authorName,
+    });
+    return this.toCommentResponse(doc);
+  }
+
+  async listComments(
+    organizationId: string,
+    entityType: CommentEntityType,
+    entityId: string,
+  ): Promise<CommentResponse[]> {
+    if (entityType !== "case" && entityType !== "intervention") {
+      throw new BadRequestException("entityType must be case or intervention");
+    }
+    const docs = await this.commentModel
+      .find({
+        organizationId,
+        entityType,
+        entityId,
+        ...activeDocumentFilter,
+      })
+      .sort({ createdAt: 1 })
+      .limit(500)
+      .exec();
+    return docs.map((d) => this.toCommentResponse(d));
+  }
+
+  async getComment(id: string, organizationId: string): Promise<CommentResponse> {
+    const doc = await this.commentModel
+      .findOne({ _id: id, organizationId, ...activeDocumentFilter })
+      .exec();
+    if (!doc) throw new NotFoundException("Comment not found");
+    return this.toCommentResponse(doc);
+  }
+
+  async updateComment(id: string, body: UpdateCommentBody): Promise<CommentResponse> {
+    const trimmed = body.body?.trim() ?? "";
+    if (!trimmed) throw new BadRequestException("Comment body is required");
+    if (trimmed.length > MAX_COMMENT_BODY_LENGTH) {
+      throw new BadRequestException(
+        `Comment body must be at most ${MAX_COMMENT_BODY_LENGTH} characters`,
+      );
+    }
+    const doc = await this.commentModel
+      .findOneAndUpdate(
+        { _id: id, organizationId: body.organizationId, ...activeDocumentFilter },
+        { $set: { body: trimmed } },
+        { new: true },
+      )
+      .exec();
+    if (!doc) throw new NotFoundException("Comment not found");
+    return this.toCommentResponse(doc);
+  }
+
+  async deleteComment(id: string, organizationId: string): Promise<{ deleted: true }> {
+    const result = await this.commentModel
+      .updateOne(
+        { _id: id, organizationId, ...activeDocumentFilter },
+        { $set: { deletedAt: new Date() } },
+      )
+      .exec();
+    if (!result.matchedCount) throw new NotFoundException("Comment not found");
+    return { deleted: true };
+  }
+
+  private async resolveCommentCaseId(
+    organizationId: string,
+    entityType: CommentEntityType,
+    entityId: string,
+  ): Promise<string> {
+    if (entityType === "case") {
+      const caseDoc = await this.caseModel
+        .findOne({ _id: entityId, organizationId, ...activeDocumentFilter })
+        .select("_id")
+        .exec();
+      if (!caseDoc) throw new NotFoundException("Case not found");
+      return caseDoc._id.toString();
+    }
+    const intervention = await this.interventionModel
+      .findOne({ _id: entityId, organizationId, ...activeDocumentFilter })
+      .select("caseId")
+      .exec();
+    if (!intervention) throw new NotFoundException("Intervention not found");
+    return intervention.caseId;
+  }
+
+  private toCommentResponse(doc: CommentDocument): CommentResponse {
+    return {
+      id: doc._id.toString(),
+      organizationId: doc.organizationId,
+      entityType: doc.entityType,
+      entityId: doc.entityId,
+      caseId: doc.caseId,
+      body: doc.body,
+      authorId: doc.authorId,
+      authorName: doc.authorName,
+      createdAt: doc.get("createdAt")?.toISOString() ?? new Date().toISOString(),
+      updatedAt: doc.get("updatedAt")?.toISOString(),
+    };
+  }
+
   async purgeTestData(organizationId: string): Promise<{ purged: true }> {
     const testCases = await this.caseModel
       .find({ organizationId, isTestData: true })
@@ -1217,7 +1374,9 @@ export class CasesService extends AbstractCasesService {
     await this.interventionModel.deleteMany(interventionFilter).exec();
     if (caseIds.length > 0) {
       await this.caseHistoryModel.deleteMany({ organizationId, caseId: { $in: caseIds } }).exec();
+      await this.commentModel.deleteMany({ organizationId, caseId: { $in: caseIds } }).exec();
     }
+    await this.commentModel.deleteMany({ organizationId, isTestData: true }).exec();
     await this.caseModel.deleteMany({ organizationId, isTestData: true }).exec();
     await this.templateModel.deleteMany({ organizationId, isTestData: true }).exec();
     return { purged: true };

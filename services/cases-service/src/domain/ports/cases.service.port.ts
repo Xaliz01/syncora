@@ -25,6 +25,10 @@ import type {
   UpdateQuoteBody,
   QuoteResponse,
   QuoteSummaryResponse,
+  CreateCommentBody,
+  UpdateCommentBody,
+  CommentResponse,
+  CommentEntityType,
 } from "@planwise/shared";
 
 export abstract class AbstractCasesService {
@@ -118,5 +122,16 @@ export abstract class AbstractCasesService {
   abstract getQuote(id: string, organizationId: string): Promise<QuoteResponse>;
   abstract updateQuote(id: string, body: UpdateQuoteBody): Promise<QuoteResponse>;
   abstract deleteQuote(id: string, organizationId: string): Promise<{ deleted: true }>;
+
+  abstract createComment(body: CreateCommentBody): Promise<CommentResponse>;
+  abstract listComments(
+    organizationId: string,
+    entityType: CommentEntityType,
+    entityId: string,
+  ): Promise<CommentResponse[]>;
+  abstract getComment(id: string, organizationId: string): Promise<CommentResponse>;
+  abstract updateComment(id: string, body: UpdateCommentBody): Promise<CommentResponse>;
+  abstract deleteComment(id: string, organizationId: string): Promise<{ deleted: true }>;
+
   abstract purgeTestData(organizationId: string): Promise<{ purged: true }>;
 }

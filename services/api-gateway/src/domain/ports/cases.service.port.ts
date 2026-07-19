@@ -15,6 +15,8 @@ import type {
   SignInterventionResponse,
   StartInterventionResponse,
   TodoDashboardVisibility,
+  CommentResponse,
+  CommentEntityType,
 } from "@planwise/shared";
 
 export interface CreateCaseForOrgBody {
@@ -154,6 +156,16 @@ export interface UpdateQuoteForOrgBody {
   }[];
 }
 
+export interface CreateCommentForOrgBody {
+  entityType: CommentEntityType;
+  entityId: string;
+  body: string;
+}
+
+export interface UpdateCommentForOrgBody {
+  body: string;
+}
+
 export abstract class AbstractCasesGatewayService {
   abstract createTemplate(
     user: AuthUser,
@@ -256,4 +268,17 @@ export abstract class AbstractCasesGatewayService {
   abstract generateQuotePdf(user: AuthUser, quoteId: string): Promise<Buffer>;
 
   abstract previewQuotePdf(user: AuthUser, body: CreateQuoteForOrgBody): Promise<Buffer>;
+
+  abstract createComment(user: AuthUser, body: CreateCommentForOrgBody): Promise<CommentResponse>;
+  abstract listComments(
+    user: AuthUser,
+    entityType: CommentEntityType,
+    entityId: string,
+  ): Promise<CommentResponse[]>;
+  abstract updateComment(
+    user: AuthUser,
+    commentId: string,
+    body: UpdateCommentForOrgBody,
+  ): Promise<CommentResponse>;
+  abstract deleteComment(user: AuthUser, commentId: string): Promise<{ deleted: true }>;
 }

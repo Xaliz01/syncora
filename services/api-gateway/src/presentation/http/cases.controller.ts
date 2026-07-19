@@ -28,6 +28,8 @@ import type {
   UpdateInterventionForOrgBody,
   UpdateTemplateForOrgBody,
   UpdateTodoForOrgBody,
+  CreateCommentForOrgBody,
+  UpdateCommentForOrgBody,
 } from "../../domain/ports/cases.service.port";
 import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
 import {
@@ -148,6 +150,52 @@ export class CasesController {
   @RequirePermissions("cases.read")
   async listCaseHistory(@CurrentUser() user: AuthUser, @Param("caseId") caseId: string) {
     return this.casesService.listCaseHistory(user, caseId);
+  }
+
+  // ── Comments ──
+
+  @Post("comments")
+  @RequirePermissions("comments.create")
+  async createComment(@CurrentUser() user: AuthUser, @Body() body: CreateCommentForOrgBody) {
+    if (!body?.entityType || !body?.entityId || typeof body.body !== "string") {
+      throw new BadRequestException("entityType, entityId and body are required");
+    }
+    return this.casesService.createComment(user, body);
+  }
+
+  @Get("comments")
+  @RequirePermissions("comments.read")
+  async listComments(
+    @CurrentUser() user: AuthUser,
+    @Query("entityType") entityType?: string,
+    @Query("entityId") entityId?: string,
+  ) {
+    if (!entityType || !entityId) {
+      throw new BadRequestException("entityType and entityId query params are required");
+    }
+    if (entityType !== "case" && entityType !== "intervention") {
+      throw new BadRequestException("entityType must be case or intervention");
+    }
+    return this.casesService.listComments(user, entityType, entityId);
+  }
+
+  @Patch("comments/:commentId")
+  @RequirePermissions("comments.update")
+  async updateComment(
+    @CurrentUser() user: AuthUser,
+    @Param("commentId") commentId: string,
+    @Body() body: UpdateCommentForOrgBody,
+  ) {
+    if (typeof body?.body !== "string") {
+      throw new BadRequestException("body is required");
+    }
+    return this.casesService.updateComment(user, commentId, body);
+  }
+
+  @Delete("comments/:commentId")
+  @RequirePermissions("comments.delete")
+  async deleteComment(@CurrentUser() user: AuthUser, @Param("commentId") commentId: string) {
+    return this.casesService.deleteComment(user, commentId);
   }
 
   @Post("interventions")

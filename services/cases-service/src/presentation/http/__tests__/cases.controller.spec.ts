@@ -40,6 +40,11 @@ describe("CasesController", () => {
       getQuote: jest.fn(),
       updateQuote: jest.fn(),
       deleteQuote: jest.fn(),
+      createComment: jest.fn(),
+      listComments: jest.fn(),
+      getComment: jest.fn(),
+      updateComment: jest.fn(),
+      deleteComment: jest.fn(),
       purgeTestData: jest.fn(),
     };
 
@@ -350,6 +355,47 @@ describe("CasesController", () => {
         controller.getDashboardStatCases("org-1", "user-1", undefined, "invalid"),
       ).rejects.toThrow(BadRequestException);
       expect(mockCasesService.getDashboardStatCases).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("comments", () => {
+    it("should create a comment", async () => {
+      const body = {
+        organizationId: "org-1",
+        entityType: "case" as const,
+        entityId: "case-1",
+        body: "Hello",
+        authorId: "user-1",
+        authorName: "Alice",
+      };
+      mockCasesService.createComment.mockResolvedValue({ id: "c-1", ...body } as never);
+
+      const result = await controller.createComment(body);
+
+      expect(mockCasesService.createComment).toHaveBeenCalledWith(body);
+      expect(result).toEqual(expect.objectContaining({ id: "c-1" }));
+    });
+
+    it("should list comments", async () => {
+      mockCasesService.listComments.mockResolvedValue([{ id: "c-1" }] as never);
+
+      const result = await controller.listComments("org-1", "case", "case-1");
+
+      expect(mockCasesService.listComments).toHaveBeenCalledWith("org-1", "case", "case-1");
+      expect(result).toHaveLength(1);
+    });
+
+    it("should require entityType and entityId when listing", async () => {
+      await expect(controller.listComments("org-1", "", "")).rejects.toThrow(BadRequestException);
+    });
+
+    it("should delete a comment", async () => {
+      mockCasesService.deleteComment.mockResolvedValue({ deleted: true });
+
+      const result = await controller.deleteComment("c-1", "org-1");
+
+      expect(mockCasesService.deleteComment).toHaveBeenCalledWith("c-1", "org-1");
+      expect(result).toEqual({ deleted: true });
     });
   });
 });

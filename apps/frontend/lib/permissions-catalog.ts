@@ -248,6 +248,26 @@ export const PERMISSION_METADATA: Record<PermissionCode, PermissionMetadata> = {
     description:
       "Recueillir la signature du client sur une intervention terminée et générer le rapport PDF.",
   },
+  "comments.read": {
+    code: "comments.read",
+    label: "Voir les commentaires",
+    description: "Consulter les commentaires sur les dossiers et interventions.",
+  },
+  "comments.create": {
+    code: "comments.create",
+    label: "Ajouter des commentaires",
+    description: "Publier un commentaire sur un dossier ou une intervention.",
+  },
+  "comments.update": {
+    code: "comments.update",
+    label: "Modifier des commentaires",
+    description: "Modifier ses propres commentaires (ou tous si administrateur).",
+  },
+  "comments.delete": {
+    code: "comments.delete",
+    label: "Supprimer des commentaires",
+    description: "Supprimer des commentaires sur les dossiers et interventions.",
+  },
   "vehicles.read": {
     code: "vehicles.read",
     label: "Voir les véhicules",
