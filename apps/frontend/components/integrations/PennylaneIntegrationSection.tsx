@@ -94,8 +94,8 @@ export function PennylaneIntegrationSection() {
         <div className="min-w-0">
           <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">Pennylane</h2>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Connectez votre compte Pennylane pour créer une facture brouillon depuis un dossier « À
-            facturer », sans ressaisir les lignes.
+            Connectez votre compte Pennylane pour créer et suivre une facture depuis un dossier,
+            sans ressaisir client ni lignes.
           </p>
         </div>
       </div>

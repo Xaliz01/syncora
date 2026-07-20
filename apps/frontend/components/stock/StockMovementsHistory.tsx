@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Link from "next/link";
 import type { StockMovementResponse } from "@planwise/shared";
 
@@ -8,6 +9,10 @@ const MOVEMENT_TYPE_LABELS: Record<string, string> = {
   out: "Sortie",
   adjustment: "Ajustement",
   transfer: "Transfert",
+};
+
+const REASON_LABELS: Record<string, string> = {
+  intervention_usage: "Usage intervention",
 };
 
 function formatDate(iso?: string): string {
@@ -31,6 +36,52 @@ function formatMovementSummary(movement: StockMovementResponse): string {
     return `${stockChange} · ${movement.locationName}`;
   }
   return stockChange;
+}
+
+function formatReasonLabel(reason: string): string {
+  return REASON_LABELS[reason] ?? reason;
+}
+
+function MovementMeta({ movement }: { movement: StockMovementResponse }) {
+  const parts: ReactNode[] = [];
+
+  if (movement.note) {
+    parts.push(<span key="note">{movement.note}</span>);
+  }
+
+  if (movement.reason && movement.reason !== "manual") {
+    const label = formatReasonLabel(movement.reason);
+    if (movement.reason === "intervention_usage" && movement.caseId) {
+      parts.push(
+        <Link
+          key="reason"
+          href={`/cases/${movement.caseId}`}
+          className="text-brand-600 dark:text-brand-400 hover:underline"
+        >
+          {label}
+        </Link>,
+      );
+    } else {
+      parts.push(<span key="reason">{label}</span>);
+    }
+  }
+
+  if (movement.actorUserName) {
+    parts.push(<span key="actor">par {movement.actorUserName}</span>);
+  }
+
+  if (parts.length === 0) return null;
+
+  return (
+    <p className="mt-0.5 flex flex-wrap items-center gap-x-1 text-xs text-slate-400 dark:text-slate-500">
+      {parts.map((part, index) => (
+        <span key={index} className="inline-flex items-center gap-x-1">
+          {index > 0 ? <span aria-hidden>·</span> : null}
+          {part}
+        </span>
+      ))}
+    </p>
+  );
 }
 
 export function StockMovementsHistory({
@@ -89,17 +140,7 @@ export function StockMovementsHistory({
             <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
               {formatMovementSummary(movement)}
             </p>
-            {(movement.note || movement.reason || movement.actorUserName) && (
-              <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
-                {[
-                  movement.note,
-                  movement.reason && movement.reason !== "manual" ? movement.reason : null,
-                  movement.actorUserName ? `par ${movement.actorUserName}` : null,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </p>
-            )}
+            <MovementMeta movement={movement} />
           </div>
           <time className="shrink-0 text-xs text-slate-400 dark:text-slate-500 tabular-nums">
             {formatDate(movement.createdAt)}

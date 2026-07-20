@@ -452,7 +452,7 @@ export const PERMISSION_METADATA: Record<PermissionCode, PermissionMetadata> = {
   "integrations.pennylane.sync": {
     code: "integrations.pennylane.sync",
     label: "Envoyer vers Pennylane",
-    description: "Créer une facture brouillon dans Pennylane depuis un dossier à facturer.",
+    description: "Créer et suivre une facture Pennylane depuis un dossier.",
   },
   "integrations.qonto.read": {
     code: "integrations.qonto.read",
@@ -467,7 +467,7 @@ export const PERMISSION_METADATA: Record<PermissionCode, PermissionMetadata> = {
   "integrations.qonto.sync": {
     code: "integrations.qonto.sync",
     label: "Envoyer vers Qonto",
-    description: "Créer une facture brouillon dans Qonto depuis un dossier à facturer.",
+    description: "Créer et suivre une facture Qonto depuis un dossier.",
   },
 };
 

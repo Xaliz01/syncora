@@ -1,8 +1,11 @@
 import type {
+  CaseInvoiceSyncListResponse,
+  CaseInvoiceSyncStatus,
   PennylaneConnectionStatus,
   PennylaneOAuthStartResponse,
   QontoConnectionStatus,
   QontoOAuthStartResponse,
+  SyncCaseInvoiceOptions,
   SyncCaseToPennylaneResult,
   SyncCaseToQontoResult,
 } from "@planwise/shared";
@@ -39,12 +42,18 @@ export function disconnectPennylane(): Promise<PennylaneConnectionStatus> {
 
 export function syncCaseToPennylane(
   caseId: string,
-  options?: { quoteId?: string },
+  options: SyncCaseInvoiceOptions,
 ): Promise<SyncCaseToPennylaneResult> {
+  const body: SyncCaseInvoiceOptions = {
+    quoteId: options.quoteId,
+  };
+  if (options.invoiceKind) body.invoiceKind = options.invoiceKind;
+  if (options.situationPercent != null) body.situationPercent = options.situationPercent;
+  if (options.amountHt != null) body.amountHt = options.amountHt;
   return apiRequestJson<SyncCaseToPennylaneResult>(
     "POST",
     `/integrations/pennylane/cases/${caseId}/sync`,
-    options?.quoteId ? { body: { quoteId: options.quoteId } } : {},
+    { body },
   );
 }
 
@@ -74,14 +83,60 @@ export function disconnectQonto(): Promise<QontoConnectionStatus> {
 
 export function syncCaseToQonto(
   caseId: string,
-  options?: { quoteId?: string; invoiceNumber?: string },
+  options: SyncCaseInvoiceOptions,
 ): Promise<SyncCaseToQontoResult> {
-  const body: { quoteId?: string; invoiceNumber?: string } = {};
-  if (options?.quoteId) body.quoteId = options.quoteId;
-  if (options?.invoiceNumber?.trim()) body.invoiceNumber = options.invoiceNumber.trim();
-  return apiRequestJson<SyncCaseToQontoResult>(
+  const body: SyncCaseInvoiceOptions = {
+    quoteId: options.quoteId,
+  };
+  if (options.invoiceNumber?.trim()) body.invoiceNumber = options.invoiceNumber.trim();
+  if (options.invoiceKind) body.invoiceKind = options.invoiceKind;
+  if (options.situationPercent != null) body.situationPercent = options.situationPercent;
+  if (options.amountHt != null) body.amountHt = options.amountHt;
+  return apiRequestJson<SyncCaseToQontoResult>("POST", `/integrations/qonto/cases/${caseId}/sync`, {
+    body,
+  });
+}
+
+export function getCaseInvoiceSync(caseId: string): Promise<CaseInvoiceSyncListResponse> {
+  return apiRequestJson<CaseInvoiceSyncListResponse>(
+    "GET",
+    `/integrations/cases/${caseId}/invoice-sync`,
+  );
+}
+
+export function finalizeCaseInvoice(
+  caseId: string,
+  syncId: string,
+): Promise<CaseInvoiceSyncStatus> {
+  return apiRequestJson<CaseInvoiceSyncStatus>(
     "POST",
-    `/integrations/qonto/cases/${caseId}/sync`,
-    Object.keys(body).length > 0 ? { body } : {},
+    `/integrations/cases/${caseId}/invoice-sync/${syncId}/finalize`,
+  );
+}
+
+export function refreshCaseInvoiceSync(
+  caseId: string,
+  syncId: string,
+): Promise<CaseInvoiceSyncStatus> {
+  return apiRequestJson<CaseInvoiceSyncStatus>(
+    "POST",
+    `/integrations/cases/${caseId}/invoice-sync/${syncId}/refresh`,
+  );
+}
+
+export function refreshAllCaseInvoiceSyncs(caseId: string): Promise<CaseInvoiceSyncListResponse> {
+  return apiRequestJson<CaseInvoiceSyncListResponse>(
+    "POST",
+    `/integrations/cases/${caseId}/invoice-sync/refresh`,
+  );
+}
+
+export function deleteCaseInvoiceSync(
+  caseId: string,
+  syncId: string,
+): Promise<CaseInvoiceSyncListResponse> {
+  return apiRequestJson<CaseInvoiceSyncListResponse>(
+    "DELETE",
+    `/integrations/cases/${caseId}/invoice-sync/${syncId}`,
   );
 }

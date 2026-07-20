@@ -4,6 +4,10 @@ import { firstValueFrom } from "rxjs";
 import axios from "axios";
 import type {
   AuthUser,
+  BillingStatus,
+  CaseInvoiceKind,
+  CaseInvoiceSyncListResponse,
+  CaseInvoiceSyncStatus,
   CaseResponse,
   ConnectPennylaneBody,
   ConnectQontoBody,
@@ -13,15 +17,25 @@ import type {
   QontoConnectionStatus,
   QontoOAuthStartResponse,
   QuoteResponse,
+  SyncCaseInvoiceOptions,
   SyncCaseToPennylaneBody,
   SyncCaseToPennylaneResult,
   SyncCaseToQontoBody,
   SyncCaseToQontoResult,
   TvaRate,
 } from "@planwise/shared";
+import {
+  aggregateCaseBillingStatus,
+  buildInvoiceLinesFromQuote,
+  canCreateCaseInvoice,
+  nextSituationNumber,
+  shouldUpgradeBillingStatus,
+  sumInvoiceAmountsHt,
+} from "@planwise/shared";
 import { AbstractIntegrationsGatewayService } from "./ports/integrations.service.port";
 import { AbstractCasesGatewayService } from "./ports/cases.service.port";
 import { AbstractCustomersGatewayService } from "./ports/customers.service.port";
+import { assertAssignablePermission } from "../infrastructure/permission-checks";
 
 const INTEGRATIONS_URL = process.env.INTEGRATIONS_SERVICE_URL ?? "http://localhost:3013";
 
@@ -146,37 +160,37 @@ export class IntegrationsGatewayService extends AbstractIntegrationsGatewayServi
   async syncCaseToPennylane(
     user: AuthUser,
     caseId: string,
-    options?: { quoteId?: string },
+    options: SyncCaseInvoiceOptions,
   ): Promise<SyncCaseToPennylaneResult> {
-    const { caseData, customer, quoteLines } = await this.loadCaseForInvoiceSync(
-      user,
-      caseId,
-      options?.quoteId,
-      "Pennylane",
-    );
+    const prepared = await this.prepareInvoiceSync(user, caseId, options, "Pennylane");
 
     const today = new Date().toISOString().slice(0, 10);
     const payload: SyncCaseToPennylaneBody = {
       organizationId: user.organizationId,
-      caseId: caseData.id,
-      caseTitle: caseData.title,
-      externalReference: `planwise-case-${caseData.id}`,
+      caseId: prepared.caseData.id,
+      caseTitle: prepared.caseData.title,
+      externalReference: prepared.externalReference,
       invoiceDate: today,
       draft: true,
+      quoteId: prepared.quoteId,
+      invoiceKind: prepared.invoiceKind,
+      situationNumber: prepared.situationNumber,
+      situationPercent: prepared.situationPercent,
+      amountHt: prepared.amountHt,
       customer: {
-        planwiseCustomerId: customer.id,
-        name: customer.displayName,
-        email: customer.email,
-        vatNumber: customer.legalIdentifier?.startsWith("FR")
-          ? customer.legalIdentifier
+        planwiseCustomerId: prepared.customer.id,
+        name: prepared.customer.displayName,
+        email: prepared.customer.email,
+        vatNumber: prepared.customer.legalIdentifier?.startsWith("FR")
+          ? prepared.customer.legalIdentifier
           : undefined,
-        addressLine1: customer.address?.line1,
-        addressLine2: customer.address?.line2,
-        postalCode: customer.address?.postalCode,
-        city: customer.address?.city,
-        country: customer.address?.country || "FR",
+        addressLine1: prepared.customer.address?.line1,
+        addressLine2: prepared.customer.address?.line2,
+        postalCode: prepared.customer.address?.postalCode,
+        city: prepared.customer.address?.city,
+        country: prepared.customer.address?.country || "FR",
       },
-      lines: quoteLines.map((line) => ({
+      lines: prepared.lines.map((line) => ({
         label: line.label,
         quantity: line.quantity,
         unitPriceHt: line.unitPriceHt,
@@ -190,50 +204,47 @@ export class IntegrationsGatewayService extends AbstractIntegrationsGatewayServi
       payload,
     );
 
-    if (caseData.billingStatus === "to_invoice") {
-      await this.casesService.updateCase(user, caseId, { billingStatus: "invoiced" });
-    }
-
+    await this.recomputeCaseBillingStatus(user, caseId, prepared.quoteTotalHt);
     return result;
   }
 
   async syncCaseToQonto(
     user: AuthUser,
     caseId: string,
-    options?: { quoteId?: string; invoiceNumber?: string },
+    options: SyncCaseInvoiceOptions,
   ): Promise<SyncCaseToQontoResult> {
-    const { caseData, customer, quoteLines } = await this.loadCaseForInvoiceSync(
-      user,
-      caseId,
-      options?.quoteId,
-      "Qonto",
-    );
-
+    const prepared = await this.prepareInvoiceSync(user, caseId, options, "Qonto");
     const today = new Date().toISOString().slice(0, 10);
     const invoiceNumber = options?.invoiceNumber?.trim();
+
     const payload: SyncCaseToQontoBody = {
       organizationId: user.organizationId,
-      caseId: caseData.id,
-      caseTitle: caseData.title,
-      externalReference: `planwise-case-${caseData.id}`,
+      caseId: prepared.caseData.id,
+      caseTitle: prepared.caseData.title,
+      externalReference: prepared.externalReference,
       invoiceDate: today,
       draft: true,
       ...(invoiceNumber ? { invoiceNumber } : {}),
+      quoteId: prepared.quoteId,
+      invoiceKind: prepared.invoiceKind,
+      situationNumber: prepared.situationNumber,
+      situationPercent: prepared.situationPercent,
+      amountHt: prepared.amountHt,
       customer: {
-        planwiseCustomerId: customer.id,
-        kind: customer.kind,
-        name: customer.displayName,
-        firstName: customer.firstName,
-        lastName: customer.lastName,
-        email: customer.email,
-        legalIdentifier: customer.legalIdentifier,
-        addressLine1: customer.address?.line1,
-        addressLine2: customer.address?.line2,
-        postalCode: customer.address?.postalCode,
-        city: customer.address?.city,
-        country: customer.address?.country || "FR",
+        planwiseCustomerId: prepared.customer.id,
+        kind: prepared.customer.kind,
+        name: prepared.customer.displayName,
+        firstName: prepared.customer.firstName,
+        lastName: prepared.customer.lastName,
+        email: prepared.customer.email,
+        legalIdentifier: prepared.customer.legalIdentifier,
+        addressLine1: prepared.customer.address?.line1,
+        addressLine2: prepared.customer.address?.line2,
+        postalCode: prepared.customer.address?.postalCode,
+        city: prepared.customer.address?.city,
+        country: prepared.customer.address?.country || "FR",
       },
-      lines: quoteLines.map((line) => ({
+      lines: prepared.lines.map((line) => ({
         label: line.label,
         quantity: line.quantity,
         unitPriceHt: line.unitPriceHt,
@@ -247,33 +258,143 @@ export class IntegrationsGatewayService extends AbstractIntegrationsGatewayServi
       payload,
     );
 
-    if (caseData.billingStatus === "to_invoice") {
-      await this.casesService.updateCase(user, caseId, { billingStatus: "invoiced" });
-    }
-
+    await this.recomputeCaseBillingStatus(user, caseId, prepared.quoteTotalHt);
     return result;
   }
 
-  private async loadCaseForInvoiceSync(
+  async getCaseInvoiceSync(user: AuthUser, caseId: string): Promise<CaseInvoiceSyncListResponse> {
+    return this.getJson<CaseInvoiceSyncListResponse>(`/integrations/cases/${caseId}/invoice-sync`, {
+      organizationId: user.organizationId,
+    });
+  }
+
+  async finalizeCaseInvoice(
     user: AuthUser,
     caseId: string,
-    quoteId: string | undefined,
+    syncId: string,
+  ): Promise<CaseInvoiceSyncStatus> {
+    const existing = await this.requireSync(user, caseId, syncId);
+    assertAssignablePermission(
+      user,
+      existing.provider === "qonto" ? "integrations.qonto.sync" : "integrations.pennylane.sync",
+    );
+    const status = await this.postJson<CaseInvoiceSyncStatus>(
+      `/integrations/cases/${caseId}/invoice-sync/${syncId}/finalize`,
+      { organizationId: user.organizationId },
+    );
+    await this.recomputeCaseBillingStatus(user, caseId);
+    return status;
+  }
+
+  async refreshCaseInvoiceSync(
+    user: AuthUser,
+    caseId: string,
+    syncId: string,
+  ): Promise<CaseInvoiceSyncStatus> {
+    const existing = await this.requireSync(user, caseId, syncId);
+    assertAssignablePermission(
+      user,
+      existing.provider === "qonto" ? "integrations.qonto.sync" : "integrations.pennylane.sync",
+    );
+    const status = await this.postJson<CaseInvoiceSyncStatus>(
+      `/integrations/cases/${caseId}/invoice-sync/${syncId}/refresh`,
+      { organizationId: user.organizationId },
+    );
+    await this.recomputeCaseBillingStatus(user, caseId);
+    return status;
+  }
+
+  async refreshAllCaseInvoiceSyncs(
+    user: AuthUser,
+    caseId: string,
+  ): Promise<CaseInvoiceSyncListResponse> {
+    const list = await this.getCaseInvoiceSync(user, caseId);
+    if (list.invoices.length === 0) {
+      throw new BadRequestException(
+        "Aucune facture d’intégration trouvée pour ce dossier. Envoyez d’abord le dossier vers Pennylane ou Qonto.",
+      );
+    }
+    const providers = new Set(list.invoices.map((i) => i.provider));
+    for (const provider of providers) {
+      assertAssignablePermission(
+        user,
+        provider === "qonto" ? "integrations.qonto.sync" : "integrations.pennylane.sync",
+      );
+    }
+    const refreshed = await this.postJson<CaseInvoiceSyncListResponse>(
+      `/integrations/cases/${caseId}/invoice-sync/refresh`,
+      { organizationId: user.organizationId },
+    );
+    await this.recomputeCaseBillingStatus(user, caseId);
+    return refreshed;
+  }
+
+  async deleteCaseInvoiceSync(
+    user: AuthUser,
+    caseId: string,
+    syncId: string,
+  ): Promise<CaseInvoiceSyncListResponse> {
+    const existing = await this.requireSync(user, caseId, syncId);
+    assertAssignablePermission(
+      user,
+      existing.provider === "qonto" ? "integrations.qonto.sync" : "integrations.pennylane.sync",
+    );
+    try {
+      const res = await firstValueFrom(
+        this.httpService.delete<CaseInvoiceSyncListResponse>(
+          `${INTEGRATIONS_URL}/integrations/cases/${caseId}/invoice-sync/${syncId}`,
+          { params: { organizationId: user.organizationId } },
+        ),
+      );
+      await this.recomputeCaseBillingStatus(user, caseId);
+      return res.data;
+    } catch (err) {
+      this.rethrow(err);
+    }
+  }
+
+  private async requireSync(
+    user: AuthUser,
+    caseId: string,
+    syncId: string,
+  ): Promise<CaseInvoiceSyncStatus> {
+    const list = await this.getCaseInvoiceSync(user, caseId);
+    const existing = list.invoices.find((i) => i.id === syncId);
+    if (!existing) {
+      throw new BadRequestException(
+        "Facture d’intégration introuvable pour ce dossier. Actualisez la liste puis réessayez.",
+      );
+    }
+    return existing;
+  }
+
+  private async prepareInvoiceSync(
+    user: AuthUser,
+    caseId: string,
+    options: SyncCaseInvoiceOptions,
     providerLabel: string,
   ): Promise<{
     caseData: CaseResponse;
     customer: CustomerResponse;
-    quoteLines: Array<{
+    lines: Array<{
       label: string;
       quantity: number;
       unitPriceHt: string;
       tvaRate: TvaRate;
       unit?: string;
     }>;
+    externalReference: string;
+    quoteId: string;
+    invoiceKind: CaseInvoiceKind;
+    situationNumber?: number;
+    situationPercent?: number;
+    amountHt: string;
+    quoteTotalHt: number;
   }> {
     const caseData = await this.casesService.getCase(user, caseId);
-    if (caseData.billingStatus !== "to_invoice" && caseData.billingStatus !== "invoiced") {
+    if (!canCreateCaseInvoice(caseData.billingStatus)) {
       throw new BadRequestException(
-        "Le dossier doit être au statut « À facturer » (ou déjà facturé pour reconsulter).",
+        "Le dossier doit être « À facturer », « Brouillon facture » ou « Partiellement facturé » pour créer une facture.",
       );
     }
 
@@ -284,56 +405,119 @@ export class IntegrationsGatewayService extends AbstractIntegrationsGatewayServi
     }
 
     const customer = await this.customersService.getCustomer(user, caseData.customerId);
-    const quoteLines = await this.resolveQuoteLines(user, caseData, quoteId);
-    return { caseData, customer, quoteLines };
+    const invoiceKind: CaseInvoiceKind = options.invoiceKind ?? "full";
+    const existing = await this.getCaseInvoiceSync(user, caseId);
+    const quote = await this.requireQuoteForInvoice(user, caseData, options.quoteId);
+
+    const quoteLines = quote.lines.map((line) => ({
+      label: line.description || caseData.title,
+      quantity: line.quantity,
+      unitPriceHt: line.unitPrice.toFixed(2),
+      tvaRate: line.tvaRate,
+      unit: line.unit,
+    }));
+
+    if (quoteLines.length === 0) {
+      throw new BadRequestException(
+        "Le devis sélectionné n’a aucune ligne. Complétez le devis avant de créer une facture.",
+      );
+    }
+
+    const quoteTotalHt = quote.totalHt;
+    const quoteId = quote.id;
+    const alreadyInvoicedHt = sumInvoiceAmountsHt(
+      existing.invoices.filter(
+        (i) =>
+          i.quoteId === quoteId &&
+          (i.remoteStatus === "finalized" ||
+            i.remoteStatus === "paid" ||
+            i.remoteStatus === "draft"),
+      ),
+    );
+
+    const situationNumber =
+      invoiceKind === "situation" ? nextSituationNumber(existing.invoices, quoteId) : undefined;
+
+    let built: ReturnType<typeof buildInvoiceLinesFromQuote>;
+    try {
+      built = buildInvoiceLinesFromQuote({
+        caseTitle: caseData.title,
+        quoteSubject: quote.subject || quote.quoteNumber,
+        quoteTotalHt,
+        quoteLines,
+        invoiceKind,
+        situationPercent: options.situationPercent,
+        amountHt: options.amountHt,
+        alreadyInvoicedHt,
+        situationNumber,
+      });
+    } catch (err) {
+      throw new BadRequestException(err instanceof Error ? err.message : "Facture invalide.");
+    }
+
+    const suffix = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+    return {
+      caseData,
+      customer,
+      lines: built.lines,
+      externalReference: `planwise-case-${caseData.id}-${suffix}`,
+      quoteId,
+      invoiceKind,
+      situationNumber,
+      situationPercent: built.situationPercent,
+      amountHt: built.amountHt,
+      quoteTotalHt,
+    };
   }
 
-  private async resolveQuoteLines(
+  private async requireQuoteForInvoice(
     user: AuthUser,
     caseData: CaseResponse,
     quoteId?: string,
-  ): Promise<
-    Array<{
-      label: string;
-      quantity: number;
-      unitPriceHt: string;
-      tvaRate: TvaRate;
-      unit?: string;
-    }>
-  > {
-    let quote: QuoteResponse | undefined;
-    if (quoteId) {
-      quote = await this.casesService.getQuote(user, quoteId);
+  ): Promise<QuoteResponse> {
+    if (quoteId?.trim()) {
+      const quote = await this.casesService.getQuote(user, quoteId.trim());
       if (quote.caseId !== caseData.id) {
         throw new BadRequestException("Le devis ne correspond pas à ce dossier.");
       }
-    } else {
-      const quotes = await this.casesService.listQuotes(user, { caseId: caseData.id });
-      const accepted = quotes.find((q) => q.status === "accepted");
-      const preferred = accepted ?? quotes[0];
-      if (preferred) {
-        quote = await this.casesService.getQuote(user, preferred.id);
-      }
+      return quote;
     }
 
-    if (quote?.lines?.length) {
-      return quote.lines.map((line) => ({
-        label: line.description || caseData.title,
-        quantity: line.quantity,
-        unitPriceHt: line.unitPrice.toFixed(2),
-        tvaRate: line.tvaRate,
-        unit: line.unit,
-      }));
+    const quotes = await this.casesService.listQuotes(user, { caseId: caseData.id });
+    if (quotes.length === 0) {
+      throw new BadRequestException(
+        "Un devis est obligatoire pour créer une facture. Créez un devis sur ce dossier, puis réessayez.",
+      );
     }
+    const accepted = quotes.find((q) => q.status === "accepted");
+    const preferred = accepted ?? quotes[0]!;
+    return this.casesService.getQuote(user, preferred.id);
+  }
 
-    return [
-      {
-        label: caseData.title,
-        quantity: 1,
-        unitPriceHt: "0.00",
-        tvaRate: 20,
-      },
-    ];
+  private async recomputeCaseBillingStatus(
+    user: AuthUser,
+    caseId: string,
+    quoteTotalHtHint?: number,
+  ): Promise<void> {
+    const caseData = await this.casesService.getCase(user, caseId);
+    const list = await this.getCaseInvoiceSync(user, caseId);
+    let quoteTotalHt = quoteTotalHtHint ?? 0;
+    if (quoteTotalHtHint == null) {
+      const quotes = await this.casesService.listQuotes(user, { caseId });
+      const accepted = quotes.filter((q) => q.status === "accepted");
+      const pool = accepted.length > 0 ? accepted : quotes;
+      quoteTotalHt = pool.reduce((s, q) => s + (q.totalHt ?? 0), 0);
+    }
+    const next = aggregateCaseBillingStatus(list.invoices, quoteTotalHt);
+    if (!next || next === caseData.billingStatus) return;
+
+    const mayApply =
+      shouldUpgradeBillingStatus(caseData.billingStatus, next) ||
+      caseData.billingStatus === "to_invoice" ||
+      (caseData.billingStatus === "invoice_draft" && next === "partially_invoiced");
+    if (!mayApply) return;
+
+    await this.casesService.updateCase(user, caseId, { billingStatus: next as BillingStatus });
   }
 
   private async getJson<T>(path: string, params: Record<string, string>): Promise<T> {

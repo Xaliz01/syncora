@@ -137,7 +137,7 @@ export class SearchGatewayService extends AbstractSearchService {
           type: "article",
           title: `${a.name} (${a.reference})`,
           subtitle: `Stock : ${a.stockQuantity} ${a.unit}`,
-          url: `/settings/stock/articles`,
+          url: `/settings/stock/articles/${a.id}`,
         });
       }
     }

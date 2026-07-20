@@ -209,6 +209,16 @@ test.describe("Parcours landing publique", () => {
     await page.getByRole("link", { name: "Se connecter" }).first().click();
     await expect(page).toHaveURL(/\/login/);
   });
+
+  test("mentionne la facturation et les intégrations disponibles", async ({ page }) => {
+    await page.goto("/");
+    await expect(
+      page.getByRole("heading", { name: "Facturation sans double saisie" }),
+    ).toBeVisible();
+    await expect(page.getByText("Facturation & intégrations")).toBeVisible();
+    await expect(page.getByText(/suivez et validez la facture depuis Planwise/i)).toBeVisible();
+    await expect(page.getByText(/validation dans Planwise/i)).toBeVisible();
+  });
 });
 
 test.describe("Route /my-day protégée", () => {

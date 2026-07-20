@@ -10,6 +10,9 @@ import { Model } from "mongoose";
 import { firstValueFrom } from "rxjs";
 import axios from "axios";
 import type {
+  CaseInvoiceKind,
+  CaseInvoiceSyncListResponse,
+  CaseInvoiceSyncStatus,
   CompletePennylaneOAuthBody,
   CompleteQontoOAuthBody,
   ConnectPennylaneBody,
@@ -18,6 +21,8 @@ import type {
   PennylaneOAuthStartResponse,
   QontoConnectionStatus,
   QontoOAuthStartResponse,
+  RefreshPendingInvoiceSyncsResult,
+  RemoteInvoiceLifecycle,
   SyncCaseToPennylaneBody,
   SyncCaseToPennylaneResult,
   SyncCaseToQontoBody,
@@ -206,24 +211,6 @@ export class IntegrationsService extends AbstractIntegrationsService {
       throw new BadRequestException("Au moins une ligne de facture est requise.");
     }
 
-    const existing = await this.syncModel
-      .findOne({
-        ...organizationScopeFilter(orgId),
-        provider: PROVIDER,
-        caseId: body.caseId,
-      })
-      .exec();
-    if (existing) {
-      return {
-        provider: PROVIDER,
-        caseId: body.caseId,
-        pennylaneCustomerId: existing.pennylaneCustomerId,
-        pennylaneInvoiceId: existing.pennylaneInvoiceId,
-        draft: existing.draft,
-        invoiceUrl: existing.invoiceUrl,
-      };
-    }
-
     const token = await this.requireAccessToken(orgId);
     const customerId = await this.ensurePennylaneCustomer(token, body);
     const draft = body.draft !== false;
@@ -258,20 +245,24 @@ export class IntegrationsService extends AbstractIntegrationsService {
     const invoiceUrl =
       created.public_url || created.url || created.invoice?.public_url || created.invoice?.url;
 
-    await this.syncModel.create({
+    const createdDoc = await this.syncModel.create({
       organizationId: orgId,
       provider: PROVIDER,
       caseId: body.caseId,
       externalReference: body.externalReference,
-      pennylaneCustomerId: String(customerId),
-      pennylaneInvoiceId: invoiceId,
+      providerCustomerId: String(customerId),
+      providerInvoiceId: invoiceId,
       draft,
+      remoteStatus: draft ? "draft" : "finalized",
       invoiceUrl,
+      lastSyncedAt: new Date(),
+      ...this.invoiceMetaFromBody(body),
     });
 
     return {
       provider: PROVIDER,
       caseId: body.caseId,
+      syncId: String(createdDoc._id),
       pennylaneCustomerId: String(customerId),
       pennylaneInvoiceId: invoiceId,
       draft,
@@ -582,6 +573,24 @@ export class IntegrationsService extends AbstractIntegrationsService {
     }
   }
 
+  private async pennylanePut<T>(token: string, path: string, body: unknown): Promise<T> {
+    try {
+      const res = await firstValueFrom(
+        this.httpService.put<T>(`${this.apiBase}${path}`, body, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          timeout: 30000,
+        }),
+      );
+      return res.data;
+    } catch (err) {
+      this.rethrowPennylane(err);
+    }
+  }
+
   private rethrowPennylane(err: unknown): never {
     if (axios.isAxiosError(err)) {
       const status = err.response?.status;
@@ -724,24 +733,6 @@ export class IntegrationsService extends AbstractIntegrationsService {
       throw new BadRequestException("Au moins une ligne de facture est requise.");
     }
 
-    const existing = await this.syncModel
-      .findOne({
-        ...organizationScopeFilter(orgId),
-        provider: QONTO_PROVIDER,
-        caseId: body.caseId,
-      })
-      .exec();
-    if (existing) {
-      return {
-        provider: QONTO_PROVIDER,
-        caseId: body.caseId,
-        qontoCustomerId: existing.pennylaneCustomerId,
-        qontoInvoiceId: existing.pennylaneInvoiceId,
-        draft: existing.draft,
-        invoiceUrl: existing.invoiceUrl,
-      };
-    }
-
     const taxId = resolveQontoTaxId(body.customer.legalIdentifier, body.customer.vatNumber);
     if (body.customer.kind === "company" && !taxId) {
       throw new BadRequestException(
@@ -787,24 +778,312 @@ export class IntegrationsService extends AbstractIntegrationsService {
     }
     const invoiceUrl = invoice?.invoice_url;
 
-    await this.syncModel.create({
+    const createdDoc = await this.syncModel.create({
       organizationId: orgId,
       provider: QONTO_PROVIDER,
       caseId: body.caseId,
       externalReference: body.externalReference,
-      pennylaneCustomerId: clientId,
-      pennylaneInvoiceId: invoiceId,
+      providerCustomerId: clientId,
+      providerInvoiceId: invoiceId,
       draft,
+      remoteStatus: draft ? "draft" : "finalized",
       invoiceUrl,
+      ...(invoiceNumber ? { invoiceNumber } : {}),
+      lastSyncedAt: new Date(),
+      ...this.invoiceMetaFromBody(body),
     });
 
     return {
       provider: QONTO_PROVIDER,
       caseId: body.caseId,
+      syncId: String(createdDoc._id),
       qontoCustomerId: clientId,
       qontoInvoiceId: invoiceId,
       draft,
       invoiceUrl,
+    };
+  }
+
+  async getCaseInvoiceSync(
+    organizationId: string,
+    caseId: string,
+  ): Promise<CaseInvoiceSyncListResponse> {
+    const orgId = requireOrganizationId(organizationId);
+    if (!caseId?.trim()) {
+      throw new BadRequestException("caseId est requis.");
+    }
+    const docs = await this.syncModel
+      .find({ ...organizationScopeFilter(orgId), caseId: caseId.trim() })
+      .sort({ createdAt: -1 })
+      .exec();
+    return { invoices: docs.map((doc) => this.toCaseInvoiceSyncStatus(doc)) };
+  }
+
+  async finalizeCaseInvoice(
+    organizationId: string,
+    caseId: string,
+    syncId: string,
+  ): Promise<CaseInvoiceSyncStatus> {
+    const orgId = requireOrganizationId(organizationId);
+    const doc = await this.requireCaseSync(orgId, caseId, syncId);
+    if (!doc.draft && doc.remoteStatus && doc.remoteStatus !== "draft") {
+      return this.toCaseInvoiceSyncStatus(doc);
+    }
+
+    if (doc.provider === PROVIDER) {
+      const token = await this.requireAccessToken(orgId);
+      const finalized = await this.pennylanePut<{
+        draft?: boolean;
+        paid?: boolean;
+        status?: string;
+        invoice_number?: string;
+        public_url?: string;
+        url?: string;
+      }>(token, `/customer_invoices/${syncRemoteInvoiceId(doc)}/finalize`, {});
+      return this.persistRemoteInvoiceState(doc, {
+        remoteStatus: mapPennylaneRemoteStatus(finalized),
+        draft: finalized.draft === true,
+        invoiceNumber: finalized.invoice_number,
+        invoiceUrl: finalized.public_url || finalized.url || doc.invoiceUrl,
+      });
+    }
+
+    if (doc.provider === QONTO_PROVIDER) {
+      const authorization = await this.requireQontoAccessAuthorization(orgId);
+      const finalized = await this.qontoPost<{
+        client_invoice?: {
+          status?: string;
+          number?: string;
+          invoice_url?: string;
+        };
+      }>(authorization, `/client_invoices/${syncRemoteInvoiceId(doc)}/finalize`, {});
+      const invoice = finalized.client_invoice;
+      return this.persistRemoteInvoiceState(doc, {
+        remoteStatus: mapQontoRemoteStatus(invoice?.status),
+        draft: invoice?.status === "draft",
+        invoiceNumber: invoice?.number,
+        invoiceUrl: invoice?.invoice_url || doc.invoiceUrl,
+      });
+    }
+
+    throw new BadRequestException(`Provider d’intégration inconnu : ${doc.provider}`);
+  }
+
+  async refreshCaseInvoiceSync(
+    organizationId: string,
+    caseId: string,
+    syncId: string,
+  ): Promise<CaseInvoiceSyncStatus> {
+    const orgId = requireOrganizationId(organizationId);
+    const doc = await this.requireCaseSync(orgId, caseId, syncId);
+    return this.refreshSyncDocument(doc);
+  }
+
+  async refreshAllCaseInvoiceSyncs(
+    organizationId: string,
+    caseId: string,
+  ): Promise<CaseInvoiceSyncListResponse> {
+    const orgId = requireOrganizationId(organizationId);
+    if (!caseId?.trim()) {
+      throw new BadRequestException("caseId est requis.");
+    }
+    const docs = await this.syncModel
+      .find({ ...organizationScopeFilter(orgId), caseId: caseId.trim() })
+      .exec();
+    for (const doc of docs) {
+      try {
+        await this.refreshSyncDocument(doc);
+      } catch {
+        // Une facture en erreur n’empêche pas le rafraîchissement des autres.
+      }
+    }
+    return this.getCaseInvoiceSync(orgId, caseId);
+  }
+
+  async deleteCaseInvoiceSync(
+    organizationId: string,
+    caseId: string,
+    syncId: string,
+  ): Promise<CaseInvoiceSyncListResponse> {
+    const orgId = requireOrganizationId(organizationId);
+    const doc = await this.requireCaseSync(orgId, caseId, syncId);
+    const status =
+      (doc.remoteStatus as RemoteInvoiceLifecycle | undefined) ??
+      (doc.draft === false ? "finalized" : "draft");
+    if (status !== "cancelled" && status !== "unknown") {
+      throw new BadRequestException(
+        "Seules les factures annulées ou introuvables peuvent être détachées du dossier.",
+      );
+    }
+    await this.syncModel.deleteOne({ _id: doc._id, ...organizationScopeFilter(orgId) }).exec();
+    return this.getCaseInvoiceSync(orgId, caseId);
+  }
+
+  async refreshPendingInvoiceSyncs(): Promise<RefreshPendingInvoiceSyncsResult> {
+    const pending = await this.syncModel
+      .find({
+        $or: [
+          { draft: true },
+          { remoteStatus: { $in: ["draft", "finalized", "unknown", null] } },
+          { remoteStatus: { $exists: false } },
+        ],
+      })
+      .limit(200)
+      .exec();
+
+    const updated: CaseInvoiceSyncStatus[] = [];
+    const errors: RefreshPendingInvoiceSyncsResult["errors"] = [];
+
+    for (const doc of pending) {
+      try {
+        const status = await this.refreshSyncDocument(doc);
+        updated.push(status);
+      } catch (err) {
+        errors.push({
+          organizationId: doc.organizationId,
+          caseId: doc.caseId,
+          syncId: String(doc._id),
+          message: err instanceof Error ? err.message : "Erreur de synchronisation",
+        });
+      }
+    }
+
+    return { refreshed: pending.length, updated, errors };
+  }
+
+  private async requireCaseSync(
+    organizationId: string,
+    caseId: string,
+    syncId: string,
+  ): Promise<IntegrationSyncDocument> {
+    if (!caseId?.trim()) {
+      throw new BadRequestException("caseId est requis.");
+    }
+    if (!syncId?.trim()) {
+      throw new BadRequestException("syncId est requis.");
+    }
+    const doc = await this.syncModel
+      .findOne({
+        ...organizationScopeFilter(organizationId),
+        caseId: caseId.trim(),
+        _id: syncId.trim(),
+      })
+      .exec();
+    if (!doc) {
+      throw new NotFoundException(
+        "Facture d’intégration introuvable pour ce dossier. Actualisez la liste puis réessayez.",
+      );
+    }
+    return doc;
+  }
+
+  private invoiceMetaFromBody(body: {
+    quoteId?: string;
+    invoiceKind?: CaseInvoiceKind;
+    situationNumber?: number;
+    situationPercent?: number;
+    amountHt?: string;
+  }): {
+    quoteId?: string;
+    invoiceKind: string;
+    situationNumber?: number;
+    situationPercent?: number;
+    amountHt?: string;
+  } {
+    return {
+      ...(body.quoteId?.trim() ? { quoteId: body.quoteId.trim() } : {}),
+      invoiceKind: body.invoiceKind || "full",
+      ...(typeof body.situationNumber === "number"
+        ? { situationNumber: body.situationNumber }
+        : {}),
+      ...(typeof body.situationPercent === "number"
+        ? { situationPercent: body.situationPercent }
+        : {}),
+      ...(body.amountHt?.trim() ? { amountHt: body.amountHt.trim() } : {}),
+    };
+  }
+
+  private async refreshSyncDocument(doc: IntegrationSyncDocument): Promise<CaseInvoiceSyncStatus> {
+    if (doc.provider === PROVIDER) {
+      const token = await this.requireAccessToken(doc.organizationId);
+      const remote = await this.pennylaneGet<{
+        draft?: boolean;
+        paid?: boolean;
+        status?: string;
+        invoice_number?: string;
+        public_url?: string;
+        url?: string;
+      }>(token, `/customer_invoices/${syncRemoteInvoiceId(doc)}`);
+      return this.persistRemoteInvoiceState(doc, {
+        remoteStatus: mapPennylaneRemoteStatus(remote),
+        draft: remote.draft === true || remote.status === "draft",
+        invoiceNumber: remote.invoice_number,
+        invoiceUrl: remote.public_url || remote.url || doc.invoiceUrl,
+      });
+    }
+
+    if (doc.provider === QONTO_PROVIDER) {
+      const authorization = await this.requireQontoAccessAuthorization(doc.organizationId);
+      const remote = await this.qontoGet<{
+        client_invoice?: {
+          status?: string;
+          number?: string;
+          invoice_url?: string;
+        };
+      }>(authorization, `/client_invoices/${syncRemoteInvoiceId(doc)}`);
+      const invoice = remote.client_invoice;
+      return this.persistRemoteInvoiceState(doc, {
+        remoteStatus: mapQontoRemoteStatus(invoice?.status),
+        draft: invoice?.status === "draft",
+        invoiceNumber: invoice?.number,
+        invoiceUrl: invoice?.invoice_url || doc.invoiceUrl,
+      });
+    }
+
+    throw new BadRequestException(`Provider d’intégration inconnu : ${doc.provider}`);
+  }
+
+  private async persistRemoteInvoiceState(
+    doc: IntegrationSyncDocument,
+    state: {
+      remoteStatus: RemoteInvoiceLifecycle;
+      draft: boolean;
+      invoiceNumber?: string;
+      invoiceUrl?: string;
+    },
+  ): Promise<CaseInvoiceSyncStatus> {
+    doc.remoteStatus = state.remoteStatus;
+    doc.draft = state.draft;
+    if (state.invoiceNumber) doc.invoiceNumber = state.invoiceNumber;
+    if (state.invoiceUrl) doc.invoiceUrl = state.invoiceUrl;
+    doc.lastSyncedAt = new Date();
+    await doc.save();
+    return this.toCaseInvoiceSyncStatus(doc);
+  }
+
+  private toCaseInvoiceSyncStatus(doc: IntegrationSyncDocument): CaseInvoiceSyncStatus {
+    const remoteStatus =
+      (doc.remoteStatus as RemoteInvoiceLifecycle | undefined) ??
+      (doc.draft === false ? "finalized" : "draft");
+    const kind = (doc.invoiceKind as CaseInvoiceKind | undefined) || "full";
+    return {
+      id: String(doc._id),
+      organizationId: doc.organizationId,
+      provider: doc.provider === QONTO_PROVIDER ? "qonto" : "pennylane",
+      caseId: doc.caseId,
+      quoteId: doc.quoteId,
+      invoiceKind: kind,
+      situationNumber: doc.situationNumber,
+      situationPercent: doc.situationPercent,
+      amountHt: doc.amountHt,
+      remoteInvoiceId: syncRemoteInvoiceId(doc),
+      remoteCustomerId: syncRemoteCustomerId(doc),
+      draft: doc.draft !== false,
+      remoteStatus,
+      invoiceUrl: doc.invoiceUrl,
+      invoiceNumber: doc.invoiceNumber,
+      lastSyncedAt: doc.lastSyncedAt?.toISOString(),
+      createdAt: (doc as { createdAt?: Date }).createdAt?.toISOString(),
     };
   }
 
@@ -1281,4 +1560,34 @@ function resolveQontoTaxId(legalIdentifier?: string, vatNumber?: string): string
   if (vatMatch) return vatMatch[1];
   if (raw.length <= 20) return raw;
   return undefined;
+}
+
+function mapPennylaneRemoteStatus(remote: {
+  draft?: boolean;
+  paid?: boolean;
+  status?: string;
+}): RemoteInvoiceLifecycle {
+  if (remote.paid === true || remote.status === "paid") return "paid";
+  if (remote.draft === true || remote.status === "draft") return "draft";
+  if (remote.status === "cancelled" || remote.status === "archived") return "cancelled";
+  if (remote.draft === false) return "finalized";
+  return "unknown";
+}
+
+function mapQontoRemoteStatus(status?: string): RemoteInvoiceLifecycle {
+  const value = (status || "").toLowerCase();
+  if (value === "draft") return "draft";
+  if (value === "paid") return "paid";
+  if (value === "canceled" || value === "cancelled") return "cancelled";
+  if (value === "unpaid" || value === "sent" || value === "pending") return "finalized";
+  return value ? "finalized" : "unknown";
+}
+
+/** Lecture duale : nouveaux champs génériques, fallback legacy prod. */
+function syncRemoteCustomerId(doc: IntegrationSyncDocument): string {
+  return (doc.providerCustomerId || doc.pennylaneCustomerId || "").trim();
+}
+
+function syncRemoteInvoiceId(doc: IntegrationSyncDocument): string {
+  return (doc.providerInvoiceId || doc.pennylaneInvoiceId || "").trim();
 }

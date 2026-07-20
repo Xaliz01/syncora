@@ -15,6 +15,16 @@ const BANNER_STYLES: Record<BillingStatus, { shell: string; accent: string; hint
     accent: "text-amber-900 dark:text-amber-100",
     hint: "text-amber-800/80 dark:text-amber-200/80",
   },
+  invoice_draft: {
+    shell: "border-violet-300 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/40",
+    accent: "text-violet-900 dark:text-violet-100",
+    hint: "text-violet-800/80 dark:text-violet-200/80",
+  },
+  partially_invoiced: {
+    shell: "border-orange-300 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/40",
+    accent: "text-orange-900 dark:text-orange-100",
+    hint: "text-orange-800/80 dark:text-orange-200/80",
+  },
   invoiced: {
     shell: "border-blue-300 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/40",
     accent: "text-blue-900 dark:text-blue-100",
@@ -31,6 +41,10 @@ const CHIP_ACTIVE: Record<BillingStatus, string> = {
   none: "bg-slate-700 text-white border-slate-700 dark:bg-slate-200 dark:text-slate-900 dark:border-slate-200",
   to_invoice:
     "bg-amber-600 text-white border-amber-600 dark:bg-amber-400 dark:text-amber-950 dark:border-amber-400",
+  invoice_draft:
+    "bg-violet-600 text-white border-violet-600 dark:bg-violet-400 dark:text-violet-950 dark:border-violet-400",
+  partially_invoiced:
+    "bg-orange-600 text-white border-orange-600 dark:bg-orange-400 dark:text-orange-950 dark:border-orange-400",
   invoiced:
     "bg-blue-600 text-white border-blue-600 dark:bg-blue-400 dark:text-blue-950 dark:border-blue-400",
   paid: "bg-emerald-600 text-white border-emerald-600 dark:bg-emerald-400 dark:text-emerald-950 dark:border-emerald-400",
@@ -39,6 +53,8 @@ const CHIP_ACTIVE: Record<BillingStatus, string> = {
 const HINTS: Record<BillingStatus, string> = {
   none: "Ce dossier n’entre pas dans le circuit de facturation.",
   to_invoice: "Prêt à facturer — devis accepté ou travaux terminés.",
+  invoice_draft: "Un brouillon a été créé dans l’outil de facturation — à valider.",
+  partially_invoiced: "Des situations ou acomptes ont été facturés — reste à facturer.",
   invoiced: "Une facture a été émise (Pennylane, Qonto ou hors outil).",
   paid: "Paiement reçu pour ce dossier.",
 };
@@ -49,6 +65,8 @@ export function CaseBillingBanner({
   pending,
   onChange,
   actions,
+  syncPanel,
+  quoteProgress,
 }: {
   status: BillingStatus;
   canEdit: boolean;
@@ -56,6 +74,10 @@ export function CaseBillingBanner({
   onChange: (status: BillingStatus) => void;
   /** Boutons d’envoi vers un outil de facturation (Pennylane, Qonto, …). */
   actions?: ReactNode;
+  /** Détail du pont d’intégration (brouillon, lien, valider, actualiser). */
+  syncPanel?: ReactNode;
+  /** Synthèse reste à facturer (devis acceptés). */
+  quoteProgress?: ReactNode;
 }) {
   const styles = BANNER_STYLES[status];
 
@@ -73,12 +95,15 @@ export function CaseBillingBanner({
             {BILLING_STATUS_LABELS[status]}
           </p>
           <p className={`mt-1 text-sm ${styles.hint}`}>{HINTS[status]}</p>
+          {quoteProgress ? <div className="mt-2">{quoteProgress}</div> : null}
         </div>
 
         {actions ? (
           <div className="shrink-0 flex flex-wrap items-center gap-2">{actions}</div>
         ) : null}
       </div>
+
+      {syncPanel}
 
       {canEdit && (
         <div

@@ -27,6 +27,8 @@ import {
 import { InterventionPhotos } from "@/components/interventions/InterventionPhotos";
 import { InterventionSignatureDialog } from "@/components/interventions/InterventionSignatureDialog";
 import { QontoInvoiceNumberDialog } from "@/components/cases/QontoInvoiceNumberDialog";
+import { CreateCaseInvoiceDialog } from "@/components/cases/CreateCaseInvoiceDialog";
+import { CaseInvoiceSyncPanel } from "@/components/cases/CaseInvoiceSyncPanel";
 import { CUSTOMER_KIND_LABELS } from "@/components/customers/customer-kind-labels";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/ToastProvider";
@@ -34,21 +36,29 @@ import { ResourceNotFoundPanel } from "@/components/ui/AppErrorAlert";
 import { ExportButton } from "@/components/ui/ExportButton";
 import * as exportsApi from "@/lib/exports.api";
 import * as integrationsApi from "@/lib/integrations.api";
+import * as quotesApi from "@/lib/quotes.api";
 import { usePermissions } from "@/lib/hooks/usePermissions";
 import { getTeamCalendarCardAppearance } from "@/lib/team-calendar-colors";
 import { useIsDarkMode } from "@/lib/use-is-dark-mode";
 import { formatPostalAddress } from "@/lib/team-route-insights";
-import { QONTO_INVOICE_NUMBER_REQUIRED_MESSAGE } from "@planwise/shared";
 import type {
   BillingStatus,
   CaseCustomerRef,
   CasePriority,
   CaseStatus,
   CustomerSiteResponse,
+  SyncCaseInvoiceOptions,
   TeamResponse,
   TodoItemStatus,
 } from "@planwise/shared";
-import { BILLING_STATUS_LABELS } from "@planwise/shared";
+import {
+  BILLING_STATUS_LABELS,
+  canCreateCaseInvoice,
+  QONTO_INVOICE_NUMBER_REQUIRED_MESSAGE,
+  quoteInvoicedHt,
+  remainingQuoteHt,
+  remainingQuotePercent,
+} from "@planwise/shared";
 
 const STATUS_LABELS: Record<CaseStatus, string> = {
   draft: "Brouillon",
@@ -73,6 +83,10 @@ const BILLING_STATUS_COLORS: Record<BillingStatus, string> = {
   none: "",
   to_invoice:
     "bg-yellow-50 dark:bg-yellow-950/30 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800",
+  invoice_draft:
+    "bg-violet-50 dark:bg-violet-950/30 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-800",
+  partially_invoiced:
+    "bg-orange-50 dark:bg-orange-950/30 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800",
   invoiced:
     "bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800",
   paid: "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
@@ -358,6 +372,20 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
     enabled: canReadQonto,
   });
 
+  const canReadInvoiceSync = canReadPennylane || canReadQonto;
+  const { data: invoiceSyncList } = useQuery({
+    queryKey: ["integrations", "invoice-sync", caseId],
+    queryFn: () => integrationsApi.getCaseInvoiceSync(caseId),
+    enabled: canReadInvoiceSync,
+  });
+  const invoiceSyncs = invoiceSyncList?.invoices ?? [];
+
+  const { data: caseQuotes = [] } = useQuery({
+    queryKey: ["quotes", caseId],
+    queryFn: () => quotesApi.listQuotes({ caseId }),
+    enabled: can("quotes.read") || canSyncPennylane || canSyncQonto,
+  });
+
   const { data: interventions } = useQuery({
     queryKey: ["interventions", caseId],
     queryFn: () => api.listInterventions({ caseId }),
@@ -457,6 +485,12 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   );
   const [signDialogInterventionId, setSignDialogInterventionId] = useState<string | null>(null);
   const [qontoInvoiceNumberDialogOpen, setQontoInvoiceNumberDialogOpen] = useState(false);
+  const [createInvoiceProvider, setCreateInvoiceProvider] = useState<"pennylane" | "qonto" | null>(
+    null,
+  );
+  const [pendingInvoiceOptions, setPendingInvoiceOptions] = useState<SyncCaseInvoiceOptions | null>(
+    null,
+  );
   const [downloadingReportId, setDownloadingReportId] = useState<string | null>(null);
 
   const invalidateAll = () => {
@@ -490,9 +524,13 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   });
 
   const pennylaneSyncMutation = useMutation({
-    mutationFn: () => integrationsApi.syncCaseToPennylane(caseId),
+    mutationFn: (options: SyncCaseInvoiceOptions) =>
+      integrationsApi.syncCaseToPennylane(caseId, options),
     onSuccess: (result) => {
+      setCreateInvoiceProvider(null);
+      setPendingInvoiceOptions(null);
       invalidateAll();
+      queryClient.invalidateQueries({ queryKey: ["integrations", "invoice-sync", caseId] });
       showToast(
         result.draft ? "Facture brouillon créée dans Pennylane." : "Facture créée dans Pennylane.",
       );
@@ -501,11 +539,14 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   });
 
   const qontoSyncMutation = useMutation({
-    mutationFn: (options: { invoiceNumber?: string } = {}) =>
+    mutationFn: (options: SyncCaseInvoiceOptions) =>
       integrationsApi.syncCaseToQonto(caseId, options),
     onSuccess: (result) => {
       setQontoInvoiceNumberDialogOpen(false);
+      setCreateInvoiceProvider(null);
+      setPendingInvoiceOptions(null);
       invalidateAll();
+      queryClient.invalidateQueries({ queryKey: ["integrations", "invoice-sync", caseId] });
       showToast(result.draft ? "Facture brouillon créée dans Qonto." : "Facture créée dans Qonto.");
     },
     onError: (err: Error) => {
@@ -515,6 +556,52 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
       }
       showToast(err.message, "error");
     },
+  });
+
+  const finalizeInvoiceMutation = useMutation({
+    mutationFn: (syncId: string) => integrationsApi.finalizeCaseInvoice(caseId, syncId),
+    onSuccess: () => {
+      invalidateAll();
+      queryClient.invalidateQueries({ queryKey: ["integrations", "invoice-sync", caseId] });
+      showToast("Facture validée dans l’outil de facturation.");
+    },
+    onError: (err: Error) => showToast(err.message, "error"),
+  });
+
+  const refreshInvoiceMutation = useMutation({
+    mutationFn: (syncId: string) => integrationsApi.refreshCaseInvoiceSync(caseId, syncId),
+    onSuccess: (status) => {
+      invalidateAll();
+      queryClient.invalidateQueries({ queryKey: ["integrations", "invoice-sync", caseId] });
+      showToast(
+        status.remoteStatus === "paid"
+          ? "Statut actualisé : facture payée."
+          : status.remoteStatus === "finalized"
+            ? "Statut actualisé : facture validée."
+            : "Statut de facture actualisé.",
+      );
+    },
+    onError: (err: Error) => showToast(err.message, "error"),
+  });
+
+  const refreshAllInvoicesMutation = useMutation({
+    mutationFn: () => integrationsApi.refreshAllCaseInvoiceSyncs(caseId),
+    onSuccess: () => {
+      invalidateAll();
+      queryClient.invalidateQueries({ queryKey: ["integrations", "invoice-sync", caseId] });
+      showToast("Factures actualisées.");
+    },
+    onError: (err: Error) => showToast(err.message, "error"),
+  });
+
+  const detachInvoiceMutation = useMutation({
+    mutationFn: (syncId: string) => integrationsApi.deleteCaseInvoiceSync(caseId, syncId),
+    onSuccess: () => {
+      invalidateAll();
+      queryClient.invalidateQueries({ queryKey: ["integrations", "invoice-sync", caseId] });
+      showToast("Facture détachée du dossier.");
+    },
+    onError: (err: Error) => showToast(err.message, "error"),
   });
 
   const updateMutation = useMutation({
@@ -676,34 +763,34 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   const showQontoSend =
     canSyncQonto && Boolean(qontoStatus?.connected) && !integrationsStatusLoading;
   const showConnectBillingTool =
-    caseData.billingStatus === "to_invoice" &&
+    canCreateCaseInvoice(caseData.billingStatus) &&
     !integrationsStatusLoading &&
     !showPennylaneSend &&
     !showQontoSend &&
     (canOpenIntegrations || canSyncPennylane || canSyncQonto);
 
   const billingActions =
-    caseData.billingStatus === "to_invoice" && !integrationsStatusLoading ? (
+    canCreateCaseInvoice(caseData.billingStatus) && !integrationsStatusLoading ? (
       showPennylaneSend || showQontoSend ? (
         <>
           {showPennylaneSend ? (
             <button
               type="button"
               disabled={pennylaneSyncMutation.isPending || qontoSyncMutation.isPending}
-              onClick={() => pennylaneSyncMutation.mutate()}
+              onClick={() => setCreateInvoiceProvider("pennylane")}
               className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 shadow-sm"
             >
-              {pennylaneSyncMutation.isPending ? "Envoi Pennylane…" : "Envoyer vers Pennylane"}
+              {pennylaneSyncMutation.isPending ? "Envoi Pennylane…" : "Créer une facture Pennylane"}
             </button>
           ) : null}
           {showQontoSend ? (
             <button
               type="button"
               disabled={qontoSyncMutation.isPending || pennylaneSyncMutation.isPending}
-              onClick={() => qontoSyncMutation.mutate({})}
+              onClick={() => setCreateInvoiceProvider("qonto")}
               className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-medium text-slate-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 shadow-sm"
             >
-              {qontoSyncMutation.isPending ? "Envoi Qonto…" : "Envoyer vers Qonto"}
+              {qontoSyncMutation.isPending ? "Envoi Qonto…" : "Créer une facture Qonto"}
             </button>
           ) : null}
         </>
@@ -1111,6 +1198,74 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
           pending={billingStatusMutation.isPending}
           onChange={(billingStatus) => billingStatusMutation.mutate(billingStatus)}
           actions={billingActions}
+          syncPanel={
+            invoiceSyncs.length > 0 ? (
+              <CaseInvoiceSyncPanel
+                invoices={invoiceSyncs}
+                canSync={
+                  invoiceSyncs.some((i) => i.provider === "qonto") ? canSyncQonto : canSyncPennylane
+                }
+                finalizePendingId={
+                  finalizeInvoiceMutation.isPending
+                    ? (finalizeInvoiceMutation.variables ?? null)
+                    : null
+                }
+                refreshPending={
+                  refreshInvoiceMutation.isPending || refreshAllInvoicesMutation.isPending
+                }
+                onFinalize={async (syncId) => {
+                  const ok = await confirm({
+                    title: "Valider la facture brouillon ?",
+                    description:
+                      "La facture sera finalisée dans l’outil de facturation. Cette action peut être irréversible côté provider.",
+                    confirmLabel: "Valider",
+                  });
+                  if (ok) finalizeInvoiceMutation.mutate(syncId);
+                }}
+                onRefreshOne={(syncId) => refreshInvoiceMutation.mutate(syncId)}
+                onRefreshAll={() => refreshAllInvoicesMutation.mutate()}
+                detachPendingId={
+                  detachInvoiceMutation.isPending ? (detachInvoiceMutation.variables ?? null) : null
+                }
+                onDetach={async (syncId) => {
+                  const ok = await confirm({
+                    title: "Détacher cette facture ?",
+                    description:
+                      "La liaison avec le dossier sera supprimée. La facture distante (annulée) n’est pas modifiée.",
+                    confirmLabel: "Détacher",
+                    variant: "danger",
+                  });
+                  if (ok) detachInvoiceMutation.mutate(syncId);
+                }}
+              />
+            ) : undefined
+          }
+          quoteProgress={
+            caseQuotes.some(
+              (q) => q.status === "accepted" || quoteInvoicedHt(invoiceSyncs, q.id) > 0,
+            ) ? (
+              <ul className="space-y-1 text-xs text-slate-600 dark:text-slate-300">
+                {caseQuotes
+                  .filter((q) => q.status === "accepted" || quoteInvoicedHt(invoiceSyncs, q.id) > 0)
+                  .map((q) => {
+                    const invoiced = quoteInvoicedHt(invoiceSyncs, q.id);
+                    const remaining = remainingQuoteHt(q.totalHt, invoiced);
+                    const pct = remainingQuotePercent(q.totalHt, remaining);
+                    return (
+                      <li key={q.id}>
+                        <span className="font-medium">{q.quoteNumber}</span>
+                        {" · "}
+                        facturé {invoiced.toFixed(2)} € HT
+                        {" · reste "}
+                        <span className="font-semibold text-amber-800 dark:text-amber-200">
+                          {remaining.toFixed(2)} € HT ({pct} %)
+                        </span>
+                      </li>
+                    );
+                  })}
+              </ul>
+            ) : undefined
+          }
         />
       )}
 
@@ -1678,10 +1833,36 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
         open={qontoInvoiceNumberDialogOpen}
         pending={qontoSyncMutation.isPending}
         onClose={() => setQontoInvoiceNumberDialogOpen(false)}
-        onSubmit={(invoiceNumber) => qontoSyncMutation.mutate({ invoiceNumber })}
+        onSubmit={(invoiceNumber) => {
+          if (!pendingInvoiceOptions?.quoteId) {
+            showToast("Sélectionnez un devis avant d’envoyer la facture.", "error");
+            return;
+          }
+          qontoSyncMutation.mutate({ ...pendingInvoiceOptions, invoiceNumber });
+        }}
       />
 
-      <CaseQuotesSection caseId={caseId} />
+      <CreateCaseInvoiceDialog
+        open={createInvoiceProvider != null}
+        pending={pennylaneSyncMutation.isPending || qontoSyncMutation.isPending}
+        providerLabel={createInvoiceProvider === "qonto" ? "Qonto" : "Pennylane"}
+        quotes={caseQuotes}
+        invoices={invoiceSyncs}
+        onClose={() => {
+          setCreateInvoiceProvider(null);
+          setPendingInvoiceOptions(null);
+        }}
+        onSubmit={(options) => {
+          setPendingInvoiceOptions(options);
+          if (createInvoiceProvider === "qonto") {
+            qontoSyncMutation.mutate(options);
+          } else {
+            pennylaneSyncMutation.mutate(options);
+          }
+        }}
+      />
+
+      <CaseQuotesSection caseId={caseId} invoices={invoiceSyncs} />
 
       <CommentsSection entityType="case" entityId={caseId} />
 

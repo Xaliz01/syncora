@@ -1,4 +1,6 @@
 import type {
+  CaseInvoiceSyncListResponse,
+  CaseInvoiceSyncStatus,
   CompletePennylaneOAuthBody,
   CompleteQontoOAuthBody,
   ConnectPennylaneBody,
@@ -7,6 +9,7 @@ import type {
   PennylaneOAuthStartResponse,
   QontoConnectionStatus,
   QontoOAuthStartResponse,
+  RefreshPendingInvoiceSyncsResult,
   SyncCaseToPennylaneBody,
   SyncCaseToPennylaneResult,
   SyncCaseToQontoBody,
@@ -39,4 +42,34 @@ export abstract class AbstractIntegrationsService {
   abstract disconnectQonto(organizationId: string): Promise<QontoConnectionStatus>;
 
   abstract syncCaseToQonto(body: SyncCaseToQontoBody): Promise<SyncCaseToQontoResult>;
+
+  abstract getCaseInvoiceSync(
+    organizationId: string,
+    caseId: string,
+  ): Promise<CaseInvoiceSyncListResponse>;
+
+  abstract finalizeCaseInvoice(
+    organizationId: string,
+    caseId: string,
+    syncId: string,
+  ): Promise<CaseInvoiceSyncStatus>;
+
+  abstract refreshCaseInvoiceSync(
+    organizationId: string,
+    caseId: string,
+    syncId: string,
+  ): Promise<CaseInvoiceSyncStatus>;
+
+  abstract refreshAllCaseInvoiceSyncs(
+    organizationId: string,
+    caseId: string,
+  ): Promise<CaseInvoiceSyncListResponse>;
+
+  abstract deleteCaseInvoiceSync(
+    organizationId: string,
+    caseId: string,
+    syncId: string,
+  ): Promise<CaseInvoiceSyncListResponse>;
+
+  abstract refreshPendingInvoiceSyncs(): Promise<RefreshPendingInvoiceSyncsResult>;
 }

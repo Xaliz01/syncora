@@ -45,6 +45,7 @@ import type {
   CreateCommentBody,
   UpdateCommentBody,
 } from "@planwise/shared";
+import { shouldSetToInvoiceOnQuoteAccepted } from "@planwise/shared";
 import PDFDocument from "pdfkit";
 import { assertAnyAssignablePermission } from "../infrastructure/permission-checks";
 import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
@@ -589,6 +590,22 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       "quote_updated",
       result.quoteNumber,
     );
+
+    if (body.status === "accepted") {
+      try {
+        const caseData = await this.callCasesService<CaseResponse>(user.organizationId, {
+          method: "get",
+          path: `/cases/${result.caseId}`,
+          query: { organizationId: user.organizationId },
+        });
+        if (shouldSetToInvoiceOnQuoteAccepted(caseData.billingStatus)) {
+          await this.updateCase(user, result.caseId, { billingStatus: "to_invoice" });
+        }
+      } catch {
+        /* Ne bloque pas l’acceptation du devis si le passage « À facturer » échoue. */
+      }
+    }
+
     return result;
   }
 

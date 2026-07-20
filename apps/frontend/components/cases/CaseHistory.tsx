@@ -465,6 +465,8 @@ const TODO_STATUS_LABELS: Record<string, string> = {
 const BILLING_STATUS_LABELS: Record<string, string> = {
   none: "Non applicable",
   to_invoice: "À facturer",
+  invoice_draft: "Brouillon facture",
+  partially_invoiced: "Partiellement facturé",
   invoiced: "Facturé",
   paid: "Payé",
 };

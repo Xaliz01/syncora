@@ -110,4 +110,72 @@ export class IntegrationsController {
       caseId,
     });
   }
+
+  @Get("integrations/cases/:caseId/invoice-sync")
+  getCaseInvoiceSync(
+    @Param("caseId") caseId: string,
+    @Query("organizationId") organizationId: string,
+  ) {
+    return this.integrationsService.getCaseInvoiceSync(
+      parseOrganizationIdQuery(organizationId),
+      caseId,
+    );
+  }
+
+  /** Doit rester avant les routes `:syncId` pour ne pas capturer `refresh` comme id. */
+  @Post("integrations/cases/:caseId/invoice-sync/refresh")
+  refreshAllCaseInvoiceSyncs(
+    @Param("caseId") caseId: string,
+    @Body() body: { organizationId?: string },
+  ) {
+    return this.integrationsService.refreshAllCaseInvoiceSyncs(
+      parseOrganizationIdBody(body.organizationId),
+      caseId,
+    );
+  }
+
+  @Post("integrations/cases/:caseId/invoice-sync/:syncId/finalize")
+  finalizeCaseInvoice(
+    @Param("caseId") caseId: string,
+    @Param("syncId") syncId: string,
+    @Body() body: { organizationId?: string },
+  ) {
+    return this.integrationsService.finalizeCaseInvoice(
+      parseOrganizationIdBody(body.organizationId),
+      caseId,
+      syncId,
+    );
+  }
+
+  @Post("integrations/cases/:caseId/invoice-sync/:syncId/refresh")
+  refreshCaseInvoiceSync(
+    @Param("caseId") caseId: string,
+    @Param("syncId") syncId: string,
+    @Body() body: { organizationId?: string },
+  ) {
+    return this.integrationsService.refreshCaseInvoiceSync(
+      parseOrganizationIdBody(body.organizationId),
+      caseId,
+      syncId,
+    );
+  }
+
+  @Delete("integrations/cases/:caseId/invoice-sync/:syncId")
+  deleteCaseInvoiceSync(
+    @Param("caseId") caseId: string,
+    @Param("syncId") syncId: string,
+    @Query("organizationId") organizationId: string,
+  ) {
+    return this.integrationsService.deleteCaseInvoiceSync(
+      parseOrganizationIdQuery(organizationId),
+      caseId,
+      syncId,
+    );
+  }
+
+  /** Appelé par le cron interne (pas exposé via la gateway publique). */
+  @Post("integrations/invoice-syncs/refresh-pending")
+  refreshPendingInvoiceSyncs() {
+    return this.integrationsService.refreshPendingInvoiceSyncs();
+  }
 }

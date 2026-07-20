@@ -7,8 +7,19 @@ import * as quotesApi from "@/lib/quotes.api";
 import * as stockApi from "@/lib/stock.api";
 import { usePermissions } from "@/lib/hooks/usePermissions";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
-import type { QuoteStatus, TvaRate, ArticleResponse } from "@planwise/shared";
-import { QUOTE_STATUS_LABELS, TVA_RATES } from "@planwise/shared";
+import type {
+  CaseInvoiceSyncStatus,
+  QuoteStatus,
+  TvaRate,
+  ArticleResponse,
+} from "@planwise/shared";
+import {
+  QUOTE_STATUS_LABELS,
+  TVA_RATES,
+  quoteInvoicedHt,
+  remainingQuoteHt,
+  remainingQuotePercent,
+} from "@planwise/shared";
 
 const STATUS_COLORS: Record<QuoteStatus, string> = {
   draft:
@@ -174,6 +185,7 @@ function QuoteForm({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [importingTerrain, setImportingTerrain] = useState(false);
   const previewUrlRef = useRef<string | null>(null);
   const inlinePdfSupported = useInlinePdfPreviewSupported();
 
@@ -199,6 +211,54 @@ function QuoteForm({
       unitPrice: article.defaultPrice ?? 0,
       unit: article.unit ?? "unité",
     });
+  };
+
+  const importTerrainContribution = async () => {
+    setImportingTerrain(true);
+    try {
+      const movements = await stockApi.listArticleMovements({ caseId, limit: 200 });
+      const byArticle = new Map<
+        string,
+        { articleId: string; name: string; unit: string; net: number; price: number }
+      >();
+      const priceById = new Map(articles.map((a) => [a.id, a.defaultPrice ?? 0]));
+      const unitById = new Map(articles.map((a) => [a.id, a.unit ?? "unité"]));
+
+      for (const m of movements) {
+        if (!m.interventionId) continue;
+        if (m.movementType !== "in" && m.movementType !== "out") continue;
+        const existing = byArticle.get(m.articleId) ?? {
+          articleId: m.articleId,
+          name: m.articleName,
+          unit: unitById.get(m.articleId) ?? "unité",
+          net: 0,
+          price: priceById.get(m.articleId) ?? 0,
+        };
+        if (m.movementType === "out") existing.net += m.quantity;
+        if (m.movementType === "in") existing.net -= m.quantity;
+        byArticle.set(m.articleId, existing);
+      }
+
+      const imported: QuoteLine[] = [...byArticle.values()]
+        .filter((a) => a.net > 0)
+        .map((a) => ({
+          articleId: a.articleId,
+          description: a.name,
+          quantity: Math.round(a.net * 1000) / 1000,
+          unitPrice: a.price,
+          tvaRate: 20 as TvaRate,
+          unit: a.unit,
+        }));
+
+      if (imported.length === 0) return;
+
+      setLines((prev) => {
+        const kept = prev.filter((l) => l.description.trim());
+        return [...kept, ...imported];
+      });
+    } finally {
+      setImportingTerrain(false);
+    }
   };
 
   const totalHt = lines.reduce((s, l) => s + l.quantity * l.unitPrice, 0);
@@ -289,17 +349,30 @@ function QuoteForm({
         </div>
 
         <div>
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
             <h4 className="text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase tracking-wide">
               Lignes
             </h4>
-            <button
-              type="button"
-              onClick={() => setLines((prev) => [...prev, { ...EMPTY_LINE }])}
-              className="text-[11px] text-brand-600 dark:text-brand-400 hover:text-brand-500 font-medium"
-            >
-              + Ajouter une ligne
-            </button>
+            <div className="flex items-center gap-2">
+              {can("stock.movements.read") || can("stock.articles.read") ? (
+                <button
+                  type="button"
+                  onClick={() => void importTerrainContribution()}
+                  disabled={importingTerrain}
+                  className="text-[11px] text-slate-600 dark:text-slate-300 hover:text-brand-600 font-medium disabled:opacity-50"
+                  title="Importer les articles consommés sur les interventions du dossier"
+                >
+                  {importingTerrain ? "Import…" : "Import terrain"}
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => setLines((prev) => [...prev, { ...EMPTY_LINE }])}
+                className="text-[11px] text-brand-600 dark:text-brand-400 hover:text-brand-500 font-medium"
+              >
+                + Ajouter une ligne
+              </button>
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -566,7 +639,13 @@ function QuoteEditorOverlay({
   );
 }
 
-export function CaseQuotesSection({ caseId }: { caseId: string }) {
+export function CaseQuotesSection({
+  caseId,
+  invoices = [],
+}: {
+  caseId: string;
+  invoices?: CaseInvoiceSyncStatus[];
+}) {
   const queryClient = useQueryClient();
   const confirm = useConfirm();
   const { can } = usePermissions();
@@ -582,6 +661,7 @@ export function CaseQuotesSection({ caseId }: { caseId: string }) {
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["quotes", caseId] });
     queryClient.invalidateQueries({ queryKey: ["case-history", caseId] });
+    queryClient.invalidateQueries({ queryKey: ["case", caseId] });
   };
 
   const createMutation = useMutation({
@@ -687,6 +767,9 @@ export function CaseQuotesSection({ caseId }: { caseId: string }) {
       {quotes.length > 0 ? (
         <div className="space-y-2">
           {quotes.map((quote) => {
+            const invoicedHt = quoteInvoicedHt(invoices, quote.id);
+            const remainingHt = remainingQuoteHt(quote.totalHt, invoicedHt);
+            const remainingPct = remainingQuotePercent(quote.totalHt, remainingHt);
             return (
               <div
                 key={quote.id}
@@ -788,6 +871,18 @@ export function CaseQuotesSection({ caseId }: { caseId: string }) {
                       {formatCurrency(quote.totalTtc)}
                     </span>
                   </span>
+                  {invoicedHt > 0 || quote.status === "accepted" ? (
+                    <span>
+                      Facturé :{" "}
+                      <span className="font-medium text-slate-700 dark:text-slate-200">
+                        {formatCurrency(invoicedHt)}
+                      </span>
+                      {" · reste : "}
+                      <span className="font-medium text-amber-700 dark:text-amber-300">
+                        {formatCurrency(remainingHt)} ({remainingPct} %)
+                      </span>
+                    </span>
+                  ) : null}
                   {quote.validUntil && (
                     <span>
                       Valide jusqu&apos;au {new Date(quote.validUntil).toLocaleDateString("fr-FR")}

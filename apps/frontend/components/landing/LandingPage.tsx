@@ -34,7 +34,7 @@ const PILLARS = [
   {
     title: "Facturation sans double saisie",
     description:
-      "Envoyez vos dossiers à facturer vers Pennylane ou Qonto : des factures brouillon prêtes à valider.",
+      "Envoyez un dossier vers Pennylane ou Qonto, puis suivez et validez la facture depuis Planwise.",
   },
 ] as const;
 
@@ -92,9 +92,9 @@ const FEATURE_SECTIONS = [
   {
     title: "Facturation & intégrations",
     items: [
-      "Connexion Pennylane (OAuth ou token API) pour créer des factures brouillon",
-      "Connexion Qonto (OAuth ou clé API) pour créer des factures brouillon",
-      "Envoi depuis un dossier « À facturer » sans ressaisir client ni lignes",
+      "Connexion Pennylane (OAuth ou token API) pour créer et suivre les factures",
+      "Connexion Qonto (OAuth ou clé API) pour créer et suivre les factures",
+      "Envoi depuis un dossier sans ressaisir client ni lignes, puis validation dans Planwise",
     ],
   },
   {

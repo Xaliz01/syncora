@@ -20,6 +20,17 @@ stateless hormis MongoDB et le volume documents).
 | `Caddyfile`                     | Reverse proxy + HTTPS (Let's Encrypt)                            |
 | `.env.production.example`       | Modèle de configuration (à copier en `.env.production`)          |
 
+## Migrations Mongo (microservices)
+
+`integrations-service` utilise [migrate-mongo](https://github.com/seppevs/migrate-mongo) :
+
+- Fichiers : `services/integrations-service/migrations/`
+- Changelog Mongo : collection `changelog` dans la DB du service
+- Au démarrage du container, les migrations pending sont appliquées automatiquement (échec → le process refuse de démarrer)
+- En local / ops : `npm run migrate:status|up|down -w @planwise/integrations-service`
+
+Les autres services pourront adopter le même schéma au besoin (un dossier `migrations/` + config par DB).
+
 ## 1. Pré-requis sur la VM
 
 - Docker + plugin Compose (`docker compose version`)

@@ -10,15 +10,57 @@ export type InterventionStatus = "planned" | "in_progress" | "completed" | "canc
 
 // ── Billing status (Phase 3.4) ──
 
-export const BILLING_STATUSES = ["none", "to_invoice", "invoiced", "paid"] as const;
+export const BILLING_STATUSES = [
+  "none",
+  "to_invoice",
+  "invoice_draft",
+  "partially_invoiced",
+  "invoiced",
+  "paid",
+] as const;
 export type BillingStatus = (typeof BILLING_STATUSES)[number];
 
 export const BILLING_STATUS_LABELS: Record<BillingStatus, string> = {
   none: "Non applicable",
   to_invoice: "À facturer",
+  invoice_draft: "Brouillon facture",
+  partially_invoiced: "Partiellement facturé",
   invoiced: "Facturé",
   paid: "Payé",
 };
+
+/** Ordre métier pour n’upgrader le statut CRM que vers l’avant. */
+export const BILLING_STATUS_RANK: Record<BillingStatus, number> = {
+  none: 0,
+  to_invoice: 1,
+  invoice_draft: 2,
+  partially_invoiced: 3,
+  invoiced: 4,
+  paid: 5,
+};
+
+/** Statuts depuis lesquels on peut encore créer une facture (1-n / situations). */
+export const BILLING_STATUSES_ALLOWING_INVOICE_CREATE: readonly BillingStatus[] = [
+  "to_invoice",
+  "invoice_draft",
+  "partially_invoiced",
+];
+
+export function canCreateCaseInvoice(status: BillingStatus): boolean {
+  return (BILLING_STATUSES_ALLOWING_INVOICE_CREATE as readonly string[]).includes(status);
+}
+
+/**
+ * Lorsqu’un devis est accepté, on peut passer le dossier à « À facturer »
+ * uniquement s’il n’est pas déjà plus avancé dans le cycle de facturation.
+ */
+export function shouldSetToInvoiceOnQuoteAccepted(current: BillingStatus): boolean {
+  return BILLING_STATUS_RANK[current] < BILLING_STATUS_RANK.to_invoice;
+}
+
+export function shouldUpgradeBillingStatus(current: BillingStatus, next: BillingStatus): boolean {
+  return BILLING_STATUS_RANK[next] > BILLING_STATUS_RANK[current];
+}
 
 /** Coordonnées GPS légères (géolocalisation terrain). */
 export interface GeoLocation {

@@ -54,23 +54,67 @@ export class IntegrationSyncDocument extends Document {
   @Prop({ required: true, index: true })
   caseId!: string;
 
+  /** Devis source (optionnel). */
+  @Prop({ index: true })
+  quoteId?: string;
+
+  /** full | situation | deposit | balance */
+  @Prop({ default: "full" })
+  invoiceKind?: string;
+
+  @Prop()
+  situationNumber?: number;
+
+  @Prop()
+  situationPercent?: number;
+
+  /** Montant HT de la facture (string décimale). */
+  @Prop()
+  amountHt?: string;
+
   @Prop({ required: true })
   externalReference!: string;
 
-  /** ID client distant (Pennylane ou Qonto selon `provider`). */
+  /** ID client distant (Pennylane, Qonto, … selon `provider`). */
   @Prop({ required: true })
-  pennylaneCustomerId!: string;
+  providerCustomerId!: string;
 
-  /** ID facture distante (Pennylane ou Qonto selon `provider`). */
+  /** ID facture distante (Pennylane, Qonto, … selon `provider`). */
   @Prop({ required: true })
-  pennylaneInvoiceId!: string;
+  providerInvoiceId!: string;
+
+  /**
+   * Anciens noms (prod pré-générique). Conservés en optionnel pour la lecture
+   * pendant / juste après la migration au boot ; plus écrits.
+   * @deprecated
+   */
+  @Prop()
+  pennylaneCustomerId?: string;
+
+  /** @deprecated */
+  @Prop()
+  pennylaneInvoiceId?: string;
 
   @Prop({ default: true })
   draft!: boolean;
 
+  /** Cycle de vie distant normalisé (draft | finalized | paid | …). */
+  @Prop()
+  remoteStatus?: string;
+
   @Prop()
   invoiceUrl?: string;
+
+  @Prop()
+  invoiceNumber?: string;
+
+  @Prop()
+  lastSyncedAt?: Date;
 }
 
 export const IntegrationSyncSchema = SchemaFactory.createForClass(IntegrationSyncDocument);
-IntegrationSyncSchema.index({ organizationId: 1, caseId: 1, provider: 1 }, { unique: true });
+IntegrationSyncSchema.index(
+  { organizationId: 1, provider: 1, providerInvoiceId: 1 },
+  { unique: true },
+);
+IntegrationSyncSchema.index({ organizationId: 1, caseId: 1 });

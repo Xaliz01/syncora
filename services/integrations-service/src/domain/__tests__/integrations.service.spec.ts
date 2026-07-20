@@ -16,7 +16,9 @@ describe("IntegrationsService", () => {
   };
   const syncModel = {
     findOne: jest.fn(),
+    find: jest.fn(),
     create: jest.fn(),
+    deleteOne: jest.fn(),
   };
   const httpService = {
     get: jest.fn(),
@@ -243,28 +245,49 @@ describe("IntegrationsService", () => {
       ).rejects.toBeInstanceOf(NotFoundException);
     });
 
-    it("returns existing sync without calling Pennylane again", async () => {
-      syncModel.findOne.mockReturnValue({
+    it("creates a new Pennylane invoice even when a sync already exists", async () => {
+      process.env.INTEGRATIONS_ENCRYPTION_KEY =
+        "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+      const { encryptSecret } = await import("../secret-crypto");
+      credentialModel.findOne.mockReturnValue({
         exec: async () => ({
-          pennylaneCustomerId: "9",
-          pennylaneInvoiceId: "77",
-          draft: true,
-          invoiceUrl: "https://example.com/i/77",
+          authMethod: "api_token",
+          encryptedToken: encryptSecret("token"),
         }),
       });
+      httpService.get.mockReturnValue(
+        of({
+          data: { customers: [{ id: 9, external_reference: "planwise-customer-cust" }] },
+          status: 200,
+        }) as never,
+      );
+      httpService.post.mockReturnValue(
+        of({ data: { id: 88, public_url: "https://example.com/i/88" }, status: 200 }) as never,
+      );
+      syncModel.create.mockResolvedValue({ _id: "sync-new" });
 
       const result = await service.syncCaseToPennylane({
         organizationId: "org-1",
         caseId: "c1",
         caseTitle: "T",
-        externalReference: "ref",
+        externalReference: "ref-2",
         invoiceDate: "2026-07-18",
         customer: { planwiseCustomerId: "cust", name: "Client" },
         lines: [{ label: "Ligne", quantity: 1, unitPriceHt: "10.00", vatRate: "FR_200" }],
+        invoiceKind: "situation",
+        situationNumber: 2,
+        amountHt: "10.00",
       });
 
-      expect(result.pennylaneInvoiceId).toBe("77");
-      expect(httpService.post).not.toHaveBeenCalled();
+      expect(result.pennylaneInvoiceId).toBe("88");
+      expect(result.syncId).toBe("sync-new");
+      expect(syncModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          invoiceKind: "situation",
+          situationNumber: 2,
+          amountHt: "10.00",
+        }),
+      );
     });
   });
 
@@ -631,7 +654,7 @@ describe("IntegrationsService", () => {
               status: 201,
             }) as never,
           );
-        syncModel.create.mockResolvedValue({});
+        syncModel.create.mockResolvedValue({ _id: "sync-indiv" });
 
         await expect(
           service.syncCaseToQonto({
@@ -721,7 +744,7 @@ describe("IntegrationsService", () => {
               status: 201,
             }) as never,
           );
-        syncModel.create.mockResolvedValue({});
+        syncModel.create.mockResolvedValue({ _id: "sync-draft" });
 
         const result = await service.syncCaseToQonto({
           organizationId: "org-1",
@@ -747,6 +770,7 @@ describe("IntegrationsService", () => {
         expect(result).toEqual({
           provider: "qonto",
           caseId: "c1",
+          syncId: "sync-draft",
           qontoCustomerId: "client-uuid",
           qontoInvoiceId: "inv-uuid",
           draft: true,
@@ -767,8 +791,8 @@ describe("IntegrationsService", () => {
           expect.objectContaining({
             provider: "qonto",
             caseId: "c1",
-            pennylaneCustomerId: "client-uuid",
-            pennylaneInvoiceId: "inv-uuid",
+            providerCustomerId: "client-uuid",
+            providerInvoiceId: "inv-uuid",
             draft: true,
           }),
         );
@@ -814,7 +838,7 @@ describe("IntegrationsService", () => {
               status: 201,
             }) as never,
           );
-        syncModel.create.mockResolvedValue({});
+        syncModel.create.mockResolvedValue({ _id: "sync-indiv" });
 
         await service.syncCaseToQonto({
           organizationId: "org-1",
@@ -838,32 +862,193 @@ describe("IntegrationsService", () => {
         expect(invoicePayload?.number).toBe("FAC-2026-042");
       });
 
-      it("returns existing sync without calling Qonto again", async () => {
-        syncModel.findOne.mockReturnValue({
+      it("creates a new Qonto invoice even when a sync already exists", async () => {
+        process.env.INTEGRATIONS_ENCRYPTION_KEY =
+          "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+        const { encryptSecret } = await import("../secret-crypto");
+        credentialModel.findOne.mockReturnValue({
           exec: async () => ({
-            pennylaneCustomerId: "existing-client",
-            pennylaneInvoiceId: "existing-inv",
-            draft: true,
-            invoiceUrl: "https://qonto.test/i/x",
+            authMethod: "api_token",
+            encryptedToken: encryptSecret("login:secret"),
           }),
         });
+        httpService.get.mockReturnValue(
+          of({
+            data: {
+              organization: {
+                bank_accounts: [{ iban: "FR7616958000010123456789037", main: true }],
+              },
+            },
+            status: 200,
+          }) as never,
+        );
+        httpService.post
+          .mockReturnValueOnce(of({ data: { client: { id: "client-1" } }, status: 200 }) as never)
+          .mockReturnValueOnce(
+            of({
+              data: { client_invoice: { id: "inv-new", status: "draft" } },
+              status: 201,
+            }) as never,
+          );
+        syncModel.create.mockResolvedValue({ _id: "sync-qonto-2" });
 
         const result = await service.syncCaseToQonto({
           organizationId: "org-1",
           caseId: "c1",
           caseTitle: "T",
-          externalReference: "ref",
+          externalReference: "ref-2",
           invoiceDate: "2026-07-18",
           customer: {
             planwiseCustomerId: "cust",
             kind: "company",
             name: "Client",
+            legalIdentifier: "123456789",
           },
           lines: [{ label: "Ligne", quantity: 1, unitPriceHt: "10.00", vatRate: "0.20" }],
         });
 
-        expect(result.qontoInvoiceId).toBe("existing-inv");
-        expect(httpService.post).not.toHaveBeenCalled();
+        expect(result.qontoInvoiceId).toBe("inv-new");
+        expect(result.syncId).toBe("sync-qonto-2");
+        expect(syncModel.create).toHaveBeenCalled();
+      });
+    });
+
+    describe("case invoice sync lifecycle", () => {
+      it("returns an empty list when no sync exists", async () => {
+        syncModel.find.mockReturnValue({
+          sort: () => ({ exec: async () => [] }),
+        });
+        await expect(service.getCaseInvoiceSync("org-1", "c1")).resolves.toEqual({ invoices: [] });
+      });
+
+      it("finalizes a Qonto draft invoice", async () => {
+        process.env.INTEGRATIONS_ENCRYPTION_KEY =
+          "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+        const { encryptSecret } = await import("../secret-crypto");
+        const doc = {
+          _id: "sync-1",
+          organizationId: "org-1",
+          provider: "qonto",
+          caseId: "c1",
+          providerCustomerId: "client-1",
+          providerInvoiceId: "inv-1",
+          draft: true,
+          remoteStatus: "draft",
+          invoiceKind: "full",
+          save: jest.fn().mockResolvedValue(undefined),
+        };
+        syncModel.findOne.mockReturnValue({ exec: async () => doc });
+        credentialModel.findOne.mockReturnValue({
+          exec: async () => ({
+            authMethod: "api_token",
+            encryptedToken: encryptSecret("login:secret"),
+          }),
+        });
+        httpService.post.mockReturnValue(
+          of({
+            data: {
+              client_invoice: {
+                id: "inv-1",
+                status: "unpaid",
+                number: "FAC-1",
+                invoice_url: "https://qonto.test/i/1",
+              },
+            },
+            status: 200,
+          }) as never,
+        );
+
+        const status = await service.finalizeCaseInvoice("org-1", "c1", "sync-1");
+        expect(httpService.post).toHaveBeenCalledWith(
+          expect.stringContaining("/client_invoices/inv-1/finalize"),
+          {},
+          expect.any(Object),
+        );
+        expect(status.remoteStatus).toBe("finalized");
+        expect(status.draft).toBe(false);
+        expect(status.invoiceNumber).toBe("FAC-1");
+        expect(status.id).toBe("sync-1");
+        expect(doc.save).toHaveBeenCalled();
+      });
+
+      it("refreshes a Pennylane invoice status", async () => {
+        process.env.INTEGRATIONS_ENCRYPTION_KEY =
+          "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+        const { encryptSecret } = await import("../secret-crypto");
+        const doc = {
+          _id: "sync-pl",
+          organizationId: "org-1",
+          provider: "pennylane",
+          caseId: "c1",
+          providerCustomerId: "42",
+          providerInvoiceId: "99",
+          draft: false,
+          remoteStatus: "finalized",
+          invoiceKind: "full",
+          save: jest.fn().mockResolvedValue(undefined),
+        };
+        syncModel.findOne.mockReturnValue({ exec: async () => doc });
+        credentialModel.findOne.mockReturnValue({
+          exec: async () => ({
+            authMethod: "api_token",
+            encryptedToken: encryptSecret("token"),
+          }),
+        });
+        httpService.get.mockImplementation(
+          () =>
+            of({
+              data: {
+                id: 99,
+                draft: false,
+                paid: true,
+                status: "paid",
+                invoice_number: "F-99",
+                public_url: "https://pennylane.test/i/99",
+              },
+              status: 200,
+            }) as never,
+        );
+
+        const status = await service.refreshCaseInvoiceSync("org-1", "c1", "sync-pl");
+        expect(status.remoteStatus).toBe("paid");
+        expect(status.invoiceNumber).toBe("F-99");
+        expect(doc.save).toHaveBeenCalled();
+      });
+
+      it("detaches a cancelled invoice sync", async () => {
+        const doc = {
+          _id: "sync-cancel",
+          organizationId: "org-1",
+          provider: "qonto",
+          caseId: "c1",
+          providerCustomerId: "client-1",
+          providerInvoiceId: "inv-c",
+          draft: false,
+          remoteStatus: "cancelled",
+          invoiceKind: "full",
+        };
+        syncModel.findOne.mockReturnValue({ exec: async () => doc });
+        syncModel.deleteOne.mockReturnValue({ exec: async () => ({ deletedCount: 1 }) });
+        syncModel.find.mockReturnValue({
+          sort: () => ({ exec: async () => [] }),
+        });
+
+        const list = await service.deleteCaseInvoiceSync("org-1", "c1", "sync-cancel");
+        expect(syncModel.deleteOne).toHaveBeenCalled();
+        expect(list).toEqual({ invoices: [] });
+      });
+
+      it("refuses to detach a finalized invoice", async () => {
+        syncModel.findOne.mockReturnValue({
+          exec: async () => ({
+            _id: "sync-ok",
+            remoteStatus: "finalized",
+            draft: false,
+          }),
+        });
+        await expect(
+          service.deleteCaseInvoiceSync("org-1", "c1", "sync-ok"),
+        ).rejects.toBeInstanceOf(BadRequestException);
       });
     });
   });
