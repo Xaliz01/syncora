@@ -9,10 +9,14 @@ import type {
   SyncCaseToQontoBody,
 } from "@planwise/shared";
 import { AbstractIntegrationsService } from "../../domain/ports/integrations.service.port";
+import { CronRunRecorder } from "../../domain/cron-run.recorder";
 
 @Controller()
 export class IntegrationsController {
-  constructor(private readonly integrationsService: AbstractIntegrationsService) {}
+  constructor(
+    private readonly integrationsService: AbstractIntegrationsService,
+    private readonly cronRunRecorder: CronRunRecorder,
+  ) {}
 
   @Get("integrations/pennylane")
   getPennylaneStatus(@Query("organizationId") organizationId: string) {
@@ -177,5 +181,39 @@ export class IntegrationsController {
   @Post("integrations/invoice-syncs/refresh-pending")
   refreshPendingInvoiceSyncs() {
     return this.integrationsService.refreshPendingInvoiceSyncs();
+  }
+
+  /** Backoffice plateforme — listings cross-org (gateway /platform uniquement). */
+  @Get("platform/integrations")
+  listPlatformIntegrations(
+    @Query("provider") provider?: string,
+    @Query("organizationId") organizationId?: string,
+    @Query("limit") limit?: string,
+    @Query("offset") offset?: string,
+  ) {
+    return this.integrationsService.listPlatformIntegrations({
+      provider,
+      organizationId,
+      limit: limit ? Number.parseInt(limit, 10) : undefined,
+      offset: offset ? Number.parseInt(offset, 10) : undefined,
+    });
+  }
+
+  @Get("platform/cron-runs")
+  listCronRuns(
+    @Query("jobKey") jobKey?: string,
+    @Query("limit") limit?: string,
+    @Query("offset") offset?: string,
+  ) {
+    return this.cronRunRecorder.list({
+      jobKey,
+      limit: limit ? Number.parseInt(limit, 10) : undefined,
+      offset: offset ? Number.parseInt(offset, 10) : undefined,
+    });
+  }
+
+  @Get("platform/cron-runs/latest")
+  getLatestCronRun(@Query("jobKey") jobKey: string) {
+    return this.cronRunRecorder.getLatest(jobKey);
   }
 }

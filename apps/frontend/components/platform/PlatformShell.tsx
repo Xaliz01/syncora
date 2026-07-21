@@ -58,6 +58,8 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
   const nav = [
     { href: "/platform", label: "Organisations" },
     { href: "/platform/users", label: "Utilisateurs" },
+    { href: "/platform/integrations", label: "Intégrations" },
+    { href: "/platform/crons", label: "Crons" },
   ];
 
   return (

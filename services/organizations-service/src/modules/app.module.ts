@@ -4,9 +4,12 @@ import { MongooseModule } from "@nestjs/mongoose";
 import { HealthController, provideHealthServiceName } from "@planwise/shared/nest";
 import { OrganizationsController } from "../presentation/http/organizations.controller";
 import { OrganizationSchema } from "../persistence/organization.schema";
+import { CronRunSchema } from "../persistence/cron-run.schema";
 import { AbstractOrganizationsService } from "../domain/ports/organizations.service.port";
 import { OrganizationsService } from "../domain/organizations.service";
 import { TrialTestDataCleanupScheduler } from "../domain/trial-test-data-cleanup.scheduler";
+import { CronRunRecorder } from "../domain/cron-run.recorder";
+import { PlatformOpsController } from "../presentation/http/platform-ops.controller";
 
 @Module({
   imports: [
@@ -14,12 +17,16 @@ import { TrialTestDataCleanupScheduler } from "../domain/trial-test-data-cleanup
     MongooseModule.forRoot(
       process.env.MONGODB_URI ?? "mongodb://localhost:27017/planwise-organizations",
     ),
-    MongooseModule.forFeature([{ name: "Organization", schema: OrganizationSchema }]),
+    MongooseModule.forFeature([
+      { name: "Organization", schema: OrganizationSchema },
+      { name: "CronRun", schema: CronRunSchema },
+    ]),
   ],
-  controllers: [OrganizationsController, HealthController],
+  controllers: [OrganizationsController, PlatformOpsController, HealthController],
   providers: [
     provideHealthServiceName("planwise-organizations-service"),
     { provide: AbstractOrganizationsService, useClass: OrganizationsService },
+    CronRunRecorder,
     TrialTestDataCleanupScheduler,
   ],
 })

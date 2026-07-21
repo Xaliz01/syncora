@@ -17,10 +17,12 @@ import type { NotificationDocument } from "../persistence/notification.schema";
 import type { SentReminderDocument } from "../persistence/sent-reminder.schema";
 import { AbstractPushSubscriptionService } from "./ports/push-subscription.service.port";
 import { AbstractEmailService } from "./ports/email.service.port";
+import { CronRunRecorder } from "./cron-run.recorder";
 
 const CASES_URL = process.env.CASES_SERVICE_URL ?? "http://localhost:3004";
 const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
 const SUBSCRIPTIONS_URL = process.env.SUBSCRIPTIONS_SERVICE_URL ?? "http://localhost:3008";
+const JOB_KEY = "notifications.intervention-reminders";
 
 @Injectable()
 export class InterventionReminderScheduler {
@@ -36,10 +38,16 @@ export class InterventionReminderScheduler {
     private readonly pushService: AbstractPushSubscriptionService,
     private readonly emailService: AbstractEmailService,
     private readonly httpService: HttpService,
+    private readonly cronRunRecorder: CronRunRecorder,
   ) {}
 
   @Cron(CronExpression.EVERY_MINUTE)
   async checkUpcomingInterventions(): Promise<void> {
+    const runId = await this.cronRunRecorder.start(JOB_KEY);
+    let processed = 0;
+    let succeeded = 0;
+    let skipped = 0;
+
     try {
       const allPrefs = await this.preferencesModel.find({}).exec();
       const prefsMap = new Map<string, NotificationPreferencesData>();
@@ -57,11 +65,15 @@ export class InterventionReminderScheduler {
         now.toISOString(),
         windowEnd.toISOString(),
       );
+      processed = interventions.length;
 
       const accessByOrganization = new Map<string, boolean>();
 
       for (const intervention of interventions) {
-        if (!intervention.scheduledStart || !intervention.assigneeId) continue;
+        if (!intervention.scheduledStart || !intervention.assigneeId) {
+          skipped += 1;
+          continue;
+        }
 
         const orgId = intervention.organizationId;
         let hasAccess = accessByOrganization.get(orgId);
@@ -69,7 +81,10 @@ export class InterventionReminderScheduler {
           hasAccess = await this.organizationHasActiveSubscription(orgId);
           accessByOrganization.set(orgId, hasAccess);
         }
-        if (!hasAccess) continue;
+        if (!hasAccess) {
+          skipped += 1;
+          continue;
+        }
 
         const scheduledStart = new Date(intervention.scheduledStart);
         const minutesUntilStart = (scheduledStart.getTime() - now.getTime()) / (60 * 1000);
@@ -82,7 +97,10 @@ export class InterventionReminderScheduler {
 
         if (minutesUntilStart <= userLeadTime && minutesUntilStart > 0) {
           const alreadySent = await this.hasReminderBeenSent(intervention.id, userId, userLeadTime);
-          if (alreadySent) continue;
+          if (alreadySent) {
+            skipped += 1;
+            continue;
+          }
 
           const channels = getEnabledChannels(userPrefs, "intervention_reminder");
 
@@ -118,11 +136,25 @@ export class InterventionReminderScheduler {
           }
 
           await this.markReminderSent(intervention.id, userId, userLeadTime);
+          succeeded += 1;
           this.logger.log(`Reminder sent for intervention ${intervention.id} to user ${userId}`);
+        } else {
+          skipped += 1;
         }
       }
+
+      await this.cronRunRecorder.finish(runId, {
+        status: "ok",
+        stats: { processed, succeeded, skipped },
+      });
     } catch (err) {
-      this.logger.warn("Reminder check failed", (err as Error).message);
+      const message = (err as Error).message;
+      this.logger.warn("Reminder check failed", message);
+      await this.cronRunRecorder.finish(runId, {
+        status: "error",
+        stats: { processed, succeeded, skipped },
+        errorMessage: message,
+      });
     }
   }
 

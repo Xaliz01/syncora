@@ -5,6 +5,7 @@ import { of } from "rxjs";
 import { InterventionReminderScheduler } from "../intervention-reminder.scheduler";
 import { AbstractPushSubscriptionService } from "../ports/push-subscription.service.port";
 import { AbstractEmailService } from "../ports/email.service.port";
+import { CronRunRecorder } from "../cron-run.recorder";
 
 describe("InterventionReminderScheduler", () => {
   let scheduler: InterventionReminderScheduler;
@@ -14,6 +15,7 @@ describe("InterventionReminderScheduler", () => {
   let mockHttpService: { get: jest.Mock };
   let mockPushService: { sendPushToUser: jest.Mock };
   let mockEmailService: { sendNotificationEmail: jest.Mock };
+  let mockCronRunRecorder: { start: jest.Mock; finish: jest.Mock };
 
   const futureDate = (minutesFromNow: number) =>
     new Date(Date.now() + minutesFromNow * 60 * 1000).toISOString();
@@ -32,6 +34,10 @@ describe("InterventionReminderScheduler", () => {
     mockHttpService = { get: jest.fn() };
     mockPushService = { sendPushToUser: jest.fn().mockResolvedValue(undefined) };
     mockEmailService = { sendNotificationEmail: jest.fn().mockResolvedValue(undefined) };
+    mockCronRunRecorder = {
+      start: jest.fn().mockResolvedValue("run-1"),
+      finish: jest.fn().mockResolvedValue(undefined),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -42,6 +48,7 @@ describe("InterventionReminderScheduler", () => {
         { provide: AbstractPushSubscriptionService, useValue: mockPushService },
         { provide: AbstractEmailService, useValue: mockEmailService },
         { provide: HttpService, useValue: mockHttpService },
+        { provide: CronRunRecorder, useValue: mockCronRunRecorder },
       ],
     }).compile();
 

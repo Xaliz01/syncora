@@ -62,4 +62,40 @@ export class PlatformController {
   impersonate(@CurrentPlatformUser() user: PlatformAuthUser, @Body() body: StartImpersonationBody) {
     return this.platformService.startImpersonation(user, body);
   }
+
+  @Get("integrations")
+  @UseGuards(PlatformJwtAuthGuard)
+  listIntegrations(
+    @Query("provider") provider?: string,
+    @Query("organizationId") organizationId?: string,
+    @Query("limit") limit?: string,
+    @Query("offset") offset?: string,
+  ) {
+    return this.platformService.listIntegrations({
+      provider,
+      organizationId,
+      limit: limit ? Number.parseInt(limit, 10) : undefined,
+      offset: offset ? Number.parseInt(offset, 10) : undefined,
+    });
+  }
+
+  @Get("cron-jobs")
+  @UseGuards(PlatformJwtAuthGuard)
+  getCronJobsOverview() {
+    return this.platformService.getCronJobsOverview();
+  }
+
+  @Get("cron-runs")
+  @UseGuards(PlatformJwtAuthGuard)
+  listCronRuns(
+    @Query("jobKey") jobKey?: string,
+    @Query("limit") limit?: string,
+    @Query("offset") offset?: string,
+  ) {
+    return this.platformService.listCronRuns({
+      jobKey,
+      limit: limit ? Number.parseInt(limit, 10) : undefined,
+      offset: offset ? Number.parseInt(offset, 10) : undefined,
+    });
+  }
 }

@@ -11,6 +11,8 @@ import {
   IntegrationCredentialSchema,
   IntegrationSyncSchema,
 } from "../persistence/integration.schema";
+import { CronRunSchema } from "../persistence/cron-run.schema";
+import { CronRunRecorder } from "../domain/cron-run.recorder";
 
 @Module({
   imports: [
@@ -22,12 +24,14 @@ import {
     MongooseModule.forFeature([
       { name: "IntegrationCredential", schema: IntegrationCredentialSchema },
       { name: "IntegrationSync", schema: IntegrationSyncSchema },
+      { name: "CronRun", schema: CronRunSchema },
     ]),
   ],
   controllers: [IntegrationsController, HealthController],
   providers: [
     provideHealthServiceName("planwise-integrations-service"),
     { provide: AbstractIntegrationsService, useClass: IntegrationsService },
+    CronRunRecorder,
     InvoiceSyncScheduler,
   ],
 })

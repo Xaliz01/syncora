@@ -5,8 +5,10 @@ import { firstValueFrom } from "rxjs";
 import type { BillingStatus, CaseInvoiceSyncStatus, CaseResponse } from "@planwise/shared";
 import { aggregateCaseBillingStatus, shouldUpgradeBillingStatus } from "@planwise/shared";
 import { AbstractIntegrationsService } from "./ports/integrations.service.port";
+import { CronRunRecorder } from "./cron-run.recorder";
 
 const CASES_URL = process.env.CASES_SERVICE_URL ?? "http://localhost:3004";
+const JOB_KEY = "integrations.invoice-sync";
 
 @Injectable()
 export class InvoiceSyncScheduler {
@@ -16,12 +18,23 @@ export class InvoiceSyncScheduler {
   constructor(
     private readonly integrationsService: AbstractIntegrationsService,
     private readonly httpService: HttpService,
+    private readonly cronRunRecorder: CronRunRecorder,
   ) {}
 
   @Cron(CronExpression.EVERY_10_MINUTES)
   async refreshPendingInvoiceSyncs(): Promise<void> {
-    if (this.running) return;
+    if (this.running) {
+      await this.cronRunRecorder.start(JOB_KEY).then((id) =>
+        this.cronRunRecorder.finish(id, {
+          status: "skipped",
+          stats: { skipped: 1 },
+          errorMessage: "Run précédent encore en cours",
+        }),
+      );
+      return;
+    }
     this.running = true;
+    const runId = await this.cronRunRecorder.start(JOB_KEY);
     try {
       const result = await this.integrationsService.refreshPendingInvoiceSyncs();
       const byCase = new Map<string, CaseInvoiceSyncStatus[]>();
@@ -55,10 +68,24 @@ export class InvoiceSyncScheduler {
           `Invoice sync failed org=${err.organizationId} case=${err.caseId} sync=${err.syncId ?? "?"}: ${err.message}`,
         );
       }
+
+      await this.cronRunRecorder.finish(runId, {
+        status: result.errors.length > 0 && result.updated.length === 0 ? "error" : "ok",
+        stats: {
+          processed: result.refreshed,
+          succeeded: result.updated.length,
+          failed: result.errors.length,
+          billingUpdates,
+        },
+        errorMessage:
+          result.errors.length > 0
+            ? `${result.errors.length} sync(s) en erreur (ex. ${result.errors[0]?.message})`
+            : undefined,
+      });
     } catch (err) {
-      this.logger.error(
-        `Invoice sync cron failed: ${err instanceof Error ? err.message : String(err)}`,
-      );
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.error(`Invoice sync cron failed: ${message}`);
+      await this.cronRunRecorder.finish(runId, { status: "error", errorMessage: message });
     } finally {
       this.running = false;
     }

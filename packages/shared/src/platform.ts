@@ -115,6 +115,24 @@ export interface PlatformOrganizationDetailResponse {
     hasAccess: boolean;
     trialEndsAt?: string;
   };
+  integrations: PlatformIntegrationSummary[];
+}
+
+export interface PlatformIntegrationSummary {
+  organizationId: string;
+  organizationName?: string;
+  provider: "pennylane" | "qonto" | string;
+  connected: boolean;
+  authMethod?: "oauth" | "api_token";
+  companyName?: string;
+  companyId?: string;
+  tokenHint?: string;
+  connectedAt?: string;
+}
+
+export interface PlatformIntegrationsListResponse {
+  integrations: PlatformIntegrationSummary[];
+  total: number;
 }
 
 export interface StartImpersonationBody {

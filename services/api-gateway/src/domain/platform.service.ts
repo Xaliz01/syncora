@@ -11,6 +11,8 @@ import { firstValueFrom } from "rxjs";
 import type {
   AuthResponse,
   AuthUser,
+  CronRunResponse,
+  CronRunsListResponse,
   EffectivePermissionsResponse,
   JwtPayload,
   LoginBody,
@@ -18,6 +20,9 @@ import type {
   OrganizationResponse,
   PlatformAuthResponse,
   PlatformAuthUser,
+  PlatformCronJobsOverviewResponse,
+  PlatformIntegrationSummary,
+  PlatformIntegrationsListResponse,
   PlatformJwtPayload,
   PlatformOrganizationDetailResponse,
   PlatformOrganizationSummary,
@@ -28,13 +33,19 @@ import type {
   UserResponse,
   ValidateCredentialsResponse,
 } from "@planwise/shared";
-import { ASSIGNABLE_PERMISSION_CODES, isPlatformStaffEmail } from "@planwise/shared";
+import {
+  ASSIGNABLE_PERMISSION_CODES,
+  isPlatformStaffEmail,
+  PLATFORM_CRON_JOBS,
+} from "@planwise/shared";
 import { AbstractPlatformService } from "./ports/platform.service.port";
 import { AbstractSubscriptionsGatewayService } from "./ports/subscriptions.service.port";
 
 const ORGANIZATIONS_URL = process.env.ORGANIZATIONS_SERVICE_URL ?? "http://localhost:3001";
 const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
 const PERMISSIONS_URL = process.env.PERMISSIONS_SERVICE_URL ?? "http://localhost:3003";
+const INTEGRATIONS_URL = process.env.INTEGRATIONS_SERVICE_URL ?? "http://localhost:3013";
+const NOTIFICATIONS_URL = process.env.NOTIFICATIONS_SERVICE_URL ?? "http://localhost:3010";
 
 const IMPERSONATION_TTL = "45m";
 const IMPERSONATION_TTL_MS = 45 * 60 * 1000;
@@ -183,7 +194,23 @@ export class PlatformService extends AbstractPlatformService {
       subscription = undefined;
     }
 
-    return { organization, users, subscription };
+    let integrations: PlatformIntegrationSummary[] = [];
+    try {
+      const intRes = await firstValueFrom(
+        this.httpService.get<PlatformIntegrationsListResponse>(
+          `${INTEGRATIONS_URL}/platform/integrations`,
+          { params: { organizationId, limit: 20 } },
+        ),
+      );
+      integrations = intRes.data.integrations.map((i) => ({
+        ...i,
+        organizationName: organization.name,
+      }));
+    } catch {
+      integrations = [];
+    }
+
+    return { organization, users, subscription, integrations };
   }
 
   async listUsers(filters?: {
@@ -292,6 +319,120 @@ export class PlatformService extends AbstractPlatformService {
     };
     const accessToken = this.jwtService.sign(payload, { expiresIn: IMPERSONATION_TTL });
     return { accessToken, user: authUser };
+  }
+
+  async listIntegrations(filters?: {
+    provider?: string;
+    organizationId?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<PlatformIntegrationsListResponse> {
+    const params: Record<string, string | number> = {};
+    if (filters?.provider?.trim()) params.provider = filters.provider.trim();
+    if (filters?.organizationId?.trim()) params.organizationId = filters.organizationId.trim();
+    if (filters?.limit != null) params.limit = filters.limit;
+    if (filters?.offset != null) params.offset = filters.offset;
+
+    const res = await firstValueFrom(
+      this.httpService.get<PlatformIntegrationsListResponse>(
+        `${INTEGRATIONS_URL}/platform/integrations`,
+        { params },
+      ),
+    );
+
+    const orgIds = [...new Set(res.data.integrations.map((i) => i.organizationId))];
+    const orgNames = await this.resolveOrganizationNames(orgIds);
+    return {
+      total: res.data.total,
+      integrations: res.data.integrations.map((i) => ({
+        ...i,
+        organizationName: orgNames[i.organizationId],
+      })),
+    };
+  }
+
+  async getCronJobsOverview(): Promise<PlatformCronJobsOverviewResponse> {
+    const jobs = await Promise.all(
+      PLATFORM_CRON_JOBS.map(async (def) => {
+        const baseUrl = this.cronServiceBaseUrl(def.service);
+        let lastRun: CronRunResponse | undefined;
+        try {
+          const res = await firstValueFrom(
+            this.httpService.get<CronRunResponse | "">(`${baseUrl}/platform/cron-runs/latest`, {
+              params: { jobKey: def.jobKey },
+            }),
+          );
+          lastRun = res.data && typeof res.data === "object" ? res.data : undefined;
+        } catch {
+          lastRun = undefined;
+        }
+        return { ...def, lastRun };
+      }),
+    );
+    return { jobs };
+  }
+
+  async listCronRuns(filters?: {
+    jobKey?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<CronRunsListResponse> {
+    const jobKey = filters?.jobKey?.trim();
+    if (jobKey) {
+      const def = PLATFORM_CRON_JOBS.find((j) => j.jobKey === jobKey);
+      if (!def) {
+        throw new BadRequestException(`Job inconnu : ${jobKey}`);
+      }
+      const res = await firstValueFrom(
+        this.httpService.get<CronRunsListResponse>(
+          `${this.cronServiceBaseUrl(def.service)}/platform/cron-runs`,
+          {
+            params: {
+              jobKey,
+              limit: filters?.limit,
+              offset: filters?.offset,
+            },
+          },
+        ),
+      );
+      return res.data;
+    }
+
+    // Sans filtre : fusionne les derniers runs de chaque service.
+    const limit = Math.min(Math.max(filters?.limit ?? 50, 1), 200);
+    const batches = await Promise.all(
+      PLATFORM_CRON_JOBS.map(async (def) => {
+        try {
+          const res = await firstValueFrom(
+            this.httpService.get<CronRunsListResponse>(
+              `${this.cronServiceBaseUrl(def.service)}/platform/cron-runs`,
+              { params: { jobKey: def.jobKey, limit } },
+            ),
+          );
+          return res.data.runs;
+        } catch {
+          return [] as CronRunResponse[];
+        }
+      }),
+    );
+    const runs = batches
+      .flat()
+      .sort((a, b) => b.startedAt.localeCompare(a.startedAt))
+      .slice(0, limit);
+    return { runs, total: runs.length };
+  }
+
+  private cronServiceBaseUrl(service: (typeof PLATFORM_CRON_JOBS)[number]["service"]): string {
+    switch (service) {
+      case "integrations-service":
+        return INTEGRATIONS_URL;
+      case "notifications-service":
+        return NOTIFICATIONS_URL;
+      case "organizations-service":
+        return ORGANIZATIONS_URL;
+      default:
+        return ORGANIZATIONS_URL;
+    }
   }
 
   private async enrichUsersWithOrgNames(

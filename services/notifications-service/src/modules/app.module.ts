@@ -20,6 +20,9 @@ import { NotificationSchema } from "../persistence/notification.schema";
 import { NotificationPreferencesSchema } from "../persistence/notification-preferences.schema";
 import { PushSubscriptionSchema } from "../persistence/push-subscription.schema";
 import { SentReminderSchema } from "../persistence/sent-reminder.schema";
+import { CronRunSchema } from "../persistence/cron-run.schema";
+import { CronRunRecorder } from "../domain/cron-run.recorder";
+import { PlatformOpsController } from "../presentation/http/platform-ops.controller";
 
 @Module({
   imports: [
@@ -31,6 +34,7 @@ import { SentReminderSchema } from "../persistence/sent-reminder.schema";
       { name: "NotificationPreferences", schema: NotificationPreferencesSchema },
       { name: "PushSubscription", schema: PushSubscriptionSchema },
       { name: "SentReminder", schema: SentReminderSchema },
+      { name: "CronRun", schema: CronRunSchema },
     ]),
     ScheduleModule.forRoot(),
     HttpModule.register({ timeout: 10000, maxRedirects: 0 }),
@@ -40,6 +44,7 @@ import { SentReminderSchema } from "../persistence/sent-reminder.schema";
     NotificationPreferencesController,
     PushSubscriptionsController,
     EmailController,
+    PlatformOpsController,
     HealthController,
   ],
   providers: [
@@ -51,6 +56,7 @@ import { SentReminderSchema } from "../persistence/sent-reminder.schema";
     },
     { provide: AbstractPushSubscriptionService, useClass: PushSubscriptionService },
     { provide: AbstractEmailService, useClass: EmailService },
+    CronRunRecorder,
     InterventionReminderScheduler,
   ],
 })

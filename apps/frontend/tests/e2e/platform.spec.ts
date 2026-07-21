@@ -5,7 +5,13 @@ import { expect, test } from "./fixtures";
  * Parcours invité : garde d’auth staff + formulaire de connexion.
  * L’impersonation authentifiée reste hors E2E (credentials staff / allowlist).
  */
-const PLATFORM_PROTECTED = ["/platform", "/platform/users", "/platform/organizations/org-demo"];
+const PLATFORM_PROTECTED = [
+  "/platform",
+  "/platform/users",
+  "/platform/organizations/org-demo",
+  "/platform/integrations",
+  "/platform/crons",
+];
 
 test.describe("Backoffice plateforme — accès invité", () => {
   test("la page de connexion backoffice est accessible", async ({ page }) => {

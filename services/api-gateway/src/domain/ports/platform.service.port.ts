@@ -1,8 +1,11 @@
 import type {
   AuthResponse,
+  CronRunsListResponse,
   LoginBody,
   PlatformAuthResponse,
   PlatformAuthUser,
+  PlatformCronJobsOverviewResponse,
+  PlatformIntegrationsListResponse,
   PlatformOrganizationDetailResponse,
   PlatformOrganizationsListResponse,
   PlatformUsersListResponse,
@@ -28,4 +31,16 @@ export abstract class AbstractPlatformService {
     staff: PlatformAuthUser,
     body: StartImpersonationBody,
   ): Promise<AuthResponse>;
+  abstract listIntegrations(filters?: {
+    provider?: string;
+    organizationId?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<PlatformIntegrationsListResponse>;
+  abstract getCronJobsOverview(): Promise<PlatformCronJobsOverviewResponse>;
+  abstract listCronRuns(filters?: {
+    jobKey?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<CronRunsListResponse>;
 }

@@ -955,6 +955,50 @@ export class IntegrationsService extends AbstractIntegrationsService {
     return { refreshed: pending.length, updated, errors };
   }
 
+  async listPlatformIntegrations(filters?: {
+    provider?: string;
+    organizationId?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<{
+    integrations: Array<{
+      organizationId: string;
+      provider: string;
+      connected: boolean;
+      authMethod?: "oauth" | "api_token";
+      companyName?: string;
+      companyId?: string;
+      tokenHint?: string;
+      connectedAt?: string;
+    }>;
+    total: number;
+  }> {
+    const limit = Math.min(Math.max(filters?.limit ?? 100, 1), 200);
+    const offset = Math.max(filters?.offset ?? 0, 0);
+    const query: Record<string, unknown> = {};
+    if (filters?.provider?.trim()) query.provider = filters.provider.trim();
+    if (filters?.organizationId?.trim()) query.organizationId = filters.organizationId.trim();
+
+    const [total, docs] = await Promise.all([
+      this.credentialModel.countDocuments(query).exec(),
+      this.credentialModel.find(query).sort({ connectedAt: -1 }).skip(offset).limit(limit).exec(),
+    ]);
+
+    return {
+      total,
+      integrations: docs.map((doc) => ({
+        organizationId: doc.organizationId,
+        provider: doc.provider,
+        connected: true,
+        authMethod: doc.authMethod === "oauth" ? "oauth" : "api_token",
+        companyName: doc.companyName,
+        companyId: doc.companyId,
+        tokenHint: doc.tokenHint,
+        connectedAt: doc.connectedAt?.toISOString(),
+      })),
+    };
+  }
+
   private async requireCaseSync(
     organizationId: string,
     caseId: string,

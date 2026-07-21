@@ -4,6 +4,7 @@ import { CronJob } from "cron";
 import { firstValueFrom } from "rxjs";
 import axios from "axios";
 import { AbstractOrganizationsService } from "./ports/organizations.service.port";
+import { CronRunRecorder } from "./cron-run.recorder";
 
 const SUBSCRIPTIONS_URL = process.env.SUBSCRIPTIONS_SERVICE_URL ?? "http://localhost:3008";
 const CASES_URL = process.env.CASES_SERVICE_URL ?? "http://localhost:3004";
@@ -15,6 +16,7 @@ const PERMISSIONS_URL = process.env.PERMISSIONS_SERVICE_URL ?? "http://localhost
 
 /** Purge quotidienne des données de démo (4h) — via `cron`, sans @nestjs/schedule. */
 const CLEANUP_CRON = "0 4 * * *";
+const JOB_KEY = "organizations.trial-test-data-cleanup";
 
 @Injectable()
 export class TrialTestDataCleanupScheduler implements OnModuleInit, OnModuleDestroy {
@@ -24,6 +26,7 @@ export class TrialTestDataCleanupScheduler implements OnModuleInit, OnModuleDest
   constructor(
     private readonly httpService: HttpService,
     private readonly organizationsService: AbstractOrganizationsService,
+    private readonly cronRunRecorder: CronRunRecorder,
   ) {}
 
   onModuleInit(): void {
@@ -43,24 +46,58 @@ export class TrialTestDataCleanupScheduler implements OnModuleInit, OnModuleDest
   }
 
   async purgeExpiredTrialTestData(): Promise<void> {
-    const organizationIds =
-      await this.organizationsService.listOrganizationsWithReadyTrialTestData();
-    if (organizationIds.length === 0) return;
+    const runId = await this.cronRunRecorder.start(JOB_KEY);
+    let processed = 0;
+    let succeeded = 0;
+    let skipped = 0;
+    let failed = 0;
 
-    for (const organizationId of organizationIds) {
-      try {
-        const shouldPurge = await this.isTrialEnded(organizationId);
-        if (!shouldPurge) continue;
-        await this.purgeAllServices(organizationId);
-        await this.organizationsService.updateTrialTestData(organizationId, {
-          status: "none",
-          injectedAt: null,
-          errorMessage: null,
+    try {
+      const organizationIds =
+        await this.organizationsService.listOrganizationsWithReadyTrialTestData();
+      processed = organizationIds.length;
+
+      if (organizationIds.length === 0) {
+        await this.cronRunRecorder.finish(runId, {
+          status: "ok",
+          stats: { processed: 0, succeeded: 0, skipped: 0 },
         });
-        this.logger.log(`Purged trial test data for organization ${organizationId}`);
-      } catch (err: unknown) {
-        this.logger.error(`Failed to purge trial test data for ${organizationId}`, err);
+        return;
       }
+
+      for (const organizationId of organizationIds) {
+        try {
+          const shouldPurge = await this.isTrialEnded(organizationId);
+          if (!shouldPurge) {
+            skipped += 1;
+            continue;
+          }
+          await this.purgeAllServices(organizationId);
+          await this.organizationsService.updateTrialTestData(organizationId, {
+            status: "none",
+            injectedAt: null,
+            errorMessage: null,
+          });
+          succeeded += 1;
+          this.logger.log(`Purged trial test data for organization ${organizationId}`);
+        } catch (err: unknown) {
+          failed += 1;
+          this.logger.error(`Failed to purge trial test data for ${organizationId}`, err);
+        }
+      }
+
+      await this.cronRunRecorder.finish(runId, {
+        status: failed > 0 && succeeded === 0 ? "error" : "ok",
+        stats: { processed, succeeded, skipped, failed },
+        errorMessage: failed > 0 ? `${failed} organisation(s) en échec de purge` : undefined,
+      });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      await this.cronRunRecorder.finish(runId, {
+        status: "error",
+        stats: { processed, succeeded, skipped, failed },
+        errorMessage: message,
+      });
     }
   }
 

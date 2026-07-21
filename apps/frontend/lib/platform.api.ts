@@ -1,7 +1,10 @@
 import type {
   AuthResponse,
+  CronRunsListResponse,
   PlatformAuthResponse,
   PlatformAuthUser,
+  PlatformCronJobsOverviewResponse,
+  PlatformIntegrationsListResponse,
   PlatformOrganizationDetailResponse,
   PlatformOrganizationsListResponse,
   PlatformUsersListResponse,
@@ -97,5 +100,50 @@ export async function startImpersonation(body: StartImpersonationBody) {
     body,
     platformBearer: true,
     fallbackError: "Impossible de démarrer la session support",
+  });
+}
+
+export async function listPlatformIntegrations(filters?: {
+  provider?: string;
+  organizationId?: string;
+  limit?: number;
+  offset?: number;
+}) {
+  const params = new URLSearchParams();
+  if (filters?.provider) params.set("provider", filters.provider);
+  if (filters?.organizationId) params.set("organizationId", filters.organizationId);
+  if (filters?.limit != null) params.set("limit", String(filters.limit));
+  if (filters?.offset != null) params.set("offset", String(filters.offset));
+  const qs = params.toString();
+  return apiRequestJson<PlatformIntegrationsListResponse>(
+    "GET",
+    `/platform/integrations${qs ? `?${qs}` : ""}`,
+    {
+      platformBearer: true,
+      fallbackError: "Impossible de charger les intégrations",
+    },
+  );
+}
+
+export async function getPlatformCronJobs() {
+  return apiRequestJson<PlatformCronJobsOverviewResponse>("GET", "/platform/cron-jobs", {
+    platformBearer: true,
+    fallbackError: "Impossible de charger les crons",
+  });
+}
+
+export async function listPlatformCronRuns(filters?: {
+  jobKey?: string;
+  limit?: number;
+  offset?: number;
+}) {
+  const params = new URLSearchParams();
+  if (filters?.jobKey) params.set("jobKey", filters.jobKey);
+  if (filters?.limit != null) params.set("limit", String(filters.limit));
+  if (filters?.offset != null) params.set("offset", String(filters.offset));
+  const qs = params.toString();
+  return apiRequestJson<CronRunsListResponse>("GET", `/platform/cron-runs${qs ? `?${qs}` : ""}`, {
+    platformBearer: true,
+    fallbackError: "Impossible de charger l’historique des crons",
   });
 }

@@ -72,4 +72,23 @@ export abstract class AbstractIntegrationsService {
   ): Promise<CaseInvoiceSyncListResponse>;
 
   abstract refreshPendingInvoiceSyncs(): Promise<RefreshPendingInvoiceSyncsResult>;
+
+  abstract listPlatformIntegrations(filters?: {
+    provider?: string;
+    organizationId?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<{
+    integrations: Array<{
+      organizationId: string;
+      provider: string;
+      connected: boolean;
+      authMethod?: "oauth" | "api_token";
+      companyName?: string;
+      companyId?: string;
+      tokenHint?: string;
+      connectedAt?: string;
+    }>;
+    total: number;
+  }>;
 }

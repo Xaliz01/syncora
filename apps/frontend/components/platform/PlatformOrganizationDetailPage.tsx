@@ -96,6 +96,38 @@ export function PlatformOrganizationDetailPage({ organizationId }: { organizatio
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
       <section className="space-y-3">
+        <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Intégrations</h2>
+        {(data.integrations ?? []).length === 0 ? (
+          <p className="text-sm text-slate-500">Aucune intégration connectée.</p>
+        ) : (
+          <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white dark:divide-slate-800 dark:border-slate-700 dark:bg-slate-900">
+            {(data.integrations ?? []).map((integration) => (
+              <li
+                key={`${integration.provider}-${integration.organizationId}`}
+                className="px-4 py-3"
+              >
+                <p className="font-medium capitalize text-slate-900 dark:text-slate-100">
+                  {integration.provider}
+                </p>
+                <p className="text-sm text-slate-500">
+                  {[
+                    integration.companyName,
+                    integration.authMethod,
+                    integration.tokenHint ? `token ${integration.tokenHint}` : null,
+                    integration.connectedAt
+                      ? `depuis ${formatDate(integration.connectedAt)}`
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="space-y-3">
         <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
           Utilisateurs ({data.users.length})
         </h2>
