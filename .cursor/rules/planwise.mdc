@@ -35,6 +35,18 @@ Avant toute feature, lire (ou se réaligner sur) :
 - **Gateway** : appels downstream via `OrganizationScopedHttpClient` (injection `organizationId` depuis `AuthUser`, validation des réponses).
 - **Microservices** : requêtes Mongo avec `organizationScopeFilter`, et `assertOrganizationScopedListNest` / `assertOrganizationScopedResourceNest` en sortie de service (défense en profondeur).
 
+## Crons — suivi backoffice obligatoire
+
+Tout **nouveau job cron** (Nest `@Cron` / scheduler) doit être instrumenté comme les jobs existants :
+
+1. **Catalogue** : ajouter la définition dans `packages/shared/src/cron-run.ts` (`PlatformCronJobKey` + `PLATFORM_CRON_JOBS`) — label, service, schedule, description.
+2. **Persistance** : enregistrer chaque run via le `CronRunRecorder` du service (`start` → `finish` avec `status` ok/error/skipped, `stats` processed/succeeded/failed/skipped, `errorMessage` si échec).
+3. **Schéma** : collection `cron_runs` + TTL (~90j) déjà en place dans le service concerné (réutiliser le pattern existant).
+4. **Gateway / UI** : le backoffice `/platform/crons` lit le catalogue + l’historique — pas de page dédiée supplémentaire si le catalogue est à jour.
+5. **Sémantique** : distinguer erreurs métier réelles vs skips attendus (ex. provider non connecté) pour ne pas polluer le statut du run.
+
+Références : `invoice-sync.scheduler.ts`, `intervention-reminders` (notifications), `trial-test-data-cleanup.scheduler.ts`.
+
 ## Qualité
 
 - Respecter l’architecture existante ; pas de refactor hors scope.

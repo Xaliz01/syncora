@@ -937,22 +937,47 @@ export class IntegrationsService extends AbstractIntegrationsService {
 
     const updated: CaseInvoiceSyncStatus[] = [];
     const errors: RefreshPendingInvoiceSyncsResult["errors"] = [];
+    let skipped = 0;
+
+    // Orgs encore connectées — les syncs orphelines (provider déconnecté) ne sont pas des erreurs.
+    const credentialKeys = new Set(
+      (
+        await this.credentialModel.find({}).select({ organizationId: 1, provider: 1 }).lean().exec()
+      ).map((c) => `${c.organizationId}:${c.provider}`),
+    );
 
     for (const doc of pending) {
+      const key = `${doc.organizationId}:${doc.provider}`;
+      if (!credentialKeys.has(key)) {
+        skipped += 1;
+        // Reculer dans la file pour ne pas monopoliser le batch à chaque cron.
+        doc.lastSyncedAt = new Date();
+        await doc.save();
+        continue;
+      }
+
       try {
         const status = await this.refreshSyncDocument(doc);
         updated.push(status);
       } catch (err) {
+        const message = err instanceof Error ? err.message : "Erreur de synchronisation";
+        // Filet de sécurité si le credential a disparu entre le check et le refresh.
+        if (/n’est pas connecté/i.test(message)) {
+          skipped += 1;
+          doc.lastSyncedAt = new Date();
+          await doc.save();
+          continue;
+        }
         errors.push({
           organizationId: doc.organizationId,
           caseId: doc.caseId,
           syncId: String(doc._id),
-          message: err instanceof Error ? err.message : "Erreur de synchronisation",
+          message,
         });
       }
     }
 
-    return { refreshed: pending.length, updated, errors };
+    return { refreshed: pending.length, skipped, updated, errors };
   }
 
   async listPlatformIntegrations(filters?: {

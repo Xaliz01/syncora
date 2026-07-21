@@ -58,9 +58,9 @@ export class InvoiceSyncScheduler {
         if (applied) billingUpdates += 1;
       }
 
-      if (result.refreshed > 0 || result.errors.length > 0) {
+      if (result.refreshed > 0 || result.errors.length > 0 || result.skipped > 0) {
         this.logger.log(
-          `Invoice sync cron: refreshed=${result.refreshed} billingUpdates=${billingUpdates} errors=${result.errors.length}`,
+          `Invoice sync cron: refreshed=${result.refreshed} succeeded=${result.updated.length} skipped=${result.skipped} billingUpdates=${billingUpdates} errors=${result.errors.length}`,
         );
       }
       for (const err of result.errors.slice(0, 5)) {
@@ -75,6 +75,7 @@ export class InvoiceSyncScheduler {
           processed: result.refreshed,
           succeeded: result.updated.length,
           failed: result.errors.length,
+          skipped: result.skipped,
           billingUpdates,
         },
         errorMessage:

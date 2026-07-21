@@ -10,6 +10,7 @@ import { signOAuthState } from "../oauth-state";
 describe("IntegrationsService", () => {
   const credentialModel = {
     findOne: jest.fn(),
+    find: jest.fn(),
     findOneAndUpdate: jest.fn(),
     deleteOne: jest.fn(),
     updateOne: jest.fn(),
@@ -1078,6 +1079,13 @@ describe("IntegrationsService", () => {
         const sort = jest.fn().mockReturnValue({ limit });
         syncModel.find.mockReturnValue({ sort });
 
+        credentialModel.find.mockReturnValue({
+          select: () => ({
+            lean: () => ({
+              exec: async () => [{ organizationId: "org-1", provider: "qonto" }],
+            }),
+          }),
+        });
         credentialModel.findOne.mockReturnValue({
           exec: async () => ({
             authMethod: "api_token",
@@ -1102,8 +1110,46 @@ describe("IntegrationsService", () => {
         expect(sort).toHaveBeenCalledWith({ lastSyncedAt: 1, _id: 1 });
         expect(limit).toHaveBeenCalledWith(50);
         expect(result.refreshed).toBe(1);
+        expect(result.skipped).toBe(0);
         expect(result.updated[0]?.remoteStatus).toBe("paid");
         delete process.env.INVOICE_SYNC_BATCH_SIZE;
+      });
+
+      it("skips pending syncs when the provider is no longer connected", async () => {
+        const save = jest.fn().mockResolvedValue(undefined);
+        const limit = jest.fn().mockReturnValue({
+          exec: async () => [
+            {
+              _id: "sync-orphan",
+              organizationId: "org-1",
+              provider: "qonto",
+              caseId: "c1",
+              providerInvoiceId: "inv-1",
+              draft: false,
+              remoteStatus: "finalized",
+              lastSyncedAt: new Date("2026-01-01"),
+              save,
+            },
+          ],
+        });
+        syncModel.find.mockReturnValue({ sort: jest.fn().mockReturnValue({ limit }) });
+        credentialModel.find.mockReturnValue({
+          select: () => ({
+            lean: () => ({
+              exec: async () => [],
+            }),
+          }),
+        });
+
+        const result = await service.refreshPendingInvoiceSyncs();
+
+        expect(result.refreshed).toBe(1);
+        expect(result.skipped).toBe(1);
+        expect(result.updated).toEqual([]);
+        expect(result.errors).toEqual([]);
+        expect(save).toHaveBeenCalled();
+        expect(credentialModel.findOne).not.toHaveBeenCalled();
+        expect(httpService.get).not.toHaveBeenCalled();
       });
     });
   });

@@ -1,0 +1,16 @@
+---
+description: Tout nouveau cron doit être journalisé (cron_runs + catalogue plateforme)
+globs: "**/*scheduler*.ts,**/cron-run*.ts,**/cron*.ts"
+alwaysApply: false
+---
+
+# Suivi des crons (backoffice)
+
+Quand tu ajoutes ou modifies un scheduler Nest :
+
+1. Étendre `PlatformCronJobKey` + `PLATFORM_CRON_JOBS` dans `packages/shared/src/cron-run.ts`.
+2. Wrapper l’exécution avec `CronRunRecorder` (`start` / `finish`) — stats + `errorMessage` si besoin.
+3. Ne compter en `failed` / `error` que les vrais échecs ; les cas attendus (rien à faire, provider déconnecté) → `skipped` / statut `ok`.
+4. Vérifier que le job apparaît sur `/platform/crons` via le catalogue (pas d’UI séparée requise).
+
+Modèles : `services/*/src/domain/*scheduler*.ts` + `cron-run.recorder.ts`.

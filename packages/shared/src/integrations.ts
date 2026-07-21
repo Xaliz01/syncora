@@ -533,6 +533,8 @@ function dominantTva(lines: QuoteLineForInvoice[]): 0 | 5.5 | 10 | 20 {
 
 export interface RefreshPendingInvoiceSyncsResult {
   refreshed: number;
+  /** Syncs ignorés car le provider n’est plus connecté (pas une erreur métier). */
+  skipped: number;
   updated: CaseInvoiceSyncStatus[];
   errors: Array<{ organizationId: string; caseId: string; syncId?: string; message: string }>;
 }
