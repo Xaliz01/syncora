@@ -27,6 +27,8 @@ export interface ApiRequestOptions {
   bearer?: boolean;
   /** When bearer is true, use onboarding token if present (for SIRET lookup during register). */
   preferOnboardingToken?: boolean;
+  /** Use the platform staff token (backoffice). */
+  platformBearer?: boolean;
   /** When bearer is true and there is no token */
   noTokenMessage?: string;
   /** When response is not OK and body has no usable message */
@@ -44,6 +46,11 @@ async function throwIfNotOk(response: Response, fallbackError: string): Promise<
   );
 }
 
+export function getPlatformToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("planwise_platform_token");
+}
+
 export async function apiRequestJson<T>(
   method: ApiMethod,
   path: string,
@@ -53,6 +60,7 @@ export async function apiRequestJson<T>(
     body,
     bearer = true,
     preferOnboardingToken = false,
+    platformBearer = false,
     noTokenMessage = "Session expirée",
     fallbackError = "Erreur API",
   } = options;
@@ -60,7 +68,11 @@ export async function apiRequestJson<T>(
   const headers: Record<string, string> = {};
 
   if (bearer) {
-    const token = preferOnboardingToken ? getBearerToken() : getAccessToken();
+    const token = platformBearer
+      ? getPlatformToken()
+      : preferOnboardingToken
+        ? getBearerToken()
+        : getAccessToken();
     if (!token) throw new Error(noTokenMessage);
     headers.Authorization = `Bearer ${token}`;
   }

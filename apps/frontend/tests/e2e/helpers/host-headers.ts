@@ -3,6 +3,7 @@ import type { APIRequestContext, APIResponse } from "@playwright/test";
 export const MARKETING_HOST = "planwise.fr";
 export const APP_HOST = "app.planwise.fr";
 export const WWW_HOST = "www.planwise.fr";
+export const BACKOFFICE_HOST = "backoffice.planwise.fr";
 
 /** Requiert des entrées /etc/hosts : 127.0.0.1 planwise.fr app.planwise.fr */
 export const MARKETING_BASE = `http://${MARKETING_HOST}:5173`;
@@ -36,6 +37,10 @@ export function marketingOrigin(): string {
 
 export function appOrigin(): string {
   return `https://${APP_HOST}`;
+}
+
+export function backofficeOrigin(): string {
+  return `https://${BACKOFFICE_HOST}`;
 }
 
 /** Vérifie que planwise.fr:5173 pointe vers le serveur de test local. */

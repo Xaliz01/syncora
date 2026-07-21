@@ -7,10 +7,12 @@
 import { test, expect, type APIRequestContext } from "@playwright/test";
 import {
   APP_HOST,
+  BACKOFFICE_HOST,
   MARKETING_HOST,
   WWW_HOST,
   appOrigin,
   appUrl,
+  backofficeOrigin,
   isLocalHostRoutingReady,
   marketingOrigin,
   marketingUrl,
@@ -65,6 +67,24 @@ test.describe("Routage par hostname — redirections middleware", () => {
     const response = await requestWithHost(request, "/page-inexistante", MARKETING_HOST);
     expect(response.status()).toBe(308);
     expect(response.headers().location).toBe(`${appOrigin()}/page-inexistante`);
+  });
+
+  test("backoffice.planwise.fr/ redirige vers /platform", async ({ request }) => {
+    const response = await requestWithHost(request, "/", BACKOFFICE_HOST);
+    expect(response.status()).toBe(307);
+    expect(response.headers().location).toBe(`${backofficeOrigin()}/platform`);
+  });
+
+  test("backoffice.planwise.fr/login redirige vers /platform", async ({ request }) => {
+    const response = await requestWithHost(request, "/login", BACKOFFICE_HOST);
+    expect(response.status()).toBe(307);
+    expect(response.headers().location).toBe(`${backofficeOrigin()}/platform`);
+  });
+
+  test("app.planwise.fr/platform redirige vers le backoffice", async ({ request }) => {
+    const response = await requestWithHost(request, "/platform", APP_HOST);
+    expect(response.status()).toBe(307);
+    expect(response.headers().location).toBe(`${backofficeOrigin()}/platform`);
   });
 });
 

@@ -4,12 +4,19 @@ export const DEFAULT_APP_HOST = "app.planwise.fr";
 /** Domaine marketing (landing). Surchargé au build via NEXT_PUBLIC_MARKETING_HOST. */
 export const DEFAULT_MARKETING_HOST = "planwise.fr";
 
+/** Backoffice plateforme. Surchargé via NEXT_PUBLIC_BACKOFFICE_HOST. */
+export const DEFAULT_BACKOFFICE_HOST = "backoffice.planwise.fr";
+
 export function getConfiguredAppHost(): string {
   return process.env.NEXT_PUBLIC_APP_HOST?.trim() || DEFAULT_APP_HOST;
 }
 
 export function getConfiguredMarketingHost(): string {
   return process.env.NEXT_PUBLIC_MARKETING_HOST?.trim() || DEFAULT_MARKETING_HOST;
+}
+
+export function getConfiguredBackofficeHost(): string {
+  return process.env.NEXT_PUBLIC_BACKOFFICE_HOST?.trim() || DEFAULT_BACKOFFICE_HOST;
 }
 
 export function getMarketingHosts(): string[] {
@@ -23,6 +30,10 @@ export function getAppOrigin(): string {
 
 export function getMarketingOrigin(): string {
   return `https://${getConfiguredMarketingHost()}`;
+}
+
+export function getBackofficeOrigin(): string {
+  return `https://${getConfiguredBackofficeHost()}`;
 }
 
 /** Lien vers l'accueil marketing : `/` en dev local, domaine apex en prod. */
@@ -45,6 +56,18 @@ export function isMarketingHost(host: string): boolean {
   return getMarketingHosts().includes(normalized);
 }
 
+export function isBackofficeHost(host: string): boolean {
+  const normalized = host.split(":")[0].toLowerCase();
+  if (isLocalDevHost(normalized)) return false;
+  return normalized === getConfiguredBackofficeHost().toLowerCase();
+}
+
+export function isAppHost(host: string): boolean {
+  const normalized = host.split(":")[0].toLowerCase();
+  if (isLocalDevHost(normalized)) return false;
+  return normalized === getConfiguredAppHost().toLowerCase();
+}
+
 import { isLegalPath } from "@/lib/legal/routes";
 
 export type HostRoutingResult =
@@ -55,6 +78,8 @@ export type HostRoutingResult =
  * Règles de routage par hostname (prod) :
  * - planwise.fr / → landing ; autres chemins → app.planwise.fr
  * - www.planwise.fr → planwise.fr
+ * - backoffice.planwise.fr → /platform/*
+ * - app.planwise.fr/platform → backoffice
  * - localhost → comportement dev inchangé
  */
 export function resolveHostRouting(
@@ -76,6 +101,35 @@ export function resolveHostRouting(
       action: "redirect",
       destination: `${getMarketingOrigin()}${pathname}${search}`,
       permanent: true,
+    };
+  }
+
+  if (isBackofficeHost(normalizedHost)) {
+    if (pathname === "/" || pathname === "") {
+      return {
+        action: "redirect",
+        destination: `${getBackofficeOrigin()}/platform`,
+        permanent: false,
+      };
+    }
+    if (pathname === "/platform" || pathname.startsWith("/platform/")) {
+      return { action: "next" };
+    }
+    return {
+      action: "redirect",
+      destination: `${getBackofficeOrigin()}/platform`,
+      permanent: false,
+    };
+  }
+
+  if (
+    isAppHost(normalizedHost) &&
+    (pathname === "/platform" || pathname.startsWith("/platform/"))
+  ) {
+    return {
+      action: "redirect",
+      destination: `${getBackofficeOrigin()}${pathname}${search}`,
+      permanent: false,
     };
   }
 

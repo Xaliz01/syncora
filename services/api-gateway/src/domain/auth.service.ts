@@ -80,6 +80,12 @@ export class AuthService extends AbstractAuthService {
       permissions,
       name: profile?.name ?? jwt.name,
       technicianId,
+      ...(jwt.impersonatorId
+        ? {
+            impersonatorId: jwt.impersonatorId,
+            impersonatorEmail: jwt.impersonatorEmail,
+          }
+        : {}),
     };
   }
 

@@ -61,6 +61,9 @@ export interface AuthUser {
   permissions: PermissionCode[];
   name?: string;
   technicianId?: string;
+  /** Présent pendant une session support (impersonation). */
+  impersonatorId?: string;
+  impersonatorEmail?: string;
 }
 
 export type UserRole = "admin" | "member";
@@ -74,6 +77,9 @@ export interface JwtPayload {
   email: string;
   name?: string;
   technicianId?: string;
+  /** Staff plateforme à l’origine de la session (impersonation). */
+  impersonatorId?: string;
+  impersonatorEmail?: string;
 }
 
 export interface AuthResponse {

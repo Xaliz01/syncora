@@ -136,6 +136,36 @@ export class OrganizationsService extends AbstractOrganizationsService {
     return docs.map((d) => d._id.toString());
   }
 
+  async listOrganizations(filters?: {
+    search?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<{ organizations: OrganizationResponse[]; total: number }> {
+    const limit = Math.min(Math.max(filters?.limit ?? 50, 1), 200);
+    const offset = Math.max(filters?.offset ?? 0, 0);
+    const query: Record<string, unknown> = { ...activeDocumentFilter };
+    const search = filters?.search?.trim();
+    if (search) {
+      const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      query.$or = [
+        { name: { $regex: escaped, $options: "i" } },
+        { siret: { $regex: escaped, $options: "i" } },
+        { email: { $regex: escaped, $options: "i" } },
+        { city: { $regex: escaped, $options: "i" } },
+      ];
+    }
+
+    const [total, docs] = await Promise.all([
+      this.organizationModel.countDocuments(query).exec(),
+      this.organizationModel.find(query).sort({ createdAt: -1 }).skip(offset).limit(limit).exec(),
+    ]);
+
+    return {
+      organizations: docs.map((doc) => this.toResponse(doc)),
+      total,
+    };
+  }
+
   private buildTrialTestDataStatus(doc: OrganizationDocument): TrialTestDataStatusResponse {
     const status: TrialTestDataStatus = doc.trialTestData?.status ?? "none";
     const hasTestData = status === "ready" || status === "injecting";

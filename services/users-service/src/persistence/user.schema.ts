@@ -23,6 +23,9 @@ export class UserDocument extends Document {
 
   @Prop({ type: Date })
   deletedAt?: Date | null;
+
+  @Prop({ type: Date })
+  lastLoginAt?: Date | null;
 }
 
 export const UserSchema = SchemaFactory.createForClass(UserDocument);

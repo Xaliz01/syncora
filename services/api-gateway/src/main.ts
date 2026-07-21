@@ -5,18 +5,14 @@ import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { AppModule } from "./modules/app.module";
 import { createNestLogger } from "@planwise/shared/nest";
 
-/** En local uniquement : CORS_ORIGIN peut lister plusieurs origines séparées par des virgules. */
+/** CORS : liste d’origines séparées par des virgules (app + backoffice en prod). */
 function resolveCorsOrigin(): string | string[] {
   const raw = process.env.CORS_ORIGIN ?? "http://localhost:5173";
-  const isLocal = process.env.NODE_ENV !== "production";
-  if (!isLocal || !raw.includes(",")) {
-    return raw.trim();
-  }
   const origins = raw
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean);
-  return origins.length === 1 ? origins[0]! : origins;
+  return origins.length <= 1 ? (origins[0] ?? raw.trim()) : origins;
 }
 
 async function bootstrap() {

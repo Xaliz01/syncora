@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Patch, Post, NotFoundException } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  NotFoundException,
+} from "@nestjs/common";
 import { AbstractOrganizationsService } from "../../domain/ports/organizations.service.port";
 import type {
   CreateOrganizationBody,
@@ -14,6 +23,19 @@ export class OrganizationsController {
   @Post()
   async create(@Body() body: CreateOrganizationBody) {
     return this.organizationsService.create(body);
+  }
+
+  @Get()
+  async list(
+    @Query("search") search?: string,
+    @Query("limit") limit?: string,
+    @Query("offset") offset?: string,
+  ) {
+    return this.organizationsService.listOrganizations({
+      search,
+      limit: limit ? Number.parseInt(limit, 10) : undefined,
+      offset: offset ? Number.parseInt(offset, 10) : undefined,
+    });
   }
 
   @Get("trial-test-data/ready-organization-ids")

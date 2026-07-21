@@ -8,12 +8,28 @@ import type {
   CreateUserBody,
   OrganizationMembershipResponse,
   PatchUserBody,
+  PlatformUserSummary,
   UpdateUserNameBody,
   UpdateUserPreferencesBody,
   UserPreferencesResponse,
   UserResponse,
   ValidateCredentialsResponse,
 } from "@planwise/shared";
+
+export interface PlatformUsersDirectoryResult {
+  users: PlatformUserSummary[];
+  total: number;
+}
+
+export interface CreateImpersonationAuditBody {
+  impersonatorUserId: string;
+  impersonatorEmail: string;
+  targetUserId: string;
+  targetEmail: string;
+  organizationId: string;
+  reason: string;
+  expiresAt?: string;
+}
 
 export abstract class AbstractUsersService {
   abstract create(body: CreateUserBody): Promise<UserResponse>;
@@ -40,4 +56,14 @@ export abstract class AbstractUsersService {
     userId: string,
     body: UpdateUserPreferencesBody,
   ): Promise<UserPreferencesResponse>;
+  abstract listPlatformDirectory(filters?: {
+    search?: string;
+    organizationId?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<PlatformUsersDirectoryResult>;
+  abstract countUsersByOrganizationIds(
+    organizationIds: string[],
+  ): Promise<Record<string, { userCount: number; lastUserLoginAt?: string }>>;
+  abstract createImpersonationAudit(body: CreateImpersonationAuditBody): Promise<{ id: string }>;
 }

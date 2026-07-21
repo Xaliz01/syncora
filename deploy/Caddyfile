@@ -33,6 +33,11 @@ www.{$MARKETING_DOMAIN} {
 	import frontend_proxy
 }
 
+# Backoffice plateforme (organisations, users, support)
+{$BACKOFFICE_DOMAIN} {
+	import frontend_proxy
+}
+
 # API Gateway
 {$API_DOMAIN} {
 	encode zstd gzip

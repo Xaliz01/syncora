@@ -9,6 +9,9 @@ describe("OrganizationsService", () => {
   let mockOrganizationModel: {
     create: jest.Mock;
     findOne: jest.Mock;
+    find: jest.Mock;
+    countDocuments: jest.Mock;
+    findOneAndUpdate: jest.Mock;
   };
 
   const mockDoc = (overrides: Record<string, unknown> = {}) => ({
@@ -23,6 +26,16 @@ describe("OrganizationsService", () => {
     mockOrganizationModel = {
       create: jest.fn(),
       findOne: jest.fn().mockReturnValue({ exec: execMock }),
+      find: jest.fn().mockReturnValue({
+        sort: jest.fn().mockReturnValue({
+          skip: jest.fn().mockReturnValue({
+            limit: jest.fn().mockReturnValue({ exec: execMock }),
+          }),
+        }),
+        select: jest.fn().mockReturnValue({ exec: execMock }),
+      }),
+      countDocuments: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(0) }),
+      findOneAndUpdate: jest.fn().mockReturnValue({ exec: execMock }),
     };
 
     const module: TestingModule = await Test.createTestingModule({

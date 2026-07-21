@@ -6,6 +6,11 @@ import type {
   UpdateOrganizationTrialTestDataBody,
 } from "@planwise/shared";
 
+export interface OrganizationsListResult {
+  organizations: OrganizationResponse[];
+  total: number;
+}
+
 export abstract class AbstractOrganizationsService {
   abstract create(body: CreateOrganizationBody): Promise<OrganizationResponse>;
   abstract findById(id: string): Promise<OrganizationResponse | null>;
@@ -16,4 +21,9 @@ export abstract class AbstractOrganizationsService {
     body: UpdateOrganizationTrialTestDataBody,
   ): Promise<TrialTestDataStatusResponse>;
   abstract listOrganizationsWithReadyTrialTestData(): Promise<string[]>;
+  abstract listOrganizations(filters?: {
+    search?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<OrganizationsListResult>;
 }

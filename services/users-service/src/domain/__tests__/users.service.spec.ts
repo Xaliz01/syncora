@@ -108,6 +108,10 @@ describe("UsersService", () => {
         { provide: getModelToken("User"), useValue: mockUserModel },
         { provide: getModelToken("OrganizationMembership"), useValue: mockMembershipModel },
         { provide: getModelToken("UserPreferences"), useValue: mockPreferencesModel },
+        {
+          provide: getModelToken("SupportImpersonationAudit"),
+          useValue: { create: jest.fn().mockResolvedValue({ _id: { toString: () => "audit-1" } }) },
+        },
       ],
     }).compile();
 

@@ -73,6 +73,42 @@ export class UsersController {
     return this.usersService.listByOrganization(organizationId);
   }
 
+  @Get("platform/directory")
+  async listPlatformDirectory(
+    @Query("search") search?: string,
+    @Query("organizationId") organizationId?: string,
+    @Query("limit") limit?: string,
+    @Query("offset") offset?: string,
+  ) {
+    return this.usersService.listPlatformDirectory({
+      search,
+      organizationId,
+      limit: limit ? Number.parseInt(limit, 10) : undefined,
+      offset: offset ? Number.parseInt(offset, 10) : undefined,
+    });
+  }
+
+  @Post("platform/organization-stats")
+  async countUsersByOrganizationIds(@Body() body: { organizationIds?: string[] }) {
+    return this.usersService.countUsersByOrganizationIds(body.organizationIds ?? []);
+  }
+
+  @Post("platform/impersonation-audits")
+  async createImpersonationAudit(
+    @Body()
+    body: {
+      impersonatorUserId: string;
+      impersonatorEmail: string;
+      targetUserId: string;
+      targetEmail: string;
+      organizationId: string;
+      reason: string;
+      expiresAt?: string;
+    },
+  ) {
+    return this.usersService.createImpersonationAudit(body);
+  }
+
   @Get(":userId/organization-memberships")
   listOrganizationMemberships(@Param("userId") userId: string) {
     return this.usersService.listOrganizationMemberships(userId);

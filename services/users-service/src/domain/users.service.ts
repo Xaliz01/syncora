@@ -12,6 +12,7 @@ import * as bcrypt from "bcrypt";
 import type { UserDocument } from "../persistence/user.schema";
 import type { OrganizationMembershipDocument } from "../persistence/organization-membership.schema";
 import type { UserPreferencesDocument } from "../persistence/user-preferences.schema";
+import type { SupportImpersonationAuditDocument } from "../persistence/support-impersonation-audit.schema";
 import {
   activeDocumentFilter,
   DEFAULT_USER_PREFERENCES,
@@ -25,6 +26,7 @@ import {
   type OrganizationMembershipResponse,
   type PatchUserBody,
   type AccountUserResponse,
+  type PlatformUserSummary,
   type UpdateUserNameBody,
   type UpdateUserPreferencesBody,
   type UserPreferences,
@@ -33,7 +35,11 @@ import {
   type UserRole,
   type ValidateCredentialsResponse,
 } from "@planwise/shared";
-import { AbstractUsersService } from "./ports/users.service.port";
+import {
+  AbstractUsersService,
+  type CreateImpersonationAuditBody,
+  type PlatformUsersDirectoryResult,
+} from "./ports/users.service.port";
 
 const SALT_ROUNDS = 10;
 const DEFAULT_ROLE: UserRole = "member";
@@ -46,6 +52,8 @@ export class UsersService extends AbstractUsersService {
     private readonly membershipModel: Model<OrganizationMembershipDocument>,
     @InjectModel("UserPreferences")
     private readonly preferencesModel: Model<UserPreferencesDocument>,
+    @InjectModel("SupportImpersonationAudit")
+    private readonly impersonationAuditModel: Model<SupportImpersonationAuditDocument>,
   ) {
     super();
   }
@@ -370,6 +378,9 @@ export class UsersService extends AbstractUsersService {
     const ok = await bcrypt.compare(password, doc.passwordHash);
     if (!ok) return null;
 
+    doc.lastLoginAt = new Date();
+    await doc.save();
+
     await this.ensureMembershipsBackfill(doc);
 
     const uid = doc._id.toString();
@@ -401,6 +412,132 @@ export class UsersService extends AbstractUsersService {
       role: m.role as ValidateCredentialsResponse["role"],
       status: doc.status,
     };
+  }
+
+  async listPlatformDirectory(filters?: {
+    search?: string;
+    organizationId?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<PlatformUsersDirectoryResult> {
+    const limit = Math.min(Math.max(filters?.limit ?? 50, 1), 200);
+    const offset = Math.max(filters?.offset ?? 0, 0);
+    const query: Record<string, unknown> = { ...activeDocumentFilter };
+
+    if (filters?.organizationId?.trim()) {
+      query.organizationId = filters.organizationId.trim();
+    }
+
+    const search = filters?.search?.trim();
+    if (search) {
+      const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      query.$or = [
+        { email: { $regex: escaped, $options: "i" } },
+        { name: { $regex: escaped, $options: "i" } },
+      ];
+    }
+
+    const [total, docs] = await Promise.all([
+      this.userModel.countDocuments(query).exec(),
+      this.userModel
+        .find(query)
+        .sort({ lastLoginAt: -1, createdAt: -1 })
+        .skip(offset)
+        .limit(limit)
+        .exec(),
+    ]);
+
+    const users: PlatformUserSummary[] = [];
+    for (const doc of docs) {
+      const uid = doc._id.toString();
+      let role: UserRole | undefined;
+      if (doc.organizationId?.trim()) {
+        const m = await this.membershipModel
+          .findOne({
+            userId: uid,
+            organizationId: doc.organizationId,
+            deletedAt: null,
+          })
+          .exec();
+        role = m?.role as UserRole | undefined;
+      }
+      users.push({
+        id: uid,
+        email: doc.email,
+        name: doc.name,
+        status: doc.status,
+        organizationId: doc.organizationId || undefined,
+        role,
+        lastLoginAt: doc.lastLoginAt?.toISOString(),
+        createdAt: doc.get("createdAt")?.toISOString(),
+      });
+    }
+
+    return { users, total };
+  }
+
+  async countUsersByOrganizationIds(
+    organizationIds: string[],
+  ): Promise<Record<string, { userCount: number; lastUserLoginAt?: string }>> {
+    const ids = [...new Set(organizationIds.map((id) => id.trim()).filter(Boolean))];
+    const out: Record<string, { userCount: number; lastUserLoginAt?: string }> = {};
+    for (const id of ids) {
+      out[id] = { userCount: 0 };
+    }
+    if (ids.length === 0) return out;
+
+    const memberships = await this.membershipModel
+      .find({ organizationId: { $in: ids }, deletedAt: null, membershipStatus: "active" })
+      .exec();
+
+    const userIdsByOrg = new Map<string, Set<string>>();
+    for (const m of memberships) {
+      const set = userIdsByOrg.get(m.organizationId) ?? new Set<string>();
+      set.add(m.userId);
+      userIdsByOrg.set(m.organizationId, set);
+    }
+
+    const allUserIds = [...new Set(memberships.map((m) => m.userId))];
+    const users =
+      allUserIds.length === 0
+        ? []
+        : await this.userModel
+            .find({ _id: { $in: allUserIds }, ...activeDocumentFilter })
+            .select({ lastLoginAt: 1 })
+            .exec();
+    const lastLoginByUser = new Map(
+      users.map((u) => [u._id.toString(), u.lastLoginAt?.toISOString()] as const),
+    );
+
+    for (const [orgId, userIds] of userIdsByOrg) {
+      let lastUserLoginAt: string | undefined;
+      for (const uid of userIds) {
+        const login = lastLoginByUser.get(uid);
+        if (login && (!lastUserLoginAt || login > lastUserLoginAt)) {
+          lastUserLoginAt = login;
+        }
+      }
+      out[orgId] = {
+        userCount: userIds.size,
+        ...(lastUserLoginAt ? { lastUserLoginAt } : {}),
+      };
+    }
+
+    return out;
+  }
+
+  async createImpersonationAudit(body: CreateImpersonationAuditBody): Promise<{ id: string }> {
+    const doc = await this.impersonationAuditModel.create({
+      impersonatorUserId: body.impersonatorUserId,
+      impersonatorEmail: body.impersonatorEmail.trim().toLowerCase(),
+      targetUserId: body.targetUserId,
+      targetEmail: body.targetEmail.trim().toLowerCase(),
+      organizationId: body.organizationId,
+      reason: body.reason.trim(),
+      startedAt: new Date(),
+      expiresAt: body.expiresAt ? new Date(body.expiresAt) : undefined,
+    });
+    return { id: doc._id.toString() };
   }
 
   private membershipToResponse(
@@ -514,6 +651,7 @@ export class UsersService extends AbstractUsersService {
       name: doc.name,
       status: doc.status,
       createdAt: doc.get("createdAt")?.toISOString(),
+      lastLoginAt: doc.lastLoginAt?.toISOString(),
     };
   }
 }

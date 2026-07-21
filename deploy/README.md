@@ -35,7 +35,7 @@ Les autres services pourront adopter le même schéma au besoin (un dossier `mig
 
 - Docker + plugin Compose (`docker compose version`)
 - Ports 80 et 443 ouverts (et **seulement** ceux-là côté public)
-- 4 enregistrements DNS A pointant vers la VM : `exemple.fr` (landing), `app.exemple.fr`, `api.exemple.fr`, `monitoring.exemple.fr` (Grafana)
+- 5 enregistrements DNS A pointant vers la VM : `exemple.fr` (landing), `app.exemple.fr`, `api.exemple.fr`, `backoffice.exemple.fr`, `monitoring.exemple.fr` (Grafana)
 - Optionnel : `www.exemple.fr` → même IP (redirigé vers l'apex par Caddy)
 
 ## 2. Préparer la configuration (une fois)

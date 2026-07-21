@@ -920,6 +920,9 @@ export class IntegrationsService extends AbstractIntegrationsService {
   }
 
   async refreshPendingInvoiceSyncs(): Promise<RefreshPendingInvoiceSyncsResult> {
+    const batchSize = resolveInvoiceSyncBatchSize();
+    // Les plus anciennes d’abord (null / jamais syncés en tête) pour éviter la famine
+    // quand le volume dépasse la taille du batch.
     const pending = await this.syncModel
       .find({
         $or: [
@@ -928,7 +931,8 @@ export class IntegrationsService extends AbstractIntegrationsService {
           { remoteStatus: { $exists: false } },
         ],
       })
-      .limit(200)
+      .sort({ lastSyncedAt: 1, _id: 1 })
+      .limit(batchSize)
       .exec();
 
     const updated: CaseInvoiceSyncStatus[] = [];
@@ -1581,6 +1585,13 @@ function mapQontoRemoteStatus(status?: string): RemoteInvoiceLifecycle {
   if (value === "canceled" || value === "cancelled") return "cancelled";
   if (value === "unpaid" || value === "sent" || value === "pending") return "finalized";
   return value ? "finalized" : "unknown";
+}
+
+/** Taille du lot cron (défaut 200, borné 1–500). */
+function resolveInvoiceSyncBatchSize(): number {
+  const raw = Number.parseInt(process.env.INVOICE_SYNC_BATCH_SIZE ?? "200", 10);
+  if (!Number.isFinite(raw)) return 200;
+  return Math.min(500, Math.max(1, raw));
 }
 
 /** Lecture duale : nouveaux champs génériques, fallback legacy prod. */

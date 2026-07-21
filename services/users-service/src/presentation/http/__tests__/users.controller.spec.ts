@@ -25,6 +25,9 @@ describe("UsersController", () => {
       changePassword: jest.fn(),
       getPreferences: jest.fn(),
       updatePreferences: jest.fn(),
+      listPlatformDirectory: jest.fn(),
+      countUsersByOrganizationIds: jest.fn(),
+      createImpersonationAudit: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({

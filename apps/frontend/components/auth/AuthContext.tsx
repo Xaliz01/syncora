@@ -39,9 +39,14 @@ interface AuthContextValue extends AuthState {
   refreshSession: () => Promise<void>;
   createOrganization: (payload: CreateOrganizationBody) => Promise<AuthUser>;
   switchOrganization: (organizationId: string) => Promise<AuthUser>;
+  /** Démarre une session client depuis le backoffice (token déjà obtenu). */
+  enterImpersonationSession: (accessToken: string, user: AuthUser) => void;
+  /** Quitte le mode support et revient au token plateforme. */
+  endImpersonationSession: () => void;
   logout: () => void;
   isAuthenticated: boolean;
   isOnboarding: boolean;
+  isImpersonating: boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -244,11 +249,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const enterImpersonationSession = useCallback(
+    (accessToken: string, user: AuthUser) => {
+      persistAuth(accessToken, user);
+    },
+    [persistAuth],
+  );
+
+  const endImpersonationSession = useCallback(() => {
+    authApi.clearToken();
+    setState({
+      user: null,
+      token: null,
+      onboardingUser: null,
+      onboardingToken: null,
+      isReady: true,
+    });
+  }, []);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       ...state,
       isAuthenticated: !!state.token && !!state.user,
       isOnboarding: !!state.onboardingToken && !!state.onboardingUser,
+      isImpersonating: !!state.user?.impersonatorId,
       login,
       registerAccount,
       completeOrganization,
@@ -256,6 +280,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       refreshSession,
       createOrganization,
       switchOrganization,
+      enterImpersonationSession,
+      endImpersonationSession,
       logout,
     }),
     [
@@ -267,6 +293,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       refreshSession,
       createOrganization,
       switchOrganization,
+      enterImpersonationSession,
+      endImpersonationSession,
       logout,
     ],
   );

@@ -118,3 +118,5 @@ IntegrationSyncSchema.index(
   { unique: true },
 );
 IntegrationSyncSchema.index({ organizationId: 1, caseId: 1 });
+/** File d’attente du cron de rafraîchissement (plus anciennes d’abord). */
+IntegrationSyncSchema.index({ lastSyncedAt: 1, _id: 1 });

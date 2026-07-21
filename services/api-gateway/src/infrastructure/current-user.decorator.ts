@@ -15,6 +15,12 @@ export const CurrentUser = createParamDecorator(
       permissions: p.permissions,
       name: p.name,
       technicianId: p.technicianId,
+      ...(p.impersonatorId
+        ? {
+            impersonatorId: p.impersonatorId,
+            impersonatorEmail: p.impersonatorEmail,
+          }
+        : {}),
     };
   },
 );

@@ -24,6 +24,7 @@ import { ExportsModule } from "./exports.module";
 import { IntegrationsModule } from "./integrations.module";
 import { GatewayHttpModule } from "./gateway-http.module";
 import { TrialTestDataModule } from "./trial-test-data.module";
+import { PlatformModule } from "./platform.module";
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { TrialTestDataModule } from "./trial-test-data.module";
     AccountModule,
     OrganizationsModule,
     AdminModule,
+    PlatformModule,
     FleetModule,
     TechniciansModule,
     TeamsModule,

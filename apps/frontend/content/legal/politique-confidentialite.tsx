@@ -47,7 +47,9 @@ export function PolitiqueConfidentialiteContent() {
             </>,
             <>
               <strong>Support et sécurité</strong> — intérêt légitime (art. 6.1.f), sauf Crisp
-              soumis au consentement.
+              soumis au consentement. Cela inclut, le cas échéant, un accès support encadré au
+              compte d&apos;un utilisateur (impersonation) : motif documenté, durée limitée, journal
+              d&apos;audit, personnel autorisé uniquement.
             </>,
             <>
               <strong>Amélioration du produit</strong> — intérêt légitime, données agrégées ou

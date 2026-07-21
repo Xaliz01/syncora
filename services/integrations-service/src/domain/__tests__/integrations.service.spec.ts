@@ -46,6 +46,7 @@ describe("IntegrationsService", () => {
     delete process.env.PENNYLANE_CLIENT_SECRET;
     delete process.env.PENNYLANE_OAUTH_REDIRECT_URI;
     delete process.env.APP_URL;
+    delete process.env.INVOICE_SYNC_BATCH_SIZE;
   });
 
   describe("getPennylaneStatus", () => {
@@ -1049,6 +1050,60 @@ describe("IntegrationsService", () => {
         await expect(
           service.deleteCaseInvoiceSync("org-1", "c1", "sync-ok"),
         ).rejects.toBeInstanceOf(BadRequestException);
+      });
+
+      it("refreshes pending syncs oldest-first within the batch limit", async () => {
+        process.env.INTEGRATIONS_ENCRYPTION_KEY =
+          "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+        process.env.INVOICE_SYNC_BATCH_SIZE = "50";
+        const { encryptSecret } = await import("../secret-crypto");
+
+        const limit = jest.fn().mockReturnValue({
+          exec: async () => [
+            {
+              _id: "sync-old",
+              organizationId: "org-1",
+              provider: "qonto",
+              caseId: "c1",
+              providerCustomerId: "client-1",
+              providerInvoiceId: "inv-old",
+              draft: false,
+              remoteStatus: "finalized",
+              invoiceKind: "full",
+              lastSyncedAt: new Date("2026-01-01"),
+              save: jest.fn().mockResolvedValue(undefined),
+            },
+          ],
+        });
+        const sort = jest.fn().mockReturnValue({ limit });
+        syncModel.find.mockReturnValue({ sort });
+
+        credentialModel.findOne.mockReturnValue({
+          exec: async () => ({
+            authMethod: "api_token",
+            encryptedToken: encryptSecret("login:secret"),
+          }),
+        });
+        httpService.get.mockReturnValue(
+          of({
+            data: {
+              client_invoice: {
+                id: "inv-old",
+                status: "paid",
+                number: "FAC-OLD",
+              },
+            },
+            status: 200,
+          }) as never,
+        );
+
+        const result = await service.refreshPendingInvoiceSyncs();
+
+        expect(sort).toHaveBeenCalledWith({ lastSyncedAt: 1, _id: 1 });
+        expect(limit).toHaveBeenCalledWith(50);
+        expect(result.refreshed).toBe(1);
+        expect(result.updated[0]?.remoteStatus).toBe("paid");
+        delete process.env.INVOICE_SYNC_BATCH_SIZE;
       });
     });
   });

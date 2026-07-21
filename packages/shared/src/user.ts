@@ -40,6 +40,7 @@ export interface UserResponse {
   /** Présent lorsque la réponse est liée à une organisation (liste admin, fiche) : état d’invitation sur cette org. */
   organizationMembershipStatus?: "active" | "invited";
   createdAt?: string;
+  lastLoginAt?: string;
 }
 
 export interface CreateInvitedUserBody {
