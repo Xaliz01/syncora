@@ -22,3 +22,4 @@ export * from "./support";
 export * from "./test-data";
 export * from "./platform";
 export * from "./cron-run";
+export * from "./pagination";

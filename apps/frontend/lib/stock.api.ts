@@ -1,5 +1,6 @@
 import type {
   ArticleResponse,
+  ArticlesListResponse,
   InterventionArticleUsageResponse,
   StockLocationResponse,
   StockLocationType,
@@ -90,6 +91,8 @@ export function listArticles(filters?: {
   lowStockOnly?: boolean;
   activeOnly?: boolean;
   locationId?: string;
+  limit?: number;
+  offset?: number;
 }) {
   const params = new URLSearchParams();
   if (filters?.search) params.set("search", filters.search);
@@ -100,8 +103,10 @@ export function listArticles(filters?: {
     params.set("activeOnly", String(filters.activeOnly));
   }
   if (filters?.locationId) params.set("locationId", filters.locationId);
+  if (filters?.limit != null) params.set("limit", String(filters.limit));
+  if (filters?.offset != null) params.set("offset", String(filters.offset));
   const qs = params.toString();
-  return stockRequest<ArticleResponse[]>("GET", `/stock/articles${qs ? `?${qs}` : ""}`);
+  return stockRequest<ArticlesListResponse>("GET", `/stock/articles${qs ? `?${qs}` : ""}`);
 }
 
 export function getArticle(articleId: string) {

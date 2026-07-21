@@ -54,6 +54,7 @@ import type {
 import {
   BILLING_STATUS_LABELS,
   canCreateCaseInvoice,
+  MAX_PAGE_LIMIT,
   QONTO_INVOICE_NUMBER_REQUIRED_MESSAGE,
   quoteInvoicedHt,
   remainingQuoteHt,
@@ -386,10 +387,11 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
     enabled: can("quotes.read") || canSyncPennylane || canSyncQonto,
   });
 
-  const { data: interventions } = useQuery({
+  const { data: interventionsData } = useQuery({
     queryKey: ["interventions", caseId],
-    queryFn: () => api.listInterventions({ caseId }),
+    queryFn: () => api.listInterventions({ caseId, limit: MAX_PAGE_LIMIT }),
   });
+  const interventions = interventionsData?.interventions;
 
   const { data: usersData } = useQuery({
     queryKey: ["organization-users"],
@@ -417,11 +419,12 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
     enabled: !!teamsData?.length && (showNewIntervention || !!editingInterventionId),
   });
 
-  const { data: articles } = useQuery({
+  const { data: articlesData } = useQuery({
     queryKey: ["articles", "intervention-usage"],
-    queryFn: () => stockApi.listArticles({ activeOnly: true }),
+    queryFn: () => stockApi.listArticles({ activeOnly: true, limit: MAX_PAGE_LIMIT }),
     enabled: canAddInterventionArticles,
   });
+  const articles = articlesData?.articles;
 
   const { data: stockLocations = [] } = useQuery({
     queryKey: ["stock-locations", "intervention-usage"],

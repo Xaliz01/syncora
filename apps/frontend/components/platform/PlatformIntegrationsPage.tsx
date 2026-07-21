@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import type { PlatformIntegrationSummary } from "@planwise/shared";
 import * as platformApi from "@/lib/platform.api";
+import { ListPagination, LIST_PAGE_SIZE } from "@/components/ui/list-page";
 
 function formatDate(iso?: string) {
   if (!iso) return "—";
@@ -16,17 +17,24 @@ function formatDate(iso?: string) {
 
 export function PlatformIntegrationsPage() {
   const [provider, setProvider] = useState("");
+  const [activeProvider, setActiveProvider] = useState("");
+  const [offset, setOffset] = useState(0);
   const [items, setItems] = useState<PlatformIntegrationSummary[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const load = (selectedProvider?: string) => {
+  useEffect(() => {
+    setOffset(0);
+  }, [activeProvider]);
+
+  useEffect(() => {
     setLoading(true);
     platformApi
       .listPlatformIntegrations({
-        provider: selectedProvider || undefined,
-        limit: 200,
+        provider: activeProvider || undefined,
+        limit: LIST_PAGE_SIZE,
+        offset,
       })
       .then((res) => {
         setItems(res.integrations);
@@ -35,15 +43,11 @@ export function PlatformIntegrationsPage() {
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Erreur"))
       .finally(() => setLoading(false));
-  };
-
-  useEffect(() => {
-    load();
-  }, []);
+  }, [activeProvider, offset]);
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
-    load(provider.trim());
+    setActiveProvider(provider.trim());
   };
 
   return (
@@ -115,6 +119,14 @@ export function PlatformIntegrationsPage() {
               ) : null}
             </tbody>
           </table>
+          <div className="px-4 pb-3">
+            <ListPagination
+              offset={offset}
+              limit={LIST_PAGE_SIZE}
+              total={total}
+              onOffsetChange={setOffset}
+            />
+          </div>
         </div>
       )}
     </div>

@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import {
+  clampPagination,
   organizationScopeFilter,
   type CreateCustomerBody,
   type CreateCustomerContactBody,
@@ -9,6 +10,7 @@ import {
   type CustomerContactResponse,
   type CustomerResponse,
   type CustomerSiteResponse,
+  type CustomersListResponse,
   type UpdateCustomerBody,
   type UpdateCustomerContactBody,
   type UpdateCustomerSiteBody,
@@ -64,8 +66,8 @@ export class CustomersService extends AbstractCustomersService {
 
   async listCustomers(
     organizationId: string,
-    filters?: { search?: string; ids?: string[] },
-  ): Promise<CustomerResponse[]> {
+    filters?: { search?: string; ids?: string[]; limit?: number; offset?: number },
+  ): Promise<CustomersListResponse> {
     const query: Record<string, unknown> = { ...organizationScopeFilter(organizationId) };
 
     const ids = filters?.ids?.length
@@ -88,15 +90,34 @@ export class CustomersService extends AbstractCustomersService {
       ];
     }
 
-    const docs = await this.customerModel
-      .find(query)
-      .sort({ updatedAt: -1 })
-      .limit(ids.length > 0 ? ids.length : 200)
-      .exec();
-    return assertOrganizationScopedListNest(
+    if (ids.length > 0) {
+      const docs = await this.customerModel
+        .find(query)
+        .sort({ updatedAt: -1 })
+        .limit(ids.length)
+        .exec();
+      const customers = assertOrganizationScopedListNest(
+        organizationId,
+        docs.map((d) => this.toCustomerResponse(d)),
+      );
+      return { customers, total: customers.length };
+    }
+
+    const { limit, offset } = clampPagination({
+      limit: filters?.limit,
+      offset: filters?.offset,
+    });
+
+    const [total, docs] = await Promise.all([
+      this.customerModel.countDocuments(query).exec(),
+      this.customerModel.find(query).sort({ updatedAt: -1 }).skip(offset).limit(limit).exec(),
+    ]);
+
+    const customers = assertOrganizationScopedListNest(
       organizationId,
       docs.map((d) => this.toCustomerResponse(d)),
     );
+    return { customers, total };
   }
 
   async getCustomer(id: string, organizationId: string): Promise<CustomerResponse> {

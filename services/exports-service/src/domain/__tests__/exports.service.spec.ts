@@ -69,7 +69,7 @@ describe("ExportsService", () => {
         )
         .mockReturnValueOnce(
           of({
-            data: interventions,
+            data: { interventions, total: interventions.length },
             status: 200,
             headers: {},
             statusText: "OK",
@@ -106,7 +106,7 @@ describe("ExportsService", () => {
 
       mockHttpService.get.mockReturnValue(
         of({
-          data: cases,
+          data: { cases, total: cases.length },
           status: 200,
           headers: {},
           statusText: "OK",
@@ -126,7 +126,13 @@ describe("ExportsService", () => {
 
     it("should forward billingStatus filter to cases-service", async () => {
       mockHttpService.get.mockReturnValue(
-        of({ data: [], status: 200, headers: {}, statusText: "OK", config: {} as never }) as never,
+        of({
+          data: { cases: [], total: 0 },
+          status: 200,
+          headers: {},
+          statusText: "OK",
+          config: {} as never,
+        }) as never,
       );
 
       await service.exportCasesList("org-123", "xlsx", { billingStatus: "to_invoice" });
@@ -137,6 +143,8 @@ describe("ExportsService", () => {
           params: expect.objectContaining({
             organizationId: "org-123",
             billingStatus: "to_invoice",
+            limit: "200",
+            offset: "0",
           }),
         }),
       );
@@ -144,7 +152,13 @@ describe("ExportsService", () => {
 
     it("should generate a PDF buffer for cases list", async () => {
       mockHttpService.get.mockReturnValue(
-        of({ data: [], status: 200, headers: {}, statusText: "OK", config: {} as never }) as never,
+        of({
+          data: { cases: [], total: 0 },
+          status: 200,
+          headers: {},
+          statusText: "OK",
+          config: {} as never,
+        }) as never,
       );
 
       const result = await service.exportCasesList("org-123", "pdf");
@@ -298,7 +312,7 @@ describe("ExportsService", () => {
 
       mockHttpService.get.mockReturnValue(
         of({
-          data: cases,
+          data: { cases, total: cases.length },
           status: 200,
           headers: {},
           statusText: "OK",
@@ -349,7 +363,7 @@ describe("ExportsService", () => {
 
       mockHttpService.get.mockReturnValue(
         of({
-          data: interventions,
+          data: { interventions, total: interventions.length },
           status: 200,
           headers: {},
           statusText: "OK",
@@ -389,7 +403,7 @@ describe("ExportsService", () => {
 
       mockHttpService.get.mockReturnValue(
         of({
-          data: customers,
+          data: { customers, total: customers.length },
           status: 200,
           headers: {},
           statusText: "OK",
@@ -497,7 +511,7 @@ describe("ExportsService", () => {
       mockHttpService.get
         .mockReturnValueOnce(
           of({
-            data: cases,
+            data: { cases, total: cases.length },
             status: 200,
             headers: {},
             statusText: "OK",
@@ -506,7 +520,7 @@ describe("ExportsService", () => {
         )
         .mockReturnValueOnce(
           of({
-            data: interventions,
+            data: { interventions, total: interventions.length },
             status: 200,
             headers: {},
             statusText: "OK",
@@ -524,7 +538,7 @@ describe("ExportsService", () => {
         )
         .mockReturnValueOnce(
           of({
-            data: customers,
+            data: { customers, total: customers.length },
             status: 200,
             headers: {},
             statusText: "OK",
@@ -577,7 +591,16 @@ describe("ExportsService", () => {
       mockHttpService.get
         .mockReturnValueOnce(
           of({
-            data: cases,
+            data: { cases, total: cases.length },
+            status: 200,
+            headers: {},
+            statusText: "OK",
+            config: {} as never,
+          }) as never,
+        )
+        .mockReturnValueOnce(
+          of({
+            data: { interventions: [], total: 0 },
             status: 200,
             headers: {},
             statusText: "OK",
@@ -595,16 +618,7 @@ describe("ExportsService", () => {
         )
         .mockReturnValueOnce(
           of({
-            data: [],
-            status: 200,
-            headers: {},
-            statusText: "OK",
-            config: {} as never,
-          }) as never,
-        )
-        .mockReturnValueOnce(
-          of({
-            data: [],
+            data: { customers: [], total: 0 },
             status: 200,
             headers: {},
             statusText: "OK",

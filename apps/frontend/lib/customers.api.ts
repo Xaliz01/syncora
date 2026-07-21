@@ -2,6 +2,7 @@ import type {
   CustomerContactResponse,
   CustomerKind,
   CustomerResponse,
+  CustomersListResponse,
   CustomerSiteResponse,
   PostalAddress,
 } from "@planwise/shared";
@@ -53,9 +54,13 @@ export interface UpdateCustomerPayload {
   notes?: string | null;
 }
 
-export function listCustomers(search?: string) {
-  const qs = search ? `?search=${encodeURIComponent(search)}` : "";
-  return customersRequest<CustomerResponse[]>("GET", `/customers${qs}`);
+export function listCustomers(filters?: { search?: string; limit?: number; offset?: number }) {
+  const params = new URLSearchParams();
+  if (filters?.search) params.set("search", filters.search);
+  if (filters?.limit != null) params.set("limit", String(filters.limit));
+  if (filters?.offset != null) params.set("offset", String(filters.offset));
+  const qs = params.toString();
+  return customersRequest<CustomersListResponse>("GET", `/customers${qs ? `?${qs}` : ""}`);
 }
 
 export function getCustomer(customerId: string) {

@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { StockLocationType } from "@planwise/shared";
+import { MAX_PAGE_LIMIT } from "@planwise/shared";
 import * as stockApi from "@/lib/stock.api";
 import { usePermissions } from "@/lib/hooks/usePermissions";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
@@ -57,11 +58,12 @@ export function StockLocationDetailPage({ locationId }: { locationId: string }) 
     queryFn: () => stockApi.getStockLocation(locationId),
   });
 
-  const { data: articles = [], isLoading: articlesLoading } = useQuery({
+  const { data: articlesData, isLoading: articlesLoading } = useQuery({
     queryKey: ["articles", "by-location", locationId],
-    queryFn: () => stockApi.listArticles({ locationId, activeOnly: true }),
+    queryFn: () => stockApi.listArticles({ locationId, activeOnly: true, limit: MAX_PAGE_LIMIT }),
     enabled: canReadArticles,
   });
+  const articles = articlesData?.articles ?? [];
 
   const { data: movements = [], isLoading: movementsLoading } = useQuery({
     queryKey: ["stock-movements", "location", locationId],

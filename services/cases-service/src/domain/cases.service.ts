@@ -12,6 +12,7 @@ import {
   type CaseHistoryEntryResponse,
   type CaseResponse,
   type CaseSummaryResponse,
+  type CasesListResponse,
   type CompleteInterventionBody,
   type CompleteInterventionResponse,
   type CreateCaseBody,
@@ -24,6 +25,7 @@ import {
   type DashboardTodoItem,
   type DashboardTodoCaseItem,
   type InterventionResponse,
+  type InterventionsListResponse,
   type SignInterventionBody,
   type SignInterventionResponse,
   type StartInterventionBody,
@@ -38,6 +40,9 @@ import {
   type QuoteSummaryResponse,
   type CreateCommentBody,
   type UpdateCommentBody,
+  clampPagination,
+  MAX_PAGE_LIMIT,
+  MAX_PAGE_LIMIT_WIDE,
   type CommentResponse,
   type CommentEntityType,
   MAX_COMMENT_BODY_LENGTH,
@@ -215,8 +220,10 @@ export class CasesService extends AbstractCasesService {
       priority?: string;
       search?: string;
       customerId?: string;
+      limit?: number;
+      offset?: number;
     },
-  ): Promise<CaseSummaryResponse[]> {
+  ): Promise<CasesListResponse> {
     const query: Record<string, unknown> = { organizationId, ...activeDocumentFilter };
     if (filters?.customerId) query.customerId = filters.customerId;
     if (filters?.status) query.status = filters.status;
@@ -232,9 +239,17 @@ export class CasesService extends AbstractCasesService {
       query.title = { $regex: filters.search, $options: "i" };
     }
 
-    const docs = await this.caseModel.find(query).sort({ updatedAt: -1 }).exec();
+    const { limit, offset } = clampPagination({
+      limit: filters?.limit,
+      offset: filters?.offset,
+    });
 
-    return docs.map((d) => this.toCaseSummary(d));
+    const [total, docs] = await Promise.all([
+      this.caseModel.countDocuments(query).exec(),
+      this.caseModel.find(query).sort({ updatedAt: -1 }).skip(offset).limit(limit).exec(),
+    ]);
+
+    return { cases: docs.map((d) => this.toCaseSummary(d)), total };
   }
 
   async getCase(id: string, organizationId: string): Promise<CaseResponse> {
@@ -372,8 +387,11 @@ export class CasesService extends AbstractCasesService {
       endDate?: string;
       status?: string;
       unscheduled?: boolean;
+      search?: string;
+      limit?: number;
+      offset?: number;
     },
-  ): Promise<InterventionResponse[]> {
+  ): Promise<InterventionsListResponse> {
     const query: Record<string, unknown> = { organizationId, ...activeDocumentFilter };
     if (filters?.caseId) query.caseId = filters.caseId;
 
@@ -392,6 +410,9 @@ export class CasesService extends AbstractCasesService {
       query.assignedTeamId = { $in: teamIds };
     }
     if (filters?.status) query.status = filters.status;
+    if (filters?.search) {
+      query.title = { $regex: filters.search, $options: "i" };
+    }
     if (filters?.unscheduled) {
       query.$or = [{ scheduledStart: null }, { scheduledStart: { $exists: false } }];
     } else if (filters?.startDate || filters?.endDate) {
@@ -401,7 +422,21 @@ export class CasesService extends AbstractCasesService {
       query.scheduledStart = dateFilter;
     }
 
-    const docs = await this.interventionModel.find(query).sort({ scheduledStart: 1 }).exec();
+    const dateBounded = Boolean(filters?.startDate || filters?.endDate);
+    const { limit, offset } = clampPagination(
+      { limit: filters?.limit, offset: filters?.offset },
+      { maxLimit: dateBounded ? MAX_PAGE_LIMIT_WIDE : undefined },
+    );
+
+    const [total, docs] = await Promise.all([
+      this.interventionModel.countDocuments(query).exec(),
+      this.interventionModel
+        .find(query)
+        .sort({ scheduledStart: 1 })
+        .skip(offset)
+        .limit(limit)
+        .exec(),
+    ]);
 
     const caseIds = [...new Set(docs.map((d) => d.caseId))];
     const cases = await this.caseModel
@@ -410,7 +445,10 @@ export class CasesService extends AbstractCasesService {
       .exec();
     const caseMap = new Map(cases.map((c) => [c._id.toString(), c.title]));
 
-    return docs.map((d) => this.toInterventionResponse(d, caseMap.get(d.caseId)));
+    return {
+      interventions: docs.map((d) => this.toInterventionResponse(d, caseMap.get(d.caseId))),
+      total,
+    };
   }
 
   async getIntervention(id: string, organizationId: string): Promise<InterventionResponse> {
@@ -677,7 +715,7 @@ export class CasesService extends AbstractCasesService {
         return [];
     }
 
-    const cases = await this.caseModel.find(query).sort(sort).exec();
+    const cases = await this.caseModel.find(query).sort(sort).limit(MAX_PAGE_LIMIT).exec();
     return cases.map((c) => this.toDashboardCaseListItem(c));
   }
 

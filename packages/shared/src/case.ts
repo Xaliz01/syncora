@@ -270,6 +270,11 @@ export interface CaseSummaryResponse {
   isTestData?: boolean;
 }
 
+export interface CasesListResponse {
+  cases: CaseSummaryResponse[];
+  total: number;
+}
+
 // ── Intervention ──
 
 export interface CreateInterventionBody {
@@ -322,6 +327,11 @@ export interface InterventionResponse {
   createdAt?: string;
   updatedAt?: string;
   isTestData?: boolean;
+}
+
+export interface InterventionsListResponse {
+  interventions: InterventionResponse[];
+  total: number;
 }
 
 // ── Intervention signature ──

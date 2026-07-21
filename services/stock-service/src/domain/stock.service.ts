@@ -8,8 +8,10 @@ import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import {
   activeDocumentFilter,
+  clampPagination,
   type AddInterventionArticleUsageBody,
   type ArticleResponse,
+  type ArticlesListResponse,
   type CreateArticleBody,
   type CreateArticleMovementBody,
   type CreateStockLocationBody,
@@ -124,8 +126,10 @@ export class StockService extends AbstractStockService {
       lowStockOnly?: boolean;
       activeOnly?: boolean;
       locationId?: string;
+      limit?: number;
+      offset?: number;
     },
-  ): Promise<ArticleResponse[]> {
+  ): Promise<ArticlesListResponse> {
     const query: Record<string, unknown> = { organizationId, ...activeDocumentFilter };
     const activeOnly = filters?.activeOnly ?? true;
     if (activeOnly) query.isActive = true;
@@ -142,8 +146,17 @@ export class StockService extends AbstractStockService {
       query["locationStocks.locationId"] = filters.locationId;
     }
 
-    const docs = await this.articleModel.find(query).sort({ name: 1 }).exec();
-    return docs.map((doc) => this.toArticleResponse(doc));
+    const { limit, offset } = clampPagination({
+      limit: filters?.limit,
+      offset: filters?.offset,
+    });
+
+    const [total, docs] = await Promise.all([
+      this.articleModel.countDocuments(query).exec(),
+      this.articleModel.find(query).sort({ name: 1 }).skip(offset).limit(limit).exec(),
+    ]);
+
+    return { articles: docs.map((doc) => this.toArticleResponse(doc)), total };
   }
 
   async getArticle(id: string, organizationId: string): Promise<ArticleResponse> {

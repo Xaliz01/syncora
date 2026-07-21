@@ -18,6 +18,7 @@ import {
 import { SubscriptionAccessGuard } from "../../infrastructure/subscription-access.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
 import { NotifyEntity } from "../../infrastructure/notify-entity.decorator";
+import { parsePaginationQueryParams } from "@planwise/shared";
 import type { AuthUser } from "@planwise/shared";
 import { AbstractStockGatewayService } from "../../domain/ports/stock.service.port";
 import type {
@@ -52,12 +53,16 @@ export class StockController {
     @Query("lowStockOnly") lowStockOnly?: string,
     @Query("activeOnly") activeOnly?: string,
     @Query("locationId") locationId?: string,
+    @Query("limit") limit?: string,
+    @Query("offset") offset?: string,
   ) {
+    const pagination = parsePaginationQueryParams(limit, offset);
     return this.stockService.listArticles(user, {
       search,
       lowStockOnly: lowStockOnly === "true",
       activeOnly: activeOnly === undefined ? true : activeOnly === "true",
       locationId,
+      ...pagination,
     });
   }
 

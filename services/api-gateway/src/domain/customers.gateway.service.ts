@@ -4,6 +4,7 @@ import type {
   CustomerContactResponse,
   CustomerResponse,
   CustomerSiteResponse,
+  CustomersListResponse,
 } from "@planwise/shared";
 import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
 import {
@@ -35,8 +36,11 @@ export class CustomersGatewayService extends AbstractCustomersGatewayService {
     });
   }
 
-  async listCustomers(user: AuthUser, filters?: { search?: string; ids?: string }) {
-    return this.scopedHttp.request<CustomerResponse[]>({
+  async listCustomers(
+    user: AuthUser,
+    filters?: { search?: string; ids?: string; limit?: number; offset?: number },
+  ) {
+    return this.scopedHttp.request<CustomersListResponse>({
       baseUrl: CUSTOMERS_URL,
       organizationId: user.organizationId,
       method: "get",
@@ -49,7 +53,8 @@ export class CustomersGatewayService extends AbstractCustomersGatewayService {
   async listCustomersByIds(user: AuthUser, ids: string[]) {
     const unique = [...new Set(ids.map((id) => id.trim()).filter(Boolean))].slice(0, 100);
     if (unique.length === 0) return [];
-    return this.listCustomers(user, { ids: unique.join(",") });
+    const response = await this.listCustomers(user, { ids: unique.join(",") });
+    return response.customers;
   }
 
   async getCustomer(user: AuthUser, customerId: string) {

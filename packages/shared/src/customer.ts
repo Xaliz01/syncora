@@ -123,3 +123,8 @@ export interface CustomerResponse {
   updatedAt?: string;
   isTestData?: boolean;
 }
+
+export interface CustomersListResponse {
+  customers: CustomerResponse[];
+  total: number;
+}

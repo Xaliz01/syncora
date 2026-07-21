@@ -1,6 +1,7 @@
 import type {
   AddInterventionArticleUsageBody,
   ArticleResponse,
+  ArticlesListResponse,
   CreateArticleBody,
   CreateArticleMovementBody,
   CreateStockLocationBody,
@@ -21,8 +22,10 @@ export abstract class AbstractStockService {
       lowStockOnly?: boolean;
       activeOnly?: boolean;
       locationId?: string;
+      limit?: number;
+      offset?: number;
     },
-  ): Promise<ArticleResponse[]>;
+  ): Promise<ArticlesListResponse>;
   abstract getArticle(id: string, organizationId: string): Promise<ArticleResponse>;
   abstract updateArticle(id: string, body: UpdateArticleBody): Promise<ArticleResponse>;
   abstract deleteArticle(id: string, organizationId: string): Promise<{ deleted: true }>;

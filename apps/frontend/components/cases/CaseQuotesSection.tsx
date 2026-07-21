@@ -16,6 +16,7 @@ import type {
 import {
   QUOTE_STATUS_LABELS,
   TVA_RATES,
+  MAX_PAGE_LIMIT,
   quoteInvoicedHt,
   remainingQuoteHt,
   remainingQuotePercent,
@@ -189,12 +190,13 @@ function QuoteForm({
   const previewUrlRef = useRef<string | null>(null);
   const inlinePdfSupported = useInlinePdfPreviewSupported();
 
-  const { data: articles = [] } = useQuery({
+  const { data: articlesData } = useQuery({
     queryKey: ["stock-articles-for-quotes"],
-    queryFn: () => stockApi.listArticles({ activeOnly: true }),
+    queryFn: () => stockApi.listArticles({ activeOnly: true, limit: MAX_PAGE_LIMIT }),
     enabled: can("stock.articles.read"),
     staleTime: 60_000,
   });
+  const articles = articlesData?.articles ?? [];
 
   const updateLine = (idx: number, patch: Partial<QuoteLine>) => {
     setLines((prev) => prev.map((l, i) => (i === idx ? { ...l, ...patch } : l)));

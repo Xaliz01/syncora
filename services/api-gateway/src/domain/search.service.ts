@@ -1,13 +1,17 @@
 import { Injectable } from "@nestjs/common";
 import type {
   AuthUser,
+  ArticlesListResponse,
   CaseSummaryResponse,
+  CasesListResponse,
   InterventionResponse,
+  InterventionsListResponse,
   VehicleResponse,
   TechnicianResponse,
   ArticleResponse,
   UserResponse,
 } from "@planwise/shared";
+import { DEFAULT_PAGE_LIMIT } from "@planwise/shared";
 import {
   AbstractSearchService,
   type GlobalSearchResponse,
@@ -35,11 +39,11 @@ export class SearchGatewayService extends AbstractSearchService {
 
     const [cases, interventions, vehicles, technicians, articles, users] = await Promise.allSettled(
       [
-        this.fetchCases(user),
-        this.fetchInterventions(user),
+        this.fetchCases(user, normalizedQuery),
+        this.fetchInterventions(user, normalizedQuery),
         this.fetchVehicles(user),
         this.fetchTechnicians(user),
-        this.fetchArticles(user),
+        this.fetchArticles(user, normalizedQuery),
         user.role === "admin" ? this.fetchUsers(user) : Promise.resolve([]),
       ],
     );
@@ -211,24 +215,30 @@ export class SearchGatewayService extends AbstractSearchService {
     return map[status] ?? status;
   }
 
-  private fetchCases(user: AuthUser): Promise<CaseSummaryResponse[]> {
-    return this.scopedHttp.request<CaseSummaryResponse[]>({
-      baseUrl: CASES_URL,
-      organizationId: user.organizationId,
-      method: "get",
-      path: "/cases",
-      errorLabel: "Cases service error",
-    });
+  private fetchCases(user: AuthUser, search: string): Promise<CaseSummaryResponse[]> {
+    return this.scopedHttp
+      .request<CasesListResponse>({
+        baseUrl: CASES_URL,
+        organizationId: user.organizationId,
+        method: "get",
+        path: "/cases",
+        query: { search, limit: DEFAULT_PAGE_LIMIT, offset: 0 },
+        errorLabel: "Cases service error",
+      })
+      .then((response) => response.cases);
   }
 
-  private fetchInterventions(user: AuthUser): Promise<InterventionResponse[]> {
-    return this.scopedHttp.request<InterventionResponse[]>({
-      baseUrl: CASES_URL,
-      organizationId: user.organizationId,
-      method: "get",
-      path: "/interventions",
-      errorLabel: "Cases service error",
-    });
+  private fetchInterventions(user: AuthUser, search: string): Promise<InterventionResponse[]> {
+    return this.scopedHttp
+      .request<InterventionsListResponse>({
+        baseUrl: CASES_URL,
+        organizationId: user.organizationId,
+        method: "get",
+        path: "/interventions",
+        query: { search, limit: DEFAULT_PAGE_LIMIT, offset: 0 },
+        errorLabel: "Cases service error",
+      })
+      .then((response) => response.interventions);
   }
 
   private fetchVehicles(user: AuthUser): Promise<VehicleResponse[]> {
@@ -251,14 +261,17 @@ export class SearchGatewayService extends AbstractSearchService {
     });
   }
 
-  private fetchArticles(user: AuthUser): Promise<ArticleResponse[]> {
-    return this.scopedHttp.request<ArticleResponse[]>({
-      baseUrl: STOCK_URL,
-      organizationId: user.organizationId,
-      method: "get",
-      path: "/articles",
-      errorLabel: "Stock service error",
-    });
+  private fetchArticles(user: AuthUser, search: string): Promise<ArticleResponse[]> {
+    return this.scopedHttp
+      .request<ArticlesListResponse>({
+        baseUrl: STOCK_URL,
+        organizationId: user.organizationId,
+        method: "get",
+        path: "/articles",
+        query: { search, limit: DEFAULT_PAGE_LIMIT, offset: 0 },
+        errorLabel: "Stock service error",
+      })
+      .then((response) => response.articles);
   }
 
   private fetchUsers(user: AuthUser): Promise<UserResponse[]> {

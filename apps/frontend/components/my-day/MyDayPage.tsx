@@ -15,6 +15,7 @@ import { InterventionSignatureDialog } from "@/components/interventions/Interven
 import { CommentsSection } from "@/components/comments/CommentsSection";
 import * as api from "@/lib/cases.api";
 import type { GeoLocation, InterventionResponse, InterventionStatus } from "@planwise/shared";
+import { MAX_PAGE_LIMIT_WIDE } from "@planwise/shared";
 
 const STATUS_LABELS: Record<InterventionStatus, string> = {
   planned: "Planifiée",
@@ -486,7 +487,7 @@ export function MyDayPage() {
     month: "long",
   });
 
-  const { data: interventions = [], isLoading } = useQuery({
+  const { data: interventionsData, isLoading } = useQuery({
     queryKey: ["my-day-interventions", user?.id, today.toISOString()],
     queryFn: () =>
       api.listInterventions({
@@ -494,10 +495,12 @@ export function MyDayPage() {
         startDate: today.toISOString(),
         endDate: todayEnd.toISOString(),
         includeTeamAssignments: "true",
+        limit: MAX_PAGE_LIMIT_WIDE,
       }),
     enabled: !!user,
     refetchInterval: 30_000,
   });
+  const interventions = interventionsData?.interventions ?? [];
 
   const filtered = useMemo(() => {
     if (activeFilter === "all") return interventions;

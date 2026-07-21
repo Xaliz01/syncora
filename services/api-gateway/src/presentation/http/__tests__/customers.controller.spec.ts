@@ -77,23 +77,35 @@ describe("CustomersController", () => {
 
   describe("listCustomers", () => {
     it("should call customersService.listCustomers with user and search filter", async () => {
-      mockCustomersService.listCustomers.mockResolvedValue([{ id: "cust-1" }] as never);
+      mockCustomersService.listCustomers.mockResolvedValue({
+        customers: [{ id: "cust-1" }],
+        total: 1,
+      } as never);
 
       const result = await controller.listCustomers(mockUser, "John");
 
-      expect(mockCustomersService.listCustomers).toHaveBeenCalledWith(mockUser, { search: "John" });
-      expect(result).toEqual([{ id: "cust-1" }]);
+      expect(mockCustomersService.listCustomers).toHaveBeenCalledWith(mockUser, {
+        search: "John",
+        limit: 50,
+        offset: 0,
+      });
+      expect(result).toEqual({ customers: [{ id: "cust-1" }], total: 1 });
     });
 
     it("should call customersService.listCustomers with undefined search", async () => {
-      mockCustomersService.listCustomers.mockResolvedValue([] as never);
+      mockCustomersService.listCustomers.mockResolvedValue({
+        customers: [],
+        total: 0,
+      } as never);
 
       const result = await controller.listCustomers(mockUser);
 
       expect(mockCustomersService.listCustomers).toHaveBeenCalledWith(mockUser, {
         search: undefined,
+        limit: 50,
+        offset: 0,
       });
-      expect(result).toEqual([]);
+      expect(result).toEqual({ customers: [], total: 0 });
     });
   });
 

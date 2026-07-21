@@ -76,22 +76,25 @@ describe("StockController", () => {
 
   describe("listArticles", () => {
     it("should call stockService.listArticles with organizationId and filters", async () => {
-      mockStockService.listArticles.mockResolvedValue([
-        {
-          id: "article-1",
-          organizationId: "org-1",
-          name: "Article A",
-          reference: "REF-001",
-          unit: "unité",
-          stockQuantity: 10,
-          reorderPoint: 5,
-          targetStock: 20,
-          isActive: true,
-          lowStock: false,
-          stockStatus: "ok",
-          suggestedReorderQuantity: 10,
-        },
-      ] as never);
+      mockStockService.listArticles.mockResolvedValue({
+        articles: [
+          {
+            id: "article-1",
+            organizationId: "org-1",
+            name: "Article A",
+            reference: "REF-001",
+            unit: "unité",
+            stockQuantity: 10,
+            reorderPoint: 5,
+            targetStock: 20,
+            isActive: true,
+            lowStock: false,
+            stockStatus: "ok",
+            suggestedReorderQuantity: 10,
+          },
+        ],
+        total: 1,
+      } as never);
 
       const result = await controller.listArticles("org-1", "search", "false", "true", undefined);
 
@@ -100,9 +103,12 @@ describe("StockController", () => {
         lowStockOnly: false,
         activeOnly: true,
         locationId: undefined,
+        limit: 50,
+        offset: 0,
       });
-      expect(result).toHaveLength(1);
-      expect(result[0].id).toBe("article-1");
+      expect(result.articles).toHaveLength(1);
+      expect(result.total).toBe(1);
+      expect(result.articles[0].id).toBe("article-1");
     });
 
     it("should throw BadRequestException when organizationId is missing", async () => {

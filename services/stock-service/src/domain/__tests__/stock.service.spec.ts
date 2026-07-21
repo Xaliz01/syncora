@@ -11,6 +11,7 @@ describe("StockService", () => {
     findOne: jest.Mock;
     find: jest.Mock;
     findOneAndUpdate: jest.Mock;
+    countDocuments: jest.Mock;
   };
   let mockStockMovementModel: {
     create: jest.Mock;
@@ -71,6 +72,7 @@ describe("StockService", () => {
       findOne: jest.fn().mockReturnValue({ exec: execMock }),
       find: jest.fn().mockReturnValue({ sort: jest.fn().mockReturnValue({ exec: sortExecMock }) }),
       findOneAndUpdate: jest.fn().mockReturnValue({ exec: execMock }),
+      countDocuments: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(0) }),
     };
 
     mockStockMovementModel = {
@@ -279,10 +281,17 @@ describe("StockService", () => {
   });
 
   describe("listArticles", () => {
-    it("should build query and return sorted list", async () => {
+    it("should build query and return paginated list", async () => {
       const docs = [mockArticleDoc(), mockArticleDoc({ _id: { toString: () => "article-456" } })];
+      mockArticleModel.countDocuments.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(2),
+      });
       mockArticleModel.find.mockReturnValue({
-        sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(docs) }),
+        sort: jest.fn().mockReturnValue({
+          skip: jest.fn().mockReturnValue({
+            limit: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(docs) }),
+          }),
+        }),
       });
 
       const result = await service.listArticles("org-1", { search: "test", lowStockOnly: true });
@@ -300,8 +309,9 @@ describe("StockService", () => {
         }),
       );
       expect(mockArticleModel.find().sort).toHaveBeenCalledWith({ name: 1 });
-      expect(result).toHaveLength(2);
-      expect(result[0].id).toBe("article-123");
+      expect(result.articles).toHaveLength(2);
+      expect(result.total).toBe(2);
+      expect(result.articles[0].id).toBe("article-123");
     });
   });
 

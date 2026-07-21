@@ -47,6 +47,16 @@ Tout **nouveau job cron** (Nest `@Cron` / scheduler) doit être instrumenté com
 
 Références : `invoice-sync.scheduler.ts`, `intervention-reminders` (notifications), `trial-test-data-cleanup.scheduler.ts`.
 
+## Pagination (listes)
+
+Contrat unique : **`limit` / `offset` + `total`** (`packages/shared/src/pagination.ts`).
+
+- Défaut **50**, max **200** (`MAX_PAGE_LIMIT`) ; plages de dates / calendrier : **500** (`MAX_PAGE_LIMIT_WIDE`).
+- Réponse typée : `{ items|cases|customers|…, total }` — pas de tableau nu pour les listes volumétriques.
+- UI : composant `ListPagination` (`list-page.tsx`) ; reset `offset` quand les filtres changent.
+- Exports / stats : parcourir toutes les pages (`fetchAllPaginated`), ne pas charger une liste illimitée d’un coup.
+- Ne pas inventer de cursor/`page` sans besoin explicite.
+
 ## Qualité
 
 - Respecter l’architecture existante ; pas de refactor hors scope.

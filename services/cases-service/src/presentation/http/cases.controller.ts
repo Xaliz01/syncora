@@ -11,24 +11,26 @@ import {
   Query,
 } from "@nestjs/common";
 import { AbstractCasesService } from "../../domain/ports/cases.service.port";
-import { isDashboardStatFilter } from "@planwise/shared";
-import type {
-  CreateCaseBody,
-  CreateCaseHistoryBody,
-  CreateCaseTemplateBody,
-  CompleteInterventionBody,
-  CreateInterventionBody,
-  CreateQuoteBody,
-  SignInterventionBody,
-  StartInterventionBody,
-  UpdateCaseBody,
-  UpdateCaseTemplateBody,
-  UpdateInterventionBody,
-  UpdateQuoteBody,
-  UpdateTodoBody,
-  CreateCommentBody,
-  UpdateCommentBody,
-  CommentEntityType,
+import {
+  isDashboardStatFilter,
+  MAX_PAGE_LIMIT_WIDE,
+  parsePaginationQueryParams,
+  type CreateCaseBody,
+  type CreateCaseHistoryBody,
+  type CreateCaseTemplateBody,
+  type CompleteInterventionBody,
+  type CreateInterventionBody,
+  type CreateQuoteBody,
+  type SignInterventionBody,
+  type StartInterventionBody,
+  type UpdateCaseBody,
+  type UpdateCaseTemplateBody,
+  type UpdateInterventionBody,
+  type UpdateQuoteBody,
+  type UpdateTodoBody,
+  type CreateCommentBody,
+  type UpdateCommentBody,
+  type CommentEntityType,
 } from "@planwise/shared";
 import { parseOrganizationIdQuery } from "@planwise/shared/nest";
 
@@ -82,8 +84,11 @@ export class CasesController {
     @Query("priority") priority?: string,
     @Query("search") search?: string,
     @Query("customerId") customerId?: string,
+    @Query("limit") limit?: string,
+    @Query("offset") offset?: string,
   ) {
     organizationId = parseOrganizationIdQuery(organizationId);
+    const pagination = parsePaginationQueryParams(limit, offset);
     return this.casesService.listCases(organizationId, {
       status,
       billingStatus,
@@ -91,6 +96,7 @@ export class CasesController {
       priority,
       search,
       customerId,
+      ...pagination,
     });
   }
 
@@ -187,8 +193,15 @@ export class CasesController {
     @Query("endDate") endDate?: string,
     @Query("status") status?: string,
     @Query("unscheduled") unscheduled?: string,
+    @Query("search") search?: string,
+    @Query("limit") limit?: string,
+    @Query("offset") offset?: string,
   ) {
     organizationId = parseOrganizationIdQuery(organizationId);
+    const dateBounded = Boolean(startDate || endDate);
+    const pagination = parsePaginationQueryParams(limit, offset, {
+      maxLimit: dateBounded ? MAX_PAGE_LIMIT_WIDE : undefined,
+    });
     return this.casesService.listInterventions(organizationId, {
       caseId,
       assigneeId,
@@ -202,6 +215,8 @@ export class CasesController {
       endDate,
       status,
       unscheduled: unscheduled === "true",
+      search,
+      ...pagination,
     });
   }
 

@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import * as customersApi from "@/lib/customers.api";
 import type { CustomerResponse } from "@planwise/shared";
+import { MAX_PAGE_LIMIT } from "@planwise/shared";
 import { CustomerCreateForm } from "@/components/customers/CustomerCreateForm";
 import { CUSTOMER_KIND_LABELS } from "@/components/customers/customer-kind-labels";
 
@@ -42,12 +43,17 @@ export function CaseCustomerPicker({
 
   const listEnabled = open && !showCreate && (debounced.length === 0 || debounced.length >= 2);
 
-  const { data: list = [], isFetching } = useQuery({
+  const { data: listData, isFetching } = useQuery({
     queryKey: ["customers", "list", debounced],
-    queryFn: () => customersApi.listCustomers(debounced || undefined),
+    queryFn: () =>
+      customersApi.listCustomers({
+        search: debounced || undefined,
+        limit: MAX_PAGE_LIMIT,
+      }),
     enabled: listEnabled,
     staleTime: 20_000,
   });
+  const list = listData?.customers ?? [];
 
   const selectCustomer = (c: CustomerResponse) => {
     onChange(c.id);

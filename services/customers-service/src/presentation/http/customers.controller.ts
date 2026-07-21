@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from "@nestjs/common";
+import { parsePaginationQueryParams } from "@planwise/shared";
 import type {
   CreateCustomerBody,
   CreateCustomerContactBody,
@@ -24,6 +25,8 @@ export class CustomersController {
     @Query("organizationId") organizationId: string,
     @Query("search") search?: string,
     @Query("ids") idsCsv?: string,
+    @Query("limit") limit?: string,
+    @Query("offset") offset?: string,
   ) {
     const orgId = parseOrganizationIdQuery(organizationId);
     const ids = idsCsv
@@ -32,9 +35,11 @@ export class CustomersController {
           .map((s) => s.trim())
           .filter(Boolean)
       : undefined;
+    const pagination = parsePaginationQueryParams(limit, offset);
     return this.customersService.listCustomers(orgId, {
       search,
       ids: ids?.length ? ids : undefined,
+      ...pagination,
     });
   }
 

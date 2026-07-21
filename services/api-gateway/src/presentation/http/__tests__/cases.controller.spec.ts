@@ -159,8 +159,11 @@ describe("CasesController", () => {
   });
 
   describe("listCases", () => {
-    it("should call casesService.listCases with user and filters", async () => {
-      mockCasesService.listCases.mockResolvedValue([{ id: "case-1" }] as never);
+    it("should call casesService.listCases with user, filters and pagination", async () => {
+      mockCasesService.listCases.mockResolvedValue({
+        cases: [{ id: "case-1" }],
+        total: 1,
+      } as never);
 
       const result = await controller.listCases(
         mockUser,
@@ -169,6 +172,9 @@ describe("CasesController", () => {
         "assignee-1",
         "high",
         "search-term",
+        undefined,
+        "25",
+        "10",
       );
 
       expect(mockCasesService.listCases).toHaveBeenCalledWith(mockUser, {
@@ -178,12 +184,14 @@ describe("CasesController", () => {
         priority: "high",
         search: "search-term",
         customerId: undefined,
+        limit: 25,
+        offset: 10,
       });
-      expect(result).toEqual([{ id: "case-1" }]);
+      expect(result).toEqual({ cases: [{ id: "case-1" }], total: 1 });
     });
 
-    it("should call casesService.listCases with undefined filters", async () => {
-      mockCasesService.listCases.mockResolvedValue([] as never);
+    it("should call casesService.listCases with default pagination", async () => {
+      mockCasesService.listCases.mockResolvedValue({ cases: [], total: 0 } as never);
 
       const result = await controller.listCases(mockUser);
 
@@ -194,8 +202,10 @@ describe("CasesController", () => {
         priority: undefined,
         search: undefined,
         customerId: undefined,
+        limit: 50,
+        offset: 0,
       });
-      expect(result).toEqual([]);
+      expect(result).toEqual({ cases: [], total: 0 });
     });
   });
 
@@ -264,8 +274,11 @@ describe("CasesController", () => {
   });
 
   describe("listInterventions", () => {
-    it("should call casesService.listInterventions with user and filters", async () => {
-      mockCasesService.listInterventions.mockResolvedValue([{ id: "int-1" }] as never);
+    it("should call casesService.listInterventions with user, filters and pagination", async () => {
+      mockCasesService.listInterventions.mockResolvedValue({
+        interventions: [{ id: "int-1" }],
+        total: 1,
+      } as never);
 
       const result = await controller.listInterventions(
         mockUser,
@@ -276,6 +289,9 @@ describe("CasesController", () => {
         "scheduled",
         "false",
         undefined,
+        "repair",
+        "100",
+        "0",
       );
 
       expect(mockCasesService.listInterventions).toHaveBeenCalledWith(mockUser, {
@@ -286,12 +302,44 @@ describe("CasesController", () => {
         status: "scheduled",
         unscheduled: "false",
         includeTeamAssignments: undefined,
+        search: "repair",
+        limit: 100,
+        offset: 0,
       });
-      expect(result).toEqual([{ id: "int-1" }]);
+      expect(result).toEqual({ interventions: [{ id: "int-1" }], total: 1 });
     });
 
-    it("should call casesService.listInterventions with undefined filters", async () => {
-      mockCasesService.listInterventions.mockResolvedValue([] as never);
+    it("should allow MAX_PAGE_LIMIT_WIDE when date range is set", async () => {
+      mockCasesService.listInterventions.mockResolvedValue({
+        interventions: [],
+        total: 0,
+      } as never);
+
+      await controller.listInterventions(
+        mockUser,
+        undefined,
+        undefined,
+        "2025-01-01",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        "500",
+        "0",
+      );
+
+      expect(mockCasesService.listInterventions).toHaveBeenCalledWith(
+        mockUser,
+        expect.objectContaining({ limit: 500, offset: 0 }),
+      );
+    });
+
+    it("should call casesService.listInterventions with default pagination", async () => {
+      mockCasesService.listInterventions.mockResolvedValue({
+        interventions: [],
+        total: 0,
+      } as never);
 
       const result = await controller.listInterventions(mockUser);
 
@@ -303,8 +351,11 @@ describe("CasesController", () => {
         status: undefined,
         unscheduled: undefined,
         includeTeamAssignments: undefined,
+        search: undefined,
+        limit: 50,
+        offset: 0,
       });
-      expect(result).toEqual([]);
+      expect(result).toEqual({ interventions: [], total: 0 });
     });
   });
 

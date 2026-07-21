@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import type { PlatformOrganizationSummary } from "@planwise/shared";
 import * as platformApi from "@/lib/platform.api";
+import { ListPagination, LIST_PAGE_SIZE } from "@/components/ui/list-page";
 
 function formatDate(iso?: string) {
   if (!iso) return "—";
@@ -17,16 +18,25 @@ function formatDate(iso?: string) {
 export function PlatformOrganizationsPage() {
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
+  const [offset, setOffset] = useState(0);
   const [items, setItems] = useState<PlatformOrganizationSummary[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    setOffset(0);
+  }, [query]);
+
+  useEffect(() => {
     let cancelled = false;
     setLoading(true);
     platformApi
-      .listPlatformOrganizations({ search: query || undefined, limit: 100 })
+      .listPlatformOrganizations({
+        search: query || undefined,
+        limit: LIST_PAGE_SIZE,
+        offset,
+      })
       .then((res) => {
         if (cancelled) return;
         setItems(res.organizations);
@@ -43,7 +53,7 @@ export function PlatformOrganizationsPage() {
     return () => {
       cancelled = true;
     };
-  }, [query]);
+  }, [query, offset]);
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -117,6 +127,14 @@ export function PlatformOrganizationsPage() {
               ) : null}
             </tbody>
           </table>
+          <div className="px-4 pb-3">
+            <ListPagination
+              offset={offset}
+              limit={LIST_PAGE_SIZE}
+              total={total}
+              onOffsetChange={setOffset}
+            />
+          </div>
         </div>
       )}
     </div>

@@ -2,7 +2,10 @@
 
 import Link from "next/link";
 import React from "react";
+import { DEFAULT_PAGE_LIMIT } from "@planwise/shared";
 import { AppErrorAlert } from "@/components/ui/AppErrorAlert";
+
+export const LIST_PAGE_SIZE = DEFAULT_PAGE_LIMIT;
 
 function cn(...parts: (string | false | undefined | null)[]): string {
   return parts.filter(Boolean).join(" ");
@@ -276,5 +279,60 @@ export function ListBadge({
     >
       {children}
     </span>
+  );
+}
+
+export function ListPagination({
+  offset,
+  limit,
+  total,
+  onOffsetChange,
+}: {
+  offset: number;
+  limit: number;
+  total: number;
+  onOffsetChange: (offset: number) => void;
+}) {
+  if (total === 0) return null;
+
+  const start = offset + 1;
+  const end = Math.min(offset + limit, total);
+  const canPrev = offset > 0;
+  const canNext = offset + limit < total;
+  const showNav = canPrev || canNext;
+
+  return (
+    <nav
+      className="flex items-center justify-between gap-2 pt-3 border-t border-slate-100 dark:border-slate-800"
+      aria-label="Pagination"
+    >
+      {showNav ? (
+        <button
+          type="button"
+          onClick={() => onOffsetChange(Math.max(0, offset - limit))}
+          disabled={!canPrev}
+          className="rounded-lg px-2.5 py-1 text-xs font-medium text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-950/40 disabled:opacity-40 disabled:pointer-events-none transition"
+        >
+          Précédent
+        </button>
+      ) : (
+        <span />
+      )}
+      <span className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
+        {start}–{end} sur {total}
+      </span>
+      {showNav ? (
+        <button
+          type="button"
+          onClick={() => onOffsetChange(offset + limit)}
+          disabled={!canNext}
+          className="rounded-lg px-2.5 py-1 text-xs font-medium text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-950/40 disabled:opacity-40 disabled:pointer-events-none transition"
+        >
+          Suivant
+        </button>
+      ) : (
+        <span />
+      )}
+    </nav>
   );
 }

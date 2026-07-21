@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import type {
   AddInterventionArticleUsageBody,
   ArticleResponse,
+  ArticlesListResponse,
   AuthUser,
   CreateArticleBody,
   CreateArticleMovementBody,
@@ -63,9 +64,11 @@ export class StockGatewayService extends AbstractStockGatewayService {
       lowStockOnly?: boolean;
       activeOnly?: boolean;
       locationId?: string;
+      limit?: number;
+      offset?: number;
     },
   ) {
-    return this.request<ArticleResponse[]>(user, {
+    return this.request<ArticlesListResponse>(user, {
       method: "get",
       path: "/articles",
       query: filters,

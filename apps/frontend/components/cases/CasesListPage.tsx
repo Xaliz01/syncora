@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import * as api from "@/lib/cases.api";
@@ -17,6 +17,8 @@ import {
   ListNoResults,
   ListPageHeader,
   ListPageRoot,
+  ListPagination,
+  LIST_PAGE_SIZE,
   ListPrimaryAction,
   ListRowLink,
   ListSearchField,
@@ -80,17 +82,27 @@ export function CasesListPage() {
   const [billingStatusFilter, setBillingStatusFilter] = useState<string>("");
   const [priorityFilter, setPriorityFilter] = useState<string>("");
   const [search, setSearch] = useState("");
+  const [offset, setOffset] = useState(0);
 
-  const { data: cases = [], isLoading } = useQuery({
-    queryKey: ["cases", statusFilter, billingStatusFilter, priorityFilter, search],
+  useEffect(() => {
+    setOffset(0);
+  }, [statusFilter, billingStatusFilter, priorityFilter, search]);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["cases", statusFilter, billingStatusFilter, priorityFilter, search, offset],
     queryFn: () =>
       api.listCases({
         status: statusFilter || undefined,
         billingStatus: billingStatusFilter || undefined,
         priority: priorityFilter || undefined,
         search: search || undefined,
+        limit: LIST_PAGE_SIZE,
+        offset,
       }),
   });
+
+  const cases = data?.cases ?? [];
+  const total = data?.total ?? 0;
 
   const hasActiveFilters = Boolean(
     statusFilter || billingStatusFilter || priorityFilter || search.trim(),
@@ -187,50 +199,58 @@ export function CasesListPage() {
           }
         />
       ) : (
-        <ListTableShell
-          gridTemplateClass={GRID}
-          headerCells={
-            <>
-              <span>Dossier</span>
-              <span>Client</span>
-              <span>Statut</span>
-              <span>Facturation</span>
-              <span>Priorité</span>
-              <span>Avancement</span>
-            </>
-          }
-        >
-          {cases.map((c) => (
-            <ListRowLink key={c.id} href={`/cases/${c.id}`} gridTemplateClass={GRID}>
-              <div className="min-w-0">
-                <ListCellPrimary className="block">
-                  <span className="inline-flex items-center gap-2 min-w-0">
-                    <span className="truncate">{c.title}</span>
-                    <TestDataBadgeIf isTestData={c.isTestData} />
-                  </span>
-                </ListCellPrimary>
-                {c.nextTodo ? (
-                  <p className="text-[11px] text-amber-600 mt-0.5 truncate">
-                    Prochaine tâche : {c.nextTodo}
-                  </p>
-                ) : null}
-              </div>
-              <ListCellMuted>{c.customer?.displayName ?? "—"}</ListCellMuted>
-              <ListBadge className={STATUS_COLORS[c.status]}>{STATUS_LABELS[c.status]}</ListBadge>
-              {c.billingStatus && c.billingStatus !== "none" ? (
-                <ListBadge className={BILLING_STATUS_COLORS[c.billingStatus]}>
-                  {BILLING_STATUS_LABELS[c.billingStatus]}
+        <>
+          <ListTableShell
+            gridTemplateClass={GRID}
+            headerCells={
+              <>
+                <span>Dossier</span>
+                <span>Client</span>
+                <span>Statut</span>
+                <span>Facturation</span>
+                <span>Priorité</span>
+                <span>Avancement</span>
+              </>
+            }
+          >
+            {cases.map((c) => (
+              <ListRowLink key={c.id} href={`/cases/${c.id}`} gridTemplateClass={GRID}>
+                <div className="min-w-0">
+                  <ListCellPrimary className="block">
+                    <span className="inline-flex items-center gap-2 min-w-0">
+                      <span className="truncate">{c.title}</span>
+                      <TestDataBadgeIf isTestData={c.isTestData} />
+                    </span>
+                  </ListCellPrimary>
+                  {c.nextTodo ? (
+                    <p className="text-[11px] text-amber-600 mt-0.5 truncate">
+                      Prochaine tâche : {c.nextTodo}
+                    </p>
+                  ) : null}
+                </div>
+                <ListCellMuted>{c.customer?.displayName ?? "—"}</ListCellMuted>
+                <ListBadge className={STATUS_COLORS[c.status]}>{STATUS_LABELS[c.status]}</ListBadge>
+                {c.billingStatus && c.billingStatus !== "none" ? (
+                  <ListBadge className={BILLING_STATUS_COLORS[c.billingStatus]}>
+                    {BILLING_STATUS_LABELS[c.billingStatus]}
+                  </ListBadge>
+                ) : (
+                  <ListCellMuted>—</ListCellMuted>
+                )}
+                <ListBadge className={PRIORITY_COLORS[c.priority]}>
+                  {PRIORITY_LABELS[c.priority]}
                 </ListBadge>
-              ) : (
-                <ListCellMuted>—</ListCellMuted>
-              )}
-              <ListBadge className={PRIORITY_COLORS[c.priority]}>
-                {PRIORITY_LABELS[c.priority]}
-              </ListBadge>
-              <ListCellDefault>{c.progress}%</ListCellDefault>
-            </ListRowLink>
-          ))}
-        </ListTableShell>
+                <ListCellDefault>{c.progress}%</ListCellDefault>
+              </ListRowLink>
+            ))}
+          </ListTableShell>
+          <ListPagination
+            offset={offset}
+            limit={LIST_PAGE_SIZE}
+            total={total}
+            onOffsetChange={setOffset}
+          />
+        </>
       )}
     </ListPageRoot>
   );

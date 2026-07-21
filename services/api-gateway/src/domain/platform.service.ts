@@ -398,28 +398,35 @@ export class PlatformService extends AbstractPlatformService {
       return res.data;
     }
 
-    // Sans filtre : fusionne les derniers runs de chaque service.
+    // Sans filtre : fusionne les runs de chaque service (triés par startedAt desc).
     const limit = Math.min(Math.max(filters?.limit ?? 50, 1), 200);
+    const offset = Math.max(filters?.offset ?? 0, 0);
+    // Assez d’éléments par source pour couvrir la page demandée après merge.
+    const fetchLimit = Math.min(offset + limit, 200);
+
     const batches = await Promise.all(
       PLATFORM_CRON_JOBS.map(async (def) => {
         try {
           const res = await firstValueFrom(
             this.httpService.get<CronRunsListResponse>(
               `${this.cronServiceBaseUrl(def.service)}/platform/cron-runs`,
-              { params: { jobKey: def.jobKey, limit } },
+              { params: { jobKey: def.jobKey, limit: fetchLimit, offset: 0 } },
             ),
           );
-          return res.data.runs;
+          return { runs: res.data.runs, total: res.data.total };
         } catch {
-          return [] as CronRunResponse[];
+          return { runs: [] as CronRunResponse[], total: 0 };
         }
       }),
     );
+
+    const total = batches.reduce((sum, b) => sum + b.total, 0);
     const runs = batches
-      .flat()
+      .flatMap((b) => b.runs)
       .sort((a, b) => b.startedAt.localeCompare(a.startedAt))
-      .slice(0, limit);
-    return { runs, total: runs.length };
+      .slice(offset, offset + limit);
+
+    return { runs, total };
   }
 
   private cronServiceBaseUrl(service: (typeof PLATFORM_CRON_JOBS)[number]["service"]): string {

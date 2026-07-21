@@ -1,5 +1,6 @@
 import type {
   ArticleResponse,
+  ArticlesListResponse,
   AuthUser,
   InterventionArticleUsageResponse,
   StockLocationResponse,
@@ -80,8 +81,10 @@ export abstract class AbstractStockGatewayService {
       lowStockOnly?: boolean;
       activeOnly?: boolean;
       locationId?: string;
+      limit?: number;
+      offset?: number;
     },
-  ): Promise<ArticleResponse[]>;
+  ): Promise<ArticlesListResponse>;
   abstract getArticle(user: AuthUser, articleId: string): Promise<ArticleResponse>;
   abstract updateArticle(
     user: AuthUser,

@@ -37,6 +37,7 @@ describe("CasesService", () => {
     findOne: jest.Mock;
     updateOne: jest.Mock;
     updateMany: jest.Mock;
+    countDocuments: jest.Mock;
   };
   let mockCaseHistoryModel: {
     create: jest.Mock;
@@ -99,9 +100,18 @@ describe("CasesService", () => {
   beforeEach(async () => {
     const execMock = jest.fn();
     const findChain = {
-      sort: jest.fn().mockReturnValue({ exec: execMock }),
+      sort: jest.fn().mockReturnValue({
+        skip: jest.fn().mockReturnValue({
+          limit: jest.fn().mockReturnValue({ exec: execMock }),
+        }),
+        limit: jest.fn().mockReturnValue({ exec: execMock }),
+        exec: execMock,
+      }),
       select: jest.fn().mockReturnValue({ exec: execMock }),
       limit: jest.fn().mockReturnValue({ exec: execMock }),
+      skip: jest.fn().mockReturnValue({
+        limit: jest.fn().mockReturnValue({ exec: execMock }),
+      }),
     };
 
     mockTemplateModel = {
@@ -119,7 +129,7 @@ describe("CasesService", () => {
       findOneAndUpdate: jest.fn().mockReturnValue({ exec: execMock }),
       findById: jest.fn().mockReturnValue({ exec: execMock }),
       updateOne: jest.fn().mockImplementation(() => updateChain()),
-      countDocuments: jest.fn().mockResolvedValue(0),
+      countDocuments: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(0) }),
     };
 
     mockInterventionModel = {
@@ -128,6 +138,7 @@ describe("CasesService", () => {
       findOne: jest.fn().mockReturnValue({ exec: execMock }),
       updateOne: jest.fn().mockImplementation(() => updateChain()),
       updateMany: jest.fn().mockImplementation(() => updateChain({ modifiedCount: 2 })),
+      countDocuments: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(0) }),
     };
 
     mockCaseHistoryModel = {
@@ -339,8 +350,17 @@ describe("CasesService", () => {
   describe("listCases", () => {
     it("should return cases with filters", async () => {
       const docs = [mockCaseDoc()];
+      mockCaseModel.countDocuments.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(1),
+      });
       mockCaseModel.find.mockReturnValue({
-        sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(docs) }),
+        sort: jest.fn().mockReturnValue({
+          skip: jest.fn().mockReturnValue({
+            limit: jest.fn().mockReturnValue({
+              exec: jest.fn().mockResolvedValue(docs),
+            }),
+          }),
+        }),
       });
 
       const result = await service.listCases("org-1", { status: "draft", assigneeId: "user-1" });
@@ -353,7 +373,8 @@ describe("CasesService", () => {
           $or: [{ assignees: { $elemMatch: { userId: "user-1" } } }, { assigneeId: "user-1" }],
         }),
       );
-      expect(result).toHaveLength(1);
+      expect(result.cases).toHaveLength(1);
+      expect(result.total).toBe(1);
     });
   });
 
@@ -839,9 +860,11 @@ describe("CasesService", () => {
     it("returns assigned active cases for the user", async () => {
       mockCaseModel.find.mockReturnValue({
         sort: jest.fn().mockReturnValue({
-          exec: jest
-            .fn()
-            .mockResolvedValue([mockCaseDoc({ title: "Dossier actif", status: "open" })]),
+          limit: jest.fn().mockReturnValue({
+            exec: jest
+              .fn()
+              .mockResolvedValue([mockCaseDoc({ title: "Dossier actif", status: "open" })]),
+          }),
         }),
       });
 
@@ -861,11 +884,13 @@ describe("CasesService", () => {
       const past = new Date("2020-01-01");
       mockCaseModel.find.mockReturnValue({
         sort: jest.fn().mockReturnValue({
-          exec: jest
-            .fn()
-            .mockResolvedValue([
-              mockCaseDoc({ title: "En retard", dueDate: past, status: "open" }),
-            ]),
+          limit: jest.fn().mockReturnValue({
+            exec: jest
+              .fn()
+              .mockResolvedValue([
+                mockCaseDoc({ title: "En retard", dueDate: past, status: "open" }),
+              ]),
+          }),
         }),
       });
 
@@ -878,9 +903,16 @@ describe("CasesService", () => {
 
   describe("listInterventions", () => {
     it("should query assignee or team assignments when both filters are provided", async () => {
+      mockInterventionModel.countDocuments = jest.fn().mockReturnValue({
+        exec: jest.fn().mockResolvedValue(0),
+      });
       mockInterventionModel.find.mockReturnValue({
         sort: jest.fn().mockReturnValue({
-          exec: jest.fn().mockResolvedValue([]),
+          skip: jest.fn().mockReturnValue({
+            limit: jest.fn().mockReturnValue({
+              exec: jest.fn().mockResolvedValue([]),
+            }),
+          }),
         }),
       });
       mockCaseModel.find.mockReturnValue({

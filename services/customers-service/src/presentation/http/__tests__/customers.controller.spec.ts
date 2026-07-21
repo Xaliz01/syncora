@@ -58,15 +58,21 @@ describe("CustomersController", () => {
 
   describe("listCustomers", () => {
     it("should call service with organizationId", async () => {
-      mockCustomersService.listCustomers.mockResolvedValue([{ id: "cust-1" }] as never);
+      mockCustomersService.listCustomers.mockResolvedValue({
+        customers: [{ id: "cust-1" }],
+        total: 1,
+      } as never);
 
       const result = await controller.listCustomers("org-1");
 
       expect(mockCustomersService.listCustomers).toHaveBeenCalledWith("org-1", {
         search: undefined,
         ids: undefined,
+        limit: 50,
+        offset: 0,
       });
-      expect(result).toHaveLength(1);
+      expect(result.customers).toHaveLength(1);
+      expect(result.total).toBe(1);
     });
 
     it("should throw BadRequestException when organizationId is missing", async () => {
@@ -77,13 +83,18 @@ describe("CustomersController", () => {
     });
 
     it("should parse CSV ids", async () => {
-      mockCustomersService.listCustomers.mockResolvedValue([{ id: "cust-1" }] as never);
+      mockCustomersService.listCustomers.mockResolvedValue({
+        customers: [{ id: "cust-1" }],
+        total: 1,
+      } as never);
 
       await controller.listCustomers("org-1", undefined, "cust-1,cust-2,cust-3");
 
       expect(mockCustomersService.listCustomers).toHaveBeenCalledWith("org-1", {
         search: undefined,
         ids: ["cust-1", "cust-2", "cust-3"],
+        limit: 50,
+        offset: 0,
       });
     });
   });

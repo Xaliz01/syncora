@@ -3,6 +3,7 @@ import type {
   CustomerContactResponse,
   CustomerResponse,
   CustomerSiteResponse,
+  CustomersListResponse,
   CustomerKind,
   PostalAddress,
 } from "@planwise/shared";
@@ -72,8 +73,8 @@ export abstract class AbstractCustomersGatewayService {
   ): Promise<CustomerResponse>;
   abstract listCustomers(
     user: AuthUser,
-    filters?: { search?: string; ids?: string },
-  ): Promise<CustomerResponse[]>;
+    filters?: { search?: string; ids?: string; limit?: number; offset?: number },
+  ): Promise<CustomersListResponse>;
   abstract listCustomersByIds(user: AuthUser, ids: string[]): Promise<CustomerResponse[]>;
   abstract getCustomer(user: AuthUser, customerId: string): Promise<CustomerResponse>;
   abstract updateCustomer(

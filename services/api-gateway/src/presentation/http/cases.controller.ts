@@ -13,7 +13,11 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import type { Response } from "express";
-import { isDashboardStatFilter } from "@planwise/shared";
+import {
+  isDashboardStatFilter,
+  MAX_PAGE_LIMIT_WIDE,
+  parsePaginationQueryParams,
+} from "@planwise/shared";
 import { AbstractCasesGatewayService } from "../../domain/ports/cases.service.port";
 import type {
   CreateCaseForOrgBody,
@@ -100,7 +104,10 @@ export class CasesController {
     @Query("priority") priority?: string,
     @Query("search") search?: string,
     @Query("customerId") customerId?: string,
+    @Query("limit") limit?: string,
+    @Query("offset") offset?: string,
   ) {
+    const pagination = parsePaginationQueryParams(limit, offset);
     return this.casesService.listCases(user, {
       status,
       billingStatus,
@@ -108,6 +115,7 @@ export class CasesController {
       priority,
       search,
       customerId,
+      ...pagination,
     });
   }
 
@@ -225,7 +233,14 @@ export class CasesController {
     @Query("status") status?: string,
     @Query("unscheduled") unscheduled?: string,
     @Query("includeTeamAssignments") includeTeamAssignments?: string,
+    @Query("search") search?: string,
+    @Query("limit") limit?: string,
+    @Query("offset") offset?: string,
   ) {
+    const dateBounded = Boolean(startDate || endDate);
+    const pagination = parsePaginationQueryParams(limit, offset, {
+      maxLimit: dateBounded ? MAX_PAGE_LIMIT_WIDE : undefined,
+    });
     return this.casesService.listInterventions(user, {
       caseId,
       assigneeId,
@@ -234,6 +249,8 @@ export class CasesController {
       status,
       unscheduled,
       includeTeamAssignments,
+      search,
+      ...pagination,
     });
   }
 

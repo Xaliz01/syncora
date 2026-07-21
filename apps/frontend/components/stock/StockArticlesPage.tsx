@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { MAX_PAGE_LIMIT } from "@planwise/shared";
 import * as api from "@/lib/stock.api";
 import { TestDataBadgeIf } from "@/components/test-data/TestDataBadge";
 import { usePermissions } from "@/lib/hooks/usePermissions";
@@ -16,6 +17,8 @@ import {
   ListPageError,
   ListPageHeader,
   ListPageRoot,
+  ListPagination,
+  LIST_PAGE_SIZE,
   ListRowLink,
   ListSearchField,
   ListTableShell,
@@ -56,6 +59,7 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
   const [search, setSearch] = useState("");
   const [lowStockOnly, setLowStockOnly] = useState(false);
   const [showInactive, setShowInactive] = useState(false);
+  const [offset, setOffset] = useState(0);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [error, setError] = useState("");
 
@@ -87,16 +91,33 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
 
   const hasLocations = (stockLocations ?? []).length > 0;
 
-  const { data: articles, isLoading } = useQuery({
-    queryKey: ["articles", search, lowStockOnly, showInactive, selectedLocationId],
+  useEffect(() => {
+    setOffset(0);
+  }, [search, lowStockOnly, showInactive, selectedLocationId]);
+
+  const { data: articlesData, isLoading } = useQuery({
+    queryKey: ["articles", search, lowStockOnly, showInactive, selectedLocationId, offset],
     queryFn: () =>
       api.listArticles({
         search: search || undefined,
         lowStockOnly,
         activeOnly: !showInactive,
         locationId: selectedLocationId || undefined,
+        limit: LIST_PAGE_SIZE,
+        offset,
       }),
   });
+
+  const articles = articlesData?.articles ?? [];
+  const total = articlesData?.total ?? 0;
+
+  const { data: pickerArticlesData } = useQuery({
+    queryKey: ["articles", "pickers"],
+    queryFn: () => api.listArticles({ activeOnly: true, limit: MAX_PAGE_LIMIT }),
+    enabled: showMovementActions,
+  });
+
+  const pickerArticles = pickerArticlesData?.articles ?? [];
 
   const { data: recentMovements } = useQuery({
     queryKey: ["article-movements", selectedLocationId],
@@ -109,7 +130,7 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
   });
 
   const lowStockArticles = useMemo(
-    () => (articles ?? []).filter((article) => article.stockStatus !== "ok"),
+    () => articles.filter((article) => article.stockStatus !== "ok"),
     [articles],
   );
 
@@ -167,7 +188,7 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
     onError: (err: Error) => setError(err.message),
   });
 
-  const selectedMovementArticle = (articles ?? []).find(
+  const selectedMovementArticle = pickerArticles.find(
     (article) => article.id === movementArticleId,
   );
   const pageTitle =
@@ -438,7 +459,7 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
               className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
             >
               <option value="">Choisir un article</option>
-              {(articles ?? []).map((article) => (
+              {pickerArticles.map((article) => (
                 <option key={article.id} value={article.id}>
                   {article.reference} — {article.name}
                 </option>
@@ -525,7 +546,7 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
                   className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
                 >
                   <option value="">Choisir un article</option>
-                  {(articles ?? []).map((a) => (
+                  {pickerArticles.map((a) => (
                     <option key={a.id} value={a.id}>
                       {a.reference} — {a.name}
                     </option>
@@ -604,7 +625,7 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
 
       {isLoading ? (
         <ListLoadingState />
-      ) : !(articles ?? []).length ? (
+      ) : total === 0 ? (
         hasActiveFilters ? (
           <ListNoResults message="Aucun article ne correspond à ces filtres." />
         ) : (
@@ -624,59 +645,67 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
           />
         )
       ) : (
-        <ListTableShell
-          gridTemplateClass={ARTICLES_GRID}
-          headerCells={
-            <>
-              <span>Référence</span>
-              <span>Nom</span>
-              <span>Prix HT</span>
-              <span>Stock</span>
-              <span>Seuil</span>
-              <span>Cible</span>
-              <span>Statut</span>
-            </>
-          }
-        >
-          {articles!.map((article) => (
-            <ListRowLink
-              key={article.id}
-              href={`/settings/stock/articles/${article.id}`}
-              gridTemplateClass={ARTICLES_GRID}
-            >
-              <ListCellDefault className="font-mono text-xs">{article.reference}</ListCellDefault>
-              <div className="min-w-0">
-                <ListCellPrimary className="block">
-                  <span className="inline-flex items-center gap-2 min-w-0">
-                    <span className="truncate">{article.name}</span>
-                    <TestDataBadgeIf isTestData={article.isTestData} />
-                  </span>
-                </ListCellPrimary>
-                {!article.isActive && (
-                  <span className="text-xs text-slate-400 dark:text-slate-500">Inactif</span>
-                )}
-              </div>
-              <ListCellDefault>
-                {article.defaultPrice !== undefined
-                  ? `${article.defaultPrice.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €`
-                  : "—"}
-              </ListCellDefault>
-              <ListCellDefault>
-                {article.stockQuantity} {article.unit}
-              </ListCellDefault>
-              <ListCellDefault>{article.reorderPoint}</ListCellDefault>
-              <ListCellDefault>{article.targetStock}</ListCellDefault>
-              <ListBadge
-                className={
-                  STOCK_STATUS_COLORS[article.stockStatus] ??
-                  "bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700"
-                }
+        <>
+          <ListTableShell
+            gridTemplateClass={ARTICLES_GRID}
+            headerCells={
+              <>
+                <span>Référence</span>
+                <span>Nom</span>
+                <span>Prix HT</span>
+                <span>Stock</span>
+                <span>Seuil</span>
+                <span>Cible</span>
+                <span>Statut</span>
+              </>
+            }
+          >
+            {articles.map((article) => (
+              <ListRowLink
+                key={article.id}
+                href={`/settings/stock/articles/${article.id}`}
+                gridTemplateClass={ARTICLES_GRID}
               >
-                {STOCK_STATUS_LABELS[article.stockStatus] ?? article.stockStatus}
-              </ListBadge>
-            </ListRowLink>
-          ))}
-        </ListTableShell>
+                <ListCellDefault className="font-mono text-xs">{article.reference}</ListCellDefault>
+                <div className="min-w-0">
+                  <ListCellPrimary className="block">
+                    <span className="inline-flex items-center gap-2 min-w-0">
+                      <span className="truncate">{article.name}</span>
+                      <TestDataBadgeIf isTestData={article.isTestData} />
+                    </span>
+                  </ListCellPrimary>
+                  {!article.isActive && (
+                    <span className="text-xs text-slate-400 dark:text-slate-500">Inactif</span>
+                  )}
+                </div>
+                <ListCellDefault>
+                  {article.defaultPrice !== undefined
+                    ? `${article.defaultPrice.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €`
+                    : "—"}
+                </ListCellDefault>
+                <ListCellDefault>
+                  {article.stockQuantity} {article.unit}
+                </ListCellDefault>
+                <ListCellDefault>{article.reorderPoint}</ListCellDefault>
+                <ListCellDefault>{article.targetStock}</ListCellDefault>
+                <ListBadge
+                  className={
+                    STOCK_STATUS_COLORS[article.stockStatus] ??
+                    "bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700"
+                  }
+                >
+                  {STOCK_STATUS_LABELS[article.stockStatus] ?? article.stockStatus}
+                </ListBadge>
+              </ListRowLink>
+            ))}
+          </ListTableShell>
+          <ListPagination
+            offset={offset}
+            limit={LIST_PAGE_SIZE}
+            total={total}
+            onOffsetChange={setOffset}
+          />
+        </>
       )}
 
       {showMovementActions && (

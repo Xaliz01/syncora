@@ -16,6 +16,7 @@ import type {
   CreateInterventionBody,
   CaseDashboardResponse,
   CaseResponse,
+  CasesListResponse,
   CaseSummaryResponse,
   CaseTemplateResponse,
   CustomerResponse,
@@ -23,6 +24,7 @@ import type {
   DashboardTodoCaseItem,
   DocumentResponse,
   InterventionResponse,
+  InterventionsListResponse,
   SignInterventionBody,
   SignInterventionResponse,
   StartInterventionBody,
@@ -175,9 +177,11 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       priority?: string;
       search?: string;
       customerId?: string;
+      limit?: number;
+      offset?: number;
     },
-  ) {
-    const rows = await this.callCasesService<CaseSummaryResponse[]>(user.organizationId, {
+  ): Promise<CasesListResponse> {
+    const response = await this.callCasesService<CasesListResponse>(user.organizationId, {
       method: "get",
       path: "/cases",
       query: {
@@ -185,7 +189,8 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
         ...filters,
       },
     });
-    return this.enrichCaseSummaries(user, rows);
+    const cases = await this.enrichCaseSummaries(user, response.cases);
+    return { cases, total: response.total };
   }
 
   async getCase(user: AuthUser, caseId: string) {
@@ -311,8 +316,11 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       status?: string;
       unscheduled?: string;
       includeTeamAssignments?: string;
+      search?: string;
+      limit?: number;
+      offset?: number;
     },
-  ) {
+  ): Promise<InterventionsListResponse> {
     let assignedTeamIds: string[] | undefined;
     if (
       filters?.includeTeamAssignments === "true" &&
@@ -322,7 +330,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       assignedTeamIds = await this.resolveTeamIdsForAssignee(user, filters.assigneeId);
     }
 
-    return this.callCasesService<InterventionResponse[]>(user.organizationId, {
+    return this.callCasesService<InterventionsListResponse>(user.organizationId, {
       method: "get",
       path: "/interventions",
       query: {
@@ -334,6 +342,9 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
         endDate: filters?.endDate,
         status: filters?.status,
         unscheduled: filters?.unscheduled,
+        search: filters?.search,
+        limit: filters?.limit,
+        offset: filters?.offset,
       },
     });
   }

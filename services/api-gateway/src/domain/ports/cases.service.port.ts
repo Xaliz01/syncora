@@ -3,13 +3,14 @@ import type {
   CaseDashboardResponse,
   CaseHistoryEntryResponse,
   CaseResponse,
-  CaseSummaryResponse,
+  CasesListResponse,
   CompleteInterventionResponse,
   CaseTemplateResponse,
   DashboardStatFilter,
   GeoLocation,
   DashboardTodoCaseItem,
   InterventionResponse,
+  InterventionsListResponse,
   QuoteResponse,
   QuoteSummaryResponse,
   SignInterventionResponse,
@@ -189,8 +190,10 @@ export abstract class AbstractCasesGatewayService {
       priority?: string;
       search?: string;
       customerId?: string;
+      limit?: number;
+      offset?: number;
     },
-  ): Promise<CaseSummaryResponse[]>;
+  ): Promise<CasesListResponse>;
   abstract getCase(user: AuthUser, caseId: string): Promise<CaseResponse>;
   abstract updateCase(
     user: AuthUser,
@@ -217,8 +220,11 @@ export abstract class AbstractCasesGatewayService {
       status?: string;
       unscheduled?: string;
       includeTeamAssignments?: string;
+      search?: string;
+      limit?: number;
+      offset?: number;
     },
-  ): Promise<InterventionResponse[]>;
+  ): Promise<InterventionsListResponse>;
   abstract getIntervention(user: AuthUser, interventionId: string): Promise<InterventionResponse>;
   abstract updateIntervention(
     user: AuthUser,

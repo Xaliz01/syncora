@@ -4,15 +4,19 @@ import { firstValueFrom } from "rxjs";
 import type {
   CaseResponse,
   CaseSummaryResponse,
+  CasesListResponse,
   CustomerResponse,
+  CustomersListResponse,
   DashboardTodoCaseItem,
   ExportFormat,
   InterventionResponse,
+  InterventionsListResponse,
   ReportingStatsResponse,
   TeamResponse,
   TechnicianResponse,
   UserResponse,
 } from "@planwise/shared";
+import { MAX_PAGE_LIMIT } from "@planwise/shared";
 import PDFDocument from "pdfkit";
 import ExcelJS from "exceljs";
 import { AbstractExportsService, type ExportResult } from "./ports/exports.service.port";
@@ -48,9 +52,10 @@ export class ExportsService extends AbstractExportsService {
       }
     }
 
-    const interventions = await this.callService<InterventionResponse[]>(
+    const interventions = await this.fetchAllPaginated<InterventionResponse>(
       CASES_URL,
       "/interventions",
+      "interventions",
       { organizationId, caseId },
     );
 
@@ -87,7 +92,12 @@ export class ExportsService extends AbstractExportsService {
     if (filters?.assigneeId) query.assigneeId = filters.assigneeId;
     if (filters?.search) query.search = filters.search;
 
-    let cases = await this.callService<CaseSummaryResponse[]>(CASES_URL, "/cases", query);
+    let cases = await this.fetchAllPaginated<CaseSummaryResponse>(
+      CASES_URL,
+      "/cases",
+      "cases",
+      query,
+    );
     cases = this.filterCasesByPeriod(cases, filters?.startDate, filters?.endDate);
 
     if (format === "pdf") {
@@ -142,9 +152,10 @@ export class ExportsService extends AbstractExportsService {
     if (filters?.search) query.search = filters.search;
     if (filters?.kind) query.kind = filters.kind;
 
-    const customers = await this.callService<CustomerResponse[]>(
+    const customers = await this.fetchAllPaginated<CustomerResponse>(
       CUSTOMERS_URL,
       "/customers",
+      "customers",
       query,
     );
 
@@ -186,9 +197,10 @@ export class ExportsService extends AbstractExportsService {
     if (filters?.assigneeId) query.assigneeId = filters.assigneeId;
     if (filters?.status) query.status = filters.status;
 
-    let interventions = await this.callService<InterventionResponse[]>(
+    let interventions = await this.fetchAllPaginated<InterventionResponse>(
       CASES_URL,
       "/interventions",
+      "interventions",
       query,
     );
 
@@ -235,9 +247,10 @@ export class ExportsService extends AbstractExportsService {
     if (filters?.startDate) query.startDate = filters.startDate;
     if (filters?.endDate) query.endDate = filters.endDate;
 
-    const interventions = await this.callService<InterventionResponse[]>(
+    const interventions = await this.fetchAllPaginated<InterventionResponse>(
       CASES_URL,
       "/interventions",
+      "interventions",
       query,
     );
 
@@ -307,9 +320,10 @@ export class ExportsService extends AbstractExportsService {
     if (filters?.startDate) query.startDate = filters.startDate;
     if (filters?.endDate) query.endDate = filters.endDate;
 
-    let interventions = await this.callService<InterventionResponse[]>(
+    let interventions = await this.fetchAllPaginated<InterventionResponse>(
       CASES_URL,
       "/interventions",
+      "interventions",
       query,
     );
 
@@ -426,12 +440,21 @@ export class ExportsService extends AbstractExportsService {
 
     const [casesResult, interventionsResult, techniciansResult, customersResult] =
       await Promise.allSettled([
-        this.callService<CaseSummaryResponse[]>(CASES_URL, "/cases", { organizationId }),
-        this.callService<InterventionResponse[]>(CASES_URL, "/interventions", interventionQuery),
+        this.fetchAllPaginated<CaseSummaryResponse>(CASES_URL, "/cases", "cases", {
+          organizationId,
+        }),
+        this.fetchAllPaginated<InterventionResponse>(
+          CASES_URL,
+          "/interventions",
+          "interventions",
+          interventionQuery,
+        ),
         this.callService<TechnicianResponse[]>(TECHNICIANS_URL, "/technicians", {
           organizationId,
         }),
-        this.callService<CustomerResponse[]>(CUSTOMERS_URL, "/customers", { organizationId }),
+        this.fetchAllPaginated<CustomerResponse>(CUSTOMERS_URL, "/customers", "customers", {
+          organizationId,
+        }),
       ]);
 
     const allCases = casesResult.status === "fulfilled" ? casesResult.value : [];
@@ -1484,6 +1507,39 @@ export class ExportsService extends AbstractExportsService {
   }
 
   // ── HTTP helper ──
+
+  private async fetchAllPaginated<T>(
+    baseUrl: string,
+    path: string,
+    itemsKey: "cases" | "interventions" | "customers",
+    params: Record<string, string>,
+  ): Promise<T[]> {
+    const all: T[] = [];
+    let offset = 0;
+    let total = Number.POSITIVE_INFINITY;
+
+    while (offset < total) {
+      const page = await this.callService<
+        CasesListResponse | InterventionsListResponse | CustomersListResponse
+      >(baseUrl, path, {
+        ...params,
+        limit: String(MAX_PAGE_LIMIT),
+        offset: String(offset),
+      });
+      const items =
+        itemsKey === "cases"
+          ? (page as CasesListResponse).cases
+          : itemsKey === "interventions"
+            ? (page as InterventionsListResponse).interventions
+            : (page as CustomersListResponse).customers;
+      total = typeof page.total === "number" ? page.total : items.length;
+      all.push(...(items as T[]));
+      offset += items.length;
+      if (items.length === 0) break;
+    }
+
+    return all;
+  }
 
   private async callService<T>(
     baseUrl: string,

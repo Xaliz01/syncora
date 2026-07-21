@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from "@nestjs/common";
+import { parsePaginationQueryParams } from "@planwise/shared";
 import { parseOrganizationIdQuery } from "@planwise/shared/nest";
 import { AbstractStockService } from "../../domain/ports/stock.service.port";
 import type {
@@ -29,13 +30,17 @@ export class StockController {
     @Query("lowStockOnly") lowStockOnly?: string,
     @Query("activeOnly") activeOnly?: string,
     @Query("locationId") locationId?: string,
+    @Query("limit") limit?: string,
+    @Query("offset") offset?: string,
   ) {
     organizationId = parseOrganizationIdQuery(organizationId);
+    const pagination = parsePaginationQueryParams(limit, offset);
     return this.stockService.listArticles(organizationId, {
       search,
       lowStockOnly: lowStockOnly === "true",
       activeOnly: activeOnly === undefined ? true : activeOnly === "true",
       locationId,
+      ...pagination,
     });
   }
 

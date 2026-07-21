@@ -6,13 +6,14 @@ import type {
   CaseDashboardResponse,
   CaseHistoryEntryResponse,
   CaseResponse,
-  CaseSummaryResponse,
+  CasesListResponse,
   CompleteInterventionBody,
   CompleteInterventionResponse,
   CaseTemplateResponse,
   DashboardStatFilter,
   DashboardTodoCaseItem,
   InterventionResponse,
+  InterventionsListResponse,
   SignInterventionBody,
   SignInterventionResponse,
   StartInterventionBody,
@@ -47,8 +48,10 @@ export abstract class AbstractCasesService {
       priority?: string;
       search?: string;
       customerId?: string;
+      limit?: number;
+      offset?: number;
     },
-  ): Promise<CaseSummaryResponse[]>;
+  ): Promise<CasesListResponse>;
   abstract getCase(id: string, organizationId: string): Promise<CaseResponse>;
   abstract updateCase(id: string, body: UpdateCaseBody): Promise<CaseResponse>;
   abstract deleteCase(id: string, organizationId: string): Promise<{ deleted: true }>;
@@ -66,8 +69,11 @@ export abstract class AbstractCasesService {
       status?: string;
       /** Sans créneau horaire (scheduledStart absent ou null) */
       unscheduled?: boolean;
+      search?: string;
+      limit?: number;
+      offset?: number;
     },
-  ): Promise<InterventionResponse[]>;
+  ): Promise<InterventionsListResponse>;
   abstract getIntervention(id: string, organizationId: string): Promise<InterventionResponse>;
   abstract updateIntervention(
     id: string,

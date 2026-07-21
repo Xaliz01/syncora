@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { CronRunResponse, PlatformCronJobsOverviewResponse } from "@planwise/shared";
 import * as platformApi from "@/lib/platform.api";
+import { ListPagination, LIST_PAGE_SIZE } from "@/components/ui/list-page";
 
 function formatDate(iso?: string) {
   if (!iso) return "—";
@@ -46,9 +47,15 @@ export function PlatformCronsPage() {
   const [overview, setOverview] = useState<PlatformCronJobsOverviewResponse | null>(null);
   const [selectedJob, setSelectedJob] = useState<string>("");
   const [runs, setRuns] = useState<CronRunResponse[]>([]);
+  const [runsTotal, setRunsTotal] = useState(0);
+  const [runsOffset, setRunsOffset] = useState(0);
   const [loading, setLoading] = useState(true);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setRunsOffset(0);
+  }, [selectedJob]);
 
   useEffect(() => {
     setLoading(true);
@@ -67,12 +74,16 @@ export function PlatformCronsPage() {
     platformApi
       .listPlatformCronRuns({
         jobKey: selectedJob || undefined,
-        limit: 100,
+        limit: LIST_PAGE_SIZE,
+        offset: runsOffset,
       })
-      .then((res) => setRuns(res.runs))
+      .then((res) => {
+        setRuns(res.runs);
+        setRunsTotal(res.total);
+      })
       .catch((err) => setError(err instanceof Error ? err.message : "Erreur"))
       .finally(() => setHistoryLoading(false));
-  }, [selectedJob]);
+  }, [selectedJob, runsOffset]);
 
   return (
     <div className="space-y-6">
@@ -179,6 +190,14 @@ export function PlatformCronsPage() {
                 ) : null}
               </tbody>
             </table>
+            <div className="px-4 pb-3">
+              <ListPagination
+                offset={runsOffset}
+                limit={LIST_PAGE_SIZE}
+                total={runsTotal}
+                onOffsetChange={setRunsOffset}
+              />
+            </div>
           </div>
         )}
       </section>

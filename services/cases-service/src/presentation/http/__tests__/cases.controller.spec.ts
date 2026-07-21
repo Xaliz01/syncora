@@ -118,7 +118,10 @@ describe("CasesController", () => {
 
   describe("listCases", () => {
     it("should call casesService.listCases with organizationId and filters", async () => {
-      mockCasesService.listCases.mockResolvedValue([{ id: "case-1" }] as never);
+      mockCasesService.listCases.mockResolvedValue({
+        cases: [{ id: "case-1" }],
+        total: 1,
+      } as never);
 
       const result = await controller.listCases(
         "org-1",
@@ -127,6 +130,9 @@ describe("CasesController", () => {
         "user-1",
         "high",
         "search",
+        undefined,
+        undefined,
+        undefined,
       );
 
       expect(mockCasesService.listCases).toHaveBeenCalledWith("org-1", {
@@ -136,8 +142,11 @@ describe("CasesController", () => {
         priority: "high",
         search: "search",
         customerId: undefined,
+        limit: 50,
+        offset: 0,
       });
-      expect(result).toHaveLength(1);
+      expect(result.cases).toHaveLength(1);
+      expect(result.total).toBe(1);
     });
 
     it("should throw BadRequestException when organizationId is missing", async () => {

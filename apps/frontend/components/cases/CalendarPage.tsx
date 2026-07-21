@@ -16,6 +16,7 @@ import {
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { ExportButton } from "@/components/ui/ExportButton";
 import type { InterventionResponse, TeamResponse } from "@planwise/shared";
+import { MAX_PAGE_LIMIT_WIDE } from "@planwise/shared";
 
 type ViewMode = "week" | "month";
 
@@ -143,10 +144,11 @@ function UnscheduledPanel({
   const [dropHover, setDropHover] = useState(false);
   const dragCounterRef = useRef(0);
 
-  const { data: unscheduledInterventions, isLoading } = useQuery({
+  const { data: unscheduledData, isLoading } = useQuery({
     queryKey: ["unscheduled-interventions"],
-    queryFn: () => api.listInterventions({ unscheduled: "true" }),
+    queryFn: () => api.listInterventions({ unscheduled: "true", limit: MAX_PAGE_LIMIT_WIDE }),
   });
+  const unscheduledInterventions = unscheduledData?.interventions;
 
   const filtered = useMemo(() => {
     if (!unscheduledInterventions) return [];
@@ -483,14 +485,16 @@ export function CalendarPage() {
     return new Date(referenceDate.getFullYear(), referenceDate.getMonth() + 1, 0, 23, 59, 59, 999);
   }, [view, weekDays, referenceDate]);
 
-  const { data: interventions } = useQuery({
+  const { data: interventionsData } = useQuery({
     queryKey: ["calendar-interventions", rangeStart.toISOString(), rangeEnd.toISOString()],
     queryFn: () =>
       api.listInterventions({
         startDate: rangeStart.toISOString(),
         endDate: rangeEnd.toISOString(),
+        limit: MAX_PAGE_LIMIT_WIDE,
       }),
   });
+  const interventions = interventionsData?.interventions;
 
   const { data: teams } = useQuery({
     queryKey: ["fleet-teams"],

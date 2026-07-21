@@ -1,10 +1,11 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import * as casesApi from "@/lib/cases.api";
 import type { CasePriority, CaseStatus } from "@planwise/shared";
+import { ListPagination, LIST_PAGE_SIZE } from "@/components/ui/list-page";
 
 const STATUS_LABELS: Record<CaseStatus, string> = {
   draft: "Brouillon",
@@ -48,30 +49,38 @@ function formatDate(iso?: string): string {
 }
 
 export function CustomerCasesSection({ customerId }: { customerId: string }) {
-  const { data: cases, isLoading } = useQuery({
-    queryKey: ["cases", "customer", customerId],
-    queryFn: () => casesApi.listCases({ customerId }),
+  const [offset, setOffset] = useState(0);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["cases", "customer", customerId, offset],
+    queryFn: () =>
+      casesApi.listCases({
+        customerId,
+        limit: LIST_PAGE_SIZE,
+        offset,
+      }),
   });
 
-  const activeCases =
-    cases?.filter((c) => c.status !== "completed" && c.status !== "cancelled") ?? [];
-  const closedCases =
-    cases?.filter((c) => c.status === "completed" || c.status === "cancelled") ?? [];
+  const cases = data?.cases ?? [];
+  const total = data?.total ?? 0;
+
+  const activeCases = cases.filter((c) => c.status !== "completed" && c.status !== "cancelled");
+  const closedCases = cases.filter((c) => c.status === "completed" || c.status === "cancelled");
 
   return (
     <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/20">
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Dossiers liés</h2>
-        {cases && cases.length > 0 && (
+        {total > 0 && (
           <span className="text-xs text-slate-500 dark:text-slate-400">
-            {cases.length} dossier{cases.length > 1 ? "s" : ""}
+            {total} dossier{total > 1 ? "s" : ""}
           </span>
         )}
       </div>
 
       {isLoading && <div className="text-sm text-slate-500 dark:text-slate-400">Chargement…</div>}
 
-      {!isLoading && (!cases || cases.length === 0) && (
+      {!isLoading && total === 0 && (
         <p className="text-sm text-slate-500 dark:text-slate-400">Aucun dossier lié à ce client.</p>
       )}
 
@@ -136,6 +145,15 @@ export function CustomerCasesSection({ customerId }: { customerId: string }) {
             ))}
           </div>
         </details>
+      )}
+
+      {!isLoading && total > 0 && (
+        <ListPagination
+          offset={offset}
+          limit={LIST_PAGE_SIZE}
+          total={total}
+          onOffsetChange={setOffset}
+        />
       )}
     </div>
   );

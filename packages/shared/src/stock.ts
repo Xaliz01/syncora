@@ -124,6 +124,11 @@ export interface ArticleResponse {
   isTestData?: boolean;
 }
 
+export interface ArticlesListResponse {
+  articles: ArticleResponse[];
+  total: number;
+}
+
 export interface CreateArticleMovementBody {
   organizationId: string;
   articleId: string;

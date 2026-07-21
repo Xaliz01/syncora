@@ -26,6 +26,7 @@ import {
 import { SubscriptionAccessGuard } from "../../infrastructure/subscription-access.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
 import { NotifyEntity } from "../../infrastructure/notify-entity.decorator";
+import { parsePaginationQueryParams } from "@planwise/shared";
 import type { AuthUser } from "@planwise/shared";
 
 @Controller("customers")
@@ -42,8 +43,14 @@ export class CustomersController {
 
   @Get()
   @RequirePermissions("customers.read")
-  async listCustomers(@CurrentUser() user: AuthUser, @Query("search") search?: string) {
-    return this.customersService.listCustomers(user, { search });
+  async listCustomers(
+    @CurrentUser() user: AuthUser,
+    @Query("search") search?: string,
+    @Query("limit") limit?: string,
+    @Query("offset") offset?: string,
+  ) {
+    const pagination = parsePaginationQueryParams(limit, offset);
+    return this.customersService.listCustomers(user, { search, ...pagination });
   }
 
   @Get(":customerId")

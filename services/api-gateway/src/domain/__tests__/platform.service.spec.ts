@@ -114,4 +114,61 @@ describe("PlatformService", () => {
       ),
     ).rejects.toThrow(/motif support/i);
   });
+
+  it("merges cron runs across services with real total and offset", async () => {
+    httpService.get.mockImplementation(
+      (_url: string, config?: { params?: { jobKey?: string } }) => {
+        const jobKey = config?.params?.jobKey;
+        if (jobKey === "notifications.intervention-reminders") {
+          return of({
+            data: {
+              total: 89,
+              runs: Array.from({ length: 50 }, (_, i) => ({
+                id: `n-${i}`,
+                jobKey,
+                service: "notifications-service",
+                status: "ok",
+                startedAt: new Date(2026, 6, 21, 12, 50 - i).toISOString(),
+              })),
+            },
+          });
+        }
+        if (jobKey === "integrations.invoice-sync") {
+          return of({
+            data: {
+              total: 10,
+              runs: Array.from({ length: 10 }, (_, i) => ({
+                id: `i-${i}`,
+                jobKey,
+                service: "integrations-service",
+                status: "ok",
+                startedAt: new Date(2026, 6, 21, 11, 10 - i).toISOString(),
+              })),
+            },
+          });
+        }
+        return of({
+          data: {
+            total: 5,
+            runs: Array.from({ length: 5 }, (_, i) => ({
+              id: `o-${i}`,
+              jobKey: jobKey ?? "organizations.trial-test-data-cleanup",
+              service: "organizations-service",
+              status: "ok",
+              startedAt: new Date(2026, 6, 20, 4, i).toISOString(),
+            })),
+          },
+        });
+      },
+    );
+
+    const page1 = await service.listCronRuns({ limit: 50, offset: 0 });
+    expect(page1.total).toBe(104);
+    expect(page1.runs).toHaveLength(50);
+
+    const page2 = await service.listCronRuns({ limit: 50, offset: 50 });
+    expect(page2.total).toBe(104);
+    expect(page2.runs.length).toBeGreaterThan(0);
+    expect(page2.runs[0]?.id).not.toBe(page1.runs[0]?.id);
+  });
 });

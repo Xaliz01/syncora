@@ -12,6 +12,7 @@ describe("CustomersService", () => {
     find: jest.Mock;
     findOne: jest.Mock;
     findOneAndUpdate: jest.Mock;
+    countDocuments: jest.Mock;
   };
 
   const mockCustomerDoc = (overrides: Record<string, unknown> = {}) => ({
@@ -54,6 +55,7 @@ describe("CustomersService", () => {
       find: jest.fn().mockReturnValue(findChain),
       findOne: jest.fn().mockReturnValue({ exec: execMock }),
       findOneAndUpdate: jest.fn().mockReturnValue({ exec: execMock }),
+      countDocuments: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(0) }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -148,11 +150,16 @@ describe("CustomersService", () => {
   });
 
   describe("listCustomers", () => {
-    it("should return list with search filter", async () => {
+    it("should return paginated list with search filter", async () => {
       const docs = [mockCustomerDoc()];
+      mockCustomerModel.countDocuments.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(1),
+      });
       mockCustomerModel.find.mockReturnValue({
         sort: jest.fn().mockReturnValue({
-          limit: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(docs) }),
+          skip: jest.fn().mockReturnValue({
+            limit: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(docs) }),
+          }),
         }),
       });
 
@@ -165,10 +172,11 @@ describe("CustomersService", () => {
           $or: expect.arrayContaining([{ companyName: { $regex: "acme", $options: "i" } }]),
         }),
       );
-      expect(result).toHaveLength(1);
+      expect(result.customers).toHaveLength(1);
+      expect(result.total).toBe(1);
     });
 
-    it("should return list with ids filter", async () => {
+    it("should return all matched ids without pagination", async () => {
       const docs = [mockCustomerDoc()];
       mockCustomerModel.find.mockReturnValue({
         sort: jest.fn().mockReturnValue({
@@ -185,7 +193,9 @@ describe("CustomersService", () => {
           _id: { $in: ["cust-123", "cust-456"] },
         }),
       );
-      expect(result).toHaveLength(1);
+      expect(mockCustomerModel.countDocuments).not.toHaveBeenCalled();
+      expect(result.customers).toHaveLength(1);
+      expect(result.total).toBe(1);
     });
   });
 
