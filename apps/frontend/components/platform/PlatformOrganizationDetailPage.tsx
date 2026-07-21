@@ -4,8 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { PlatformOrganizationDetailResponse, PlatformUserSummary } from "@planwise/shared";
 import * as platformApi from "@/lib/platform.api";
-import { useAuth } from "@/components/auth/AuthContext";
-import { getAppOrigin, isLocalDevHost } from "@/lib/host-routing";
+import { buildSupportSessionHandoffUrl } from "@/lib/support-session";
 
 function formatDate(iso?: string) {
   if (!iso) return "—";
@@ -17,7 +16,6 @@ function formatDate(iso?: string) {
 }
 
 export function PlatformOrganizationDetailPage({ organizationId }: { organizationId: string }) {
-  const { enterImpersonationSession } = useAuth();
   const [data, setData] = useState<PlatformOrganizationDetailResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,9 +58,7 @@ export function PlatformOrganizationDetailPage({ organizationId }: { organizatio
         organizationId,
         reason,
       });
-      enterImpersonationSession(result.accessToken, result.user);
-      const host = typeof window !== "undefined" ? window.location.hostname : "";
-      window.location.href = isLocalDevHost(host) ? "/" : `${getAppOrigin()}/`;
+      window.location.href = buildSupportSessionHandoffUrl(result.accessToken);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Impersonation impossible");
       setImpersonatingId(null);

@@ -4,8 +4,7 @@ import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import type { PlatformUserSummary } from "@planwise/shared";
 import * as platformApi from "@/lib/platform.api";
-import { useAuth } from "@/components/auth/AuthContext";
-import { getAppOrigin, isLocalDevHost } from "@/lib/host-routing";
+import { buildSupportSessionHandoffUrl } from "@/lib/support-session";
 
 function formatDate(iso?: string) {
   if (!iso) return "—";
@@ -17,7 +16,6 @@ function formatDate(iso?: string) {
 }
 
 export function PlatformUsersPage() {
-  const { enterImpersonationSession } = useAuth();
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
   const [items, setItems] = useState<PlatformUserSummary[]>([]);
@@ -73,9 +71,8 @@ export function PlatformUsersPage() {
         organizationId: user.organizationId,
         reason,
       });
-      enterImpersonationSession(result.accessToken, result.user);
-      const host = typeof window !== "undefined" ? window.location.hostname : "";
-      window.location.href = isLocalDevHost(host) ? "/" : `${getAppOrigin()}/`;
+      // Ne pas écrire le JWT sur l’origine backoffice : handoff vers app.*
+      window.location.href = buildSupportSessionHandoffUrl(result.accessToken);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Impersonation impossible");
       setImpersonatingId(null);

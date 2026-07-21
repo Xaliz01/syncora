@@ -37,4 +37,9 @@ test.describe("Backoffice plateforme — accès invité", () => {
     });
     await expect(page).toHaveURL(/\/platform\/login/);
   });
+
+  test("le handoff support sans token renvoie vers la connexion app", async ({ page }) => {
+    await page.goto("/auth/support-session");
+    await expect(page).toHaveURL(/\/login/);
+  });
 });
