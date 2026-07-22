@@ -37,6 +37,7 @@ export function QontoIntegrationSection() {
   const invalidateBillingIntegrations = () => {
     queryClient.invalidateQueries({ queryKey: ["integrations", "pennylane"] });
     queryClient.invalidateQueries({ queryKey: ["integrations", "qonto"] });
+    queryClient.invalidateQueries({ queryKey: ["billing-integration-availability"] });
   };
 
   const confirmReplaceOther = async () => {

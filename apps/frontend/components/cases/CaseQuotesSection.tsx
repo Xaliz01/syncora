@@ -644,9 +644,17 @@ function QuoteEditorOverlay({
 export function CaseQuotesSection({
   caseId,
   invoices = [],
+  invoiceCreate,
 }: {
   caseId: string;
   invoices?: CaseInvoiceSyncStatus[];
+  /** Boutons « Créer facture » (mêmes conditions que la card Facturation). */
+  invoiceCreate?: {
+    showPennylane: boolean;
+    showQonto: boolean;
+    pending: boolean;
+    onCreate: (provider: "pennylane" | "qonto", quoteId: string) => void;
+  };
 }) {
   const queryClient = useQueryClient();
   const confirm = useConfirm();
@@ -837,6 +845,28 @@ export function CaseQuotesSection({
                         </button>
                       </>
                     )}
+                    {invoiceCreate?.showPennylane ? (
+                      <button
+                        type="button"
+                        disabled={invoiceCreate.pending}
+                        onClick={() => invoiceCreate.onCreate("pennylane", quote.id)}
+                        className="text-[10px] text-brand-700 hover:text-brand-800 dark:text-brand-300 dark:hover:text-brand-200 px-1.5 py-0.5 rounded border border-brand-200 dark:border-brand-800 bg-brand-50 dark:bg-brand-950/40 hover:bg-brand-100 dark:hover:bg-brand-950/60 transition disabled:opacity-50"
+                        title="Créer une facture Pennylane à partir de ce devis"
+                      >
+                        Facture Pennylane
+                      </button>
+                    ) : null}
+                    {invoiceCreate?.showQonto ? (
+                      <button
+                        type="button"
+                        disabled={invoiceCreate.pending}
+                        onClick={() => invoiceCreate.onCreate("qonto", quote.id)}
+                        className="text-[10px] text-slate-700 hover:text-slate-900 dark:text-slate-200 dark:hover:text-white px-1.5 py-0.5 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 transition disabled:opacity-50"
+                        title="Créer une facture Qonto à partir de ce devis"
+                      >
+                        Facture Qonto
+                      </button>
+                    ) : null}
                     {can("quotes.delete") && (
                       <button
                         onClick={async () => {

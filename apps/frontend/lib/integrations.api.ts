@@ -1,6 +1,9 @@
 import type {
+  BillingIntegrationAvailability,
   CaseInvoiceSyncListResponse,
   CaseInvoiceSyncStatus,
+  OrganizationInvoiceSyncStatsResponse,
+  OrganizationInvoiceSyncsListResponse,
   PennylaneConnectionStatus,
   PennylaneOAuthStartResponse,
   QontoConnectionStatus,
@@ -13,6 +16,13 @@ import { apiRequestJson } from "./api-client";
 
 export function getPennylaneStatus(): Promise<PennylaneConnectionStatus> {
   return apiRequestJson<PennylaneConnectionStatus>("GET", "/integrations/pennylane");
+}
+
+export function getBillingIntegrationAvailability(): Promise<BillingIntegrationAvailability> {
+  return apiRequestJson<BillingIntegrationAvailability>(
+    "GET",
+    "/integrations/billing-availability",
+  );
 }
 
 export function startPennylaneOAuth(): Promise<PennylaneOAuthStartResponse> {
@@ -138,5 +148,45 @@ export function deleteCaseInvoiceSync(
   return apiRequestJson<CaseInvoiceSyncListResponse>(
     "DELETE",
     `/integrations/cases/${caseId}/invoice-sync/${syncId}`,
+  );
+}
+
+export function listOrganizationInvoiceSyncs(filters?: {
+  remoteStatus?: string;
+  provider?: string;
+  invoiceKind?: string;
+  startDate?: string;
+  endDate?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<OrganizationInvoiceSyncsListResponse> {
+  const params = new URLSearchParams();
+  if (filters?.remoteStatus) params.set("remoteStatus", filters.remoteStatus);
+  if (filters?.provider) params.set("provider", filters.provider);
+  if (filters?.invoiceKind) params.set("invoiceKind", filters.invoiceKind);
+  if (filters?.startDate) params.set("startDate", filters.startDate);
+  if (filters?.endDate) params.set("endDate", filters.endDate);
+  if (filters?.limit != null) params.set("limit", String(filters.limit));
+  if (filters?.offset != null) params.set("offset", String(filters.offset));
+  const qs = params.toString();
+  return apiRequestJson<OrganizationInvoiceSyncsListResponse>(
+    "GET",
+    `/integrations/invoice-syncs${qs ? `?${qs}` : ""}`,
+  );
+}
+
+export function getOrganizationInvoiceSyncStats(filters?: {
+  startDate?: string;
+  endDate?: string;
+  provider?: string;
+}): Promise<OrganizationInvoiceSyncStatsResponse> {
+  const params = new URLSearchParams();
+  if (filters?.startDate) params.set("startDate", filters.startDate);
+  if (filters?.endDate) params.set("endDate", filters.endDate);
+  if (filters?.provider) params.set("provider", filters.provider);
+  const qs = params.toString();
+  return apiRequestJson<OrganizationInvoiceSyncStatsResponse>(
+    "GET",
+    `/integrations/invoice-syncs/stats${qs ? `?${qs}` : ""}`,
   );
 }

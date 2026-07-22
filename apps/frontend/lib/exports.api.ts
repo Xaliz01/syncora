@@ -173,3 +173,23 @@ export function getReportingStats(filters?: {
     `/exports/reporting/stats${qs ? `?${qs}` : ""}`,
   );
 }
+
+export function exportInvoicesList(
+  format: "pdf" | "xlsx" | "csv",
+  filters?: {
+    remoteStatus?: string;
+    provider?: string;
+    invoiceKind?: string;
+    startDate?: string;
+    endDate?: string;
+  },
+): Promise<void> {
+  const params = new URLSearchParams();
+  params.set("format", format);
+  if (filters?.remoteStatus) params.set("remoteStatus", filters.remoteStatus);
+  if (filters?.provider) params.set("provider", filters.provider);
+  if (filters?.invoiceKind) params.set("invoiceKind", filters.invoiceKind);
+  if (filters?.startDate) params.set("startDate", filters.startDate);
+  if (filters?.endDate) params.set("endDate", filters.endDate);
+  return downloadExport(`/exports/invoices?${params.toString()}`, `liste-factures.${format}`);
+}

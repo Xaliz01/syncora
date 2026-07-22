@@ -252,6 +252,46 @@ export interface CaseInvoiceSyncListResponse {
   invoices: CaseInvoiceSyncStatus[];
 }
 
+/** Ligne de suivi facturation org (sync + enrichissement gateway). */
+export interface OrganizationInvoiceSyncItem extends CaseInvoiceSyncStatus {
+  caseTitle?: string;
+  customerDisplayName?: string;
+}
+
+export interface OrganizationInvoiceSyncsListResponse {
+  invoices: OrganizationInvoiceSyncItem[];
+  total: number;
+}
+
+export interface OrganizationInvoiceSyncStatsResponse {
+  total: number;
+  draftCount: number;
+  finalizedCount: number;
+  paidCount: number;
+  cancelledCount: number;
+  unknownCount: number;
+  amountHtDraft: string;
+  amountHtFinalized: string;
+  amountHtPaid: string;
+  amountHtTotal: string;
+  byKind: Partial<Record<CaseInvoiceKind, number>>;
+}
+
+export const REMOTE_INVOICE_STATUS_LABELS: Record<RemoteInvoiceLifecycle, string> = {
+  draft: "Brouillon",
+  finalized: "Finalisée",
+  paid: "Payée",
+  cancelled: "Annulée",
+  unknown: "Inconnu",
+};
+
+/** Indique si une intégration facturation est connectée (page Suivi facturation). */
+export interface BillingIntegrationAvailability {
+  connected: boolean;
+  pennylane: boolean;
+  qonto: boolean;
+}
+
 export function billingStatusFromRemoteInvoice(
   remote: RemoteInvoiceLifecycle,
 ): "invoice_draft" | "invoiced" | "paid" | null {

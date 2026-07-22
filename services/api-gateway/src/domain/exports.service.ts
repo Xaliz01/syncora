@@ -5,6 +5,7 @@ import axios from "axios";
 import type {
   AuthUser,
   ExportFormat,
+  ExportInvoicesListParams,
   ReportingStatsResponse,
   UserPermissionAssignmentResponse,
 } from "@planwise/shared";
@@ -119,6 +120,18 @@ export class ExportsGatewayService extends AbstractExportsGatewayService {
       userProfileId,
       templateId: params.templateId,
       todoLabel: params.todoLabel,
+    });
+  }
+
+  async exportInvoicesList(
+    user: AuthUser,
+    format: ExportFormat,
+    filters?: ExportInvoicesListParams,
+  ): Promise<ExportResult> {
+    return this.proxyExport(`${EXPORTS_URL}/exports/invoices`, {
+      organizationId: user.organizationId,
+      format,
+      ...this.cleanFilters(filters as Record<string, string | undefined>),
     });
   }
 

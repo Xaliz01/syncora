@@ -491,6 +491,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   const [createInvoiceProvider, setCreateInvoiceProvider] = useState<"pennylane" | "qonto" | null>(
     null,
   );
+  const [createInvoiceQuoteId, setCreateInvoiceQuoteId] = useState<string | null>(null);
   const [pendingInvoiceOptions, setPendingInvoiceOptions] = useState<SyncCaseInvoiceOptions | null>(
     null,
   );
@@ -531,6 +532,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
       integrationsApi.syncCaseToPennylane(caseId, options),
     onSuccess: (result) => {
       setCreateInvoiceProvider(null);
+      setCreateInvoiceQuoteId(null);
       setPendingInvoiceOptions(null);
       invalidateAll();
       queryClient.invalidateQueries({ queryKey: ["integrations", "invoice-sync", caseId] });
@@ -547,6 +549,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
     onSuccess: (result) => {
       setQontoInvoiceNumberDialogOpen(false);
       setCreateInvoiceProvider(null);
+      setCreateInvoiceQuoteId(null);
       setPendingInvoiceOptions(null);
       invalidateAll();
       queryClient.invalidateQueries({ queryKey: ["integrations", "invoice-sync", caseId] });
@@ -780,7 +783,10 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
             <button
               type="button"
               disabled={pennylaneSyncMutation.isPending || qontoSyncMutation.isPending}
-              onClick={() => setCreateInvoiceProvider("pennylane")}
+              onClick={() => {
+                setCreateInvoiceQuoteId(null);
+                setCreateInvoiceProvider("pennylane");
+              }}
               className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 shadow-sm"
             >
               {pennylaneSyncMutation.isPending ? "Envoi Pennylane…" : "Créer une facture Pennylane"}
@@ -790,7 +796,10 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
             <button
               type="button"
               disabled={qontoSyncMutation.isPending || pennylaneSyncMutation.isPending}
-              onClick={() => setCreateInvoiceProvider("qonto")}
+              onClick={() => {
+                setCreateInvoiceQuoteId(null);
+                setCreateInvoiceProvider("qonto");
+              }}
               className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-medium text-slate-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 shadow-sm"
             >
               {qontoSyncMutation.isPending ? "Envoi Qonto…" : "Créer une facture Qonto"}
@@ -1851,8 +1860,10 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
         providerLabel={createInvoiceProvider === "qonto" ? "Qonto" : "Pennylane"}
         quotes={caseQuotes}
         invoices={invoiceSyncs}
+        initialQuoteId={createInvoiceQuoteId}
         onClose={() => {
           setCreateInvoiceProvider(null);
+          setCreateInvoiceQuoteId(null);
           setPendingInvoiceOptions(null);
         }}
         onSubmit={(options) => {
@@ -1865,7 +1876,23 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
         }}
       />
 
-      <CaseQuotesSection caseId={caseId} invoices={invoiceSyncs} />
+      <CaseQuotesSection
+        caseId={caseId}
+        invoices={invoiceSyncs}
+        invoiceCreate={
+          canCreateCaseInvoice(caseData.billingStatus)
+            ? {
+                showPennylane: showPennylaneSend,
+                showQonto: showQontoSend,
+                pending: pennylaneSyncMutation.isPending || qontoSyncMutation.isPending,
+                onCreate: (provider, quoteId) => {
+                  setCreateInvoiceQuoteId(quoteId);
+                  setCreateInvoiceProvider(provider);
+                },
+              }
+            : undefined
+        }
+      />
 
       <CommentsSection entityType="case" entityId={caseId} />
 

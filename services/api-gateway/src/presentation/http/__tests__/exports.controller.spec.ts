@@ -37,6 +37,7 @@ describe("ExportsController", () => {
       exportTechniciansActivity: jest.fn(),
       exportMileageReport: jest.fn(),
       exportDashboardTodoCases: jest.fn(),
+      exportInvoicesList: jest.fn(),
       getReportingStats: jest.fn(),
     };
 
@@ -268,6 +269,11 @@ describe("ExportsController", () => {
         avgCompletionDays: 3.2,
         techniciansActive: 8,
         customersTotal: 30,
+        casesBillingToInvoice: 4,
+        casesBillingDraft: 2,
+        casesBillingPartiallyInvoiced: 3,
+        casesBillingInvoiced: 5,
+        casesBillingPaid: 6,
       };
       mockExportsService.getReportingStats.mockResolvedValue(stats);
 

@@ -1,9 +1,12 @@
 import type {
   AuthUser,
+  BillingIntegrationAvailability,
   CaseInvoiceSyncListResponse,
   CaseInvoiceSyncStatus,
   ConnectPennylaneBody,
   ConnectQontoBody,
+  OrganizationInvoiceSyncStatsResponse,
+  OrganizationInvoiceSyncsListResponse,
   PennylaneConnectionStatus,
   PennylaneOAuthStartResponse,
   QontoConnectionStatus,
@@ -57,6 +60,28 @@ export abstract class AbstractIntegrationsGatewayService {
     caseId: string,
     options: SyncCaseInvoiceOptions,
   ): Promise<SyncCaseToQontoResult>;
+
+  abstract listOrganizationInvoiceSyncs(
+    user: AuthUser,
+    filters?: {
+      remoteStatus?: string;
+      provider?: string;
+      invoiceKind?: string;
+      startDate?: string;
+      endDate?: string;
+      limit?: number;
+      offset?: number;
+    },
+  ): Promise<OrganizationInvoiceSyncsListResponse>;
+
+  abstract getOrganizationInvoiceSyncStats(
+    user: AuthUser,
+    filters?: { startDate?: string; endDate?: string; provider?: string },
+  ): Promise<OrganizationInvoiceSyncStatsResponse>;
+
+  abstract getBillingIntegrationAvailability(
+    user: AuthUser,
+  ): Promise<BillingIntegrationAvailability>;
 
   abstract getCaseInvoiceSync(user: AuthUser, caseId: string): Promise<CaseInvoiceSyncListResponse>;
 

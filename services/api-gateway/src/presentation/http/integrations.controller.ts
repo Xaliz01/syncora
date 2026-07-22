@@ -21,6 +21,17 @@ export class IntegrationsController {
     return this.integrationsService.getPennylaneStatus(user);
   }
 
+  @Get("billing-availability")
+  @RequireAnyPermissions(
+    "exports.billing",
+    "exports.reporting",
+    "integrations.pennylane.read",
+    "integrations.qonto.read",
+  )
+  getBillingIntegrationAvailability(@CurrentUser() user: AuthUser) {
+    return this.integrationsService.getBillingIntegrationAvailability(user);
+  }
+
   @Post("pennylane/oauth/start")
   @RequirePermissions("integrations.pennylane.configure")
   startOAuth(@CurrentUser() user: AuthUser) {
@@ -138,6 +149,44 @@ export class IntegrationsController {
       invoiceKind: body?.invoiceKind as "full" | "situation" | "deposit" | "balance" | undefined,
       situationPercent: body?.situationPercent,
       amountHt: body?.amountHt,
+    });
+  }
+
+  @Get("invoice-syncs/stats")
+  @RequireAnyPermissions("exports.billing", "exports.reporting")
+  getOrganizationInvoiceSyncStats(
+    @CurrentUser() user: AuthUser,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+    @Query("provider") provider?: string,
+  ) {
+    return this.integrationsService.getOrganizationInvoiceSyncStats(user, {
+      startDate,
+      endDate,
+      provider,
+    });
+  }
+
+  @Get("invoice-syncs")
+  @RequireAnyPermissions("exports.billing", "exports.reporting")
+  listOrganizationInvoiceSyncs(
+    @CurrentUser() user: AuthUser,
+    @Query("remoteStatus") remoteStatus?: string,
+    @Query("provider") provider?: string,
+    @Query("invoiceKind") invoiceKind?: string,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+    @Query("limit") limit?: string,
+    @Query("offset") offset?: string,
+  ) {
+    return this.integrationsService.listOrganizationInvoiceSyncs(user, {
+      remoteStatus,
+      provider,
+      invoiceKind,
+      startDate,
+      endDate,
+      limit: limit != null ? Number(limit) : undefined,
+      offset: offset != null ? Number(offset) : undefined,
     });
   }
 

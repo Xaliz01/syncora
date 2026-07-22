@@ -16,6 +16,7 @@ import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { CrispHelpButton } from "@/components/support/CrispHelpButton";
 import { appVersionLabel, APP_VERSION } from "@/lib/app-version";
+import { useBillingIntegrationAvailability } from "@/lib/hooks/useBillingIntegrationAvailability";
 
 interface MenuLink {
   label: string;
@@ -187,6 +188,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const sidebarCollapsedRef = useRef(sidebarCollapsed);
   sidebarCollapsedRef.current = sidebarCollapsed;
   const subscriptionOk = hasActiveSubscriptionAccess(user);
+  const { data: billingAvailability } = useBillingIntegrationAvailability();
+  const billingConnected = billingAvailability?.connected === true;
 
   useEffect(() => {
     setSidebarCollapsed(readSidebarCollapsed());
@@ -242,6 +245,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               : []),
             ...(hasPermission(user, "exports.reporting")
               ? [{ label: "Reporting", href: "/reporting" }]
+              : []),
+            ...(hasPermission(user, "exports.billing") && billingConnected
+              ? [{ label: "Facturation", href: "/billing" }]
               : []),
           ],
         },

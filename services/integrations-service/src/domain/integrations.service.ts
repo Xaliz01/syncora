@@ -17,6 +17,8 @@ import type {
   CompleteQontoOAuthBody,
   ConnectPennylaneBody,
   ConnectQontoBody,
+  OrganizationInvoiceSyncStatsResponse,
+  OrganizationInvoiceSyncsListResponse,
   PennylaneConnectionStatus,
   PennylaneOAuthStartResponse,
   QontoConnectionStatus,
@@ -29,8 +31,11 @@ import type {
   SyncCaseToQontoResult,
 } from "@planwise/shared";
 import {
+  CASE_INVOICE_KINDS,
+  clampPagination,
   organizationScopeFilter,
   requireOrganizationId,
+  sumInvoiceAmountsHt,
   QONTO_INVOICE_NUMBER_REQUIRED_MESSAGE,
 } from "@planwise/shared";
 import { AbstractIntegrationsService } from "./ports/integrations.service.port";
@@ -817,6 +822,149 @@ export class IntegrationsService extends AbstractIntegrationsService {
       .sort({ createdAt: -1 })
       .exec();
     return { invoices: docs.map((doc) => this.toCaseInvoiceSyncStatus(doc)) };
+  }
+
+  async listOrganizationInvoiceSyncs(
+    organizationId: string,
+    filters?: {
+      remoteStatus?: string;
+      provider?: string;
+      invoiceKind?: string;
+      startDate?: string;
+      endDate?: string;
+      limit?: number;
+      offset?: number;
+    },
+  ): Promise<OrganizationInvoiceSyncsListResponse> {
+    const orgId = requireOrganizationId(organizationId);
+    const query = this.buildInvoiceSyncListQuery(orgId, filters);
+    const { limit, offset } = clampPagination({
+      limit: filters?.limit,
+      offset: filters?.offset,
+    });
+
+    const [total, docs] = await Promise.all([
+      this.syncModel.countDocuments(query).exec(),
+      this.syncModel.find(query).sort({ createdAt: -1 }).skip(offset).limit(limit).exec(),
+    ]);
+
+    return {
+      invoices: docs.map((doc) => this.toCaseInvoiceSyncStatus(doc)),
+      total,
+    };
+  }
+
+  async getOrganizationInvoiceSyncStats(
+    organizationId: string,
+    filters?: {
+      startDate?: string;
+      endDate?: string;
+      provider?: string;
+    },
+  ): Promise<OrganizationInvoiceSyncStatsResponse> {
+    const orgId = requireOrganizationId(organizationId);
+    const query = this.buildInvoiceSyncListQuery(orgId, filters);
+    const docs = await this.syncModel
+      .find(query)
+      .select({ remoteStatus: 1, invoiceKind: 1, amountHt: 1, draft: 1 })
+      .lean()
+      .exec();
+
+    const byKind: Partial<Record<CaseInvoiceKind, number>> = {};
+    let draftCount = 0;
+    let finalizedCount = 0;
+    let paidCount = 0;
+    let cancelledCount = 0;
+    let unknownCount = 0;
+    const draftInvoices: Array<{ amountHt?: string; remoteStatus?: RemoteInvoiceLifecycle }> = [];
+    const finalizedInvoices: Array<{ amountHt?: string; remoteStatus?: RemoteInvoiceLifecycle }> =
+      [];
+    const paidInvoices: Array<{ amountHt?: string; remoteStatus?: RemoteInvoiceLifecycle }> = [];
+    const activeInvoices: Array<{ amountHt?: string; remoteStatus?: RemoteInvoiceLifecycle }> = [];
+
+    for (const doc of docs) {
+      const status =
+        (doc.remoteStatus as RemoteInvoiceLifecycle | undefined) ??
+        (doc.draft === false ? "finalized" : "draft");
+      const kind = (doc.invoiceKind as CaseInvoiceKind | undefined) ?? "full";
+      if (CASE_INVOICE_KINDS.includes(kind)) {
+        byKind[kind] = (byKind[kind] ?? 0) + 1;
+      }
+      const row = { amountHt: doc.amountHt, remoteStatus: status };
+      if (status !== "cancelled") activeInvoices.push(row);
+      switch (status) {
+        case "draft":
+          draftCount += 1;
+          draftInvoices.push(row);
+          break;
+        case "finalized":
+          finalizedCount += 1;
+          finalizedInvoices.push(row);
+          break;
+        case "paid":
+          paidCount += 1;
+          paidInvoices.push(row);
+          break;
+        case "cancelled":
+          cancelledCount += 1;
+          break;
+        default:
+          unknownCount += 1;
+          break;
+      }
+    }
+
+    return {
+      total: docs.length,
+      draftCount,
+      finalizedCount,
+      paidCount,
+      cancelledCount,
+      unknownCount,
+      amountHtDraft: sumInvoiceAmountsHt(draftInvoices).toFixed(2),
+      amountHtFinalized: sumInvoiceAmountsHt(finalizedInvoices).toFixed(2),
+      amountHtPaid: sumInvoiceAmountsHt(paidInvoices).toFixed(2),
+      amountHtTotal: sumInvoiceAmountsHt(activeInvoices).toFixed(2),
+      byKind,
+    };
+  }
+
+  private buildInvoiceSyncListQuery(
+    organizationId: string,
+    filters?: {
+      remoteStatus?: string;
+      provider?: string;
+      invoiceKind?: string;
+      startDate?: string;
+      endDate?: string;
+    },
+  ): Record<string, unknown> {
+    const query: Record<string, unknown> = { ...organizationScopeFilter(organizationId) };
+    if (filters?.provider?.trim()) query.provider = filters.provider.trim();
+    if (filters?.invoiceKind?.trim()) query.invoiceKind = filters.invoiceKind.trim();
+    if (filters?.remoteStatus?.trim()) {
+      const status = filters.remoteStatus.trim();
+      if (status === "draft") {
+        query.$or = [{ remoteStatus: "draft" }, { remoteStatus: { $exists: false }, draft: true }];
+      } else {
+        query.remoteStatus = status;
+      }
+    }
+    if (filters?.startDate || filters?.endDate) {
+      const createdAt: Record<string, Date> = {};
+      if (filters.startDate) {
+        createdAt.$gte = new Date(
+          filters.startDate.includes("T") ? filters.startDate : `${filters.startDate}T00:00:00.000`,
+        );
+      }
+      if (filters.endDate) {
+        createdAt.$lte = new Date(
+          filters.endDate.includes("T") ? filters.endDate : `${filters.endDate}T23:59:59.999`,
+        );
+      }
+      query.createdAt = createdAt;
+    }
+    return query;
   }
 
   async finalizeCaseInvoice(

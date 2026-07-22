@@ -164,6 +164,29 @@ export class ExportsController {
     this.sendExport(res!, result);
   }
 
+  @Get("invoices")
+  @RequirePermissions("exports.billing")
+  async exportInvoicesList(
+    @CurrentUser() user: AuthUser,
+    @Query("format") format: string,
+    @Query("remoteStatus") remoteStatus?: string,
+    @Query("provider") provider?: string,
+    @Query("invoiceKind") invoiceKind?: string,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+    @Res() res?: Response,
+  ) {
+    const exportFormat = this.parseFormat(format);
+    const result = await this.exportsService.exportInvoicesList(user, exportFormat, {
+      remoteStatus,
+      provider,
+      invoiceKind,
+      startDate,
+      endDate,
+    });
+    this.sendExport(res!, result);
+  }
+
   @Get("reporting/stats")
   @RequireAnyPermissions("exports.reporting", "exports.cases")
   async getReportingStats(

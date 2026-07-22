@@ -4,11 +4,15 @@ import { firstValueFrom } from "rxjs";
 import axios from "axios";
 import type {
   AuthUser,
+  BillingIntegrationAvailability,
   BillingStatus,
   CaseInvoiceKind,
   CaseInvoiceSyncListResponse,
   CaseInvoiceSyncStatus,
   CaseResponse,
+  OrganizationInvoiceSyncItem,
+  OrganizationInvoiceSyncStatsResponse,
+  OrganizationInvoiceSyncsListResponse,
   ConnectPennylaneBody,
   ConnectQontoBody,
   CustomerResponse,
@@ -114,6 +118,17 @@ export class IntegrationsGatewayService extends AbstractIntegrationsGatewayServi
     return this.getJson("/integrations/qonto", {
       organizationId: user.organizationId,
     });
+  }
+
+  async getBillingIntegrationAvailability(user: AuthUser): Promise<BillingIntegrationAvailability> {
+    const [pennylaneResult, qontoResult] = await Promise.allSettled([
+      this.getPennylaneStatus(user),
+      this.getQontoStatus(user),
+    ]);
+    const pennylane =
+      pennylaneResult.status === "fulfilled" && pennylaneResult.value.connected === true;
+    const qonto = qontoResult.status === "fulfilled" && qontoResult.value.connected === true;
+    return { connected: pennylane || qonto, pennylane, qonto };
   }
 
   async startQontoOAuth(user: AuthUser): Promise<QontoOAuthStartResponse> {
@@ -260,6 +275,79 @@ export class IntegrationsGatewayService extends AbstractIntegrationsGatewayServi
 
     await this.recomputeCaseBillingStatus(user, caseId, prepared.quoteTotalHt);
     return result;
+  }
+
+  async listOrganizationInvoiceSyncs(
+    user: AuthUser,
+    filters?: {
+      remoteStatus?: string;
+      provider?: string;
+      invoiceKind?: string;
+      startDate?: string;
+      endDate?: string;
+      limit?: number;
+      offset?: number;
+    },
+  ): Promise<OrganizationInvoiceSyncsListResponse> {
+    const params: Record<string, string> = { organizationId: user.organizationId };
+    if (filters?.remoteStatus) params.remoteStatus = filters.remoteStatus;
+    if (filters?.provider) params.provider = filters.provider;
+    if (filters?.invoiceKind) params.invoiceKind = filters.invoiceKind;
+    if (filters?.startDate) params.startDate = filters.startDate;
+    if (filters?.endDate) params.endDate = filters.endDate;
+    if (filters?.limit != null) params.limit = String(filters.limit);
+    if (filters?.offset != null) params.offset = String(filters.offset);
+
+    const raw = await this.getJson<OrganizationInvoiceSyncsListResponse>(
+      "/integrations/invoice-syncs",
+      params,
+    );
+    if (raw.invoices.length === 0) {
+      return raw;
+    }
+
+    const caseIds = [...new Set(raw.invoices.map((i) => i.caseId).filter(Boolean))];
+    const caseResults = await Promise.allSettled(
+      caseIds.map((caseId) => this.casesService.getCase(user, caseId)),
+    );
+
+    const caseById = new Map<string, CaseResponse>();
+    const customerIds: string[] = [];
+    caseResults.forEach((result, index) => {
+      if (result.status !== "fulfilled") return;
+      const caseData = result.value;
+      caseById.set(caseIds[index]!, caseData);
+      if (caseData.customerId) customerIds.push(caseData.customerId);
+    });
+
+    const customers = await this.customersService.listCustomersByIds(user, customerIds);
+    const customerById = new Map(customers.map((c) => [c.id, c]));
+
+    const invoices: OrganizationInvoiceSyncItem[] = raw.invoices.map((invoice) => {
+      const caseData = caseById.get(invoice.caseId);
+      const customer = caseData?.customerId ? customerById.get(caseData.customerId) : undefined;
+      return {
+        ...invoice,
+        caseTitle: caseData?.title,
+        customerDisplayName: customer?.displayName,
+      };
+    });
+
+    return { invoices, total: raw.total };
+  }
+
+  async getOrganizationInvoiceSyncStats(
+    user: AuthUser,
+    filters?: { startDate?: string; endDate?: string; provider?: string },
+  ): Promise<OrganizationInvoiceSyncStatsResponse> {
+    const params: Record<string, string> = { organizationId: user.organizationId };
+    if (filters?.startDate) params.startDate = filters.startDate;
+    if (filters?.endDate) params.endDate = filters.endDate;
+    if (filters?.provider) params.provider = filters.provider;
+    return this.getJson<OrganizationInvoiceSyncStatsResponse>(
+      "/integrations/invoice-syncs/stats",
+      params,
+    );
   }
 
   async getCaseInvoiceSync(user: AuthUser, caseId: string): Promise<CaseInvoiceSyncListResponse> {

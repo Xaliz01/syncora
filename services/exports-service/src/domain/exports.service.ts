@@ -9,14 +9,21 @@ import type {
   CustomersListResponse,
   DashboardTodoCaseItem,
   ExportFormat,
+  ExportInvoicesListParams,
   InterventionResponse,
   InterventionsListResponse,
+  OrganizationInvoiceSyncItem,
+  OrganizationInvoiceSyncsListResponse,
   ReportingStatsResponse,
   TeamResponse,
   TechnicianResponse,
   UserResponse,
 } from "@planwise/shared";
-import { MAX_PAGE_LIMIT } from "@planwise/shared";
+import {
+  MAX_PAGE_LIMIT,
+  REMOTE_INVOICE_STATUS_LABELS,
+  CASE_INVOICE_KIND_LABELS,
+} from "@planwise/shared";
 import PDFDocument from "pdfkit";
 import ExcelJS from "exceljs";
 import { AbstractExportsService, type ExportResult } from "./ports/exports.service.port";
@@ -25,6 +32,7 @@ const CASES_URL = process.env.CASES_SERVICE_URL ?? "http://localhost:3004";
 const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
 const CUSTOMERS_URL = process.env.CUSTOMERS_SERVICE_URL ?? "http://localhost:3009";
 const TECHNICIANS_URL = process.env.TECHNICIANS_SERVICE_URL ?? "http://localhost:3006";
+const INTEGRATIONS_URL = process.env.INTEGRATIONS_SERVICE_URL ?? "http://localhost:3013";
 
 @Injectable()
 export class ExportsService extends AbstractExportsService {
@@ -427,6 +435,108 @@ export class ExportsService extends AbstractExportsService {
     };
   }
 
+  // ── Invoices list ──
+
+  async exportInvoicesList(
+    organizationId: string,
+    format: ExportFormat,
+    filters?: ExportInvoicesListParams,
+  ): Promise<ExportResult> {
+    const query: Record<string, string> = { organizationId };
+    if (filters?.remoteStatus) query.remoteStatus = filters.remoteStatus;
+    if (filters?.provider) query.provider = filters.provider;
+    if (filters?.invoiceKind) query.invoiceKind = filters.invoiceKind;
+    if (filters?.startDate) query.startDate = filters.startDate;
+    if (filters?.endDate) query.endDate = filters.endDate;
+
+    const invoices = await this.fetchAllPaginated<OrganizationInvoiceSyncItem>(
+      INTEGRATIONS_URL,
+      "/integrations/invoice-syncs",
+      "invoices",
+      query,
+    );
+    const enriched = await this.enrichInvoiceSyncs(organizationId, invoices);
+
+    if (format === "csv") {
+      const buffer = this.buildInvoicesListCsv(enriched);
+      return { buffer, contentType: "text/csv; charset=utf-8", filename: "liste-factures.csv" };
+    }
+
+    if (format === "pdf") {
+      const buffer = await this.buildInvoicesListPdf(enriched);
+      return { buffer, contentType: "application/pdf", filename: "liste-factures.pdf" };
+    }
+
+    const buffer = await this.buildInvoicesListXlsx(enriched);
+    return {
+      buffer,
+      contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      filename: "liste-factures.xlsx",
+    };
+  }
+
+  private async enrichInvoiceSyncs(
+    organizationId: string,
+    invoices: OrganizationInvoiceSyncItem[],
+  ): Promise<OrganizationInvoiceSyncItem[]> {
+    if (invoices.length === 0) return invoices;
+
+    const caseIds = [...new Set(invoices.map((i) => i.caseId).filter(Boolean))];
+    const caseEntries = await Promise.all(
+      caseIds.map(async (caseId) => {
+        try {
+          const caseData = await this.callService<CaseResponse>(CASES_URL, `/cases/${caseId}`, {
+            organizationId,
+          });
+          return [caseId, caseData] as const;
+        } catch {
+          return null;
+        }
+      }),
+    );
+
+    const caseById = new Map<string, CaseResponse>();
+    const customerIds: string[] = [];
+    for (const entry of caseEntries) {
+      if (!entry) continue;
+      const [caseId, caseData] = entry;
+      caseById.set(caseId, caseData);
+      if (caseData.customerId) customerIds.push(caseData.customerId);
+    }
+
+    const uniqueCustomerIds = [...new Set(customerIds)];
+    const customerById = new Map<string, CustomerResponse>();
+    if (uniqueCustomerIds.length > 0) {
+      try {
+        const customersPage = await this.callService<CustomersListResponse>(
+          CUSTOMERS_URL,
+          "/customers",
+          {
+            organizationId,
+            ids: uniqueCustomerIds.join(","),
+            limit: String(Math.min(uniqueCustomerIds.length, 200)),
+            offset: "0",
+          },
+        );
+        for (const customer of customersPage.customers) {
+          customerById.set(customer.id, customer);
+        }
+      } catch {
+        // Enrichissement best-effort : on garde les factures sans client.
+      }
+    }
+
+    return invoices.map((invoice) => {
+      const caseData = caseById.get(invoice.caseId);
+      const customer = caseData?.customerId ? customerById.get(caseData.customerId) : undefined;
+      return {
+        ...invoice,
+        caseTitle: caseData?.title ?? invoice.caseTitle,
+        customerDisplayName: customer?.displayName ?? invoice.customerDisplayName,
+      };
+    });
+  }
+
   // ── Reporting stats ──
 
   async getReportingStats(
@@ -499,6 +609,12 @@ export class ExportsService extends AbstractExportsService {
       avgCompletionDays: Math.round(avgCompletionDays * 10) / 10,
       techniciansActive: technicians.filter((t) => t.status === "actif").length,
       customersTotal: customers.length,
+      casesBillingToInvoice: cases.filter((c) => c.billingStatus === "to_invoice").length,
+      casesBillingDraft: cases.filter((c) => c.billingStatus === "invoice_draft").length,
+      casesBillingPartiallyInvoiced: cases.filter((c) => c.billingStatus === "partially_invoiced")
+        .length,
+      casesBillingInvoiced: cases.filter((c) => c.billingStatus === "invoiced").length,
+      casesBillingPaid: cases.filter((c) => c.billingStatus === "paid").length,
     };
   }
 
@@ -1082,6 +1198,88 @@ export class ExportsService extends AbstractExportsService {
     return Buffer.from(bom + lines.join("\r\n"), "utf-8");
   }
 
+  private buildInvoicesListCsv(invoices: OrganizationInvoiceSyncItem[]): Buffer {
+    const headers = [
+      "Date",
+      "Numéro",
+      "Dossier",
+      "Client",
+      "Type",
+      "Montant HT",
+      "Statut",
+      "Fournisseur",
+      "Lien",
+    ];
+    const rows = invoices.map((invoice) => [
+      invoice.createdAt ? this.formatDateFr(invoice.createdAt) : "",
+      invoice.invoiceNumber ?? "",
+      invoice.caseTitle ?? invoice.caseId,
+      invoice.customerDisplayName ?? "",
+      CASE_INVOICE_KIND_LABELS[invoice.invoiceKind] ?? invoice.invoiceKind,
+      invoice.amountHt ?? "",
+      REMOTE_INVOICE_STATUS_LABELS[invoice.remoteStatus] ?? invoice.remoteStatus,
+      this.translateProvider(invoice.provider),
+      invoice.invoiceUrl ?? "",
+    ]);
+    return this.buildCsvBuffer(headers, rows);
+  }
+
+  private buildInvoicesListPdf(invoices: OrganizationInvoiceSyncItem[]): Promise<Buffer> {
+    return this.buildTablePdf(
+      "Liste des factures",
+      ["Date", "Numéro", "Dossier", "Client", "Type", "HT", "Statut", "Fournisseur"],
+      invoices.map((invoice) => [
+        invoice.createdAt ? this.formatDateFr(invoice.createdAt) : "—",
+        invoice.invoiceNumber ?? "—",
+        invoice.caseTitle ?? invoice.caseId,
+        invoice.customerDisplayName ?? "—",
+        CASE_INVOICE_KIND_LABELS[invoice.invoiceKind] ?? invoice.invoiceKind,
+        invoice.amountHt ?? "—",
+        REMOTE_INVOICE_STATUS_LABELS[invoice.remoteStatus] ?? invoice.remoteStatus,
+        this.translateProvider(invoice.provider),
+      ]),
+    );
+  }
+
+  private async buildInvoicesListXlsx(invoices: OrganizationInvoiceSyncItem[]): Promise<Buffer> {
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet("Factures");
+    ws.columns = [
+      { header: "Date", key: "date", width: 14 },
+      { header: "Numéro", key: "number", width: 16 },
+      { header: "Dossier", key: "caseTitle", width: 30 },
+      { header: "Client", key: "customer", width: 25 },
+      { header: "Type", key: "kind", width: 18 },
+      { header: "Montant HT", key: "amountHt", width: 14 },
+      { header: "Statut", key: "status", width: 14 },
+      { header: "Fournisseur", key: "provider", width: 14 },
+      { header: "Lien", key: "url", width: 40 },
+    ];
+    this.styleHeaderRow(ws);
+
+    for (const invoice of invoices) {
+      ws.addRow({
+        date: invoice.createdAt ? this.formatDateFr(invoice.createdAt) : "",
+        number: invoice.invoiceNumber ?? "",
+        caseTitle: invoice.caseTitle ?? invoice.caseId,
+        customer: invoice.customerDisplayName ?? "",
+        kind: CASE_INVOICE_KIND_LABELS[invoice.invoiceKind] ?? invoice.invoiceKind,
+        amountHt: invoice.amountHt ?? "",
+        status: REMOTE_INVOICE_STATUS_LABELS[invoice.remoteStatus] ?? invoice.remoteStatus,
+        provider: this.translateProvider(invoice.provider),
+        url: invoice.invoiceUrl ?? "",
+      });
+    }
+
+    return Buffer.from(await wb.xlsx.writeBuffer());
+  }
+
+  private translateProvider(provider: string): string {
+    if (provider === "pennylane") return "Pennylane";
+    if (provider === "qonto") return "Qonto";
+    return provider;
+  }
+
   private buildCasesListCsv(cases: CaseSummaryResponse[]): Buffer {
     const headers = [
       "Dossier",
@@ -1511,7 +1709,7 @@ export class ExportsService extends AbstractExportsService {
   private async fetchAllPaginated<T>(
     baseUrl: string,
     path: string,
-    itemsKey: "cases" | "interventions" | "customers",
+    itemsKey: "cases" | "interventions" | "customers" | "invoices",
     params: Record<string, string>,
   ): Promise<T[]> {
     const all: T[] = [];
@@ -1520,7 +1718,10 @@ export class ExportsService extends AbstractExportsService {
 
     while (offset < total) {
       const page = await this.callService<
-        CasesListResponse | InterventionsListResponse | CustomersListResponse
+        | CasesListResponse
+        | InterventionsListResponse
+        | CustomersListResponse
+        | OrganizationInvoiceSyncsListResponse
       >(baseUrl, path, {
         ...params,
         limit: String(MAX_PAGE_LIMIT),
@@ -1531,7 +1732,9 @@ export class ExportsService extends AbstractExportsService {
           ? (page as CasesListResponse).cases
           : itemsKey === "interventions"
             ? (page as InterventionsListResponse).interventions
-            : (page as CustomersListResponse).customers;
+            : itemsKey === "customers"
+              ? (page as CustomersListResponse).customers
+              : (page as OrganizationInvoiceSyncsListResponse).invoices;
       total = typeof page.total === "number" ? page.total : items.length;
       all.push(...(items as T[]));
       offset += items.length;

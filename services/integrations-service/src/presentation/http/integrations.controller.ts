@@ -1,5 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Post, Query } from "@nestjs/common";
 import { parseOrganizationIdBody, parseOrganizationIdQuery } from "@planwise/shared/nest";
+import { parsePaginationQueryParams } from "@planwise/shared";
 import type {
   CompletePennylaneOAuthBody,
   CompleteQontoOAuthBody,
@@ -113,6 +114,44 @@ export class IntegrationsController {
       organizationId,
       caseId,
     });
+  }
+
+  @Get("integrations/invoice-syncs")
+  listOrganizationInvoiceSyncs(
+    @Query("organizationId") organizationId: string,
+    @Query("remoteStatus") remoteStatus?: string,
+    @Query("provider") provider?: string,
+    @Query("invoiceKind") invoiceKind?: string,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+    @Query("limit") limit?: string,
+    @Query("offset") offset?: string,
+  ) {
+    const pagination = parsePaginationQueryParams(limit, offset);
+    return this.integrationsService.listOrganizationInvoiceSyncs(
+      parseOrganizationIdQuery(organizationId),
+      {
+        remoteStatus,
+        provider,
+        invoiceKind,
+        startDate,
+        endDate,
+        ...pagination,
+      },
+    );
+  }
+
+  @Get("integrations/invoice-syncs/stats")
+  getOrganizationInvoiceSyncStats(
+    @Query("organizationId") organizationId: string,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+    @Query("provider") provider?: string,
+  ) {
+    return this.integrationsService.getOrganizationInvoiceSyncStats(
+      parseOrganizationIdQuery(organizationId),
+      { startDate, endDate, provider },
+    );
   }
 
   @Get("integrations/cases/:caseId/invoice-sync")

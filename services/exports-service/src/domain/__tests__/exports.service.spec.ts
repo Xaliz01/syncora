@@ -478,7 +478,7 @@ describe("ExportsService", () => {
           organizationId: "org-123",
           title: "Case 2",
           status: "in_progress",
-          billingStatus: "none",
+          billingStatus: "to_invoice",
           priority: "high",
           assignees: [],
           tags: [],
@@ -486,6 +486,32 @@ describe("ExportsService", () => {
           interventionCount: 2,
           dueDate: "2020-01-01T00:00:00Z",
           createdAt: "2024-06-20T10:00:00Z",
+        },
+        {
+          id: "c3",
+          organizationId: "org-123",
+          title: "Case 3",
+          status: "in_progress",
+          billingStatus: "invoice_draft",
+          priority: "medium",
+          assignees: [],
+          tags: [],
+          progress: 80,
+          interventionCount: 0,
+          createdAt: "2024-06-21T10:00:00Z",
+        },
+        {
+          id: "c4",
+          organizationId: "org-123",
+          title: "Case 4",
+          status: "completed",
+          billingStatus: "paid",
+          priority: "low",
+          assignees: [],
+          tags: [],
+          progress: 100,
+          interventionCount: 1,
+          createdAt: "2024-06-22T10:00:00Z",
         },
       ];
 
@@ -548,14 +574,19 @@ describe("ExportsService", () => {
 
       const result = await service.getReportingStats("org-123");
 
-      expect(result.casesTotal).toBe(2);
-      expect(result.casesCompleted).toBe(1);
-      expect(result.casesInProgress).toBe(1);
+      expect(result.casesTotal).toBe(4);
+      expect(result.casesCompleted).toBe(2);
+      expect(result.casesInProgress).toBe(2);
       expect(result.casesOverdue).toBe(1);
       expect(result.interventionsTotal).toBe(1);
       expect(result.interventionsCompleted).toBe(1);
       expect(result.techniciansActive).toBe(1);
       expect(result.customersTotal).toBe(1);
+      expect(result.casesBillingToInvoice).toBe(1);
+      expect(result.casesBillingDraft).toBe(1);
+      expect(result.casesBillingPartiallyInvoiced).toBe(0);
+      expect(result.casesBillingInvoiced).toBe(0);
+      expect(result.casesBillingPaid).toBe(1);
     });
 
     it("should filter cases by period and forward date range to interventions", async () => {
@@ -640,6 +671,96 @@ describe("ExportsService", () => {
             organizationId: "org-123",
             startDate: "2024-06-01T00:00:00.000",
             endDate: "2024-06-30T23:59:59.999",
+          }),
+        }),
+      );
+    });
+  });
+
+  describe("exportInvoicesList", () => {
+    it("should generate a PDF buffer for invoices list", async () => {
+      mockHttpService.get
+        .mockReturnValueOnce(
+          of({
+            data: {
+              invoices: [
+                {
+                  id: "sync-1",
+                  organizationId: "org-123",
+                  provider: "qonto",
+                  caseId: "case-1",
+                  invoiceKind: "full",
+                  remoteInvoiceId: "inv-1",
+                  remoteCustomerId: "cust-1",
+                  draft: false,
+                  remoteStatus: "finalized",
+                  invoiceNumber: "FAC-001",
+                  amountHt: "1200.00",
+                  createdAt: "2026-07-01T10:00:00.000Z",
+                },
+              ],
+              total: 1,
+            },
+            status: 200,
+            headers: {},
+            statusText: "OK",
+            config: {} as never,
+          }) as never,
+        )
+        .mockReturnValueOnce(
+          of({
+            data: {
+              id: "case-1",
+              organizationId: "org-123",
+              title: "Chantier A",
+              customerId: "cust-42",
+              status: "open",
+              billingStatus: "invoiced",
+              priority: "medium",
+              assignees: [],
+              tags: [],
+              steps: [],
+            },
+            status: 200,
+            headers: {},
+            statusText: "OK",
+            config: {} as never,
+          }) as never,
+        )
+        .mockReturnValueOnce(
+          of({
+            data: {
+              customers: [
+                {
+                  id: "cust-42",
+                  organizationId: "org-123",
+                  kind: "company",
+                  displayName: "Client SA",
+                },
+              ],
+              total: 1,
+            },
+            status: 200,
+            headers: {},
+            statusText: "OK",
+            config: {} as never,
+          }) as never,
+        );
+
+      const result = await service.exportInvoicesList("org-123", "pdf");
+
+      expect(result.contentType).toBe("application/pdf");
+      expect(result.filename).toBe("liste-factures.pdf");
+      expect(result.buffer.length).toBeGreaterThan(100);
+      expect(mockHttpService.get).toHaveBeenCalledWith(
+        expect.stringContaining("/cases/case-1"),
+        expect.any(Object),
+      );
+      expect(mockHttpService.get).toHaveBeenCalledWith(
+        expect.stringContaining("/customers"),
+        expect.objectContaining({
+          params: expect.objectContaining({
+            ids: "cust-42",
           }),
         }),
       );

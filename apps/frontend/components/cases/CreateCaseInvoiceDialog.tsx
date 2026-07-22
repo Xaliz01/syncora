@@ -22,6 +22,8 @@ type Props = {
   quotes: QuoteSummaryResponse[];
   /** Factures déjà liées (pour calculer le reste du devis). */
   invoices?: CaseInvoiceSyncStatus[];
+  /** Pré-sélectionne ce devis à l’ouverture (ex. depuis la carte devis). */
+  initialQuoteId?: string | null;
   onClose: () => void;
   onSubmit: (options: SyncCaseInvoiceOptions) => void;
 };
@@ -32,13 +34,17 @@ export function CreateCaseInvoiceDialog({
   providerLabel,
   quotes,
   invoices = [],
+  initialQuoteId,
   onClose,
   onSubmit,
 }: Props) {
   const preferredQuoteId = useMemo(() => {
+    if (initialQuoteId && quotes.some((q) => q.id === initialQuoteId)) {
+      return initialQuoteId;
+    }
     const accepted = quotes.find((q) => q.status === "accepted");
     return accepted?.id ?? quotes[0]?.id ?? "";
-  }, [quotes]);
+  }, [quotes, initialQuoteId]);
 
   const [quoteId, setQuoteId] = useState(preferredQuoteId);
   const [invoiceKind, setInvoiceKind] = useState<CaseInvoiceKind>("full");

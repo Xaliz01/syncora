@@ -74,4 +74,18 @@ export interface ReportingStatsResponse {
   avgCompletionDays: number;
   techniciansActive: number;
   customersTotal: number;
+  /** Compteurs dossiers par billingStatus (hors « none »). */
+  casesBillingToInvoice: number;
+  casesBillingDraft: number;
+  casesBillingPartiallyInvoiced: number;
+  casesBillingInvoiced: number;
+  casesBillingPaid: number;
+}
+
+export interface ExportInvoicesListParams {
+  remoteStatus?: string;
+  provider?: string;
+  invoiceKind?: string;
+  startDate?: string;
+  endDate?: string;
 }

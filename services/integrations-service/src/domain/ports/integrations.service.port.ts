@@ -5,6 +5,8 @@ import type {
   CompleteQontoOAuthBody,
   ConnectPennylaneBody,
   ConnectQontoBody,
+  OrganizationInvoiceSyncStatsResponse,
+  OrganizationInvoiceSyncsListResponse,
   PennylaneConnectionStatus,
   PennylaneOAuthStartResponse,
   QontoConnectionStatus,
@@ -47,6 +49,28 @@ export abstract class AbstractIntegrationsService {
     organizationId: string,
     caseId: string,
   ): Promise<CaseInvoiceSyncListResponse>;
+
+  abstract listOrganizationInvoiceSyncs(
+    organizationId: string,
+    filters?: {
+      remoteStatus?: string;
+      provider?: string;
+      invoiceKind?: string;
+      startDate?: string;
+      endDate?: string;
+      limit?: number;
+      offset?: number;
+    },
+  ): Promise<OrganizationInvoiceSyncsListResponse>;
+
+  abstract getOrganizationInvoiceSyncStats(
+    organizationId: string,
+    filters?: {
+      startDate?: string;
+      endDate?: string;
+      provider?: string;
+    },
+  ): Promise<OrganizationInvoiceSyncStatsResponse>;
 
   abstract finalizeCaseInvoice(
     organizationId: string,

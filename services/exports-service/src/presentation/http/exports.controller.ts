@@ -164,6 +164,29 @@ export class ExportsController {
     this.sendExport(res!, result);
   }
 
+  @Get("exports/invoices")
+  async exportInvoicesList(
+    @Query("organizationId") organizationId: string,
+    @Query("format") format: string,
+    @Query("remoteStatus") remoteStatus?: string,
+    @Query("provider") provider?: string,
+    @Query("invoiceKind") invoiceKind?: string,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+    @Res() res?: Response,
+  ) {
+    const orgId = parseOrganizationIdQuery(organizationId);
+    const exportFormat = this.parseFormat(format);
+    const result = await this.exportsService.exportInvoicesList(orgId, exportFormat, {
+      remoteStatus,
+      provider,
+      invoiceKind,
+      startDate,
+      endDate,
+    });
+    this.sendExport(res!, result);
+  }
+
   @Get("exports/reporting/stats")
   async getReportingStats(
     @Query("organizationId") organizationId: string,

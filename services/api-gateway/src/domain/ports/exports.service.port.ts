@@ -1,4 +1,9 @@
-import type { AuthUser, ExportFormat, ReportingStatsResponse } from "@planwise/shared";
+import type {
+  AuthUser,
+  ExportFormat,
+  ExportInvoicesListParams,
+  ReportingStatsResponse,
+} from "@planwise/shared";
 
 export interface ExportResult {
   buffer: Buffer;
@@ -59,6 +64,12 @@ export abstract class AbstractExportsGatewayService {
     user: AuthUser,
     format: ExportFormat,
     params: { templateId: string; todoLabel: string },
+  ): Promise<ExportResult>;
+
+  abstract exportInvoicesList(
+    user: AuthUser,
+    format: ExportFormat,
+    filters?: ExportInvoicesListParams,
   ): Promise<ExportResult>;
 
   abstract getReportingStats(

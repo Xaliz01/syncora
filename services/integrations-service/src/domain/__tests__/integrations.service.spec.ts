@@ -20,6 +20,7 @@ describe("IntegrationsService", () => {
     find: jest.fn(),
     create: jest.fn(),
     deleteOne: jest.fn(),
+    countDocuments: jest.fn(),
   };
   const httpService = {
     get: jest.fn(),
@@ -1151,6 +1152,79 @@ describe("IntegrationsService", () => {
         expect(credentialModel.findOne).not.toHaveBeenCalled();
         expect(httpService.get).not.toHaveBeenCalled();
       });
+    });
+  });
+
+  describe("organization invoice sync listing", () => {
+    const syncDoc = {
+      _id: "sync-org-1",
+      organizationId: "org-1",
+      provider: "pennylane",
+      caseId: "case-1",
+      providerInvoiceId: "inv-1",
+      providerCustomerId: "cust-1",
+      draft: false,
+      remoteStatus: "finalized",
+      invoiceKind: "full",
+      amountHt: "1200.00",
+      invoiceNumber: "FAC-001",
+      createdAt: new Date("2026-01-15T10:00:00.000Z"),
+    };
+
+    it("lists organization invoice syncs with pagination", async () => {
+      syncModel.countDocuments.mockReturnValue({ exec: async () => 1 });
+      syncModel.find.mockReturnValue({
+        sort: jest.fn().mockReturnValue({
+          skip: jest.fn().mockReturnValue({
+            limit: jest.fn().mockReturnValue({
+              exec: async () => [syncDoc],
+            }),
+          }),
+        }),
+      });
+
+      const result = await service.listOrganizationInvoiceSyncs("org-1", {
+        provider: "pennylane",
+        limit: 50,
+        offset: 0,
+      });
+
+      expect(result.total).toBe(1);
+      expect(result.invoices).toHaveLength(1);
+      expect(result.invoices[0]?.invoiceNumber).toBe("FAC-001");
+      expect(result.invoices[0]?.remoteStatus).toBe("finalized");
+    });
+
+    it("aggregates organization invoice sync stats", async () => {
+      syncModel.find.mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          lean: jest.fn().mockReturnValue({
+            exec: async () => [
+              { remoteStatus: "draft", invoiceKind: "full", amountHt: "100.00", draft: true },
+              {
+                remoteStatus: "finalized",
+                invoiceKind: "situation",
+                amountHt: "500.00",
+                draft: false,
+              },
+              { remoteStatus: "paid", invoiceKind: "full", amountHt: "300.00", draft: false },
+            ],
+          }),
+        }),
+      });
+
+      const stats = await service.getOrganizationInvoiceSyncStats("org-1", {
+        startDate: "2026-01-01",
+        endDate: "2026-12-31",
+      });
+
+      expect(stats.total).toBe(3);
+      expect(stats.draftCount).toBe(1);
+      expect(stats.finalizedCount).toBe(1);
+      expect(stats.paidCount).toBe(1);
+      expect(stats.amountHtTotal).toBe("900.00");
+      expect(stats.byKind.full).toBe(2);
+      expect(stats.byKind.situation).toBe(1);
     });
   });
 });

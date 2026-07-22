@@ -433,6 +433,12 @@ export const PERMISSION_METADATA: Record<PermissionCode, PermissionMetadata> = {
     label: "Exporter les interventions",
     description: "Exporter la liste des interventions en PDF ou Excel.",
   },
+  "exports.billing": {
+    code: "exports.billing",
+    label: "Suivi facturation",
+    description:
+      "Consulter le suivi des factures synchronisées (Pennylane, Qonto) et exporter la liste.",
+  },
   "exports.reporting": {
     code: "exports.reporting",
     label: "Accéder aux rapports",
