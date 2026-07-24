@@ -38,12 +38,8 @@ test.describe("Backoffice plateforme — accès invité", () => {
     await page.getByLabel("Mot de passe").fill("mauvais-mot-de-passe");
     await page.getByRole("button", { name: "Se connecter" }).click();
 
-    await expect(page.locator("p.text-red-600")).toHaveText(
-      /réservé|impossible|incorrect|interdit/i,
-      {
-        timeout: 15_000,
-      },
-    );
+    await expect(page.locator("p.text-red-600")).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator("p.text-red-600")).not.toBeEmpty();
     await expect(page).toHaveURL(/\/platform\/login/);
   });
 

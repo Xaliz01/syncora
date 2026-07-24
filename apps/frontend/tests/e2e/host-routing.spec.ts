@@ -114,7 +114,9 @@ test.describe("Domaine app (app.planwise.fr)", () => {
   test("les routes protégées redirigent vers la connexion", async ({ page }) => {
     for (const path of ["/cases", "/my-day", "/fleet/vehicles"]) {
       await page.goto(appUrl(path));
-      await expect(page).toHaveURL(appUrl("/login"));
+      // RequireAuth conserve le deep link via ?next=
+      await expect(page).toHaveURL(/\/login(\?|$)/);
+      expect(new URL(page.url()).origin).toBe(appOrigin());
     }
   });
 
