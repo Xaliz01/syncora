@@ -13,7 +13,7 @@ import type {
   NotificationPreferencesResponse,
   UserResponse,
 } from "@planwise/shared";
-import { getEnabledChannels } from "@planwise/shared";
+import { getEnabledChannels, withNotificationOrganizationId } from "@planwise/shared";
 import { AbstractSubscriptionsGatewayService } from "./ports/subscriptions.service.port";
 
 const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
@@ -84,7 +84,9 @@ export class NotificationEventListener {
     if (event.entityType === "intervention") {
       if (event.detail === "Intervention démarrée") return "intervention_started";
       if (event.detail === "Intervention terminée") return "intervention_completed";
-      if (event.detail?.includes("Signature")) return "intervention_signed";
+      if (event.detail?.includes("signée") || event.detail?.includes("Signature")) {
+        return "intervention_signed";
+      }
       if (event.action === "created") return "intervention_assigned";
       return "entity_updated";
     }
@@ -161,12 +163,15 @@ export class NotificationEventListener {
   }
 
   private buildPushUrl(event: PlanwiseDomainEvent): string {
+    let path = "/";
     if (event.relatedEntityType === "case" && event.relatedEntityId) {
-      return `/cases/${event.relatedEntityId}`;
+      path = `/cases/${event.relatedEntityId}`;
+    } else if (event.entityType === "case") {
+      path = `/cases/${event.entityId}`;
+    } else if (event.entityType === "intervention") {
+      path = "/my-day";
     }
-    if (event.entityType === "case") return `/cases/${event.entityId}`;
-    if (event.entityType === "intervention") return "/my-day";
-    return "/";
+    return withNotificationOrganizationId(path, event.organizationId);
   }
 
   private async filterByChannel(

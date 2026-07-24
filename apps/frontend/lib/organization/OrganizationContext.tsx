@@ -22,7 +22,7 @@ export interface OrganizationContextValue {
   isSwitchingOrganization: boolean;
   refetchOrganizations: () => void;
   /** Bascule vers une autre organisation (JWT mis à jour). */
-  selectOrganization: (organizationId: string) => Promise<void>;
+  selectOrganization: (organizationId: string, options?: { redirectTo?: string }) => Promise<void>;
 }
 
 const OrganizationContext = createContext<OrganizationContextValue | null>(null);
@@ -61,7 +61,7 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
   );
 
   const selectOrganization = useCallback(
-    async (organizationId: string) => {
+    async (organizationId: string, options?: { redirectTo?: string }) => {
       if (organizationId === sessionOrganizationId) return;
       if (switchingRef.current) return;
 
@@ -79,7 +79,7 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
          */
         await queryClient.cancelQueries();
         queryClient.clear();
-        router.replace("/");
+        router.replace(options?.redirectTo ?? "/");
       } catch (e) {
         showToast(e instanceof Error ? e.message : "Bascule impossible.", "error");
       } finally {

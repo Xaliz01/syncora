@@ -80,19 +80,21 @@ export class EmailService extends AbstractEmailService {
     return to.trim().toLowerCase() === LOCAL_ALLOWED_RECIPIENT;
   }
 
+  private appBaseUrl(): string {
+    return (process.env.APP_URL ?? "https://app.planwise.fr").replace(/\/$/, "");
+  }
+
   private buildPlainText(body: string, url?: string): string {
     let text = body;
     if (url) {
-      const baseUrl = process.env.APP_URL ?? "https://app.planwise.fr";
-      text += `\n\nVoir dans Planwise : ${baseUrl}${url}`;
+      text += `\n\nVoir dans Planwise : ${this.appBaseUrl()}${url}`;
     }
     return text;
   }
 
   private buildHtml(subject: string, body: string, url?: string): string {
-    const baseUrl = process.env.APP_URL ?? "https://app.planwise.fr";
     const linkHtml = url
-      ? `<p style="margin-top:16px;"><a href="${baseUrl}${url}" style="display:inline-block;padding:10px 20px;background-color:#4338ca;color:#ffffff;text-decoration:none;border-radius:6px;font-size:14px;">Voir dans Planwise</a></p>`
+      ? `<p style="margin-top:16px;"><a href="${this.appBaseUrl()}${url}" style="display:inline-block;padding:10px 20px;background-color:#4338ca;color:#ffffff;text-decoration:none;border-radius:6px;font-size:14px;">Voir dans Planwise</a></p>`
       : "";
 
     return `<!DOCTYPE html>

@@ -549,7 +549,12 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       "intervention_signed",
       `Signé par ${body.signatoryName}`,
     );
-    return result;
+    return {
+      ...result,
+      title: intervention.title,
+      caseId: intervention.caseId,
+      caseTitle: intervention.caseTitle,
+    };
   }
 
   // ── Quotes ──

@@ -11,7 +11,11 @@ import type {
   ReminderLeadTime,
   UserResponse,
 } from "@planwise/shared";
-import { buildDefaultNotificationPreferences, getEnabledChannels } from "@planwise/shared";
+import {
+  buildDefaultNotificationPreferences,
+  getEnabledChannels,
+  withNotificationOrganizationId,
+} from "@planwise/shared";
 import type { NotificationPreferencesDocument } from "../persistence/notification-preferences.schema";
 import type { NotificationDocument } from "../persistence/notification.schema";
 import type { SentReminderDocument } from "../persistence/sent-reminder.schema";
@@ -113,10 +117,14 @@ export class InterventionReminderScheduler {
             const body = intervention.title
               ? `Intervention « ${intervention.title} » dans ${Math.round(minutesUntilStart)} min`
               : `Intervention dans ${Math.round(minutesUntilStart)} min`;
+            const deepLink = withNotificationOrganizationId(
+              intervention.caseId ? `/cases/${intervention.caseId}` : "/my-day",
+              orgId,
+            );
             await this.pushService.sendPushToUser(userId, orgId, {
               title,
               body,
-              url: intervention.caseId ? `/cases/${intervention.caseId}` : "/my-day",
+              url: deepLink,
             });
           }
 
@@ -130,7 +138,10 @@ export class InterventionReminderScheduler {
                 userEmail,
                 "Rappel intervention",
                 emailBody,
-                intervention.caseId ? `/cases/${intervention.caseId}` : "/my-day",
+                withNotificationOrganizationId(
+                  intervention.caseId ? `/cases/${intervention.caseId}` : "/my-day",
+                  orgId,
+                ),
               );
             }
           }

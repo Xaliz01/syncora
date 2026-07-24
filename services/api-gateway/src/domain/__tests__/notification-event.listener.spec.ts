@@ -73,4 +73,96 @@ describe("NotificationEventListener", () => {
     expect(mockSubscriptionsGateway.getCurrentSubscription).toHaveBeenCalled();
     expect(mockHttpService.post).toHaveBeenCalled();
   });
+
+  it("should include organizationId on push and email deep links", async () => {
+    mockHttpService.get.mockImplementation((url: string) => {
+      if (url.includes("/users")) {
+        return of({ data: [{ id: "user-2", email: "bob@example.com" }] });
+      }
+      return of({
+        data: {
+          preferences: {
+            events: {
+              case_created: {
+                channels: {
+                  in_app: { enabled: true },
+                  push: { enabled: true },
+                  email: { enabled: true },
+                  sms: { enabled: false },
+                },
+              },
+            },
+            reminderLeadTime: 30,
+          },
+        },
+      });
+    });
+
+    await listener.handleEntityChanged(baseEvent);
+
+    const pushCall = mockHttpService.post.mock.calls.find((call) =>
+      String(call[0]).includes("/push-subscriptions/send"),
+    );
+    const emailCall = mockHttpService.post.mock.calls.find((call) =>
+      String(call[0]).includes("/email/send"),
+    );
+
+    expect(pushCall?.[1]).toEqual(
+      expect.objectContaining({
+        url: "/cases/case-1?organizationId=org-1",
+      }),
+    );
+    expect(emailCall?.[1]).toEqual(
+      expect.objectContaining({
+        url: "/cases/case-1?organizationId=org-1",
+      }),
+    );
+  });
+
+  it("should deep-link intervention events to the related case with organizationId", async () => {
+    mockHttpService.get.mockImplementation((url: string) => {
+      if (url.includes("/users")) {
+        return of({ data: [{ id: "user-2" }] });
+      }
+      return of({
+        data: {
+          preferences: {
+            events: {
+              intervention_started: {
+                channels: {
+                  in_app: { enabled: true },
+                  push: { enabled: true },
+                  email: { enabled: false },
+                  sms: { enabled: false },
+                },
+              },
+            },
+            reminderLeadTime: 30,
+          },
+        },
+      });
+    });
+
+    await listener.handleEntityChanged({
+      organizationId: "org-1",
+      actorId: "actor-1",
+      actorName: "Alice",
+      entityType: "intervention",
+      entityId: "int-1",
+      entityLabel: "Plomberie",
+      action: "updated",
+      relatedEntityType: "case",
+      relatedEntityId: "case-9",
+      detail: "Intervention démarrée",
+    });
+
+    const pushCall = mockHttpService.post.mock.calls.find((call) =>
+      String(call[0]).includes("/push-subscriptions/send"),
+    );
+    expect(pushCall?.[1]).toEqual(
+      expect.objectContaining({
+        url: "/cases/case-9?organizationId=org-1",
+      }),
+    );
+  });
 });

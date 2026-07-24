@@ -2,10 +2,11 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthContext";
 import { getMarketingHomeHref } from "@/lib/host-routing";
 import { postAuthHomePath } from "@/lib/subscription-access";
+import { sanitizeAuthReturnPath } from "@/lib/auth-return-url";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 export function LoginPage() {
@@ -15,11 +16,13 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false);
   const { login, isAuthenticated, isReady, user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnPath = sanitizeAuthReturnPath(searchParams.get("next"));
 
   useEffect(() => {
     if (!isReady || !isAuthenticated || !user) return;
-    router.replace(postAuthHomePath(user));
-  }, [isReady, isAuthenticated, user, router]);
+    router.replace(returnPath ?? postAuthHomePath(user));
+  }, [isReady, isAuthenticated, user, router, returnPath]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +34,7 @@ export function LoginPage() {
         router.replace("/register?step=organization");
         return;
       }
-      router.replace(postAuthHomePath(result));
+      router.replace(returnPath ?? postAuthHomePath(result));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Connexion impossible");
     } finally {

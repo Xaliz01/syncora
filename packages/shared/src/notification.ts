@@ -222,3 +222,15 @@ export interface SendEmailNotificationResponse {
   sent: boolean;
   reason?: string;
 }
+
+/**
+ * Deep links push/email : ajoute organizationId pour basculer l’org au clic
+ * (les notifs in-app sont déjà filtrées par l’org de session).
+ */
+export function withNotificationOrganizationId(path: string, organizationId: string): string {
+  const base = path.startsWith("/") ? path : `/${path}`;
+  const trimmedOrg = organizationId.trim();
+  if (!trimmedOrg) return base;
+  const separator = base.includes("?") ? "&" : "?";
+  return `${base}${separator}organizationId=${encodeURIComponent(trimmedOrg)}`;
+}

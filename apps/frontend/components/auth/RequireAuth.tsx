@@ -7,6 +7,8 @@ import {
   hasActiveSubscriptionAccess,
   isOrganizationSubscriptionRoute,
 } from "@/lib/subscription-access";
+import { buildLoginHref } from "@/lib/auth-return-url";
+
 export function RequireAuth({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isReady, user } = useAuth();
   const router = useRouter();
@@ -15,8 +17,14 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
 
   React.useEffect(() => {
     if (!isReady) return;
-    if (!isAuthenticated) router.replace("/login");
-  }, [isReady, isAuthenticated, router]);
+    if (!isAuthenticated) {
+      const returnPath =
+        typeof window !== "undefined"
+          ? `${window.location.pathname}${window.location.search}`
+          : pathname;
+      router.replace(buildLoginHref(returnPath));
+    }
+  }, [isReady, isAuthenticated, router, pathname]);
 
   React.useEffect(() => {
     if (!isReady || !isAuthenticated || !user) return;

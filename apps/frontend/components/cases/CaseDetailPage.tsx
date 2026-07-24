@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "@/lib/cases.api";
 import * as fleetApi from "@/lib/fleet.api";
@@ -38,6 +38,7 @@ import * as exportsApi from "@/lib/exports.api";
 import * as integrationsApi from "@/lib/integrations.api";
 import * as quotesApi from "@/lib/quotes.api";
 import { usePermissions } from "@/lib/hooks/usePermissions";
+import { useOrganization } from "@/lib/organization";
 import { getTeamCalendarCardAppearance } from "@/lib/team-calendar-colors";
 import { useIsDarkMode } from "@/lib/use-is-dark-mode";
 import { formatPostalAddress } from "@/lib/team-route-insights";
@@ -329,10 +330,19 @@ function InterventionTeamHighlight({
 
 export function CaseDetailPage({ caseId }: { caseId: string }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const confirm = useConfirm();
   const { showToast } = useToast();
   const { can, canAny } = usePermissions();
+  const { sessionOrganizationId, organizations, isLoading: orgsLoading } = useOrganization();
+  const deepLinkOrg = searchParams.get("organizationId")?.trim() || null;
+  const canSwitchToDeepLinkOrg = Boolean(
+    deepLinkOrg && organizations.some((o) => o.id === deepLinkOrg),
+  );
+  const waitingForOrgSwitch = Boolean(
+    deepLinkOrg && deepLinkOrg !== sessionOrganizationId && (orgsLoading || canSwitchToDeepLinkOrg),
+  );
   const canAssignCase = canAny(["cases.assign", "cases.update"]);
   const canSyncPennylane = can("integrations.pennylane.sync");
   const canSyncQonto = can("integrations.qonto.sync");
@@ -359,6 +369,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   } = useQuery({
     queryKey: ["case", caseId],
     queryFn: () => api.getCase(caseId),
+    enabled: !waitingForOrgSwitch,
   });
 
   const { data: pennylaneStatus, isLoading: pennylaneStatusLoading } = useQuery({
@@ -742,7 +753,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
     return [...map.entries()].map(([id, label]) => ({ id, label }));
   }, [caseData, usersData?.users]);
 
-  if (isLoading) {
+  if (waitingForOrgSwitch || isLoading) {
     return <div className="text-sm text-slate-500 dark:text-slate-400">Chargement…</div>;
   }
 

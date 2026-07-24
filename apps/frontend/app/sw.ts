@@ -162,17 +162,27 @@ self.addEventListener("notificationclick", (event: NotificationEvent) => {
   const url = new URL(rawUrl, self.location.origin).href;
 
   event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
-      for (const client of clientList) {
-        if ("focus" in client) {
-          client.focus();
-          if ("navigate" in client) {
-            return (client as WindowClient).navigate(url);
+    (async () => {
+      const clientList = await self.clients.matchAll({
+        type: "window",
+        includeUncontrolled: true,
+      });
+      const sameOrigin = clientList.filter((client) => client.url.startsWith(self.location.origin));
+
+      for (const client of sameOrigin) {
+        if (!("focus" in client)) continue;
+        await client.focus();
+        if ("navigate" in client) {
+          try {
+            await (client as WindowClient).navigate(url);
+            return;
+          } catch {
+            /* navigate peut échouer (origine / navigateur) → openWindow */
           }
-          return;
         }
       }
-      return self.clients.openWindow(url);
-    }),
+
+      await self.clients.openWindow(url);
+    })(),
   );
 });
