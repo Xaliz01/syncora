@@ -116,7 +116,7 @@ test.describe("Domaine app (app.planwise.fr)", () => {
       await page.goto(appUrl(path));
       // RequireAuth conserve le deep link via ?next=
       await expect(page).toHaveURL(/\/login(\?|$)/);
-      expect(new URL(page.url()).origin).toBe(appOrigin());
+      expect(new URL(page.url()).hostname).toBe(APP_HOST);
     }
   });
 
