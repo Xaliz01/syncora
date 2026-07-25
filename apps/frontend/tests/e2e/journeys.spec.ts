@@ -88,6 +88,8 @@ const ALL_PROTECTED_PATHS = [
   "/settings/stock/locations",
   "/settings/notifications",
   "/settings/integrations",
+  "/billing",
+  "/reporting",
 ];
 
 test.describe("Protection exhaustive des routes", () => {

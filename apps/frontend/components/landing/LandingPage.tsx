@@ -34,7 +34,7 @@ const PILLARS = [
   {
     title: "Facturation sans double saisie",
     description:
-      "Envoyez un dossier vers Pennylane ou Qonto, puis suivez et validez la facture depuis Planwise.",
+      "Envoyez un dossier vers votre outil de facturation connecté, puis suivez et validez la facture depuis Planwise.",
   },
 ] as const;
 
@@ -92,9 +92,9 @@ const FEATURE_SECTIONS = [
   {
     title: "Facturation & intégrations",
     items: [
-      "Connexion Pennylane (OAuth ou token API) pour créer et suivre les factures",
-      "Connexion Qonto (OAuth ou clé API) pour créer et suivre les factures",
+      "Connexion de votre outil de facturation pour créer et suivre les factures",
       "Envoi depuis un dossier sans ressaisir client ni lignes, puis validation dans Planwise",
+      "Suivi du statut des factures synchronisées depuis Planwise",
     ],
   },
   {
@@ -188,8 +188,9 @@ export function LandingPage() {
             <ScrollReveal when="mount" delayMs={160}>
               <p className="mt-5 text-lg text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed">
                 Centralisez dossiers, interventions, clients, flotte et stocks. Standardisez vos
-                processus, planifiez vos équipes et gardez une vision claire de votre activité.
-                Essayez Planwise pendant {BASE_SUBSCRIPTION_PLAN.trialDays} jours,{" "}
+                processus, planifiez vos équipes, reliez votre outil de facturation et gardez une
+                vision claire de votre activité. Essayez Planwise pendant{" "}
+                {BASE_SUBSCRIPTION_PLAN.trialDays} jours,{" "}
                 <span className="font-semibold text-slate-900 dark:text-slate-100">
                   sans aucun moyen de paiement
                 </span>{" "}

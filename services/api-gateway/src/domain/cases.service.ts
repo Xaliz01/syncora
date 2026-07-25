@@ -748,12 +748,15 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       const contentBottom = () => doc.page.height - 80;
       const logo = options?.logo;
 
-      // Header — logo org en haut à gauche, titre Devis à droite / en dessous
+      // Header — logo org en haut à gauche, titre Devis + numéro à droite / en dessous
       let headerBottom = 72;
       if (logo) {
         try {
           doc.image(logo, 50, 28, { fit: [120, 48] });
-          doc.fontSize(20).fillColor(brandColor).text("Devis", 185, 36, { width: 310 });
+          doc
+            .fontSize(20)
+            .fillColor(brandColor)
+            .text(`Devis ${quote.quoteNumber}`, 185, 36, { width: 310 });
           if (options?.organizationName) {
             doc
               .fontSize(9)
@@ -762,7 +765,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
           }
           headerBottom = 88;
         } catch {
-          doc.fontSize(22).fillColor(brandColor).text("Devis", 50, 40);
+          doc.fontSize(22).fillColor(brandColor).text(`Devis ${quote.quoteNumber}`, 50, 40);
           headerBottom = 72;
         }
       } else {

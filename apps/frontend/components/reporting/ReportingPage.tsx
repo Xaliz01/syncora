@@ -348,7 +348,7 @@ export function ReportingPage() {
         {canExportBilling && billingConnected && (
           <ReportCard
             title="Liste des factures"
-            description="Export des factures synchronisées (Pennylane, Qonto) avec dossier, client et statut."
+            description="Export des factures synchronisées avec dossier, client et statut."
             icon={<InvoiceIcon />}
             onExport={(format, filterValues) =>
               runExport(() =>

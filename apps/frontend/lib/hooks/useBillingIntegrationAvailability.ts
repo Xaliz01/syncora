@@ -6,7 +6,7 @@ import { useAuth } from "@/components/auth/AuthContext";
 import { hasAnyPermission } from "@/lib/auth-permissions";
 import * as integrationsApi from "@/lib/integrations.api";
 
-/** True si Pennylane ou Qonto est connecté (pour nav / page Facturation). */
+/** Disponibilité Pennylane / Qonto (bandeau Facturation, carte reporting, etc.). */
 export function useBillingIntegrationAvailability() {
   const { user } = useAuth();
   const canCheck = hasAnyPermission(user, [

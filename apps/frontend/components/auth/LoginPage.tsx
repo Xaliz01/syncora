@@ -70,28 +70,30 @@ export function LoginPage() {
               Bienvenue sur Planwise
             </h1>
             <p className="text-slate-600 dark:text-slate-300 mb-8 max-w-xl">
-              Gérez votre portefeuille client, planifiez vos interventions, suivez vos stocks et
-              votre flotte au même endroit.
+              Le hub opérationnel des artisans et TPE : dossiers, interventions terrain, gestion des
+              équipes et des stocks, facturation connectée.
             </p>
 
             <div className="grid gap-4 md:grid-cols-3">
               <article className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-4">
-                <h2 className="font-medium mb-1">Portefeuille client</h2>
+                <h2 className="font-medium mb-1">Terrain & preuves</h2>
                 <p className="text-sm text-slate-600 dark:text-slate-300">
-                  Centralisez vos clients, sites et contacts, avec l’historique des interventions.
+                  « Ma journée », démarrage géolocalisé, photos, signature client et rapport PDF
+                  d’intervention.
                 </p>
               </article>
               <article className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-4">
-                <h2 className="font-medium mb-1">Interventions</h2>
+                <h2 className="font-medium mb-1">Pilotage bureau</h2>
                 <p className="text-sm text-slate-600 dark:text-slate-300">
-                  Planifiez, assignez des intervenants et suivez le cycle de vie complet d’une
-                  intervention.
+                  Dossiers, calendrier, stock et flotte, reporting et notifications pour un suivi au
+                  plus près de vos interventions.
                 </p>
               </article>
               <article className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-4">
-                <h2 className="font-medium mb-1">Stocks & flotte</h2>
+                <h2 className="font-medium mb-1">Facturation connectée</h2>
                 <p className="text-sm text-slate-600 dark:text-slate-300">
-                  Pilotez vos stocks, entrepôts et camions avec une vision temps réel.
+                  Devis liés aux dossiers, envoi vers votre outil de facturation connecté, puis
+                  suivi des factures sans double saisie.
                 </p>
               </article>
             </div>
