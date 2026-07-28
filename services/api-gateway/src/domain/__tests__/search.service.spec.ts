@@ -36,8 +36,26 @@ describe("SearchGatewayService", () => {
       async (options: { path?: string; query?: Record<string, unknown> }) => {
         if (options.path === "/cases") return { cases: [], total: 0 };
         if (options.path === "/interventions") return { interventions: [], total: 0 };
+        if (options.path === "/customers") {
+          return {
+            customers: [
+              {
+                id: "cust-1",
+                organizationId: "org-1",
+                kind: "company",
+                displayName: "Acme Plomberie",
+                companyName: "Acme Plomberie SARL",
+                email: "contact@acme.fr",
+                legalIdentifier: "12345678900012",
+              },
+            ],
+            total: 1,
+          };
+        }
         if (options.path === "/vehicles") return [];
         if (options.path === "/technicians") return [];
+        if (options.path === "/teams") return [];
+        if (options.path === "/agences") return [];
         if (options.path === "/articles") {
           return {
             articles: [
@@ -72,6 +90,27 @@ describe("SearchGatewayService", () => {
     ]);
   });
 
+  it("should return customers matching company name (raison sociale)", async () => {
+    const result = await service.search(user, "acme");
+
+    expect(result.results).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "cust-1",
+          type: "customer",
+          title: "Acme Plomberie",
+          url: "/customers/cust-1",
+        }),
+      ]),
+    );
+    expect(scopedRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: "/customers",
+        query: expect.objectContaining({ search: "acme", limit: 50, offset: 0 }),
+      }),
+    );
+  });
+
   it("should pass search and limit to paginated list endpoints", async () => {
     await service.search(user, "cable");
 
@@ -84,6 +123,12 @@ describe("SearchGatewayService", () => {
     expect(scopedRequest).toHaveBeenCalledWith(
       expect.objectContaining({
         path: "/interventions",
+        query: expect.objectContaining({ search: "cable", limit: 50, offset: 0 }),
+      }),
+    );
+    expect(scopedRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: "/customers",
         query: expect.objectContaining({ search: "cable", limit: 50, offset: 0 }),
       }),
     );

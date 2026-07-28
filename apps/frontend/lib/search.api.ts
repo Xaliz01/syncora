@@ -6,7 +6,16 @@ const API_BASE =
 
 export interface SearchResultItem {
   id: string;
-  type: "case" | "intervention" | "vehicle" | "technician" | "article" | "user";
+  type:
+    | "case"
+    | "intervention"
+    | "customer"
+    | "vehicle"
+    | "technician"
+    | "team"
+    | "agence"
+    | "article"
+    | "user";
   title: string;
   subtitle?: string;
   url: string;

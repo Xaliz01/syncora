@@ -9,8 +9,11 @@ import { globalSearch, type SearchResultItem } from "@/lib/search.api";
 const TYPE_LABELS: Record<string, string> = {
   case: "Dossiers",
   intervention: "Interventions",
+  customer: "Clients",
   vehicle: "Véhicules",
   technician: "Techniciens",
+  team: "Équipes",
+  agence: "Agences",
   article: "Articles",
   user: "Utilisateurs",
 };
@@ -46,6 +49,21 @@ const TYPE_ICONS: Record<string, JSX.Element> = {
       />
     </svg>
   ),
+  customer: (
+    <svg
+      className="h-5 w-5"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.5}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.98 5.98 0 00-.34-1.99m0 0A5.981 5.981 0 0012 13.5a5.981 5.981 0 00-5.66 3.23m11.32 0A9.053 9.053 0 0112 15c-1.768 0-3.422.48-4.862 1.32M15 9.75a3 3 0 11-6 0 3 3 0 016 0z"
+      />
+    </svg>
+  ),
   vehicle: (
     <svg
       className="h-5 w-5"
@@ -73,6 +91,36 @@ const TYPE_ICONS: Record<string, JSX.Element> = {
         strokeLinecap="round"
         strokeLinejoin="round"
         d="M11.42 15.17l-5.2-5.2m0 0l5.2-5.2m-5.2 5.2H21.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"
+      />
+    </svg>
+  ),
+  team: (
+    <svg
+      className="h-5 w-5"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.5}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.98 5.98 0 00-.34-1.99m0 0A5.981 5.981 0 0012 13.5a5.981 5.981 0 00-5.66 3.23m11.32 0A9.053 9.053 0 0112 15c-1.768 0-3.422.48-4.862 1.32M15 9.75a3 3 0 11-6 0 3 3 0 016 0z"
+      />
+    </svg>
+  ),
+  agence: (
+    <svg
+      className="h-5 w-5"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.5}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21"
       />
     </svg>
   ),
@@ -111,13 +159,26 @@ const TYPE_ICONS: Record<string, JSX.Element> = {
 const TYPE_COLORS: Record<string, string> = {
   case: "bg-blue-50 text-blue-600",
   intervention: "bg-violet-50 text-violet-600",
+  customer: "bg-sky-50 text-sky-700",
   vehicle: "bg-emerald-50 text-emerald-600",
   technician: "bg-amber-50 text-amber-600",
+  team: "bg-indigo-50 text-indigo-600",
+  agence: "bg-teal-50 text-teal-700",
   article: "bg-rose-50 text-rose-600",
   user: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300",
 };
 
-const TYPE_ORDER = ["case", "intervention", "vehicle", "technician", "article", "user"];
+const TYPE_ORDER = [
+  "case",
+  "intervention",
+  "customer",
+  "vehicle",
+  "technician",
+  "team",
+  "agence",
+  "article",
+  "user",
+];
 
 function ResultCard({ item }: { item: SearchResultItem }) {
   return (
@@ -308,8 +369,8 @@ export function SearchResultsPage() {
             Saisissez un mot-clé pour lancer une recherche
           </p>
           <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
-            La recherche couvre les dossiers, interventions, véhicules, techniciens, articles et
-            utilisateurs.
+            La recherche couvre les dossiers, interventions, clients, véhicules, techniciens,
+            équipes, agences, articles et utilisateurs.
           </p>
         </div>
       )}

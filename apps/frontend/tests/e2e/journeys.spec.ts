@@ -218,8 +218,10 @@ test.describe("Parcours landing publique", () => {
       page.getByRole("heading", { name: "Facturation sans double saisie" }),
     ).toBeVisible();
     await expect(page.getByText("Facturation & intégrations")).toBeVisible();
-    await expect(page.getByText(/suivez et validez la facture depuis Planwise/i)).toBeVisible();
-    await expect(page.getByText(/validation dans Planwise/i)).toBeVisible();
+    await expect(
+      page.getByText(/Suivi et validation des factures synchronisées depuis Planwise/i),
+    ).toBeVisible();
+    await expect(page.getByText(/sans ressaisie/i)).toBeVisible();
   });
 });
 

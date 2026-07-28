@@ -10,6 +10,10 @@ import type {
   TechnicianResponse,
   ArticleResponse,
   UserResponse,
+  CustomerResponse,
+  CustomersListResponse,
+  TeamResponse,
+  AgenceResponse,
 } from "@planwise/shared";
 import { DEFAULT_PAGE_LIMIT } from "@planwise/shared";
 import {
@@ -24,6 +28,7 @@ const FLEET_URL = process.env.FLEET_SERVICE_URL ?? "http://localhost:3005";
 const TECHNICIANS_URL = process.env.TECHNICIANS_SERVICE_URL ?? "http://localhost:3006";
 const STOCK_URL = process.env.STOCK_SERVICE_URL ?? "http://localhost:3007";
 const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
+const CUSTOMERS_URL = process.env.CUSTOMERS_SERVICE_URL ?? "http://localhost:3009";
 
 @Injectable()
 export class SearchGatewayService extends AbstractSearchService {
@@ -37,16 +42,27 @@ export class SearchGatewayService extends AbstractSearchService {
       return { query, results: [], counts: {} };
     }
 
-    const [cases, interventions, vehicles, technicians, articles, users] = await Promise.allSettled(
-      [
-        this.fetchCases(user, normalizedQuery),
-        this.fetchInterventions(user, normalizedQuery),
-        this.fetchVehicles(user),
-        this.fetchTechnicians(user),
-        this.fetchArticles(user, normalizedQuery),
-        user.role === "admin" ? this.fetchUsers(user) : Promise.resolve([]),
-      ],
-    );
+    const [
+      cases,
+      interventions,
+      customers,
+      vehicles,
+      technicians,
+      teams,
+      agences,
+      articles,
+      users,
+    ] = await Promise.allSettled([
+      this.fetchCases(user, normalizedQuery),
+      this.fetchInterventions(user, normalizedQuery),
+      this.fetchCustomers(user, normalizedQuery),
+      this.fetchVehicles(user),
+      this.fetchTechnicians(user),
+      this.fetchTeams(user),
+      this.fetchAgences(user),
+      this.fetchArticles(user, normalizedQuery),
+      user.role === "admin" ? this.fetchUsers(user) : Promise.resolve([]),
+    ]);
 
     const results: SearchResultItem[] = [];
 
@@ -100,6 +116,32 @@ export class SearchGatewayService extends AbstractSearchService {
       }
     }
 
+    for (const customer of this.settled(customers)) {
+      if (
+        this.matches(
+          normalizedQuery,
+          customer.displayName,
+          customer.companyName,
+          customer.firstName,
+          customer.lastName,
+          customer.email,
+          customer.phone,
+          customer.mobile,
+          customer.legalIdentifier,
+        )
+      ) {
+        const kindLabel = customer.kind === "company" ? "Entreprise" : "Particulier";
+        const detail = [customer.email, customer.legalIdentifier].filter(Boolean).join(" · ");
+        results.push({
+          id: customer.id,
+          type: "customer",
+          title: customer.displayName,
+          subtitle: detail ? `${kindLabel} · ${detail}` : kindLabel,
+          url: `/customers/${customer.id}`,
+        });
+      }
+    }
+
     for (const v of this.settled(vehicles)) {
       if (
         this.matches(
@@ -130,6 +172,32 @@ export class SearchGatewayService extends AbstractSearchService {
           title: `${t.firstName} ${t.lastName}`,
           subtitle: `${t.speciality ?? "Technicien"}${t.email ? ` · ${t.email}` : ""}`,
           url: `/fleet/technicians/${t.id}`,
+        });
+      }
+    }
+
+    for (const team of this.settled(teams)) {
+      if (this.matches(normalizedQuery, team.name, team.agenceName)) {
+        results.push({
+          id: team.id,
+          type: "team",
+          title: team.name,
+          subtitle: team.agenceName ? `Agence : ${team.agenceName}` : "Équipe",
+          url: `/fleet/teams/${team.id}`,
+        });
+      }
+    }
+
+    for (const agence of this.settled(agences)) {
+      if (
+        this.matches(normalizedQuery, agence.name, agence.city, agence.postalCode, agence.address)
+      ) {
+        results.push({
+          id: agence.id,
+          type: "agence",
+          title: agence.name,
+          subtitle: [agence.postalCode, agence.city].filter(Boolean).join(" ") || "Agence",
+          url: `/fleet/agences/${agence.id}`,
         });
       }
     }
@@ -241,6 +309,19 @@ export class SearchGatewayService extends AbstractSearchService {
       .then((response) => response.interventions);
   }
 
+  private fetchCustomers(user: AuthUser, search: string): Promise<CustomerResponse[]> {
+    return this.scopedHttp
+      .request<CustomersListResponse>({
+        baseUrl: CUSTOMERS_URL,
+        organizationId: user.organizationId,
+        method: "get",
+        path: "/customers",
+        query: { search, limit: DEFAULT_PAGE_LIMIT, offset: 0 },
+        errorLabel: "Customers service error",
+      })
+      .then((response) => response.customers);
+  }
+
   private fetchVehicles(user: AuthUser): Promise<VehicleResponse[]> {
     return this.scopedHttp.request<VehicleResponse[]>({
       baseUrl: FLEET_URL,
@@ -257,6 +338,26 @@ export class SearchGatewayService extends AbstractSearchService {
       organizationId: user.organizationId,
       method: "get",
       path: "/technicians",
+      errorLabel: "Technicians service error",
+    });
+  }
+
+  private fetchTeams(user: AuthUser): Promise<TeamResponse[]> {
+    return this.scopedHttp.request<TeamResponse[]>({
+      baseUrl: TECHNICIANS_URL,
+      organizationId: user.organizationId,
+      method: "get",
+      path: "/teams",
+      errorLabel: "Technicians service error",
+    });
+  }
+
+  private fetchAgences(user: AuthUser): Promise<AgenceResponse[]> {
+    return this.scopedHttp.request<AgenceResponse[]>({
+      baseUrl: TECHNICIANS_URL,
+      organizationId: user.organizationId,
+      method: "get",
+      path: "/agences",
       errorLabel: "Technicians service error",
     });
   }
