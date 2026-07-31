@@ -10,6 +10,7 @@ import type {
   PlatformOrganizationsListResponse,
   PlatformUsersListResponse,
   StartImpersonationBody,
+  PlatformAnalyticsOverviewResponse,
 } from "@planwise/shared";
 
 export abstract class AbstractPlatformService {
@@ -43,4 +44,5 @@ export abstract class AbstractPlatformService {
     limit?: number;
     offset?: number;
   }): Promise<CronRunsListResponse>;
+  abstract getAnalyticsOverview(days?: number): Promise<PlatformAnalyticsOverviewResponse>;
 }

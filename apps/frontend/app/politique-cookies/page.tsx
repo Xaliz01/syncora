@@ -5,6 +5,8 @@ import { PolitiqueCookiesContent } from "@/content/legal/politique-cookies";
 export const metadata: Metadata = {
   title: "Politique cookies",
   description: "Politique cookies et gestion du consentement — Planwise.",
+  alternates: { canonical: "/politique-cookies" },
+  robots: { index: true, follow: true },
 };
 
 export default function PolitiqueCookiesPage() {

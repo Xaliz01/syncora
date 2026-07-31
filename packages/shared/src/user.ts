@@ -1,6 +1,7 @@
 /** Contrat API users-service (création + validation credentials) */
 
 import type { UserRole } from "./auth";
+import type { OrganizationMembershipStatus } from "./organization-membership";
 import type { QuickActionId } from "./quick-actions";
 import { DEFAULT_QUICK_ACTION_IDS } from "./quick-actions";
 
@@ -53,7 +54,7 @@ export interface UserResponse {
   /** Statut « compte » (actif / legacy invité). Préférer `organizationMembershipStatus` pour le rattachement à l’org. */
   status: UserStatus;
   /** Présent lorsque la réponse est liée à une organisation (liste admin, fiche) : état d’invitation sur cette org. */
-  organizationMembershipStatus?: "active" | "invited";
+  organizationMembershipStatus?: OrganizationMembershipStatus;
   createdAt?: string;
   lastLoginAt?: string;
 }

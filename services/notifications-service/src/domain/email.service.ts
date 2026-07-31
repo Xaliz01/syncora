@@ -45,16 +45,19 @@ export class EmailService extends AbstractEmailService {
     subject: string,
     body: string,
     url?: string,
+    ctaLabel?: string,
   ): Promise<SendEmailNotificationResponse> {
-    return this.sendMail(to, subject, body, url, "notification");
+    return this.sendMail(to, subject, body, url, "notification", ctaLabel);
   }
 
   async sendTransactionalEmail(
     to: string,
     subject: string,
     body: string,
+    url?: string,
+    ctaLabel?: string,
   ): Promise<SendEmailNotificationResponse> {
-    return this.sendMail(to, subject, body, undefined, "transactional");
+    return this.sendMail(to, subject, body, url, "transactional", ctaLabel);
   }
 
   private async sendMail(
@@ -63,6 +66,7 @@ export class EmailService extends AbstractEmailService {
     body: string,
     url: string | undefined,
     kind: "notification" | "transactional",
+    ctaLabel?: string,
   ): Promise<SendEmailNotificationResponse> {
     if (!this.transporter) {
       return { sent: false, reason: "smtp_not_configured" };
@@ -76,12 +80,12 @@ export class EmailService extends AbstractEmailService {
     }
 
     try {
-      const html = this.buildHtml(subject, body, url, kind);
+      const html = this.buildHtml(subject, body, url, kind, ctaLabel);
       await this.transporter.sendMail({
         from: this.fromAddress,
         to,
         subject: `[Planwise] ${subject}`,
-        text: this.buildPlainText(body, url),
+        text: this.buildPlainText(body, url, ctaLabel),
         html,
       });
       return { sent: true };
@@ -102,12 +106,20 @@ export class EmailService extends AbstractEmailService {
     return (process.env.APP_URL ?? "https://app.planwise.fr").replace(/\/$/, "");
   }
 
-  private buildPlainText(body: string, url?: string): string {
+  private buildPlainText(body: string, url?: string, ctaLabel?: string): string {
     let text = body;
     if (url) {
-      text += `\n\nVoir dans Planwise : ${this.appBaseUrl()}${url}`;
+      const label = (ctaLabel?.trim() || "Voir dans Planwise").slice(0, 80);
+      text += `\n\n${label} : ${this.resolveActionUrl(url)}`;
     }
     return text;
+  }
+
+  private resolveActionUrl(url: string): string {
+    const trimmed = url.trim();
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    const path = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+    return `${this.appBaseUrl()}${path}`;
   }
 
   private buildHtml(
@@ -115,11 +127,13 @@ export class EmailService extends AbstractEmailService {
     body: string,
     url: string | undefined,
     kind: "notification" | "transactional",
+    ctaLabel?: string,
   ): string {
     const base = this.appBaseUrl();
     const logoUrl = `${base}/planwise-logo-512.png`;
+    const label = (ctaLabel?.trim() || "Voir dans Planwise").slice(0, 80);
     const linkHtml = url
-      ? `<p style="margin-top:16px;"><a href="${base}${url}" style="display:inline-block;padding:10px 20px;background-color:#4338ca;color:#ffffff;text-decoration:none;border-radius:6px;font-size:14px;">Voir dans Planwise</a></p>`
+      ? `<p style="margin-top:16px;"><a href="${this.resolveActionUrl(url)}" style="display:inline-block;padding:10px 20px;background-color:#4338ca;color:#ffffff;text-decoration:none;border-radius:6px;font-size:14px;">${label}</a></p>`
       : "";
 
     const footer =

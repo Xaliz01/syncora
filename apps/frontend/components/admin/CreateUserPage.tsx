@@ -7,6 +7,7 @@ import type { PermissionCode, PermissionProfileResponse } from "@planwise/shared
 import * as adminApi from "@/lib/admin.api";
 import * as subscriptionsApi from "@/lib/subscriptions.api";
 import { getPermissionLabel } from "@/lib/permissions-catalog";
+import { countOrganizationUserSeats } from "@/lib/organization-user-status";
 import { useToast } from "@/components/ui/ToastProvider";
 
 function togglePermission(list: PermissionCode[], permission: PermissionCode): PermissionCode[] {
@@ -45,7 +46,7 @@ export function CreateUserPage() {
       setProfiles(profilesRes);
       if (subscriptionRes?.hasAccess) {
         setSeatLimit({
-          current: usersRes.users.length,
+          current: countOrganizationUserSeats(usersRes.users),
           max: subscriptionRes.maxUsers,
         });
       } else {

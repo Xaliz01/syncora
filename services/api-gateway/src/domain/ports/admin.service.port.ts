@@ -60,4 +60,6 @@ export abstract class AbstractAdminService {
     body: { email: string },
   ): Promise<unknown>;
   abstract cancelInvitation(currentUser: AuthUser, invitationId: string): Promise<unknown>;
+  abstract deactivateOrganizationUser(currentUser: AuthUser, userId: string): Promise<unknown>;
+  abstract reactivateOrganizationUser(currentUser: AuthUser, userId: string): Promise<unknown>;
 }

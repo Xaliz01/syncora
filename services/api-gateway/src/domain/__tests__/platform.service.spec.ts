@@ -8,6 +8,10 @@ describe("PlatformService", () => {
   const subscriptionsGateway = {
     getCurrentSubscription: jest.fn(),
   };
+  const analyticsGateway = {
+    trackPageview: jest.fn(),
+    getOverview: jest.fn(),
+  };
 
   let service: PlatformService;
 
@@ -19,6 +23,7 @@ describe("PlatformService", () => {
       httpService as never,
       jwtService as never,
       subscriptionsGateway as never,
+      analyticsGateway as never,
     );
   });
 

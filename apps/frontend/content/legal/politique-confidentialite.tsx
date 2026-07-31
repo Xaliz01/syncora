@@ -30,6 +30,7 @@ export function PolitiqueConfidentialiteContent() {
             "Facturation de l'abonnement Planwise : identifiants Stripe, historique d'abonnement (via Stripe).",
             "Intégrations de facturation (optionnelles, activées par le Client) : jetons d'accès OAuth ou clés API (stockés chiffrés), identifiants techniques de connexion (ex. nom / identifiant d'entreprise côté outil), métadonnées de synchronisation des factures créées depuis Planwise (statut distant, numéro, lien, montants associés).",
             "Usage : journaux techniques, préférences (thème, sidebar), notifications.",
+            "Mesure d'audience first-party : pages vues anonymes (chemin, surface landing/app, referrer hôte, identifiants aléatoires navigateur), sans publicité ni revente.",
             "Support : échanges via Crisp (si consentement cookies).",
             "Données saisies par le Client : clients, interventions, géolocalisation optionnelle, photos, signatures, devis et éléments nécessaires à la facturation.",
           ]}
@@ -65,7 +66,13 @@ export function PolitiqueConfidentialiteContent() {
             </>,
             <>
               <strong>Amélioration du produit</strong> — intérêt légitime, données agrégées ou
-              anonymisées lorsque possible.
+              anonymisées lorsque possible, y compris la mesure d&apos;audience first-party (pages
+              vues) pour comprendre l&apos;usage du site et de l&apos;application (art. 6.1.f).
+              Opposition possible via{" "}
+              <code className="text-xs bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">
+                planwise_analytics_opt_out=1
+              </code>{" "}
+              dans le localStorage.
             </>,
           ]}
         />
@@ -111,6 +118,7 @@ export function PolitiqueConfidentialiteContent() {
             "Connexion d'intégration : jusqu'à déconnexion par le Client ou suppression du compte ; les jetons d'accès sont alors supprimés.",
             "Métadonnées de synchronisation de factures : durée de la relation contractuelle ou jusqu'à détachement / suppression demandée par l'organisation.",
             "Journaux techniques : jusqu'à 12 mois.",
+            "Mesure d'audience first-party (pages vues anonymes) : environ 400 jours.",
             "Données saisies par le Client : selon paramétrage ou demande de suppression de l'organisation.",
           ]}
         />

@@ -51,6 +51,14 @@ export abstract class AbstractUsersService {
     email: string,
   ): Promise<UserResponse>;
   abstract cancelOrganizationInvitation(userId: string, organizationId: string): Promise<void>;
+  abstract deactivateOrganizationMembership(
+    userId: string,
+    organizationId: string,
+  ): Promise<UserResponse>;
+  abstract reactivateOrganizationMembership(
+    userId: string,
+    organizationId: string,
+  ): Promise<UserResponse>;
   abstract patch(id: string, body: PatchUserBody): Promise<UserResponse>;
   abstract findById(id: string): Promise<UserResponse | null>;
   abstract listByOrganization(organizationId: string): Promise<UserResponse[]>;

@@ -194,6 +194,28 @@ export class UsersController {
     await this.usersService.cancelOrganizationInvitation(id, body.organizationId);
   }
 
+  @Post(":id/deactivate-organization-membership")
+  async deactivateOrganizationMembership(
+    @Param("id") id: string,
+    @Body() body: { organizationId?: string },
+  ) {
+    if (!body.organizationId?.trim()) {
+      throw new BadRequestException("organizationId is required");
+    }
+    return this.usersService.deactivateOrganizationMembership(id, body.organizationId);
+  }
+
+  @Post(":id/reactivate-organization-membership")
+  async reactivateOrganizationMembership(
+    @Param("id") id: string,
+    @Body() body: { organizationId?: string },
+  ) {
+    if (!body.organizationId?.trim()) {
+      throw new BadRequestException("organizationId is required");
+    }
+    return this.usersService.reactivateOrganizationMembership(id, body.organizationId);
+  }
+
   @Put(":id/name")
   async updateName(@Param("id") id: string, @Body() body: UpdateUserNameBody) {
     return this.usersService.updateName(id, body);

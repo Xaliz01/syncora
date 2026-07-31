@@ -12,6 +12,7 @@ import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { PwaInstallBanner } from "@/components/pwa/PwaInstallBanner";
 import { CookieConsentBanner } from "@/components/legal/CookieConsentBanner";
 import { ImpersonationBanner } from "@/components/platform/ImpersonationBanner";
+import { AnalyticsTracker } from "@/components/analytics/AnalyticsTracker";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());
@@ -26,6 +27,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
                 <Suspense fallback={null}>
                   <DeepLinkOrganizationSync />
                 </Suspense>
+                <AnalyticsTracker />
                 <ImpersonationBanner />
                 <CrispSupport />
                 <PwaInstallBanner />

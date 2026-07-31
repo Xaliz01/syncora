@@ -20,6 +20,8 @@ describe("UsersController", () => {
       getInvitationActivationHints: jest.fn(),
       updateInvitedUserEmail: jest.fn(),
       cancelOrganizationInvitation: jest.fn(),
+      deactivateOrganizationMembership: jest.fn(),
+      reactivateOrganizationMembership: jest.fn(),
       createSession: jest.fn(),
       validateSession: jest.fn(),
       revokeSession: jest.fn(),

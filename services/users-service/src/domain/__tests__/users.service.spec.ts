@@ -5,6 +5,7 @@ import {
   NotFoundException,
   BadRequestException,
   UnauthorizedException,
+  ForbiddenException,
 } from "@nestjs/common";
 import * as bcrypt from "bcrypt";
 import { activeDocumentFilter } from "@planwise/shared";
@@ -89,6 +90,7 @@ describe("UsersService", () => {
         sort: jest.fn().mockReturnValue({
           exec: jest.fn().mockResolvedValue([]),
         }),
+        exec: jest.fn().mockResolvedValue([mockMemDoc({ role: "member" })]),
       }),
       findOne: jest.fn().mockReturnValue({
         exec: jest.fn().mockResolvedValue(mockMemDoc({ role: "member" })),
@@ -450,6 +452,76 @@ describe("UsersService", () => {
     });
   });
 
+  describe("deactivateOrganizationMembership", () => {
+    it("should disable an active membership and clear session", async () => {
+      const doc = mockDoc({
+        activeSessionId: "sid-1",
+        save: jest.fn().mockImplementation(function (this: typeof doc) {
+          return Promise.resolve(this);
+        }),
+      });
+      const membership = mockMemDoc({ membershipStatus: "active", role: "member" });
+      mockUserModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+      mockMembershipModel.findOne
+        .mockReturnValueOnce({ exec: jest.fn().mockResolvedValue(membership) })
+        .mockReturnValueOnce({
+          sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
+        })
+        .mockReturnValueOnce({
+          exec: jest.fn().mockResolvedValue({ ...membership, membershipStatus: "disabled" }),
+        });
+
+      const result = await service.deactivateOrganizationMembership("user-123", "org-1");
+
+      expect(membership.membershipStatus).toBe("disabled");
+      expect(membership.save).toHaveBeenCalled();
+      expect((doc as { activeSessionId?: string }).activeSessionId).toBeUndefined();
+      expect(result.organizationMembershipStatus).toBe("disabled");
+    });
+
+    it("should reject deactivating the last active admin", async () => {
+      const doc = mockDoc();
+      const membership = mockMemDoc({ membershipStatus: "active", role: "admin" });
+      mockUserModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+      mockMembershipModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(membership),
+      });
+      mockMembershipModel.countDocuments.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(0),
+      });
+
+      await expect(service.deactivateOrganizationMembership("user-123", "org-1")).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(membership.save).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("reactivateOrganizationMembership", () => {
+    it("should reactivate a disabled membership", async () => {
+      const doc = mockDoc();
+      const membership = mockMemDoc({ membershipStatus: "disabled", role: "member" });
+      mockUserModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+      mockMembershipModel.findOne
+        .mockReturnValueOnce({ exec: jest.fn().mockResolvedValue(membership) })
+        .mockReturnValueOnce({
+          exec: jest.fn().mockResolvedValue({ ...membership, membershipStatus: "active" }),
+        });
+
+      const result = await service.reactivateOrganizationMembership("user-123", "org-1");
+
+      expect(membership.membershipStatus).toBe("active");
+      expect(membership.save).toHaveBeenCalled();
+      expect(result.organizationMembershipStatus).toBe("active");
+    });
+  });
+
   describe("updateInvitedUserEmail", () => {
     it("should update email when membership is still invited", async () => {
       const doc = mockDoc({
@@ -721,8 +793,8 @@ describe("UsersService", () => {
         exec: jest.fn().mockResolvedValue(doc),
       });
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-      mockMembershipModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(mockMemDoc({ membershipStatus: "invited" })),
+      mockMembershipModel.find.mockReturnValue({
+        exec: jest.fn().mockResolvedValue([mockMemDoc({ membershipStatus: "invited" })]),
       });
 
       const result = await service.validateCredentials("user@example.com", "password");
@@ -736,13 +808,28 @@ describe("UsersService", () => {
         exec: jest.fn().mockResolvedValue(doc),
       });
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-      mockMembershipModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(null),
+      mockMembershipModel.find.mockReturnValue({
+        exec: jest.fn().mockResolvedValue([]),
       });
 
       const result = await service.validateCredentials("user@example.com", "password");
 
       expect(result).toBeNull();
+    });
+
+    it("should reject login when all organization memberships are disabled", async () => {
+      const doc = mockDoc({ passwordHash: "hashed" });
+      mockUserModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      mockMembershipModel.find.mockReturnValue({
+        exec: jest.fn().mockResolvedValue([mockMemDoc({ membershipStatus: "disabled" })]),
+      });
+
+      await expect(service.validateCredentials("user@example.com", "password")).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it("should return account without organization when user has no org yet", async () => {

@@ -98,4 +98,10 @@ export class PlatformController {
       offset: offset ? Number.parseInt(offset, 10) : undefined,
     });
   }
+
+  @Get("analytics/overview")
+  @UseGuards(PlatformJwtAuthGuard)
+  getAnalyticsOverview(@Query("days") days?: string) {
+    return this.platformService.getAnalyticsOverview(days ? Number.parseInt(days, 10) : undefined);
+  }
 }

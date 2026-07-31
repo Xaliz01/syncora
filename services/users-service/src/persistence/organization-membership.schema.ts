@@ -15,9 +15,9 @@ export class OrganizationMembershipDocument extends Document {
   @Prop({ required: true, enum: ["admin", "member"], default: "member" })
   role!: string;
 
-  /** Aligné sur le cycle invitation du user ; extensions futures (suspended, …). */
-  @Prop({ required: true, enum: ["active", "invited"], default: "active" })
-  membershipStatus!: "active" | "invited";
+  /** Aligné sur le cycle invitation / désactivation du rattachement org. */
+  @Prop({ required: true, enum: ["active", "invited", "disabled"], default: "active" })
+  membershipStatus!: "active" | "invited" | "disabled";
 
   @Prop({ type: Date })
   deletedAt?: Date | null;

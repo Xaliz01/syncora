@@ -218,11 +218,15 @@ export interface SendEmailNotificationBody {
   url?: string;
 }
 
-/** E-mail transactionnel (auth OTP, etc.) — destinataire explicite, hors préférences notif. */
+/** E-mail transactionnel (auth OTP, invitation, etc.) — destinataire explicite, hors préférences notif. */
 export interface SendTransactionalEmailBody {
   to: string;
   subject: string;
   body: string;
+  /** Chemin relatif (ex. `/accept-invitation?token=…`) pour le bouton CTA. */
+  url?: string;
+  /** Libellé du bouton (défaut : « Voir dans Planwise »). */
+  ctaLabel?: string;
 }
 
 export interface SendEmailNotificationResponse {

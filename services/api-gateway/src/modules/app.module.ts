@@ -6,6 +6,7 @@ import { AbstractAppService } from "../domain/ports/app.service.port";
 import { AppService } from "../services/app.service";
 import { NotifyInterceptor } from "../infrastructure/notify.interceptor";
 import { AppVersionInterceptor } from "../infrastructure/app-version.interceptor";
+import { AnalyticsModule } from "./analytics.module";
 import { AuthModule } from "./auth.module";
 import { AccountModule } from "./account.module";
 import { AdminModule } from "./admin.module";
@@ -30,6 +31,7 @@ import { PlatformModule } from "./platform.module";
   imports: [
     EventEmitterModule.forRoot(),
     GatewayHttpModule,
+    AnalyticsModule,
     AuthModule,
     AccountModule,
     OrganizationsModule,

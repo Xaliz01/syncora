@@ -27,7 +27,11 @@ import type {
   UserPermissionAssignmentResponse,
   UserResponse,
 } from "@planwise/shared";
-import { ASSIGNABLE_PERMISSION_CODES, BASE_SUBSCRIPTION_PLAN } from "@planwise/shared";
+import {
+  ASSIGNABLE_PERMISSION_CODES,
+  BASE_SUBSCRIPTION_PLAN,
+  membershipCountsTowardUserSeat,
+} from "@planwise/shared";
 import {
   assertAnyAssignablePermission,
   assertAssignablePermission,
@@ -44,10 +48,6 @@ const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
 const PERMISSIONS_URL = process.env.PERMISSIONS_SERVICE_URL ?? "http://localhost:3003";
 const SUBSCRIPTIONS_URL = process.env.SUBSCRIPTIONS_SERVICE_URL ?? "http://localhost:3008";
 const NOTIFICATIONS_URL = process.env.NOTIFICATIONS_SERVICE_URL ?? "http://localhost:3010";
-
-function appBaseUrl(): string {
-  return (process.env.APP_URL ?? "https://app.planwise.fr").replace(/\/$/, "");
-}
 
 @Injectable()
 export class AdminService extends AbstractAdminService {
@@ -235,6 +235,32 @@ export class AdminService extends AbstractAdminService {
     });
 
     return { ok: true };
+  }
+
+  async deactivateOrganizationUser(currentUser: AuthUser, userId: string) {
+    if (userId === currentUser.id) {
+      throw new BadRequestException("Vous ne pouvez pas désactiver votre propre compte");
+    }
+
+    const user = await this.callUsersService<UserResponse>({
+      method: "post",
+      path: `/users/${userId}/deactivate-organization-membership`,
+      body: { organizationId: currentUser.organizationId },
+    });
+
+    return { user };
+  }
+
+  async reactivateOrganizationUser(currentUser: AuthUser, userId: string) {
+    await this.assertOrganizationUserSeatAvailable(currentUser.organizationId);
+
+    const user = await this.callUsersService<UserResponse>({
+      method: "post",
+      path: `/users/${userId}/reactivate-organization-membership`,
+      body: { organizationId: currentUser.organizationId },
+    });
+
+    return { user };
   }
 
   async listOrganizationUsers(currentUser: AuthUser) {
@@ -446,13 +472,11 @@ export class AdminService extends AbstractAdminService {
     invitation: InvitationResponse,
     invitedByLabel: string,
   ): Promise<boolean> {
-    const acceptUrl = `${appBaseUrl()}/accept-invitation?token=${encodeURIComponent(
-      invitation.invitationToken,
-    )}`;
+    const acceptPath = `/accept-invitation?token=${encodeURIComponent(invitation.invitationToken)}`;
     const greeting = invitation.invitedName?.trim()
       ? `Bonjour ${invitation.invitedName.trim()},`
       : "Bonjour,";
-    const body = `${greeting}\n\n${invitedByLabel} vous invite à rejoindre une organisation sur Planwise.\n\nCliquez sur le lien suivant pour accepter l'invitation :\n${acceptUrl}\n\nSi vous n'attendiez pas cette invitation, vous pouvez ignorer cet e-mail.`;
+    const body = `${greeting}\n\n${invitedByLabel} vous invite à rejoindre une organisation sur Planwise.\n\nCliquez sur le bouton ci-dessous pour accepter l'invitation.\n\nSi vous n'attendiez pas cette invitation, vous pouvez ignorer cet e-mail.`;
 
     try {
       const res = await firstValueFrom(
@@ -462,6 +486,8 @@ export class AdminService extends AbstractAdminService {
             to: invitation.invitedEmail,
             subject: "Invitation à rejoindre Planwise",
             body,
+            url: acceptPath,
+            ctaLabel: "Accepter l'invitation",
           },
         ),
       );
@@ -499,7 +525,11 @@ export class AdminService extends AbstractAdminService {
       return;
     }
 
-    if (users.length >= subscription.maxUsers) {
+    const seatUsed = users.filter((user) =>
+      membershipCountsTowardUserSeat(user.organizationMembershipStatus),
+    ).length;
+
+    if (seatUsed >= subscription.maxUsers) {
       throw new ConflictException(
         `Limite d'utilisateurs atteinte (${subscription.maxUsers} au total, dont ${subscription.includedUsers} inclus dans l'offre ${BASE_SUBSCRIPTION_PLAN.name}). ` +
           `Ajoutez des utilisateurs supplémentaires depuis la page Abonnement.`,

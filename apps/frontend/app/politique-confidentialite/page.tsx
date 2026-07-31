@@ -5,6 +5,8 @@ import { PolitiqueConfidentialiteContent } from "@/content/legal/politique-confi
 export const metadata: Metadata = {
   title: "Politique de confidentialité",
   description: "Politique de confidentialité et protection des données personnelles — Planwise.",
+  alternates: { canonical: "/politique-confidentialite" },
+  robots: { index: true, follow: true },
 };
 
 export default function PolitiqueConfidentialitePage() {

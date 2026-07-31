@@ -1,6 +1,7 @@
 import type {
   AuthResponse,
   CronRunsListResponse,
+  PlatformAnalyticsOverviewResponse,
   PlatformAuthResponse,
   PlatformAuthUser,
   PlatformCronJobsOverviewResponse,
@@ -146,4 +147,18 @@ export async function listPlatformCronRuns(filters?: {
     platformBearer: true,
     fallbackError: "Impossible de charger l’historique des crons",
   });
+}
+
+export async function getPlatformAnalyticsOverview(days?: number) {
+  const params = new URLSearchParams();
+  if (days != null) params.set("days", String(days));
+  const qs = params.toString();
+  return apiRequestJson<PlatformAnalyticsOverviewResponse>(
+    "GET",
+    `/platform/analytics/overview${qs ? `?${qs}` : ""}`,
+    {
+      platformBearer: true,
+      fallbackError: "Impossible de charger l’audience",
+    },
+  );
 }

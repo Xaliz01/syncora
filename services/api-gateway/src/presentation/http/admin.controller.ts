@@ -58,6 +58,18 @@ export class AdminController {
     return this.adminService.getOrganizationUser(user, userId);
   }
 
+  @Post("users/:userId/deactivate")
+  @RequirePermissions("users.deactivate")
+  async deactivateOrganizationUser(@CurrentUser() user: AuthUser, @Param("userId") userId: string) {
+    return this.adminService.deactivateOrganizationUser(user, userId);
+  }
+
+  @Post("users/:userId/reactivate")
+  @RequirePermissions("users.deactivate")
+  async reactivateOrganizationUser(@CurrentUser() user: AuthUser, @Param("userId") userId: string) {
+    return this.adminService.reactivateOrganizationUser(user, userId);
+  }
+
   @Put("users/:userId/permissions")
   @RequireAnyPermissions("users.manage_permissions", "users.assign_profile")
   async assignUserPermissions(

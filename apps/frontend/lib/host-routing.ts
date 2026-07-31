@@ -74,9 +74,13 @@ export type HostRoutingResult =
   | { action: "next" }
   | { action: "redirect"; destination: string; permanent?: boolean };
 
+function isMarketingInfraPath(pathname: string): boolean {
+  return pathname === "/robots.txt" || pathname === "/sitemap.xml";
+}
+
 /**
  * Règles de routage par hostname (prod) :
- * - planwise.fr / → landing ; autres chemins → app.planwise.fr
+ * - planwise.fr / → landing ; /robots.txt /sitemap.xml /légal → marketing ; autres → app
  * - www.planwise.fr → planwise.fr
  * - backoffice.planwise.fr → /platform/*
  * - app.planwise.fr/platform → backoffice
@@ -134,7 +138,7 @@ export function resolveHostRouting(
   }
 
   if (isMarketingHost(normalizedHost)) {
-    if (pathname === "/" || isLegalPath(pathname)) {
+    if (pathname === "/" || isLegalPath(pathname) || isMarketingInfraPath(pathname)) {
       return { action: "next" };
     }
     return {

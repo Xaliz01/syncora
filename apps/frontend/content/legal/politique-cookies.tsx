@@ -48,6 +48,26 @@ export function PolitiqueCookiesContent() {
               <strong>planwise_cookie_consent</strong> — mémorisation de vos choix cookies
               (localStorage).
             </>,
+            <>
+              <strong>Mesure d&apos;audience first-party</strong> — identifiants anonymes{" "}
+              <code className="text-xs bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">
+                planwise_visitor_id
+              </code>{" "}
+              (localStorage) et{" "}
+              <code className="text-xs bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">
+                planwise_session_id
+              </code>{" "}
+              (sessionStorage) pour compter les pages vues sur planwise.fr et app.planwise.fr. Aucun
+              outil publicitaire tiers. Données : chemin de page, surface (landing / app), hôte du
+              referrer le cas échéant, horodatage. Conservées environ 400 jours. Vous pouvez vous y
+              opposer en définissant{" "}
+              <code className="text-xs bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">
+                planwise_analytics_opt_out
+              </code>{" "}
+              à{" "}
+              <code className="text-xs bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">1</code>{" "}
+              dans le localStorage, puis en rechargeant la page.
+            </>,
           ]}
         />
       </LegalSection>

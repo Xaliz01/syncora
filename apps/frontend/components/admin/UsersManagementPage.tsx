@@ -6,11 +6,15 @@ import type { InvitationResponse } from "@planwise/shared";
 import * as adminApi from "@/lib/admin.api";
 import * as subscriptionsApi from "@/lib/subscriptions.api";
 import type { ManagedOrganizationUser } from "@/lib/admin.api";
-import { getOrganizationUserStatusLabel } from "@/lib/organization-user-status";
+import {
+  getOrganizationUserStatusLabel,
+  countOrganizationUserSeats,
+} from "@/lib/organization-user-status";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { ExportButton } from "@/components/ui/ExportButton";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/ToastProvider";
+import { useAuth } from "@/components/auth/AuthContext";
 import * as exportsApi from "@/lib/exports.api";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -27,6 +31,7 @@ const INVITATION_STATUS_LABELS: Record<string, string> = {
 };
 
 export function UsersManagementPage() {
+  const { user: currentUser } = useAuth();
   const { showToast } = useToast();
   const confirm = useConfirm();
   const [users, setUsers] = useState<ManagedOrganizationUser[]>([]);
@@ -39,6 +44,9 @@ export function UsersManagementPage() {
   const [editEmail, setEditEmail] = useState("");
   const [savingId, setSavingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [membershipActionId, setMembershipActionId] = useState<string | null>(null);
+
+  const seatsUsed = countOrganizationUserSeats(users);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -144,6 +152,57 @@ export function UsersManagementPage() {
     }
   };
 
+  const handleDeactivateUser = async (user: ManagedOrganizationUser) => {
+    const confirmed = await confirm({
+      title: "Désactiver cet utilisateur ?",
+      description: (
+        <>
+          <strong>{user.name ?? user.email}</strong> ne pourra plus accéder à l&apos;organisation.
+          Le créneau sera libéré et pourra être réutilisé.
+        </>
+      ),
+      confirmLabel: "Désactiver",
+      variant: "danger",
+    });
+    if (!confirmed) return;
+
+    setMembershipActionId(user.id);
+    try {
+      await adminApi.deactivateOrganizationUser(user.id);
+      showToast("Utilisateur désactivé.", "success");
+      await loadData();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Désactivation impossible", "error");
+    } finally {
+      setMembershipActionId(null);
+    }
+  };
+
+  const handleReactivateUser = async (user: ManagedOrganizationUser) => {
+    const confirmed = await confirm({
+      title: "Réactiver cet utilisateur ?",
+      description: (
+        <>
+          <strong>{user.name ?? user.email}</strong> retrouvera l&apos;accès à l&apos;organisation
+          si un créneau est disponible.
+        </>
+      ),
+      confirmLabel: "Réactiver",
+    });
+    if (!confirmed) return;
+
+    setMembershipActionId(user.id);
+    try {
+      await adminApi.reactivateOrganizationUser(user.id);
+      showToast("Utilisateur réactivé.", "success");
+      await loadData();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Réactivation impossible", "error");
+    } finally {
+      setMembershipActionId(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
@@ -153,7 +212,11 @@ export function UsersManagementPage() {
             Liste des utilisateurs de l&apos;organisation. Cliquez sur un nom pour ouvrir sa fiche.
             {maxUsers !== null && (
               <span className="block mt-1 text-slate-600 dark:text-slate-300">
-                {users.length} / {maxUsers} utilisateur{maxUsers > 1 ? "s" : ""} utilisés.
+                {seatsUsed} / {maxUsers} utilisateur{maxUsers > 1 ? "s" : ""} utilisés
+                {users.length > seatsUsed
+                  ? ` (${users.length - seatsUsed} désactivé${users.length - seatsUsed > 1 ? "s" : ""})`
+                  : ""}
+                .
               </span>
             )}
           </p>
@@ -189,34 +252,65 @@ export function UsersManagementPage() {
         </div>
       ) : (
         <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden">
-          <div className="hidden md:grid md:grid-cols-[1.2fr_1.2fr_auto_auto] gap-3 border-b border-slate-200 dark:border-slate-700 px-4 py-3 text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">
+          <div className="hidden md:grid md:grid-cols-[1.2fr_1.2fr_auto_auto_auto] gap-3 border-b border-slate-200 dark:border-slate-700 px-4 py-3 text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">
             <span>Utilisateur</span>
             <span>Email</span>
             <span>Rôle</span>
             <span>Statut</span>
+            <span className="sr-only">Actions</span>
           </div>
-          {users.map((user) => (
-            <div
-              key={user.id}
-              className="grid md:grid-cols-[1.2fr_1.2fr_auto_auto] gap-2 md:gap-3 items-center px-4 py-3 border-b border-slate-200 dark:border-slate-700 last:border-b-0"
-            >
-              <Link
-                href={`/users/${user.id}`}
-                className="font-medium text-brand-600 dark:text-brand-400 hover:text-brand-500 hover:underline"
+          {users.map((user) => {
+            const isDisabled = user.organizationMembershipStatus === "disabled";
+            const isSelf = user.id === currentUser?.id;
+            const canToggleMembership = !isSelf && user.organizationMembershipStatus !== "invited";
+            return (
+              <div
+                key={user.id}
+                className="grid md:grid-cols-[1.2fr_1.2fr_auto_auto_auto] gap-2 md:gap-3 items-center px-4 py-3 border-b border-slate-200 dark:border-slate-700 last:border-b-0"
               >
-                {user.name ?? user.email}
-              </Link>
-              <div className="text-sm text-slate-500 dark:text-slate-400 truncate">
-                {user.email}
+                <Link
+                  href={`/users/${user.id}`}
+                  className="font-medium text-brand-600 dark:text-brand-400 hover:text-brand-500 hover:underline"
+                >
+                  {user.name ?? user.email}
+                </Link>
+                <div className="text-sm text-slate-500 dark:text-slate-400 truncate">
+                  {user.email}
+                </div>
+                <span className="inline-flex w-fit rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-0.5 text-xs text-slate-700 dark:text-slate-200">
+                  {ROLE_LABELS[user.role] ?? user.role}
+                </span>
+                <span className="inline-flex w-fit rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-0.5 text-xs text-slate-700 dark:text-slate-200">
+                  {getOrganizationUserStatusLabel(user)}
+                </span>
+                <div className="flex justify-start md:justify-end">
+                  {canToggleMembership ? (
+                    <PermissionGate permission="users.deactivate">
+                      {isDisabled ? (
+                        <button
+                          type="button"
+                          onClick={() => void handleReactivateUser(user)}
+                          disabled={membershipActionId === user.id}
+                          className="rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-medium text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-950/40 disabled:opacity-50 transition"
+                        >
+                          {membershipActionId === user.id ? "Réactivation…" : "Réactiver"}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => void handleDeactivateUser(user)}
+                          disabled={membershipActionId === user.id}
+                          className="rounded-lg border border-red-200 dark:border-red-900 bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 disabled:opacity-50 transition"
+                        >
+                          {membershipActionId === user.id ? "Désactivation…" : "Désactiver"}
+                        </button>
+                      )}
+                    </PermissionGate>
+                  ) : null}
+                </div>
               </div>
-              <span className="inline-flex w-fit rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-0.5 text-xs text-slate-700 dark:text-slate-200">
-                {ROLE_LABELS[user.role] ?? user.role}
-              </span>
-              <span className="inline-flex w-fit rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-0.5 text-xs text-slate-700 dark:text-slate-200">
-                {getOrganizationUserStatusLabel(user)}
-              </span>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

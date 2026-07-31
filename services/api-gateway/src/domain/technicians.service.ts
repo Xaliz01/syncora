@@ -14,6 +14,7 @@ import type {
 } from "@planwise/shared";
 import {
   BASE_SUBSCRIPTION_PLAN,
+  membershipCountsTowardUserSeat,
   TECHNICIAN_FIELD_DEFAULT_PERMISSIONS,
   TECHNICIAN_FIELD_PROFILE_NAME,
 } from "@planwise/shared";
@@ -107,7 +108,11 @@ export class TechniciansGatewayService extends AbstractTechniciansGatewayService
       return;
     }
 
-    if (users.length >= subscription.maxUsers) {
+    const seatUsed = users.filter((user) =>
+      membershipCountsTowardUserSeat(user.organizationMembershipStatus),
+    ).length;
+
+    if (seatUsed >= subscription.maxUsers) {
       throw new ConflictException(
         `Limite d'utilisateurs atteinte (${subscription.maxUsers} au total, dont ${subscription.includedUsers} inclus dans l'offre ${BASE_SUBSCRIPTION_PLAN.name}). ` +
           `Ajoutez des utilisateurs supplémentaires depuis la page Abonnement.`,

@@ -36,6 +36,8 @@ describe("AdminController", () => {
       resendInvitation: jest.fn(),
       updatePendingInvitation: jest.fn(),
       cancelInvitation: jest.fn(),
+      deactivateOrganizationUser: jest.fn(),
+      reactivateOrganizationUser: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({

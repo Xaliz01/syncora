@@ -48,7 +48,13 @@ export class EmailController {
       return { sent: false, reason: "smtp_not_configured" };
     }
 
-    return this.emailService.sendTransactionalEmail(body.to.trim(), body.subject, body.body ?? "");
+    return this.emailService.sendTransactionalEmail(
+      body.to.trim(),
+      body.subject,
+      body.body ?? "",
+      body.url,
+      body.ctaLabel,
+    );
   }
 
   @Get("status")

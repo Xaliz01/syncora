@@ -38,6 +38,12 @@ export const PERMISSION_METADATA: Record<PermissionCode, PermissionMetadata> = {
     label: "Inviter des utilisateurs",
     description: "Créer et envoyer des invitations à des utilisateurs.",
   },
+  "users.deactivate": {
+    code: "users.deactivate",
+    label: "Désactiver des utilisateurs",
+    description:
+      "Désactiver un membre pour libérer un créneau, et le réactiver si le quota le permet.",
+  },
   "users.assign_profile": {
     code: "users.assign_profile",
     label: "Affecter des profils",

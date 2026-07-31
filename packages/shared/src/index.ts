@@ -27,5 +27,6 @@ export * from "./integrations";
 export * from "./support";
 export * from "./test-data";
 export * from "./platform";
+export * from "./analytics";
 export * from "./cron-run";
 export * from "./pagination";

@@ -342,7 +342,16 @@ export class AuthService extends AbstractAuthService {
       user = res.data;
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } })?.response?.status;
+      const message = (err as { response?: { data?: { message?: string | string[] } } })?.response
+        ?.data?.message;
+      const normalized = Array.isArray(message) ? message.join(", ") : message;
       if (status === 401) throw new UnauthorizedException("Email ou mot de passe incorrect");
+      if (status === 403) {
+        throw new ForbiddenException(
+          normalized ??
+            "Votre accès à l'organisation a été désactivé. Contactez un administrateur pour être réactivé.",
+        );
+      }
       throw err;
     }
 
@@ -708,11 +717,16 @@ export class AuthService extends AbstractAuthService {
           `${USERS_URL}/users/${userId}/organization-memberships`,
         ),
       );
-      const active = res.data.find(
-        (m) => m.organizationId === organizationId && m.membershipStatus === "active",
-      );
-      return active?.role ?? fallback;
-    } catch {
+      const membership = res.data.find((m) => m.organizationId === organizationId);
+      if (membership?.membershipStatus === "disabled") {
+        throw new UnauthorizedException("Votre accès à cette organisation a été désactivé");
+      }
+      if (membership?.membershipStatus === "active") {
+        return membership.role;
+      }
+      return fallback;
+    } catch (err: unknown) {
+      if (err instanceof UnauthorizedException) throw err;
       return fallback;
     }
   }

@@ -5,6 +5,8 @@ import { CgvContent } from "@/content/legal/cgv";
 export const metadata: Metadata = {
   title: "Conditions Générales de Vente",
   description: "CGV et conditions d'abonnement Planwise.",
+  alternates: { canonical: "/cgv" },
+  robots: { index: true, follow: true },
 };
 
 export default function CgvPage() {

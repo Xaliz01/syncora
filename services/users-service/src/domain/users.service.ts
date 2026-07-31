@@ -4,6 +4,7 @@ import {
   NotFoundException,
   BadRequestException,
   UnauthorizedException,
+  ForbiddenException,
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import type { Model } from "mongoose";
@@ -229,6 +230,11 @@ export class UsersService extends AbstractUsersService {
       if (existingMembership?.membershipStatus === "invited") {
         throw new ConflictException("Une invitation est déjà en attente pour cet email");
       }
+      if (existingMembership?.membershipStatus === "disabled") {
+        throw new ConflictException(
+          "Cet utilisateur est désactivé dans l'organisation ; réactivez-le depuis la liste des utilisateurs",
+        );
+      }
 
       await this.membershipModel.findOneAndUpdate(
         { userId: uid, organizationId: body.organizationId },
@@ -406,6 +412,94 @@ export class UsersService extends AbstractUsersService {
       doc.organizationId = next?.organizationId;
       await doc.save();
     }
+  }
+
+  async deactivateOrganizationMembership(
+    userId: string,
+    organizationId: string,
+  ): Promise<UserResponse> {
+    const doc = await this.userModel.findOne({ _id: userId, ...activeDocumentFilter }).exec();
+    if (!doc) throw new NotFoundException("User not found");
+
+    const membership = await this.membershipModel
+      .findOne({
+        userId,
+        organizationId,
+        membershipStatus: "active",
+        deletedAt: null,
+      })
+      .exec();
+    if (!membership) {
+      throw new BadRequestException("Aucun rattachement actif à désactiver pour cet utilisateur");
+    }
+
+    if (membership.role === "admin") {
+      const otherActiveAdmins = await this.membershipModel
+        .countDocuments({
+          organizationId,
+          membershipStatus: "active",
+          role: "admin",
+          deletedAt: null,
+          userId: { $ne: userId },
+        })
+        .exec();
+      if (otherActiveAdmins === 0) {
+        throw new BadRequestException(
+          "Impossible de désactiver le dernier administrateur de l'organisation",
+        );
+      }
+    }
+
+    membership.membershipStatus = "disabled";
+    await membership.save();
+
+    doc.activeSessionId = undefined;
+    if (doc.organizationId === organizationId) {
+      const nextActive = await this.membershipModel
+        .findOne({
+          userId,
+          membershipStatus: "active",
+          deletedAt: null,
+        })
+        .sort({ updatedAt: -1 })
+        .exec();
+      doc.organizationId = nextActive?.organizationId ?? organizationId;
+    }
+    await doc.save();
+
+    return this.toResponseForOrganization(doc, organizationId);
+  }
+
+  async reactivateOrganizationMembership(
+    userId: string,
+    organizationId: string,
+  ): Promise<UserResponse> {
+    const doc = await this.userModel.findOne({ _id: userId, ...activeDocumentFilter }).exec();
+    if (!doc) throw new NotFoundException("User not found");
+
+    const membership = await this.membershipModel
+      .findOne({
+        userId,
+        organizationId,
+        membershipStatus: "disabled",
+        deletedAt: null,
+      })
+      .exec();
+    if (!membership) {
+      throw new BadRequestException(
+        "Aucun rattachement désactivé à réactiver pour cet utilisateur",
+      );
+    }
+
+    membership.membershipStatus = "active";
+    await membership.save();
+
+    if (!doc.organizationId?.trim()) {
+      doc.organizationId = organizationId;
+      await doc.save();
+    }
+
+    return this.toResponseForOrganization(doc, organizationId);
   }
 
   async patch(id: string, body: PatchUserBody): Promise<UserResponse> {
@@ -620,13 +714,12 @@ export class UsersService extends AbstractUsersService {
       };
     }
 
-    doc.lastLoginAt = new Date();
-    await doc.save();
-
     await this.ensureMembershipsBackfill(doc);
 
     const uid = doc._id.toString();
     if (!doc.organizationId?.trim()) {
+      doc.lastLoginAt = new Date();
+      await doc.save();
       return {
         id: uid,
         email: doc.email,
@@ -636,26 +729,43 @@ export class UsersService extends AbstractUsersService {
       };
     }
 
-    const m = await this.membershipModel
-      .findOne({
-        userId: uid,
-        organizationId: doc.organizationId,
-        deletedAt: null,
-      })
-      .exec();
-    if (!m || m.membershipStatus === "invited") {
-      return null;
+    const memberships = await this.membershipModel.find({ userId: uid, deletedAt: null }).exec();
+    const activeMembership =
+      memberships.find(
+        (m) => m.organizationId === doc.organizationId && m.membershipStatus === "active",
+      ) ?? memberships.find((m) => m.membershipStatus === "active");
+
+    if (activeMembership) {
+      if (doc.organizationId !== activeMembership.organizationId) {
+        doc.organizationId = activeMembership.organizationId;
+      }
+      doc.lastLoginAt = new Date();
+      await doc.save();
+      return {
+        id: uid,
+        organizationId: activeMembership.organizationId,
+        email: doc.email,
+        name: doc.name,
+        role: activeMembership.role as ValidateCredentialsResponse["role"],
+        status: doc.status,
+        emailVerified: true,
+      };
     }
 
-    return {
-      id: uid,
-      organizationId: doc.organizationId,
-      email: doc.email,
-      name: doc.name,
-      role: m.role as ValidateCredentialsResponse["role"],
-      status: doc.status,
-      emailVerified: true,
-    };
+    const hasDisabledOnly =
+      memberships.length > 0 &&
+      memberships.every(
+        (m) => m.membershipStatus === "disabled" || m.membershipStatus === "invited",
+      ) &&
+      memberships.some((m) => m.membershipStatus === "disabled");
+
+    if (hasDisabledOnly) {
+      throw new ForbiddenException(
+        "Votre accès à l'organisation a été désactivé. Contactez un administrateur pour être réactivé.",
+      );
+    }
+
+    return null;
   }
 
   async createSession(userId: string): Promise<CreateUserSessionResponse> {
@@ -883,21 +993,6 @@ export class UsersService extends AbstractUsersService {
     }
   }
 
-  private async requireRoleForOrganization(
-    userId: string,
-    organizationId: string,
-  ): Promise<UserRole> {
-    const m = await this.membershipModel
-      .findOne({ userId, organizationId, deletedAt: null })
-      .exec();
-    if (!m) {
-      throw new NotFoundException(
-        "Aucun rattachement organisation pour cet utilisateur (organization_memberships).",
-      );
-    }
-    return m.role as UserRole;
-  }
-
   private async storeEmailVerificationOtp(doc: UserDocument): Promise<string> {
     const code = String(randomInt(100_000, 1_000_000));
     doc.emailVerificationCodeHash = await bcrypt.hash(code, SALT_ROUNDS);
@@ -917,8 +1012,21 @@ export class UsersService extends AbstractUsersService {
     doc: UserDocument,
     organizationId: string,
   ): Promise<UserResponse> {
-    const role = await this.requireRoleForOrganization(doc._id.toString(), organizationId);
-    return { ...this.toBaseResponse(doc), role };
+    const membership = await this.membershipModel
+      .findOne({ userId: doc._id.toString(), organizationId, deletedAt: null })
+      .exec();
+    if (!membership) {
+      throw new NotFoundException(
+        "Aucun rattachement organisation pour cet utilisateur (organization_memberships).",
+      );
+    }
+    return {
+      ...this.toBaseResponse(doc),
+      organizationId,
+      role: membership.role as UserResponse["role"],
+      organizationMembershipStatus:
+        membership.membershipStatus as UserResponse["organizationMembershipStatus"],
+    };
   }
 
   private toAccountResponse(doc: UserDocument): AccountUserResponse {

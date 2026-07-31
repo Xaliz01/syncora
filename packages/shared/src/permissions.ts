@@ -7,6 +7,7 @@ export const ASSIGNABLE_PERMISSION_CODES = [
   "organizations.update",
   "users.read",
   "users.invite",
+  "users.deactivate",
   "users.assign_profile",
   "users.manage_permissions",
   "profiles.read",

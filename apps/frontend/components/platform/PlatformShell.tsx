@@ -59,6 +59,7 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
     { href: "/platform", label: "Organisations" },
     { href: "/platform/users", label: "Utilisateurs" },
     { href: "/platform/integrations", label: "Intégrations" },
+    { href: "/platform/audience", label: "Audience" },
     { href: "/platform/crons", label: "Crons" },
   ];
 

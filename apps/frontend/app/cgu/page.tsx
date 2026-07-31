@@ -5,6 +5,8 @@ import { CguContent } from "@/content/legal/cgu";
 export const metadata: Metadata = {
   title: "Conditions Générales d'Utilisation",
   description: "CGU du service SaaS Planwise.",
+  alternates: { canonical: "/cgu" },
+  robots: { index: true, follow: true },
 };
 
 export default function CguPage() {

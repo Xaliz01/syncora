@@ -5,9 +5,14 @@ import { AbstractPlatformService } from "../domain/ports/platform.service.port";
 import { PlatformService } from "../domain/platform.service";
 import { PlatformJwtAuthGuard } from "../infrastructure/platform-jwt-auth.guard";
 import { SubscriptionsModule } from "./subscriptions.module";
+import { AnalyticsModule } from "./analytics.module";
 
 @Module({
-  imports: [HttpModule.register({ timeout: 10000, maxRedirects: 0 }), SubscriptionsModule],
+  imports: [
+    HttpModule.register({ timeout: 10000, maxRedirects: 0 }),
+    SubscriptionsModule,
+    AnalyticsModule,
+  ],
   controllers: [PlatformController],
   providers: [
     { provide: AbstractPlatformService, useClass: PlatformService },

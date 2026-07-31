@@ -1,33 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
+import { buildRootMetadata } from "@/lib/seo";
 
-const APP_NAME = "Planwise";
-const APP_TITLE = "Planwise CRM";
-const APP_DESCRIPTION = "CRM des opérations terrain";
-
-export const metadata: Metadata = {
-  applicationName: APP_NAME,
-  title: {
-    default: APP_TITLE,
-    template: `%s — ${APP_NAME}`,
-  },
-  description: APP_DESCRIPTION,
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "black-translucent",
-    title: APP_TITLE,
-  },
-  formatDetection: {
-    telephone: false,
-  },
-  openGraph: {
-    type: "website",
-    siteName: APP_NAME,
-    title: APP_TITLE,
-    description: APP_DESCRIPTION,
-  },
-};
+export const metadata: Metadata = buildRootMetadata();
 
 export const viewport: Viewport = {
   themeColor: "#4338ca",

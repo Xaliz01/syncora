@@ -63,6 +63,29 @@ test.describe("Routage par hostname — redirections middleware", () => {
     expect(response.status()).toBe(200);
   });
 
+  test("planwise.fr/robots.txt reste sur le domaine marketing", async ({ request }) => {
+    const response = await requestWithHost(request, "/robots.txt", MARKETING_HOST);
+    expect(response.status()).toBe(200);
+    const body = await response.text();
+    expect(body).toContain("Sitemap:");
+    expect(body).toMatch(/Allow:\s*\//);
+  });
+
+  test("planwise.fr/sitemap.xml reste sur le domaine marketing", async ({ request }) => {
+    const response = await requestWithHost(request, "/sitemap.xml", MARKETING_HOST);
+    expect(response.status()).toBe(200);
+    const body = await response.text();
+    expect(body).toContain("https://planwise.fr");
+    expect(body).toContain("/mentions-legales");
+  });
+
+  test("app.planwise.fr/robots.txt décourage l'indexation", async ({ request }) => {
+    const response = await requestWithHost(request, "/robots.txt", APP_HOST);
+    expect(response.status()).toBe(200);
+    const body = await response.text();
+    expect(body).toMatch(/Disallow:\s*\//);
+  });
+
   test("planwise.fr/page-inexistante redirige vers le domaine app", async ({ request }) => {
     const response = await requestWithHost(request, "/page-inexistante", MARKETING_HOST);
     expect(response.status()).toBe(308);

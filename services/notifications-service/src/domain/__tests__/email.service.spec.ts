@@ -96,6 +96,24 @@ describe("EmailService (configured)", () => {
     const call = mockSendMail.mock.calls[0][0];
     expect(call.text).toContain("https://app.test.com/my-day");
     expect(call.html).toContain("https://app.test.com/my-day");
+    expect(call.html).toContain("Voir dans Planwise");
+  });
+
+  it("should render a custom CTA label for transactional emails", async () => {
+    await service.sendTransactionalEmail(
+      "invitee@example.com",
+      "Invitation",
+      "Body",
+      "/accept-invitation?token=abc",
+      "Accepter l'invitation",
+    );
+
+    const call = mockSendMail.mock.calls[0][0];
+    expect(call.html).toContain("Accepter l'invitation");
+    expect(call.html).toContain('href="https://app.test.com/accept-invitation?token=abc"');
+    expect(call.text).toContain(
+      "Accepter l'invitation : https://app.test.com/accept-invitation?token=abc",
+    );
   });
 
   it("should include the Planwise logo in html", async () => {

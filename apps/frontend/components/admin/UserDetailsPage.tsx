@@ -7,8 +7,11 @@ import * as adminApi from "@/lib/admin.api";
 import { getPermissionLabel } from "@/lib/permissions-catalog";
 import type { ManagedOrganizationUser } from "@/lib/admin.api";
 import { useToast } from "@/components/ui/ToastProvider";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { usePermissions } from "@/lib/hooks/usePermissions";
+import { useAuth } from "@/components/auth/AuthContext";
 import { getOrganizationUserStatusLabel } from "@/lib/organization-user-status";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Administrateur",
@@ -22,6 +25,8 @@ function togglePermission(list: PermissionCode[], permission: PermissionCode): P
 
 export function UserDetailsPage({ userId }: { userId: string }) {
   const { showToast } = useToast();
+  const confirm = useConfirm();
+  const { user: currentUser } = useAuth();
   const { can } = usePermissions();
   const [catalog, setCatalog] = useState<PermissionCode[]>([]);
   const [profiles, setProfiles] = useState<PermissionProfileResponse[]>([]);
@@ -31,9 +36,13 @@ export function UserDetailsPage({ userId }: { userId: string }) {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [membershipActionLoading, setMembershipActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const isOrganizationAdmin = user?.role === "admin";
+  const isSelf = user?.id === currentUser?.id;
+  const isDisabled = user?.organizationMembershipStatus === "disabled";
+  const isInvited = user?.organizationMembershipStatus === "invited";
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -93,6 +102,57 @@ export function UserDetailsPage({ userId }: { userId: string }) {
     }
   };
 
+  const handleDeactivate = async () => {
+    if (!user || isSelf) return;
+    const confirmed = await confirm({
+      title: "Désactiver cet utilisateur ?",
+      description: (
+        <>
+          <strong>{user.name ?? user.email}</strong> ne pourra plus accéder à l&apos;organisation.
+          Le créneau sera libéré.
+        </>
+      ),
+      confirmLabel: "Désactiver",
+      variant: "danger",
+    });
+    if (!confirmed) return;
+    setMembershipActionLoading(true);
+    try {
+      await adminApi.deactivateOrganizationUser(user.id);
+      showToast("Utilisateur désactivé.", "success");
+      await refresh();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Désactivation impossible", "error");
+    } finally {
+      setMembershipActionLoading(false);
+    }
+  };
+
+  const handleReactivate = async () => {
+    if (!user) return;
+    const confirmed = await confirm({
+      title: "Réactiver cet utilisateur ?",
+      description: (
+        <>
+          <strong>{user.name ?? user.email}</strong> retrouvera l&apos;accès si un créneau est
+          disponible.
+        </>
+      ),
+      confirmLabel: "Réactiver",
+    });
+    if (!confirmed) return;
+    setMembershipActionLoading(true);
+    try {
+      await adminApi.reactivateOrganizationUser(user.id);
+      showToast("Utilisateur réactivé.", "success");
+      await refresh();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Réactivation impossible", "error");
+    } finally {
+      setMembershipActionLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 text-sm text-slate-500 dark:text-slate-400">
@@ -122,8 +182,31 @@ export function UserDetailsPage({ userId }: { userId: string }) {
             <span className="font-medium text-slate-700 dark:text-slate-200">{user.email}</span>.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          {!isOrganizationAdmin && can("users.manage_permissions") && (
+        <div className="flex items-center gap-2 flex-wrap">
+          {!isSelf && !isInvited ? (
+            <PermissionGate permission="users.deactivate">
+              {isDisabled ? (
+                <button
+                  type="button"
+                  onClick={() => void handleReactivate()}
+                  disabled={membershipActionLoading}
+                  className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-950/40 disabled:opacity-50"
+                >
+                  {membershipActionLoading ? "Réactivation…" : "Réactiver"}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => void handleDeactivate()}
+                  disabled={membershipActionLoading}
+                  className="rounded-lg border border-red-200 dark:border-red-900 px-3 py-1.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 disabled:opacity-50"
+                >
+                  {membershipActionLoading ? "Désactivation…" : "Désactiver"}
+                </button>
+              )}
+            </PermissionGate>
+          ) : null}
+          {!isOrganizationAdmin && !isDisabled && can("users.manage_permissions") && (
             <button
               type="button"
               onClick={() => setIsEditing((previous) => !previous)}

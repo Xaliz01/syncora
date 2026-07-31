@@ -1,7 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { JwtModule, JwtService } from "@nestjs/jwt";
 import { HttpModule, HttpService } from "@nestjs/axios";
-import { UnauthorizedException } from "@nestjs/common";
+import { UnauthorizedException, ForbiddenException } from "@nestjs/common";
 import { of, throwError } from "rxjs";
 import type { AxiosResponse } from "axios";
 import { AuthService } from "../auth.service";
@@ -292,6 +292,28 @@ describe("AuthService", () => {
       };
 
       await expect(service.login(body)).rejects.toThrow(UnauthorizedException);
+      expect(jwtSignSpy).not.toHaveBeenCalled();
+    });
+
+    it("should throw ForbiddenException when organization access is disabled", async () => {
+      jest.spyOn(httpService, "post").mockImplementation((url: string) => {
+        if (url.includes("validate-credentials")) {
+          return throwError(() => ({
+            response: {
+              status: 403,
+              data: {
+                message:
+                  "Votre accès à l'organisation a été désactivé. Contactez un administrateur pour être réactivé.",
+              },
+            },
+          }));
+        }
+        return of({ data: {}, status: 200 } as AxiosResponse);
+      });
+
+      await expect(
+        service.login({ email: "disabled@example.com", password: "secret123" }),
+      ).rejects.toThrow(ForbiddenException);
       expect(jwtSignSpy).not.toHaveBeenCalled();
     });
   });

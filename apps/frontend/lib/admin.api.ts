@@ -127,3 +127,11 @@ export function updatePendingInvitation(invitationId: string, email: string) {
 export function cancelInvitation(invitationId: string) {
   return adminRequest<{ ok: true }>("DELETE", `/admin/invitations/${invitationId}`);
 }
+
+export function deactivateOrganizationUser(userId: string) {
+  return adminRequest<{ user: UserResponse }>("POST", `/admin/users/${userId}/deactivate`);
+}
+
+export function reactivateOrganizationUser(userId: string) {
+  return adminRequest<{ user: UserResponse }>("POST", `/admin/users/${userId}/reactivate`);
+}

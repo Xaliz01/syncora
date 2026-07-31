@@ -28,6 +28,7 @@ import type {
   PlatformOrganizationSummary,
   PlatformOrganizationsListResponse,
   PlatformUserSummary,
+  PlatformAnalyticsOverviewResponse,
   PlatformUsersListResponse,
   StartImpersonationBody,
   UserResponse,
@@ -38,6 +39,7 @@ import {
   isPlatformStaffEmail,
   PLATFORM_CRON_JOBS,
 } from "@planwise/shared";
+import { AbstractAnalyticsGatewayService } from "./ports/analytics.gateway.service.port";
 import { AbstractPlatformService } from "./ports/platform.service.port";
 import { AbstractSubscriptionsGatewayService } from "./ports/subscriptions.service.port";
 
@@ -57,6 +59,7 @@ export class PlatformService extends AbstractPlatformService {
     private readonly httpService: HttpService,
     private readonly jwtService: JwtService,
     private readonly subscriptionsGateway: AbstractSubscriptionsGatewayService,
+    private readonly analyticsGateway: AbstractAnalyticsGatewayService,
   ) {
     super();
   }
@@ -427,6 +430,10 @@ export class PlatformService extends AbstractPlatformService {
       .slice(offset, offset + limit);
 
     return { runs, total };
+  }
+
+  getAnalyticsOverview(days?: number): Promise<PlatformAnalyticsOverviewResponse> {
+    return this.analyticsGateway.getOverview(days);
   }
 
   private cronServiceBaseUrl(service: (typeof PLATFORM_CRON_JOBS)[number]["service"]): string {
