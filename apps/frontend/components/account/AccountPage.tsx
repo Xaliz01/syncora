@@ -4,7 +4,12 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthContext";
 import { useToast } from "@/components/ui/ToastProvider";
 import * as accountApi from "@/lib/account.api";
-import type { ThemePreference, SidebarPreference, UserPreferences } from "@planwise/shared";
+import type {
+  ThemePreference,
+  SidebarPreference,
+  UserPreferences,
+  UserSessionResponse,
+} from "@planwise/shared";
 import { useTheme } from "next-themes";
 import { readSidebarCollapsed } from "@/lib/sidebar-preference";
 import {
@@ -64,6 +69,18 @@ function preferenceOptionClassName(selected: boolean, readOnly: boolean): string
   return `${base} border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 ${
     readOnly ? "opacity-60" : "hover:border-slate-300 dark:hover:border-slate-500 cursor-pointer"
   }`;
+}
+
+function formatSessionActivity(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return "à l'instant";
+  if (minutes < 60) return `il y a ${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `il y a ${hours}h`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `il y a ${days}j`;
+  return new Date(dateStr).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 }
 
 function ThemeRadioGroup({
@@ -243,6 +260,10 @@ export function AccountPage() {
   const [prefsSaving, setPrefsSaving] = useState(false);
   const [prefsLoaded, setPrefsLoaded] = useState(false);
 
+  const [sessions, setSessions] = useState<UserSessionResponse[]>([]);
+  const [sessionsLoaded, setSessionsLoaded] = useState(false);
+  const [sessionsBusy, setSessionsBusy] = useState(false);
+
   const syncDisplayPreferencesFromLive = useCallback(() => {
     if (resolvedTheme === "light" || resolvedTheme === "dark") {
       setThemePreference(resolvedTheme);
@@ -265,6 +286,21 @@ export function AccountPage() {
   useEffect(() => {
     void loadPreferencesFromServer();
   }, [loadPreferencesFromServer]);
+
+  const loadSessions = useCallback(async () => {
+    try {
+      const res = await accountApi.listSessions();
+      setSessions(res.sessions);
+    } catch {
+      setSessions([]);
+    } finally {
+      setSessionsLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadSessions();
+  }, [loadSessions]);
 
   useEffect(() => {
     if (user?.name) setName(user.name);
@@ -359,6 +395,35 @@ export function AccountPage() {
     },
     [themePreference, sidebarPreference, setTheme, showToast],
   );
+
+  const handleRevokeSession = useCallback(
+    async (sessionId: string) => {
+      setSessionsBusy(true);
+      try {
+        await accountApi.revokeSession(sessionId);
+        showToast("Appareil déconnecté");
+        await loadSessions();
+      } catch (err) {
+        showToast((err as Error).message, "error");
+      } finally {
+        setSessionsBusy(false);
+      }
+    },
+    [loadSessions, showToast],
+  );
+
+  const handleRevokeOtherSessions = useCallback(async () => {
+    setSessionsBusy(true);
+    try {
+      await accountApi.revokeOtherSessions();
+      showToast("Autres appareils déconnectés");
+      await loadSessions();
+    } catch (err) {
+      showToast((err as Error).message, "error");
+    } finally {
+      setSessionsBusy(false);
+    }
+  }, [loadSessions, showToast]);
 
   const inputClassName =
     "w-full max-w-md rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 transition";
@@ -475,6 +540,72 @@ export function AccountPage() {
               {prefsSaving ? "Enregistrement…" : "Enregistrer"}
             </button>
           </form>
+        )}
+      </section>
+
+      <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+              Appareils connectés
+            </h2>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              Une session bureau et une session mobile peuvent rester connectées en parallèle.
+            </p>
+          </div>
+          {sessions.some((s) => !s.current) ? (
+            <button
+              type="button"
+              onClick={() => void handleRevokeOtherSessions()}
+              disabled={sessionsBusy}
+              className={outlineButtonClassName}
+            >
+              Déconnecter les autres appareils
+            </button>
+          ) : null}
+        </div>
+        {!sessionsLoaded ? (
+          <p className="text-sm text-slate-500 dark:text-slate-400">Chargement…</p>
+        ) : sessions.length === 0 ? (
+          <p className="text-sm text-slate-500 dark:text-slate-400">Aucune session active.</p>
+        ) : (
+          <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+            {sessions.map((session) => (
+              <li
+                key={session.sessionId}
+                className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
+              >
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                      {session.label}
+                    </p>
+                    <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-xs font-medium text-slate-600 dark:text-slate-300">
+                      {session.deviceClass === "mobile" ? "Mobile" : "Bureau"}
+                    </span>
+                    {session.current ? (
+                      <span className="rounded-full bg-brand-600/10 px-2 py-0.5 text-xs font-medium text-brand-600 dark:text-brand-400">
+                        Cet appareil
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                    Dernière activité {formatSessionActivity(session.lastSeenAt)}
+                  </p>
+                </div>
+                {!session.current ? (
+                  <button
+                    type="button"
+                    onClick={() => void handleRevokeSession(session.sessionId)}
+                    disabled={sessionsBusy}
+                    className={outlineButtonClassName}
+                  >
+                    Révoquer
+                  </button>
+                ) : null}
+              </li>
+            ))}
+          </ul>
         )}
       </section>
 

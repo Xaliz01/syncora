@@ -10,6 +10,7 @@ import type {
   UpdateUserPreferencesBody,
   UserPreferencesResponse,
   UserResponse,
+  UserSessionsListResponse,
 } from "@planwise/shared";
 import { AbstractAccountService } from "./ports/account.service.port";
 
@@ -66,6 +67,31 @@ export class AccountService extends AbstractAccountService {
       email: user.email,
       nickname: user.name?.trim() || user.email,
       ...(signature ? { signature } : {}),
+    });
+  }
+
+  async listSessions(userId: string, currentSessionId?: string): Promise<UserSessionsListResponse> {
+    const query = currentSessionId?.trim()
+      ? `?currentSessionId=${encodeURIComponent(currentSessionId.trim())}`
+      : "";
+    return this.callUsersService<UserSessionsListResponse>({
+      method: "get",
+      path: `/users/${userId}/sessions${query}`,
+    });
+  }
+
+  async revokeSession(userId: string, sessionId: string): Promise<void> {
+    await this.callUsersServiceRaw({
+      method: "delete",
+      path: `/users/${userId}/sessions/${encodeURIComponent(sessionId)}`,
+    });
+  }
+
+  async revokeOtherSessions(userId: string, keepSessionId: string): Promise<void> {
+    await this.callUsersServiceRaw({
+      method: "post",
+      path: `/users/${userId}/sessions/revoke-others`,
+      body: { keepSessionId },
     });
   }
 

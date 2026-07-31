@@ -122,9 +122,13 @@ describe("AuthController", () => {
       };
       mockAuthService.register.mockResolvedValue(mockAuthResponse);
 
-      const result = await controller.register(body);
+      const result = await controller.register(body, {
+        headers: { "user-agent": "JestAgent/1.0" },
+      } as never);
 
-      expect(mockAuthService.register).toHaveBeenCalledWith(body);
+      expect(mockAuthService.register).toHaveBeenCalledWith(body, {
+        userAgent: "JestAgent/1.0",
+      });
       expect(result).toEqual(mockAuthResponse);
       expect(result.accessToken).toBe("mock-jwt-token");
     });
@@ -138,9 +142,13 @@ describe("AuthController", () => {
       };
       mockAuthService.login.mockResolvedValue(mockAuthResponse);
 
-      const result = await controller.login(body);
+      const result = await controller.login(body, {
+        headers: { "user-agent": "JestAgent/1.0" },
+      } as never);
 
-      expect(mockAuthService.login).toHaveBeenCalledWith(body);
+      expect(mockAuthService.login).toHaveBeenCalledWith(body, {
+        userAgent: "JestAgent/1.0",
+      });
       expect(result).toEqual(mockAuthResponse);
     });
   });
@@ -178,9 +186,14 @@ describe("AuthController", () => {
       };
       mockAuthService.createOrganization.mockResolvedValue(mockAuthResponse);
 
-      const result = await controller.createOrganization(body, { user: jwtPayload } as never);
+      const result = await controller.createOrganization(body, {
+        user: jwtPayload,
+        headers: { "user-agent": "JestAgent/1.0" },
+      } as never);
 
-      expect(mockAuthService.createOrganization).toHaveBeenCalledWith(body, jwtPayload);
+      expect(mockAuthService.createOrganization).toHaveBeenCalledWith(body, jwtPayload, {
+        userAgent: "JestAgent/1.0",
+      });
       expect(result).toEqual(mockAuthResponse);
     });
   });
@@ -194,9 +207,13 @@ describe("AuthController", () => {
       };
       mockAuthService.acceptInvitation.mockResolvedValue(mockAuthResponse);
 
-      const result = await controller.acceptInvitation(body);
+      const result = await controller.acceptInvitation(body, {
+        headers: { "user-agent": "JestAgent/1.0" },
+      } as never);
 
-      expect(mockAuthService.acceptInvitation).toHaveBeenCalledWith(body);
+      expect(mockAuthService.acceptInvitation).toHaveBeenCalledWith(body, {
+        userAgent: "JestAgent/1.0",
+      });
       expect(result).toEqual(mockAuthResponse);
     });
   });

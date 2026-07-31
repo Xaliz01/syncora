@@ -194,4 +194,64 @@ describe("AccountService", () => {
       expect(result.nickname).toBe("user@example.com");
     });
   });
+
+  describe("listSessions", () => {
+    it("should call users-service GET /users/:id/sessions with currentSessionId", async () => {
+      const expected = {
+        sessions: [
+          {
+            id: "1",
+            sessionId: "sid-1",
+            label: "Chrome · macOS",
+            deviceClass: "desktop",
+            createdAt: "2026-07-18T12:00:00.000Z",
+            lastSeenAt: "2026-07-18T12:00:00.000Z",
+            current: true,
+          },
+        ],
+      };
+      mockHttpService.request.mockReturnValue(of({ data: expected, status: 200 } as AxiosResponse));
+
+      const result = await service.listSessions("user-123", "sid-1");
+
+      expect(mockHttpService.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: "get",
+          url: expect.stringContaining("/users/user-123/sessions?currentSessionId=sid-1"),
+        }),
+      );
+      expect(result).toEqual(expected);
+    });
+  });
+
+  describe("revokeSession", () => {
+    it("should call users-service DELETE /users/:id/sessions/:sessionId", async () => {
+      mockHttpService.request.mockReturnValue(of({ data: null, status: 204 } as AxiosResponse));
+
+      await service.revokeSession("user-123", "sid-2");
+
+      expect(mockHttpService.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: "delete",
+          url: expect.stringContaining("/users/user-123/sessions/sid-2"),
+        }),
+      );
+    });
+  });
+
+  describe("revokeOtherSessions", () => {
+    it("should call users-service POST revoke-others", async () => {
+      mockHttpService.request.mockReturnValue(of({ data: null, status: 204 } as AxiosResponse));
+
+      await service.revokeOtherSessions("user-123", "sid-1");
+
+      expect(mockHttpService.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: "post",
+          url: expect.stringContaining("/users/user-123/sessions/revoke-others"),
+          data: { keepSessionId: "sid-1" },
+        }),
+      );
+    });
+  });
 });

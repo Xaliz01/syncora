@@ -122,8 +122,12 @@ export interface SwitchOrganizationBody {
   organizationId: string;
 }
 
-/** Message d'erreur stable renvoyé quand un autre login a pris la session. */
-export const SESSION_REPLACED_MESSAGE = "Session remplacée par une autre connexion";
+/** Message d'erreur stable quand la session JWT n'est plus valide (révoquée / expirée). */
+export const SESSION_REPLACED_MESSAGE = "Session expirée ou révoquée";
+
+export interface CreateUserSessionBody {
+  userAgent?: string;
+}
 
 export interface CreateUserSessionResponse {
   sessionId: string;
@@ -140,4 +144,22 @@ export interface ValidateUserSessionResponse {
 
 export interface RevokeUserSessionBody {
   sessionId?: string;
+}
+
+/** Session appareil listée côté « Mon compte » (sans secrets). */
+export interface UserSessionResponse {
+  id: string;
+  sessionId: string;
+  label: string;
+  /** Classe d'appareil : au plus une session bureau et une mobile par compte. */
+  deviceClass: "desktop" | "mobile";
+  userAgent?: string;
+  createdAt: string;
+  lastSeenAt: string;
+  /** true si c'est la session du JWT courant. */
+  current: boolean;
+}
+
+export interface UserSessionsListResponse {
+  sessions: UserSessionResponse[];
 }

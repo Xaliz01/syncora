@@ -24,6 +24,7 @@ describe("UsersService", () => {
     findOne: jest.Mock;
     findOneAndUpdate: jest.Mock;
     find: jest.Mock;
+    updateOne: jest.Mock;
     collection: { findOne: jest.Mock; updateOne: jest.Mock };
   };
   let mockMembershipModel: {
@@ -36,6 +37,13 @@ describe("UsersService", () => {
   let mockPreferencesModel: {
     findOne: jest.Mock;
     findOneAndUpdate: jest.Mock;
+  };
+  let mockSessionModel: {
+    create: jest.Mock;
+    find: jest.Mock;
+    findOne: jest.Mock;
+    deleteOne: jest.Mock;
+    deleteMany: jest.Mock;
   };
 
   const mockDoc = (overrides: Record<string, unknown> = {}) => ({
@@ -78,6 +86,7 @@ describe("UsersService", () => {
       findOne: jest.fn().mockReturnValue({ exec: execMock }),
       findOneAndUpdate: jest.fn().mockReturnValue({ exec: execMock }),
       find: jest.fn().mockReturnValue({ sort: sortMock }),
+      updateOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue({}) }),
       collection: {
         findOne: jest.fn(),
         updateOne: jest.fn().mockResolvedValue(undefined),
@@ -106,12 +115,35 @@ describe("UsersService", () => {
       findOneAndUpdate: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
     };
 
+    mockSessionModel = {
+      create: jest.fn().mockResolvedValue({}),
+      find: jest.fn().mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          exec: jest.fn().mockResolvedValue([]),
+        }),
+        sort: jest.fn().mockReturnValue({
+          select: jest.fn().mockReturnValue({
+            exec: jest.fn().mockResolvedValue([]),
+          }),
+          exec: jest.fn().mockResolvedValue([]),
+        }),
+      }),
+      findOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
+      deleteOne: jest
+        .fn()
+        .mockReturnValue({ exec: jest.fn().mockResolvedValue({ deletedCount: 1 }) }),
+      deleteMany: jest
+        .fn()
+        .mockReturnValue({ exec: jest.fn().mockResolvedValue({ deletedCount: 1 }) }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         { provide: AbstractUsersService, useClass: UsersService },
         { provide: getModelToken("User"), useValue: mockUserModel },
         { provide: getModelToken("OrganizationMembership"), useValue: mockMembershipModel },
         { provide: getModelToken("UserPreferences"), useValue: mockPreferencesModel },
+        { provide: getModelToken("UserSession"), useValue: mockSessionModel },
         {
           provide: getModelToken("SupportImpersonationAudit"),
           useValue: { create: jest.fn().mockResolvedValue({ _id: { toString: () => "audit-1" } }) },
@@ -453,9 +485,8 @@ describe("UsersService", () => {
   });
 
   describe("deactivateOrganizationMembership", () => {
-    it("should disable an active membership and clear session", async () => {
+    it("should disable an active membership and revoke all sessions", async () => {
       const doc = mockDoc({
-        activeSessionId: "sid-1",
         save: jest.fn().mockImplementation(function (this: typeof doc) {
           return Promise.resolve(this);
         }),
@@ -463,6 +494,9 @@ describe("UsersService", () => {
       const membership = mockMemDoc({ membershipStatus: "active", role: "member" });
       mockUserModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(doc),
+      });
+      mockUserModel.updateOne = jest.fn().mockReturnValue({
+        exec: jest.fn().mockResolvedValue({}),
       });
       mockMembershipModel.findOne
         .mockReturnValueOnce({ exec: jest.fn().mockResolvedValue(membership) })
@@ -477,7 +511,7 @@ describe("UsersService", () => {
 
       expect(membership.membershipStatus).toBe("disabled");
       expect(membership.save).toHaveBeenCalled();
-      expect((doc as { activeSessionId?: string }).activeSessionId).toBeUndefined();
+      expect(mockSessionModel.deleteMany).toHaveBeenCalledWith({ userId: "user-123" });
       expect(result.organizationMembershipStatus).toBe("disabled");
     });
 
@@ -598,71 +632,154 @@ describe("UsersService", () => {
     });
   });
 
-  describe("createSession / validateSession / revokeSession", () => {
-    it("should create a new active session id", async () => {
-      const doc = mockDoc({
-        activeSessionId: "old-session",
-        save: jest.fn().mockImplementation(function (this: unknown) {
-          return Promise.resolve(this);
-        }),
-      }) as ReturnType<typeof mockDoc> & { activeSessionId?: string };
+  describe("createSession / validateSession / revokeSession / listSessions", () => {
+    it("should create a session document with derived label and device class", async () => {
       mockUserModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(doc),
+        exec: jest.fn().mockResolvedValue(mockDoc()),
+      });
+      mockSessionModel.find.mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          exec: jest.fn().mockResolvedValue([]),
+        }),
       });
 
-      const result = await service.createSession("user-123");
+      const result = await service.createSession("user-123", {
+        userAgent:
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      });
 
       expect(result.sessionId).toBeTruthy();
-      expect(result.sessionId).not.toBe("old-session");
-      expect(doc.activeSessionId).toBe(result.sessionId);
-      expect(doc.save).toHaveBeenCalled();
+      expect(mockSessionModel.deleteMany).toHaveBeenCalledWith({
+        userId: "user-123",
+        deviceClass: "desktop",
+      });
+      expect(mockSessionModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: "user-123",
+          sessionId: result.sessionId,
+          label: "Chrome · macOS",
+          deviceClass: "desktop",
+        }),
+      );
     });
 
-    it("should validate only the active session id", async () => {
+    it("should replace the previous session of the same device class", async () => {
       mockUserModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(mockDoc({ activeSessionId: "session-1" })),
+        exec: jest.fn().mockResolvedValue(mockDoc()),
+      });
+      mockSessionModel.find.mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          exec: jest.fn().mockResolvedValue([]),
+        }),
+      });
+
+      await service.createSession("user-123", {
+        userAgent:
+          "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+      });
+
+      expect(mockSessionModel.deleteMany).toHaveBeenCalledWith({
+        userId: "user-123",
+        deviceClass: "mobile",
+      });
+      expect(mockSessionModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({ deviceClass: "mobile", label: "Safari · iOS" }),
+      );
+    });
+
+    it("should validate an existing session and touch lastSeenAt when stale", async () => {
+      const session = {
+        lastSeenAt: new Date(Date.now() - 10 * 60 * 1000),
+        save: jest.fn().mockResolvedValue(undefined),
+      };
+      mockSessionModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(session),
       });
 
       await expect(service.validateSession("user-123", "session-1")).resolves.toEqual({
         valid: true,
       });
-      await expect(service.validateSession("user-123", "other")).resolves.toEqual({
+      expect(session.save).toHaveBeenCalled();
+
+      mockSessionModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null),
+      });
+      await expect(service.validateSession("user-123", "missing")).resolves.toEqual({
         valid: false,
       });
     });
 
-    it("should revoke matching session", async () => {
-      const doc = mockDoc({
-        activeSessionId: "session-1",
-        save: jest.fn().mockImplementation(function (this: unknown) {
-          return Promise.resolve(this);
-        }),
-      }) as ReturnType<typeof mockDoc> & { activeSessionId?: string };
+    it("should revoke one session or all sessions", async () => {
       mockUserModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(doc),
+        exec: jest.fn().mockResolvedValue(mockDoc()),
       });
 
       await service.revokeSession("user-123", "session-1");
-
-      expect(doc.activeSessionId).toBeUndefined();
-      expect(doc.save).toHaveBeenCalled();
-    });
-
-    it("should not clear session when revoke sid does not match", async () => {
-      const doc = mockDoc({
-        activeSessionId: "session-1",
-        save: jest.fn().mockImplementation(function (this: unknown) {
-          return Promise.resolve(this);
-        }),
-      }) as ReturnType<typeof mockDoc> & { activeSessionId?: string };
-      mockUserModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(doc),
+      expect(mockSessionModel.deleteOne).toHaveBeenCalledWith({
+        userId: "user-123",
+        sessionId: "session-1",
       });
 
-      await service.revokeSession("user-123", "other-session");
+      await service.revokeSession("user-123");
+      expect(mockSessionModel.deleteMany).toHaveBeenCalledWith({ userId: "user-123" });
+    });
 
-      expect(doc.activeSessionId).toBe("session-1");
-      expect(doc.save).not.toHaveBeenCalled();
+    it("should revoke other sessions while keeping the current one", async () => {
+      mockUserModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockDoc()),
+      });
+
+      await service.revokeOtherSessions("user-123", "keep-me");
+
+      expect(mockSessionModel.deleteMany).toHaveBeenCalledWith({
+        userId: "user-123",
+        sessionId: { $ne: "keep-me" },
+      });
+    });
+
+    it("should list sessions with current flag and device class", async () => {
+      mockUserModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockDoc()),
+      });
+      const now = new Date("2026-07-18T12:00:00.000Z");
+      mockSessionModel.find.mockReturnValue({
+        sort: jest.fn().mockReturnValue({
+          exec: jest.fn().mockResolvedValue([
+            {
+              _id: { toString: () => "doc-1" },
+              sessionId: "sid-current",
+              label: "Chrome · macOS",
+              deviceClass: "desktop",
+              userAgent: "Chrome",
+              createdAt: now,
+              lastSeenAt: now,
+            },
+            {
+              _id: { toString: () => "doc-2" },
+              sessionId: "sid-other",
+              label: "Safari · iOS",
+              deviceClass: "mobile",
+              createdAt: now,
+              lastSeenAt: now,
+            },
+          ]),
+        }),
+      });
+
+      const result = await service.listSessions("user-123", "sid-current");
+
+      expect(result).toEqual([
+        expect.objectContaining({
+          sessionId: "sid-current",
+          current: true,
+          deviceClass: "desktop",
+        }),
+        expect.objectContaining({
+          sessionId: "sid-other",
+          current: false,
+          deviceClass: "mobile",
+        }),
+      ]);
     });
   });
 

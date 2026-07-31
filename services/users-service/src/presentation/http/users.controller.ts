@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -21,6 +22,7 @@ import type {
   CreateInvitedUserBody,
   CreateOrganizationMembershipBody,
   CreateUserBody,
+  CreateUserSessionBody,
   PatchUserBody,
   ResendEmailVerificationBody,
   UpdateUserNameBody,
@@ -94,14 +96,38 @@ export class UsersController {
   }
 
   @Post(":id/sessions")
-  async createSession(@Param("id") id: string) {
-    return this.usersService.createSession(id);
+  async createSession(@Param("id") id: string, @Body() body?: CreateUserSessionBody) {
+    return this.usersService.createSession(id, { userAgent: body?.userAgent });
+  }
+
+  @Get(":id/sessions")
+  async listSessions(
+    @Param("id") id: string,
+    @Query("currentSessionId") currentSessionId?: string,
+  ) {
+    const sessions = await this.usersService.listSessions(id, currentSessionId);
+    return { sessions };
   }
 
   @Post(":id/sessions/revoke")
   @HttpCode(HttpStatus.NO_CONTENT)
   async revokeSession(@Param("id") id: string, @Body() body: { sessionId?: string }) {
     await this.usersService.revokeSession(id, body.sessionId);
+  }
+
+  @Post(":id/sessions/revoke-others")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async revokeOtherSessions(@Param("id") id: string, @Body() body: { keepSessionId?: string }) {
+    if (!body.keepSessionId?.trim()) {
+      throw new BadRequestException("keepSessionId is required");
+    }
+    await this.usersService.revokeOtherSessions(id, body.keepSessionId);
+  }
+
+  @Delete(":id/sessions/:sessionId")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteSession(@Param("id") id: string, @Param("sessionId") sessionId: string) {
+    await this.usersService.revokeSession(id, sessionId);
   }
 
   @Get()

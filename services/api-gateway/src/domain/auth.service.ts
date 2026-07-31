@@ -61,7 +61,7 @@ function buildOrganizationCreatePayload(body: CreateOrganizationBody): CreateOrg
     country: body.country?.trim() || undefined,
   };
 }
-import { AbstractAuthService } from "./ports/auth.service.port";
+import { AbstractAuthService, type AuthRequestContext } from "./ports/auth.service.port";
 import { AbstractSubscriptionsGatewayService } from "./ports/subscriptions.service.port";
 
 const ORGANIZATIONS_URL = process.env.ORGANIZATIONS_SERVICE_URL ?? "http://localhost:3001";
@@ -113,7 +113,7 @@ export class AuthService extends AbstractAuthService {
     };
   }
 
-  async register(body: RegisterBody): Promise<AuthResponse> {
+  async register(body: RegisterBody, context?: AuthRequestContext): Promise<AuthResponse> {
     if (!body.organizationSiret?.trim()) {
       throw new BadRequestException("Le SIRET de l'organisation est requis");
     }
@@ -167,6 +167,7 @@ export class AuthService extends AbstractAuthService {
       status: user.status,
       permissions,
       name: user.name,
+      userAgent: context?.userAgent,
     });
   }
 
@@ -330,7 +331,10 @@ export class AuthService extends AbstractAuthService {
     }
   }
 
-  async login(body: LoginBody): Promise<AuthResponse | OnboardingAuthResponse> {
+  async login(
+    body: LoginBody,
+    context?: AuthRequestContext,
+  ): Promise<AuthResponse | OnboardingAuthResponse> {
     let user: ValidateCredentialsResponse;
     try {
       const res = await firstValueFrom(
@@ -386,12 +390,14 @@ export class AuthService extends AbstractAuthService {
       permissions,
       name: user.name,
       technicianId,
+      userAgent: context?.userAgent,
     });
   }
 
   async createOrganization(
     body: CreateOrganizationBody,
     actor: JwtPayload | OnboardingJwtPayload,
+    context?: AuthRequestContext,
   ): Promise<AuthResponse> {
     if (!body.name?.trim()) {
       throw new BadRequestException("Le nom de l’organisation est requis");
@@ -468,6 +474,7 @@ export class AuthService extends AbstractAuthService {
       status: user.status,
       permissions,
       name: user.name,
+      userAgent: context?.userAgent,
     });
   }
 
@@ -551,7 +558,10 @@ export class AuthService extends AbstractAuthService {
     return { ok: true };
   }
 
-  async acceptInvitation(body: AcceptInvitationBody): Promise<AuthResponse> {
+  async acceptInvitation(
+    body: AcceptInvitationBody,
+    context?: AuthRequestContext,
+  ): Promise<AuthResponse> {
     let invitation: InvitationResponse;
     try {
       const res = await firstValueFrom(
@@ -621,6 +631,7 @@ export class AuthService extends AbstractAuthService {
       permissions,
       name: user.name,
       technicianId,
+      userAgent: context?.userAgent,
     });
   }
 
@@ -776,9 +787,11 @@ export class AuthService extends AbstractAuthService {
     }
   }
 
-  private async createUserSession(userId: string): Promise<string> {
+  private async createUserSession(userId: string, userAgent?: string): Promise<string> {
     const res = await firstValueFrom(
-      this.httpService.post<CreateUserSessionResponse>(`${USERS_URL}/users/${userId}/sessions`),
+      this.httpService.post<CreateUserSessionResponse>(`${USERS_URL}/users/${userId}/sessions`, {
+        userAgent,
+      }),
     );
     return res.data.sessionId;
   }
@@ -794,10 +807,11 @@ export class AuthService extends AbstractAuthService {
     technicianId?: string;
     /** Si fourni, réutilise la session (ex. switch d'organisation). */
     reuseSessionId?: string;
+    userAgent?: string;
   }): Promise<AuthResponse> {
     const sid = params.reuseSessionId?.trim()
       ? params.reuseSessionId.trim()
-      : await this.createUserSession(params.id);
+      : await this.createUserSession(params.id, params.userAgent);
 
     const authUser: AuthUser = {
       id: params.id,

@@ -29,14 +29,19 @@ type CreateOrgRequest = Request & {
   onboardingUser?: OnboardingJwtPayload;
 };
 
+function requestUserAgent(req: Request): string | undefined {
+  const ua = req.headers["user-agent"];
+  return typeof ua === "string" ? ua : undefined;
+}
+
 @Controller("auth")
 export class AuthController {
   constructor(private readonly authService: AbstractAuthService) {}
 
   /** @deprecated Préférer register-account puis create-organization. */
   @Post("register")
-  async register(@Body() body: RegisterBody): Promise<AuthResponse> {
-    return this.authService.register(body);
+  async register(@Body() body: RegisterBody, @Req() req: Request): Promise<AuthResponse> {
+    return this.authService.register(body, { userAgent: requestUserAgent(req) });
   }
 
   @Post("register-account")
@@ -59,13 +64,19 @@ export class AuthController {
   }
 
   @Post("login")
-  async login(@Body() body: LoginBody): Promise<AuthResponse | OnboardingAuthResponse> {
-    return this.authService.login(body);
+  async login(
+    @Body() body: LoginBody,
+    @Req() req: Request,
+  ): Promise<AuthResponse | OnboardingAuthResponse> {
+    return this.authService.login(body, { userAgent: requestUserAgent(req) });
   }
 
   @Post("accept-invitation")
-  async acceptInvitation(@Body() body: AcceptInvitationBody): Promise<AuthResponse> {
-    return this.authService.acceptInvitation(body);
+  async acceptInvitation(
+    @Body() body: AcceptInvitationBody,
+    @Req() req: Request,
+  ): Promise<AuthResponse> {
+    return this.authService.acceptInvitation(body, { userAgent: requestUserAgent(req) });
   }
 
   @Post("resolve-invitation")
@@ -85,7 +96,9 @@ export class AuthController {
     if (!actor) {
       throw new Error("CreateOrganizationGuard should set actor");
     }
-    return this.authService.createOrganization(body, actor);
+    return this.authService.createOrganization(body, actor, {
+      userAgent: requestUserAgent(req),
+    });
   }
 
   @Post("switch-organization")

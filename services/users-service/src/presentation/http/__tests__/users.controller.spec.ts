@@ -25,6 +25,8 @@ describe("UsersController", () => {
       createSession: jest.fn(),
       validateSession: jest.fn(),
       revokeSession: jest.fn(),
+      revokeOtherSessions: jest.fn(),
+      listSessions: jest.fn(),
       patch: jest.fn(),
       findById: jest.fn(),
       listByOrganization: jest.fn(),

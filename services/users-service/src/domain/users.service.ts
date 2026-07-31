@@ -15,6 +15,7 @@ import type { UserDocument } from "../persistence/user.schema";
 import type { OrganizationMembershipDocument } from "../persistence/organization-membership.schema";
 import type { UserPreferencesDocument } from "../persistence/user-preferences.schema";
 import type { SupportImpersonationAuditDocument } from "../persistence/support-impersonation-audit.schema";
+import type { UserSessionDocument } from "../persistence/user-session.schema";
 import {
   activeDocumentFilter,
   DEFAULT_USER_PREFERENCES,
@@ -40,6 +41,7 @@ import {
   type UserPreferencesResponse,
   type UserResponse,
   type UserRole,
+  type UserSessionResponse,
   type ValidateCredentialsResponse,
   type ValidateUserSessionResponse,
 } from "@planwise/shared";
@@ -48,12 +50,15 @@ import {
   type CreateImpersonationAuditBody,
   type PlatformUsersDirectoryResult,
 } from "./ports/users.service.port";
+import { deriveSessionDeviceClass, deriveSessionLabel } from "./session-label";
 
 /** bcrypt cost factor (OWASP recommande ≥ 10 ; 12 est un bon compromis). */
 const SALT_ROUNDS = 12;
 const DEFAULT_ROLE: UserRole = "member";
 const EMAIL_OTP_TTL_MS = 15 * 60 * 1000;
 const EMAIL_OTP_RESEND_COOLDOWN_MS = 60 * 1000;
+const SESSION_LAST_SEEN_THROTTLE_MS = 5 * 60 * 1000;
+const MAX_USER_AGENT_LENGTH = 400;
 
 function assertPasswordPolicy(password: string): void {
   const error = getPasswordPolicyError(password);
@@ -70,6 +75,8 @@ export class UsersService extends AbstractUsersService {
     private readonly preferencesModel: Model<UserPreferencesDocument>,
     @InjectModel("SupportImpersonationAudit")
     private readonly impersonationAuditModel: Model<SupportImpersonationAuditDocument>,
+    @InjectModel("UserSession")
+    private readonly sessionModel: Model<UserSessionDocument>,
   ) {
     super();
   }
@@ -453,7 +460,7 @@ export class UsersService extends AbstractUsersService {
     membership.membershipStatus = "disabled";
     await membership.save();
 
-    doc.activeSessionId = undefined;
+    await this.revokeSession(userId);
     if (doc.organizationId === organizationId) {
       const nextActive = await this.membershipModel
         .findOne({
@@ -621,8 +628,8 @@ export class UsersService extends AbstractUsersService {
       throw new UnauthorizedException("Mot de passe actuel incorrect");
     }
     doc.passwordHash = await bcrypt.hash(body.newPassword, SALT_ROUNDS);
-    doc.activeSessionId = undefined;
     await doc.save();
+    await this.revokeSession(id);
   }
 
   async getPreferences(userId: string): Promise<UserPreferencesResponse> {
@@ -768,12 +775,50 @@ export class UsersService extends AbstractUsersService {
     return null;
   }
 
-  async createSession(userId: string): Promise<CreateUserSessionResponse> {
+  async createSession(
+    userId: string,
+    options?: { userAgent?: string },
+  ): Promise<CreateUserSessionResponse> {
     const doc = await this.userModel.findOne({ _id: userId, ...activeDocumentFilter }).exec();
     if (!doc) throw new NotFoundException("User not found");
+
+    const now = new Date();
     const sessionId = randomUUID();
-    doc.activeSessionId = sessionId;
-    await doc.save();
+    const rawUa = options?.userAgent?.trim() ?? "";
+    const userAgent = rawUa ? rawUa.slice(0, MAX_USER_AGENT_LENGTH) : undefined;
+    const deviceClass = deriveSessionDeviceClass(userAgent);
+
+    // 1 session max par classe (bureau / mobile) : remplace l'éventuelle session du même type.
+    await this.sessionModel.deleteMany({ userId, deviceClass }).exec();
+
+    // Migration soft : sessions legacy sans deviceClass → reclassées via userAgent.
+    const legacy = await this.sessionModel
+      .find({ userId, deviceClass: { $exists: false } })
+      .select("_id userAgent")
+      .exec();
+    const legacyIds = legacy
+      .filter((s) => deriveSessionDeviceClass(s.userAgent) === deviceClass)
+      .map((s) => s._id);
+    if (legacyIds.length > 0) {
+      await this.sessionModel.deleteMany({ _id: { $in: legacyIds } }).exec();
+    }
+
+    await this.sessionModel.create({
+      userId,
+      sessionId,
+      deviceClass,
+      label: deriveSessionLabel(userAgent),
+      userAgent,
+      createdAt: now,
+      lastSeenAt: now,
+    });
+
+    // Nettoyage legacy (session unique sur le document user).
+    await this.userModel
+      .updateOne({ _id: userId }, { $unset: { activeSessionId: "" } })
+      .exec()
+      .catch(() => undefined);
+
     return { sessionId };
   }
 
@@ -781,19 +826,58 @@ export class UsersService extends AbstractUsersService {
     if (!sessionId?.trim()) {
       return { valid: false };
     }
-    const doc = await this.userModel.findOne({ _id: userId, ...activeDocumentFilter }).exec();
-    if (!doc) return { valid: false };
-    return { valid: doc.activeSessionId === sessionId };
+    const session = await this.sessionModel.findOne({ userId, sessionId: sessionId.trim() }).exec();
+    if (!session) return { valid: false };
+
+    const now = Date.now();
+    if (now - session.lastSeenAt.getTime() >= SESSION_LAST_SEEN_THROTTLE_MS) {
+      session.lastSeenAt = new Date(now);
+      await session.save().catch(() => undefined);
+    }
+    return { valid: true };
   }
 
   async revokeSession(userId: string, sessionId?: string): Promise<void> {
-    const doc = await this.userModel.findOne({ _id: userId, ...activeDocumentFilter }).exec();
-    if (!doc) throw new NotFoundException("User not found");
-    if (sessionId !== undefined && sessionId !== "" && doc.activeSessionId !== sessionId) {
+    const user = await this.userModel.findOne({ _id: userId, ...activeDocumentFilter }).exec();
+    if (!user) throw new NotFoundException("User not found");
+
+    if (sessionId?.trim()) {
+      await this.sessionModel.deleteOne({ userId, sessionId: sessionId.trim() }).exec();
       return;
     }
-    doc.activeSessionId = undefined;
-    await doc.save();
+    await this.sessionModel.deleteMany({ userId }).exec();
+    await this.userModel
+      .updateOne({ _id: userId }, { $unset: { activeSessionId: "" } })
+      .exec()
+      .catch(() => undefined);
+  }
+
+  async revokeOtherSessions(userId: string, keepSessionId: string): Promise<void> {
+    const user = await this.userModel.findOne({ _id: userId, ...activeDocumentFilter }).exec();
+    if (!user) throw new NotFoundException("User not found");
+    const keep = keepSessionId.trim();
+    if (!keep) {
+      throw new BadRequestException("sessionId courant requis");
+    }
+    await this.sessionModel.deleteMany({ userId, sessionId: { $ne: keep } }).exec();
+  }
+
+  async listSessions(userId: string, currentSessionId?: string): Promise<UserSessionResponse[]> {
+    const user = await this.userModel.findOne({ _id: userId, ...activeDocumentFilter }).exec();
+    if (!user) throw new NotFoundException("User not found");
+
+    const docs = await this.sessionModel.find({ userId }).sort({ lastSeenAt: -1 }).exec();
+    const current = currentSessionId?.trim() ?? "";
+    return docs.map((doc) => ({
+      id: doc._id.toString(),
+      sessionId: doc.sessionId,
+      label: doc.label,
+      deviceClass: doc.deviceClass ?? deriveSessionDeviceClass(doc.userAgent),
+      userAgent: doc.userAgent,
+      createdAt: doc.createdAt.toISOString(),
+      lastSeenAt: doc.lastSeenAt.toISOString(),
+      current: current.length > 0 && doc.sessionId === current,
+    }));
   }
 
   async listPlatformDirectory(filters?: {

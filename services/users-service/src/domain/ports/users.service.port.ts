@@ -17,6 +17,7 @@ import type {
   UpdateUserPreferencesBody,
   UserPreferencesResponse,
   UserResponse,
+  UserSessionResponse,
   ValidateCredentialsResponse,
   ValidateUserSessionResponse,
 } from "@planwise/shared";
@@ -71,9 +72,14 @@ export abstract class AbstractUsersService {
     email: string,
     password: string,
   ): Promise<ValidateCredentialsResponse | null>;
-  abstract createSession(userId: string): Promise<CreateUserSessionResponse>;
+  abstract createSession(
+    userId: string,
+    options?: { userAgent?: string },
+  ): Promise<CreateUserSessionResponse>;
   abstract validateSession(userId: string, sessionId: string): Promise<ValidateUserSessionResponse>;
   abstract revokeSession(userId: string, sessionId?: string): Promise<void>;
+  abstract revokeOtherSessions(userId: string, keepSessionId: string): Promise<void>;
+  abstract listSessions(userId: string, currentSessionId?: string): Promise<UserSessionResponse[]>;
   abstract updateName(id: string, body: UpdateUserNameBody): Promise<UserResponse>;
   abstract changePassword(id: string, body: ChangePasswordBody): Promise<void>;
   abstract getPreferences(userId: string): Promise<UserPreferencesResponse>;

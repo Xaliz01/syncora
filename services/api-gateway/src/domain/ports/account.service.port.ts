@@ -6,6 +6,7 @@ import type {
   UpdateUserPreferencesBody,
   UserPreferencesResponse,
   UserResponse,
+  UserSessionsListResponse,
 } from "@planwise/shared";
 
 export abstract class AbstractAccountService {
@@ -17,4 +18,10 @@ export abstract class AbstractAccountService {
     body: UpdateUserPreferencesBody,
   ): Promise<UserPreferencesResponse>;
   abstract getCrispIdentity(user: AuthUser): Promise<CrispIdentityResponse>;
+  abstract listSessions(
+    userId: string,
+    currentSessionId?: string,
+  ): Promise<UserSessionsListResponse>;
+  abstract revokeSession(userId: string, sessionId: string): Promise<void>;
+  abstract revokeOtherSessions(userId: string, keepSessionId: string): Promise<void>;
 }

@@ -42,10 +42,6 @@ export class UserDocument extends Document {
 
   @Prop({ type: Date })
   lastLoginAt?: Date | null;
-
-  /** Session active unique (anti-partage de compte). */
-  @Prop()
-  activeSessionId?: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(UserDocument);

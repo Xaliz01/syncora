@@ -25,6 +25,9 @@ describe("AccountController", () => {
       getPreferences: jest.fn(),
       updatePreferences: jest.fn(),
       getCrispIdentity: jest.fn(),
+      listSessions: jest.fn(),
+      revokeSession: jest.fn(),
+      revokeOtherSessions: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -135,6 +138,50 @@ describe("AccountController", () => {
 
       expect(mockAccountService.getCrispIdentity).toHaveBeenCalledWith(mockUser);
       expect(result).toEqual(expected);
+    });
+  });
+
+  describe("sessions", () => {
+    it("should list sessions with current sid from JWT", async () => {
+      const expected = {
+        sessions: [
+          {
+            id: "1",
+            sessionId: "sid-1",
+            label: "Chrome · macOS",
+            deviceClass: "desktop" as const,
+            createdAt: "2026-07-18T12:00:00.000Z",
+            lastSeenAt: "2026-07-18T12:00:00.000Z",
+            current: true,
+          },
+        ],
+      };
+      mockAccountService.listSessions.mockResolvedValue(expected);
+
+      const result = await controller.listSessions(mockUser, {
+        user: { sid: "sid-1" },
+      } as never);
+
+      expect(mockAccountService.listSessions).toHaveBeenCalledWith("user-123", "sid-1");
+      expect(result).toEqual(expected);
+    });
+
+    it("should revoke a session by id", async () => {
+      mockAccountService.revokeSession.mockResolvedValue(undefined);
+
+      await controller.revokeSession(mockUser, "sid-2");
+
+      expect(mockAccountService.revokeSession).toHaveBeenCalledWith("user-123", "sid-2");
+    });
+
+    it("should revoke other sessions keeping JWT sid", async () => {
+      mockAccountService.revokeOtherSessions.mockResolvedValue(undefined);
+
+      await controller.revokeOtherSessions(mockUser, {
+        user: { sid: "sid-1" },
+      } as never);
+
+      expect(mockAccountService.revokeOtherSessions).toHaveBeenCalledWith("user-123", "sid-1");
     });
   });
 });

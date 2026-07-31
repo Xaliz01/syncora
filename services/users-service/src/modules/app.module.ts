@@ -6,6 +6,7 @@ import { UserSchema } from "../persistence/user.schema";
 import { OrganizationMembershipSchema } from "../persistence/organization-membership.schema";
 import { UserPreferencesSchema } from "../persistence/user-preferences.schema";
 import { SupportImpersonationAuditSchema } from "../persistence/support-impersonation-audit.schema";
+import { UserSessionSchema } from "../persistence/user-session.schema";
 import { AbstractUsersService } from "../domain/ports/users.service.port";
 import { UsersService } from "../domain/users.service";
 
@@ -17,6 +18,7 @@ import { UsersService } from "../domain/users.service";
       { name: "OrganizationMembership", schema: OrganizationMembershipSchema },
       { name: "UserPreferences", schema: UserPreferencesSchema },
       { name: "SupportImpersonationAudit", schema: SupportImpersonationAuditSchema },
+      { name: "UserSession", schema: UserSessionSchema },
     ]),
   ],
   controllers: [UsersController, HealthController],
