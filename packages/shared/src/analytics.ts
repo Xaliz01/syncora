@@ -14,6 +14,16 @@ export interface TrackPageviewBody {
   sessionId: string;
   /** true si une session app authentifiée est présente (sans userId). */
   authenticated?: boolean;
+  /**
+   * Rempli côté serveur uniquement (ISO 3166-1 alpha-2).
+   * Ignoré / écrasé s'il est envoyé par le client.
+   */
+  country?: string;
+  /**
+   * Rempli côté serveur uniquement (code région approximatif).
+   * Ignoré / écrasé s'il est envoyé par le client.
+   */
+  region?: string;
 }
 
 export interface TrackPageviewResponse {
@@ -38,6 +48,12 @@ export interface AnalyticsSurfaceStat {
   visitors: number;
 }
 
+export interface AnalyticsCountryStat {
+  country: string;
+  pageviews: number;
+  visitors: number;
+}
+
 export interface PlatformAnalyticsOverviewResponse {
   days: number;
   from: string;
@@ -50,4 +66,5 @@ export interface PlatformAnalyticsOverviewResponse {
   bySurface: AnalyticsSurfaceStat[];
   byDay: AnalyticsDailyBucket[];
   topPaths: AnalyticsPathStat[];
+  topCountries: AnalyticsCountryStat[];
 }

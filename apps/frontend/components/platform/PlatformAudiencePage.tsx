@@ -16,6 +16,15 @@ function formatNumber(n: number) {
   return new Intl.NumberFormat("fr-FR").format(n);
 }
 
+function formatCountry(code: string): string {
+  try {
+    const name = new Intl.DisplayNames(["fr"], { type: "region" }).of(code);
+    return name ? `${name} (${code})` : code;
+  } catch {
+    return code;
+  }
+}
+
 export function PlatformAudiencePage() {
   const [days, setDays] = useState<(typeof DAY_OPTIONS)[number]>(30);
   const [data, setData] = useState<PlatformAnalyticsOverviewResponse | null>(null);
@@ -42,7 +51,7 @@ export function PlatformAudiencePage() {
         <div>
           <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Audience</h1>
           <p className="text-sm text-slate-500">
-            Mesure first-party (pages vues anonymes, rétention ~400 jours).
+            Mesure first-party (pages vues, pays approximatif via IP — IP non stockée, ~400 jours).
           </p>
         </div>
         <div className="flex gap-1 rounded-lg border border-slate-200 p-1 dark:border-slate-700">
@@ -173,6 +182,38 @@ export function PlatformAudiencePage() {
                 </tbody>
               </table>
             </div>
+          </div>
+
+          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+            <div className="border-b border-slate-100 px-4 py-3 text-sm font-medium dark:border-slate-800">
+              Par pays
+            </div>
+            <table className="w-full text-left text-sm">
+              <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-950">
+                <tr>
+                  <th className="px-4 py-2">Pays</th>
+                  <th className="px-4 py-2">Vues</th>
+                  <th className="px-4 py-2">Visiteurs</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {(data.topCountries ?? []).length === 0 ? (
+                  <tr>
+                    <td colSpan={3} className="px-4 py-6 text-center text-slate-500">
+                      Aucune donnée
+                    </td>
+                  </tr>
+                ) : (
+                  data.topCountries.map((row) => (
+                    <tr key={row.country}>
+                      <td className="px-4 py-2">{formatCountry(row.country)}</td>
+                      <td className="px-4 py-2 tabular-nums">{formatNumber(row.pageviews)}</td>
+                      <td className="px-4 py-2 tabular-nums">{formatNumber(row.visitors)}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </>
       )}

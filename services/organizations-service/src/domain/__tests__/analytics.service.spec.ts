@@ -55,6 +55,21 @@ describe("AnalyticsService", () => {
       });
     });
 
+    it("persists country and region when provided by gateway", async () => {
+      await service.trackPageview({
+        ...validBody,
+        country: "fr",
+        region: "idf",
+      });
+
+      expect(mockPageViewModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          country: "FR",
+          region: "IDF",
+        }),
+      );
+    });
+
     it("rejects invalid surface", async () => {
       await expect(
         service.trackPageview({
@@ -92,6 +107,7 @@ describe("AnalyticsService", () => {
       expect(overview.byDay).toHaveLength(7);
       expect(overview.bySurface).toEqual([]);
       expect(overview.topPaths).toEqual([]);
+      expect(overview.topCountries).toEqual([]);
     });
 
     it("maps aggregation rows", async () => {
@@ -107,8 +123,8 @@ describe("AnalyticsService", () => {
         })
         .mockReturnValueOnce({
           exec: jest.fn().mockResolvedValue([
-            { _id: "marketing", pageviews: 6, visitors: ["a"] },
             { _id: "app", pageviews: 4, visitors: ["b"] },
+            { _id: "marketing", pageviews: 6, visitors: ["a"] },
           ]),
         })
         .mockReturnValueOnce({
@@ -123,6 +139,9 @@ describe("AnalyticsService", () => {
         })
         .mockReturnValueOnce({
           exec: jest.fn().mockResolvedValue([{ _id: "/", pageviews: 5 }]),
+        })
+        .mockReturnValueOnce({
+          exec: jest.fn().mockResolvedValue([{ _id: "FR", pageviews: 8, visitors: ["a", "b"] }]),
         });
 
       const overview = await service.getOverview(1);
@@ -133,6 +152,7 @@ describe("AnalyticsService", () => {
         { surface: "app", pageviews: 4, visitors: 1 },
       ]);
       expect(overview.topPaths).toEqual([{ path: "/", pageviews: 5 }]);
+      expect(overview.topCountries).toEqual([{ country: "FR", pageviews: 8, visitors: 2 }]);
       expect(overview.byDay).toHaveLength(1);
     });
   });

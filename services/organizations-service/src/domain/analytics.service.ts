@@ -37,6 +37,8 @@ export class AnalyticsService extends AbstractAnalyticsService {
     }
 
     const referrerHost = this.normalizeReferrerHost(body.referrerHost);
+    const country = this.normalizeCountry(body.country);
+    const region = this.normalizeRegion(body.region);
 
     await this.pageViewModel.create({
       surface,
@@ -45,6 +47,8 @@ export class AnalyticsService extends AbstractAnalyticsService {
       visitorId,
       sessionId,
       authenticated: body.authenticated === true,
+      ...(country ? { country } : {}),
+      ...(region ? { region } : {}),
     });
 
     return { ok: true };
@@ -59,7 +63,7 @@ export class AnalyticsService extends AbstractAnalyticsService {
 
     const match = { createdAt: { $gte: from, $lte: to } };
 
-    const [totalsAgg, bySurface, byDay, topPaths] = await Promise.all([
+    const [totalsAgg, bySurface, byDay, topPaths, topCountries] = await Promise.all([
       this.pageViewModel
         .aggregate<{ pageviews: number; visitors: string[]; sessions: string[] }>([
           { $match: match },
@@ -83,6 +87,7 @@ export class AnalyticsService extends AbstractAnalyticsService {
               visitors: { $addToSet: "$visitorId" },
             },
           },
+          { $sort: { pageviews: -1 } },
         ])
         .exec(),
       this.pageViewModel
@@ -110,6 +115,20 @@ export class AnalyticsService extends AbstractAnalyticsService {
           { $group: { _id: "$path", pageviews: { $sum: 1 } } },
           { $sort: { pageviews: -1 } },
           { $limit: 20 },
+        ])
+        .exec(),
+      this.pageViewModel
+        .aggregate<{ _id: string; pageviews: number; visitors: string[] }>([
+          { $match: { ...match, country: { $exists: true, $nin: [null, ""] } } },
+          {
+            $group: {
+              _id: "$country",
+              pageviews: { $sum: 1 },
+              visitors: { $addToSet: "$visitorId" },
+            },
+          },
+          { $sort: { pageviews: -1 } },
+          { $limit: 15 },
         ])
         .exec(),
     ]);
@@ -144,15 +163,22 @@ export class AnalyticsService extends AbstractAnalyticsService {
         visitors: totalsRow?.visitors.length ?? 0,
         sessions: totalsRow?.sessions.length ?? 0,
       },
-      bySurface: bySurface.map((row) => ({
-        surface: row._id,
-        pageviews: row.pageviews,
-        visitors: row.visitors.length,
-      })),
+      bySurface: [...bySurface]
+        .sort((a, b) => b.pageviews - a.pageviews)
+        .map((row) => ({
+          surface: row._id,
+          pageviews: row.pageviews,
+          visitors: row.visitors.length,
+        })),
       byDay: byDayFilled,
       topPaths: topPaths.map((row) => ({
         path: row._id,
         pageviews: row.pageviews,
+      })),
+      topCountries: topCountries.map((row) => ({
+        country: row._id,
+        pageviews: row.pageviews,
+        visitors: row.visitors.length,
       })),
     };
   }
@@ -184,5 +210,20 @@ export class AnalyticsService extends AbstractAnalyticsService {
     } catch {
       return undefined;
     }
+  }
+
+  private normalizeCountry(raw?: string): string | undefined {
+    const value = (raw ?? "").trim().toUpperCase();
+    if (!/^[A-Z]{2}$/.test(value)) return undefined;
+    return value;
+  }
+
+  private normalizeRegion(raw?: string): string | undefined {
+    const value = (raw ?? "")
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9-]/g, "");
+    if (!value || value.length > 10) return undefined;
+    return value;
   }
 }

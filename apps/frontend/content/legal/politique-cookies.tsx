@@ -59,8 +59,9 @@ export function PolitiqueCookiesContent() {
               </code>{" "}
               (sessionStorage) pour compter les pages vues sur planwise.fr et app.planwise.fr. Aucun
               outil publicitaire tiers. Données : chemin de page, surface (landing / app), hôte du
-              referrer le cas échéant, horodatage. Conservées environ 400 jours. Vous pouvez vous y
-              opposer en définissant{" "}
+              referrer le cas échéant, pays / région approximatifs dérivés de l&apos;adresse IP au
+              moment de la requête (l&apos;IP elle-même n&apos;est pas conservée), horodatage.
+              Conservées environ 400 jours. Vous pouvez vous y opposer en définissant{" "}
               <code className="text-xs bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">
                 planwise_analytics_opt_out
               </code>{" "}

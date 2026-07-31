@@ -19,6 +19,9 @@ async function bootstrap() {
   const logger = createNestLogger("api-gateway");
   const app = await NestFactory.create(AppModule, { logger });
 
+  // Nécessaire pour req.ip / X-Forwarded-For derrière reverse proxy (geo analytics).
+  app.getHttpAdapter().getInstance().set("trust proxy", 1);
+
   app.setGlobalPrefix("api");
   const corsOrigin = resolveCorsOrigin();
   app.enableCors({

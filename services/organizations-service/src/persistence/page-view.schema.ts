@@ -22,6 +22,14 @@ export class PageViewDocument extends Document {
   @Prop({ default: false })
   authenticated!: boolean;
 
+  /** ISO 3166-1 alpha-2 dérivé serveur (pas d'IP stockée). */
+  @Prop()
+  country?: string;
+
+  /** Code région approximatif dérivé serveur. */
+  @Prop()
+  region?: string;
+
   createdAt!: Date;
 }
 
@@ -29,3 +37,4 @@ export const PageViewSchema = SchemaFactory.createForClass(PageViewDocument);
 PageViewSchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 400 });
 PageViewSchema.index({ surface: 1, createdAt: -1 });
 PageViewSchema.index({ path: 1, createdAt: -1 });
+PageViewSchema.index({ country: 1, createdAt: -1 });
