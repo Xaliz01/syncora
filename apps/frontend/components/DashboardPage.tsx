@@ -96,7 +96,7 @@ function DashboardPaginatedList<T>({
       </div>
       {showPager ? (
         <nav
-          className="mt-auto flex shrink-0 items-center justify-between gap-1 sm:gap-2 pt-2 sm:pt-3 border-t border-slate-100 dark:border-slate-800"
+          className="mt-auto flex shrink-0 items-center justify-between gap-1 sm:gap-2 pt-2 sm:pt-3 pr-16 sm:pr-20 border-t border-slate-100 dark:border-slate-800"
           aria-label={ariaLabel}
         >
           <button

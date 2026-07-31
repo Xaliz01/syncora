@@ -205,8 +205,36 @@ export interface InvitationResponse {
   acceptedAt?: string;
 }
 
+/** Réponse après renvoi d'un e-mail d'invitation encore en attente. */
+export interface ResendInvitationResponse {
+  ok: true;
+  invitation: InvitationResponse;
+  emailSent: boolean;
+}
+
+export interface UpdatePendingInvitationBody {
+  email: string;
+}
+
+export interface UpdatePendingInvitationResponse {
+  invitation: InvitationResponse;
+  emailSent: boolean;
+}
+
+export interface CancelInvitationResponse {
+  ok: true;
+}
+
 export interface AcceptInvitationBody {
   invitationToken: string;
   password: string;
   name?: string;
+}
+
+/** Aperçu public d'une invitation en attente (sans jeton ni ids internes exposés inutilement). */
+export interface ResolveInvitationPreviewResponse {
+  invitedEmail: string;
+  invitedName?: string;
+  /** true si le compte n'a pas encore de mot de passe (première activation). */
+  requiresPasswordSetup: boolean;
 }

@@ -12,9 +12,17 @@ describe("UsersController", () => {
     mockUsersService = {
       create: jest.fn(),
       createAccount: jest.fn(),
+      verifyEmail: jest.fn(),
+      resendEmailVerification: jest.fn(),
       findAccountById: jest.fn(),
       invite: jest.fn(),
       activateInvitedUser: jest.fn(),
+      getInvitationActivationHints: jest.fn(),
+      updateInvitedUserEmail: jest.fn(),
+      cancelOrganizationInvitation: jest.fn(),
+      createSession: jest.fn(),
+      validateSession: jest.fn(),
+      revokeSession: jest.fn(),
       patch: jest.fn(),
       findById: jest.fn(),
       listByOrganization: jest.fn(),
@@ -51,10 +59,14 @@ describe("UsersController", () => {
     it("should delegate to usersService.createAccount", async () => {
       const body = { email: "solo@example.com", password: "secret123", name: "Solo" };
       const expected = {
-        id: "user-1",
-        email: "solo@example.com",
-        name: "Solo",
-        status: "active" as const,
+        user: {
+          id: "user-1",
+          email: "solo@example.com",
+          name: "Solo",
+          status: "active" as const,
+          emailVerified: false,
+        },
+        emailVerificationCode: "123456",
       };
       mockUsersService.createAccount.mockResolvedValue(expected);
 
@@ -120,7 +132,11 @@ describe("UsersController", () => {
 
   describe("activateInvitedUser", () => {
     it("should call service.activateInvitedUser and return the result", async () => {
-      const body = { password: "newpassword", name: "Activated User" };
+      const body = {
+        password: "newpassword",
+        name: "Activated User",
+        organizationId: "org-1",
+      };
       const expected = {
         id: "user-123",
         organizationId: "org-1",
@@ -279,6 +295,7 @@ describe("UsersController", () => {
         name: "User",
         role: "member" as const,
         status: "active" as const,
+        emailVerified: true,
       };
       mockUsersService.validateCredentials.mockResolvedValue(response);
 

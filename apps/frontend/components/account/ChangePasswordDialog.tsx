@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
+import { getPasswordPolicyError, PASSWORD_POLICY_HINT } from "@planwise/shared";
 import * as accountApi from "@/lib/account.api";
 import { useToast } from "@/components/ui/ToastProvider";
 
@@ -38,8 +39,9 @@ export function ChangePasswordDialog({ open, onClose }: { open: boolean; onClose
         showToast("Les mots de passe ne correspondent pas", "error");
         return;
       }
-      if (newPassword.length < 6) {
-        showToast("Le mot de passe doit contenir au moins 6 caractères", "error");
+      const policyError = getPasswordPolicyError(newPassword);
+      if (policyError) {
+        showToast(policyError, "error");
         return;
       }
       setSaving(true);
@@ -115,6 +117,9 @@ export function ChangePasswordDialog({ open, onClose }: { open: boolean; onClose
               autoComplete="new-password"
               disabled={saving}
             />
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              {PASSWORD_POLICY_HINT}
+            </p>
           </div>
           <div>
             <label

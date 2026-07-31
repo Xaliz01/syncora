@@ -4,6 +4,7 @@ import { firstValueFrom } from "rxjs";
 import type {
   SendEmailNotificationBody,
   SendEmailNotificationResponse,
+  SendTransactionalEmailBody,
   UserResponse,
 } from "@planwise/shared";
 import { AbstractEmailService } from "../../domain/ports/email.service.port";
@@ -33,6 +34,21 @@ export class EmailController {
     }
 
     return this.emailService.sendNotificationEmail(email, body.subject, body.body, body.url);
+  }
+
+  @Post("transactional")
+  async sendTransactional(
+    @Body() body: SendTransactionalEmailBody,
+  ): Promise<SendEmailNotificationResponse> {
+    if (!body.to?.trim() || !body.subject?.trim()) {
+      throw new BadRequestException("to and subject are required");
+    }
+
+    if (!this.emailService.isConfigured()) {
+      return { sent: false, reason: "smtp_not_configured" };
+    }
+
+    return this.emailService.sendTransactionalEmail(body.to.trim(), body.subject, body.body ?? "");
   }
 
   @Get("status")

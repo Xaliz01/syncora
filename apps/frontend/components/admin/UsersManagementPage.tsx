@@ -9,6 +9,8 @@ import type { ManagedOrganizationUser } from "@/lib/admin.api";
 import { getOrganizationUserStatusLabel } from "@/lib/organization-user-status";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { ExportButton } from "@/components/ui/ExportButton";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { useToast } from "@/components/ui/ToastProvider";
 import * as exportsApi from "@/lib/exports.api";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -19,16 +21,24 @@ const ROLE_LABELS: Record<string, string> = {
 const INVITATION_STATUS_LABELS: Record<string, string> = {
   pending: "En attente",
   accepted: "Acceptée",
+  cancelled: "Annulée",
   expired: "Expirée",
   revoked: "Révoquée",
 };
 
 export function UsersManagementPage() {
+  const { showToast } = useToast();
+  const confirm = useConfirm();
   const [users, setUsers] = useState<ManagedOrganizationUser[]>([]);
   const [invitations, setInvitations] = useState<InvitationResponse[]>([]);
   const [maxUsers, setMaxUsers] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [resendingId, setResendingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editEmail, setEditEmail] = useState("");
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -40,7 +50,7 @@ export function UsersManagementPage() {
         subscriptionsApi.getSubscriptionCurrent().catch(() => null),
       ]);
       setUsers(usersRes.users);
-      setInvitations(invitationsRes);
+      setInvitations(invitationsRes.filter((invitation) => invitation.status !== "cancelled"));
       setMaxUsers(subscriptionRes?.hasAccess ? subscriptionRes.maxUsers : null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur de chargement des utilisateurs");
@@ -52,6 +62,87 @@ export function UsersManagementPage() {
   useEffect(() => {
     void loadData();
   }, [loadData]);
+
+  const handleResendInvitation = async (invitationId: string) => {
+    setResendingId(invitationId);
+    try {
+      const result = await adminApi.resendInvitation(invitationId);
+      showToast(
+        result.emailSent
+          ? "E-mail d'invitation renvoyé."
+          : "Impossible d'envoyer l'e-mail pour le moment.",
+        result.emailSent ? "success" : "error",
+      );
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Renvoi impossible", "error");
+    } finally {
+      setResendingId(null);
+    }
+  };
+
+  const startEditEmail = (invitation: InvitationResponse) => {
+    setEditingId(invitation.id);
+    setEditEmail(invitation.invitedEmail);
+  };
+
+  const cancelEditEmail = () => {
+    setEditingId(null);
+    setEditEmail("");
+  };
+
+  const handleSaveEmail = async (invitationId: string) => {
+    const email = editEmail.trim();
+    if (!email || !email.includes("@")) {
+      showToast("Adresse e-mail invalide", "error");
+      return;
+    }
+    setSavingId(invitationId);
+    try {
+      const result = await adminApi.updatePendingInvitation(invitationId, email);
+      setInvitations((prev) =>
+        prev.map((invitation) => (invitation.id === invitationId ? result.invitation : invitation)),
+      );
+      setEditingId(null);
+      setEditEmail("");
+      showToast(
+        result.emailSent
+          ? "E-mail mis à jour et invitation renvoyée."
+          : "E-mail mis à jour, mais l'envoi a échoué.",
+        result.emailSent ? "success" : "error",
+      );
+      await loadData();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Modification impossible", "error");
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const handleDeleteInvitation = async (invitation: InvitationResponse) => {
+    const confirmed = await confirm({
+      title: "Supprimer cette invitation ?",
+      description: (
+        <>
+          L&apos;invitation pour <strong>{invitation.invitedEmail}</strong> sera annulée et le
+          créneau utilisateur sera libéré.
+        </>
+      ),
+      confirmLabel: "Supprimer",
+      variant: "danger",
+    });
+    if (!confirmed) return;
+
+    setDeletingId(invitation.id);
+    try {
+      await adminApi.cancelInvitation(invitation.id);
+      showToast("Invitation supprimée.", "success");
+      await loadData();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Suppression impossible", "error");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -141,18 +232,76 @@ export function UsersManagementPage() {
                   key={invitation.id}
                   className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-3 text-sm"
                 >
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-medium">{invitation.invitedEmail}</span>
-                    <span className="rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-0.5 text-xs text-slate-600 dark:text-slate-300">
-                      {INVITATION_STATUS_LABELS[invitation.status] ?? invitation.status}
-                    </span>
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="flex flex-col gap-2 min-w-0 flex-1">
+                      {editingId === invitation.id ? (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <label className="sr-only" htmlFor={`invite-email-${invitation.id}`}>
+                            Nouvel e-mail
+                          </label>
+                          <input
+                            id={`invite-email-${invitation.id}`}
+                            type="email"
+                            value={editEmail}
+                            onChange={(e) => setEditEmail(e.target.value)}
+                            className="min-w-[14rem] flex-1 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-1.5 text-sm"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => void handleSaveEmail(invitation.id)}
+                            disabled={savingId === invitation.id}
+                            className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
+                          >
+                            {savingId === invitation.id ? "Enregistrement…" : "Enregistrer"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={cancelEditEmail}
+                            disabled={savingId === invitation.id}
+                            className="rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 transition"
+                          >
+                            Annuler
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex flex-wrap items-center gap-2 min-w-0">
+                          <span className="font-medium truncate">{invitation.invitedEmail}</span>
+                          <span className="rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-0.5 text-xs text-slate-600 dark:text-slate-300">
+                            {INVITATION_STATUS_LABELS[invitation.status] ?? invitation.status}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    {invitation.status === "pending" && editingId !== invitation.id && (
+                      <PermissionGate permission="users.invite">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => startEditEmail(invitation)}
+                            className="rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                          >
+                            Modifier l&apos;e-mail
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleResendInvitation(invitation.id)}
+                            disabled={resendingId === invitation.id}
+                            className="rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-medium text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-950/40 disabled:opacity-50 transition"
+                          >
+                            {resendingId === invitation.id ? "Envoi…" : "Renvoyer l'e-mail"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleDeleteInvitation(invitation)}
+                            disabled={deletingId === invitation.id}
+                            className="rounded-lg border border-red-200 dark:border-red-900 bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 disabled:opacity-50 transition"
+                          >
+                            {deletingId === invitation.id ? "Suppression…" : "Supprimer"}
+                          </button>
+                        </div>
+                      </PermissionGate>
+                    )}
                   </div>
-                  <p className="mt-1 text-slate-500 dark:text-slate-400">
-                    Token:{" "}
-                    <span className="font-mono text-slate-700 dark:text-slate-200 break-all text-xs">
-                      {invitation.invitationToken}
-                    </span>
-                  </p>
                 </article>
               ))}
             </div>

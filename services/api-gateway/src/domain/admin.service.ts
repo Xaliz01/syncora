@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
@@ -10,6 +11,7 @@ import { firstValueFrom } from "rxjs";
 import type {
   AssignUserPermissionsBody,
   AuthUser,
+  CancelInvitationResponse,
   CreateInvitationBody,
   CreateInvitedUserBody,
   CreatePermissionProfileBody,
@@ -17,6 +19,10 @@ import type {
   InvitationResponse,
   OrganizationMembershipResponse,
   OrganizationSubscriptionResponse,
+  ResendInvitationResponse,
+  SendEmailNotificationResponse,
+  UpdatePendingInvitationBody,
+  UpdatePendingInvitationResponse,
   UpdatePermissionProfileBody,
   UserPermissionAssignmentResponse,
   UserResponse,
@@ -37,9 +43,16 @@ import {
 const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
 const PERMISSIONS_URL = process.env.PERMISSIONS_SERVICE_URL ?? "http://localhost:3003";
 const SUBSCRIPTIONS_URL = process.env.SUBSCRIPTIONS_SERVICE_URL ?? "http://localhost:3008";
+const NOTIFICATIONS_URL = process.env.NOTIFICATIONS_SERVICE_URL ?? "http://localhost:3010";
+
+function appBaseUrl(): string {
+  return (process.env.APP_URL ?? "https://app.planwise.fr").replace(/\/$/, "");
+}
 
 @Injectable()
 export class AdminService extends AbstractAdminService {
+  private readonly logger = new Logger(AdminService.name);
+
   constructor(private readonly httpService: HttpService) {
     super();
   }
@@ -115,11 +128,113 @@ export class AdminService extends AbstractAdminService {
       } satisfies CreateInvitationBody,
     });
 
+    const emailSent = await this.sendInvitationEmail(
+      invitation,
+      currentUser.name ?? currentUser.email,
+    );
+
     return {
       invitedUser,
       assignment,
       invitation,
+      emailSent,
     };
+  }
+
+  async resendInvitation(
+    currentUser: AuthUser,
+    invitationId: string,
+  ): Promise<ResendInvitationResponse> {
+    const invitation = await this.callPermissionsService<InvitationResponse>({
+      method: "get",
+      path: `/invitations/${invitationId}`,
+      query: { organizationId: currentUser.organizationId },
+    });
+
+    if (invitation.status !== "pending") {
+      throw new BadRequestException("Seules les invitations en attente peuvent être renvoyées");
+    }
+
+    const emailSent = await this.sendInvitationEmail(
+      invitation,
+      currentUser.name ?? currentUser.email,
+    );
+    return { ok: true, invitation, emailSent };
+  }
+
+  async updatePendingInvitation(
+    currentUser: AuthUser,
+    invitationId: string,
+    body: UpdatePendingInvitationBody,
+  ): Promise<UpdatePendingInvitationResponse> {
+    const invitation = await this.callPermissionsService<InvitationResponse>({
+      method: "get",
+      path: `/invitations/${invitationId}`,
+      query: { organizationId: currentUser.organizationId },
+    });
+
+    if (invitation.status !== "pending") {
+      throw new BadRequestException("Seules les invitations en attente peuvent être modifiées");
+    }
+
+    await this.callUsersService<UserResponse>({
+      method: "patch",
+      path: `/users/${invitation.invitedUserId}/invited-email`,
+      body: {
+        organizationId: currentUser.organizationId,
+        email: body.email,
+      },
+    });
+
+    const updatedInvitation = await this.callPermissionsService<InvitationResponse>({
+      method: "patch",
+      path: `/invitations/${invitationId}`,
+      body: {
+        organizationId: currentUser.organizationId,
+        email: body.email,
+      },
+    });
+
+    const emailSent = await this.sendInvitationEmail(
+      updatedInvitation,
+      currentUser.name ?? currentUser.email,
+    );
+    return { invitation: updatedInvitation, emailSent };
+  }
+
+  async cancelInvitation(
+    currentUser: AuthUser,
+    invitationId: string,
+  ): Promise<CancelInvitationResponse> {
+    const invitation = await this.callPermissionsService<InvitationResponse>({
+      method: "get",
+      path: `/invitations/${invitationId}`,
+      query: { organizationId: currentUser.organizationId },
+    });
+
+    if (invitation.status !== "pending") {
+      throw new BadRequestException("Seules les invitations en attente peuvent être annulées");
+    }
+
+    await this.callPermissionsService<InvitationResponse>({
+      method: "post",
+      path: `/invitations/${invitationId}/cancel`,
+      body: { organizationId: currentUser.organizationId },
+    });
+
+    await this.callUsersService({
+      method: "post",
+      path: `/users/${invitation.invitedUserId}/cancel-organization-invitation`,
+      body: { organizationId: currentUser.organizationId },
+    });
+
+    await this.callPermissionsService({
+      method: "delete",
+      path: `/assignments/${invitation.invitedUserId}`,
+      query: { organizationId: currentUser.organizationId },
+    });
+
+    return { ok: true };
   }
 
   async listOrganizationUsers(currentUser: AuthUser) {
@@ -325,6 +440,45 @@ export class AdminService extends AbstractAdminService {
       path: "/invitations",
       query: { organizationId: currentUser.organizationId, status },
     });
+  }
+
+  private async sendInvitationEmail(
+    invitation: InvitationResponse,
+    invitedByLabel: string,
+  ): Promise<boolean> {
+    const acceptUrl = `${appBaseUrl()}/accept-invitation?token=${encodeURIComponent(
+      invitation.invitationToken,
+    )}`;
+    const greeting = invitation.invitedName?.trim()
+      ? `Bonjour ${invitation.invitedName.trim()},`
+      : "Bonjour,";
+    const body = `${greeting}\n\n${invitedByLabel} vous invite à rejoindre une organisation sur Planwise.\n\nCliquez sur le lien suivant pour accepter l'invitation :\n${acceptUrl}\n\nSi vous n'attendiez pas cette invitation, vous pouvez ignorer cet e-mail.`;
+
+    try {
+      const res = await firstValueFrom(
+        this.httpService.post<SendEmailNotificationResponse>(
+          `${NOTIFICATIONS_URL}/email/transactional`,
+          {
+            to: invitation.invitedEmail,
+            subject: "Invitation à rejoindre Planwise",
+            body,
+          },
+        ),
+      );
+      if (!res.data.sent) {
+        this.logger.warn(
+          `Invitation email not sent to ${invitation.invitedEmail}: ${res.data.reason ?? "unknown"}`,
+        );
+        return false;
+      }
+      return true;
+    } catch (err) {
+      this.logger.warn(
+        `Failed to send invitation email to ${invitation.invitedEmail}`,
+        (err as Error).message,
+      );
+      return false;
+    }
   }
 
   private async assertOrganizationUserSeatAvailable(organizationId: string): Promise<void> {

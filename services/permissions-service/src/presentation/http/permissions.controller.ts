@@ -1,4 +1,15 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from "@nestjs/common";
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Put,
+  Query,
+} from "@nestjs/common";
 import { parseOrganizationIdQuery } from "@planwise/shared/nest";
 import { AbstractPermissionsService } from "../../domain/ports/permissions.service.port";
 import type {
@@ -75,6 +86,43 @@ export class PermissionsController {
   ) {
     organizationId = parseOrganizationIdQuery(organizationId);
     return this.permissionsService.listInvitations(organizationId, status);
+  }
+
+  @Get("invitations/:id")
+  async findInvitationById(
+    @Param("id") id: string,
+    @Query("organizationId") organizationId: string,
+  ) {
+    organizationId = parseOrganizationIdQuery(organizationId);
+    return this.permissionsService.findInvitationById(id, organizationId);
+  }
+
+  @Patch("invitations/:id")
+  async updatePendingInvitationEmail(
+    @Param("id") id: string,
+    @Body() body: { organizationId?: string; email?: string },
+  ) {
+    const organizationId = parseOrganizationIdQuery(body.organizationId);
+    if (!body.email?.trim()) {
+      throw new BadRequestException("email is required");
+    }
+    return this.permissionsService.updatePendingInvitationEmail(id, organizationId, body.email);
+  }
+
+  @Post("invitations/:id/cancel")
+  async cancelInvitation(@Param("id") id: string, @Body() body: { organizationId?: string }) {
+    const organizationId = parseOrganizationIdQuery(body.organizationId);
+    return this.permissionsService.cancelInvitation(id, organizationId);
+  }
+
+  @Delete("assignments/:userId")
+  async deleteUserAssignment(
+    @Param("userId") userId: string,
+    @Query("organizationId") organizationId: string,
+  ) {
+    organizationId = parseOrganizationIdQuery(organizationId);
+    await this.permissionsService.deleteUserAssignment(organizationId, userId);
+    return { deleted: true as const };
   }
 
   @Post("invitations/resolve")

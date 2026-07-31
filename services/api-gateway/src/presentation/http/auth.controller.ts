@@ -17,6 +17,11 @@ import type {
   OnboardingUser,
   CreateOrganizationBody,
   SwitchOrganizationBody,
+  EmailVerificationRequiredResponse,
+  VerifyEmailBody,
+  ResendEmailVerificationBody,
+  ResendEmailVerificationResponse,
+  ResolveInvitationPreviewResponse,
 } from "@planwise/shared";
 
 type CreateOrgRequest = Request & {
@@ -35,8 +40,22 @@ export class AuthController {
   }
 
   @Post("register-account")
-  async registerAccount(@Body() body: RegisterAccountBody): Promise<OnboardingAuthResponse> {
+  async registerAccount(
+    @Body() body: RegisterAccountBody,
+  ): Promise<EmailVerificationRequiredResponse> {
     return this.authService.registerAccount(body);
+  }
+
+  @Post("verify-email")
+  async verifyEmail(@Body() body: VerifyEmailBody): Promise<OnboardingAuthResponse> {
+    return this.authService.verifyEmail(body);
+  }
+
+  @Post("resend-email-verification")
+  async resendEmailVerification(
+    @Body() body: ResendEmailVerificationBody,
+  ): Promise<ResendEmailVerificationResponse> {
+    return this.authService.resendEmailVerification(body);
   }
 
   @Post("login")
@@ -47,6 +66,13 @@ export class AuthController {
   @Post("accept-invitation")
   async acceptInvitation(@Body() body: AcceptInvitationBody): Promise<AuthResponse> {
     return this.authService.acceptInvitation(body);
+  }
+
+  @Post("resolve-invitation")
+  async resolveInvitation(
+    @Body() body: { invitationToken?: string },
+  ): Promise<ResolveInvitationPreviewResponse> {
+    return this.authService.resolveInvitation(body.invitationToken ?? "");
   }
 
   @Post("create-organization")
@@ -75,6 +101,12 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async me(@Req() req: Request & { user: JwtPayload }): Promise<AuthUser> {
     return this.authService.getSessionUser(req.user);
+  }
+
+  @Post("logout")
+  @UseGuards(JwtAuthGuard)
+  async logout(@Req() req: Request & { user: JwtPayload }): Promise<{ ok: true }> {
+    return this.authService.logout(req.user);
   }
 
   @Get("onboarding/me")

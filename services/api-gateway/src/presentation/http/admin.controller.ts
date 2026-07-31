@@ -119,4 +119,32 @@ export class AdminController {
   ) {
     return this.adminService.listInvitations(user, status);
   }
+
+  @Post("invitations/:invitationId/resend")
+  @RequirePermissions("users.invite")
+  async resendInvitation(
+    @CurrentUser() user: AuthUser,
+    @Param("invitationId") invitationId: string,
+  ) {
+    return this.adminService.resendInvitation(user, invitationId);
+  }
+
+  @Patch("invitations/:invitationId")
+  @RequirePermissions("users.invite")
+  async updatePendingInvitation(
+    @CurrentUser() user: AuthUser,
+    @Param("invitationId") invitationId: string,
+    @Body() body: { email: string },
+  ) {
+    return this.adminService.updatePendingInvitation(user, invitationId, body);
+  }
+
+  @Delete("invitations/:invitationId")
+  @RequirePermissions("users.invite")
+  async cancelInvitation(
+    @CurrentUser() user: AuthUser,
+    @Param("invitationId") invitationId: string,
+  ) {
+    return this.adminService.cancelInvitation(user, invitationId);
+  }
 }

@@ -20,6 +20,7 @@
     "@planwise/shared": "0.1.0",
     "@planwise/telemetry": "0.1.0",
     "axios": "^1.18.1",
+    "dotenv": "^16.6.1",
     "mongoose": "^8.0.0",
     "nodemailer": "^9.0.3",
     "reflect-metadata": "^0.2.0",

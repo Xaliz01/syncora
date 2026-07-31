@@ -34,6 +34,20 @@ export abstract class AbstractPermissionsService {
     organizationId: string,
     status?: "pending" | "accepted" | "cancelled",
   ): Promise<InvitationResponse[]>;
+  abstract findInvitationById(
+    invitationId: string,
+    organizationId: string,
+  ): Promise<InvitationResponse>;
+  abstract updatePendingInvitationEmail(
+    invitationId: string,
+    organizationId: string,
+    email: string,
+  ): Promise<InvitationResponse>;
+  abstract cancelInvitation(
+    invitationId: string,
+    organizationId: string,
+  ): Promise<InvitationResponse>;
+  abstract deleteUserAssignment(organizationId: string, userId: string): Promise<void>;
   abstract resolveInvitation(invitationToken: string): Promise<InvitationResponse>;
   abstract acceptInvitation(invitationToken: string): Promise<InvitationResponse>;
   abstract purgeTestData(organizationId: string): Promise<{ purged: true }>;

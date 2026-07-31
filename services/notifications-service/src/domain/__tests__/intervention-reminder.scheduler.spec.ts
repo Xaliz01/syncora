@@ -14,7 +14,11 @@ describe("InterventionReminderScheduler", () => {
   let mockSentReminderModel: { findOne: jest.Mock; updateOne: jest.Mock };
   let mockHttpService: { get: jest.Mock };
   let mockPushService: { sendPushToUser: jest.Mock };
-  let mockEmailService: { sendNotificationEmail: jest.Mock };
+  let mockEmailService: {
+    sendNotificationEmail: jest.Mock;
+    sendTransactionalEmail: jest.Mock;
+    isConfigured: jest.Mock;
+  };
   let mockCronRunRecorder: { start: jest.Mock; finish: jest.Mock };
 
   const futureDate = (minutesFromNow: number) =>
@@ -33,7 +37,11 @@ describe("InterventionReminderScheduler", () => {
     };
     mockHttpService = { get: jest.fn() };
     mockPushService = { sendPushToUser: jest.fn().mockResolvedValue(undefined) };
-    mockEmailService = { sendNotificationEmail: jest.fn().mockResolvedValue(undefined) };
+    mockEmailService = {
+      sendNotificationEmail: jest.fn().mockResolvedValue(undefined),
+      sendTransactionalEmail: jest.fn().mockResolvedValue(undefined),
+      isConfigured: jest.fn().mockReturnValue(true),
+    };
     mockCronRunRecorder = {
       start: jest.fn().mockResolvedValue("run-1"),
       finish: jest.fn().mockResolvedValue(undefined),

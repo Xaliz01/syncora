@@ -85,11 +85,12 @@ export function CreateUserPage() {
               (permission) => !selectedPermissions.includes(permission),
             ),
       });
-      const invitationUrl = `${window.location.origin}/accept-invitation?token=${encodeURIComponent(
-        result.invitation.invitationToken,
-      )}`;
-      await navigator.clipboard.writeText(invitationUrl).catch(() => undefined);
-      showToast("Invitation créée. Lien d'activation copié (2s).");
+      showToast(
+        result.emailSent
+          ? "Invitation envoyée par e-mail."
+          : "Invitation créée, mais l'e-mail n'a pas pu être envoyé. Vous pourrez le renvoyer depuis la liste des utilisateurs.",
+        result.emailSent ? undefined : "error",
+      );
       setEmail("");
       setName("");
       setRole("member");
@@ -108,7 +109,7 @@ export function CreateUserPage() {
       <div>
         <h1 className="text-xl sm:text-2xl font-semibold">Inviter un utilisateur</h1>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Invitez un utilisateur dans votre organisation et pré-configurez ses droits.
+          Invitez un utilisateur : un e-mail avec le lien d&apos;activation lui sera envoyé.
         </p>
       </div>
 

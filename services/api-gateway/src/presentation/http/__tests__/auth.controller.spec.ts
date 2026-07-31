@@ -28,12 +28,16 @@ describe("AuthController", () => {
     mockAuthService = {
       register: jest.fn(),
       registerAccount: jest.fn(),
+      verifyEmail: jest.fn(),
+      resendEmailVerification: jest.fn(),
       getOnboardingUser: jest.fn(),
       login: jest.fn(),
       acceptInvitation: jest.fn(),
+      resolveInvitation: jest.fn(),
       createOrganization: jest.fn(),
       switchOrganization: jest.fn(),
       getSessionUser: jest.fn(),
+      logout: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -67,12 +71,28 @@ describe("AuthController", () => {
   });
 
   describe("registerAccount", () => {
-    it("should call authService.registerAccount and return onboarding response", async () => {
+    it("should call authService.registerAccount and return email verification required", async () => {
       const body = {
         email: "admin@example.com",
         password: "secret123",
         name: "Admin User",
       };
+      const verificationResponse = {
+        status: "email_verification_required" as const,
+        email: "admin@example.com",
+      };
+      mockAuthService.registerAccount.mockResolvedValue(verificationResponse);
+
+      const result = await controller.registerAccount(body);
+
+      expect(mockAuthService.registerAccount).toHaveBeenCalledWith(body);
+      expect(result).toEqual(verificationResponse);
+    });
+  });
+
+  describe("verifyEmail", () => {
+    it("should call authService.verifyEmail and return onboarding response", async () => {
+      const body = { email: "admin@example.com", code: "123456" };
       const onboardingResponse = {
         accessToken: "onboarding-token",
         user: {
@@ -82,11 +102,11 @@ describe("AuthController", () => {
           status: "active" as const,
         },
       };
-      mockAuthService.registerAccount.mockResolvedValue(onboardingResponse);
+      mockAuthService.verifyEmail.mockResolvedValue(onboardingResponse);
 
-      const result = await controller.registerAccount(body);
+      const result = await controller.verifyEmail(body);
 
-      expect(mockAuthService.registerAccount).toHaveBeenCalledWith(body);
+      expect(mockAuthService.verifyEmail).toHaveBeenCalledWith(body);
       expect(result).toEqual(onboardingResponse);
     });
   });

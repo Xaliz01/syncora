@@ -3,9 +3,13 @@ import type {
   ActivateInvitedUserBody,
   ChangePasswordBody,
   CreateAccountBody,
+  CreateAccountResult,
   CreateInvitedUserBody,
   CreateOrganizationMembershipBody,
   CreateUserBody,
+  CreateUserSessionResponse,
+  InvitationActivationHintsResponse,
+  IssueEmailVerificationResult,
   OrganizationMembershipResponse,
   PatchUserBody,
   PlatformUserSummary,
@@ -14,6 +18,7 @@ import type {
   UserPreferencesResponse,
   UserResponse,
   ValidateCredentialsResponse,
+  ValidateUserSessionResponse,
 } from "@planwise/shared";
 
 export interface PlatformUsersDirectoryResult {
@@ -33,10 +38,19 @@ export interface CreateImpersonationAuditBody {
 
 export abstract class AbstractUsersService {
   abstract create(body: CreateUserBody): Promise<UserResponse>;
-  abstract createAccount(body: CreateAccountBody): Promise<AccountUserResponse>;
+  abstract createAccount(body: CreateAccountBody): Promise<CreateAccountResult>;
+  abstract verifyEmail(email: string, code: string): Promise<AccountUserResponse>;
+  abstract resendEmailVerification(email: string): Promise<IssueEmailVerificationResult>;
   abstract findAccountById(id: string): Promise<AccountUserResponse | null>;
   abstract invite(body: CreateInvitedUserBody): Promise<UserResponse>;
   abstract activateInvitedUser(id: string, body: ActivateInvitedUserBody): Promise<UserResponse>;
+  abstract getInvitationActivationHints(userId: string): Promise<InvitationActivationHintsResponse>;
+  abstract updateInvitedUserEmail(
+    userId: string,
+    organizationId: string,
+    email: string,
+  ): Promise<UserResponse>;
+  abstract cancelOrganizationInvitation(userId: string, organizationId: string): Promise<void>;
   abstract patch(id: string, body: PatchUserBody): Promise<UserResponse>;
   abstract findById(id: string): Promise<UserResponse | null>;
   abstract listByOrganization(organizationId: string): Promise<UserResponse[]>;
@@ -49,6 +63,9 @@ export abstract class AbstractUsersService {
     email: string,
     password: string,
   ): Promise<ValidateCredentialsResponse | null>;
+  abstract createSession(userId: string): Promise<CreateUserSessionResponse>;
+  abstract validateSession(userId: string, sessionId: string): Promise<ValidateUserSessionResponse>;
+  abstract revokeSession(userId: string, sessionId?: string): Promise<void>;
   abstract updateName(id: string, body: UpdateUserNameBody): Promise<UserResponse>;
   abstract changePassword(id: string, body: ChangePasswordBody): Promise<void>;
   abstract getPreferences(userId: string): Promise<UserPreferencesResponse>;

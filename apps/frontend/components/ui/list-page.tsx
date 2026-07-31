@@ -303,7 +303,7 @@ export function ListPagination({
 
   return (
     <nav
-      className="flex items-center justify-between gap-2 pt-3 border-t border-slate-100 dark:border-slate-800"
+      className="flex items-center justify-between gap-2 pt-3 pr-16 sm:pr-20 border-t border-slate-100 dark:border-slate-800"
       aria-label="Pagination"
     >
       {showNav ? (

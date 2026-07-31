@@ -70,6 +70,7 @@ describe("PermissionsService", () => {
       findOne: jest.fn(),
       findOneAndUpdate: jest.fn(),
       updateMany: jest.fn().mockResolvedValue({ modifiedCount: 0 }),
+      deleteOne: jest.fn().mockReturnValue(createExecMock({ deletedCount: 1 })),
     };
     mockInvitationModel = {
       create: jest.fn(),
@@ -456,6 +457,56 @@ describe("PermissionsService", () => {
     });
   });
 
+  describe("updatePendingInvitationEmail", () => {
+    it("should update email and rotate token for a pending invitation", async () => {
+      const doc = mockInvitationDoc();
+      mockInvitationModel.findOne.mockReturnValue(createExecMock(doc));
+
+      const result = await service.updatePendingInvitationEmail(
+        "inv-123",
+        "org-1",
+        "updated@example.com",
+      );
+
+      expect(doc.invitedEmail).toBe("updated@example.com");
+      expect(doc.invitationToken).not.toBe("token-abc");
+      expect(doc.save).toHaveBeenCalled();
+      expect(result.invitedEmail).toBe("updated@example.com");
+    });
+
+    it("should throw when invitation is not pending", async () => {
+      mockInvitationModel.findOne.mockReturnValue(createExecMock(null));
+
+      await expect(
+        service.updatePendingInvitationEmail("inv-123", "org-1", "updated@example.com"),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe("cancelInvitation", () => {
+    it("should mark pending invitation as cancelled", async () => {
+      const doc = mockInvitationDoc();
+      mockInvitationModel.findOne.mockReturnValue(createExecMock(doc));
+
+      const result = await service.cancelInvitation("inv-123", "org-1");
+
+      expect(doc.status).toBe("cancelled");
+      expect(doc.save).toHaveBeenCalled();
+      expect(result.status).toBe("cancelled");
+    });
+  });
+
+  describe("deleteUserAssignment", () => {
+    it("should delete the assignment for the org and user", async () => {
+      await service.deleteUserAssignment("org-1", "user-1");
+
+      expect(mockUserAssignmentModel.deleteOne).toHaveBeenCalledWith({
+        organizationId: "org-1",
+        userId: "user-1",
+      });
+    });
+  });
+
   describe("resolveInvitation", () => {
     it("should return invitation when found and pending", async () => {
       const doc = mockInvitationDoc({ status: "pending" });
@@ -489,6 +540,29 @@ describe("PermissionsService", () => {
       await expect(service.resolveInvitation("token-abc")).rejects.toThrow(ConflictException);
       await expect(service.resolveInvitation("token-abc")).rejects.toThrow(
         "Invitation has already been processed",
+      );
+    });
+  });
+
+  describe("findInvitationById", () => {
+    it("should return invitation scoped to organization", async () => {
+      const doc = mockInvitationDoc({ status: "pending" });
+      mockInvitationModel.findOne.mockReturnValue(createExecMock(doc));
+
+      const result = await service.findInvitationById("inv-123", "org-1");
+
+      expect(mockInvitationModel.findOne).toHaveBeenCalledWith({
+        _id: "inv-123",
+        organizationId: "org-1",
+      });
+      expect(result.id).toBe("inv-123");
+    });
+
+    it("should throw NotFoundException when missing", async () => {
+      mockInvitationModel.findOne.mockReturnValue(createExecMock(null));
+
+      await expect(service.findInvitationById("missing", "org-1")).rejects.toThrow(
+        NotFoundException,
       );
     });
   });

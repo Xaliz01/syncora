@@ -46,6 +46,24 @@ export class EmailService extends AbstractEmailService {
     body: string,
     url?: string,
   ): Promise<SendEmailNotificationResponse> {
+    return this.sendMail(to, subject, body, url, "notification");
+  }
+
+  async sendTransactionalEmail(
+    to: string,
+    subject: string,
+    body: string,
+  ): Promise<SendEmailNotificationResponse> {
+    return this.sendMail(to, subject, body, undefined, "transactional");
+  }
+
+  private async sendMail(
+    to: string,
+    subject: string,
+    body: string,
+    url: string | undefined,
+    kind: "notification" | "transactional",
+  ): Promise<SendEmailNotificationResponse> {
     if (!this.transporter) {
       return { sent: false, reason: "smtp_not_configured" };
     }
@@ -58,7 +76,7 @@ export class EmailService extends AbstractEmailService {
     }
 
     try {
-      const html = this.buildHtml(subject, body, url);
+      const html = this.buildHtml(subject, body, url, kind);
       await this.transporter.sendMail({
         from: this.fromAddress,
         to,
@@ -92,21 +110,39 @@ export class EmailService extends AbstractEmailService {
     return text;
   }
 
-  private buildHtml(subject: string, body: string, url?: string): string {
+  private buildHtml(
+    subject: string,
+    body: string,
+    url: string | undefined,
+    kind: "notification" | "transactional",
+  ): string {
+    const base = this.appBaseUrl();
+    const logoUrl = `${base}/planwise-logo-512.png`;
     const linkHtml = url
-      ? `<p style="margin-top:16px;"><a href="${this.appBaseUrl()}${url}" style="display:inline-block;padding:10px 20px;background-color:#4338ca;color:#ffffff;text-decoration:none;border-radius:6px;font-size:14px;">Voir dans Planwise</a></p>`
+      ? `<p style="margin-top:16px;"><a href="${base}${url}" style="display:inline-block;padding:10px 20px;background-color:#4338ca;color:#ffffff;text-decoration:none;border-radius:6px;font-size:14px;">Voir dans Planwise</a></p>`
       : "";
+
+    const footer =
+      kind === "transactional"
+        ? "Cet e-mail a été envoyé dans le cadre de la création ou de la sécurisation de votre compte Planwise."
+        : "Vous recevez cet email car les notifications email sont activées dans vos préférences Planwise.";
 
     return `<!DOCTYPE html>
 <html lang="fr">
 <head><meta charset="utf-8"></head>
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background-color:#f8fafc;padding:32px;">
   <div style="max-width:480px;margin:0 auto;background:#ffffff;border-radius:12px;border:1px solid #e2e8f0;padding:32px;">
+    <div style="margin:0 0 20px;">
+      <a href="${base}" style="text-decoration:none;display:inline-flex;align-items:center;gap:10px;">
+        <img src="${logoUrl}" alt="Planwise" width="36" height="36" style="display:block;border:0;border-radius:8px;width:36px;height:36px;" />
+        <span style="font-size:18px;font-weight:600;color:#1e293b;letter-spacing:-0.01em;">Planwise</span>
+      </a>
+    </div>
     <h2 style="margin:0 0 8px;color:#1e293b;font-size:18px;">${subject}</h2>
-    <p style="margin:0;color:#475569;font-size:14px;line-height:1.5;">${body}</p>
+    <p style="margin:0;color:#475569;font-size:14px;line-height:1.5;white-space:pre-wrap;">${body}</p>
     ${linkHtml}
     <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0;" />
-    <p style="margin:0;color:#94a3b8;font-size:12px;">Vous recevez cet email car les notifications email sont activées dans vos préférences Planwise.</p>
+    <p style="margin:0;color:#94a3b8;font-size:12px;">${footer}</p>
   </div>
 </body>
 </html>`;

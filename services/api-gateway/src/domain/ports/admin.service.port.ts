@@ -53,4 +53,11 @@ export abstract class AbstractAdminService {
     currentUser: AuthUser,
     status?: "pending" | "accepted" | "cancelled",
   ): Promise<unknown>;
+  abstract resendInvitation(currentUser: AuthUser, invitationId: string): Promise<unknown>;
+  abstract updatePendingInvitation(
+    currentUser: AuthUser,
+    invitationId: string,
+    body: { email: string },
+  ): Promise<unknown>;
+  abstract cancelInvitation(currentUser: AuthUser, invitationId: string): Promise<unknown>;
 }

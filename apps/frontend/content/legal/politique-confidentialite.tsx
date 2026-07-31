@@ -27,12 +27,19 @@ export function PolitiqueConfidentialiteContent() {
           items={[
             "Identité et contact : nom, email, mot de passe (stocké de manière sécurisée), rôle.",
             "Organisation : raison sociale, SIRET, adresse postale.",
-            "Facturation : identifiants Stripe, historique d'abonnement (via Stripe).",
+            "Facturation de l'abonnement Planwise : identifiants Stripe, historique d'abonnement (via Stripe).",
+            "Intégrations de facturation (optionnelles, activées par le Client) : jetons d'accès OAuth ou clés API (stockés chiffrés), identifiants techniques de connexion (ex. nom / identifiant d'entreprise côté outil), métadonnées de synchronisation des factures créées depuis Planwise (statut distant, numéro, lien, montants associés).",
             "Usage : journaux techniques, préférences (thème, sidebar), notifications.",
             "Support : échanges via Crisp (si consentement cookies).",
-            "Données saisies par le Client : clients, interventions, géolocalisation optionnelle, photos, signatures.",
+            "Données saisies par le Client : clients, interventions, géolocalisation optionnelle, photos, signatures, devis et éléments nécessaires à la facturation.",
           ]}
         />
+        <LegalParagraph>
+          Planwise ne réalise pas d&apos;import massif du grand livre ou de l&apos;historique
+          comptable de l&apos;outil tiers. Les données échangées avec Pennylane ou Qonto portent
+          principalement sur les clients et factures que le Client choisit de créer ou de suivre
+          depuis Planwise, ainsi que sur le statut de ces factures.
+        </LegalParagraph>
       </LegalSection>
 
       <LegalSection title="3. Finalités et bases légales">
@@ -42,8 +49,13 @@ export function PolitiqueConfidentialiteContent() {
               <strong>Fourniture du service</strong> — exécution du contrat (art. 6.1.b RGPD).
             </>,
             <>
-              <strong>Facturation et comptabilité</strong> — obligation légale et contrat (art.
-              6.1.b et 6.1.c).
+              <strong>Facturation et comptabilité de l&apos;abonnement</strong> — obligation légale
+              et contrat (art. 6.1.b et 6.1.c).
+            </>,
+            <>
+              <strong>Intégrations de facturation</strong> — exécution du contrat lorsque le Client
+              active volontairement une connexion (Pennylane, Qonto, etc.) afin d&apos;émettre ou de
+              suivre des factures sans double saisie (art. 6.1.b).
             </>,
             <>
               <strong>Support et sécurité</strong> — intérêt légitime (art. 6.1.f), sauf Crisp
@@ -65,7 +77,7 @@ export function PolitiqueConfidentialiteContent() {
         </LegalParagraph>
         <LegalList
           items={[
-            "Stripe — paiements et facturation (États-Unis, clauses contractuelles types).",
+            "Stripe — paiements et facturation de l'abonnement Planwise (États-Unis, clauses contractuelles types).",
             "OVHcloud — hébergement applicatif et stockage (France, datacenter de Gravelines).",
             "Crisp — support client (consentement requis).",
             "Prestataire email (SMTP) — notifications transactionnelles.",
@@ -73,8 +85,20 @@ export function PolitiqueConfidentialiteContent() {
           ]}
         />
         <LegalParagraph>
+          Lorsque le Client active une intégration de facturation (notamment{" "}
+          <strong>Pennylane</strong> ou <strong>Qonto</strong>), des données nécessaires à
+          l&apos;émission et au suivi des factures (identité / coordonnées clients, lignes de devis,
+          montants, TVA, statut de facture) peuvent être transmises à cet outil,{" "}
+          <strong>sur instruction du Client</strong>. Ces éditeurs sont des prestataires choisis et
+          contractés par le Client ; leurs traitements sont régis par leurs propres conditions et
+          politiques de confidentialité. {legal.companyName} n&apos;est pas responsable des
+          traitements réalisés par ces outils au-delà de la transmission technique opérée pour le
+          compte du Client.
+        </LegalParagraph>
+        <LegalParagraph>
           Le Client demeure responsable de traitement pour les données de ses propres clients finaux
-          saisies dans Planwise. {legal.companyName} agit alors en sous-traitant (art. 28 RGPD).
+          saisies dans Planwise ou synchronisées via une intégration. {legal.companyName} agit alors
+          en sous-traitant (art. 28 RGPD).
         </LegalParagraph>
       </LegalSection>
 
@@ -83,7 +107,9 @@ export function PolitiqueConfidentialiteContent() {
           items={[
             "Compte actif : durée de la relation contractuelle.",
             "Compte fermé : suppression ou anonymisation sous 3 ans sauf obligation légale contraire.",
-            "Factures : 10 ans (obligations comptables).",
+            "Factures de l'abonnement Planwise : 10 ans (obligations comptables).",
+            "Connexion d'intégration : jusqu'à déconnexion par le Client ou suppression du compte ; les jetons d'accès sont alors supprimés.",
+            "Métadonnées de synchronisation de factures : durée de la relation contractuelle ou jusqu'à détachement / suppression demandée par l'organisation.",
             "Journaux techniques : jusqu'à 12 mois.",
             "Données saisies par le Client : selon paramétrage ou demande de suppression de l'organisation.",
           ]}

@@ -36,6 +36,7 @@ describe("AuthService", () => {
     name: "Admin User",
     role: "admin",
     status: "active",
+    emailVerified: true,
   };
 
   const mockPermissionsResponse = {
@@ -104,6 +105,12 @@ describe("AuthService", () => {
         let response: AxiosResponse;
         if (url.includes("/organizations")) {
           response = { data: mockOrgResponse, status: 201, statusText: "Created" } as AxiosResponse;
+        } else if (url.includes("/sessions")) {
+          response = {
+            data: { sessionId: "session-abc" },
+            status: 201,
+            statusText: "Created",
+          } as AxiosResponse;
         } else if (url.includes("/users") && !url.includes("validate-credentials")) {
           response = {
             data: mockUserResponse,
@@ -137,18 +144,25 @@ describe("AuthService", () => {
   });
 
   describe("registerAccount", () => {
-    it("should create account without organization and return onboarding JWT", async () => {
+    it("should create account and require email verification (no JWT yet)", async () => {
       jest.spyOn(httpService, "post").mockImplementation((url: string) => {
-        if (url.includes("/users/accounts")) {
+        if (url.includes("/users/accounts") && !url.includes("verify")) {
           return of({
             data: {
-              id: "user-new",
-              email: "new@example.com",
-              name: "New Admin",
-              status: "active",
+              user: {
+                id: "user-new",
+                email: "new@example.com",
+                name: "New Admin",
+                status: "active",
+                emailVerified: false,
+              },
+              emailVerificationCode: "123456",
             },
             status: 201,
           } as AxiosResponse);
+        }
+        if (url.includes("/email/transactional")) {
+          return of({ data: { sent: true }, status: 200 } as AxiosResponse);
         }
         return of({ data: {}, status: 200 } as AxiosResponse);
       });
@@ -157,6 +171,35 @@ describe("AuthService", () => {
         email: "new@example.com",
         password: "secret123",
         name: "New Admin",
+      });
+
+      expect(result).toMatchObject({
+        status: "email_verification_required",
+        email: "new@example.com",
+      });
+      expect(jwtSignSpy).not.toHaveBeenCalled();
+    });
+
+    it("should verify email and return onboarding JWT", async () => {
+      jest.spyOn(httpService, "post").mockImplementation((url: string) => {
+        if (url.includes("/users/accounts/verify-email")) {
+          return of({
+            data: {
+              id: "user-new",
+              email: "new@example.com",
+              name: "New Admin",
+              status: "active",
+              emailVerified: true,
+            },
+            status: 200,
+          } as AxiosResponse);
+        }
+        return of({ data: {}, status: 200 } as AxiosResponse);
+      });
+
+      const result = await service.verifyEmail({
+        email: "new@example.com",
+        code: "123456",
       });
 
       expect(result.accessToken).toBe("mock-jwt-token");
@@ -174,6 +217,8 @@ describe("AuthService", () => {
         let response: AxiosResponse;
         if (url.includes("validate-credentials")) {
           response = { data: mockValidateCredentialsResponse, status: 200 } as AxiosResponse;
+        } else if (url.includes("/sessions")) {
+          response = { data: { sessionId: "session-abc" }, status: 201 } as AxiosResponse;
         } else if (url.includes("/permissions/effective")) {
           response = { data: mockPermissionsResponse, status: 200 } as AxiosResponse;
         } else {
@@ -190,6 +235,12 @@ describe("AuthService", () => {
       const result = await service.login(body);
 
       expect(result.accessToken).toBe("mock-jwt-token");
+      expect(jwtSignSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sub: "user-123",
+          sid: "session-abc",
+        }),
+      );
       expect(result.user.id).toBe("user-123");
       expect(result.user.email).toBe("admin@example.com");
       expect(jwtSignSpy).toHaveBeenCalled();
@@ -203,6 +254,7 @@ describe("AuthService", () => {
               id: "user-pending",
               email: "pending@example.com",
               status: "active",
+              emailVerified: true,
             },
             status: 200,
           } as AxiosResponse);

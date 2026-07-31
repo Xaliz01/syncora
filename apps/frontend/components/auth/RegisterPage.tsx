@@ -3,7 +3,11 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import type { SiretLookupResult } from "@planwise/shared";
+import {
+  isPasswordPolicyValid,
+  PASSWORD_POLICY_HINT,
+  type SiretLookupResult,
+} from "@planwise/shared";
 import { useAuth } from "@/components/auth/AuthContext";
 import { postAuthHomePath } from "@/lib/subscription-access";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
@@ -18,7 +22,13 @@ import {
 } from "@/lib/organization-address";
 import { LegalConsentCheckbox } from "@/components/legal/LegalConsentCheckbox";
 
-type RegisterStep = "account" | "organization";
+type RegisterStep = "account" | "verify-email" | "organization";
+
+function stepBadgeClass(active: boolean, done: boolean): string {
+  if (active) return "bg-brand-600 text-white";
+  if (done) return "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300";
+  return "bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-400";
+}
 
 export function RegisterPage() {
   const searchParams = useSearchParams();
@@ -29,6 +39,8 @@ export function RegisterPage() {
   const [adminEmail, setAdminEmail] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
   const [adminName, setAdminName] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
+  const [debugVerificationCode, setDebugVerificationCode] = useState<string | undefined>();
   const [organizationName, setOrganizationName] = useState("");
   const [organizationSiret, setOrganizationSiret] = useState("");
   const [organizationAddress, setOrganizationAddress] =
@@ -36,7 +48,14 @@ export function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [legalConsent, setLegalConsent] = useState(false);
-  const { registerAccount, completeOrganization, isOnboarding, isAuthenticated } = useAuth();
+  const {
+    registerAccount,
+    verifyEmail,
+    resendEmailVerification,
+    completeOrganization,
+    isOnboarding,
+    isAuthenticated,
+  } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -59,7 +78,9 @@ export function RegisterPage() {
   };
 
   const canSubmitAccount =
-    adminEmail.trim().length > 0 && adminPassword.length >= 8 && legalConsent;
+    adminEmail.trim().length > 0 && isPasswordPolicyValid(adminPassword) && legalConsent;
+
+  const canSubmitVerification = verificationCode.trim().length === 6;
 
   const canSubmitOrganization =
     organizationSiret.trim().length > 0 &&
@@ -72,14 +93,51 @@ export function RegisterPage() {
     setError(null);
     setLoading(true);
     try {
-      await registerAccount({
+      const result = await registerAccount({
         email: adminEmail,
         password: adminPassword,
         name: adminName.trim() || undefined,
       });
-      setStep("organization");
+      setAdminEmail(result.email);
+      setDebugVerificationCode(result.debugVerificationCode);
+      setVerificationCode(result.debugVerificationCode ?? "");
+      setStep("verify-email");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Création de compte impossible");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canSubmitVerification) return;
+    setError(null);
+    setLoading(true);
+    try {
+      await verifyEmail({
+        email: adminEmail,
+        code: verificationCode.trim(),
+      });
+      setStep("organization");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Vérification impossible");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      const result = await resendEmailVerification({ email: adminEmail });
+      if (result.debugVerificationCode) {
+        setDebugVerificationCode(result.debugVerificationCode);
+        setVerificationCode(result.debugVerificationCode);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Renvoi du code impossible");
     } finally {
       setLoading(false);
     }
@@ -104,11 +162,18 @@ export function RegisterPage() {
     }
   };
 
-  const headerTitle = step === "account" ? "Créer votre compte" : "Créer votre organisation";
+  const headerTitle =
+    step === "account"
+      ? "Créer votre compte"
+      : step === "verify-email"
+        ? "Vérifiez votre e-mail"
+        : "Créer votre organisation";
   const headerSubtitle =
     step === "account"
       ? "Commencez par créer votre compte administrateur."
-      : "Renseignez les informations de votre entreprise pour finaliser l'inscription.";
+      : step === "verify-email"
+        ? `Saisissez le code à 6 chiffres envoyé à ${adminEmail}.`
+        : "Renseignez les informations de votre entreprise pour finaliser l'inscription.";
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950">
@@ -133,13 +198,9 @@ export function RegisterPage() {
 
       <main className="flex-1 flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-md">
-          <div className="mb-6 flex items-center gap-2 text-xs font-medium">
+          <div className="mb-6 flex flex-wrap items-center gap-2 text-xs font-medium">
             <span
-              className={`flex h-6 w-6 items-center justify-center rounded-full ${
-                step === "account"
-                  ? "bg-brand-600 text-white"
-                  : "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
-              }`}
+              className={`flex h-6 w-6 items-center justify-center rounded-full ${stepBadgeClass(step === "account", step !== "account")}`}
             >
               1
             </span>
@@ -152,13 +213,22 @@ export function RegisterPage() {
             </span>
             <span className="text-slate-300 dark:text-slate-600">—</span>
             <span
-              className={`flex h-6 w-6 items-center justify-center rounded-full ${
-                step === "organization"
-                  ? "bg-brand-600 text-white"
-                  : "bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
-              }`}
+              className={`flex h-6 w-6 items-center justify-center rounded-full ${stepBadgeClass(step === "verify-email", step === "organization")}`}
             >
               2
+            </span>
+            <span
+              className={
+                step === "verify-email" ? "text-slate-900 dark:text-slate-100" : "text-slate-500"
+              }
+            >
+              E-mail
+            </span>
+            <span className="text-slate-300 dark:text-slate-600">—</span>
+            <span
+              className={`flex h-6 w-6 items-center justify-center rounded-full ${stepBadgeClass(step === "organization", false)}`}
+            >
+              3
             </span>
             <span
               className={
@@ -239,7 +309,7 @@ export function RegisterPage() {
                   placeholder="••••••••"
                 />
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  Minimum 8 caractères
+                  {PASSWORD_POLICY_HINT}
                 </p>
               </div>
               <LegalConsentCheckbox checked={legalConsent} onChange={setLegalConsent} />
@@ -250,6 +320,77 @@ export function RegisterPage() {
               >
                 {loading ? "Création…" : "Continuer"}
               </button>
+            </form>
+          ) : step === "verify-email" ? (
+            <form
+              onSubmit={handleVerifySubmit}
+              className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm dark:shadow-slate-950/20 space-y-4"
+            >
+              {error && (
+                <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm p-3">
+                  {error}
+                </div>
+              )}
+              {debugVerificationCode && (
+                <div className="rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm p-3">
+                  Mode développement : code{" "}
+                  <span className="font-mono font-semibold">{debugVerificationCode}</span>
+                </div>
+              )}
+              <div>
+                <label
+                  htmlFor="verificationCode"
+                  className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1"
+                >
+                  Code de vérification
+                </label>
+                <input
+                  id="verificationCode"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  value={verificationCode}
+                  onChange={(e) =>
+                    setVerificationCode(e.target.value.replace(/\D/g, "").slice(0, 6))
+                  }
+                  required
+                  className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 tracking-widest text-center text-lg font-mono"
+                  placeholder="000000"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={loading || !canSubmitVerification}
+                className="w-full rounded-lg bg-brand-600 py-2.5 font-medium text-white hover:bg-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-50 transition"
+              >
+                {loading ? "Vérification…" : "Vérifier mon e-mail"}
+              </button>
+              <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
+                Vous n&apos;avez pas reçu le code ?{" "}
+                <button
+                  type="button"
+                  onClick={handleResendCode}
+                  disabled={loading}
+                  className="text-brand-600 dark:text-brand-400 underline font-medium disabled:opacity-50"
+                >
+                  Renvoyer
+                </button>
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStep("account");
+                    setVerificationCode("");
+                    setDebugVerificationCode(undefined);
+                    setError(null);
+                  }}
+                  className="underline font-medium"
+                >
+                  Modifier l&apos;adresse e-mail
+                </button>
+              </p>
             </form>
           ) : (
             <form

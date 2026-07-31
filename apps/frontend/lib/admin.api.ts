@@ -88,6 +88,7 @@ export function inviteOrganizationUser(payload: InviteOrganizationUserPayload) {
     invitedUser: UserResponse;
     assignment: UserPermissionAssignmentResponse;
     invitation: InvitationResponse;
+    emailSent: boolean;
   }>("POST", "/admin/users/invite", payload);
 }
 
@@ -106,4 +107,23 @@ export function updateOrganizationUserPermissions(
 export function listInvitations(status?: "pending" | "accepted" | "cancelled") {
   const query = status ? `?status=${status}` : "";
   return adminRequest<InvitationResponse[]>("GET", `/admin/invitations${query}`);
+}
+
+export function resendInvitation(invitationId: string) {
+  return adminRequest<{ ok: true; invitation: InvitationResponse; emailSent: boolean }>(
+    "POST",
+    `/admin/invitations/${invitationId}/resend`,
+  );
+}
+
+export function updatePendingInvitation(invitationId: string, email: string) {
+  return adminRequest<{ invitation: InvitationResponse; emailSent: boolean }>(
+    "PATCH",
+    `/admin/invitations/${invitationId}`,
+    { email },
+  );
+}
+
+export function cancelInvitation(invitationId: string) {
+  return adminRequest<{ ok: true }>("DELETE", `/admin/invitations/${invitationId}`);
 }

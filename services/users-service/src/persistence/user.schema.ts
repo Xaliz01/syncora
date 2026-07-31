@@ -18,6 +18,22 @@ export class UserDocument extends Document {
   @Prop({ required: true, enum: ["active", "invited"], default: "active" })
   status!: "active" | "invited";
 
+  /**
+   * Compte self-service : false jusqu'à validation OTP.
+   * Absent / true pour les comptes legacy et les invitations.
+   */
+  @Prop({ default: true })
+  emailVerified!: boolean;
+
+  @Prop()
+  emailVerificationCodeHash?: string;
+
+  @Prop({ type: Date })
+  emailVerificationExpiresAt?: Date | null;
+
+  @Prop({ type: Date })
+  emailVerificationSentAt?: Date | null;
+
   @Prop()
   invitedByUserId?: string;
 
@@ -26,6 +42,10 @@ export class UserDocument extends Document {
 
   @Prop({ type: Date })
   lastLoginAt?: Date | null;
+
+  /** Session active unique (anti-partage de compte). */
+  @Prop()
+  activeSessionId?: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(UserDocument);

@@ -218,6 +218,13 @@ export interface SendEmailNotificationBody {
   url?: string;
 }
 
+/** E-mail transactionnel (auth OTP, etc.) — destinataire explicite, hors préférences notif. */
+export interface SendTransactionalEmailBody {
+  to: string;
+  subject: string;
+  body: string;
+}
+
 export interface SendEmailNotificationResponse {
   sent: boolean;
   reason?: string;

@@ -181,11 +181,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarPrefReady, setSidebarPrefReady] = useState(false);
   const sidebarCollapsedRef = useRef(sidebarCollapsed);
   sidebarCollapsedRef.current = sidebarCollapsed;
+  const mobileSearchInputRef = useRef<HTMLInputElement>(null);
   const subscriptionOk = hasActiveSubscriptionAccess(user);
 
   useEffect(() => {
@@ -196,6 +198,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener(USER_PREFERENCES_APPLIED, onPreferencesApplied);
   }, []);
 
+  useEffect(() => {
+    if (!mobileSearchOpen) return;
+    mobileSearchInputRef.current?.focus();
+  }, [mobileSearchOpen]);
+
+  useEffect(() => {
+    setMobileSearchOpen(false);
+  }, [pathname]);
+
+  const submitSearch = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      const q = searchQuery.trim();
+      if (!q) return;
+      setMobileSearchOpen(false);
+      router.push(`/search?q=${encodeURIComponent(q)}`);
+    },
+    [router, searchQuery],
+  );
   const toggleSidebarCollapsed = useCallback(() => {
     const next = !sidebarCollapsedRef.current;
     setSidebarCollapsed(next);
@@ -345,21 +366,36 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </div>
             </Link>
           </div>
-          <div className="flex items-center gap-3">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                const q = searchQuery.trim();
-                if (q) router.push(`/search?q=${encodeURIComponent(q)}`);
-              }}
-              className="relative hidden sm:block"
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              type="button"
+              onClick={() => setMobileSearchOpen(true)}
+              className="sm:hidden -mr-0.5 rounded-md p-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200"
+              aria-label="Rechercher"
             >
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+                aria-hidden
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+                />
+              </svg>
+            </button>
+            <form onSubmit={submitSearch} className="relative hidden sm:block">
               <svg
                 className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
                 strokeWidth={2}
+                aria-hidden
               >
                 <path
                   strokeLinecap="round"
@@ -368,7 +404,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 />
               </svg>
               <input
-                type="text"
+                type="search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Rechercher…"
@@ -393,6 +429,47 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </button>
           </div>
         </div>
+        {mobileSearchOpen && (
+          <div className="sm:hidden border-t border-slate-200 dark:border-slate-800 px-4 py-2.5">
+            <form onSubmit={submitSearch} className="flex items-center gap-2">
+              <div className="relative min-w-0 flex-1">
+                <svg
+                  className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  aria-hidden
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+                  />
+                </svg>
+                <input
+                  ref={mobileSearchInputRef}
+                  type="search"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") setMobileSearchOpen(false);
+                  }}
+                  placeholder="Rechercher…"
+                  aria-label="Rechercher"
+                  className="w-full rounded-md border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 py-2 pl-8 pr-3 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-brand-500 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-brand-500 transition"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setMobileSearchOpen(false)}
+                className="shrink-0 rounded-md px-2.5 py-2 text-xs font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                Fermer
+              </button>
+            </form>
+          </div>
+        )}
       </header>
 
       <div className="flex flex-1">
@@ -440,7 +517,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         )}
 
-        <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 min-w-0 p-4 pb-20 sm:p-6 sm:pb-24 lg:p-8 lg:pb-24">
           <div className="mx-auto w-full max-w-screen-2xl">{children}</div>
         </main>
       </div>

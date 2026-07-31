@@ -1,8 +1,11 @@
 import { ApiError, normalizeApiErrorMessage } from "./api-errors";
+import { SESSION_REPLACED_MESSAGE } from "@planwise/shared";
 
 export const API_BASE =
   (typeof process !== "undefined" && process.env.NEXT_PUBLIC_API_URL) ||
   "http://localhost:3000/api";
+
+export const SESSION_REPLACED_EVENT = "planwise:session-replaced";
 
 export type ApiMethod = "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
 
@@ -35,15 +38,32 @@ export interface ApiRequestOptions {
   fallbackError?: string;
 }
 
-async function throwIfNotOk(response: Response, fallbackError: string): Promise<void> {
+function clearAccessTokenOnly() {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem("planwise_access_token");
+}
+
+function notifySessionReplaced(message: string) {
+  if (typeof window === "undefined") return;
+  if (!message.includes(SESSION_REPLACED_MESSAGE)) return;
+  clearAccessTokenOnly();
+  window.dispatchEvent(new Event(SESSION_REPLACED_EVENT));
+}
+
+async function throwIfNotOk(
+  response: Response,
+  fallbackError: string,
+  path?: string,
+): Promise<void> {
   if (response.ok) return;
   const err = await response.json().catch(() => ({}));
   const raw = (err as { message?: string | string[] }).message;
   const message = Array.isArray(raw) ? raw.join(", ") : raw;
-  throw new ApiError(
-    normalizeApiErrorMessage(response.status, message, fallbackError),
-    response.status,
-  );
+  const normalized = normalizeApiErrorMessage(response.status, message, fallbackError);
+  if (response.status === 401 && path !== "/auth/logout") {
+    notifySessionReplaced(normalized);
+  }
+  throw new ApiError(normalized, response.status);
 }
 
 export function getPlatformToken(): string | null {
@@ -87,7 +107,7 @@ export async function apiRequestJson<T>(
     body: body === undefined ? undefined : JSON.stringify(body),
   });
 
-  await throwIfNotOk(response, fallbackError);
+  await throwIfNotOk(response, fallbackError, path);
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
 }

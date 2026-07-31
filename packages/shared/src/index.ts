@@ -1,5 +1,11 @@
 export * from "./runtime-version";
 export * from "./auth";
+export {
+  PASSWORD_MIN_LENGTH,
+  PASSWORD_POLICY_HINT,
+  getPasswordPolicyError,
+  isPasswordPolicyValid,
+} from "./password";
 export * from "./case";
 export * from "./customer";
 export * from "./organization";

@@ -19,6 +19,32 @@ export interface RegisterAccountBody {
   name?: string;
 }
 
+/** Réponse après register-account : vérification e-mail requise (pas de JWT). */
+export interface EmailVerificationRequiredResponse {
+  status: "email_verification_required";
+  email: string;
+  /**
+   * Présent uniquement hors production (SMTP local / debug).
+   * Ne jamais s'y fier en production.
+   */
+  debugVerificationCode?: string;
+}
+
+export interface VerifyEmailBody {
+  email: string;
+  code: string;
+}
+
+export interface ResendEmailVerificationBody {
+  email: string;
+}
+
+export interface ResendEmailVerificationResponse {
+  ok: true;
+  /** Présent uniquement hors production. */
+  debugVerificationCode?: string;
+}
+
 /** Profil minimal pendant l'onboarding (pas encore d'organisation). */
 export interface OnboardingUser {
   id: string;
@@ -77,6 +103,11 @@ export interface JwtPayload {
   email: string;
   name?: string;
   technicianId?: string;
+  /**
+   * Identifiant de session unique. Requis pour les JWT org normaux ;
+   * absent / non vérifié pour l'impersonation support.
+   */
+  sid?: string;
   /** Staff plateforme à l’origine de la session (impersonation). */
   impersonatorId?: string;
   impersonatorEmail?: string;
@@ -89,4 +120,24 @@ export interface AuthResponse {
 
 export interface SwitchOrganizationBody {
   organizationId: string;
+}
+
+/** Message d'erreur stable renvoyé quand un autre login a pris la session. */
+export const SESSION_REPLACED_MESSAGE = "Session remplacée par une autre connexion";
+
+export interface CreateUserSessionResponse {
+  sessionId: string;
+}
+
+export interface ValidateUserSessionBody {
+  userId: string;
+  sessionId: string;
+}
+
+export interface ValidateUserSessionResponse {
+  valid: boolean;
+}
+
+export interface RevokeUserSessionBody {
+  sessionId?: string;
 }

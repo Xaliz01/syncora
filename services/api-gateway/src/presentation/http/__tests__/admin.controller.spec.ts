@@ -33,6 +33,9 @@ describe("AdminController", () => {
       updatePermissionProfile: jest.fn(),
       deletePermissionProfile: jest.fn(),
       listInvitations: jest.fn(),
+      resendInvitation: jest.fn(),
+      updatePendingInvitation: jest.fn(),
+      cancelInvitation: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -202,6 +205,50 @@ describe("AdminController", () => {
 
       expect(mockAdminService.listInvitations).toHaveBeenCalledWith(mockUser, undefined);
       expect(result).toEqual([]);
+    });
+  });
+
+  describe("resendInvitation", () => {
+    it("should call adminService.resendInvitation with user and invitation id", async () => {
+      mockAdminService.resendInvitation.mockResolvedValue({
+        ok: true,
+        emailSent: true,
+        invitation: { id: "inv-1" },
+      } as never);
+
+      const result = await controller.resendInvitation(mockUser, "inv-1");
+
+      expect(mockAdminService.resendInvitation).toHaveBeenCalledWith(mockUser, "inv-1");
+      expect(result).toMatchObject({ ok: true, emailSent: true });
+    });
+  });
+
+  describe("updatePendingInvitation", () => {
+    it("should call adminService.updatePendingInvitation with user, id and body", async () => {
+      mockAdminService.updatePendingInvitation.mockResolvedValue({
+        invitation: { id: "inv-1", invitedEmail: "new@example.com" },
+        emailSent: true,
+      } as never);
+
+      const result = await controller.updatePendingInvitation(mockUser, "inv-1", {
+        email: "new@example.com",
+      });
+
+      expect(mockAdminService.updatePendingInvitation).toHaveBeenCalledWith(mockUser, "inv-1", {
+        email: "new@example.com",
+      });
+      expect(result).toMatchObject({ emailSent: true });
+    });
+  });
+
+  describe("cancelInvitation", () => {
+    it("should call adminService.cancelInvitation with user and invitation id", async () => {
+      mockAdminService.cancelInvitation.mockResolvedValue({ ok: true } as never);
+
+      const result = await controller.cancelInvitation(mockUser, "inv-1");
+
+      expect(mockAdminService.cancelInvitation).toHaveBeenCalledWith(mockUser, "inv-1");
+      expect(result).toEqual({ ok: true });
     });
   });
 });

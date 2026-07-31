@@ -8,5 +8,11 @@ export abstract class AbstractEmailService {
     url?: string,
   ): Promise<SendEmailNotificationResponse>;
 
+  abstract sendTransactionalEmail(
+    to: string,
+    subject: string,
+    body: string,
+  ): Promise<SendEmailNotificationResponse>;
+
   abstract isConfigured(): boolean;
 }

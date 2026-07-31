@@ -267,6 +267,64 @@ export class PermissionsService extends AbstractPermissionsService {
     return docs.map((doc) => this.toInvitationResponse(doc));
   }
 
+  async findInvitationById(
+    invitationId: string,
+    organizationId: string,
+  ): Promise<InvitationResponse> {
+    const doc = await this.invitationModel.findOne({ _id: invitationId, organizationId }).exec();
+    if (!doc) throw new NotFoundException("Invitation not found");
+    return this.toInvitationResponse(doc);
+  }
+
+  async updatePendingInvitationEmail(
+    invitationId: string,
+    organizationId: string,
+    email: string,
+  ): Promise<InvitationResponse> {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail || !normalizedEmail.includes("@")) {
+      throw new BadRequestException("Adresse e-mail invalide");
+    }
+
+    const doc = await this.invitationModel
+      .findOne({ _id: invitationId, organizationId, status: "pending" })
+      .exec();
+    if (!doc) throw new NotFoundException("Pending invitation not found");
+
+    if (doc.invitedEmail === normalizedEmail) {
+      return this.toInvitationResponse(doc);
+    }
+
+    try {
+      doc.invitedEmail = normalizedEmail;
+      doc.invitationToken = randomUUID();
+      await doc.save();
+      return this.toInvitationResponse(doc);
+    } catch (err: unknown) {
+      if (this.isDuplicateKeyError(err)) {
+        throw new ConflictException("A pending invitation already exists for this email");
+      }
+      throw err;
+    }
+  }
+
+  async cancelInvitation(
+    invitationId: string,
+    organizationId: string,
+  ): Promise<InvitationResponse> {
+    const doc = await this.invitationModel
+      .findOne({ _id: invitationId, organizationId, status: "pending" })
+      .exec();
+    if (!doc) throw new NotFoundException("Pending invitation not found");
+    doc.status = "cancelled";
+    await doc.save();
+    return this.toInvitationResponse(doc);
+  }
+
+  async deleteUserAssignment(organizationId: string, userId: string): Promise<void> {
+    await this.userAssignmentModel.deleteOne({ organizationId, userId }).exec();
+  }
+
   async resolveInvitation(invitationToken: string): Promise<InvitationResponse> {
     const doc = await this.invitationModel.findOne({ invitationToken }).exec();
     if (!doc) throw new NotFoundException("Invitation not found");

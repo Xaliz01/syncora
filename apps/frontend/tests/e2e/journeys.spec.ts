@@ -47,9 +47,10 @@ test.describe("Parcours navigation auth", () => {
     await expect(page).toHaveURL(/\/accept-invitation/);
   });
 
-  test("préremplit le token d'invitation depuis l'URL", async ({ page }) => {
+  test("utilise le token d'invitation depuis l'URL sans champ manuel", async ({ page }) => {
     await page.goto("/accept-invitation?token=test-token-123");
-    await expect(page.getByLabel("Token d'invitation")).toHaveValue("test-token-123");
+    await expect(page.getByLabel("Jeton d'invitation")).toHaveCount(0);
+    await expect(page.getByLabel("Mot de passe")).toBeVisible();
   });
 });
 
@@ -117,7 +118,14 @@ test.describe("Formulaires d'authentification", () => {
     await expect(page.getByLabel("Mot de passe")).toBeVisible();
     await expect(page.getByRole("button", { name: "Continuer" })).toBeVisible();
     await expect(page.getByText("Compte", { exact: true })).toBeVisible();
+    await expect(page.getByText("E-mail", { exact: true })).toBeVisible();
     await expect(page.getByText("Organisation", { exact: true })).toBeVisible();
+  });
+
+  test("l'étape 2 demande un code de vérification e-mail après le compte", async ({ page }) => {
+    await page.goto("/register");
+    await expect(page.getByText("E-mail", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Continuer" })).toBeVisible();
   });
 
   test("l'étape organisation n'est pas accessible sans session onboarding", async ({ page }) => {
@@ -131,9 +139,16 @@ test.describe("Formulaires d'authentification", () => {
     await expect(page.getByText("Adresse postale")).toBeVisible();
   });
 
-  test("le formulaire d'invitation contient token, mot de passe et bouton", async ({ page }) => {
+  test("le formulaire d'invitation contient jeton, mot de passe et bouton", async ({ page }) => {
     await page.goto("/accept-invitation");
-    await expect(page.getByLabel("Token d'invitation")).toBeVisible();
+    await expect(page.getByLabel("Jeton d'invitation")).toBeVisible();
+    await expect(page.getByLabel("Mot de passe")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Activer mon compte" })).toBeVisible();
+  });
+
+  test("le lien d'invitation préremplit le jeton sans champ manuel", async ({ page }) => {
+    await page.goto("/accept-invitation?token=test-invite-token");
+    await expect(page.getByLabel("Jeton d'invitation")).toHaveCount(0);
     await expect(page.getByLabel("Mot de passe")).toBeVisible();
     await expect(page.getByRole("button", { name: "Activer mon compte" })).toBeVisible();
   });

@@ -1,3 +1,11 @@
+import { config } from "dotenv";
+import { resolve } from "node:path";
+
+/** En local uniquement : en prod les variables viennent de Docker / l'environnement. */
+if (process.env.NODE_ENV !== "production") {
+  config({ path: resolve(__dirname, "../.env") });
+}
+
 import "./tracer";
 import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";

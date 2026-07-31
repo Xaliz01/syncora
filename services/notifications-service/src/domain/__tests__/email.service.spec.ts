@@ -98,6 +98,14 @@ describe("EmailService (configured)", () => {
     expect(call.html).toContain("https://app.test.com/my-day");
   });
 
+  it("should include the Planwise logo in html", async () => {
+    await service.sendNotificationEmail("user@example.com", "Subject", "Body");
+
+    const call = mockSendMail.mock.calls[0][0];
+    expect(call.html).toContain("https://app.test.com/planwise-logo-512.png");
+    expect(call.html).toContain('alt="Planwise"');
+  });
+
   it("should handle send errors gracefully", async () => {
     mockSendMail.mockRejectedValueOnce(new Error("SMTP connection refused"));
 

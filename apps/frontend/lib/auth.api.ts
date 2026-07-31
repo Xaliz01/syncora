@@ -2,8 +2,10 @@ import type {
   AuthResponse,
   AuthUser,
   CreateOrganizationBody,
+  EmailVerificationRequiredResponse,
   OnboardingAuthResponse,
   OnboardingUser,
+  ResendEmailVerificationResponse,
 } from "@planwise/shared";
 import { apiRequestJson, getAccessToken, getOnboardingToken } from "./api-client";
 
@@ -16,11 +18,31 @@ export async function login(email: string, password: string) {
 }
 
 export async function registerAccount(payload: { email: string; password: string; name?: string }) {
-  return apiRequestJson<OnboardingAuthResponse>("POST", "/auth/register-account", {
+  return apiRequestJson<EmailVerificationRequiredResponse>("POST", "/auth/register-account", {
     body: payload,
     bearer: false,
     fallbackError: "Création de compte impossible",
   });
+}
+
+export async function verifyEmail(payload: { email: string; code: string }) {
+  return apiRequestJson<OnboardingAuthResponse>("POST", "/auth/verify-email", {
+    body: payload,
+    bearer: false,
+    fallbackError: "Vérification impossible",
+  });
+}
+
+export async function resendEmailVerification(payload: { email: string }) {
+  return apiRequestJson<ResendEmailVerificationResponse>(
+    "POST",
+    "/auth/resend-email-verification",
+    {
+      body: payload,
+      bearer: false,
+      fallbackError: "Renvoi du code impossible",
+    },
+  );
 }
 
 export async function acceptInvitation(payload: {
@@ -32,6 +54,18 @@ export async function acceptInvitation(payload: {
     body: payload,
     bearer: false,
     fallbackError: "Acceptation impossible",
+  });
+}
+
+export async function resolveInvitation(invitationToken: string) {
+  return apiRequestJson<{
+    invitedEmail: string;
+    invitedName?: string;
+    requiresPasswordSetup: boolean;
+  }>("POST", "/auth/resolve-invitation", {
+    body: { invitationToken },
+    bearer: false,
+    fallbackError: "Invitation introuvable",
   });
 }
 
@@ -84,6 +118,18 @@ export async function getMe(): Promise<AuthUser> {
     noTokenMessage: "Session non authentifiée",
     fallbackError: "Session expirée",
   });
+}
+
+export async function logout(): Promise<void> {
+  try {
+    await apiRequestJson<{ ok: true }>("POST", "/auth/logout", {
+      fallbackError: "Déconnexion impossible",
+    });
+  } catch {
+    // Clear local token even if the server revoke fails.
+  } finally {
+    clearToken();
+  }
 }
 
 export async function getOnboardingMe(): Promise<OnboardingUser> {

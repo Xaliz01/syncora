@@ -22,10 +22,12 @@ import type {
   CreateOrganizationMembershipBody,
   CreateUserBody,
   PatchUserBody,
+  ResendEmailVerificationBody,
   UpdateUserNameBody,
   UpdateUserPreferencesBody,
   ValidateCredentialsBody,
   ValidateCredentialsResponse,
+  VerifyEmailBody,
 } from "@planwise/shared";
 
 @Controller("users")
@@ -35,6 +37,23 @@ export class UsersController {
   @Post("accounts")
   async createAccount(@Body() body: CreateAccountBody) {
     return this.usersService.createAccount(body);
+  }
+
+  @Post("accounts/verify-email")
+  async verifyEmail(@Body() body: VerifyEmailBody) {
+    if (!body.email?.trim() || !body.code?.trim()) {
+      throw new BadRequestException("email and code are required");
+    }
+    return this.usersService.verifyEmail(body.email, body.code);
+  }
+
+  @Post("accounts/resend-email-verification")
+  @HttpCode(HttpStatus.OK)
+  async resendEmailVerification(@Body() body: ResendEmailVerificationBody) {
+    if (!body.email?.trim()) {
+      throw new BadRequestException("email is required");
+    }
+    return this.usersService.resendEmailVerification(body.email);
   }
 
   @Get("accounts/:id")
@@ -63,6 +82,26 @@ export class UsersController {
       throw new UnauthorizedException("Invalid email or password");
     }
     return result;
+  }
+
+  @Post("validate-session")
+  @HttpCode(HttpStatus.OK)
+  async validateSession(@Body() body: { userId?: string; sessionId?: string }) {
+    if (!body.userId?.trim() || !body.sessionId?.trim()) {
+      throw new BadRequestException("userId and sessionId are required");
+    }
+    return this.usersService.validateSession(body.userId, body.sessionId);
+  }
+
+  @Post(":id/sessions")
+  async createSession(@Param("id") id: string) {
+    return this.usersService.createSession(id);
+  }
+
+  @Post(":id/sessions/revoke")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async revokeSession(@Param("id") id: string, @Body() body: { sessionId?: string }) {
+    await this.usersService.revokeSession(id, body.sessionId);
   }
 
   @Get()
@@ -125,6 +164,34 @@ export class UsersController {
   @Post(":id/activate")
   async activateInvitedUser(@Param("id") id: string, @Body() body: ActivateInvitedUserBody) {
     return this.usersService.activateInvitedUser(id, body);
+  }
+
+  @Get(":id/invitation-activation-hints")
+  async getInvitationActivationHints(@Param("id") id: string) {
+    return this.usersService.getInvitationActivationHints(id);
+  }
+
+  @Patch(":id/invited-email")
+  async updateInvitedUserEmail(
+    @Param("id") id: string,
+    @Body() body: { organizationId?: string; email?: string },
+  ) {
+    if (!body.organizationId?.trim() || !body.email?.trim()) {
+      throw new BadRequestException("organizationId and email are required");
+    }
+    return this.usersService.updateInvitedUserEmail(id, body.organizationId, body.email);
+  }
+
+  @Post(":id/cancel-organization-invitation")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async cancelOrganizationInvitation(
+    @Param("id") id: string,
+    @Body() body: { organizationId?: string },
+  ) {
+    if (!body.organizationId?.trim()) {
+      throw new BadRequestException("organizationId is required");
+    }
+    await this.usersService.cancelOrganizationInvitation(id, body.organizationId);
   }
 
   @Put(":id/name")

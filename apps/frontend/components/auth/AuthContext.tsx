@@ -10,10 +10,18 @@ import React, {
   useState,
 } from "react";
 import { useTheme } from "next-themes";
-import type { AuthUser, CreateOrganizationBody, OnboardingUser } from "@planwise/shared";
+import type {
+  AuthUser,
+  CreateOrganizationBody,
+  EmailVerificationRequiredResponse,
+  OnboardingUser,
+} from "@planwise/shared";
 import * as authApi from "@/lib/auth.api";
 import * as accountApi from "@/lib/account.api";
 import { applyUserPreferences } from "@/lib/user-preferences";
+import { SESSION_REPLACED_EVENT } from "@/lib/api-client";
+import { useToast } from "@/components/ui/ToastProvider";
+import { SESSION_REPLACED_MESSAGE } from "@planwise/shared";
 
 interface AuthState {
   user: AuthUser | null;
@@ -29,7 +37,12 @@ interface AuthContextValue extends AuthState {
     email: string;
     password: string;
     name?: string;
-  }) => Promise<OnboardingUser>;
+  }) => Promise<EmailVerificationRequiredResponse>;
+  verifyEmail: (payload: { email: string; code: string }) => Promise<OnboardingUser>;
+  resendEmailVerification: (payload: { email: string }) => Promise<{
+    ok: true;
+    debugVerificationCode?: string;
+  }>;
   completeOrganization: (payload: CreateOrganizationBody) => Promise<AuthUser>;
   acceptInvitation: (payload: {
     invitationToken: string;
@@ -53,6 +66,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { setTheme } = useTheme();
+  const { showToast } = useToast();
   const setThemeRef = useRef(setTheme);
   setThemeRef.current = setTheme;
   const [state, setState] = useState<AuthState>({
@@ -222,12 +236,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const registerAccount = useCallback(
     async (payload: { email: string; password: string; name?: string }) => {
-      const result = await authApi.registerAccount(payload);
+      return authApi.registerAccount(payload);
+    },
+    [],
+  );
+
+  const verifyEmail = useCallback(
+    async (payload: { email: string; code: string }) => {
+      const result = await authApi.verifyEmail(payload);
       persistOnboarding(result.accessToken, result.user);
       return result.user;
     },
     [persistOnboarding],
   );
+
+  const resendEmailVerification = useCallback(async (payload: { email: string }) => {
+    return authApi.resendEmailVerification(payload);
+  }, []);
 
   const acceptInvitation = useCallback(
     async (payload: { invitationToken: string; password: string; name?: string }) => {
@@ -239,15 +264,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const logout = useCallback(() => {
-    authApi.clearToken();
-    setState({
-      user: null,
-      token: null,
-      onboardingUser: null,
-      onboardingToken: null,
-      isReady: true,
+    void authApi.logout().finally(() => {
+      setState({
+        user: null,
+        token: null,
+        onboardingUser: null,
+        onboardingToken: null,
+        isReady: true,
+      });
     });
   }, []);
+
+  useEffect(() => {
+    const onSessionReplaced = () => {
+      setState({
+        user: null,
+        token: null,
+        onboardingUser: null,
+        onboardingToken: null,
+        isReady: true,
+      });
+      showToast(SESSION_REPLACED_MESSAGE, "error");
+    };
+    window.addEventListener(SESSION_REPLACED_EVENT, onSessionReplaced);
+    return () => window.removeEventListener(SESSION_REPLACED_EVENT, onSessionReplaced);
+  }, [showToast]);
 
   const enterImpersonationSession = useCallback(
     (accessToken: string, user: AuthUser) => {
@@ -275,6 +316,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isImpersonating: !!state.user?.impersonatorId,
       login,
       registerAccount,
+      verifyEmail,
+      resendEmailVerification,
       completeOrganization,
       acceptInvitation,
       refreshSession,
@@ -288,6 +331,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       state,
       login,
       registerAccount,
+      verifyEmail,
+      resendEmailVerification,
       completeOrganization,
       acceptInvitation,
       refreshSession,

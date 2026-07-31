@@ -4,6 +4,7 @@ import {
   ConflictException,
   BadRequestException,
   ForbiddenException,
+  Logger,
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { HttpService } from "@nestjs/axios";
@@ -30,8 +31,24 @@ import type {
   SwitchOrganizationBody,
   TechnicianResponse,
   AccountUserResponse,
+  CreateAccountResult,
+  EmailVerificationRequiredResponse,
+  VerifyEmailBody,
+  ResendEmailVerificationBody,
+  ResendEmailVerificationResponse,
+  IssueEmailVerificationResult,
+  SendEmailNotificationResponse,
+  CreateUserSessionResponse,
+  InvitationActivationHintsResponse,
+  ResolveInvitationPreviewResponse,
+  UserRole,
+  UserStatus,
 } from "@planwise/shared";
-import { ASSIGNABLE_PERMISSION_CODES, isOnboardingJwtPayload } from "@planwise/shared";
+import {
+  ASSIGNABLE_PERMISSION_CODES,
+  getPasswordPolicyError,
+  isOnboardingJwtPayload,
+} from "@planwise/shared";
 
 function buildOrganizationCreatePayload(body: CreateOrganizationBody): CreateOrganizationBody {
   return {
@@ -51,9 +68,16 @@ const ORGANIZATIONS_URL = process.env.ORGANIZATIONS_SERVICE_URL ?? "http://local
 const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
 const PERMISSIONS_URL = process.env.PERMISSIONS_SERVICE_URL ?? "http://localhost:3003";
 const TECHNICIANS_URL = process.env.TECHNICIANS_SERVICE_URL ?? "http://localhost:3006";
+const NOTIFICATIONS_URL = process.env.NOTIFICATIONS_SERVICE_URL ?? "http://localhost:3010";
+
+function isNonProduction(): boolean {
+  return process.env.NODE_ENV !== "production";
+}
 
 @Injectable()
 export class AuthService extends AbstractAuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly httpService: HttpService,
     private readonly jwtService: JwtService,
@@ -135,7 +159,7 @@ export class AuthService extends AbstractAuthService {
       user.id,
       user.role,
     );
-    const authUser: AuthUser = {
+    return this.issueOrganizationAuth({
       id: user.id,
       email: user.email,
       organizationId: user.organizationId,
@@ -143,44 +167,118 @@ export class AuthService extends AbstractAuthService {
       status: user.status,
       permissions,
       name: user.name,
-    };
-    const payload: JwtPayload = {
-      sub: user.id,
-      organizationId: user.organizationId,
-      role: user.role,
-      status: user.status,
-      permissions,
-      email: user.email,
-      name: user.name,
-    };
-    const accessToken = this.jwtService.sign(payload);
-    return { accessToken, user: authUser };
+    });
   }
 
-  async registerAccount(body: RegisterAccountBody): Promise<OnboardingAuthResponse> {
-    let user: AccountUserResponse;
+  async registerAccount(body: RegisterAccountBody): Promise<EmailVerificationRequiredResponse> {
+    const passwordError = getPasswordPolicyError(body.password);
+    if (passwordError) {
+      throw new BadRequestException(passwordError);
+    }
+
+    let created: CreateAccountResult;
     try {
       const res = await firstValueFrom(
-        this.httpService.post<AccountUserResponse>(`${USERS_URL}/users/accounts`, {
+        this.httpService.post<CreateAccountResult>(`${USERS_URL}/users/accounts`, {
           email: body.email,
           password: body.password,
           name: body.name,
         }),
       );
+      created = res.data;
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number; data?: { message?: string } } })
+        ?.response?.status;
+      const message = (err as { response?: { data?: { message?: string } } })?.response?.data
+        ?.message;
+      if (status === 409) throw new ConflictException("Un utilisateur avec cet email existe déjà");
+      if (status === 400) throw new BadRequestException(message ?? "Données invalides");
+      throw err;
+    }
+
+    await this.sendEmailVerificationCode(created.user.email, created.emailVerificationCode);
+
+    const response: EmailVerificationRequiredResponse = {
+      status: "email_verification_required",
+      email: created.user.email,
+    };
+    if (isNonProduction()) {
+      response.debugVerificationCode = created.emailVerificationCode;
+    }
+    return response;
+  }
+
+  async verifyEmail(body: VerifyEmailBody): Promise<OnboardingAuthResponse> {
+    let user: AccountUserResponse;
+    try {
+      const res = await firstValueFrom(
+        this.httpService.post<AccountUserResponse>(`${USERS_URL}/users/accounts/verify-email`, {
+          email: body.email,
+          code: body.code,
+        }),
+      );
       user = res.data;
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } })?.response?.status;
-      if (status === 409) throw new ConflictException("Un utilisateur avec cet email existe déjà");
+      if (status === 401) {
+        throw new UnauthorizedException("Code de vérification invalide ou expiré");
+      }
+      if (status === 400) {
+        throw new BadRequestException("Email et code sont requis");
+      }
       throw err;
     }
 
     return this.issueOnboardingAuth(user);
   }
 
+  async resendEmailVerification(
+    body: ResendEmailVerificationBody,
+  ): Promise<ResendEmailVerificationResponse> {
+    let issued: IssueEmailVerificationResult | null = null;
+    try {
+      const res = await firstValueFrom(
+        this.httpService.post<IssueEmailVerificationResult>(
+          `${USERS_URL}/users/accounts/resend-email-verification`,
+          { email: body.email },
+        ),
+      );
+      issued = res.data;
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number; data?: { message?: string } } })
+        ?.response?.status;
+      const message = (err as { response?: { data?: { message?: string } } })?.response?.data
+        ?.message;
+      if (status === 400) {
+        throw new BadRequestException(
+          message ?? "Veuillez patienter avant de demander un nouveau code",
+        );
+      }
+      // 404 : ne pas révéler si l'email existe — réponse neutre.
+      if (status === 404) {
+        return { ok: true };
+      }
+      throw err;
+    }
+
+    if (issued) {
+      await this.sendEmailVerificationCode(issued.email, issued.emailVerificationCode);
+    }
+
+    const response: ResendEmailVerificationResponse = { ok: true };
+    if (issued && isNonProduction()) {
+      response.debugVerificationCode = issued.emailVerificationCode;
+    }
+    return response;
+  }
+
   async getOnboardingUser(jwt: OnboardingJwtPayload): Promise<OnboardingUser> {
     const account = await this.resolveAccountProfile(jwt.sub);
     if (!account) {
       throw new UnauthorizedException("Utilisateur introuvable");
+    }
+    if (account.emailVerified === false) {
+      throw new ForbiddenException("Adresse e-mail non vérifiée");
     }
     return {
       id: account.id,
@@ -210,6 +308,28 @@ export class AuthService extends AbstractAuthService {
     };
   }
 
+  private async sendEmailVerificationCode(email: string, code: string): Promise<void> {
+    try {
+      const res = await firstValueFrom(
+        this.httpService.post<SendEmailNotificationResponse>(
+          `${NOTIFICATIONS_URL}/email/transactional`,
+          {
+            to: email,
+            subject: "Vérifiez votre adresse e-mail",
+            body: `Bonjour,\n\nVotre code de vérification Planwise est : ${code}\n\nIl expire dans 15 minutes. Si vous n'avez pas créé de compte, ignorez cet e-mail.`,
+          },
+        ),
+      );
+      if (!res.data.sent) {
+        this.logger.warn(
+          `Email verification OTP not sent to ${email}: ${res.data.reason ?? "unknown"}`,
+        );
+      }
+    } catch (err) {
+      this.logger.warn(`Failed to send email verification OTP to ${email}`, (err as Error).message);
+    }
+  }
+
   async login(body: LoginBody): Promise<AuthResponse | OnboardingAuthResponse> {
     let user: ValidateCredentialsResponse;
     try {
@@ -226,12 +346,19 @@ export class AuthService extends AbstractAuthService {
       throw err;
     }
 
+    if (user.emailVerified === false) {
+      throw new ForbiddenException(
+        "Adresse e-mail non vérifiée. Consultez votre boîte mail pour le code de vérification.",
+      );
+    }
+
     if (!user.organizationId?.trim() || !user.role) {
       return this.issueOnboardingAuth({
         id: user.id,
         email: user.email,
         name: user.name,
         status: user.status,
+        emailVerified: true,
       });
     }
 
@@ -241,7 +368,7 @@ export class AuthService extends AbstractAuthService {
       user.role,
     );
     const technicianId = await this.resolveTechnicianId(user.organizationId, user.id);
-    const authUser: AuthUser = {
+    return this.issueOrganizationAuth({
       id: user.id,
       email: user.email,
       organizationId: user.organizationId,
@@ -250,19 +377,7 @@ export class AuthService extends AbstractAuthService {
       permissions,
       name: user.name,
       technicianId,
-    };
-    const payload: JwtPayload = {
-      sub: user.id,
-      organizationId: user.organizationId,
-      role: user.role,
-      status: user.status,
-      permissions,
-      email: user.email,
-      name: user.name,
-      technicianId,
-    };
-    const accessToken = this.jwtService.sign(payload);
-    return { accessToken, user: authUser };
+    });
   }
 
   async createOrganization(
@@ -336,7 +451,7 @@ export class AuthService extends AbstractAuthService {
       user.id,
       user.role,
     );
-    const authUser: AuthUser = {
+    return this.issueOrganizationAuth({
       id: user.id,
       email: user.email,
       organizationId: user.organizationId,
@@ -344,18 +459,7 @@ export class AuthService extends AbstractAuthService {
       status: user.status,
       permissions,
       name: user.name,
-    };
-    const payload: JwtPayload = {
-      sub: user.id,
-      organizationId: user.organizationId,
-      role: user.role,
-      status: user.status,
-      permissions,
-      email: user.email,
-      name: user.name,
-    };
-    const accessToken = this.jwtService.sign(payload);
-    return { accessToken, user: authUser };
+    });
   }
 
   async switchOrganization(body: SwitchOrganizationBody, jwt: JwtPayload): Promise<AuthResponse> {
@@ -409,7 +513,7 @@ export class AuthService extends AbstractAuthService {
       role,
     );
     const technicianId = await this.resolveTechnicianId(user.organizationId, user.id);
-    const authUser: AuthUser = {
+    return this.issueOrganizationAuth({
       id: user.id,
       email: user.email,
       organizationId: user.organizationId,
@@ -418,19 +522,24 @@ export class AuthService extends AbstractAuthService {
       permissions,
       name: user.name,
       technicianId,
-    };
-    const payload: JwtPayload = {
-      sub: user.id,
-      organizationId: user.organizationId,
-      role,
-      status: user.status,
-      permissions,
-      email: user.email,
-      name: user.name,
-      technicianId,
-    };
-    const accessToken = this.jwtService.sign(payload);
-    return { accessToken, user: authUser };
+      reuseSessionId: jwt.sid,
+    });
+  }
+
+  async logout(jwt: JwtPayload): Promise<{ ok: true }> {
+    if (jwt.impersonatorId || !jwt.sid?.trim()) {
+      return { ok: true };
+    }
+    try {
+      await firstValueFrom(
+        this.httpService.post(`${USERS_URL}/users/${jwt.sub}/sessions/revoke`, {
+          sessionId: jwt.sid,
+        }),
+      );
+    } catch {
+      // Logout client-side even if revoke fails (session already gone).
+    }
+    return { ok: true };
   }
 
   async acceptInvitation(body: AcceptInvitationBody): Promise<AuthResponse> {
@@ -457,15 +566,21 @@ export class AuthService extends AbstractAuthService {
           {
             password: body.password,
             name: body.name,
+            organizationId: invitation.organizationId,
           },
         ),
       );
       user = res.data;
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } })?.response?.status;
+      const message = (err as { response?: { data?: { message?: string } } })?.response?.data
+        ?.message;
       if (status === 404) throw new UnauthorizedException("Utilisateur invité introuvable");
+      if (status === 401) {
+        throw new UnauthorizedException(message ?? "Mot de passe incorrect");
+      }
       if (status === 400)
-        throw new UnauthorizedException("État d'activation de l'invitation invalide");
+        throw new UnauthorizedException(message ?? "État d'activation de l'invitation invalide");
       throw err;
     }
 
@@ -488,7 +603,7 @@ export class AuthService extends AbstractAuthService {
       user.role,
     );
     const technicianId = await this.resolveTechnicianId(user.organizationId, user.id);
-    const authUser: AuthUser = {
+    return this.issueOrganizationAuth({
       id: user.id,
       email: user.email,
       organizationId: user.organizationId,
@@ -497,19 +612,47 @@ export class AuthService extends AbstractAuthService {
       permissions,
       name: user.name,
       technicianId,
+    });
+  }
+
+  async resolveInvitation(invitationToken: string): Promise<ResolveInvitationPreviewResponse> {
+    const token = invitationToken?.trim();
+    if (!token) {
+      throw new BadRequestException("Le jeton d'invitation est requis");
+    }
+
+    let invitation: InvitationResponse;
+    try {
+      const res = await firstValueFrom(
+        this.httpService.post<InvitationResponse>(`${PERMISSIONS_URL}/invitations/resolve`, {
+          invitationToken: token,
+        }),
+      );
+      invitation = res.data;
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 404) throw new UnauthorizedException("Invitation introuvable");
+      if (status === 409) throw new UnauthorizedException("Cette invitation a déjà été utilisée");
+      throw err;
+    }
+
+    let requiresPasswordSetup = true;
+    try {
+      const res = await firstValueFrom(
+        this.httpService.get<InvitationActivationHintsResponse>(
+          `${USERS_URL}/users/${invitation.invitedUserId}/invitation-activation-hints`,
+        ),
+      );
+      requiresPasswordSetup = !res.data.hasPassword;
+    } catch {
+      requiresPasswordSetup = true;
+    }
+
+    return {
+      invitedEmail: invitation.invitedEmail,
+      invitedName: invitation.invitedName,
+      requiresPasswordSetup,
     };
-    const payload: JwtPayload = {
-      sub: user.id,
-      organizationId: user.organizationId,
-      role: user.role,
-      status: user.status,
-      permissions,
-      email: user.email,
-      name: user.name,
-      technicianId,
-    };
-    const accessToken = this.jwtService.sign(payload);
-    return { accessToken, user: authUser };
   }
 
   private async resolveTechnicianId(
@@ -617,5 +760,53 @@ export class AuthService extends AbstractAuthService {
     } catch {
       return role === "admin" ? [...ASSIGNABLE_PERMISSION_CODES] : [];
     }
+  }
+
+  private async createUserSession(userId: string): Promise<string> {
+    const res = await firstValueFrom(
+      this.httpService.post<CreateUserSessionResponse>(`${USERS_URL}/users/${userId}/sessions`),
+    );
+    return res.data.sessionId;
+  }
+
+  private async issueOrganizationAuth(params: {
+    id: string;
+    email: string;
+    organizationId: string;
+    role: UserRole;
+    status: UserStatus;
+    permissions: PermissionCode[];
+    name?: string;
+    technicianId?: string;
+    /** Si fourni, réutilise la session (ex. switch d'organisation). */
+    reuseSessionId?: string;
+  }): Promise<AuthResponse> {
+    const sid = params.reuseSessionId?.trim()
+      ? params.reuseSessionId.trim()
+      : await this.createUserSession(params.id);
+
+    const authUser: AuthUser = {
+      id: params.id,
+      email: params.email,
+      organizationId: params.organizationId,
+      role: params.role,
+      status: params.status,
+      permissions: params.permissions,
+      name: params.name,
+      technicianId: params.technicianId,
+    };
+    const payload: JwtPayload = {
+      sub: params.id,
+      organizationId: params.organizationId,
+      role: params.role,
+      status: params.status,
+      permissions: params.permissions,
+      email: params.email,
+      name: params.name,
+      technicianId: params.technicianId,
+      sid,
+    };
+    const accessToken = this.jwtService.sign(payload);
+    return { accessToken, user: authUser };
   }
 }

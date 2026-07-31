@@ -8,6 +8,7 @@ import {
 import { InjectModel } from "@nestjs/mongoose";
 import type { Model } from "mongoose";
 import { Types } from "mongoose";
+import { randomInt, randomUUID } from "crypto";
 import * as bcrypt from "bcrypt";
 import type { UserDocument } from "../persistence/user.schema";
 import type { OrganizationMembershipDocument } from "../persistence/organization-membership.schema";
@@ -16,13 +17,18 @@ import type { SupportImpersonationAuditDocument } from "../persistence/support-i
 import {
   activeDocumentFilter,
   DEFAULT_USER_PREFERENCES,
+  getPasswordPolicyError,
   normalizeQuickActionIds,
   type ActivateInvitedUserBody,
   type ChangePasswordBody,
   type CreateAccountBody,
+  type CreateAccountResult,
   type CreateInvitedUserBody,
   type CreateOrganizationMembershipBody,
   type CreateUserBody,
+  type CreateUserSessionResponse,
+  type InvitationActivationHintsResponse,
+  type IssueEmailVerificationResult,
   type OrganizationMembershipResponse,
   type PatchUserBody,
   type AccountUserResponse,
@@ -34,6 +40,7 @@ import {
   type UserResponse,
   type UserRole,
   type ValidateCredentialsResponse,
+  type ValidateUserSessionResponse,
 } from "@planwise/shared";
 import {
   AbstractUsersService,
@@ -41,8 +48,16 @@ import {
   type PlatformUsersDirectoryResult,
 } from "./ports/users.service.port";
 
-const SALT_ROUNDS = 10;
+/** bcrypt cost factor (OWASP recommande ≥ 10 ; 12 est un bon compromis). */
+const SALT_ROUNDS = 12;
 const DEFAULT_ROLE: UserRole = "member";
+const EMAIL_OTP_TTL_MS = 15 * 60 * 1000;
+const EMAIL_OTP_RESEND_COOLDOWN_MS = 60 * 1000;
+
+function assertPasswordPolicy(password: string): void {
+  const error = getPasswordPolicyError(password);
+  if (error) throw new BadRequestException(error);
+}
 
 @Injectable()
 export class UsersService extends AbstractUsersService {
@@ -59,6 +74,7 @@ export class UsersService extends AbstractUsersService {
   }
 
   async create(body: CreateUserBody): Promise<UserResponse> {
+    assertPasswordPolicy(body.password);
     const existing = await this.userModel
       .findOne({ email: body.email, ...activeDocumentFilter })
       .exec();
@@ -72,6 +88,7 @@ export class UsersService extends AbstractUsersService {
       passwordHash,
       name: body.name,
       status: "active",
+      emailVerified: true,
     });
     const uid = doc._id.toString();
     await this.membershipModel.findOneAndUpdate(
@@ -89,21 +106,97 @@ export class UsersService extends AbstractUsersService {
     return this.toResponseForOrganization(doc, body.organizationId);
   }
 
-  async createAccount(body: CreateAccountBody): Promise<AccountUserResponse> {
-    const existing = await this.userModel
-      .findOne({ email: body.email, ...activeDocumentFilter })
-      .exec();
+  async createAccount(body: CreateAccountBody): Promise<CreateAccountResult> {
+    assertPasswordPolicy(body.password);
+    const email = body.email.trim().toLowerCase();
+    const existing = await this.userModel.findOne({ email, ...activeDocumentFilter }).exec();
     if (existing) {
+      if (!this.isEmailVerified(existing) && !existing.organizationId?.trim()) {
+        const passwordHash = await bcrypt.hash(body.password, SALT_ROUNDS);
+        existing.passwordHash = passwordHash;
+        if (body.name) existing.name = body.name;
+        const emailVerificationCode = await this.storeEmailVerificationOtp(existing);
+        return {
+          user: this.toAccountResponse(existing),
+          emailVerificationCode,
+        };
+      }
       throw new ConflictException("User with this email already exists");
     }
     const passwordHash = await bcrypt.hash(body.password, SALT_ROUNDS);
     const doc = await this.userModel.create({
-      email: body.email,
+      email,
       passwordHash,
       name: body.name,
       status: "active",
+      emailVerified: false,
     });
+    const emailVerificationCode = await this.storeEmailVerificationOtp(doc);
+    return {
+      user: this.toAccountResponse(doc),
+      emailVerificationCode,
+    };
+  }
+
+  async verifyEmail(email: string, code: string): Promise<AccountUserResponse> {
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedCode = code.trim();
+    if (!normalizedEmail || !normalizedCode) {
+      throw new BadRequestException("Email et code sont requis");
+    }
+
+    const doc = await this.userModel
+      .findOne({ email: normalizedEmail, ...activeDocumentFilter })
+      .exec();
+    if (!doc) {
+      throw new UnauthorizedException("Code de vérification invalide ou expiré");
+    }
+    if (this.isEmailVerified(doc)) {
+      return this.toAccountResponse(doc);
+    }
+    if (!doc.emailVerificationCodeHash || !doc.emailVerificationExpiresAt) {
+      throw new UnauthorizedException("Code de vérification invalide ou expiré");
+    }
+    if (doc.emailVerificationExpiresAt.getTime() < Date.now()) {
+      throw new UnauthorizedException("Code de vérification invalide ou expiré");
+    }
+    const ok = await bcrypt.compare(normalizedCode, doc.emailVerificationCodeHash);
+    if (!ok) {
+      throw new UnauthorizedException("Code de vérification invalide ou expiré");
+    }
+
+    doc.emailVerified = true;
+    doc.emailVerificationCodeHash = undefined;
+    doc.emailVerificationExpiresAt = null;
+    doc.emailVerificationSentAt = null;
+    await doc.save();
     return this.toAccountResponse(doc);
+  }
+
+  async resendEmailVerification(email: string): Promise<IssueEmailVerificationResult> {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
+      throw new BadRequestException("Email requis");
+    }
+
+    const doc = await this.userModel
+      .findOne({ email: normalizedEmail, ...activeDocumentFilter })
+      .exec();
+    if (!doc || this.isEmailVerified(doc)) {
+      // Réponse neutre côté gateway : ne pas révéler si l'email existe.
+      throw new NotFoundException("Aucun compte en attente de vérification pour cet email");
+    }
+    if (doc.emailVerificationSentAt) {
+      const elapsed = Date.now() - doc.emailVerificationSentAt.getTime();
+      if (elapsed < EMAIL_OTP_RESEND_COOLDOWN_MS) {
+        throw new BadRequestException(
+          "Veuillez patienter avant de demander un nouveau code de vérification",
+        );
+      }
+    }
+
+    const emailVerificationCode = await this.storeEmailVerificationOtp(doc);
+    return { email: doc.email, emailVerificationCode };
   }
 
   async findAccountById(id: string): Promise<AccountUserResponse | null> {
@@ -113,16 +206,49 @@ export class UsersService extends AbstractUsersService {
   }
 
   async invite(body: CreateInvitedUserBody): Promise<UserResponse> {
-    const existing = await this.userModel
-      .findOne({ email: body.email, ...activeDocumentFilter })
-      .exec();
-    if (existing) {
-      throw new ConflictException("User with this email already exists");
+    const email = body.email.trim().toLowerCase();
+    if (!email || !email.includes("@")) {
+      throw new BadRequestException("Adresse e-mail invalide");
     }
     const invitedRole = body.role ?? DEFAULT_ROLE;
+
+    const existing = await this.userModel.findOne({ email, ...activeDocumentFilter }).exec();
+    if (existing) {
+      const uid = existing._id.toString();
+      const existingMembership = await this.membershipModel
+        .findOne({
+          userId: uid,
+          organizationId: body.organizationId,
+          deletedAt: null,
+        })
+        .exec();
+
+      if (existingMembership?.membershipStatus === "active") {
+        throw new ConflictException("Cet utilisateur est déjà membre de l'organisation");
+      }
+      if (existingMembership?.membershipStatus === "invited") {
+        throw new ConflictException("Une invitation est déjà en attente pour cet email");
+      }
+
+      await this.membershipModel.findOneAndUpdate(
+        { userId: uid, organizationId: body.organizationId },
+        {
+          $set: {
+            role: invitedRole,
+            membershipStatus: "invited",
+            deletedAt: null,
+          },
+          $setOnInsert: { userId: uid, organizationId: body.organizationId },
+        },
+        { upsert: true, new: true },
+      );
+
+      return this.toResponseForOrganization(existing, body.organizationId);
+    }
+
     const doc = await this.userModel.create({
       organizationId: body.organizationId,
-      email: body.email,
+      email,
       name: body.name,
       status: "active",
       invitedByUserId: body.invitedByUserId,
@@ -144,6 +270,11 @@ export class UsersService extends AbstractUsersService {
   }
 
   async activateInvitedUser(id: string, body: ActivateInvitedUserBody): Promise<UserResponse> {
+    const organizationId = body.organizationId?.trim();
+    if (!organizationId) {
+      throw new BadRequestException("organizationId is required");
+    }
+
     const doc = await this.userModel.findOne({ _id: id, ...activeDocumentFilter }).exec();
     if (!doc) throw new NotFoundException("User not found");
 
@@ -153,7 +284,7 @@ export class UsersService extends AbstractUsersService {
     const pending = await this.membershipModel
       .findOne({
         userId: uid,
-        organizationId: doc.organizationId,
+        organizationId,
         membershipStatus: "invited",
         deletedAt: null,
       })
@@ -164,16 +295,117 @@ export class UsersService extends AbstractUsersService {
       );
     }
 
-    doc.passwordHash = await bcrypt.hash(body.password, SALT_ROUNDS);
+    if (doc.passwordHash) {
+      const ok = await bcrypt.compare(body.password, doc.passwordHash);
+      if (!ok) {
+        throw new UnauthorizedException("Mot de passe incorrect");
+      }
+    } else {
+      assertPasswordPolicy(body.password);
+      doc.passwordHash = await bcrypt.hash(body.password, SALT_ROUNDS);
+    }
+
     if (body.name) doc.name = body.name;
+    doc.emailVerified = true;
+    doc.emailVerificationCodeHash = undefined;
+    doc.emailVerificationExpiresAt = null;
+    doc.emailVerificationSentAt = null;
+    doc.organizationId = organizationId;
     await doc.save();
 
     await this.membershipModel.updateMany(
-      { userId: uid, organizationId: doc.organizationId, deletedAt: null },
+      { userId: uid, organizationId, deletedAt: null },
       { $set: { membershipStatus: "active" } },
     );
 
-    return this.toResponseForOrganization(doc, doc.organizationId!);
+    return this.toResponseForOrganization(doc, organizationId);
+  }
+
+  async getInvitationActivationHints(userId: string): Promise<InvitationActivationHintsResponse> {
+    const doc = await this.userModel.findOne({ _id: userId, ...activeDocumentFilter }).exec();
+    if (!doc) throw new NotFoundException("User not found");
+    return {
+      hasPassword: Boolean(doc.passwordHash),
+      email: doc.email,
+    };
+  }
+
+  async updateInvitedUserEmail(
+    userId: string,
+    organizationId: string,
+    email: string,
+  ): Promise<UserResponse> {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail || !normalizedEmail.includes("@")) {
+      throw new BadRequestException("Adresse e-mail invalide");
+    }
+
+    const doc = await this.userModel.findOne({ _id: userId, ...activeDocumentFilter }).exec();
+    if (!doc) throw new NotFoundException("User not found");
+
+    const membership = await this.membershipModel
+      .findOne({
+        userId,
+        organizationId,
+        membershipStatus: "invited",
+        deletedAt: null,
+      })
+      .exec();
+    if (!membership) {
+      throw new BadRequestException("Aucune invitation en attente pour cet utilisateur");
+    }
+
+    if (doc.email === normalizedEmail) {
+      return this.toResponseForOrganization(doc, organizationId);
+    }
+
+    const existing = await this.userModel
+      .findOne({ email: normalizedEmail, ...activeDocumentFilter })
+      .exec();
+    if (existing && existing._id.toString() !== userId) {
+      throw new ConflictException("Un utilisateur avec cet email existe déjà");
+    }
+
+    doc.email = normalizedEmail;
+    await doc.save();
+    return this.toResponseForOrganization(doc, organizationId);
+  }
+
+  async cancelOrganizationInvitation(userId: string, organizationId: string): Promise<void> {
+    const doc = await this.userModel.findOne({ _id: userId, ...activeDocumentFilter }).exec();
+    if (!doc) throw new NotFoundException("User not found");
+
+    const membership = await this.membershipModel
+      .findOne({
+        userId,
+        organizationId,
+        membershipStatus: "invited",
+        deletedAt: null,
+      })
+      .exec();
+    if (!membership) {
+      throw new BadRequestException("Aucune invitation en attente pour cet utilisateur");
+    }
+
+    const now = new Date();
+    membership.deletedAt = now;
+    await membership.save();
+
+    const remaining = await this.membershipModel.countDocuments({ userId, deletedAt: null }).exec();
+    if (remaining === 0) {
+      doc.deletedAt = now;
+      if (doc.organizationId === organizationId) {
+        doc.organizationId = undefined;
+      }
+      await doc.save();
+    } else if (doc.organizationId === organizationId) {
+      const next = await this.membershipModel
+        .findOne({ userId, deletedAt: null })
+        .sort({ updatedAt: -1 })
+        .exec();
+      doc.organizationId = next?.organizationId;
+      await doc.save();
+    }
   }
 
   async patch(id: string, body: PatchUserBody): Promise<UserResponse> {
@@ -284,9 +516,7 @@ export class UsersService extends AbstractUsersService {
   }
 
   async changePassword(id: string, body: ChangePasswordBody): Promise<void> {
-    if (!body.newPassword?.trim()) {
-      throw new BadRequestException("Le nouveau mot de passe est requis");
-    }
+    assertPasswordPolicy(body.newPassword);
     const doc = await this.userModel.findOne({ _id: id, ...activeDocumentFilter }).exec();
     if (!doc) throw new NotFoundException("User not found");
     if (!doc.passwordHash) {
@@ -297,6 +527,7 @@ export class UsersService extends AbstractUsersService {
       throw new UnauthorizedException("Mot de passe actuel incorrect");
     }
     doc.passwordHash = await bcrypt.hash(body.newPassword, SALT_ROUNDS);
+    doc.activeSessionId = undefined;
     await doc.save();
   }
 
@@ -378,6 +609,17 @@ export class UsersService extends AbstractUsersService {
     const ok = await bcrypt.compare(password, doc.passwordHash);
     if (!ok) return null;
 
+    const emailVerified = this.isEmailVerified(doc);
+    if (!emailVerified) {
+      return {
+        id: doc._id.toString(),
+        email: doc.email,
+        name: doc.name,
+        status: doc.status,
+        emailVerified: false,
+      };
+    }
+
     doc.lastLoginAt = new Date();
     await doc.save();
 
@@ -390,6 +632,7 @@ export class UsersService extends AbstractUsersService {
         email: doc.email,
         name: doc.name,
         status: doc.status,
+        emailVerified: true,
       };
     }
 
@@ -411,7 +654,36 @@ export class UsersService extends AbstractUsersService {
       name: doc.name,
       role: m.role as ValidateCredentialsResponse["role"],
       status: doc.status,
+      emailVerified: true,
     };
+  }
+
+  async createSession(userId: string): Promise<CreateUserSessionResponse> {
+    const doc = await this.userModel.findOne({ _id: userId, ...activeDocumentFilter }).exec();
+    if (!doc) throw new NotFoundException("User not found");
+    const sessionId = randomUUID();
+    doc.activeSessionId = sessionId;
+    await doc.save();
+    return { sessionId };
+  }
+
+  async validateSession(userId: string, sessionId: string): Promise<ValidateUserSessionResponse> {
+    if (!sessionId?.trim()) {
+      return { valid: false };
+    }
+    const doc = await this.userModel.findOne({ _id: userId, ...activeDocumentFilter }).exec();
+    if (!doc) return { valid: false };
+    return { valid: doc.activeSessionId === sessionId };
+  }
+
+  async revokeSession(userId: string, sessionId?: string): Promise<void> {
+    const doc = await this.userModel.findOne({ _id: userId, ...activeDocumentFilter }).exec();
+    if (!doc) throw new NotFoundException("User not found");
+    if (sessionId !== undefined && sessionId !== "" && doc.activeSessionId !== sessionId) {
+      return;
+    }
+    doc.activeSessionId = undefined;
+    await doc.save();
   }
 
   async listPlatformDirectory(filters?: {
@@ -626,6 +898,21 @@ export class UsersService extends AbstractUsersService {
     return m.role as UserRole;
   }
 
+  private async storeEmailVerificationOtp(doc: UserDocument): Promise<string> {
+    const code = String(randomInt(100_000, 1_000_000));
+    doc.emailVerificationCodeHash = await bcrypt.hash(code, SALT_ROUNDS);
+    doc.emailVerificationExpiresAt = new Date(Date.now() + EMAIL_OTP_TTL_MS);
+    doc.emailVerificationSentAt = new Date();
+    doc.emailVerified = false;
+    await doc.save();
+    return code;
+  }
+
+  /** Legacy / invitations : champ absent ⇒ considéré vérifié. */
+  private isEmailVerified(doc: UserDocument): boolean {
+    return doc.emailVerified !== false;
+  }
+
   private async toResponseForOrganization(
     doc: UserDocument,
     organizationId: string,
@@ -640,6 +927,7 @@ export class UsersService extends AbstractUsersService {
       email: doc.email,
       name: doc.name,
       status: doc.status,
+      emailVerified: this.isEmailVerified(doc),
     };
   }
 

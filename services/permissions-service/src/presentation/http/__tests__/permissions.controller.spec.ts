@@ -20,6 +20,10 @@ describe("PermissionsController", () => {
       resolveEffectivePermissions: jest.fn(),
       createInvitation: jest.fn(),
       listInvitations: jest.fn(),
+      findInvitationById: jest.fn(),
+      updatePendingInvitationEmail: jest.fn(),
+      cancelInvitation: jest.fn(),
+      deleteUserAssignment: jest.fn(),
       resolveInvitation: jest.fn(),
       acceptInvitation: jest.fn(),
       purgeTestData: jest.fn(),
@@ -220,6 +224,52 @@ describe("PermissionsController", () => {
 
       expect(mockPermissionsService.createInvitation).toHaveBeenCalledWith(body);
       expect(result).toEqual(expected);
+    });
+  });
+
+  describe("updatePendingInvitationEmail", () => {
+    it("should call service.updatePendingInvitationEmail", async () => {
+      const expected = {
+        id: "inv-123",
+        invitedEmail: "new@example.com",
+        status: "pending" as const,
+      };
+      mockPermissionsService.updatePendingInvitationEmail.mockResolvedValue(expected as never);
+
+      const result = await controller.updatePendingInvitationEmail("inv-123", {
+        organizationId: "org-1",
+        email: "new@example.com",
+      });
+
+      expect(mockPermissionsService.updatePendingInvitationEmail).toHaveBeenCalledWith(
+        "inv-123",
+        "org-1",
+        "new@example.com",
+      );
+      expect(result).toEqual(expected);
+    });
+  });
+
+  describe("cancelInvitation", () => {
+    it("should call service.cancelInvitation", async () => {
+      const expected = { id: "inv-123", status: "cancelled" as const };
+      mockPermissionsService.cancelInvitation.mockResolvedValue(expected as never);
+
+      const result = await controller.cancelInvitation("inv-123", { organizationId: "org-1" });
+
+      expect(mockPermissionsService.cancelInvitation).toHaveBeenCalledWith("inv-123", "org-1");
+      expect(result).toEqual(expected);
+    });
+  });
+
+  describe("deleteUserAssignment", () => {
+    it("should call service.deleteUserAssignment", async () => {
+      mockPermissionsService.deleteUserAssignment.mockResolvedValue(undefined);
+
+      const result = await controller.deleteUserAssignment("user-1", "org-1");
+
+      expect(mockPermissionsService.deleteUserAssignment).toHaveBeenCalledWith("org-1", "user-1");
+      expect(result).toEqual({ deleted: true });
     });
   });
 });

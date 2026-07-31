@@ -27,6 +27,21 @@ export interface AccountUserResponse {
   email: string;
   name?: string;
   status: UserStatus;
+  emailVerified: boolean;
+}
+
+/**
+ * Résultat interne users-service → gateway (code OTP une seule fois pour l'e-mail).
+ * Ne jamais exposer `emailVerificationCode` au client.
+ */
+export interface CreateAccountResult {
+  user: AccountUserResponse;
+  emailVerificationCode: string;
+}
+
+export interface IssueEmailVerificationResult {
+  email: string;
+  emailVerificationCode: string;
 }
 
 export interface UserResponse {
@@ -54,6 +69,25 @@ export interface CreateInvitedUserBody {
 export interface ActivateInvitedUserBody {
   password: string;
   name?: string;
+  /** Organisation de l'invitation à activer (requis pour multi-org). */
+  organizationId: string;
+}
+
+/** Indices pour l'écran d'acceptation d'invitation (sans secrets). */
+export interface InvitationActivationHintsResponse {
+  hasPassword: boolean;
+  email: string;
+}
+
+/** Mise à jour de l'e-mail d'un utilisateur encore en invitation (membership invited). */
+export interface UpdateInvitedUserEmailBody {
+  organizationId: string;
+  email: string;
+}
+
+/** Annulation d'une invitation côté users (soft-delete membership ± user). */
+export interface CancelOrganizationInvitationBody {
+  organizationId: string;
 }
 
 /** Mise à jour partielle côté serveur (ex. gateway → users-service). */
@@ -76,6 +110,8 @@ export interface ValidateCredentialsResponse {
   /** Absent si organizationId est absent. */
   role?: UserRole;
   status: UserStatus;
+  /** false si le compte self-service n'a pas encore validé son e-mail. */
+  emailVerified: boolean;
 }
 
 /* ── Mon compte / User Account ─────────────────────────────── */

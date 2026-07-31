@@ -96,6 +96,7 @@ export function CgvContent() {
             "Fournir des informations exactes lors de l'inscription (SIRET, coordonnées).",
             "Respecter les CGU et la réglementation applicable à ses propres clients finaux.",
             "S'assurer que les utilisateurs invités disposent des autorisations nécessaires.",
+            "Lors de l'activation d'une intégration (Pennylane, Qonto, etc.), disposer des droits nécessaires et accepter les conditions de l'éditeur tiers.",
             "Ne pas utiliser le service à des fins illicites ou contraires à l'ordre public.",
           ]}
         />
@@ -127,7 +128,8 @@ export function CgvContent() {
         <LegalParagraph>
           {legal.companyName} agit en qualité de responsable de traitement pour les données des
           comptes utilisateurs et de sous-traitant pour les données que le Client saisit concernant
-          ses propres clients. Voir la{" "}
+          ses propres clients, y compris lorsqu&apos;elles sont transmises à un outil de facturation
+          tiers sur instruction du Client (intégration activée). Voir la{" "}
           <Link href="/politique-confidentialite" className="text-brand-600 underline">
             Politique de confidentialité
           </Link>
