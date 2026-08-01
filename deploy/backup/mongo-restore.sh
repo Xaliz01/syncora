@@ -65,6 +65,7 @@ echo "⚠️  Restauration vers mongodb://${MONGO_HOST}:27017 (drop) dans 5s —
 sleep 5
 
 docker run --rm \
+  --user 0:0 \
   --network "$MONGO_NETWORK" \
   -v "${ARCHIVE}:/backup/dump.archive.gz:ro" \
   "$MONGO_IMAGE" \

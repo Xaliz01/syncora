@@ -71,12 +71,16 @@ if ! docker ps --format '{{.Names}}' | grep -qx 'planwise-mongodb'; then
 fi
 
 log "Dump Mongo (${MONGO_HOST})…"
+# Écriture via stdout hôte : l'image mongo:7 tourne en user non-root et ne
+# peut pas écrire dans un bind-mount /tmp créé par ubuntu/root.
 docker run --rm \
   --network "$MONGO_NETWORK" \
-  -v "${WORKDIR}:/backup" \
   "$MONGO_IMAGE" \
-  mongodump --uri="mongodb://${MONGO_HOST}:27017" --archive="/backup/${ARCHIVE_NAME}" --gzip \
+  mongodump --uri="mongodb://${MONGO_HOST}:27017" --archive --gzip \
+  >"$ARCHIVE_PATH" \
   || die "mongodump a echoue"
+
+[[ -s "$ARCHIVE_PATH" ]] || die "archive vide apres mongodump"
 
 UPLOAD_FILE="$ARCHIVE_PATH"
 UPLOAD_NAME="$ARCHIVE_NAME"
