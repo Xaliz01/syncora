@@ -207,7 +207,10 @@ jobs:
 
             # 3) Caddy avec la conf blue/green — AVANT de purger les anciens conteneurs,
             #    pour éviter une fenêtre sans aucun upstream joignable.
-            compose up -d --no-deps caddy
+            #    Force recreate + reload : le Caddyfile est monté en bind ; un simple
+            #    `up -d` ne recharge pas la conf déjà en mémoire.
+            compose up -d --force-recreate --no-deps caddy
+            docker exec planwise-caddy caddy reload --config /etc/caddy/Caddyfile 2>/dev/null || true
 
             # 4) Purge des orphelins (anciens noms api-gateway / frontend) une fois
             #    blue (ou green) + Caddy en place.
