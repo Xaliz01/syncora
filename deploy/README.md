@@ -18,6 +18,7 @@ stateless hormis MongoDB et le volume documents).
 | `docker-compose.monitoring.yml` | Stack Grafana/Prometheus (profil `monitoring`, optionnel)        |
 | `monitoring/`                   | Config Prometheus, Blackbox, Tempo, OTel Collector, Grafana      |
 | `Caddyfile`                     | Reverse proxy + HTTPS (Let's Encrypt)                            |
+| `rolling-edge.sh`               | Bascule blue/green api-gateway + frontend (quasi zero-downtime)  |
 | `.env.production.example`       | Modèle de configuration (à copier en `.env.production`)          |
 
 ## Migrations Mongo (microservices)
@@ -110,11 +111,39 @@ de tag d'image et de version applicative).
    `NEXT_PUBLIC_GIT_SHA` (= SHA court) → affichés dans l'app (page « Mon compte »).
    Les images backend reçoivent `APP_VERSION` / `GIT_SHA` au build : exposés par
    `GET /api/health` et les en-têtes `X-App-Version` / `X-Git-Sha` sur chaque réponse.
-4. Copie de `docker-compose.prod.yml` et `Caddyfile` sur la VM (SCP).
-5. `docker compose pull` + `up -d` sur la VM avec le tag fraîchement construit.
+4. Copie de `docker-compose.prod.yml`, `Caddyfile`, `rolling-edge.sh` et monitoring
+   sur la VM (SCP).
+5. Sur la VM : `pull` → `up` des microservices / Caddy / monitoring →
+   **`rolling-edge.sh`** bascule api-gateway + frontend (blue/green, sans coupure
+   visible sur les domaines publics).
 6. **Tag Git automatique** : si une `version` a été fournie et que le déploiement
    a réussi, le workflow crée et pousse le tag Git correspondant (ex. `v0.1.0`)
    sur le commit déployé. Étape ignorée pour un déploiement sans version (SHA).
+
+### Blue/green (api-gateway + frontend)
+
+Caddy route vers `*-blue` et `*-green` avec health checks (`lb_policy first`) :
+seul le slot healthy reçoit le trafic. Le script `rolling-edge.sh` :
+
+1. détecte le slot actif ;
+2. démarre l'autre slot avec la nouvelle image ;
+3. attend `healthy` ;
+4. laisse Caddy basculer (~quelques secondes) ;
+5. arrête l'ancien slot.
+
+Les microservices internes sont toujours mis à jour via un `compose up` classique
+(courte interruption possible sur les appels en cours uniquement).
+
+**Important** : ne pas lancer un `docker compose up -d` sans liste de services —
+cela démarrerait blue **et** green en parallèle.
+
+Dépannage manuel de la bascule edge :
+
+```bash
+cd /opt/planwise/deploy
+export REGISTRY IMAGE_TAG   # tag déjà pullé
+./rolling-edge.sh
+```
 
 ### Convention de versioning (SemVer + tag Git)
 
@@ -151,8 +180,21 @@ Sur la VM :
 
 ```bash
 cd /opt/planwise/deploy
-docker compose -f docker-compose.prod.yml --env-file .env.production pull
-docker compose -f docker-compose.prod.yml --env-file .env.production up -d
+export REGISTRY IMAGE_TAG   # même tag que le build
+docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml \
+  --env-file .env.production --profile monitoring pull
+# Microservices + monitoring (pas un up global)
+docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml \
+  --env-file .env.production --profile monitoring up -d \
+  mongodb organizations-service users-service permissions-service \
+  cases-service fleet-service technicians-service stock-service \
+  subscriptions-service customers-service notifications-service \
+  documents-service exports-service integrations-service \
+  prometheus tempo otel-collector grafana node-exporter cadvisor blackbox-exporter
+./rolling-edge.sh
+# Caddy + purge des anciens conteneurs api-gateway / frontend
+docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml \
+  --env-file .env.production --profile monitoring up -d --remove-orphans caddy
 ```
 
 ## 6. MongoDB

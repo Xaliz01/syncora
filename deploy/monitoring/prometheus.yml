@@ -50,8 +50,10 @@ scrape_configs:
     params:
       module: [http_2xx]
     static_configs:
-      - targets: [http://api-gateway:3000/api/health]
-        labels: { service: api-gateway }
+      - targets: [http://api-gateway-blue:3000/api/health]
+        labels: { service: api-gateway, slot: blue }
+      - targets: [http://api-gateway-green:3000/api/health]
+        labels: { service: api-gateway, slot: green }
       - targets: [http://organizations-service:3001/health]
         labels: { service: organizations }
       - targets: [http://users-service:3002/health]
@@ -76,8 +78,10 @@ scrape_configs:
         labels: { service: documents }
       - targets: [http://exports-service:3012/health]
         labels: { service: exports }
-      - targets: [http://frontend:5173/]
-        labels: { service: frontend }
+      - targets: [http://frontend-blue:5173/]
+        labels: { service: frontend, slot: blue }
+      - targets: [http://frontend-green:5173/]
+        labels: { service: frontend, slot: green }
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target

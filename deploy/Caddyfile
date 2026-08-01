@@ -1,5 +1,9 @@
 # Reverse proxy Planwise — HTTPS automatique (Let's Encrypt).
 # Les domaines et l'email ACME proviennent de variables d'environnement (cf. docker-compose.prod.yml).
+#
+# Frontend + API Gateway : deux slots (blue/green). Caddy ne route que vers les
+# upstreams healthy (`lb_policy first`). Le script rolling-edge.sh démarre le
+# slot inactif, attend healthy, puis arrête l'ancien → bascule sans downtime.
 
 {
 	email {$ACME_EMAIL}
@@ -15,7 +19,14 @@
 		Referrer-Policy "strict-origin-when-cross-origin"
 	}
 
-	reverse_proxy frontend:5173
+	reverse_proxy frontend-blue:5173 frontend-green:5173 {
+		lb_policy first
+		health_uri /
+		health_interval 2s
+		health_timeout 3s
+		health_status 2xx
+		fail_duration 10s
+	}
 }
 
 # www → apex marketing
@@ -47,7 +58,14 @@ www.{$MARKETING_DOMAIN} {
 		X-Content-Type-Options "nosniff"
 	}
 
-	reverse_proxy api-gateway:3000
+	reverse_proxy api-gateway-blue:3000 api-gateway-green:3000 {
+		lb_policy first
+		health_uri /api/health
+		health_interval 2s
+		health_timeout 3s
+		health_status 2xx
+		fail_duration 10s
+	}
 }
 
 # Grafana (monitoring) — auth Grafana obligatoire ; ne pas désactiver GF_AUTH

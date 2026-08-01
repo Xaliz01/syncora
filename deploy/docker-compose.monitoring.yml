@@ -10,9 +10,13 @@
 #     --env-file .env.production --profile monitoring up -d \
 #     prometheus tempo otel-collector grafana node-exporter cadvisor blackbox-exporter
 #
-# Deploy CD (app + monitoring) — IMAGE_TAG est exporté puis persisté dans .env.production :
+# Deploy CD (app + monitoring) — IMAGE_TAG est exporté puis persisté dans .env.production.
+# Les points d'entrée (api-gateway / frontend) passent par rolling-edge.sh (blue/green) :
+# ne pas faire un `up -d` global qui démarrerait les deux slots.
 #   docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml \
-#     --env-file .env.production --profile monitoring up -d --remove-orphans
+#     --env-file .env.production --profile monitoring up -d --remove-orphans \
+#     mongodb organizations-service … caddy prometheus … blackbox-exporter
+#   ./rolling-edge.sh
 #
 # Ne pas lancer uniquement docker-compose.prod.yml avec --remove-orphans :
 # cela arrête Grafana et provoque un 502 sur MONITORING_DOMAIN.

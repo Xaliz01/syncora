@@ -6,7 +6,7 @@
 # Usage :
 #   cp deploy/.env.production.example deploy/.env.production   # puis renseigner les secrets
 #   docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.production pull
-#   docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.production up -d
+#   # microservices… puis ./rolling-edge.sh (ne pas `up -d` global : démarrerait blue+green)
 
 # ── Ancres réutilisables ──────────────────────────────────────
 x-service-urls: &service-urls
@@ -41,6 +41,51 @@ x-backend: &backend
   depends_on:
     mongodb:
       condition: service_healthy
+
+x-api-gateway: &api-gateway
+  image: ${REGISTRY}/planwise-api-gateway:${IMAGE_TAG:-latest}
+  restart: unless-stopped
+  stop_grace_period: 25s
+  networks: [planwise]
+  environment:
+    <<: *service-urls
+    OTEL_TRACES_ENABLED: ${OTEL_TRACES_ENABLED:-false}
+    OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
+    NODE_ENV: production
+    PORT: "3000"
+    JWT_SECRET: ${JWT_SECRET:?JWT_SECRET requis}
+    CORS_ORIGIN: ${CORS_ORIGIN:?CORS_ORIGIN requis}
+    PLATFORM_STAFF_EMAILS: ${PLATFORM_STAFF_EMAILS:-mail@benoistbabin.fr}
+    PLATFORM_STAFF_EMAIL_DOMAINS: ${PLATFORM_STAFF_EMAIL_DOMAINS:-planwise.fr}
+    CRISP_IDENTITY_SECRET: ${CRISP_IDENTITY_SECRET:-}
+    SWAGGER_PATH: ${SWAGGER_PATH:-api/docs}
+    SWAGGER_TITLE: ${SWAGGER_TITLE:-Planwise API Gateway}
+  depends_on:
+    - organizations-service
+    - users-service
+    - permissions-service
+    - cases-service
+    - fleet-service
+    - technicians-service
+    - stock-service
+    - subscriptions-service
+    - customers-service
+    - notifications-service
+    - documents-service
+    - exports-service
+    - integrations-service
+  healthcheck: *tcp-healthcheck
+
+x-frontend: &frontend
+  image: ${REGISTRY}/planwise-frontend:${IMAGE_TAG:-latest}
+  restart: unless-stopped
+  stop_grace_period: 20s
+  networks: [planwise]
+  environment:
+    NODE_ENV: production
+    PORT: "5173"
+    HOSTNAME: 0.0.0.0
+  healthcheck: *tcp-healthcheck
 
 services:
   # ── Base de données ─────────────────────────────────────────
@@ -252,50 +297,21 @@ services:
       APP_URL: ${APP_URL:-https://app.planwise.fr}
     healthcheck: *tcp-healthcheck
 
-  # ── API Gateway (exposée via Caddy) ─────────────────────────
-  api-gateway:
-    image: ${REGISTRY}/planwise-api-gateway:${IMAGE_TAG:-latest}
-    restart: unless-stopped
-    networks: [planwise]
-    environment:
-      <<: *service-urls
-      OTEL_TRACES_ENABLED: ${OTEL_TRACES_ENABLED:-false}
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
-      NODE_ENV: production
-      PORT: "3000"
-      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET requis}
-      CORS_ORIGIN: ${CORS_ORIGIN:?CORS_ORIGIN requis}
-      PLATFORM_STAFF_EMAILS: ${PLATFORM_STAFF_EMAILS:-mail@benoistbabin.fr}
-      PLATFORM_STAFF_EMAIL_DOMAINS: ${PLATFORM_STAFF_EMAIL_DOMAINS:-planwise.fr}
-      CRISP_IDENTITY_SECRET: ${CRISP_IDENTITY_SECRET:-}
-      SWAGGER_PATH: ${SWAGGER_PATH:-api/docs}
-      SWAGGER_TITLE: ${SWAGGER_TITLE:-Planwise API Gateway}
-    depends_on:
-      - organizations-service
-      - users-service
-      - permissions-service
-      - cases-service
-      - fleet-service
-      - technicians-service
-      - stock-service
-      - subscriptions-service
-      - customers-service
-      - notifications-service
-      - documents-service
-      - exports-service
-      - integrations-service
-    healthcheck: *tcp-healthcheck
+  # ── API Gateway — slots blue/green (bascule sans downtime via Caddy) ──
+  # Un seul slot tourne en régime normal ; pendant un deploy les deux sont
+  # brièvement up, puis l'ancien est arrêté (cf. rolling-edge.sh).
+  api-gateway-blue:
+    <<: *api-gateway
 
-  # ── Frontend Next.js (exposé via Caddy) ─────────────────────
-  frontend:
-    image: ${REGISTRY}/planwise-frontend:${IMAGE_TAG:-latest}
-    restart: unless-stopped
-    networks: [planwise]
-    environment:
-      NODE_ENV: production
-      PORT: "5173"
-      HOSTNAME: 0.0.0.0
-    healthcheck: *tcp-healthcheck
+  api-gateway-green:
+    <<: *api-gateway
+
+  # ── Frontend Next.js — slots blue/green ─────────────────────
+  frontend-blue:
+    <<: *frontend
+
+  frontend-green:
+    <<: *frontend
 
   # ── Reverse proxy (HTTPS automatique Let's Encrypt) ─────────
   caddy:
@@ -317,9 +333,8 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
       - caddy-config:/config
-    depends_on:
-      - api-gateway
-      - frontend
+    # Pas de depends_on sur les slots : un seul est up en régime normal ;
+    # Caddy ignore les upstreams down via health checks.
 
 networks:
   planwise:
