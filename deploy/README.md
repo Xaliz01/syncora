@@ -190,7 +190,7 @@ docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml \
   cases-service fleet-service technicians-service stock-service \
   subscriptions-service customers-service notifications-service \
   documents-service exports-service integrations-service \
-  prometheus tempo otel-collector grafana node-exporter cadvisor blackbox-exporter
+  prometheus tempo otel-collector grafana node-exporter cadvisor blackbox-exporter mongodb-exporter
 ./rolling-edge.sh
 # Caddy + purge des anciens conteneurs api-gateway / frontend
 docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml \
@@ -326,13 +326,14 @@ consommation par service, disponibilité HTTP de l'API et du frontend.
 
 Composants (profil Docker `monitoring`) :
 
-| Service           | Rôle                                      |
-| ----------------- | ----------------------------------------- |
-| **Prometheus**    | Collecte et stockage des métriques (15 j) |
-| **Grafana**       | Dashboards et visualisation               |
-| **node-exporter** | Métriques hôte (CPU, RAM, disque)         |
-| **cAdvisor**      | Métriques par conteneur Docker            |
-| **blackbox**      | Sondes HTTP (`/api/health`, frontend)     |
+| Service              | Rôle                                         |
+| -------------------- | -------------------------------------------- |
+| **Prometheus**       | Collecte et stockage des métriques (15 j)    |
+| **Grafana**          | Dashboards et visualisation                  |
+| **node-exporter**    | Métriques hôte (CPU, RAM, disque)            |
+| **cAdvisor**         | Métriques par conteneur Docker               |
+| **blackbox**         | Sondes HTTP (`/api/health`, frontend)        |
+| **mongodb-exporter** | Métriques MongoDB (connexions, ops, tailles) |
 
 ### Activer sur la VM
 
@@ -357,7 +358,7 @@ GRAFANA_PORT=3030
 cd /opt/planwise/deploy
 docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml \
   --env-file .env.production --profile monitoring up -d \
-  prometheus tempo otel-collector grafana node-exporter cadvisor blackbox-exporter
+  prometheus tempo otel-collector grafana node-exporter cadvisor blackbox-exporter mongodb-exporter
 ```
 
 Éviter un `up` global sans le bon `IMAGE_TAG` : Compose recréerait l’app avec le
@@ -375,7 +376,11 @@ Secours tunnel SSH si besoin :
 ssh -L 3030:127.0.0.1:3030 ubuntu@<IP_VM>
 ```
 
-Un dashboard **Planwise — Infra & disponibilité** est provisionné automatiquement.
+Dashboards provisionnés automatiquement (dossier Grafana **Planwise**) :
+
+- **Planwise — Infra & disponibilité** — VM, sondes HTTP, CPU/RAM conteneurs
+- **Planwise — MongoDB** — uptime, connexions, ops/s, tailles des bases, réseau
+- **Planwise — API & traces** — (si Tempo / OTEL activés)
 
 ### Traces APM (OpenTelemetry + Tempo)
 

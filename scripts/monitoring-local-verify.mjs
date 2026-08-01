@@ -13,6 +13,7 @@ const REQUIRED = [
   "planwise-blackbox-exporter-local",
   "planwise-node-exporter-local",
   "planwise-cadvisor-local",
+  "planwise-mongodb-exporter-local",
 ];
 
 function listRunningContainers() {

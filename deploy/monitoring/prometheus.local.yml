@@ -15,6 +15,12 @@ scrape_configs:
     static_configs:
       - targets: ["node-exporter:9100"]
 
+  - job_name: mongodb
+    static_configs:
+      - targets: ["mongodb-exporter:9216"]
+        labels:
+          service: mongodb
+
   - job_name: cadvisor
     static_configs:
       - targets: ["cadvisor:8080"]

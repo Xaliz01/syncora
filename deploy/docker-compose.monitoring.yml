@@ -8,7 +8,7 @@
 # Relancer uniquement le monitoring (sans recréer l'app) :
 #   docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml \
 #     --env-file .env.production --profile monitoring up -d \
-#     prometheus tempo otel-collector grafana node-exporter cadvisor blackbox-exporter
+#     prometheus tempo otel-collector grafana node-exporter cadvisor blackbox-exporter mongodb-exporter
 #
 # Deploy CD (app + monitoring) — IMAGE_TAG est exporté puis persisté dans .env.production.
 # Les points d'entrée (api-gateway / frontend) passent par rolling-edge.sh (blue/green) :
@@ -171,6 +171,20 @@ services:
       - --config.file=/etc/blackbox/blackbox.yml
     volumes:
       - ./monitoring/blackbox.yml:/etc/blackbox/blackbox.yml:ro
+
+  # Métriques MongoDB (instance Compose `mongodb` sur le réseau planwise).
+  mongodb-exporter:
+    profiles: ["monitoring"]
+    image: percona/mongodb_exporter:0.43.1
+    container_name: planwise-mongodb-exporter
+    restart: unless-stopped
+    networks: [planwise]
+    command:
+      - --mongodb.uri=mongodb://mongodb:27017
+      - --collect-all
+    depends_on:
+      mongodb:
+        condition: service_healthy
 
 volumes:
   prometheus-data:

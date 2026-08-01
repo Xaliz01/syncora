@@ -18,8 +18,8 @@ services:
     container_name: planwise-mongodb
     ports:
       - "27017:27017"
-    volumes:
-      - planwise-mongodb-data:/data/db
+    # volumes:
+    #   - planwise-mongodb-data:/data/db
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 5s
@@ -179,8 +179,19 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
+  mongodb-exporter:
+    profiles: ["monitoring"]
+    image: percona/mongodb_exporter:0.43.1
+    container_name: planwise-mongodb-exporter-local
+    command:
+      - --mongodb.uri=mongodb://mongodb:27017
+      - --collect-all
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
 volumes:
-  planwise-mongodb-data:
+  # planwise-mongodb-data:
   planwise-documents:
   planwise-tempo-data:
   planwise-prometheus-data:
