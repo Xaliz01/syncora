@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Bascule blue/green des points d'entrée (api-gateway + frontend) sans downtime.
 #
-# Prérequis : images déjà pullées, microservices à jour, Caddyfile avec les deux
-# upstreams + health checks. Un seul slot tourne en régime normal.
+# Génère Caddyfile depuis Caddyfile.template avec UN seul upstream (slot actif).
+# Caddy ne sait pas fallback correctement si le 1er hostname n'existe pas en DNS.
 #
 # Usage (depuis le répertoire deploy/ sur la VM) :
 #   export REGISTRY IMAGE_TAG
@@ -15,7 +15,6 @@ cd "$ROOT_DIR"
 
 COMPOSE_FILES=(-f docker-compose.prod.yml)
 ENV_FILE=(--env-file .env.production)
-# Monitoring optionnel : présent en prod CD, absent en dépannage minimal.
 if [[ -f docker-compose.monitoring.yml ]]; then
   COMPOSE_FILES+=(-f docker-compose.monitoring.yml)
 fi
@@ -71,9 +70,29 @@ wait_healthy() {
   return 1
 }
 
-# Pause pour laisser le nouvel upstream accepter des connexions avant d'arrêter l'ancien.
-wait_caddy_settle() {
-  sleep 5
+apply_caddy_slot() {
+  local slot="$1" # blue | green
+  local template="${ROOT_DIR}/Caddyfile.template"
+  local target="${ROOT_DIR}/Caddyfile"
+  if [[ ! -f "$template" ]]; then
+    echo "❌ Caddyfile.template manquant"
+    return 1
+  fi
+  local fe="frontend-${slot}:5173"
+  local api="api-gateway-${slot}:3000"
+  sed \
+    -e "s|__FRONTEND_UPSTREAM__|${fe}|g" \
+    -e "s|__API_GATEWAY_UPSTREAM__|${api}|g" \
+    "$template" >"$target"
+  echo "$slot" >"${ROOT_DIR}/.edge-slot"
+  echo "📝 Caddyfile → frontend=${fe} api=${api}"
+
+  if [[ -n "$(compose ps -q --status running caddy 2>/dev/null || true)" ]]; then
+    docker exec planwise-caddy caddy reload --config /etc/caddy/Caddyfile \
+      || compose up -d --force-recreate --no-deps caddy
+  else
+    compose up -d --no-deps caddy
+  fi
 }
 
 roll_pair() {
@@ -93,7 +112,6 @@ roll_pair() {
     active=green
     inactive=blue
   elif $blue_up && $green_up; then
-    # Les deux tournent (état anormal) : on recrée green puis on coupe blue.
     echo "⚠️  $base : blue et green sont up — bascule forcée vers green"
     active=blue
     inactive=green
@@ -101,21 +119,39 @@ roll_pair() {
     echo "ℹ️  $base : aucun slot actif — bootstrap sur blue"
     compose up -d --no-deps --pull never "$blue"
     wait_healthy "$blue"
+    LAST_SLOT=blue
     return 0
   fi
 
   echo "🔁 $base : actif=$active → déploiement sur $inactive"
   compose up -d --no-deps --force-recreate --pull never "${base}-${inactive}"
   wait_healthy "${base}-${inactive}"
-  wait_caddy_settle
+
+  # Les deux tournent : basculer Caddy vers le nouveau avant d'arrêter l'ancien.
+  apply_caddy_slot "$inactive"
+  sleep 2
 
   echo "🛑 Arrêt de ${base}-${active}"
   compose stop "${base}-${active}"
   compose rm -f "${base}-${active}" >/dev/null
   echo "✅ $base basculé sur $inactive"
+  LAST_SLOT=$inactive
 }
 
 echo "=== Rolling edge (api-gateway + frontend) ==="
+LAST_SLOT=blue
 roll_pair "api-gateway"
 roll_pair "frontend"
-echo "=== Rolling edge terminé ==="
+
+# Garantit Caddy aligné sur un slot où frontend ET gateway tournent.
+if service_running frontend-green && service_running api-gateway-green; then
+  apply_caddy_slot green
+elif service_running frontend-blue && service_running api-gateway-blue; then
+  apply_caddy_slot blue
+else
+  echo "❌ Pas de paire frontend+gateway cohérente"
+  compose ps || true
+  exit 1
+fi
+
+echo "=== Rolling edge terminé (slot=$(cat .edge-slot)) ==="

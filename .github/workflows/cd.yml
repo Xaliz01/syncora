@@ -160,7 +160,7 @@ jobs:
           username: ${{ secrets.DEPLOY_SSH_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_SSH_PORT || 22 }}
-          source: "deploy/docker-compose.prod.yml,deploy/docker-compose.monitoring.yml,deploy/Caddyfile,deploy/rolling-edge.sh,deploy/monitoring"
+          source: "deploy/docker-compose.prod.yml,deploy/docker-compose.monitoring.yml,deploy/Caddyfile.template,deploy/rolling-edge.sh,deploy/recover-edge.sh,deploy/monitoring"
           target: ${{ secrets.DEPLOY_PATH }}
           overwrite: true
       - name: Pull & up sur la VM
@@ -183,7 +183,9 @@ jobs:
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
             # IMAGE_TAG/REGISTRY surchargent les valeurs du .env.production (secrets locaux conservés sur la VM).
             export REGISTRY IMAGE_TAG
-            chmod +x ./rolling-edge.sh
+            chmod +x ./rolling-edge.sh ./recover-edge.sh
+            # Assure le template présent (SCP) avant rolling.
+            test -f Caddyfile.template
 
             compose() {
               docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml \
@@ -205,12 +207,18 @@ jobs:
             # 2) Bascule blue/green (bootstrap blue si premier deploy après migration).
             ./rolling-edge.sh
 
-            # 3) Caddy avec la conf blue/green — AVANT de purger les anciens conteneurs,
-            #    pour éviter une fenêtre sans aucun upstream joignable.
-            #    Force recreate + reload : le Caddyfile est monté en bind ; un simple
-            #    `up -d` ne recharge pas la conf déjà en mémoire.
-            compose up -d --force-recreate --no-deps caddy
-            docker exec planwise-caddy caddy reload --config /etc/caddy/Caddyfile 2>/dev/null || true
+            # 3) Caddy : rolling-edge a déjà écrit Caddyfile (slot actif unique).
+            #    Recreate pour être sûr que le process charge le fichier disque.
+            echo "=== Recreate Caddy ==="
+            if grep -E '__FRONTEND_UPSTREAM__|health_uri|frontend-blue:5173 frontend-green' Caddyfile; then
+              echo "❌ Caddyfile invalide après rolling-edge (placeholders / multi-upstream / health_uri)"
+              exit 1
+            fi
+            compose stop caddy || true
+            compose rm -f caddy || true
+            compose up -d --no-deps caddy
+            sleep 2
+            echo "Caddy recréé OK"
 
             # 4) Purge des orphelins (anciens noms api-gateway / frontend) une fois
             #    blue (ou green) + Caddy en place.

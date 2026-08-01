@@ -1,0 +1,70 @@
+# Reverse proxy Planwise — HTTPS automatique (Let's Encrypt).
+# Les domaines et l'email ACME proviennent de variables d'environnement (cf. docker-compose.prod.yml).
+#
+# TEMPLATE : ne pas monter tel quel. `rolling-edge.sh` / `recover-edge.sh` génèrent
+# `Caddyfile` en remplaçant __FRONTEND_UPSTREAM__ et __API_GATEWAY_UPSTREAM__
+# par le slot actif (ex. frontend-green:5173). Un seul upstream évite les 502
+# quand l'autre slot n'a pas de conteneur (DNS « bad address »).
+
+{
+	email {$ACME_EMAIL}
+}
+
+(frontend_proxy) {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+
+	reverse_proxy __FRONTEND_UPSTREAM__
+}
+
+# www → apex marketing
+www.{$MARKETING_DOMAIN} {
+	redir https://{$MARKETING_DOMAIN}{uri} permanent
+}
+
+# Landing marketing (planwise.fr)
+{$MARKETING_DOMAIN} {
+	import frontend_proxy
+}
+
+# Application (connexion + PWA)
+{$APP_DOMAIN} {
+	import frontend_proxy
+}
+
+# Backoffice plateforme (organisations, users, support)
+{$BACKOFFICE_DOMAIN} {
+	import frontend_proxy
+}
+
+# API Gateway
+{$API_DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+	}
+
+	reverse_proxy __API_GATEWAY_UPSTREAM__
+}
+
+# Grafana (monitoring) — auth Grafana obligatoire ; ne pas désactiver GF_AUTH
+{$MONITORING_DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+
+	reverse_proxy grafana:3000
+}
