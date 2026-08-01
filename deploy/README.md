@@ -281,8 +281,38 @@ restent à sauvegarder côté VM.
 
 ## 8. Stripe (webhook)
 
-Configurer dans Stripe l'URL de webhook vers l'API publique
-(`https://api.exemple.fr/api/...`) et renseigner `STRIPE_WEBHOOK_SECRET`.
+Endpoint public (Caddy → `subscriptions-service`, **pas** le gateway) :
+
+```text
+https://api.exemple.fr/webhooks/stripe
+```
+
+1. Dashboard Stripe → Developers → Webhooks → Add endpoint.
+2. URL : `https://$API_DOMAIN/webhooks/stripe` (ex. `https://api.planwise.fr/webhooks/stripe`).
+3. Événements à écouter :
+   - `checkout.session.completed`
+   - `customer.subscription.created`
+   - `customer.subscription.updated`
+   - `customer.subscription.deleted`
+4. Copier le **Signing secret** (`whsec_…`) dans `.env.production` → `STRIPE_WEBHOOK_SECRET`.
+5. Redémarrer le service abonnements :
+
+```bash
+cd /opt/planwise/deploy
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d subscriptions-service
+```
+
+Après un déploiement qui met à jour `Caddyfile.template`, recharger Caddy
+(`./rolling-edge.sh` ou recreate `caddy`) pour que la route `/webhooks/stripe` soit active.
+
+Test rapide depuis la VM (doit répondre 400 sans signature Stripe, pas 404) :
+
+```bash
+curl -sS -o /dev/null -w "%{http_code}\n" -X POST "https://$API_DOMAIN/webhooks/stripe"
+```
+
+Renseigner aussi les price IDs addons (`STRIPE_ADDON_*`) et le Customer Portal
+(`STRIPE_BILLING_PORTAL_CONFIGURATION_ID`) avant d’ouvrir les paiements.
 
 ## 9. Notifications push (VAPID)
 

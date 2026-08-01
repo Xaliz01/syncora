@@ -43,16 +43,22 @@ www.{$MARKETING_DOMAIN} {
 	import frontend_proxy
 }
 
-# API Gateway
+# API Gateway (+ webhook Stripe hors gateway — body brut requis)
 {$API_DOMAIN} {
-	encode zstd gzip
-
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 		X-Content-Type-Options "nosniff"
 	}
 
-	reverse_proxy __API_GATEWAY_UPSTREAM__
+	# Stripe → subscriptions-service (ne passe pas par le gateway Nest).
+	handle /webhooks/stripe* {
+		reverse_proxy subscriptions-service:3008
+	}
+
+	handle {
+		encode zstd gzip
+		reverse_proxy __API_GATEWAY_UPSTREAM__
+	}
 }
 
 # Grafana (monitoring) — auth Grafana obligatoire ; ne pas désactiver GF_AUTH

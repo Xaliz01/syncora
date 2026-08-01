@@ -46,7 +46,7 @@ tech:
       env_vars:
         - "LOG_LEVEL (niveau Winston: error, warn, info, debug)"
         - "DD_SERVICE, DD_ENV, DD_VERSION (Datadog)"
-        - "STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_PRICE_ID (abonnements ; webhook → subscriptions-service :3008/webhooks/stripe)"
+        - "STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_PRICE_ID (abonnements ; webhook public Caddy → subscriptions-service : https://$API_DOMAIN/webhooks/stripe)"
         - "SUBSCRIPTIONS_SERVICE_URL (gateway → microservice abonnements)"
         - "EXPORTS_SERVICE_URL (gateway → microservice exports, défaut localhost:3012)"
         - "INTEGRATIONS_SERVICE_URL (gateway → microservice intégrations / Pennylane & Qonto, défaut localhost:3013)"
