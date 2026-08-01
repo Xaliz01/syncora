@@ -121,7 +121,7 @@ export function PlatformAudiencePage() {
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
-            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+            <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
               <div className="border-b border-slate-100 px-4 py-3 text-sm font-medium dark:border-slate-800">
                 Par surface
               </div>
@@ -153,7 +153,7 @@ export function PlatformAudiencePage() {
               </table>
             </div>
 
-            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+            <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
               <div className="border-b border-slate-100 px-4 py-3 text-sm font-medium dark:border-slate-800">
                 Pages les plus vues
               </div>
@@ -184,7 +184,7 @@ export function PlatformAudiencePage() {
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
             <div className="border-b border-slate-100 px-4 py-3 text-sm font-medium dark:border-slate-800">
               Par pays
             </div>

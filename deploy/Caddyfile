@@ -1,9 +1,10 @@
 # Reverse proxy Planwise — HTTPS automatique (Let's Encrypt).
 # Les domaines et l'email ACME proviennent de variables d'environnement (cf. docker-compose.prod.yml).
 #
-# Frontend + API Gateway : deux slots (blue/green). Caddy ne route que vers les
-# upstreams healthy (`lb_policy first`). Le script rolling-edge.sh démarre le
-# slot inactif, attend healthy, puis arrête l'ancien → bascule sans downtime.
+# Frontend + API Gateway : deux slots (blue/green). `lb_policy first` envoie le
+# trafic au premier upstream joignable ; l'autre peut être arrêté (DNS vide / dial
+# fail → Caddy passe au suivant). Pas de health_uri actif : les sondes actives
+# cassent Next (Host interne ≠ app/marketing) et provoquent des ERR_INVALID_RESPONSE.
 
 {
 	email {$ACME_EMAIL}
@@ -21,11 +22,6 @@
 
 	reverse_proxy frontend-blue:5173 frontend-green:5173 {
 		lb_policy first
-		health_uri /
-		health_interval 2s
-		health_timeout 3s
-		health_status 2xx
-		fail_duration 10s
 	}
 }
 
@@ -60,11 +56,6 @@ www.{$MARKETING_DOMAIN} {
 
 	reverse_proxy api-gateway-blue:3000 api-gateway-green:3000 {
 		lb_policy first
-		health_uri /api/health
-		health_interval 2s
-		health_timeout 3s
-		health_status 2xx
-		fail_duration 10s
 	}
 }
 

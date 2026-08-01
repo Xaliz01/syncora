@@ -71,10 +71,9 @@ wait_healthy() {
   return 1
 }
 
-# Pause pour laisser Caddy marquer le nouvel upstream healthy
-# avant d'arrêter l'ancien (health_interval 2s).
+# Pause pour laisser le nouvel upstream accepter des connexions avant d'arrêter l'ancien.
 wait_caddy_settle() {
-  sleep 12
+  sleep 5
 }
 
 roll_pair() {

@@ -152,8 +152,8 @@ export function PlatformCronsPage() {
         {historyLoading ? (
           <p className="text-sm text-slate-500">Chargement…</p>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
-            <table className="w-full text-left text-sm">
+          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+            <table className="min-w-[36rem] w-full text-left text-sm">
               <thead className="border-b border-slate-100 bg-slate-50 text-xs uppercase text-slate-500 dark:border-slate-800 dark:bg-slate-950">
                 <tr>
                   <th className="px-4 py-3">Job</th>

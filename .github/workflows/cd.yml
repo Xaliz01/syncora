@@ -205,7 +205,12 @@ jobs:
             # 2) Bascule blue/green (bootstrap blue si premier deploy après migration).
             ./rolling-edge.sh
 
-            # 3) Caddy (nouvelle conf) + purge des orphelins (anciens noms de services).
+            # 3) Caddy avec la conf blue/green — AVANT de purger les anciens conteneurs,
+            #    pour éviter une fenêtre sans aucun upstream joignable.
+            compose up -d --no-deps caddy
+
+            # 4) Purge des orphelins (anciens noms api-gateway / frontend) une fois
+            #    blue (ou green) + Caddy en place.
             compose up -d --remove-orphans \
               caddy \
               mongodb \
@@ -214,6 +219,24 @@ jobs:
               subscriptions-service customers-service notifications-service \
               documents-service exports-service integrations-service \
               prometheus tempo otel-collector grafana node-exporter cadvisor blackbox-exporter
+
+            # Smoke : au moins un slot frontend / gateway doit répondre en local.
+            fe_ok=0
+            for slot in frontend-blue frontend-green; do
+              id="$(compose ps -q --status running "$slot" 2>/dev/null || true)"
+              if [[ -n "$id" ]]; then
+                if docker exec "$id" node -e "require('http').get('http://127.0.0.1:5173/',r=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))" 2>/dev/null; then
+                  fe_ok=1
+                  break
+                fi
+              fi
+            done
+            if [[ "$fe_ok" -ne 1 ]]; then
+              echo "❌ Aucun frontend slot ne répond après deploy"
+              compose ps || true
+              compose logs --tail 100 frontend-blue frontend-green caddy || true
+              exit 1
+            fi
 
             # Persister le tag déployé : un `compose up` manuel sans export IMAGE_TAG
             # ne doit pas recréer l'app avec un ancien tag du .env.production.

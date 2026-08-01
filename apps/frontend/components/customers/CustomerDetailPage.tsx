@@ -225,7 +225,27 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
                     </dd>
                   </div>
                 )}
-                {!c.email && !c.phone && !c.mobile && (
+                {c.address && (
+                  <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
+                    <dt className="text-slate-500 dark:text-slate-400 sm:w-32">Adresse</dt>
+                    <dd>
+                      <address className="not-italic text-slate-800 dark:text-slate-100">
+                        {c.address.line1}
+                        <br />
+                        {c.address.line2 ? (
+                          <>
+                            {c.address.line2}
+                            <br />
+                          </>
+                        ) : null}
+                        {c.address.postalCode} {c.address.city}
+                        <br />
+                        {c.address.country}
+                      </address>
+                    </dd>
+                  </div>
+                )}
+                {!c.email && !c.phone && !c.mobile && !c.address && (
                   <p className="text-slate-500 dark:text-slate-400">
                     Aucune coordonnée renseignée.
                   </p>
@@ -257,36 +277,13 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
                   )}
                   {c.legalIdentifier && (
                     <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
-                      <dt className="text-slate-500 dark:text-slate-400 sm:w-32">
-                        Identifiant légal
-                      </dt>
+                      <dt className="text-slate-500 dark:text-slate-400 sm:w-32">Siret</dt>
                       <dd className="text-slate-800 dark:text-slate-100">{c.legalIdentifier}</dd>
                     </div>
                   )}
                 </dl>
               </div>
             ) : null}
-
-            {c.address && (
-              <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/20 sm:col-span-2">
-                <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-                  Adresse
-                </h2>
-                <address className="mt-3 text-sm not-italic text-slate-700 dark:text-slate-200">
-                  {c.address.line1}
-                  <br />
-                  {c.address.line2 ? (
-                    <>
-                      {c.address.line2}
-                      <br />
-                    </>
-                  ) : null}
-                  {c.address.postalCode} {c.address.city}
-                  <br />
-                  {c.address.country}
-                </address>
-              </div>
-            )}
 
             {c.notes && (
               <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/20 sm:col-span-2">
