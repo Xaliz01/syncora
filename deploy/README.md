@@ -430,6 +430,20 @@ Exemples LogQL :
 Les labels utiles : `compose_service`, `container`, `stream` (stdout/stderr), `job=docker`.
 Seuls les conteneurs `planwise-*` sont collectés (Loki/Alloy exclus).
 
+Si Grafana affiche **Datasource loki was not found** : le fichier de provisioning
+n’était pas rechargé, ou Loki n’était pas démarré. Corriger ainsi :
+
+```bash
+cd /opt/planwise/deploy
+docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml \
+  --env-file .env.production --profile monitoring up -d loki alloy
+docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml \
+  --env-file .env.production --profile monitoring up -d --force-recreate grafana
+```
+
+Puis Connections → Data sources : vérifier que **Loki** (`uid: loki`) apparaît.
+Explore → Loki → `{job="docker"}`.
+
 ### Traces APM (OpenTelemetry + Tempo)
 
 Les microservices NestJS envoient des traces OTLP vers `otel-collector` → **Tempo**
