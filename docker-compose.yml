@@ -128,12 +128,42 @@ services:
         condition: service_healthy
       tempo:
         condition: service_healthy
+      loki:
+        condition: service_started
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/health"]
       interval: 15s
       timeout: 5s
       retries: 5
       start_period: 30s
+
+  loki:
+    profiles: ["monitoring"]
+    image: grafana/loki:3.4.2
+    container_name: planwise-loki-local
+    user: "0"
+    command: ["-config.file=/etc/loki/loki.yml"]
+    volumes:
+      - ./deploy/monitoring/loki.yml:/etc/loki/loki.yml:ro
+      - planwise-loki-data:/loki
+    ports:
+      - "127.0.0.1:3100:3100"
+
+  alloy:
+    profiles: ["monitoring"]
+    image: grafana/alloy:v1.7.1
+    container_name: planwise-alloy-local
+    command:
+      - run
+      - /etc/alloy/config.alloy
+      - --storage.path=/var/lib/alloy/data
+      - --server.http.listen-addr=0.0.0.0:12345
+    volumes:
+      - ./deploy/monitoring/alloy.config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - planwise-alloy-data:/var/lib/alloy/data
+    depends_on:
+      - loki
 
   node-exporter:
     profiles: ["monitoring"]
@@ -196,3 +226,5 @@ volumes:
   planwise-tempo-data:
   planwise-prometheus-data:
   planwise-grafana-data:
+  planwise-loki-data:
+  planwise-alloy-data:

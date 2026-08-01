@@ -202,7 +202,7 @@ jobs:
               cases-service fleet-service technicians-service stock-service \
               subscriptions-service customers-service notifications-service \
               documents-service exports-service integrations-service \
-              prometheus tempo otel-collector grafana node-exporter cadvisor blackbox-exporter mongodb-exporter
+              prometheus tempo otel-collector grafana loki alloy node-exporter cadvisor blackbox-exporter mongodb-exporter
 
             # Recharge la config Prometheus (bind-mount) sans recréer le volume TSDB.
             docker exec planwise-prometheus wget -qO- --post-data='' http://localhost:9090/-/reload >/dev/null \
@@ -233,7 +233,7 @@ jobs:
               cases-service fleet-service technicians-service stock-service \
               subscriptions-service customers-service notifications-service \
               documents-service exports-service integrations-service \
-              prometheus tempo otel-collector grafana node-exporter cadvisor blackbox-exporter mongodb-exporter
+              prometheus tempo otel-collector grafana loki alloy node-exporter cadvisor blackbox-exporter mongodb-exporter
 
             # Smoke : au moins un slot frontend / gateway doit répondre en local.
             fe_ok=0

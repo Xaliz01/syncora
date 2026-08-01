@@ -14,6 +14,8 @@ const REQUIRED = [
   "planwise-node-exporter-local",
   "planwise-cadvisor-local",
   "planwise-mongodb-exporter-local",
+  "planwise-loki-local",
+  "planwise-alloy-local",
 ];
 
 function listRunningContainers() {

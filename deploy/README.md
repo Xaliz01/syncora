@@ -190,7 +190,7 @@ docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml \
   cases-service fleet-service technicians-service stock-service \
   subscriptions-service customers-service notifications-service \
   documents-service exports-service integrations-service \
-  prometheus tempo otel-collector grafana node-exporter cadvisor blackbox-exporter mongodb-exporter
+  prometheus tempo otel-collector grafana loki alloy node-exporter cadvisor blackbox-exporter mongodb-exporter
 ./rolling-edge.sh
 # Caddy + purge des anciens conteneurs api-gateway / frontend
 docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml \
@@ -349,10 +349,10 @@ La clé publique est exposée au frontend via `GET /api/notifications/vapid-publ
 La clé privée ne doit jamais être commitée. Garder la même paire en production : un
 changement de clés peut obliger les utilisateurs à se réabonner aux notifications.
 
-## 10. Monitoring (Grafana + Prometheus)
+## 10. Monitoring (Grafana + Prometheus + Loki)
 
-Stack open source pour surveiller la VM et les conteneurs Docker : CPU/RAM disque,
-consommation par service, disponibilité HTTP de l'API et du frontend.
+Stack open source pour surveiller la VM, les conteneurs, les **logs applicatifs**
+et les traces : CPU/RAM, disponibilité HTTP, logs Docker, APM.
 
 Composants (profil Docker `monitoring`) :
 
@@ -360,6 +360,8 @@ Composants (profil Docker `monitoring`) :
 | -------------------- | -------------------------------------------- |
 | **Prometheus**       | Collecte et stockage des métriques (15 j)    |
 | **Grafana**          | Dashboards et visualisation                  |
+| **Loki**             | Stockage des logs applicatifs (14 j)         |
+| **Alloy**            | Collecte des logs Docker → Loki              |
 | **node-exporter**    | Métriques hôte (CPU, RAM, disque)            |
 | **cAdvisor**         | Métriques par conteneur Docker               |
 | **blackbox**         | Sondes HTTP (`/api/health`, frontend)        |
@@ -388,7 +390,7 @@ GRAFANA_PORT=3030
 cd /opt/planwise/deploy
 docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml \
   --env-file .env.production --profile monitoring up -d \
-  prometheus tempo otel-collector grafana node-exporter cadvisor blackbox-exporter mongodb-exporter
+  prometheus tempo otel-collector grafana loki alloy node-exporter cadvisor blackbox-exporter mongodb-exporter
 ```
 
 Éviter un `up` global sans le bon `IMAGE_TAG` : Compose recréerait l’app avec le
@@ -409,8 +411,24 @@ ssh -L 3030:127.0.0.1:3030 ubuntu@<IP_VM>
 Dashboards provisionnés automatiquement (dossier Grafana **Planwise**) :
 
 - **Planwise — Infra & disponibilité** — VM, sondes HTTP, CPU/RAM conteneurs
-- **Planwise — MongoDB** — uptime, connexions, ops/s, tailles des bases, réseau
+- **Planwise — MongoDB** — uptime, connexions, ops/s, tailles des bases
+- **Planwise — Logs** — volume + recherche filtrée par service Compose
 - **Planwise — API & traces** — (si Tempo / OTEL activés)
+
+### Logs applicatifs (Loki)
+
+Dans Grafana : **Explore** → datasource **Loki**, ou dashboard **Planwise — Logs**.
+
+Exemples LogQL :
+
+```logql
+{compose_service="api-gateway-blue"} |= "ERROR"
+{compose_service=~"cases-service|customers-service"} |= "organizationId"
+{container=~"planwise-.*"} |~ "(?i)exception|fatal"
+```
+
+Les labels utiles : `compose_service`, `container`, `stream` (stdout/stderr), `job=docker`.
+Seuls les conteneurs `planwise-*` sont collectés (Loki/Alloy exclus).
 
 ### Traces APM (OpenTelemetry + Tempo)
 

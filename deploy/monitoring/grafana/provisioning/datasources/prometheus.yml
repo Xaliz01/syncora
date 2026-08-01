@@ -9,6 +9,21 @@ datasources:
     isDefault: true
     editable: false
 
+  - name: Loki
+    uid: loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    editable: false
+    jsonData:
+      maxLines: 1000
+      derivedFields:
+        - datasourceUid: tempo
+          matcherRegex: '"traceId":"(\\w+)"'
+          name: TraceID
+          url: "$${__value.raw}"
+          urlDisplayLabel: "Voir la trace"
+
   - name: Tempo
     uid: tempo
     type: tempo
@@ -19,7 +34,15 @@ datasources:
       nodeGraph:
         enabled: true
       tracesToLogsV2:
-        datasourceUid: prometheus
+        datasourceUid: loki
+        spanStartTimeShift: "-5m"
+        spanEndTimeShift: "5m"
+        filterByTraceID: false
+        filterBySpanID: false
+        customQuery: false
+        tags:
+          - key: service.name
+            value: compose_service
       tracesToMetrics:
         datasourceUid: prometheus
       serviceMap:
