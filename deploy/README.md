@@ -200,20 +200,84 @@ docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml \
 ## 6. MongoDB
 
 Par défaut, MongoDB tourne dans Compose (volume `mongodb-data`, non exposé).
-Pour un MVP c'est acceptable, mais prévoir **dès que possible** :
+Les documents applicatifs sont déjà sur S3 ; **la base reste critique** : mettre
+en place les backups ci-dessous dès le MVP, puis tester une restauration.
 
-- sauvegardes quotidiennes chiffrées (`mongodump`) vers un Object Storage OVH ;
-- tests de restauration réguliers ;
-- migration vers un **MongoDB managé** (renseigner alors `MONGO_BASE_URI`, ou
-  surcharger chaque `MONGODB_URI` directement dans le compose si l'URI managée
-  comporte des identifiants/paramètres de requête).
+À terme : migration vers un **MongoDB managé** (renseigner alors `MONGO_BASE_URI`,
+ou surcharger chaque `MONGODB_URI` dans le compose).
+
+### 6.1 Backups automatisés → Object Storage OVH
+
+Scripts : `deploy/backup/mongo-backup.sh` et `mongo-restore.sh`.
+
+1. **Bucket S3** (idéal : bucket séparé `planwise-backups`, privé, pas de lecture
+   publique). Réutiliser les clés S3 déjà utilisées pour les documents, ou un
+   utilisateur Object Storage dédié « backup only ».
+2. Dans `.env.production` :
+
+```env
+S3_ENDPOINT=https://s3.eu-west-par.io.cloud.ovh.net
+AWS_REGION=eu-west-par
+AWS_ACCESS_KEY_ID=...
+AWS_SECRET_ACCESS_KEY=...
+MONGO_BACKUP_S3_BUCKET=planwise-backups
+MONGO_BACKUP_S3_PREFIX=mongo/
+MONGO_BACKUP_RETENTION_DAYS=14
+# Optionnel — chiffrement avant upload (conserver la phrase hors du bucket) :
+# MONGO_BACKUP_ENCRYPT_PASSPHRASE=...
+```
+
+3. **Test manuel** (sur la VM, depuis `/opt/planwise/deploy`) :
+
+```bash
+chmod +x backup/*.sh
+./backup/mongo-backup.sh
+```
+
+4. **Planification** — choisir une des deux options.
+
+**Option A (recommandée) — cron hôte**
+
+```bash
+sudo tee /etc/cron.d/planwise-mongo-backup >/dev/null <<'EOF'
+# Tous les jours à 03:15 Europe/Paris (ajuster le fuseau de la VM)
+15 3 * * * root DEPLOY_DIR=/opt/planwise/deploy /opt/planwise/deploy/backup/mongo-backup.sh >> /var/log/planwise-mongo-backup.log 2>&1
+EOF
+sudo chmod 644 /etc/cron.d/planwise-mongo-backup
+```
+
+**Option B — profil Compose `backup` (Ofelia)**
+
+```bash
+sudo mkdir -p /var/lib/planwise/mongo-backup-work
+docker compose -f docker-compose.prod.yml -f docker-compose.backup.yml \
+  --env-file .env.production --profile backup up -d
+```
+
+### 6.2 Restauration
+
+```bash
+# Lister (avec AWS CLI via Docker) :
+docker run --rm \
+  -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION \
+  amazon/aws-cli:2.15.0 \
+  s3 ls "s3://${MONGO_BACKUP_S3_BUCKET:-planwise-backups}/mongo/" \
+  --endpoint-url "$S3_ENDPOINT"
+
+# Restaurer (ÉCRASE les données Mongo — confirmer avant) :
+./backup/mongo-restore.sh s3://planwise-backups/mongo/planwise-mongo-YYYYMMDD….archive.gz
+```
+
+Tester une restauration au moins une fois (VM de staging ou Mongo jetable) avant
+d’avoir vraiment besoin des backups.
 
 ## 7. Stockage des documents
 
 `STORAGE_PROVIDER=local` (défaut) stocke dans le volume `documents-data`.
-Penser à le sauvegarder, ou basculer sur `STORAGE_PROVIDER=s3` (Object Storage
-OVH compatible S3 : renseigner `S3_BUCKET`, `S3_ENDPOINT`, `AWS_REGION`,
-`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`).
+Avec `STORAGE_PROVIDER=s3` (Object Storage OVH), renseigner `S3_BUCKET`,
+`S3_ENDPOINT`, `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`.
+Les fichiers documents ne sont plus sur le volume Docker : seuls Mongo + secrets
+restent à sauvegarder côté VM.
 
 ## 8. Stripe (webhook)
 

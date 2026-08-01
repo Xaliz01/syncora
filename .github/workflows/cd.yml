@@ -160,7 +160,7 @@ jobs:
           username: ${{ secrets.DEPLOY_SSH_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_SSH_PORT || 22 }}
-          source: "deploy/docker-compose.prod.yml,deploy/docker-compose.monitoring.yml,deploy/Caddyfile.template,deploy/rolling-edge.sh,deploy/recover-edge.sh,deploy/monitoring"
+          source: "deploy/docker-compose.prod.yml,deploy/docker-compose.monitoring.yml,deploy/docker-compose.backup.yml,deploy/Caddyfile.template,deploy/rolling-edge.sh,deploy/recover-edge.sh,deploy/backup,deploy/monitoring"
           target: ${{ secrets.DEPLOY_PATH }}
           overwrite: true
       - name: Pull & up sur la VM
@@ -183,7 +183,7 @@ jobs:
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
             # IMAGE_TAG/REGISTRY surchargent les valeurs du .env.production (secrets locaux conservés sur la VM).
             export REGISTRY IMAGE_TAG
-            chmod +x ./rolling-edge.sh ./recover-edge.sh
+            chmod +x ./rolling-edge.sh ./recover-edge.sh ./backup/*.sh
             # Assure le template présent (SCP) avant rolling.
             test -f Caddyfile.template
 

@@ -1,0 +1,50 @@
+# Sauvegarde Mongo planifiée (Ofelia) — profil Docker Compose `backup`.
+#
+# Préférer le cron hôte si possible (voir deploy/README.md) — plus simple à déboguer.
+#
+# Activation :
+#   sudo mkdir -p /var/lib/planwise/mongo-backup-work
+#   docker compose -f docker-compose.prod.yml -f docker-compose.backup.yml \
+#     --env-file .env.production --profile backup up -d
+#
+# MONGO_BACKUP_WORKDIR doit être le MÊME chemin sur l'hôte et dans le runner
+# (Docker socket : les -v du script sont résolus côté daemon hôte).
+
+services:
+  mongo-backup-scheduler:
+    profiles: ["backup"]
+    image: mcuadros/ofelia:latest
+    container_name: planwise-mongo-backup-scheduler
+    restart: unless-stopped
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      mongo-backup-runner:
+        condition: service_started
+    command: daemon --docker
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks: [planwise]
+
+  mongo-backup-runner:
+    profiles: ["backup"]
+    image: docker:27-cli
+    container_name: planwise-mongo-backup-runner
+    restart: unless-stopped
+    entrypoint: ["sleep", "infinity"]
+    working_dir: /backup
+    environment:
+      DEPLOY_DIR: /deploy
+      # Chemin identique hôte ↔ conteneur (obligatoire avec Docker socket).
+      MONGO_BACKUP_WORKDIR: /var/lib/planwise/mongo-backup-work
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./backup:/backup:ro
+      - ./.env.production:/deploy/.env.production:ro
+      - /var/lib/planwise/mongo-backup-work:/var/lib/planwise/mongo-backup-work
+    # Ofelia : secondes minutes heures jour mois weekday — défaut 03:15 UTC
+    labels:
+      ofelia.enabled: "true"
+      ofelia.job-exec.mongo-backup.schedule: "${MONGO_BACKUP_CRON:-0 15 3 * * *}"
+      ofelia.job-exec.mongo-backup.command: "sh -c 'apk add --no-cache bash openssl >/dev/null && bash /backup/mongo-backup.sh'"
+    networks: [planwise]
