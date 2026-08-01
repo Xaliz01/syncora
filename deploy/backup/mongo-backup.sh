@@ -46,10 +46,9 @@ die() {
 }
 
 if [[ -f "$ENV_FILE" ]]; then
-  set -a
-  # shellcheck disable=SC1090
-  source "$ENV_FILE"
-  set +a
+  # shellcheck disable=SC1091
+  source "$(dirname "${BASH_SOURCE[0]}")/load-env.sh"
+  load_dotenv "$ENV_FILE"
 fi
 
 : "${AWS_ACCESS_KEY_ID:?AWS_ACCESS_KEY_ID requis}"
