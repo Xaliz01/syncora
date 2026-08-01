@@ -27,6 +27,10 @@ export class TechnicianDocument extends Document {
   @Prop()
   userId?: string;
 
+  /** Hex #RRGGBB — cartes calendrier (assignation individuelle) */
+  @Prop()
+  calendarColor?: string;
+
   @Prop({ type: Date })
   deletedAt?: Date | null;
 

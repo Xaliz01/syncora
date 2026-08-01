@@ -22,6 +22,7 @@ export * from "./comment";
 export * from "./soft-delete";
 export * from "./organization-scope";
 export * from "./export";
+export * from "./reporting-period";
 export * from "./quote";
 export * from "./integrations";
 export * from "./support";

@@ -13,11 +13,11 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/** Géocodage adresse France (Base Adresse Nationale) — pas de clé API. */
+/** Géocodage adresse France (Géoplateforme / BAN) — pas de clé API. */
 export async function geocodeAddressGouv(query: string): Promise<GeoPoint | null> {
   const q = query.trim();
   if (q.length < 3) return null;
-  const url = `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(q)}&limit=1`;
+  const url = `https://data.geopf.fr/geocodage/search?q=${encodeURIComponent(q)}&limit=1`;
   const res = await fetch(url);
   if (!res.ok) return null;
   const data = (await res.json()) as {

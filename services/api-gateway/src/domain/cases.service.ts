@@ -287,12 +287,17 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
   // ── Interventions ──
 
   async createIntervention(user: AuthUser, body: CreateInterventionForOrgBody) {
+    const assignment = await this.resolveInterventionAssignmentLabels(user.organizationId, {
+      assigneeId: body.assigneeId,
+      assignedTeamId: body.assignedTeamId,
+    });
     const result = await this.callCasesService<InterventionResponse>(user.organizationId, {
       method: "post",
       path: "/interventions",
       body: {
         organizationId: user.organizationId,
         ...body,
+        ...assignment,
       } as CreateInterventionBody,
     });
     this.recordHistory(
@@ -392,6 +397,103 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     }
   }
 
+  private async resolveInterventionAssignmentLabels(
+    organizationId: string,
+    filters: { assigneeId?: string | null; assignedTeamId?: string | null },
+  ): Promise<{
+    assigneeName?: string | null;
+    assignedTeamName?: string | null;
+  }> {
+    const labels: {
+      assigneeName?: string | null;
+      assignedTeamName?: string | null;
+    } = {};
+
+    if (filters.assigneeId) {
+      labels.assigneeName = await this.resolveAssigneeDisplayName(
+        organizationId,
+        filters.assigneeId,
+      );
+      labels.assignedTeamName = null;
+    } else if (filters.assigneeId === null) {
+      labels.assigneeName = null;
+    }
+
+    if (filters.assignedTeamId) {
+      labels.assignedTeamName = await this.resolveTeamDisplayName(
+        organizationId,
+        filters.assignedTeamId,
+      );
+      labels.assigneeName = null;
+    } else if (filters.assignedTeamId === null) {
+      labels.assignedTeamName = null;
+    }
+
+    return labels;
+  }
+
+  private async resolveAssigneeDisplayName(
+    organizationId: string,
+    assigneeId: string,
+  ): Promise<string> {
+    try {
+      const technician = await this.scopedHttp.request<TechnicianResponse | null>({
+        baseUrl: TECHNICIANS_URL,
+        organizationId,
+        method: "get",
+        path: `/technicians/by-user/${assigneeId}`,
+        validateResponseScope: false,
+        errorLabel: "Technicians service error",
+      });
+      if (technician) {
+        return `${technician.firstName} ${technician.lastName}`.trim();
+      }
+    } catch {
+      // fallback below
+    }
+
+    try {
+      const technician = await this.scopedHttp.request<TechnicianResponse>({
+        baseUrl: TECHNICIANS_URL,
+        organizationId,
+        method: "get",
+        path: `/technicians/${assigneeId}`,
+        errorLabel: "Technicians service error",
+      });
+      return `${technician.firstName} ${technician.lastName}`.trim();
+    } catch {
+      // fallback below
+    }
+
+    try {
+      const user = await this.scopedHttp.request<UserResponse>({
+        baseUrl: USERS_URL,
+        organizationId,
+        method: "get",
+        path: `/users/${assigneeId}`,
+        errorLabel: "Users service error",
+      });
+      return user.name?.trim() || user.email;
+    } catch {
+      return assigneeId;
+    }
+  }
+
+  private async resolveTeamDisplayName(organizationId: string, teamId: string): Promise<string> {
+    try {
+      const team = await this.scopedHttp.request<TeamResponse>({
+        baseUrl: TECHNICIANS_URL,
+        organizationId,
+        method: "get",
+        path: `/teams/${teamId}`,
+        errorLabel: "Technicians service error",
+      });
+      return team.name;
+    } catch {
+      return teamId;
+    }
+  }
+
   async getIntervention(user: AuthUser, interventionId: string) {
     return this.callCasesService<InterventionResponse>(user.organizationId, {
       method: "get",
@@ -409,12 +511,21 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       assertAnyAssignablePermission(user, ["cases.manage_billing", "interventions.update"]);
     }
 
+    const assignment =
+      body.assigneeId !== undefined || body.assignedTeamId !== undefined
+        ? await this.resolveInterventionAssignmentLabels(user.organizationId, {
+            assigneeId: body.assigneeId,
+            assignedTeamId: body.assignedTeamId,
+          })
+        : {};
+
     const result = await this.callCasesService<InterventionResponse>(user.organizationId, {
       method: "patch",
       path: `/interventions/${interventionId}`,
       body: {
         organizationId: user.organizationId,
         ...body,
+        ...assignment,
       } as UpdateInterventionBody,
     });
     this.recordHistory(

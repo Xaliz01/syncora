@@ -1,6 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getModelToken } from "@nestjs/mongoose";
-import { NotFoundException, BadRequestException } from "@nestjs/common";
+import { NotFoundException, BadRequestException, ConflictException } from "@nestjs/common";
 import { activeDocumentFilter } from "@planwise/shared";
 import { TechniciansService } from "../technicians.service";
 
@@ -87,6 +87,7 @@ describe("TechniciansService", () => {
         phone: body.phone,
         speciality: body.speciality,
         status: "actif",
+        calendarColor: undefined,
         isTestData: false,
       });
       expect(result.id).toBe("tech-123");
@@ -98,6 +99,23 @@ describe("TechniciansService", () => {
       expect(result.speciality).toBe("mechanic");
       expect(result.status).toBe("actif");
       expect(result.userId).toBeUndefined();
+    });
+
+    it("should accept valid calendarColor", async () => {
+      const doc = mockTechnicianDoc({ calendarColor: "#FF0000" });
+      mockTechnicianModel.create.mockResolvedValue(doc);
+
+      const result = await service.createTechnician({
+        organizationId: "org-1",
+        firstName: "John",
+        lastName: "Doe",
+        calendarColor: "#f00",
+      });
+
+      expect(mockTechnicianModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({ calendarColor: "#FF0000" }),
+      );
+      expect(result.calendarColor).toBe("#FF0000");
     });
   });
 
@@ -193,9 +211,13 @@ describe("TechniciansService", () => {
   describe("linkUserToTechnician", () => {
     it("should link user when technician has no userId", async () => {
       const doc = mockTechnicianDoc({ userId: undefined });
-      mockTechnicianModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(doc),
-      });
+      mockTechnicianModel.findOne
+        .mockReturnValueOnce({
+          exec: jest.fn().mockResolvedValue(doc),
+        })
+        .mockReturnValueOnce({
+          exec: jest.fn().mockResolvedValue(null),
+        });
 
       const result = await service.linkUserToTechnician("org-1", "tech-123", "user-456");
 
@@ -212,6 +234,26 @@ describe("TechniciansService", () => {
 
       await expect(service.linkUserToTechnician("org-1", "tech-123", "user-456")).rejects.toThrow(
         BadRequestException,
+      );
+      expect(doc.save).not.toHaveBeenCalled();
+    });
+
+    it("should throw ConflictException when user is already linked to another technician", async () => {
+      const doc = mockTechnicianDoc({ userId: undefined });
+      const other = mockTechnicianDoc({
+        _id: { toString: () => "tech-other" },
+        userId: "user-456",
+      });
+      mockTechnicianModel.findOne
+        .mockReturnValueOnce({
+          exec: jest.fn().mockResolvedValue(doc),
+        })
+        .mockReturnValueOnce({
+          exec: jest.fn().mockResolvedValue(other),
+        });
+
+      await expect(service.linkUserToTechnician("org-1", "tech-123", "user-456")).rejects.toThrow(
+        ConflictException,
       );
       expect(doc.save).not.toHaveBeenCalled();
     });

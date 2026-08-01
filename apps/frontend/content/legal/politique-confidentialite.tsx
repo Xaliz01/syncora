@@ -89,7 +89,7 @@ export function PolitiqueConfidentialiteContent() {
             "OVHcloud — hébergement applicatif et stockage (France, datacenter de Gravelines).",
             "Crisp — support client (consentement requis).",
             "Prestataire email (SMTP) — notifications transactionnelles.",
-            "API publiques françaises (recherche-entreprises.api.gouv.fr, api-adresse.data.gouv.fr) — préremplissage SIRET/adresse.",
+            "API publiques françaises (recherche-entreprises.api.gouv.fr, data.geopf.fr/geocodage) — préremplissage SIRET/adresse.",
           ]}
         />
         <LegalParagraph>

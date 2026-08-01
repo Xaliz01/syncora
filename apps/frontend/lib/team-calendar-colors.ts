@@ -1,8 +1,10 @@
 import type { CSSProperties } from "react";
 
 /**
- * Couleur de carte calendrier : couleur équipe paramétrée (`calendarColor`) si présente,
- * sinon palette stable dérivée de `assignedTeamId`.
+ * Couleur de carte calendrier :
+ * - équipe : `calendarColor` paramétrée, sinon palette stable dérivée de `teamId`
+ * - personne (sans équipe) : `assigneeCalendarColor` paramétrée, sinon palette dérivée de `assigneeId`
+ * - sinon : gris
  */
 
 const LIGHT_PALETTE = [
@@ -40,7 +42,7 @@ const TEXT_ON_DARK_BG = "#f8fafc";
 /** Luminance max du fond en mode sombre (évite les pastels illisibles). */
 const DARK_BG_LUMINANCE_CAP = 0.32;
 
-function hashTeamId(id: string): number {
+function hashStableId(id: string): number {
   let h = 2166136261;
   for (let i = 0; i < id.length; i++) {
     h ^= id.charCodeAt(i);
@@ -115,7 +117,7 @@ function clampDarkBackground(bg: { r: number; g: number; b: number }): {
   return current;
 }
 
-/** Fond teinté équipe (même logique que les cartes calendrier). */
+/** Fond teinté (même logique que les cartes calendrier). */
 export function getTeamCalendarBackgroundRgb(
   hex: string,
   isDark: boolean,
@@ -134,7 +136,7 @@ export function getTeamCalendarBackgroundRgb(
   return mixRgb(team, LIGHT_BASE, 0.24);
 }
 
-/** Texte contrasté pour un fond teinté équipe. */
+/** Texte contrasté pour un fond teinté. */
 export function getTeamCalendarForeground(hex: string, isDark: boolean): string {
   const bg = getTeamCalendarBackgroundRgb(hex, isDark);
   return relativeLuminance(bg) > 0.5 ? TEXT_ON_LIGHT_BG : TEXT_ON_DARK_BG;
@@ -148,19 +150,19 @@ function getTeamCalendarBorderColor(hex: string, isDark: boolean): string {
   return rgbCss(mixRgb(team, { r: 255, g: 255, b: 255 }, 0.35));
 }
 
-/** Classes Tailwind pour le fond / bordure / texte (sans couleur équipe perso). */
+/** Classes Tailwind pour le fond / bordure / texte (sans couleur perso). */
 export function getTeamCalendarCardClasses(
-  teamId: string | undefined | null,
+  entityId: string | undefined | null,
   isDark: boolean,
 ): string {
-  const id = teamId?.trim();
+  const id = entityId?.trim();
   if (!id) {
     return isDark
       ? "bg-slate-800 text-slate-100 border border-slate-600"
       : "bg-slate-100 text-slate-900 border border-slate-300/90";
   }
   const palette = isDark ? DARK_PALETTE : LIGHT_PALETTE;
-  return palette[hashTeamId(id) % palette.length];
+  return palette[hashStableId(id) % palette.length];
 }
 
 export interface TeamCalendarCardAppearance {
@@ -168,27 +170,56 @@ export interface TeamCalendarCardAppearance {
   style?: CSSProperties;
 }
 
-/** Couleur perso équipe (`calendarColor`) ou palette automatique selon `teamId`. */
+export interface CalendarCardAppearanceOptions {
+  assigneeId?: string | null;
+  assigneeCalendarColor?: string | null;
+}
+
+function appearanceFromHex(hex: string, isDark: boolean): TeamCalendarCardAppearance {
+  const bg = getTeamCalendarBackgroundRgb(hex, isDark);
+  const fg = getTeamCalendarForeground(hex, isDark);
+  return {
+    className: "border border-solid",
+    style: {
+      borderColor: getTeamCalendarBorderColor(hex, isDark),
+      backgroundColor: rgbCss(bg),
+      color: fg,
+    },
+  };
+}
+
+/**
+ * Couleur perso (`calendarColor`) ou palette automatique selon l’id.
+ * Priorité : équipe → personne → neutre.
+ */
 export function getTeamCalendarCardAppearance(
   teamId: string | undefined | null,
   calendarColor: string | undefined | null,
   isDark: boolean,
+  options?: CalendarCardAppearanceOptions,
 ): TeamCalendarCardAppearance {
-  const hex = normalizeCalendarColorHex(calendarColor);
-  if (hex) {
-    const bg = getTeamCalendarBackgroundRgb(hex, isDark);
-    const fg = getTeamCalendarForeground(hex, isDark);
+  const team = teamId?.trim();
+  if (team) {
+    const hex = normalizeCalendarColorHex(calendarColor);
+    if (hex) return appearanceFromHex(hex, isDark);
     return {
-      className: "border border-solid",
-      style: {
-        borderColor: getTeamCalendarBorderColor(hex, isDark),
-        backgroundColor: rgbCss(bg),
-        color: fg,
-      },
+      className: getTeamCalendarCardClasses(team, isDark),
+      style: undefined,
     };
   }
+
+  const assignee = options?.assigneeId?.trim();
+  if (assignee) {
+    const hex = normalizeCalendarColorHex(options?.assigneeCalendarColor);
+    if (hex) return appearanceFromHex(hex, isDark);
+    return {
+      className: getTeamCalendarCardClasses(assignee, isDark),
+      style: undefined,
+    };
+  }
+
   return {
-    className: getTeamCalendarCardClasses(teamId, isDark),
+    className: getTeamCalendarCardClasses(undefined, isDark),
     style: undefined,
   };
 }

@@ -2,7 +2,7 @@
 
 > Document de référence pour l’équipe et les assistants de développement.  
 > Complète `planwise.product.config.yml` (entités, auth) par le **pourquoi**, la **cible** et le **cap** des évolutions.  
-> Dernière mise à jour : juin 2026.
+> Dernière mise à jour : juillet 2026.
 
 ---
 
@@ -183,14 +183,31 @@ Objectif : stock utile sans WMS enterprise.
 
 Objectif : monter en gamme sans perdre la simplicité TPE.
 
-| #   | Évolution                                                  | Notes                                |
-| --- | ---------------------------------------------------------- | ------------------------------------ |
-| 5.1 | **Maintenance récurrente** (contrats, échéances)           | Cible chauffage / contrats entretien |
-| 5.2 | **SMS** client (rappel RDV, « en route »)                  | Complément email                     |
-| 5.3 | Optimisation **tournée journée** (plusieurs interventions) | Extension addon routing              |
-| 5.4 | **API / webhooks** documentés                              | Intégrateurs, partenaires            |
-| 5.5 | **Rapports** (interventions / semaine, retard, stock)      | Pilotage patron                      |
-| 5.6 | Offre **Pro** (palier prix, plus de users / stock)         | Alignement valeur / prix             |
+| #   | Évolution                                                  | Notes                                | Statut |
+| --- | ---------------------------------------------------------- | ------------------------------------ | ------ |
+| 5.1 | **Maintenance récurrente** (contrats, échéances)           | Cible chauffage / contrats entretien | ⬜     |
+| 5.2 | **SMS** client (rappel RDV, « en route »)                  | Complément email                     | ⬜     |
+| 5.3 | Optimisation **tournée journée** (plusieurs interventions) | Extension addon routing              | ⬜     |
+| 5.4 | **API / webhooks** documentés                              | Intégrateurs, partenaires            | ⬜     |
+| 5.5 | **Rapports** (interventions / semaine, retard, stock)      | Pilotage patron                      | ⬜     |
+| 5.6 | Offre **Pro** (voir cible ci-dessous)                      | Alignement valeur / prix             | ⬜     |
+
+#### Offre Pro — cible produit (pas encore commercialisée)
+
+**Acheteur** : TPE multi-équipes (~5–15 personnes), pas le duo artisan.  
+**Principe** : Pro ≠ « Essentiel plus cher » ; pack + features de pilotage / croissance que le solo n’utilise pas.
+
+|                     | **Essentiel** (actuel)               | **Pro** (cible)                                                                                     |
+| ------------------- | ------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| Prix indicatif      | 9,99 € / mois / org                  | **29–39 € / mois / org** (à figer à la sortie)                                                      |
+| Users inclus        | 2                                    | **8–10**                                                                                            |
+| Stockage inclus     | 10 Go                                | **50–100 Go**                                                                                       |
+| Suggestion d’équipe | Addon 4,99 €                         | **Incluse**                                                                                         |
+| Différenciateurs    | Cœur métier (terrain, devis, compta) | Au moins **2** parmi : contrats maintenance (5.1), SMS (5.2), tournée journée (5.3), rapports (5.5) |
+| Addons restants     | Users, stockage, suggestion          | Users au-delà du pack, volumes SMS, etc.                                                            |
+
+**Prérequis avant lancement Pro** : livrer au moins deux items 5.1–5.5 ; sinon le palier n’a pas de justification crédible.  
+**À ne pas faire** : réserver terrain / Pennylane à Pro (contredit « valeur jour 1 ») ; monter Essentiel brutalement sans porte d’entrée.
 
 ### Hors roadmap explicite (sauf pivot)
 
@@ -204,7 +221,7 @@ Objectif : monter en gamme sans perdre la simplicité TPE.
 
 ## 7. Modèle économique (rappel)
 
-Aligné sur `packages/shared/src/subscription.ts` :
+Aligné sur `packages/shared/src/subscription.ts` (prix **en production**) :
 
 | Élément                          | Valeur                                                              |
 | -------------------------------- | ------------------------------------------------------------------- |
@@ -213,8 +230,13 @@ Aligné sur `packages/shared/src/subscription.ts` :
 | Suggestion intelligente d’équipe | 4,99 € / mois                                                       |
 | Stockage supplémentaire          | 4,99 € / mois / +50 Go                                              |
 | Stockage inclus                  | 10 Go, limite 10 Mo / fichier                                       |
+| **Pro**                          | Cible documentée en §5.6 — **pas encore au catalogue**              |
 
-**Stratégie prix (TPE)** : rester **10× moins cher** qu’un FSM par utilisateur tant que la boucle terrain + revenus n’est pas complète ; réviser à la **Phase 3–5** quand la valeur perçue couvre planning + terrain + export compta.
+**Stratégie prix (TPE)** :
+
+- Boucle terrain + revenus légers désormais largement livrées : le prix d’entrée peut évoluer **modérément**, mais l’essentiel de la monétisation « croissance » passe par **Pro + addons**, pas par un Essentiel cher.
+- **Hausse Essentiel à 14,99 €** : envisageable pour les _nouveaux_ clients si traction OK, en grand-fathering les abonnés à 9,99 €. Ce n’est **pas** un substitut à Pro ; à 14,99 € Essentiel reste une porte d’entrée, Pro reste le palier multi-équipes.
+- Révision majeure (offre Pro live) quand 5.1–5.5 apportent des différenciateurs packagés.
 
 ---
 

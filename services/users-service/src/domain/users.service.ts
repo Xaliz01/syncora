@@ -553,6 +553,8 @@ export class UsersService extends AbstractUsersService {
       if (!u) continue;
       out.push({
         ...this.toBaseResponse(u),
+        // Toujours l’org du membership listé (pas l’org « primaire » du document user).
+        organizationId,
         role: m.role as UserResponse["role"],
         organizationMembershipStatus:
           m.membershipStatus as UserResponse["organizationMembershipStatus"],

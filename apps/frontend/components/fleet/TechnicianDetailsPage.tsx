@@ -1,17 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import type { TechnicianResponse, TeamResponse, TechnicianStatus } from "@planwise/shared";
 
 const TECHNICIAN_STATUSES: TechnicianStatus[] = ["actif", "inactif"];
 import * as fleetApi from "@/lib/fleet.api";
+import * as adminApi from "@/lib/admin.api";
+import type { ManagedOrganizationUser } from "@/lib/admin.api";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/ToastProvider";
 import { usePermissions } from "@/lib/hooks/usePermissions";
 import { useRouter } from "next/navigation";
 import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
 import { AppErrorAlert, ResourceNotFoundPanel } from "@/components/ui/AppErrorAlert";
+import { normalizeCalendarColorHex } from "@/lib/team-calendar-colors";
+import { getOrganizationUserStatusLabel } from "@/lib/organization-user-status";
 
 const STATUS_COLORS: Record<string, string> = {
   actif: "bg-emerald-50 text-emerald-700 border-emerald-200",
@@ -47,10 +51,14 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
   const [editPhone, setEditPhone] = useState("");
   const [editSpeciality, setEditSpeciality] = useState("");
   const [editStatus, setEditStatus] = useState<TechnicianStatus>("actif");
+  const [editCalendarColor, setEditCalendarColor] = useState("");
 
-  const [showCreateAccount, setShowCreateAccount] = useState(false);
-  const [accountPassword, setAccountPassword] = useState("");
+  const [accountAction, setAccountAction] = useState<"idle" | "invite" | "link">("idle");
   const [creatingAccount, setCreatingAccount] = useState(false);
+  const [linkingAccount, setLinkingAccount] = useState(false);
+  const [linkableUsers, setLinkableUsers] = useState<ManagedOrganizationUser[]>([]);
+  const [loadingLinkableUsers, setLoadingLinkableUsers] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState("");
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -69,6 +77,7 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
       setEditPhone(techData.phone ?? "");
       setEditSpeciality(techData.speciality ?? "");
       setEditStatus(techData.status);
+      setEditCalendarColor(techData.calendarColor ?? "");
     } catch (err) {
       setError(err);
     } finally {
@@ -80,6 +89,43 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
     void refresh();
   }, [refresh]);
 
+  const loadLinkableUsers = useCallback(async () => {
+    if (!can("users.read")) return;
+    setLoadingLinkableUsers(true);
+    try {
+      const [{ users }, technicians] = await Promise.all([
+        adminApi.listOrganizationUsers(),
+        fleetApi.listTechnicians(),
+      ]);
+      const linkedUserIds = new Set(
+        technicians.map((tech) => tech.userId).filter((id): id is string => Boolean(id)),
+      );
+      setLinkableUsers(
+        users.filter(
+          (user) => user.organizationMembershipStatus !== "disabled" && !linkedUserIds.has(user.id),
+        ),
+      );
+    } catch (err) {
+      setError(err);
+    } finally {
+      setLoadingLinkableUsers(false);
+    }
+  }, [can]);
+
+  useEffect(() => {
+    if (accountAction === "link") {
+      void loadLinkableUsers();
+    }
+  }, [accountAction, loadLinkableUsers]);
+
+  const linkableUserOptions = useMemo(
+    () =>
+      linkableUsers.map((user) => ({
+        id: user.id,
+        label: `${user.name?.trim() || user.email} (${user.email}) — ${getOrganizationUserStatusLabel(user)}`,
+      })),
+    [linkableUsers],
+  );
   const handleSave = async () => {
     if (!technician) return;
     setSaving(true);
@@ -92,6 +138,7 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
         phone: editPhone.trim() || undefined,
         speciality: editSpeciality.trim() || undefined,
         status: editStatus,
+        calendarColor: editCalendarColor.trim() ? editCalendarColor.trim() : null,
       });
       showToast("Technicien mis à jour.");
       setIsEditing(false);
@@ -124,22 +171,47 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
 
   const handleCreateAccount = async () => {
     if (!technician) return;
-    if (!accountPassword.trim()) {
-      setError("Un mot de passe est requis");
+    if (!technician.email?.trim()) {
+      setError("Une adresse email est requise pour envoyer l'invitation");
       return;
     }
     setCreatingAccount(true);
     setError(null);
     try {
-      await fleetApi.createTechnicianUserAccount(technician.id, accountPassword);
-      showToast("Compte utilisateur créé pour le technicien.");
-      setShowCreateAccount(false);
-      setAccountPassword("");
+      const result = await fleetApi.createTechnicianUserAccount(technician.id);
+      showToast(
+        result.emailSent
+          ? "Invitation envoyée par e-mail."
+          : "Invitation créée, mais l'e-mail n'a pas pu être envoyé. Vous pourrez le renvoyer depuis la liste des utilisateurs.",
+        result.emailSent ? undefined : "error",
+      );
+      setAccountAction("idle");
       await refresh();
     } catch (err) {
       setError(err);
     } finally {
       setCreatingAccount(false);
+    }
+  };
+
+  const handleLinkAccount = async () => {
+    if (!technician) return;
+    if (!selectedUserId) {
+      setError("Sélectionnez un utilisateur à lier");
+      return;
+    }
+    setLinkingAccount(true);
+    setError(null);
+    try {
+      await fleetApi.linkTechnicianUser(technician.id, selectedUserId);
+      showToast("Compte utilisateur lié au technicien.");
+      setAccountAction("idle");
+      setSelectedUserId("");
+      await refresh();
+    } catch (err) {
+      setError(err);
+    } finally {
+      setLinkingAccount(false);
     }
   };
 
@@ -162,6 +234,25 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
       />
     );
   }
+
+  const linkedMembership = technician.linkedUser?.organizationMembershipStatus;
+  const technicianUserInvitationPending = Boolean(
+    technician.userId &&
+    (linkedMembership === "invited" ||
+      technician.linkedUser?.status === "invited" ||
+      // userId lié mais statut pas encore enrichi : ne pas afficher comme compte actif
+      !technician.linkedUser),
+  );
+  const technicianUserDisabled = Boolean(
+    technician.userId && technician.linkedUser && linkedMembership === "disabled",
+  );
+  const technicianUserAccountActive = Boolean(
+    technician.userId &&
+    technician.linkedUser &&
+    !technicianUserInvitationPending &&
+    !technicianUserDisabled &&
+    (linkedMembership === "active" || technician.linkedUser.status === "active"),
+  );
 
   return (
     <div className="space-y-6">
@@ -238,6 +329,29 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
                   {STATUS_LABELS[technician.status] ?? technician.status}
                 </span>
               </p>
+            </div>
+            <div className="md:col-span-2">
+              <span className="text-slate-400 dark:text-slate-500">Couleur au calendrier</span>
+              <div className="mt-1 flex items-center gap-2 flex-wrap">
+                {technician.calendarColor && normalizeCalendarColorHex(technician.calendarColor) ? (
+                  <>
+                    <span
+                      className="h-6 w-10 rounded border shrink-0"
+                      style={{
+                        backgroundColor:
+                          normalizeCalendarColorHex(technician.calendarColor) ?? undefined,
+                      }}
+                    />
+                    <code className="text-xs text-slate-600 dark:text-slate-300">
+                      {normalizeCalendarColorHex(technician.calendarColor)}
+                    </code>
+                  </>
+                ) : (
+                  <p className="text-sm text-slate-600 dark:text-slate-300">
+                    Automatique (couleur dérivée de la personne sur le calendrier)
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </section>
@@ -317,6 +431,38 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
               </select>
             </div>
           </div>
+          <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 p-3 space-y-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
+              Couleur au calendrier
+            </label>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Utilisée pour les interventions assignées à cette personne. Laissez vide pour une
+              couleur automatique.
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <input
+                type="color"
+                aria-label="Choix de la couleur"
+                className="h-10 w-14 cursor-pointer rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900"
+                value={normalizeCalendarColorHex(editCalendarColor) ?? "#94a3b8"}
+                onChange={(e) => setEditCalendarColor(e.target.value)}
+              />
+              <input
+                type="text"
+                placeholder="#RRGGBB"
+                value={editCalendarColor}
+                onChange={(e) => setEditCalendarColor(e.target.value)}
+                className="flex-1 min-w-[120px] rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-mono text-slate-900 dark:text-slate-100"
+              />
+              <button
+                type="button"
+                onClick={() => setEditCalendarColor("")}
+                className="rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                Automatique
+              </button>
+            </div>
+          </div>
           <div className="flex justify-end">
             <button
               type="button"
@@ -370,30 +516,78 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
 
       <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 space-y-3">
         <h2 className="font-semibold">Compte utilisateur</h2>
-        {technician.userId ? (
+        {technicianUserAccountActive ? (
           <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
-            Ce technicien dispose d&apos;un compte utilisateur (ID:{" "}
-            <span className="font-mono text-xs">{technician.userId}</span>).
+            Compte utilisateur actif
+            {technician.linkedUser?.email ? (
+              <>
+                {" "}
+                (<span className="font-medium">{technician.linkedUser.email}</span>)
+              </>
+            ) : null}
+            .
+          </div>
+        ) : technicianUserInvitationPending ? (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 space-y-1">
+            <p className="font-medium">Invitation en attente</p>
+            <p>
+              Un e-mail d&apos;invitation a été envoyé
+              {technician.linkedUser?.email || technician.email
+                ? ` à ${technician.linkedUser?.email ?? technician.email}`
+                : ""}
+              . Le compte sera actif lorsque l&apos;utilisateur aura défini son mot de passe.
+            </p>
+            {can("users.read") ? (
+              <p>
+                <Link href="/users" className="underline hover:no-underline">
+                  Suivre l&apos;invitation dans Utilisateurs
+                </Link>
+              </p>
+            ) : null}
+          </div>
+        ) : technicianUserDisabled ? (
+          <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-3 text-sm text-slate-600 dark:text-slate-300">
+            Le compte utilisateur lié est désactivé
+            {technician.linkedUser?.email ? (
+              <>
+                {" "}
+                (<span className="font-medium">{technician.linkedUser.email}</span>)
+              </>
+            ) : null}
+            .
           </div>
         ) : (
           <>
             <p className="text-sm text-slate-500 dark:text-slate-400">
               Ce technicien n&apos;a pas encore de compte utilisateur.
             </p>
-            {!showCreateAccount ? (
+            {accountAction === "idle" ? (
               can("fleet.technicians.create_user") ? (
-                <button
-                  type="button"
-                  onClick={() => setShowCreateAccount(true)}
-                  className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500"
-                >
-                  Créer un compte utilisateur
-                </button>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setAccountAction("invite")}
+                    className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500"
+                  >
+                    Inviter un utilisateur
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAccountAction("link")}
+                    className="rounded-lg border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  >
+                    Lier un compte existant
+                  </button>
+                </div>
               ) : null
-            ) : (
+            ) : accountAction === "invite" ? (
               <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-4 space-y-3">
                 <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                  Créer un compte pour {technician.firstName} {technician.lastName}
+                  Inviter {technician.firstName} {technician.lastName}
+                </p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Une invitation sera envoyée par e-mail. Le technicien définira son mot de passe en
+                  activant le compte.
                 </p>
                 {!technician.email && (
                   <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
@@ -401,30 +595,16 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
                     sa fiche pour ajouter un email.
                   </div>
                 )}
-                <div className="grid gap-3 md:grid-cols-2">
-                  <div>
-                    <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      value={technician.email ?? ""}
-                      disabled
-                      className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-slate-500 dark:text-slate-400"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">
-                      Mot de passe <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="password"
-                      placeholder="Mot de passe initial"
-                      value={accountPassword}
-                      onChange={(e) => setAccountPassword(e.target.value)}
-                      className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">
+                    Email d&apos;invitation
+                  </label>
+                  <input
+                    type="email"
+                    value={technician.email ?? ""}
+                    disabled
+                    className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-slate-500 dark:text-slate-400"
+                  />
                 </div>
                 <div className="flex items-center gap-2">
                   <button
@@ -433,13 +613,81 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
                     disabled={creatingAccount || !technician.email}
                     className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50"
                   >
-                    {creatingAccount ? "Création..." : "Créer le compte"}
+                    {creatingAccount ? "Envoi..." : "Envoyer l'invitation"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAccountAction("idle")}
+                    className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  >
+                    Annuler
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-4 space-y-3">
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                  Lier un compte existant
+                </p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Associez ce technicien à un utilisateur déjà présent dans l&apos;organisation.
+                </p>
+                {!can("users.read") ? (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                    Vous n&apos;avez pas le droit de consulter la liste des utilisateurs. Demandez à
+                    un administrateur de lier le compte, ou invitez un nouvel utilisateur.
+                  </div>
+                ) : loadingLinkableUsers ? (
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    Chargement des utilisateurs…
+                  </p>
+                ) : linkableUserOptions.length === 0 ? (
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    Aucun utilisateur disponible à lier (déjà associés à un technicien, ou
+                    désactivés).
+                  </p>
+                ) : (
+                  <div>
+                    <label
+                      htmlFor="link-user-select"
+                      className="block text-sm text-slate-500 dark:text-slate-400 mb-1"
+                    >
+                      Utilisateur
+                    </label>
+                    <select
+                      id="link-user-select"
+                      value={selectedUserId}
+                      onChange={(e) => setSelectedUserId(e.target.value)}
+                      className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100"
+                    >
+                      <option value="">Sélectionner…</option>
+                      {linkableUserOptions.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void handleLinkAccount()}
+                    disabled={
+                      linkingAccount ||
+                      !selectedUserId ||
+                      !can("users.read") ||
+                      linkableUserOptions.length === 0
+                    }
+                    className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50"
+                  >
+                    {linkingAccount ? "Liaison..." : "Lier le compte"}
                   </button>
                   <button
                     type="button"
                     onClick={() => {
-                      setShowCreateAccount(false);
-                      setAccountPassword("");
+                      setAccountAction("idle");
+                      setSelectedUserId("");
                     }}
                     className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
                   >

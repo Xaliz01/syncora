@@ -2,7 +2,7 @@ import type {
   AuthUser,
   TechnicianResponse,
   UpdateTechnicianBody,
-  CreateTechnicianUserAccountBody,
+  CreateTechnicianUserAccountResponse,
   TechnicianStatus,
 } from "@planwise/shared";
 
@@ -16,8 +16,8 @@ export abstract class AbstractTechniciansGatewayService {
       phone?: string;
       speciality?: string;
       status?: TechnicianStatus;
+      calendarColor?: string;
       createUserAccount?: boolean;
-      userAccountPassword?: string;
     },
   ): Promise<TechnicianResponse>;
   abstract listTechnicians(currentUser: AuthUser): Promise<TechnicianResponse[]>;
@@ -34,6 +34,10 @@ export abstract class AbstractTechniciansGatewayService {
   abstract createTechnicianUserAccount(
     currentUser: AuthUser,
     technicianId: string,
-    body: CreateTechnicianUserAccountBody,
+  ): Promise<CreateTechnicianUserAccountResponse>;
+  abstract linkTechnicianUser(
+    currentUser: AuthUser,
+    technicianId: string,
+    userId: string,
   ): Promise<TechnicianResponse>;
 }

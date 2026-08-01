@@ -22,6 +22,8 @@ export interface ExportCasesListParams {
   priority?: string;
   assigneeId?: string;
   search?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface ExportUsersListParams {

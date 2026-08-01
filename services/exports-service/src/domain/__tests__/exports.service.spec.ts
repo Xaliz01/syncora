@@ -377,9 +377,10 @@ describe("ExportsService", () => {
       });
 
       expect(result.contentType).toBe("text/csv; charset=utf-8");
-      expect(result.filename).toBe("liste-interventions.csv");
+      expect(result.filename).toBe("liste-interventions_2024-03-01_2024-03-31.csv");
 
       const content = result.buffer.toString("utf-8");
+      expect(content).toContain("Période");
       expect(content).toContain("Titre;Dossier;Statut;Technicien");
       expect(content).toContain("Intervention 1;Dossier A;Terminée;Jean Dupont");
       expect(content).toContain("2");
@@ -572,7 +573,10 @@ describe("ExportsService", () => {
           }) as never,
         );
 
-      const result = await service.getReportingStats("org-123");
+      const result = await service.getReportingStats("org-123", {
+        startDate: "2024-01-01",
+        endDate: "2024-12-31",
+      });
 
       expect(result.casesTotal).toBe(4);
       expect(result.casesCompleted).toBe(2);
@@ -764,6 +768,118 @@ describe("ExportsService", () => {
           }),
         }),
       );
+    });
+  });
+
+  describe("exportTechniciansActivity", () => {
+    it("counts direct and team-assigned interventions for a technician", async () => {
+      const technicians = [
+        {
+          id: "tech-1",
+          organizationId: "org-123",
+          firstName: "Alice",
+          lastName: "Martin",
+          status: "actif" as const,
+          userId: "user-1",
+        },
+      ];
+      const teams = [
+        {
+          id: "team-a",
+          organizationId: "org-123",
+          name: "Équipe A",
+          technicianIds: ["tech-1"],
+          status: "active" as const,
+        },
+      ];
+      const interventions: InterventionResponse[] = [
+        {
+          id: "int-direct",
+          organizationId: "org-123",
+          caseId: "case-1",
+          title: "Directe",
+          status: "completed",
+          billingStatus: "none",
+          assigneeId: "user-1",
+          startedAt: "2024-01-16T08:00:00Z",
+          completedAt: "2024-01-16T10:00:00Z",
+          createdAt: "2024-01-16T07:00:00Z",
+        },
+        {
+          id: "int-team",
+          organizationId: "org-123",
+          caseId: "case-2",
+          title: "Via équipe",
+          status: "planned",
+          billingStatus: "none",
+          assignedTeamId: "team-a",
+          createdAt: "2024-01-17T07:00:00Z",
+        },
+        {
+          id: "int-other",
+          organizationId: "org-123",
+          caseId: "case-3",
+          title: "Autre",
+          status: "planned",
+          billingStatus: "none",
+          assigneeId: "user-other",
+          createdAt: "2024-01-18T07:00:00Z",
+        },
+      ];
+
+      mockHttpService.get
+        .mockReturnValueOnce(
+          of({
+            data: technicians,
+            status: 200,
+            headers: {},
+            statusText: "OK",
+            config: {} as never,
+          }) as never,
+        )
+        .mockReturnValueOnce(
+          of({
+            data: teams,
+            status: 200,
+            headers: {},
+            statusText: "OK",
+            config: {} as never,
+          }) as never,
+        )
+        .mockReturnValueOnce(
+          of({
+            data: { interventions, total: interventions.length },
+            status: 200,
+            headers: {},
+            statusText: "OK",
+            config: {} as never,
+          }) as never,
+        );
+
+      const result = await service.exportTechniciansActivity("org-123", "csv", {
+        startDate: "2024-01-01",
+        endDate: "2024-01-31",
+      });
+
+      expect(result.filename).toBe("activite-techniciens_2024-01-01_2024-01-31.csv");
+      const csv = result.buffer.toString("utf-8");
+      expect(csv).toContain("Période");
+      expect(csv).toContain("Alice Martin");
+      // 2 interventions (direct + team), 1 completed, 0 in progress, 1 planned, 2.0 hours
+      expect(csv).toContain("Alice Martin;;2;1;0;1;2");
+    });
+
+    it("rejects missing reporting period", async () => {
+      await expect(service.exportTechniciansActivity("org-123", "csv")).rejects.toThrow(/période/i);
+    });
+
+    it("rejects period longer than 2 years", async () => {
+      await expect(
+        service.exportTechniciansActivity("org-123", "csv", {
+          startDate: "2024-01-01",
+          endDate: "2026-01-02",
+        }),
+      ).rejects.toThrow(/2 ans/);
     });
   });
 });

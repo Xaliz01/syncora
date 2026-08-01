@@ -1,6 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getModelToken } from "@nestjs/mongoose";
-import { ConflictException, NotFoundException } from "@nestjs/common";
+import { ConflictException, NotFoundException, BadRequestException } from "@nestjs/common";
 import { activeDocumentFilter } from "@planwise/shared";
 import { CasesService } from "../cases.service";
 import { AbstractCasesService } from "../ports/cases.service.port";
@@ -457,6 +457,24 @@ describe("CasesService", () => {
         { $inc: { interventionCount: 1 } },
       );
       expect(result.id).toBe("int-123");
+    });
+
+    it("should reject creating an intervention assigned to both team and person", async () => {
+      const caseDoc = mockCaseDoc({ title: "Case 1" });
+      mockCaseModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(caseDoc),
+      });
+
+      await expect(
+        service.createIntervention({
+          organizationId: "org-1",
+          caseId: "case-123",
+          title: "Intervention 1",
+          assigneeId: "user-1",
+          assignedTeamId: "team-1",
+        }),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockInterventionModel.create).not.toHaveBeenCalled();
     });
 
     it("should throw NotFoundException when case does not exist", async () => {

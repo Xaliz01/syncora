@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, UseGuards } from "@nestjs/common";
 import { AbstractTechniciansGatewayService } from "../../domain/ports/technicians.service.port";
 import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
 import {
@@ -8,9 +8,9 @@ import {
 import { SubscriptionAccessGuard } from "../../infrastructure/subscription-access.guard";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
 import { NotifyEntity } from "../../infrastructure/notify-entity.decorator";
-import type { AuthUser } from "@planwise/shared";
 import type {
-  CreateTechnicianUserAccountBody,
+  AuthUser,
+  LinkTechnicianUserBody,
   UpdateTechnicianBody,
   TechnicianStatus,
 } from "@planwise/shared";
@@ -22,8 +22,8 @@ interface CreateTechnicianPayload {
   phone?: string;
   speciality?: string;
   status?: TechnicianStatus;
+  calendarColor?: string;
   createUserAccount?: boolean;
-  userAccountPassword?: string;
 }
 
 @Controller("fleet/technicians")
@@ -82,8 +82,18 @@ export class TechniciansController {
   async createTechnicianAccount(
     @CurrentUser() user: AuthUser,
     @Param("technicianId") technicianId: string,
-    @Body() body: CreateTechnicianUserAccountBody,
   ) {
-    return this.techniciansService.createTechnicianUserAccount(user, technicianId, body);
+    return this.techniciansService.createTechnicianUserAccount(user, technicianId);
+  }
+
+  @Put(":technicianId/link-user")
+  @RequirePermissions("fleet.technicians.create_user")
+  @RequirePermissions("technicians.update")
+  async linkTechnicianUser(
+    @CurrentUser() user: AuthUser,
+    @Param("technicianId") technicianId: string,
+    @Body() body: LinkTechnicianUserBody,
+  ) {
+    return this.techniciansService.linkTechnicianUser(user, technicianId, body.userId);
   }
 }

@@ -839,6 +839,36 @@ describe("UsersService", () => {
       expect(result).toHaveLength(1);
       expect(result[0].role).toBe("admin");
       expect(result[0].organizationMembershipStatus).toBe("active");
+      expect(result[0].organizationId).toBe("org-1");
+    });
+
+    it("should expose the listed membership organizationId, not the user primary org", async () => {
+      const mRows = [
+        {
+          userId: "user-123",
+          organizationId: "org-listed",
+          role: "member",
+          membershipStatus: "active",
+        },
+      ];
+      mockMembershipModel.find.mockReturnValue({
+        sort: jest.fn().mockReturnValue({
+          exec: jest.fn().mockResolvedValue(mRows),
+        }),
+      });
+      const udoc = mockDoc({
+        _id: { toString: () => "user-123" },
+        organizationId: "org-primary",
+      });
+      mockUserModel.find.mockReturnValue({
+        exec: jest.fn().mockResolvedValue([udoc]),
+      });
+
+      const result = await service.listByOrganization("org-listed");
+
+      expect(result).toHaveLength(1);
+      expect(result[0].organizationId).toBe("org-listed");
+      expect(result[0].id).toBe("user-123");
     });
   });
 

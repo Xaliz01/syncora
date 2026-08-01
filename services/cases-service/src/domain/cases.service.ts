@@ -345,6 +345,25 @@ export class CasesService extends AbstractCasesService {
 
   // ── Interventions ──
 
+  private normalizeOptionalId(value: string | null | undefined): string | undefined {
+    const trimmed = value?.trim();
+    return trimmed ? trimmed : undefined;
+  }
+
+  /** Une intervention est assignée soit à une personne, soit à une équipe — pas les deux. */
+  private assertExclusiveInterventionAssignment(
+    assigneeId?: string | null,
+    assignedTeamId?: string | null,
+  ): void {
+    const assignee = this.normalizeOptionalId(assigneeId ?? undefined);
+    const team = this.normalizeOptionalId(assignedTeamId ?? undefined);
+    if (assignee && team) {
+      throw new BadRequestException(
+        "Une intervention ne peut être assignée qu'à une équipe ou à une personne, pas les deux.",
+      );
+    }
+  }
+
   async createIntervention(body: CreateInterventionBody): Promise<InterventionResponse> {
     const caseDoc = await this.caseModel
       .findOne({
@@ -355,13 +374,19 @@ export class CasesService extends AbstractCasesService {
       .exec();
     if (!caseDoc) throw new NotFoundException("Case not found");
 
+    const assigneeId = this.normalizeOptionalId(body.assigneeId);
+    const assignedTeamId = this.normalizeOptionalId(body.assignedTeamId);
+    this.assertExclusiveInterventionAssignment(assigneeId, assignedTeamId);
+
     const doc = await this.interventionModel.create({
       organizationId: body.organizationId,
       caseId: body.caseId,
       title: body.title,
       description: body.description,
-      assigneeId: body.assigneeId,
-      assignedTeamId: body.assignedTeamId,
+      ...(assigneeId ? { assigneeId } : {}),
+      ...(body.assigneeName?.trim() ? { assigneeName: body.assigneeName.trim() } : {}),
+      ...(assignedTeamId ? { assignedTeamId } : {}),
+      ...(body.assignedTeamName?.trim() ? { assignedTeamName: body.assignedTeamName.trim() } : {}),
       scheduledStart: body.scheduledStart ? new Date(body.scheduledStart) : undefined,
       scheduledEnd: body.scheduledEnd ? new Date(body.scheduledEnd) : undefined,
       status: "planned",
@@ -468,12 +493,45 @@ export class CasesService extends AbstractCasesService {
     body: UpdateInterventionBody,
   ): Promise<InterventionResponse> {
     const update: Record<string, unknown> = {};
+    const unset: Record<string, string> = {};
     if (body.title !== undefined) update.title = body.title;
     if (body.description !== undefined) update.description = body.description;
     if (body.status !== undefined) update.status = body.status;
     if (body.billingStatus !== undefined) update.billingStatus = body.billingStatus;
-    if (body.assigneeId !== undefined) update.assigneeId = body.assigneeId;
-    if (body.assignedTeamId !== undefined) update.assignedTeamId = body.assignedTeamId;
+
+    const assigneeTouched = body.assigneeId !== undefined;
+    const teamTouched = body.assignedTeamId !== undefined;
+    const assigneeId = assigneeTouched ? this.normalizeOptionalId(body.assigneeId) : undefined;
+    const assignedTeamId = teamTouched ? this.normalizeOptionalId(body.assignedTeamId) : undefined;
+
+    if (assigneeTouched && teamTouched) {
+      this.assertExclusiveInterventionAssignment(assigneeId, assignedTeamId);
+    }
+
+    if (assigneeTouched && assigneeId) {
+      update.assigneeId = assigneeId;
+      if (body.assigneeName?.trim()) {
+        update.assigneeName = body.assigneeName.trim();
+      }
+      unset.assignedTeamId = "";
+      unset.assignedTeamName = "";
+    } else if (assigneeTouched) {
+      unset.assigneeId = "";
+      unset.assigneeName = "";
+    }
+
+    if (teamTouched && assignedTeamId) {
+      update.assignedTeamId = assignedTeamId;
+      if (body.assignedTeamName?.trim()) {
+        update.assignedTeamName = body.assignedTeamName.trim();
+      }
+      unset.assigneeId = "";
+      unset.assigneeName = "";
+    } else if (teamTouched) {
+      unset.assignedTeamId = "";
+      unset.assignedTeamName = "";
+    }
+
     if (body.scheduledStart !== undefined) {
       update.scheduledStart = body.scheduledStart ? new Date(body.scheduledStart) : null;
     }
@@ -482,10 +540,17 @@ export class CasesService extends AbstractCasesService {
     }
     if (body.notes !== undefined) update.notes = body.notes;
 
+    const mongoUpdate: Record<string, unknown> = {};
+    if (Object.keys(update).length > 0) mongoUpdate.$set = update;
+    if (Object.keys(unset).length > 0) mongoUpdate.$unset = unset;
+    if (Object.keys(mongoUpdate).length === 0) {
+      return this.getIntervention(id, body.organizationId);
+    }
+
     const doc = await this.interventionModel
       .findOneAndUpdate(
         { _id: id, organizationId: body.organizationId, ...activeDocumentFilter },
-        { $set: update },
+        mongoUpdate,
         { new: true },
       )
       .exec();

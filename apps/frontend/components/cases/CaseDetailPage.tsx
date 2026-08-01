@@ -409,6 +409,13 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
     queryFn: () => listOrganizationUsers(),
   });
 
+  const canListTechnicians = canAny(["fleet.technicians.read", "technicians.read"]);
+  const { data: techniciansData } = useQuery({
+    queryKey: ["fleet-technicians"],
+    queryFn: () => fleetApi.listTechnicians(),
+    enabled: canListTechnicians,
+  });
+
   const { data: teamsData } = useQuery({
     queryKey: ["teams"],
     queryFn: () => fleetApi.listTeams(),
@@ -752,6 +759,30 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
     }
     return [...map.entries()].map(([id, label]) => ({ id, label }));
   }, [caseData, usersData?.users]);
+
+  const interventionPersonOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const technician of techniciansData ?? []) {
+      if (technician.status !== "actif" || !technician.userId) continue;
+      map.set(technician.userId, `${technician.firstName} ${technician.lastName}`.trim());
+    }
+    for (const user of usersData?.users ?? []) {
+      if (!map.has(user.id)) {
+        map.set(user.id, user.name?.trim() || user.email);
+      }
+    }
+    return [...map.entries()]
+      .map(([id, label]) => ({ id, label }))
+      .sort((a, b) => a.label.localeCompare(b.label, "fr"));
+  }, [techniciansData, usersData?.users]);
+
+  const techniciansWithoutAccount = useMemo(
+    () =>
+      (techniciansData ?? []).filter(
+        (technician) => technician.status === "actif" && !technician.userId,
+      ),
+    [techniciansData],
+  );
 
   if (waitingForOrgSwitch || isLoading) {
     return <div className="text-sm text-slate-500 dark:text-slate-400">Chargement…</div>;
@@ -1334,7 +1365,11 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                   />
                   <select
                     value={newIntTeamId}
-                    onChange={(e) => setNewIntTeamId(e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setNewIntTeamId(value);
+                      if (value) setNewIntAssignee("");
+                    }}
                     className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
                   >
                     <option value="">Équipe (aucune)</option>
@@ -1346,16 +1381,31 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                   </select>
                   <select
                     value={newIntAssignee}
-                    onChange={(e) => setNewIntAssignee(e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setNewIntAssignee(value);
+                      if (value) setNewIntTeamId("");
+                    }}
                     className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
                   >
                     <option value="">Assignée à (personne)</option>
-                    {usersData?.users.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.name ?? u.email}
+                    {interventionPersonOptions.map((person) => (
+                      <option key={person.id} value={person.id}>
+                        {person.label}
                       </option>
                     ))}
                   </select>
+                  <p className="sm:col-span-2 text-xs text-slate-500 dark:text-slate-400">
+                    Assignez soit une équipe, soit une personne — pas les deux.
+                    {techniciansWithoutAccount.length > 0 && (
+                      <>
+                        {" "}
+                        {techniciansWithoutAccount.length} technicien
+                        {techniciansWithoutAccount.length > 1 ? "s" : ""} sans compte utilisateur
+                        n’apparaissent pas ici (créez le compte depuis la fiche Flotte).
+                      </>
+                    )}
+                  </p>
                   {plannerCustomerLoading && plannerCustomerId ? (
                     <div className="sm:col-span-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 p-4 animate-pulse">
                       <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-48 mb-3" />
@@ -1371,7 +1421,10 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                         customerLinked={Boolean(plannerCustomerId)}
                         customerAddress={caseData.interventionAddress ?? plannerCustomer?.address}
                         selectedTeamId={newIntTeamId}
-                        onSelectTeam={setNewIntTeamId}
+                        onSelectTeam={(id) => {
+                          setNewIntTeamId(id);
+                          if (id) setNewIntAssignee("");
+                        }}
                       />
                     </div>
                   )}
@@ -1401,8 +1454,11 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                       caseId,
                       title: newIntTitle.trim(),
                       description: newIntDesc.trim() || undefined,
-                      assigneeId: newIntAssignee || undefined,
-                      assignedTeamId: newIntTeamId || undefined,
+                      ...(newIntTeamId
+                        ? { assignedTeamId: newIntTeamId }
+                        : newIntAssignee
+                          ? { assigneeId: newIntAssignee }
+                          : {}),
                       scheduledStart: newIntStart ? new Date(newIntStart).toISOString() : undefined,
                       scheduledEnd: newIntEnd ? new Date(newIntEnd).toISOString() : undefined,
                     });
@@ -1451,8 +1507,11 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                         payload: {
                           title: editIntTitle.trim(),
                           description: editIntDesc.trim() || undefined,
-                          assignedTeamId: editIntTeamId || null,
-                          assigneeId: editIntAssignee || null,
+                          ...(editIntTeamId
+                            ? { assignedTeamId: editIntTeamId, assigneeId: null }
+                            : editIntAssignee
+                              ? { assigneeId: editIntAssignee, assignedTeamId: null }
+                              : { assigneeId: null, assignedTeamId: null }),
                           scheduledStart: editIntStart
                             ? new Date(editIntStart).toISOString()
                             : null,
@@ -1487,7 +1546,11 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                             />
                             <select
                               value={editIntTeamId}
-                              onChange={(e) => setEditIntTeamId(e.target.value)}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                setEditIntTeamId(value);
+                                if (value) setEditIntAssignee("");
+                              }}
                               className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
                             >
                               <option value="">Équipe (aucune)</option>
@@ -1499,16 +1562,32 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                             </select>
                             <select
                               value={editIntAssignee}
-                              onChange={(e) => setEditIntAssignee(e.target.value)}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                setEditIntAssignee(value);
+                                if (value) setEditIntTeamId("");
+                              }}
                               className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
                             >
                               <option value="">Assignée à (personne)</option>
-                              {usersData?.users.map((u) => (
-                                <option key={u.id} value={u.id}>
-                                  {u.name ?? u.email}
+                              {interventionPersonOptions.map((person) => (
+                                <option key={person.id} value={person.id}>
+                                  {person.label}
                                 </option>
                               ))}
                             </select>
+                            <p className="sm:col-span-2 text-xs text-slate-500 dark:text-slate-400">
+                              Assignez soit une équipe, soit une personne — pas les deux.
+                              {techniciansWithoutAccount.length > 0 && (
+                                <>
+                                  {" "}
+                                  {techniciansWithoutAccount.length} technicien
+                                  {techniciansWithoutAccount.length > 1 ? "s" : ""} sans compte
+                                  utilisateur n’apparaissent pas ici (créez le compte depuis la
+                                  fiche Flotte).
+                                </>
+                              )}
+                            </p>
                             {plannerCustomerLoading && plannerCustomerId ? (
                               <div className="sm:col-span-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 p-4 animate-pulse">
                                 <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-48 mb-3" />
@@ -1526,7 +1605,10 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                                     caseData.interventionAddress ?? plannerCustomer?.address
                                   }
                                   selectedTeamId={editIntTeamId}
-                                  onSelectTeam={setEditIntTeamId}
+                                  onSelectTeam={(id) => {
+                                    setEditIntTeamId(id);
+                                    if (id) setEditIntAssignee("");
+                                  }}
                                 />
                               </div>
                             )}

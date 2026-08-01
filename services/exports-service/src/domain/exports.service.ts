@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
 import type {
@@ -23,6 +23,9 @@ import {
   MAX_PAGE_LIMIT,
   REMOTE_INVOICE_STATUS_LABELS,
   CASE_INVOICE_KIND_LABELS,
+  parseReportingPeriod,
+  reportingPeriodFilenameSuffix,
+  ReportingPeriodError,
 } from "@planwise/shared";
 import PDFDocument from "pdfkit";
 import ExcelJS from "exceljs";
@@ -106,23 +109,32 @@ export class ExportsService extends AbstractExportsService {
       "cases",
       query,
     );
-    cases = this.filterCasesByPeriod(cases, filters?.startDate, filters?.endDate);
+    const period = this.resolveOptionalReportingPeriod(filters);
+    cases = this.filterCasesByPeriod(cases, period?.startDate, period?.endDate);
 
     if (format === "pdf") {
-      const buffer = await this.buildCasesListPdf(cases);
-      return { buffer, contentType: "application/pdf", filename: "liste-dossiers.pdf" };
+      const buffer = await this.buildCasesListPdf(cases, period);
+      return {
+        buffer,
+        contentType: "application/pdf",
+        filename: this.exportFilename("liste-dossiers", "pdf", period),
+      };
     }
 
     if (format === "csv") {
-      const buffer = this.buildCasesListCsv(cases);
-      return { buffer, contentType: "text/csv; charset=utf-8", filename: "liste-dossiers.csv" };
+      const buffer = this.buildCasesListCsv(cases, period);
+      return {
+        buffer,
+        contentType: "text/csv; charset=utf-8",
+        filename: this.exportFilename("liste-dossiers", "csv", period),
+      };
     }
 
-    const buffer = await this.buildCasesListXlsx(cases);
+    const buffer = await this.buildCasesListXlsx(cases, period);
     return {
       buffer,
       contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      filename: "liste-dossiers.xlsx",
+      filename: this.exportFilename("liste-dossiers", "xlsx", period),
     };
   }
 
@@ -198,9 +210,10 @@ export class ExportsService extends AbstractExportsService {
       status?: string;
     },
   ): Promise<ExportResult> {
+    const period = this.resolveOptionalReportingPeriod(filters);
     const query: Record<string, string> = {
       organizationId,
-      ...this.toServiceDateRange(filters),
+      ...this.toServiceDateRange(period),
     };
     if (filters?.assigneeId) query.assigneeId = filters.assigneeId;
     if (filters?.status) query.status = filters.status;
@@ -217,24 +230,28 @@ export class ExportsService extends AbstractExportsService {
     }
 
     if (format === "pdf") {
-      const buffer = await this.buildInterventionsListPdf(interventions);
-      return { buffer, contentType: "application/pdf", filename: "liste-interventions.pdf" };
-    }
-
-    if (format === "csv") {
-      const buffer = this.buildInterventionsListCsv(interventions);
+      const buffer = await this.buildInterventionsListPdf(interventions, period);
       return {
         buffer,
-        contentType: "text/csv; charset=utf-8",
-        filename: "liste-interventions.csv",
+        contentType: "application/pdf",
+        filename: this.exportFilename("liste-interventions", "pdf", period),
       };
     }
 
-    const buffer = await this.buildInterventionsListXlsx(interventions);
+    if (format === "csv") {
+      const buffer = this.buildInterventionsListCsv(interventions, period);
+      return {
+        buffer,
+        contentType: "text/csv; charset=utf-8",
+        filename: this.exportFilename("liste-interventions", "csv", period),
+      };
+    }
+
+    const buffer = await this.buildInterventionsListXlsx(interventions, period);
     return {
       buffer,
       contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      filename: "liste-interventions.xlsx",
+      filename: this.exportFilename("liste-interventions", "xlsx", period),
     };
   }
 
@@ -245,15 +262,20 @@ export class ExportsService extends AbstractExportsService {
     format: ExportFormat,
     filters?: { startDate?: string; endDate?: string; technicianId?: string },
   ): Promise<ExportResult> {
-    const technicians = await this.callService<TechnicianResponse[]>(
-      TECHNICIANS_URL,
-      "/technicians",
-      { organizationId },
-    );
+    const period = this.requireReportingPeriod(filters);
+    const [technicians, teams] = await Promise.all([
+      this.callService<TechnicianResponse[]>(TECHNICIANS_URL, "/technicians", {
+        organizationId,
+      }),
+      this.callService<TeamResponse[]>(TECHNICIANS_URL, "/teams", {
+        organizationId,
+      }).catch(() => [] as TeamResponse[]),
+    ]);
 
-    const query: Record<string, string> = { organizationId };
-    if (filters?.startDate) query.startDate = filters.startDate;
-    if (filters?.endDate) query.endDate = filters.endDate;
+    const query: Record<string, string> = {
+      organizationId,
+      ...this.toServiceDateRange(period),
+    };
 
     const interventions = await this.fetchAllPaginated<InterventionResponse>(
       CASES_URL,
@@ -266,10 +288,23 @@ export class ExportsService extends AbstractExportsService {
       ? technicians.filter((t) => t.id === filters.technicianId)
       : technicians;
 
+    const teamIdsByTechnicianId = new Map<string, string[]>();
+    for (const team of teams) {
+      for (const technicianId of team.technicianIds ?? []) {
+        const existing = teamIdsByTechnicianId.get(technicianId) ?? [];
+        existing.push(team.id);
+        teamIdsByTechnicianId.set(technicianId, existing);
+      }
+    }
+
     const activityData = filteredTechnicians.map((tech) => {
-      const techInterventions = interventions.filter(
-        (i) => i.assigneeId === tech.userId || i.assigneeId === tech.id,
-      );
+      const teamIds = new Set(teamIdsByTechnicianId.get(tech.id) ?? []);
+      const techInterventions = interventions.filter((i) => {
+        if (i.assigneeId && (i.assigneeId === tech.userId || i.assigneeId === tech.id)) {
+          return true;
+        }
+        return Boolean(i.assignedTeamId && teamIds.has(i.assignedTeamId));
+      });
       const completed = techInterventions.filter((i) => i.status === "completed");
       const totalHours = completed.reduce((sum, i) => {
         if (i.startedAt && i.completedAt) {
@@ -292,24 +327,28 @@ export class ExportsService extends AbstractExportsService {
     });
 
     if (format === "pdf") {
-      const buffer = await this.buildTechniciansActivityPdf(activityData, filters);
-      return { buffer, contentType: "application/pdf", filename: "activite-techniciens.pdf" };
-    }
-
-    if (format === "csv") {
-      const buffer = this.buildTechniciansActivityCsv(activityData);
+      const buffer = await this.buildTechniciansActivityPdf(activityData, period);
       return {
         buffer,
-        contentType: "text/csv; charset=utf-8",
-        filename: "activite-techniciens.csv",
+        contentType: "application/pdf",
+        filename: this.exportFilename("activite-techniciens", "pdf", period),
       };
     }
 
-    const buffer = await this.buildTechniciansActivityXlsx(activityData, filters);
+    if (format === "csv") {
+      const buffer = this.buildTechniciansActivityCsv(activityData, period);
+      return {
+        buffer,
+        contentType: "text/csv; charset=utf-8",
+        filename: this.exportFilename("activite-techniciens", "csv", period),
+      };
+    }
+
+    const buffer = await this.buildTechniciansActivityXlsx(activityData, period);
     return {
       buffer,
       contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      filename: "activite-techniciens.xlsx",
+      filename: this.exportFilename("activite-techniciens", "xlsx", period),
     };
   }
 
@@ -320,13 +359,15 @@ export class ExportsService extends AbstractExportsService {
     format: ExportFormat,
     filters?: { startDate?: string; endDate?: string; teamId?: string },
   ): Promise<ExportResult> {
+    const period = this.requireReportingPeriod(filters);
     const teams = await this.callService<TeamResponse[]>(TECHNICIANS_URL, "/teams", {
       organizationId,
     });
 
-    const query: Record<string, string> = { organizationId };
-    if (filters?.startDate) query.startDate = filters.startDate;
-    if (filters?.endDate) query.endDate = filters.endDate;
+    const query: Record<string, string> = {
+      organizationId,
+      ...this.toServiceDateRange(period),
+    };
 
     let interventions = await this.fetchAllPaginated<InterventionResponse>(
       CASES_URL,
@@ -376,24 +417,28 @@ export class ExportsService extends AbstractExportsService {
       });
 
     if (format === "pdf") {
-      const buffer = await this.buildMileageReportPdf(mileageByTeam, filters);
-      return { buffer, contentType: "application/pdf", filename: "rapport-kilometrique.pdf" };
-    }
-
-    if (format === "csv") {
-      const buffer = this.buildMileageReportCsv(mileageByTeam);
+      const buffer = await this.buildMileageReportPdf(mileageByTeam, period);
       return {
         buffer,
-        contentType: "text/csv; charset=utf-8",
-        filename: "rapport-kilometrique.csv",
+        contentType: "application/pdf",
+        filename: this.exportFilename("rapport-kilometrique", "pdf", period),
       };
     }
 
-    const buffer = await this.buildMileageReportXlsx(mileageByTeam, filters);
+    if (format === "csv") {
+      const buffer = this.buildMileageReportCsv(mileageByTeam, period);
+      return {
+        buffer,
+        contentType: "text/csv; charset=utf-8",
+        filename: this.exportFilename("rapport-kilometrique", "csv", period),
+      };
+    }
+
+    const buffer = await this.buildMileageReportXlsx(mileageByTeam, period);
     return {
       buffer,
       contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      filename: "rapport-kilometrique.xlsx",
+      filename: this.exportFilename("rapport-kilometrique", "xlsx", period),
     };
   }
 
@@ -442,12 +487,15 @@ export class ExportsService extends AbstractExportsService {
     format: ExportFormat,
     filters?: ExportInvoicesListParams,
   ): Promise<ExportResult> {
+    const period = this.resolveOptionalReportingPeriod(filters);
     const query: Record<string, string> = { organizationId };
     if (filters?.remoteStatus) query.remoteStatus = filters.remoteStatus;
     if (filters?.provider) query.provider = filters.provider;
     if (filters?.invoiceKind) query.invoiceKind = filters.invoiceKind;
-    if (filters?.startDate) query.startDate = filters.startDate;
-    if (filters?.endDate) query.endDate = filters.endDate;
+    if (period) {
+      query.startDate = period.startDate;
+      query.endDate = period.endDate;
+    }
 
     const invoices = await this.fetchAllPaginated<OrganizationInvoiceSyncItem>(
       INTEGRATIONS_URL,
@@ -458,20 +506,28 @@ export class ExportsService extends AbstractExportsService {
     const enriched = await this.enrichInvoiceSyncs(organizationId, invoices);
 
     if (format === "csv") {
-      const buffer = this.buildInvoicesListCsv(enriched);
-      return { buffer, contentType: "text/csv; charset=utf-8", filename: "liste-factures.csv" };
+      const buffer = this.buildInvoicesListCsv(enriched, period);
+      return {
+        buffer,
+        contentType: "text/csv; charset=utf-8",
+        filename: this.exportFilename("liste-factures", "csv", period),
+      };
     }
 
     if (format === "pdf") {
-      const buffer = await this.buildInvoicesListPdf(enriched);
-      return { buffer, contentType: "application/pdf", filename: "liste-factures.pdf" };
+      const buffer = await this.buildInvoicesListPdf(enriched, period);
+      return {
+        buffer,
+        contentType: "application/pdf",
+        filename: this.exportFilename("liste-factures", "pdf", period),
+      };
     }
 
-    const buffer = await this.buildInvoicesListXlsx(enriched);
+    const buffer = await this.buildInvoicesListXlsx(enriched, period);
     return {
       buffer,
       contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      filename: "liste-factures.xlsx",
+      filename: this.exportFilename("liste-factures", "xlsx", period),
     };
   }
 
@@ -543,9 +599,10 @@ export class ExportsService extends AbstractExportsService {
     organizationId: string,
     filters?: { startDate?: string; endDate?: string },
   ): Promise<ReportingStatsResponse> {
+    const period = this.requireReportingPeriod(filters);
     const interventionQuery: Record<string, string> = {
       organizationId,
-      ...this.toServiceDateRange(filters),
+      ...this.toServiceDateRange(period),
     };
 
     const [casesResult, interventionsResult, techniciansResult, customersResult] =
@@ -573,7 +630,7 @@ export class ExportsService extends AbstractExportsService {
     const technicians = techniciansResult.status === "fulfilled" ? techniciansResult.value : [];
     const customers = customersResult.status === "fulfilled" ? customersResult.value : [];
 
-    const cases = this.filterCasesByPeriod(allCases, filters?.startDate, filters?.endDate);
+    const cases = this.filterCasesByPeriod(allCases, period.startDate, period.endDate);
 
     const now = new Date();
     const completedCases = cases.filter((c) => c.status === "completed");
@@ -781,9 +838,13 @@ export class ExportsService extends AbstractExportsService {
     });
   }
 
-  private buildCasesListPdf(cases: CaseSummaryResponse[]): Promise<Buffer> {
+  private buildCasesListPdf(
+    cases: CaseSummaryResponse[],
+    period?: { startDate: string; endDate: string },
+  ): Promise<Buffer> {
+    const periodLabel = period ? this.formatPeriodLabel(period.startDate, period.endDate) : "";
     return this.buildTablePdf(
-      "Liste des dossiers",
+      `Liste des dossiers${periodLabel ? ` — ${periodLabel}` : ""}`,
       ["Dossier", "Statut", "Priorité", "Avancement", "Échéance"],
       cases.map((c) => [
         c.title,
@@ -795,20 +856,39 @@ export class ExportsService extends AbstractExportsService {
     );
   }
 
-  private async buildCasesListXlsx(cases: CaseSummaryResponse[]): Promise<Buffer> {
+  private async buildCasesListXlsx(
+    cases: CaseSummaryResponse[],
+    period?: { startDate: string; endDate: string },
+  ): Promise<Buffer> {
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet("Dossiers");
     ws.columns = [
-      { header: "Dossier", key: "title", width: 35 },
-      { header: "Statut", key: "status", width: 15 },
-      { header: "Priorité", key: "priority", width: 12 },
-      { header: "Client", key: "customer", width: 25 },
-      { header: "Avancement", key: "progress", width: 12 },
-      { header: "Interventions", key: "interventions", width: 14 },
-      { header: "Échéance", key: "dueDate", width: 14 },
-      { header: "Créé le", key: "createdAt", width: 14 },
+      { key: "title", width: 35 },
+      { key: "status", width: 15 },
+      { key: "priority", width: 12 },
+      { key: "customer", width: 25 },
+      { key: "progress", width: 12 },
+      { key: "interventions", width: 14 },
+      { key: "dueDate", width: 14 },
+      { key: "createdAt", width: 14 },
     ];
-    this.styleHeaderRow(ws);
+
+    const periodLabel = period ? this.formatPeriodLabel(period.startDate, period.endDate) : "";
+    if (periodLabel) {
+      ws.addRow([`Période : ${periodLabel}`]);
+      ws.addRow([]);
+    }
+
+    this.addStyledHeaderRow(ws, [
+      "Dossier",
+      "Statut",
+      "Priorité",
+      "Client",
+      "Avancement",
+      "Interventions",
+      "Échéance",
+      "Créé le",
+    ]);
 
     for (const c of cases) {
       ws.addRow({
@@ -905,9 +985,13 @@ export class ExportsService extends AbstractExportsService {
     return Buffer.from(await wb.xlsx.writeBuffer());
   }
 
-  private buildInterventionsListPdf(interventions: InterventionResponse[]): Promise<Buffer> {
+  private buildInterventionsListPdf(
+    interventions: InterventionResponse[],
+    period?: { startDate: string; endDate: string },
+  ): Promise<Buffer> {
+    const periodLabel = period ? this.formatPeriodLabel(period.startDate, period.endDate) : "";
     return this.buildTablePdf(
-      "Liste des interventions",
+      `Liste des interventions${periodLabel ? ` — ${periodLabel}` : ""}`,
       ["Titre", "Dossier", "Statut", "Technicien", "Équipe", "Date"],
       interventions.map((i) => [
         i.title,
@@ -920,21 +1004,41 @@ export class ExportsService extends AbstractExportsService {
     );
   }
 
-  private async buildInterventionsListXlsx(interventions: InterventionResponse[]): Promise<Buffer> {
+  private async buildInterventionsListXlsx(
+    interventions: InterventionResponse[],
+    period?: { startDate: string; endDate: string },
+  ): Promise<Buffer> {
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet("Interventions");
     ws.columns = [
-      { header: "Titre", key: "title", width: 30 },
-      { header: "Dossier", key: "caseTitle", width: 25 },
-      { header: "Statut", key: "status", width: 14 },
-      { header: "Technicien", key: "assignee", width: 20 },
-      { header: "Équipe", key: "team", width: 18 },
-      { header: "Date planifiée", key: "scheduledStart", width: 16 },
-      { header: "Démarré", key: "startedAt", width: 16 },
-      { header: "Terminé", key: "completedAt", width: 16 },
-      { header: "Durée (h)", key: "duration", width: 10 },
+      { key: "title", width: 30 },
+      { key: "caseTitle", width: 25 },
+      { key: "status", width: 14 },
+      { key: "assignee", width: 20 },
+      { key: "team", width: 18 },
+      { key: "scheduledStart", width: 16 },
+      { key: "startedAt", width: 16 },
+      { key: "completedAt", width: 16 },
+      { key: "duration", width: 10 },
     ];
-    this.styleHeaderRow(ws);
+
+    const periodLabel = period ? this.formatPeriodLabel(period.startDate, period.endDate) : "";
+    if (periodLabel) {
+      ws.addRow([`Période : ${periodLabel}`]);
+      ws.addRow([]);
+    }
+
+    this.addStyledHeaderRow(ws, [
+      "Titre",
+      "Dossier",
+      "Statut",
+      "Technicien",
+      "Équipe",
+      "Date planifiée",
+      "Démarré",
+      "Terminé",
+      "Durée (h)",
+    ]);
 
     for (const i of interventions) {
       let duration = "";
@@ -968,11 +1072,11 @@ export class ExportsService extends AbstractExportsService {
       planned: number;
       totalHours: number;
     }>,
-    filters?: { startDate?: string; endDate?: string },
+    period: { startDate: string; endDate: string },
   ): Promise<Buffer> {
-    const period = this.formatPeriodLabel(filters?.startDate, filters?.endDate);
+    const periodLabel = this.formatPeriodLabel(period.startDate, period.endDate);
     return this.buildTablePdf(
-      `Activité techniciens${period ? ` — ${period}` : ""}`,
+      `Activité techniciens — ${periodLabel}`,
       ["Technicien", "Spécialité", "Total", "Terminées", "En cours", "Planifiées", "Heures"],
       data.map((d) => [
         d.name,
@@ -996,10 +1100,10 @@ export class ExportsService extends AbstractExportsService {
       planned: number;
       totalHours: number;
     }>,
-    filters?: { startDate?: string; endDate?: string },
+    period: { startDate: string; endDate: string },
   ): Promise<Buffer> {
     const wb = new ExcelJS.Workbook();
-    const period = this.formatPeriodLabel(filters?.startDate, filters?.endDate);
+    const periodLabel = this.formatPeriodLabel(period.startDate, period.endDate);
     const ws = wb.addWorksheet("Activité techniciens");
     ws.columns = [
       { key: "name", width: 25 },
@@ -1011,10 +1115,8 @@ export class ExportsService extends AbstractExportsService {
       { key: "hours", width: 18 },
     ];
 
-    if (period) {
-      ws.addRow([`Période : ${period}`]);
-      ws.addRow([]);
-    }
+    ws.addRow([`Période : ${periodLabel}`]);
+    ws.addRow([]);
 
     this.addStyledHeaderRow(ws, [
       "Technicien",
@@ -1050,11 +1152,11 @@ export class ExportsService extends AbstractExportsService {
       fuelCostEur: number;
       co2Kg: number;
     }>,
-    filters?: { startDate?: string; endDate?: string },
+    period: { startDate: string; endDate: string },
   ): Promise<Buffer> {
-    const period = this.formatPeriodLabel(filters?.startDate, filters?.endDate);
+    const periodLabel = this.formatPeriodLabel(period.startDate, period.endDate);
     return this.buildTablePdf(
-      `Rapport kilométrique${period ? ` — ${period}` : ""}`,
+      `Rapport kilométrique — ${periodLabel}`,
       ["Équipe", "Interventions", "Distance (km)", "Carburant (L)", "Coût (€)", "CO₂ (kg)"],
       data.map((d) => [
         d.teamName,
@@ -1076,10 +1178,10 @@ export class ExportsService extends AbstractExportsService {
       fuelCostEur: number;
       co2Kg: number;
     }>,
-    filters?: { startDate?: string; endDate?: string },
+    period: { startDate: string; endDate: string },
   ): Promise<Buffer> {
     const wb = new ExcelJS.Workbook();
-    const period = this.formatPeriodLabel(filters?.startDate, filters?.endDate);
+    const periodLabel = this.formatPeriodLabel(period.startDate, period.endDate);
     const ws = wb.addWorksheet("Rapport kilométrique");
     ws.columns = [
       { key: "team", width: 25 },
@@ -1090,10 +1192,8 @@ export class ExportsService extends AbstractExportsService {
       { key: "co2", width: 12 },
     ];
 
-    if (period) {
-      ws.addRow([`Période : ${period}`]);
-      ws.addRow([]);
-    }
+    ws.addRow([`Période : ${periodLabel}`]);
+    ws.addRow([]);
 
     this.addStyledHeaderRow(ws, [
       "Équipe",
@@ -1186,19 +1286,31 @@ export class ExportsService extends AbstractExportsService {
 
   // ── CSV Builders ──
 
-  private buildCsvBuffer(headers: string[], rows: string[][]): Buffer {
+  private buildCsvBuffer(
+    headers: string[],
+    rows: string[][],
+    options?: { periodLabel?: string },
+  ): Buffer {
     const escape = (val: string) => {
       if (val.includes('"') || val.includes(",") || val.includes("\n") || val.includes(";")) {
         return `"${val.replace(/"/g, '""')}"`;
       }
       return val;
     };
-    const lines = [headers.map(escape).join(";"), ...rows.map((r) => r.map(escape).join(";"))];
+    const lines: string[] = [];
+    if (options?.periodLabel) {
+      lines.push(["Période", options.periodLabel].map(escape).join(";"));
+      lines.push("");
+    }
+    lines.push(headers.map(escape).join(";"), ...rows.map((r) => r.map(escape).join(";")));
     const bom = "\uFEFF";
     return Buffer.from(bom + lines.join("\r\n"), "utf-8");
   }
 
-  private buildInvoicesListCsv(invoices: OrganizationInvoiceSyncItem[]): Buffer {
+  private buildInvoicesListCsv(
+    invoices: OrganizationInvoiceSyncItem[],
+    period?: { startDate: string; endDate: string },
+  ): Buffer {
     const headers = [
       "Date",
       "Numéro",
@@ -1221,12 +1333,17 @@ export class ExportsService extends AbstractExportsService {
       this.translateProvider(invoice.provider),
       invoice.invoiceUrl ?? "",
     ]);
-    return this.buildCsvBuffer(headers, rows);
+    const periodLabel = period ? this.formatPeriodLabel(period.startDate, period.endDate) : "";
+    return this.buildCsvBuffer(headers, rows, periodLabel ? { periodLabel } : undefined);
   }
 
-  private buildInvoicesListPdf(invoices: OrganizationInvoiceSyncItem[]): Promise<Buffer> {
+  private buildInvoicesListPdf(
+    invoices: OrganizationInvoiceSyncItem[],
+    period?: { startDate: string; endDate: string },
+  ): Promise<Buffer> {
+    const periodLabel = period ? this.formatPeriodLabel(period.startDate, period.endDate) : "";
     return this.buildTablePdf(
-      "Liste des factures",
+      `Liste des factures${periodLabel ? ` — ${periodLabel}` : ""}`,
       ["Date", "Numéro", "Dossier", "Client", "Type", "HT", "Statut", "Fournisseur"],
       invoices.map((invoice) => [
         invoice.createdAt ? this.formatDateFr(invoice.createdAt) : "—",
@@ -1241,21 +1358,41 @@ export class ExportsService extends AbstractExportsService {
     );
   }
 
-  private async buildInvoicesListXlsx(invoices: OrganizationInvoiceSyncItem[]): Promise<Buffer> {
+  private async buildInvoicesListXlsx(
+    invoices: OrganizationInvoiceSyncItem[],
+    period?: { startDate: string; endDate: string },
+  ): Promise<Buffer> {
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet("Factures");
     ws.columns = [
-      { header: "Date", key: "date", width: 14 },
-      { header: "Numéro", key: "number", width: 16 },
-      { header: "Dossier", key: "caseTitle", width: 30 },
-      { header: "Client", key: "customer", width: 25 },
-      { header: "Type", key: "kind", width: 18 },
-      { header: "Montant HT", key: "amountHt", width: 14 },
-      { header: "Statut", key: "status", width: 14 },
-      { header: "Fournisseur", key: "provider", width: 14 },
-      { header: "Lien", key: "url", width: 40 },
+      { key: "date", width: 14 },
+      { key: "number", width: 16 },
+      { key: "caseTitle", width: 30 },
+      { key: "customer", width: 25 },
+      { key: "kind", width: 18 },
+      { key: "amountHt", width: 14 },
+      { key: "status", width: 14 },
+      { key: "provider", width: 14 },
+      { key: "url", width: 40 },
     ];
-    this.styleHeaderRow(ws);
+
+    const periodLabel = period ? this.formatPeriodLabel(period.startDate, period.endDate) : "";
+    if (periodLabel) {
+      ws.addRow([`Période : ${periodLabel}`]);
+      ws.addRow([]);
+    }
+
+    this.addStyledHeaderRow(ws, [
+      "Date",
+      "Numéro",
+      "Dossier",
+      "Client",
+      "Type",
+      "Montant HT",
+      "Statut",
+      "Fournisseur",
+      "Lien",
+    ]);
 
     for (const invoice of invoices) {
       ws.addRow({
@@ -1280,7 +1417,10 @@ export class ExportsService extends AbstractExportsService {
     return provider;
   }
 
-  private buildCasesListCsv(cases: CaseSummaryResponse[]): Buffer {
+  private buildCasesListCsv(
+    cases: CaseSummaryResponse[],
+    period?: { startDate: string; endDate: string },
+  ): Buffer {
     const headers = [
       "Dossier",
       "Statut",
@@ -1301,7 +1441,8 @@ export class ExportsService extends AbstractExportsService {
       c.dueDate ? this.formatDateFr(c.dueDate) : "",
       c.createdAt ? this.formatDateFr(c.createdAt) : "",
     ]);
-    return this.buildCsvBuffer(headers, rows);
+    const periodLabel = period ? this.formatPeriodLabel(period.startDate, period.endDate) : "";
+    return this.buildCsvBuffer(headers, rows, periodLabel ? { periodLabel } : undefined);
   }
 
   private buildUsersListCsv(users: UserResponse[]): Buffer {
@@ -1329,7 +1470,10 @@ export class ExportsService extends AbstractExportsService {
     return this.buildCsvBuffer(headers, rows);
   }
 
-  private buildInterventionsListCsv(interventions: InterventionResponse[]): Buffer {
+  private buildInterventionsListCsv(
+    interventions: InterventionResponse[],
+    period?: { startDate: string; endDate: string },
+  ): Buffer {
     const headers = [
       "Titre",
       "Dossier",
@@ -1359,7 +1503,8 @@ export class ExportsService extends AbstractExportsService {
         duration,
       ];
     });
-    return this.buildCsvBuffer(headers, rows);
+    const periodLabel = period ? this.formatPeriodLabel(period.startDate, period.endDate) : "";
+    return this.buildCsvBuffer(headers, rows, periodLabel ? { periodLabel } : undefined);
   }
 
   private buildTechniciansActivityCsv(
@@ -1372,6 +1517,7 @@ export class ExportsService extends AbstractExportsService {
       planned: number;
       totalHours: number;
     }>,
+    period: { startDate: string; endDate: string },
   ): Buffer {
     const headers = [
       "Technicien",
@@ -1391,7 +1537,9 @@ export class ExportsService extends AbstractExportsService {
       d.planned.toString(),
       d.totalHours.toString(),
     ]);
-    return this.buildCsvBuffer(headers, rows);
+    return this.buildCsvBuffer(headers, rows, {
+      periodLabel: this.formatPeriodLabel(period.startDate, period.endDate),
+    });
   }
 
   private buildMileageReportCsv(
@@ -1403,6 +1551,7 @@ export class ExportsService extends AbstractExportsService {
       fuelCostEur: number;
       co2Kg: number;
     }>,
+    period: { startDate: string; endDate: string },
   ): Buffer {
     const headers = [
       "Équipe",
@@ -1420,7 +1569,9 @@ export class ExportsService extends AbstractExportsService {
       d.fuelCostEur.toFixed(2),
       d.co2Kg.toString(),
     ]);
-    return this.buildCsvBuffer(headers, rows);
+    return this.buildCsvBuffer(headers, rows, {
+      periodLabel: this.formatPeriodLabel(period.startDate, period.endDate),
+    });
   }
 
   private buildTodoCasesCsv(cases: DashboardTodoCaseItem[]): Buffer {
@@ -1686,6 +1837,43 @@ export class ExportsService extends AbstractExportsService {
       return `${this.formatDateFr(startDate)} au ${this.formatDateFr(endDate)}`;
     if (startDate) return `à partir du ${this.formatDateFr(startDate)}`;
     return `jusqu'au ${this.formatDateFr(endDate!)}`;
+  }
+
+  private requireReportingPeriod(filters?: { startDate?: string; endDate?: string }): {
+    startDate: string;
+    endDate: string;
+  } {
+    try {
+      return parseReportingPeriod(filters?.startDate, filters?.endDate);
+    } catch (error) {
+      if (error instanceof ReportingPeriodError) {
+        throw new BadRequestException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Si aucune date n’est fournie → période absente (export hors reporting).
+   * Si une seule date ou une plage invalide → erreur.
+   */
+  private resolveOptionalReportingPeriod(filters?: {
+    startDate?: string;
+    endDate?: string;
+  }): { startDate: string; endDate: string } | undefined {
+    const start = filters?.startDate?.trim() ?? "";
+    const end = filters?.endDate?.trim() ?? "";
+    if (!start && !end) return undefined;
+    return this.requireReportingPeriod(filters);
+  }
+
+  private exportFilename(
+    base: string,
+    ext: string,
+    period?: { startDate: string; endDate: string },
+  ): string {
+    const suffix = period ? reportingPeriodFilenameSuffix(period.startDate, period.endDate) : "";
+    return `${base}${suffix}.${ext}`;
   }
 
   // ── Geo helpers ──

@@ -7,6 +7,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as api from "@/lib/cases.api";
 import * as fleetApi from "@/lib/fleet.api";
 import * as exportsApi from "@/lib/exports.api";
+import { listOrganizationUsers } from "@/lib/admin.api";
 import {
   getTeamCalendarCardAppearance,
   getTeamCalendarCardClasses,
@@ -15,10 +16,41 @@ import {
 } from "@/lib/team-calendar-colors";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { ExportButton } from "@/components/ui/ExportButton";
-import type { InterventionResponse, TeamResponse } from "@planwise/shared";
+import type { InterventionResponse, TeamResponse, TechnicianResponse } from "@planwise/shared";
 import { MAX_PAGE_LIMIT_WIDE } from "@planwise/shared";
 
 type ViewMode = "week" | "month";
+
+function looksLikeObjectId(value: string): boolean {
+  return /^[a-f0-9]{24}$/i.test(value.trim());
+}
+
+/** Prefers a human label; ignores empty values and raw Mongo ids. */
+function pickPersonDisplayLabel(...candidates: Array<string | undefined | null>): string | null {
+  for (const candidate of candidates) {
+    const trimmed = candidate?.trim();
+    if (trimmed && !looksLikeObjectId(trimmed)) return trimmed;
+  }
+  return null;
+}
+
+function resolveInterventionCardAppearance(
+  intervention: InterventionResponse,
+  teamsById: Map<string, TeamResponse>,
+  techniciansByAssigneeId: Map<string, TechnicianResponse>,
+  isDark: boolean,
+) {
+  const teamId = intervention.assignedTeamId;
+  if (teamId) {
+    return getTeamCalendarCardAppearance(teamId, teamsById.get(teamId)?.calendarColor, isDark);
+  }
+  const assigneeId = intervention.assigneeId;
+  const technician = assigneeId ? techniciansByAssigneeId.get(assigneeId) : undefined;
+  return getTeamCalendarCardAppearance(undefined, undefined, isDark, {
+    assigneeId,
+    assigneeCalendarColor: technician?.calendarColor,
+  });
+}
 
 const HOURS = Array.from({ length: 14 }, (_, i) => i + 7);
 
@@ -129,12 +161,14 @@ function UnscheduledPanel({
   onDragStart,
   onDropToUnschedule,
   teamsById,
+  techniciansByAssigneeId,
   isDark,
   calendarHeight,
 }: {
   onDragStart: (e: React.DragEvent, intervention: InterventionResponse) => void;
   onDropToUnschedule: (interventionId: string) => void;
   teamsById: Map<string, TeamResponse>;
+  techniciansByAssigneeId: Map<string, TechnicianResponse>;
   isDark: boolean;
   /** Hauteur du bloc calendrier (desktop) pour aligner le panneau et activer le scroll. */
   calendarHeight?: number;
@@ -373,11 +407,10 @@ function UnscheduledPanel({
         )}
 
         {filtered.map((intervention) => {
-          const appearance = getTeamCalendarCardAppearance(
-            intervention.assignedTeamId,
-            intervention.assignedTeamId
-              ? teamsById.get(intervention.assignedTeamId)?.calendarColor
-              : undefined,
+          const appearance = resolveInterventionCardAppearance(
+            intervention,
+            teamsById,
+            techniciansByAssigneeId,
             isDark,
           );
           return (
@@ -501,12 +534,68 @@ export function CalendarPage() {
     queryFn: () => fleetApi.listTeams(),
   });
 
+  const { data: technicians } = useQuery({
+    queryKey: ["fleet-technicians"],
+    queryFn: () => fleetApi.listTechnicians(),
+  });
+
+  const { data: orgUsersData } = useQuery({
+    queryKey: ["organization-users"],
+    queryFn: () => listOrganizationUsers(),
+    retry: false,
+  });
+
   const teamsById = useMemo(() => new Map((teams ?? []).map((t) => [t.id, t])), [teams]);
+
+  const techniciansByAssigneeId = useMemo(() => {
+    const map = new Map<string, TechnicianResponse>();
+    for (const technician of technicians ?? []) {
+      if (technician.userId) map.set(technician.userId, technician);
+      map.set(technician.id, technician);
+    }
+    return map;
+  }, [technicians]);
+
+  const usersById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const user of orgUsersData?.users ?? []) {
+      map.set(user.id, user.name?.trim() || user.email);
+    }
+    return map;
+  }, [orgUsersData?.users]);
 
   const teamsSorted = useMemo(
     () => [...(teams ?? [])].sort((a, b) => a.name.localeCompare(b.name, "fr")),
     [teams],
   );
+
+  const peopleOnCalendar = useMemo(() => {
+    const ids = new Set<string>();
+    for (const intervention of interventions ?? []) {
+      if (!intervention.assignedTeamId && intervention.assigneeId) {
+        ids.add(intervention.assigneeId);
+      }
+    }
+    return [...ids]
+      .map((id) => {
+        const tech = techniciansByAssigneeId.get(id);
+        const storedName = (interventions ?? []).find(
+          (intervention) => intervention.assigneeId === id,
+        )?.assigneeName;
+        const label =
+          pickPersonDisplayLabel(
+            tech ? `${tech.firstName} ${tech.lastName}` : null,
+            usersById.get(id),
+            storedName,
+          ) ?? "Personne assignée";
+        return {
+          id,
+          label,
+          calendarColor: tech?.calendarColor,
+        };
+      })
+      .sort((a, b) => a.label.localeCompare(b.label, "fr"));
+  }, [interventions, techniciansByAssigneeId, usersById]);
 
   const updateMutation = useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: api.UpdateInterventionPayload }) =>
@@ -735,11 +824,10 @@ export function CalendarPage() {
                           onDrop={(e) => handleDrop(e, day, hour)}
                         >
                           {dayInterventions.map((intervention) => {
-                            const appearance = getTeamCalendarCardAppearance(
-                              intervention.assignedTeamId,
-                              intervention.assignedTeamId
-                                ? teamsById.get(intervention.assignedTeamId)?.calendarColor
-                                : undefined,
+                            const appearance = resolveInterventionCardAppearance(
+                              intervention,
+                              teamsById,
+                              techniciansByAssigneeId,
                               isDark,
                             );
                             return (
@@ -808,11 +896,10 @@ export function CalendarPage() {
                             </div>
                             <div className="space-y-0.5">
                               {dayInterventions.slice(0, 3).map((intervention) => {
-                                const appearance = getTeamCalendarCardAppearance(
-                                  intervention.assignedTeamId,
-                                  intervention.assignedTeamId
-                                    ? teamsById.get(intervention.assignedTeamId)?.calendarColor
-                                    : undefined,
+                                const appearance = resolveInterventionCardAppearance(
+                                  intervention,
+                                  teamsById,
+                                  techniciansByAssigneeId,
                                   isDark,
                                 );
                                 return (
@@ -857,6 +944,7 @@ export function CalendarPage() {
           onDragStart={handleDragStart}
           onDropToUnschedule={handleDropToUnschedule}
           teamsById={teamsById}
+          techniciansByAssigneeId={techniciansByAssigneeId}
           isDark={isDark}
           calendarHeight={calendarAreaHeight}
         />
@@ -865,8 +953,8 @@ export function CalendarPage() {
       <div className="flex flex-col gap-3 text-xs text-slate-500 dark:text-slate-400">
         <p>
           <span className="font-medium text-slate-600 dark:text-slate-300">Couleur des cartes</span>{" "}
-          — selon l&apos;équipe assignée à l&apos;intervention. Sans équipe : gris. Couleur
-          personnalisable sur la fiche de chaque équipe (Flotte).
+          — selon l&apos;équipe ou la personne assignée. Sans assignation : gris. Couleurs
+          personnalisables sur les fiches équipe / technicien (Flotte).
         </p>
 
         {teamsSorted.length > 0 && (
@@ -893,6 +981,43 @@ export function CalendarPage() {
                     {t.name}
                   </span>
                   {!t.calendarColor && (
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 shrink-0">
+                      (auto)
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {peopleOnCalendar.length > 0 && (
+          <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/50 px-3 py-2.5">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-2">
+              Légende personnes
+            </p>
+            <ul className="flex flex-wrap gap-x-4 gap-y-2">
+              {peopleOnCalendar.map((person) => (
+                <li key={person.id} className="flex items-center gap-2 min-w-0 max-w-[220px]">
+                  {person.calendarColor && normalizeCalendarColorHex(person.calendarColor) ? (
+                    <span
+                      className="team-cal-legend-swatch h-3.5 w-3.5 rounded shrink-0"
+                      style={teamLegendSwatchStyle(person.calendarColor, isDark)}
+                      aria-hidden
+                    />
+                  ) : (
+                    <span
+                      className={`inline-block h-3.5 w-3.5 rounded shrink-0 ${getTeamCalendarCardClasses(person.id, isDark)}`}
+                      aria-hidden
+                    />
+                  )}
+                  <span
+                    className="truncate text-slate-700 dark:text-slate-200"
+                    title={person.label}
+                  >
+                    {person.label}
+                  </span>
+                  {!person.calendarColor && (
                     <span className="text-[10px] text-slate-400 dark:text-slate-500 shrink-0">
                       (auto)
                     </span>

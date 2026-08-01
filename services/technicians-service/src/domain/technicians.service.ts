@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import type { TechnicianDocument } from "../persistence/technician.schema";
@@ -29,6 +34,9 @@ export class TechniciansService extends AbstractTechniciansService {
       phone: body.phone,
       speciality: body.speciality,
       status: body.status ?? "actif",
+      calendarColor: body.calendarColor?.trim()
+        ? this.validateCalendarColor(body.calendarColor)
+        : undefined,
       isTestData: body.isTestData === true,
     });
     return this.toTechnicianResponse(doc);
@@ -51,6 +59,13 @@ export class TechniciansService extends AbstractTechniciansService {
     if (body.phone !== undefined) doc.phone = body.phone;
     if (body.speciality !== undefined) doc.speciality = body.speciality;
     if (body.status !== undefined) doc.status = body.status;
+    if (body.calendarColor !== undefined) {
+      if (body.calendarColor === null || body.calendarColor.trim() === "") {
+        doc.calendarColor = undefined;
+      } else {
+        doc.calendarColor = this.validateCalendarColor(body.calendarColor);
+      }
+    }
     await doc.save();
     return this.toTechnicianResponse(doc);
   }
@@ -100,6 +115,14 @@ export class TechniciansService extends AbstractTechniciansService {
     if (doc.userId) {
       throw new BadRequestException("Ce technicien a déjà un compte utilisateur associé");
     }
+
+    const alreadyLinked = await this.technicianModel
+      .findOne({ organizationId, userId, ...activeDocumentFilter })
+      .exec();
+    if (alreadyLinked) {
+      throw new ConflictException("Cet utilisateur est déjà lié à un autre technicien");
+    }
+
     doc.userId = userId;
     await doc.save();
     return this.toTechnicianResponse(doc);
@@ -123,9 +146,27 @@ export class TechniciansService extends AbstractTechniciansService {
       speciality: doc.speciality,
       status: doc.status as TechnicianStatus,
       userId: doc.userId,
+      calendarColor: doc.calendarColor,
       createdAt: doc.get("createdAt")?.toISOString(),
       updatedAt: doc.get("updatedAt")?.toISOString(),
       isTestData: doc.isTestData === true,
     };
+  }
+
+  /** Accepte #RGB ou #RRGGBB ; normalise en #RRGGBB majuscules */
+  private validateCalendarColor(raw: string): string {
+    const t = raw.trim();
+    const short = /^#?([0-9a-fA-F]{3})$/.exec(t);
+    if (short) {
+      const [r, g, b] = short[1].split("").map((c) => c + c);
+      return `#${r}${g}${b}`.toUpperCase();
+    }
+    const full = /^#?([0-9a-fA-F]{6})$/.exec(t);
+    if (full) {
+      return `#${full[1]}`.toUpperCase();
+    }
+    throw new BadRequestException(
+      "calendarColor doit être une couleur hexadécimale (#RGB ou #RRGGBB)",
+    );
   }
 }

@@ -161,6 +161,10 @@ export class PermissionsService extends AbstractPermissionsService {
             extraPermissions,
             revokedPermissions,
           },
+          $setOnInsert: {
+            organizationId: body.organizationId,
+            userId: body.userId,
+          },
         },
         { upsert: true, new: true, setDefaultsOnInsert: true },
       )

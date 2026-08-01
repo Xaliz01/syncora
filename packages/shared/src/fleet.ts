@@ -77,6 +77,8 @@ export interface CreateTechnicianBody {
   phone?: string;
   speciality?: string;
   status?: TechnicianStatus;
+  /** Couleur calendrier (#RRGGBB), optionnelle */
+  calendarColor?: string;
   isTestData?: boolean;
 }
 
@@ -87,6 +89,16 @@ export interface UpdateTechnicianBody {
   phone?: string;
   speciality?: string;
   status?: TechnicianStatus;
+  /** Couleur calendrier (#RRGGBB). `null` pour revenir à la couleur automatique */
+  calendarColor?: string | null;
+}
+
+export interface TechnicianLinkedUser {
+  id: string;
+  email: string;
+  name?: string;
+  status: "active" | "invited";
+  organizationMembershipStatus?: "active" | "invited" | "disabled";
 }
 
 export interface TechnicianResponse {
@@ -99,13 +111,26 @@ export interface TechnicianResponse {
   speciality?: string;
   status: TechnicianStatus;
   userId?: string;
+  /** Compte lié (enrichi par la gateway) — pour distinguer invitation en attente vs compte actif. */
+  linkedUser?: TechnicianLinkedUser;
+  /** Hex #RRGGBB pour les cartes du calendrier ; absent = palette automatique */
+  calendarColor?: string;
   createdAt?: string;
   updatedAt?: string;
   isTestData?: boolean;
 }
 
-export interface CreateTechnicianUserAccountBody {
-  password: string;
+/** Corps vide : l’invitation ne demande plus de mot de passe. */
+export type CreateTechnicianUserAccountBody = Record<string, never>;
+
+export interface CreateTechnicianUserAccountResponse {
+  technician: TechnicianResponse;
+  emailSent: boolean;
+  invitationId: string;
+}
+
+export interface LinkTechnicianUserBody {
+  userId: string;
 }
 
 // ── Teams (Équipes) ──

@@ -1,12 +1,16 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import {
+  defaultReportingPeriod,
+  getReportingPeriodError,
+  type ReportingStatsResponse,
+} from "@planwise/shared";
 import * as exportsApi from "@/lib/exports.api";
 import { useAuth } from "@/components/auth/AuthContext";
 import { useToast } from "@/components/ui/ToastProvider";
 import { hasPermission } from "@/lib/auth-permissions";
-import type { ReportingStatsResponse } from "@planwise/shared";
 import { useBillingIntegrationAvailability } from "@/lib/hooks/useBillingIntegrationAvailability";
 
 type ExportFormat = "pdf" | "xlsx" | "csv";
@@ -29,17 +33,22 @@ function ReportCard({
   icon,
   onExport,
   filters,
+  disabled,
+  disabledReason,
 }: {
   title: string;
   description: string;
   icon: React.ReactNode;
   onExport: (format: ExportFormat, filters: Record<string, string>) => Promise<void>;
   filters?: React.ReactNode;
+  disabled?: boolean;
+  disabledReason?: string;
 }) {
   const [loading, setLoading] = useState(false);
   const [filterValues, setFilterValues] = useState<Record<string, string>>({});
 
   const handleExport = async (format: ExportFormat) => {
+    if (disabled) return;
     setLoading(true);
     try {
       await onExport(format, filterValues);
@@ -49,6 +58,8 @@ function ReportCard({
       setLoading(false);
     }
   };
+
+  const exportDisabled = loading || Boolean(disabled);
 
   return (
     <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm">
@@ -81,11 +92,15 @@ function ReportCard({
         </div>
       )}
 
+      {disabled && disabledReason && (
+        <p className="mt-3 text-[11px] text-amber-700 dark:text-amber-300">{disabledReason}</p>
+      )}
+
       <div className="mt-4 flex gap-2">
         <button
           type="button"
           onClick={() => handleExport("xlsx")}
-          disabled={loading}
+          disabled={exportDisabled}
           className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition disabled:opacity-50"
         >
           <svg
@@ -106,7 +121,7 @@ function ReportCard({
         <button
           type="button"
           onClick={() => handleExport("csv")}
-          disabled={loading}
+          disabled={exportDisabled}
           className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition disabled:opacity-50"
         >
           <svg
@@ -127,7 +142,7 @@ function ReportCard({
         <button
           type="button"
           onClick={() => handleExport("pdf")}
-          disabled={loading}
+          disabled={exportDisabled}
           className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition disabled:opacity-50"
         >
           <svg
@@ -162,13 +177,14 @@ export function ReportingPage() {
   const canExportCustomers = hasPermission(user, "exports.customers");
   const canExportUsers = hasPermission(user, "exports.users");
 
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const initialPeriod = useMemo(() => defaultReportingPeriod(), []);
+  const [startDate, setStartDate] = useState(initialPeriod.startDate);
+  const [endDate, setEndDate] = useState(initialPeriod.endDate);
 
-  const periodFilters = {
-    startDate: startDate || undefined,
-    endDate: endDate || undefined,
-  };
+  const periodError = getReportingPeriodError(startDate, endDate);
+  const periodValid = periodError === null;
+  const periodFilters = { startDate, endDate };
+  const periodDisabledReason = periodError ?? undefined;
 
   const {
     data: stats,
@@ -180,6 +196,7 @@ export function ReportingPage() {
     queryFn: () => exportsApi.getReportingStats(periodFilters),
     staleTime: 60_000,
     retry: 2,
+    enabled: periodValid,
   });
 
   const runExport = async (fn: () => Promise<void>) => {
@@ -193,6 +210,14 @@ export function ReportingPage() {
     }
   };
 
+  const runPeriodExport = async (fn: () => Promise<void>) => {
+    if (!periodValid) {
+      showToast(periodError ?? "Période invalide.", "error");
+      throw new Error(periodError ?? "Période invalide.");
+    }
+    await runExport(fn);
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -204,13 +229,38 @@ export function ReportingPage() {
         </p>
       </div>
 
-      {statsLoading && (
+      <div className="flex flex-wrap gap-2 items-center">
+        <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Période :</span>
+        <input
+          type="date"
+          required
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+          className="rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-200"
+        />
+        <span className="text-xs text-slate-400">→</span>
+        <input
+          type="date"
+          required
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
+          className="rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-200"
+        />
+        <span className="text-[11px] text-slate-400 dark:text-slate-500">
+          Obligatoire · max. 2 ans · défaut : 1 mois
+        </span>
+      </div>
+      {periodError && (
+        <p className="text-xs text-amber-700 dark:text-amber-300 -mt-4">{periodError}</p>
+      )}
+
+      {statsLoading && periodValid && (
         <div className="text-sm text-slate-500 dark:text-slate-400">
           Chargement des indicateurs…
         </div>
       )}
 
-      {statsError && (
+      {statsError && periodValid && (
         <div className="rounded-lg border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/30 px-3 py-2 text-sm text-amber-800 dark:text-amber-200 flex flex-wrap items-center gap-2">
           <span>Impossible de charger les indicateurs (service d’exports indisponible).</span>
           <button
@@ -223,7 +273,7 @@ export function ReportingPage() {
         </div>
       )}
 
-      {stats && (
+      {stats && periodValid && (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             <StatCard
@@ -250,31 +300,16 @@ export function ReportingPage() {
         </>
       )}
 
-      <div className="flex flex-wrap gap-2 items-center">
-        <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Période :</span>
-        <input
-          type="date"
-          value={startDate}
-          onChange={(e) => setStartDate(e.target.value)}
-          className="rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-200"
-        />
-        <span className="text-xs text-slate-400">→</span>
-        <input
-          type="date"
-          value={endDate}
-          onChange={(e) => setEndDate(e.target.value)}
-          className="rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-200"
-        />
-      </div>
-
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {canExportCases && (
           <ReportCard
             title="Liste des dossiers"
             description="Export complet des dossiers avec statut, priorité, client et avancement."
             icon={<FolderIcon />}
+            disabled={!periodValid}
+            disabledReason={periodDisabledReason}
             onExport={(format) =>
-              runExport(() => exportsApi.exportCasesList(format, periodFilters))
+              runPeriodExport(() => exportsApi.exportCasesList(format, periodFilters))
             }
           />
         )}
@@ -284,13 +319,10 @@ export function ReportingPage() {
             title="Liste des interventions"
             description="Toutes les interventions avec technicien, équipe, durée et statut."
             icon={<CalendarIcon />}
+            disabled={!periodValid}
+            disabledReason={periodDisabledReason}
             onExport={(format) =>
-              runExport(() =>
-                exportsApi.exportInterventionsList(format, {
-                  startDate: startDate || undefined,
-                  endDate: endDate || undefined,
-                }),
-              )
+              runPeriodExport(() => exportsApi.exportInterventionsList(format, periodFilters))
             }
           />
         )}
@@ -298,15 +330,12 @@ export function ReportingPage() {
         {canExportReporting && (
           <ReportCard
             title="Activité techniciens"
-            description="Rapport d'activité par technicien : interventions, heures travaillées, taux de complétion."
+            description="Rapport d'activité par technicien : interventions assignées directement ou via une équipe, heures travaillées, taux de complétion."
             icon={<UsersIcon />}
+            disabled={!periodValid}
+            disabledReason={periodDisabledReason}
             onExport={(format) =>
-              runExport(() =>
-                exportsApi.exportTechniciansActivity(format, {
-                  startDate: startDate || undefined,
-                  endDate: endDate || undefined,
-                }),
-              )
+              runPeriodExport(() => exportsApi.exportTechniciansActivity(format, periodFilters))
             }
           />
         )}
@@ -316,13 +345,10 @@ export function ReportingPage() {
             title="Rapport kilométrique"
             description="Distance estimée, consommation de carburant, coût et empreinte CO₂ par équipe."
             icon={<TruckIcon />}
+            disabled={!periodValid}
+            disabledReason={periodDisabledReason}
             onExport={(format) =>
-              runExport(() =>
-                exportsApi.exportMileageReport(format, {
-                  startDate: startDate || undefined,
-                  endDate: endDate || undefined,
-                }),
-              )
+              runPeriodExport(() => exportsApi.exportMileageReport(format, periodFilters))
             }
           />
         )}
@@ -350,11 +376,13 @@ export function ReportingPage() {
             title="Liste des factures"
             description="Export des factures synchronisées avec dossier, client et statut."
             icon={<InvoiceIcon />}
+            disabled={!periodValid}
+            disabledReason={periodDisabledReason}
             onExport={(format, filterValues) =>
-              runExport(() =>
+              runPeriodExport(() =>
                 exportsApi.exportInvoicesList(format, {
-                  startDate: filterValues.startDate || startDate || undefined,
-                  endDate: filterValues.endDate || endDate || undefined,
+                  startDate,
+                  endDate,
                   remoteStatus: filterValues.remoteStatus,
                   provider: filterValues.provider,
                   invoiceKind: filterValues.invoiceKind,

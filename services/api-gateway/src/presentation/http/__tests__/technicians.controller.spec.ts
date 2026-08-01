@@ -28,6 +28,7 @@ describe("TechniciansController", () => {
       updateTechnician: jest.fn(),
       deleteTechnician: jest.fn(),
       createTechnicianUserAccount: jest.fn(),
+      linkTechnicianUser: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -179,31 +180,58 @@ describe("TechniciansController", () => {
   });
 
   describe("createTechnicianAccount", () => {
-    it("should call techniciansService.createTechnicianUserAccount with user, technicianId and body", async () => {
-      const body = { password: "secret123" };
+    it("should call techniciansService.createTechnicianUserAccount with user and technicianId", async () => {
       mockTechniciansService.createTechnicianUserAccount.mockResolvedValue({
-        id: "tech-1",
-        organizationId: "org-123",
-        firstName: "John",
-        lastName: "Doe",
-        email: "john@example.com",
-        phone: "+33123456789",
-        speciality: "mechanic",
-        status: "actif",
-        userId: "user-456",
-        assignedVehicleIds: [],
-        createdAt: "2025-01-01T00:00:00.000Z",
-        updatedAt: "2025-01-02T00:00:00.000Z",
+        technician: {
+          id: "tech-1",
+          organizationId: "org-123",
+          firstName: "John",
+          lastName: "Doe",
+          email: "john@example.com",
+          phone: "+33123456789",
+          speciality: "mechanic",
+          status: "actif",
+          userId: "user-456",
+          assignedVehicleIds: [],
+          createdAt: "2025-01-01T00:00:00.000Z",
+          updatedAt: "2025-01-02T00:00:00.000Z",
+        },
+        emailSent: true,
+        invitationId: "inv-1",
       } as never);
 
-      const result = await controller.createTechnicianAccount(mockUser, "tech-1", body);
+      const result = await controller.createTechnicianAccount(mockUser, "tech-1");
 
       expect(mockTechniciansService.createTechnicianUserAccount).toHaveBeenCalledWith(
         mockUser,
         "tech-1",
-        body,
       );
-      expect(result.userId).toBe("user-456");
+      expect(result.technician.userId).toBe("user-456");
+      expect(result.emailSent).toBe(true);
+    });
+  });
+
+  describe("linkTechnicianUser", () => {
+    it("should call techniciansService.linkTechnicianUser with user, technicianId and userId", async () => {
+      mockTechniciansService.linkTechnicianUser.mockResolvedValue({
+        id: "tech-1",
+        organizationId: "org-123",
+        firstName: "John",
+        lastName: "Doe",
+        userId: "user-789",
+        status: "actif",
+      } as never);
+
+      const result = await controller.linkTechnicianUser(mockUser, "tech-1", {
+        userId: "user-789",
+      });
+
+      expect(mockTechniciansService.linkTechnicianUser).toHaveBeenCalledWith(
+        mockUser,
+        "tech-1",
+        "user-789",
+      );
+      expect(result.userId).toBe("user-789");
     });
   });
 });

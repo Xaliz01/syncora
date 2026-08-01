@@ -193,8 +193,9 @@ export const PERMISSION_METADATA: Record<PermissionCode, PermissionMetadata> = {
   },
   "fleet.technicians.create_user": {
     code: "fleet.technicians.create_user",
-    label: "Créer un compte utilisateur pour un technicien",
-    description: "Créer un accès Planwise associé à un technicien.",
+    label: "Gérer le compte utilisateur d'un technicien",
+    description:
+      "Inviter un utilisateur pour un technicien, ou lier un compte utilisateur existant.",
   },
   "subscriptions.manage_billing": {
     code: "subscriptions.manage_billing",

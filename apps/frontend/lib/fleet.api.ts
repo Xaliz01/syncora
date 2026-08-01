@@ -11,6 +11,7 @@ import type {
   UpdateTechnicianBody,
   UpdateTeamBody,
   UpdateAgenceBody,
+  CreateTechnicianUserAccountResponse,
 } from "@planwise/shared";
 import { apiRequestJson, type ApiMethod } from "./api-client";
 
@@ -33,8 +34,8 @@ export interface CreateTechnicianPayload {
   phone?: string;
   speciality?: string;
   status?: TechnicianStatus;
+  calendarColor?: string;
   createUserAccount?: boolean;
-  userAccountPassword?: string;
 }
 
 async function fleetRequest<TResponse>(
@@ -78,7 +79,11 @@ export function getTechnician(technicianId: string) {
 }
 
 export function createTechnician(payload: CreateTechnicianPayload) {
-  return fleetRequest<TechnicianResponse>("POST", "/fleet/technicians", payload);
+  return fleetRequest<TechnicianResponse & { emailSent?: boolean; invitationId?: string }>(
+    "POST",
+    "/fleet/technicians",
+    payload,
+  );
 }
 
 export function updateTechnician(technicianId: string, payload: UpdateTechnicianBody) {
@@ -89,12 +94,17 @@ export function deleteTechnician(technicianId: string) {
   return fleetRequest<{ deleted: true }>("DELETE", `/fleet/technicians/${technicianId}`);
 }
 
-export function createTechnicianUserAccount(technicianId: string, password: string) {
-  return fleetRequest<TechnicianResponse>(
+export function createTechnicianUserAccount(technicianId: string) {
+  return fleetRequest<CreateTechnicianUserAccountResponse>(
     "POST",
     `/fleet/technicians/${technicianId}/create-account`,
-    { password },
   );
+}
+
+export function linkTechnicianUser(technicianId: string, userId: string) {
+  return fleetRequest<TechnicianResponse>("PUT", `/fleet/technicians/${technicianId}/link-user`, {
+    userId,
+  });
 }
 
 // ─── Teams (Équipes) ───

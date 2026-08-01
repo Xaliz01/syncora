@@ -283,7 +283,9 @@ export interface CreateInterventionBody {
   title: string;
   description?: string;
   assigneeId?: string;
+  assigneeName?: string;
   assignedTeamId?: string;
+  assignedTeamName?: string;
   scheduledStart?: string;
   scheduledEnd?: string;
   isTestData?: boolean;
@@ -296,7 +298,9 @@ export interface UpdateInterventionBody {
   status?: InterventionStatus;
   billingStatus?: BillingStatus;
   assigneeId?: string | null;
+  assigneeName?: string | null;
   assignedTeamId?: string | null;
+  assignedTeamName?: string | null;
   scheduledStart?: string | null;
   scheduledEnd?: string | null;
   notes?: string;

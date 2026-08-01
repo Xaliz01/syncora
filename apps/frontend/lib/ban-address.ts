@@ -1,6 +1,7 @@
 import type { PostalAddress } from "@planwise/shared";
 
-const BAN_SEARCH = "https://api-adresse.data.gouv.fr/search/";
+/** Géocodage Géoplateforme (IGN) — remplace api-adresse.data.gouv.fr. */
+const GEOCODAGE_SEARCH = "https://data.geopf.fr/geocodage/search";
 
 export interface BanFeatureProperties {
   label: string;
@@ -43,7 +44,7 @@ export function banFeatureToPostalAddress(feature: BanFeature): PostalAddress {
 export async function searchBanAddresses(query: string, limit = 8): Promise<BanFeature[]> {
   const q = query.trim();
   if (q.length < 3) return [];
-  const url = `${BAN_SEARCH}?q=${encodeURIComponent(q)}&limit=${limit}`;
+  const url = `${GEOCODAGE_SEARCH}?q=${encodeURIComponent(q)}&limit=${limit}`;
   const res = await fetch(url);
   if (!res.ok) return [];
   const data = (await res.json()) as BanSearchResponse;
