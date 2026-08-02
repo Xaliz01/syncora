@@ -25,8 +25,10 @@ test.describe("Backoffice plateforme — accès invité", () => {
   });
 
   test("les routes backoffice sans session redirigent vers la connexion", async ({ page }) => {
+    // Plusieurs goto + compile Next en CI : 30s global est trop juste (flake sur /platform/crons).
+    test.setTimeout(90_000);
     for (const path of PLATFORM_PROTECTED) {
-      await page.goto(path);
+      await page.goto(path, { waitUntil: "domcontentloaded" });
       await expect(page).toHaveURL(/\/platform\/login/);
     }
   });
