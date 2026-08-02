@@ -133,6 +133,8 @@ export class ExportsController {
     @Query("startDate") startDate?: string,
     @Query("endDate") endDate?: string,
     @Query("teamId") teamId?: string,
+    @Query("technicianId") technicianId?: string,
+    @Query("groupBy") groupBy?: string,
     @Res() res?: Response,
   ) {
     const exportFormat = this.parseFormat(format);
@@ -140,6 +142,8 @@ export class ExportsController {
       startDate,
       endDate,
       teamId,
+      technicianId,
+      groupBy: groupBy === "technician" ? "technician" : groupBy === "team" ? "team" : undefined,
     });
     this.sendExport(res!, result);
   }
@@ -185,6 +189,54 @@ export class ExportsController {
       endDate,
     });
     this.sendExport(res!, result);
+  }
+
+  @Get("reporting/preview")
+  @RequireAnyPermissions(
+    "exports.reporting",
+    "exports.cases",
+    "exports.interventions",
+    "exports.customers",
+    "exports.users",
+    "exports.billing",
+  )
+  async previewReport(
+    @CurrentUser() user: AuthUser,
+    @Query("type") type: string,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+    @Query("status") status?: string,
+    @Query("billingStatus") billingStatus?: string,
+    @Query("priority") priority?: string,
+    @Query("assigneeId") assigneeId?: string,
+    @Query("search") search?: string,
+    @Query("kind") kind?: string,
+    @Query("teamId") teamId?: string,
+    @Query("technicianId") technicianId?: string,
+    @Query("remoteStatus") remoteStatus?: string,
+    @Query("provider") provider?: string,
+    @Query("invoiceKind") invoiceKind?: string,
+    @Query("groupBy") groupBy?: string,
+  ) {
+    if (!type?.trim()) {
+      throw new BadRequestException("type est requis");
+    }
+    return this.exportsService.previewReport(user, type, {
+      startDate,
+      endDate,
+      status,
+      billingStatus,
+      priority,
+      assigneeId,
+      search,
+      kind,
+      teamId,
+      technicianId,
+      remoteStatus,
+      provider,
+      invoiceKind,
+      groupBy: groupBy === "technician" ? "technician" : groupBy === "team" ? "team" : undefined,
+    });
   }
 
   @Get("reporting/stats")

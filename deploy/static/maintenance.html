@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#4338ca" />
+    <meta name="robots" content="noindex" />
+    <title>Planwise — Maintenance</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f8fafc;
+        --fg: #0f172a;
+        --muted: #64748b;
+        --brand: #4338ca;
+        --brand-hover: #4f46e5;
+        --glow: rgba(67, 56, 202, 0.16);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #020617;
+          --fg: #f1f5f9;
+          --muted: #94a3b8;
+          --glow: rgba(67, 56, 202, 0.28);
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family:
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "SF Pro Text",
+          "Segoe UI",
+          sans-serif;
+        background: var(--bg);
+        color: var(--fg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4rem 1rem;
+        position: relative;
+        overflow: hidden;
+      }
+      .glow {
+        pointer-events: none;
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(ellipse at top, var(--glow), transparent 55%);
+      }
+      .orb {
+        pointer-events: none;
+        position: absolute;
+        bottom: -6rem;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 36rem;
+        height: 16rem;
+        border-radius: 9999px;
+        background: rgba(67, 56, 202, 0.12);
+        filter: blur(48px);
+      }
+      main {
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        max-width: 28rem;
+        text-align: center;
+      }
+      .mark {
+        display: inline-flex;
+        width: 3.5rem;
+        height: 3.5rem;
+        align-items: center;
+        justify-content: center;
+        border-radius: 1rem;
+        background: var(--brand);
+        color: #fff;
+        font-size: 1.25rem;
+        font-weight: 600;
+        box-shadow: 0 10px 24px rgba(67, 56, 202, 0.3);
+        margin-bottom: 1.5rem;
+      }
+      .brand {
+        margin: 0 0 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        color: var(--brand);
+      }
+      h1 {
+        margin: 0;
+        font-size: clamp(1.5rem, 4vw, 1.875rem);
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        line-height: 1.25;
+      }
+      p {
+        margin: 0.75rem 0 0;
+        font-size: 1rem;
+        line-height: 1.6;
+        color: var(--muted);
+      }
+      button {
+        margin-top: 2rem;
+        appearance: none;
+        border: 0;
+        border-radius: 0.5rem;
+        background: var(--brand);
+        color: #fff;
+        font: inherit;
+        font-size: 0.875rem;
+        font-weight: 600;
+        padding: 0.625rem 1.25rem;
+        cursor: pointer;
+        box-shadow: 0 1px 2px rgba(67, 56, 202, 0.2);
+      }
+      button:hover {
+        background: var(--brand-hover);
+      }
+      button:focus-visible {
+        outline: 2px solid var(--brand);
+        outline-offset: 3px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="glow" aria-hidden="true"></div>
+    <div class="orb" aria-hidden="true"></div>
+    <main>
+      <div class="mark" aria-hidden="true">P</div>
+      <p class="brand">Planwise</p>
+      <h1>Maintenance en cours</h1>
+      <p>
+        Planwise est temporairement indisponible pour maintenance. Merci de
+        réessayer dans quelques instants.
+      </p>
+      <button type="button" onclick="window.location.reload()">Réessayer</button>
+    </main>
+  </body>
+</html>

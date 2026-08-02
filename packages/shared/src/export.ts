@@ -53,6 +53,9 @@ export interface ExportMileageReportParams {
   startDate?: string;
   endDate?: string;
   teamId?: string;
+  technicianId?: string;
+  /** Regroupement : équipes (défaut) ou techniciens. */
+  groupBy?: "team" | "technician";
 }
 
 export interface ExportDashboardTodoCasesParams {

@@ -328,9 +328,9 @@ describe("ExportsService", () => {
 
       const content = result.buffer.toString("utf-8");
       expect(content.startsWith("\uFEFF")).toBe(true);
-      expect(content).toContain("Dossier;Statut;Priorité;Client");
-      expect(content).toContain("Dossier A;Ouvert;Moyenne;Client X");
-      expect(content).toContain('"Dossier ""B""";En cours;Haute;');
+      expect(content).toContain("Dossier;Statut;Facturation;Priorité;Client");
+      expect(content).toContain("Dossier A;Ouvert;—;Moyenne;Client X");
+      expect(content).toContain('"Dossier ""B""";En cours;À facturer;Haute;');
     });
   });
 
@@ -361,15 +361,42 @@ describe("ExportsService", () => {
         },
       ];
 
-      mockHttpService.get.mockReturnValue(
-        of({
+      mockHttpService.get.mockImplementation((url: string) => {
+        if (String(url).includes("/technicians")) {
+          return of({
+            data: [],
+            status: 200,
+            headers: {},
+            statusText: "OK",
+            config: {} as never,
+          }) as never;
+        }
+        if (String(url).includes("/teams")) {
+          return of({
+            data: [],
+            status: 200,
+            headers: {},
+            statusText: "OK",
+            config: {} as never,
+          }) as never;
+        }
+        if (String(url).includes("/users")) {
+          return of({
+            data: [],
+            status: 200,
+            headers: {},
+            statusText: "OK",
+            config: {} as never,
+          }) as never;
+        }
+        return of({
           data: { interventions, total: interventions.length },
           status: 200,
           headers: {},
           statusText: "OK",
           config: {} as never,
-        }) as never,
-      );
+        }) as never;
+      });
 
       const result = await service.exportInterventionsList("org-123", "csv", {
         startDate: "2024-03-01",
@@ -384,6 +411,97 @@ describe("ExportsService", () => {
       expect(content).toContain("Titre;Dossier;Statut;Technicien");
       expect(content).toContain("Intervention 1;Dossier A;Terminée;Jean Dupont");
       expect(content).toContain("2");
+    });
+
+    it("resolves technician and team labels from fleet when denormalized names are missing", async () => {
+      const interventions: InterventionResponse[] = [
+        {
+          id: "int-1",
+          organizationId: "org-123",
+          caseId: "case-1",
+          caseTitle: "Dossier A",
+          title: "Sans noms stockés",
+          status: "planned",
+          billingStatus: "none",
+          assigneeId: "user-1",
+          assigneeName: "user-1",
+          assignedTeamId: "team-a",
+          assignedTeamName: "team-a",
+        },
+      ];
+      const technicians = [
+        {
+          id: "tech-1",
+          organizationId: "org-123",
+          firstName: "Alice",
+          lastName: "Martin",
+          status: "actif" as const,
+          userId: "user-1",
+        },
+      ];
+      const teams = [
+        {
+          id: "team-a",
+          organizationId: "org-123",
+          name: "Équipe Alpha",
+          technicianIds: ["tech-1"],
+          status: "active" as const,
+        },
+      ];
+
+      mockHttpService.get.mockImplementation((url: string) => {
+        if (String(url).includes("/technicians")) {
+          return of({
+            data: technicians,
+            status: 200,
+            headers: {},
+            statusText: "OK",
+            config: {} as never,
+          }) as never;
+        }
+        if (String(url).includes("/teams")) {
+          return of({
+            data: teams,
+            status: 200,
+            headers: {},
+            statusText: "OK",
+            config: {} as never,
+          }) as never;
+        }
+        if (String(url).includes("/users")) {
+          return of({
+            data: [],
+            status: 200,
+            headers: {},
+            statusText: "OK",
+            config: {} as never,
+          }) as never;
+        }
+        return of({
+          data: { interventions, total: interventions.length },
+          status: 200,
+          headers: {},
+          statusText: "OK",
+          config: {} as never,
+        }) as never;
+      });
+
+      const preview = await service.previewReport("org-123", "interventions_list", {
+        startDate: "2024-03-01",
+        endDate: "2024-03-31",
+      });
+
+      expect(preview.rows).toHaveLength(1);
+      expect(preview.rows[0].cells.technician).toEqual({
+        kind: "technician",
+        id: "tech-1",
+        label: "Alice Martin",
+      });
+      expect(preview.rows[0].cells.team).toEqual({
+        kind: "team",
+        id: "team-a",
+        label: "Équipe Alpha",
+      });
     });
   });
 
@@ -880,6 +998,64 @@ describe("ExportsService", () => {
           endDate: "2026-01-02",
         }),
       ).rejects.toThrow(/2 ans/);
+    });
+  });
+
+  describe("exportMileageReport", () => {
+    it("aggregates mileage by technician when groupBy=technician", async () => {
+      const technicians = [
+        {
+          id: "tech-1",
+          organizationId: "org-123",
+          firstName: "Alice",
+          lastName: "Martin",
+          status: "actif" as const,
+          userId: "user-1",
+        },
+      ];
+      const interventions: InterventionResponse[] = [
+        {
+          id: "int-1",
+          organizationId: "org-123",
+          caseId: "case-1",
+          title: "Déplacement",
+          status: "completed",
+          billingStatus: "none",
+          assigneeId: "user-1",
+          startLocation: { latitude: 48.8566, longitude: 2.3522 },
+          endLocation: { latitude: 48.8606, longitude: 2.3376 },
+          createdAt: "2024-01-16T07:00:00Z",
+        },
+      ];
+
+      mockHttpService.get.mockImplementation((url: string) => {
+        if (String(url).includes("/technicians")) {
+          return of({
+            data: technicians,
+            status: 200,
+            headers: {},
+            statusText: "OK",
+            config: {} as never,
+          }) as never;
+        }
+        return of({
+          data: { interventions, total: interventions.length },
+          status: 200,
+          headers: {},
+          statusText: "OK",
+          config: {} as never,
+        }) as never;
+      });
+
+      const result = await service.exportMileageReport("org-123", "csv", {
+        startDate: "2024-01-01",
+        endDate: "2024-01-31",
+        groupBy: "technician",
+      });
+
+      const csv = result.buffer.toString("utf-8");
+      expect(csv).toContain("Technicien;Interventions");
+      expect(csv).toContain("Alice Martin");
     });
   });
 });

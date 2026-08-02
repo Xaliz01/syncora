@@ -20,13 +20,14 @@ import {
   ListPagination,
   LIST_PAGE_SIZE,
   ListPrimaryAction,
-  ListRowLink,
+  ListRow,
   ListSearchField,
   ListTableShell,
   ListToolbar,
 } from "@/components/ui/list-page";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { ExportButton } from "@/components/ui/ExportButton";
+import { EntityRef } from "@/components/ui/EntityRef";
 import * as exportsApi from "@/lib/exports.api";
 
 const STATUS_LABELS: Record<CaseStatus, string> = {
@@ -214,13 +215,16 @@ export function CasesListPage() {
             }
           >
             {cases.map((c) => (
-              <ListRowLink key={c.id} href={`/cases/${c.id}`} gridTemplateClass={GRID}>
+              <ListRow key={c.id} gridTemplateClass={GRID}>
                 <div className="min-w-0">
                   <ListCellPrimary className="block">
-                    <span className="inline-flex items-center gap-2 min-w-0">
+                    <Link
+                      href={`/cases/${c.id}`}
+                      className="inline-flex items-center gap-2 min-w-0 text-brand-600 dark:text-brand-400 hover:underline font-medium"
+                    >
                       <span className="truncate">{c.title}</span>
                       <TestDataBadgeIf isTestData={c.isTestData} />
-                    </span>
+                    </Link>
                   </ListCellPrimary>
                   {c.nextTodo ? (
                     <p className="text-[11px] text-amber-600 mt-0.5 truncate">
@@ -228,7 +232,13 @@ export function CasesListPage() {
                     </p>
                   ) : null}
                 </div>
-                <ListCellMuted>{c.customer?.displayName ?? "—"}</ListCellMuted>
+                <ListCellMuted>
+                  <EntityRef
+                    kind="customer"
+                    id={c.customer?.id ?? c.customerId}
+                    label={c.customer?.displayName ?? "—"}
+                  />
+                </ListCellMuted>
                 <ListBadge className={STATUS_COLORS[c.status]}>{STATUS_LABELS[c.status]}</ListBadge>
                 {c.billingStatus && c.billingStatus !== "none" ? (
                   <ListBadge className={BILLING_STATUS_COLORS[c.billingStatus]}>
@@ -241,7 +251,7 @@ export function CasesListPage() {
                   {PRIORITY_LABELS[c.priority]}
                 </ListBadge>
                 <ListCellDefault>{c.progress}%</ListCellDefault>
-              </ListRowLink>
+              </ListRow>
             ))}
           </ListTableShell>
           <ListPagination

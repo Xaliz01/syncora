@@ -6,9 +6,12 @@ import type {
   AuthUser,
   ExportFormat,
   ExportInvoicesListParams,
+  ReportPreviewQuery,
+  ReportPreviewResponse,
   ReportingStatsResponse,
   UserPermissionAssignmentResponse,
 } from "@planwise/shared";
+import { isReportPreviewType } from "@planwise/shared";
 import { AbstractExportsGatewayService, type ExportResult } from "./ports/exports.service.port";
 
 const EXPORTS_URL = process.env.EXPORTS_SERVICE_URL ?? "http://localhost:3012";
@@ -98,7 +101,13 @@ export class ExportsGatewayService extends AbstractExportsGatewayService {
   async exportMileageReport(
     user: AuthUser,
     format: ExportFormat,
-    filters?: { startDate?: string; endDate?: string; teamId?: string },
+    filters?: {
+      startDate?: string;
+      endDate?: string;
+      teamId?: string;
+      technicianId?: string;
+      groupBy?: "team" | "technician";
+    },
   ): Promise<ExportResult> {
     return this.proxyExport(`${EXPORTS_URL}/exports/mileage-report`, {
       organizationId: user.organizationId,
@@ -146,6 +155,31 @@ export class ExportsGatewayService extends AbstractExportsGatewayService {
       return res.data.profileId;
     } catch {
       return undefined;
+    }
+  }
+
+  async previewReport(
+    user: AuthUser,
+    reportType: string,
+    filters?: ReportPreviewQuery,
+  ): Promise<ReportPreviewResponse> {
+    if (!isReportPreviewType(reportType)) {
+      throw new BadRequestException(`Type de rapport inconnu : ${reportType}`);
+    }
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get<ReportPreviewResponse>(`${EXPORTS_URL}/exports/reporting/preview`, {
+          params: {
+            organizationId: user.organizationId,
+            type: reportType,
+            ...this.cleanFilters(filters as Record<string, string | undefined>),
+          },
+          timeout: 60000,
+        }),
+      );
+      return response.data;
+    } catch (err) {
+      this.rethrowAsHttpException(err);
     }
   }
 

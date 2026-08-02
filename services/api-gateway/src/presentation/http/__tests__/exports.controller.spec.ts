@@ -38,6 +38,7 @@ describe("ExportsController", () => {
       exportMileageReport: jest.fn(),
       exportDashboardTodoCases: jest.fn(),
       exportInvoicesList: jest.fn(),
+      previewReport: jest.fn(),
       getReportingStats: jest.fn(),
     };
 

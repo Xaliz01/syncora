@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { PermissionCode, PermissionProfileResponse } from "@planwise/shared";
 import * as adminApi from "@/lib/admin.api";
+import * as fleetApi from "@/lib/fleet.api";
 import { getPermissionLabel } from "@/lib/permissions-catalog";
 import type { ManagedOrganizationUser } from "@/lib/admin.api";
 import { useToast } from "@/components/ui/ToastProvider";
@@ -12,11 +14,26 @@ import { usePermissions } from "@/lib/hooks/usePermissions";
 import { useAuth } from "@/components/auth/AuthContext";
 import { getOrganizationUserStatusLabel } from "@/lib/organization-user-status";
 import { PermissionGate } from "@/components/auth/PermissionGate";
+import { hasPermission } from "@/lib/auth-permissions";
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Administrateur",
   member: "Membre",
 };
+
+function splitDisplayName(
+  name: string | undefined,
+  email: string,
+): { firstName: string; lastName: string } {
+  const trimmed = name?.trim() || "";
+  if (!trimmed) {
+    const local = email.split("@")[0] || "Technicien";
+    return { firstName: local, lastName: "" };
+  }
+  const parts = trimmed.split(/\s+/);
+  if (parts.length === 1) return { firstName: parts[0], lastName: "" };
+  return { firstName: parts[0], lastName: parts.slice(1).join(" ") };
+}
 
 function togglePermission(list: PermissionCode[], permission: PermissionCode): PermissionCode[] {
   if (list.includes(permission)) return list.filter((item) => item !== permission);
@@ -28,6 +45,7 @@ export function UserDetailsPage({ userId }: { userId: string }) {
   const confirm = useConfirm();
   const { user: currentUser } = useAuth();
   const { can } = usePermissions();
+  const queryClient = useQueryClient();
   const [catalog, setCatalog] = useState<PermissionCode[]>([]);
   const [profiles, setProfiles] = useState<PermissionProfileResponse[]>([]);
   const [user, setUser] = useState<ManagedOrganizationUser | null>(null);
@@ -37,12 +55,33 @@ export function UserDetailsPage({ userId }: { userId: string }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [membershipActionLoading, setMembershipActionLoading] = useState(false);
+  const [creatingTechnician, setCreatingTechnician] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const isOrganizationAdmin = user?.role === "admin";
   const isSelf = user?.id === currentUser?.id;
   const isDisabled = user?.organizationMembershipStatus === "disabled";
   const isInvited = user?.organizationMembershipStatus === "invited";
+  const canReadTechnicians =
+    hasPermission(currentUser, "fleet.technicians.read") ||
+    hasPermission(currentUser, "technicians.read");
+  const canCreateTechnician =
+    hasPermission(currentUser, "fleet.technicians.create") ||
+    hasPermission(currentUser, "technicians.create");
+  const canLinkTechnician =
+    hasPermission(currentUser, "fleet.technicians.update") ||
+    hasPermission(currentUser, "technicians.update");
+
+  const { data: technicians = [] } = useQuery({
+    queryKey: ["fleet-technicians"],
+    queryFn: () => fleetApi.listTechnicians(),
+    enabled: canReadTechnicians,
+  });
+
+  const linkedTechnician = useMemo(
+    () => technicians.find((technician) => technician.userId === userId) ?? null,
+    [technicians, userId],
+  );
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -153,6 +192,42 @@ export function UserDetailsPage({ userId }: { userId: string }) {
     }
   };
 
+  const handleCreateLinkedTechnician = async () => {
+    if (!user || linkedTechnician || !canCreateTechnician || !canLinkTechnician) return;
+    const confirmed = await confirm({
+      title: "Créer un technicien associé ?",
+      description: (
+        <>
+          Un technicien sera créé pour <strong>{user.name ?? user.email}</strong> et lié à ce
+          compte. Il pourra ensuite être affecté sur des interventions.
+        </>
+      ),
+      confirmLabel: "Créer le technicien",
+    });
+    if (!confirmed) return;
+
+    setCreatingTechnician(true);
+    try {
+      const { firstName, lastName } = splitDisplayName(user.name, user.email);
+      const created = await fleetApi.createTechnician({
+        firstName,
+        lastName: lastName || firstName,
+        email: user.email,
+        status: "actif",
+      });
+      await fleetApi.linkTechnicianUser(created.id, user.id);
+      showToast("Technicien créé et associé à l’utilisateur.", "success");
+      await queryClient.invalidateQueries({ queryKey: ["fleet-technicians"] });
+    } catch (err) {
+      showToast(
+        err instanceof Error ? err.message : "Impossible de créer le technicien associé",
+        "error",
+      );
+    } finally {
+      setCreatingTechnician(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 text-sm text-slate-500 dark:text-slate-400">
@@ -250,6 +325,47 @@ export function UserDetailsPage({ userId }: { userId: string }) {
           </div>
         </div>
       </section>
+
+      {canReadTechnicians && (
+        <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <div>
+              <h2 className="font-semibold">Technicien associé</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                Nécessaire pour affecter cet utilisateur sur des interventions. Sans technicien lié,
+                seules les permissions applicatives s&apos;appliquent.
+              </p>
+            </div>
+            {linkedTechnician ? (
+              <Link
+                href={`/fleet/technicians/${linkedTechnician.id}`}
+                className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-950/40 self-start"
+              >
+                Voir la fiche technicien
+              </Link>
+            ) : canCreateTechnician && canLinkTechnician && !isDisabled ? (
+              <button
+                type="button"
+                onClick={() => void handleCreateLinkedTechnician()}
+                disabled={creatingTechnician}
+                className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 self-start"
+              >
+                {creatingTechnician ? "Création…" : "Créer un technicien associé"}
+              </button>
+            ) : null}
+          </div>
+          {linkedTechnician ? (
+            <p className="text-sm text-slate-700 dark:text-slate-200">
+              {linkedTechnician.firstName} {linkedTechnician.lastName}
+              {linkedTechnician.speciality ? ` · ${linkedTechnician.speciality}` : ""}
+            </p>
+          ) : (
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Aucun technicien n&apos;est lié à cet utilisateur.
+            </p>
+          )}
+        </section>
+      )}
 
       <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
         <h2 className="font-semibold mb-2">Permissions actuelles</h2>

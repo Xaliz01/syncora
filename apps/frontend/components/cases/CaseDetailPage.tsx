@@ -34,6 +34,7 @@ import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/ToastProvider";
 import { ResourceNotFoundPanel } from "@/components/ui/AppErrorAlert";
 import { ExportButton } from "@/components/ui/ExportButton";
+import { EntityRef } from "@/components/ui/EntityRef";
 import * as exportsApi from "@/lib/exports.api";
 import * as integrationsApi from "@/lib/integrations.api";
 import * as quotesApi from "@/lib/quotes.api";
@@ -50,6 +51,7 @@ import type {
   CustomerSiteResponse,
   SyncCaseInvoiceOptions,
   TeamResponse,
+  TechnicianResponse,
   TodoItemStatus,
 } from "@planwise/shared";
 import {
@@ -275,6 +277,18 @@ const INTERVENTION_STATUS_COLORS: Record<string, string> = {
   cancelled: "bg-red-50 text-red-600 border-red-200",
 };
 
+function InterventionAssigneeHint() {
+  return (
+    <span
+      className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-slate-300 dark:border-slate-600 text-[10px] font-semibold text-slate-500 dark:text-slate-400 cursor-help"
+      title="L’affectation se fait uniquement sur un technicien. Sans compte utilisateur lié, les notifications (rappel, push, e-mail) ne pourront pas lui être envoyées."
+      aria-label="Information : notifications possibles uniquement si le technicien a un compte utilisateur lié"
+    >
+      i
+    </span>
+  );
+}
+
 function InterventionTeamHighlight({
   teamId,
   teamName,
@@ -322,7 +336,9 @@ function InterventionTeamHighlight({
         <p className="text-[10px] font-semibold uppercase tracking-wide opacity-90">
           Équipe assignée
         </p>
-        <p className="text-sm font-semibold truncate">{displayName}</p>
+        <p className="text-sm font-semibold truncate">
+          {teamId ? <EntityRef kind="team" id={teamId} label={displayName} /> : displayName}
+        </p>
       </div>
     </div>
   );
@@ -760,29 +776,30 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
     return [...map.entries()].map(([id, label]) => ({ id, label }));
   }, [caseData, usersData?.users]);
 
-  const interventionPersonOptions = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const technician of techniciansData ?? []) {
-      if (technician.status !== "actif" || !technician.userId) continue;
-      map.set(technician.userId, `${technician.firstName} ${technician.lastName}`.trim());
-    }
-    for (const user of usersData?.users ?? []) {
-      if (!map.has(user.id)) {
-        map.set(user.id, user.name?.trim() || user.email);
-      }
-    }
-    return [...map.entries()]
-      .map(([id, label]) => ({ id, label }))
+  const interventionTechnicianOptions = useMemo(() => {
+    return (techniciansData ?? [])
+      .filter((technician) => technician.status === "actif")
+      .map((technician) => ({
+        id: technician.id,
+        label: `${technician.firstName} ${technician.lastName}`.trim(),
+        hasUserAccount: Boolean(technician.userId),
+      }))
       .sort((a, b) => a.label.localeCompare(b.label, "fr"));
-  }, [techniciansData, usersData?.users]);
+  }, [techniciansData]);
 
-  const techniciansWithoutAccount = useMemo(
-    () =>
-      (techniciansData ?? []).filter(
-        (technician) => technician.status === "actif" && !technician.userId,
-      ),
-    [techniciansData],
-  );
+  const techniciansByAssigneeKey = useMemo(() => {
+    const map = new Map<string, TechnicianResponse>();
+    for (const technician of techniciansData ?? []) {
+      map.set(technician.id, technician);
+      if (technician.userId) map.set(technician.userId, technician);
+    }
+    return map;
+  }, [techniciansData]);
+
+  const resolveInterventionTechnicianId = (assigneeId: string | undefined) => {
+    if (!assigneeId) return "";
+    return techniciansByAssigneeKey.get(assigneeId)?.id ?? assigneeId;
+  };
 
   if (waitingForOrgSwitch || isLoading) {
     return <div className="text-sm text-slate-500 dark:text-slate-400">Chargement…</div>;
@@ -1387,24 +1404,23 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                       if (value) setNewIntTeamId("");
                     }}
                     className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
+                    aria-label="Technicien assigné"
                   >
-                    <option value="">Assignée à (personne)</option>
-                    {interventionPersonOptions.map((person) => (
+                    <option value="">Technicien (aucun)</option>
+                    {interventionTechnicianOptions.map((person) => (
                       <option key={person.id} value={person.id}>
                         {person.label}
+                        {!person.hasUserAccount ? " (sans compte)" : ""}
                       </option>
                     ))}
                   </select>
-                  <p className="sm:col-span-2 text-xs text-slate-500 dark:text-slate-400">
-                    Assignez soit une équipe, soit une personne — pas les deux.
-                    {techniciansWithoutAccount.length > 0 && (
-                      <>
-                        {" "}
-                        {techniciansWithoutAccount.length} technicien
-                        {techniciansWithoutAccount.length > 1 ? "s" : ""} sans compte utilisateur
-                        n’apparaissent pas ici (créez le compte depuis la fiche Flotte).
-                      </>
-                    )}
+                  <p className="sm:col-span-2 text-xs text-slate-500 dark:text-slate-400 inline-flex items-start gap-1.5">
+                    <InterventionAssigneeHint />
+                    <span>
+                      Assignez soit une équipe, soit un technicien. Les techniciens sans compte
+                      utilisateur peuvent être affectés ; seules les notifications nécessitent un
+                      compte lié.
+                    </span>
                   </p>
                   {plannerCustomerLoading && plannerCustomerId ? (
                     <div className="sm:col-span-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 p-4 animate-pulse">
@@ -1484,7 +1500,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                     setEditIntTitle(intervention.title);
                     setEditIntDesc(intervention.description ?? "");
                     setEditIntTeamId(intervention.assignedTeamId ?? "");
-                    setEditIntAssignee(intervention.assigneeId ?? "");
+                    setEditIntAssignee(resolveInterventionTechnicianId(intervention.assigneeId));
                     setEditIntStart(
                       intervention.scheduledStart ? intervention.scheduledStart.slice(0, 16) : "",
                     );
@@ -1568,25 +1584,23 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                                 if (value) setEditIntTeamId("");
                               }}
                               className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
+                              aria-label="Technicien assigné"
                             >
-                              <option value="">Assignée à (personne)</option>
-                              {interventionPersonOptions.map((person) => (
+                              <option value="">Technicien (aucun)</option>
+                              {interventionTechnicianOptions.map((person) => (
                                 <option key={person.id} value={person.id}>
                                   {person.label}
+                                  {!person.hasUserAccount ? " (sans compte)" : ""}
                                 </option>
                               ))}
                             </select>
-                            <p className="sm:col-span-2 text-xs text-slate-500 dark:text-slate-400">
-                              Assignez soit une équipe, soit une personne — pas les deux.
-                              {techniciansWithoutAccount.length > 0 && (
-                                <>
-                                  {" "}
-                                  {techniciansWithoutAccount.length} technicien
-                                  {techniciansWithoutAccount.length > 1 ? "s" : ""} sans compte
-                                  utilisateur n’apparaissent pas ici (créez le compte depuis la
-                                  fiche Flotte).
-                                </>
-                              )}
+                            <p className="sm:col-span-2 text-xs text-slate-500 dark:text-slate-400 inline-flex items-start gap-1.5">
+                              <InterventionAssigneeHint />
+                              <span>
+                                Assignez soit une équipe, soit un technicien. Les techniciens sans
+                                compte utilisateur peuvent être affectés ; seules les notifications
+                                nécessitent un compte lié.
+                              </span>
                             </p>
                             {plannerCustomerLoading && plannerCustomerId ? (
                               <div className="sm:col-span-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 p-4 animate-pulse">
@@ -1723,11 +1737,17 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                             {intervention.assigneeName && (
                               <span className="inline-flex items-center gap-1">
                                 <span className="text-slate-400 dark:text-slate-500">
-                                  Assigné :
+                                  Technicien :
                                 </span>
-                                <span className="font-medium text-slate-600 dark:text-slate-300">
-                                  {intervention.assigneeName}
-                                </span>
+                                <EntityRef
+                                  kind="technician"
+                                  id={
+                                    techniciansByAssigneeKey.get(intervention.assigneeId ?? "")
+                                      ?.id ?? intervention.assigneeId
+                                  }
+                                  label={intervention.assigneeName}
+                                  className="font-medium text-brand-600 dark:text-brand-400 hover:underline"
+                                />
                               </span>
                             )}
                             {intervention.scheduledStart && (

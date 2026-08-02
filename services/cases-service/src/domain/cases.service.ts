@@ -350,7 +350,7 @@ export class CasesService extends AbstractCasesService {
     return trimmed ? trimmed : undefined;
   }
 
-  /** Une intervention est assignée soit à une personne, soit à une équipe — pas les deux. */
+  /** Une intervention est assignée soit à une personne, soit à une équipe. */
   private assertExclusiveInterventionAssignment(
     assigneeId?: string | null,
     assignedTeamId?: string | null,
@@ -359,7 +359,7 @@ export class CasesService extends AbstractCasesService {
     const team = this.normalizeOptionalId(assignedTeamId ?? undefined);
     if (assignee && team) {
       throw new BadRequestException(
-        "Une intervention ne peut être assignée qu'à une équipe ou à une personne, pas les deux.",
+        "Une intervention ne peut être assignée qu'à une équipe ou à une personne.",
       );
     }
   }

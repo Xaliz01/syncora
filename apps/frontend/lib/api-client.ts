@@ -1,4 +1,4 @@
-import { ApiError, normalizeApiErrorMessage } from "./api-errors";
+import { ApiError, normalizeApiErrorMessage, normalizeThrownFetchError } from "./api-errors";
 import { SESSION_REPLACED_MESSAGE } from "@planwise/shared";
 
 export const API_BASE =
@@ -8,6 +8,18 @@ export const API_BASE =
 export const SESSION_REPLACED_EVENT = "planwise:session-replaced";
 
 export type ApiMethod = "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
+
+/** fetch avec message FR si le serveur est injoignable. */
+export async function fetchWithUserFacingErrors(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+): Promise<Response> {
+  try {
+    return await fetch(input, init);
+  } catch (error) {
+    throw normalizeThrownFetchError(error);
+  }
+}
 
 export function getAccessToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -101,7 +113,7 @@ export async function apiRequestJson<T>(
     headers["Content-Type"] = "application/json";
   }
 
-  const response = await fetch(`${API_BASE}${path}`, {
+  const response = await fetchWithUserFacingErrors(`${API_BASE}${path}`, {
     method,
     headers,
     body: body === undefined ? undefined : JSON.stringify(body),

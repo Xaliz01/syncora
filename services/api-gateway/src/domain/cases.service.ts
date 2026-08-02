@@ -326,6 +326,15 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       offset?: number;
     },
   ): Promise<InterventionsListResponse> {
+    let assigneeId = filters?.assigneeId;
+    if (assigneeId) {
+      const technician = await this.resolveTechnicianForInterventionAssignment(
+        user.organizationId,
+        assigneeId,
+      );
+      if (technician) assigneeId = technician.id;
+    }
+
     let assignedTeamIds: string[] | undefined;
     if (
       filters?.includeTeamAssignments === "true" &&
@@ -341,7 +350,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       query: {
         organizationId: user.organizationId,
         caseId: filters?.caseId,
-        assigneeId: filters?.assigneeId,
+        assigneeId,
         assignedTeamIds: assignedTeamIds?.length ? assignedTeamIds.join(",") : undefined,
         startDate: filters?.startDate,
         endDate: filters?.endDate,
@@ -401,21 +410,31 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     organizationId: string,
     filters: { assigneeId?: string | null; assignedTeamId?: string | null },
   ): Promise<{
+    assigneeId?: string | null;
     assigneeName?: string | null;
     assignedTeamName?: string | null;
   }> {
     const labels: {
+      assigneeId?: string | null;
       assigneeName?: string | null;
       assignedTeamName?: string | null;
     } = {};
 
     if (filters.assigneeId) {
-      labels.assigneeName = await this.resolveAssigneeDisplayName(
+      const technician = await this.resolveTechnicianForInterventionAssignment(
         organizationId,
         filters.assigneeId,
       );
+      if (!technician) {
+        throw new BadRequestException(
+          "L'affectation d'une intervention doit viser un technicien de la flotte",
+        );
+      }
+      labels.assigneeId = technician.id;
+      labels.assigneeName = `${technician.firstName} ${technician.lastName}`.trim();
       labels.assignedTeamName = null;
     } else if (filters.assigneeId === null) {
+      labels.assigneeId = null;
       labels.assigneeName = null;
     }
 
@@ -424,6 +443,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
         organizationId,
         filters.assignedTeamId,
       );
+      labels.assigneeId = null;
       labels.assigneeName = null;
     } else if (filters.assignedTeamId === null) {
       labels.assignedTeamName = null;
@@ -432,12 +452,25 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     return labels;
   }
 
-  private async resolveAssigneeDisplayName(
+  /** Accepte un id technicien ou un userId lié ; refuse les utilisateurs hors flotte. */
+  private async resolveTechnicianForInterventionAssignment(
     organizationId: string,
     assigneeId: string,
-  ): Promise<string> {
+  ): Promise<TechnicianResponse | null> {
     try {
-      const technician = await this.scopedHttp.request<TechnicianResponse | null>({
+      return await this.scopedHttp.request<TechnicianResponse>({
+        baseUrl: TECHNICIANS_URL,
+        organizationId,
+        method: "get",
+        path: `/technicians/${assigneeId}`,
+        errorLabel: "Technicians service error",
+      });
+    } catch {
+      // fallback: assigneeId may be a linked user id
+    }
+
+    try {
+      return await this.scopedHttp.request<TechnicianResponse | null>({
         baseUrl: TECHNICIANS_URL,
         organizationId,
         method: "get",
@@ -445,37 +478,8 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
         validateResponseScope: false,
         errorLabel: "Technicians service error",
       });
-      if (technician) {
-        return `${technician.firstName} ${technician.lastName}`.trim();
-      }
     } catch {
-      // fallback below
-    }
-
-    try {
-      const technician = await this.scopedHttp.request<TechnicianResponse>({
-        baseUrl: TECHNICIANS_URL,
-        organizationId,
-        method: "get",
-        path: `/technicians/${assigneeId}`,
-        errorLabel: "Technicians service error",
-      });
-      return `${technician.firstName} ${technician.lastName}`.trim();
-    } catch {
-      // fallback below
-    }
-
-    try {
-      const user = await this.scopedHttp.request<UserResponse>({
-        baseUrl: USERS_URL,
-        organizationId,
-        method: "get",
-        path: `/users/${assigneeId}`,
-        errorLabel: "Users service error",
-      });
-      return user.name?.trim() || user.email;
-    } catch {
-      return assigneeId;
+      return null;
     }
   }
 

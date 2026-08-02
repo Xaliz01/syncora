@@ -23,6 +23,17 @@
 	reverse_proxy frontend-blue:5173 frontend-green:5173 {
 		lb_policy first
 	}
+
+	# Frontend down / 5xx → page de maintenance statique (volume ./static)
+	handle_errors {
+		@upstream expression `{err.status_code} >= 500`
+		handle @upstream {
+			header Cache-Control "no-store"
+			rewrite * /maintenance.html
+			root * /srv/static
+			file_server
+		}
+	}
 }
 
 # www → apex marketing

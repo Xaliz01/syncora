@@ -335,10 +335,12 @@ services:
       ACME_EMAIL: ${ACME_EMAIL:?ACME_EMAIL requis}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./static:/srv/static:ro
       - caddy-data:/data
       - caddy-config:/config
     # Pas de depends_on sur les slots : un seul est up en régime normal ;
     # Caddy ignore les upstreams down via health checks.
+    # ./static/maintenance.html est servi si le frontend upstream répond 5xx.
 
 networks:
   planwise:

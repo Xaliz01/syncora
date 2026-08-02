@@ -24,6 +24,7 @@ import {
   ListToolbar,
 } from "@/components/ui/list-page";
 import { PermissionGate } from "@/components/auth/PermissionGate";
+import { EntityRef } from "@/components/ui/EntityRef";
 
 const STATUS_COLORS: Record<string, string> = {
   active: "bg-emerald-50 text-emerald-700 border-emerald-200",
@@ -138,7 +139,9 @@ export function TeamsListPage() {
                   <TestDataBadgeIf isTestData={team.isTestData} />
                 </span>
               </ListCellPrimary>
-              <ListCellMuted>{team.agenceName || "—"}</ListCellMuted>
+              <ListCellMuted>
+                <EntityRef kind="agence" id={team.agenceId} label={team.agenceName || "—"} />
+              </ListCellMuted>
               <ListCellDefault>{team.technicianIds.length}</ListCellDefault>
               <ListBadge
                 className={

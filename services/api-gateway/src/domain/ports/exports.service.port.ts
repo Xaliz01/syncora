@@ -2,6 +2,8 @@ import type {
   AuthUser,
   ExportFormat,
   ExportInvoicesListParams,
+  ReportPreviewQuery,
+  ReportPreviewResponse,
   ReportingStatsResponse,
 } from "@planwise/shared";
 
@@ -57,7 +59,13 @@ export abstract class AbstractExportsGatewayService {
   abstract exportMileageReport(
     user: AuthUser,
     format: ExportFormat,
-    filters?: { startDate?: string; endDate?: string; teamId?: string },
+    filters?: {
+      startDate?: string;
+      endDate?: string;
+      teamId?: string;
+      technicianId?: string;
+      groupBy?: "team" | "technician";
+    },
   ): Promise<ExportResult>;
 
   abstract exportDashboardTodoCases(
@@ -71,6 +79,12 @@ export abstract class AbstractExportsGatewayService {
     format: ExportFormat,
     filters?: ExportInvoicesListParams,
   ): Promise<ExportResult>;
+
+  abstract previewReport(
+    user: AuthUser,
+    reportType: string,
+    filters?: ReportPreviewQuery,
+  ): Promise<ReportPreviewResponse>;
 
   abstract getReportingStats(
     user: AuthUser,

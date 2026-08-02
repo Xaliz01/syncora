@@ -1,4 +1,4 @@
-import { API_BASE, getAccessToken } from "./api-client";
+import { API_BASE, fetchWithUserFacingErrors, getAccessToken } from "./api-client";
 import type { DocumentEntityType, DocumentResponse } from "@planwise/shared";
 
 /** URL absolue utilisable par fetch (stockage local → /api/documents/download/…). */
@@ -25,11 +25,14 @@ export async function uploadDocument(
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE}/documents/upload/${entityType}/${entityId}`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
-    body: formData,
-  });
+  const response = await fetchWithUserFacingErrors(
+    `${API_BASE}/documents/upload/${entityType}/${entityId}`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    },
+  );
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
@@ -46,10 +49,13 @@ export async function listDocuments(
   const token = getAccessToken();
   if (!token) throw new Error("Session expirée");
 
-  const response = await fetch(`${API_BASE}/documents/${entityType}/${entityId}`, {
-    method: "GET",
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const response = await fetchWithUserFacingErrors(
+    `${API_BASE}/documents/${entityType}/${entityId}`,
+    {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
@@ -63,10 +69,13 @@ export async function getDocumentDownloadUrl(documentId: string): Promise<string
   const token = getAccessToken();
   if (!token) throw new Error("Session expirée");
 
-  const response = await fetch(`${API_BASE}/documents/${documentId}/download-url`, {
-    method: "GET",
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const response = await fetchWithUserFacingErrors(
+    `${API_BASE}/documents/${documentId}/download-url`,
+    {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
@@ -85,7 +94,7 @@ export async function fetchDocumentPreviewUrl(documentId: string): Promise<strin
   const token = getAccessToken();
   if (!token) throw new Error("Session expirée");
 
-  const response = await fetch(fileUrl, {
+  const response = await fetchWithUserFacingErrors(fileUrl, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!response.ok) {
@@ -109,7 +118,7 @@ export async function openDocumentDownload(
   const token = getAccessToken();
   if (!token) throw new Error("Session expirée");
 
-  const response = await fetch(fileUrl, {
+  const response = await fetchWithUserFacingErrors(fileUrl, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!response.ok) {
@@ -129,7 +138,7 @@ export async function deleteDocument(documentId: string): Promise<void> {
   const token = getAccessToken();
   if (!token) throw new Error("Session expirée");
 
-  const response = await fetch(`${API_BASE}/documents/${documentId}`, {
+  const response = await fetchWithUserFacingErrors(`${API_BASE}/documents/${documentId}`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}` },
   });

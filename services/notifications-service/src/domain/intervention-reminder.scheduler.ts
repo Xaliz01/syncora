@@ -26,6 +26,7 @@ import { CronRunRecorder } from "./cron-run.recorder";
 const CASES_URL = process.env.CASES_SERVICE_URL ?? "http://localhost:3004";
 const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
 const SUBSCRIPTIONS_URL = process.env.SUBSCRIPTIONS_SERVICE_URL ?? "http://localhost:3008";
+const TECHNICIANS_URL = process.env.TECHNICIANS_SERVICE_URL ?? "http://localhost:3006";
 const JOB_KEY = "notifications.intervention-reminders";
 
 @Injectable()
@@ -93,7 +94,11 @@ export class InterventionReminderScheduler {
         const scheduledStart = new Date(intervention.scheduledStart);
         const minutesUntilStart = (scheduledStart.getTime() - now.getTime()) / (60 * 1000);
 
-        const userId = intervention.assigneeId;
+        const userId = await this.resolveNotificationUserId(orgId, intervention.assigneeId);
+        if (!userId) {
+          skipped += 1;
+          continue;
+        }
         const userPrefs =
           prefsMap.get(`${userId}:${orgId}`) ?? buildDefaultNotificationPreferences();
 
@@ -167,6 +172,42 @@ export class InterventionReminderScheduler {
         errorMessage: message,
       });
     }
+  }
+
+  private async resolveNotificationUserId(
+    organizationId: string,
+    assigneeId: string,
+  ): Promise<string | null> {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get<{ id?: string; firstName?: string; userId?: string }>(
+          `${TECHNICIANS_URL}/technicians/${assigneeId}`,
+          { params: { organizationId } },
+        ),
+      );
+      if (
+        response.data &&
+        (response.data.firstName !== undefined || response.data.id === assigneeId)
+      ) {
+        return response.data.userId?.trim() || null;
+      }
+    } catch {
+      // assigneeId may be a legacy user id
+    }
+
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get<{ id?: string } | null>(
+          `${TECHNICIANS_URL}/technicians/by-user/${assigneeId}`,
+          { params: { organizationId } },
+        ),
+      );
+      if (response.data) return assigneeId;
+    } catch {
+      // ignore
+    }
+
+    return assigneeId;
   }
 
   private async hasReminderBeenSent(

@@ -1,12 +1,16 @@
-import type { ReportingStatsResponse } from "@planwise/shared";
-import { apiRequestJson } from "./api-client";
+import type {
+  ReportingStatsResponse,
+  ReportPreviewQuery,
+  ReportPreviewResponse,
+} from "@planwise/shared";
+import { apiRequestJson, fetchWithUserFacingErrors } from "./api-client";
 import { API_BASE, getAccessToken } from "./api-client";
 
 async function downloadExport(path: string, defaultFilename: string): Promise<void> {
   const token = getAccessToken();
   if (!token) throw new Error("Session expirée");
 
-  const response = await fetch(`${API_BASE}${path}`, {
+  const response = await fetchWithUserFacingErrors(`${API_BASE}${path}`, {
     method: "GET",
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -129,13 +133,21 @@ export function exportTechniciansActivity(
 
 export function exportMileageReport(
   format: "pdf" | "xlsx" | "csv",
-  filters?: { startDate?: string; endDate?: string; teamId?: string },
+  filters?: {
+    startDate?: string;
+    endDate?: string;
+    teamId?: string;
+    technicianId?: string;
+    groupBy?: "team" | "technician";
+  },
 ): Promise<void> {
   const params = new URLSearchParams();
   params.set("format", format);
   if (filters?.startDate) params.set("startDate", filters.startDate);
   if (filters?.endDate) params.set("endDate", filters.endDate);
   if (filters?.teamId) params.set("teamId", filters.teamId);
+  if (filters?.technicianId) params.set("technicianId", filters.technicianId);
+  if (filters?.groupBy) params.set("groupBy", filters.groupBy);
   return downloadExport(
     `/exports/mileage-report?${params.toString()}`,
     `rapport-kilometrique.${format}`,
@@ -171,6 +183,32 @@ export function getReportingStats(filters?: {
   return apiRequestJson<ReportingStatsResponse>(
     "GET",
     `/exports/reporting/stats${qs ? `?${qs}` : ""}`,
+  );
+}
+
+export function getReportPreview(
+  type: string,
+  filters?: ReportPreviewQuery,
+): Promise<ReportPreviewResponse> {
+  const params = new URLSearchParams();
+  params.set("type", type);
+  if (filters?.startDate) params.set("startDate", filters.startDate);
+  if (filters?.endDate) params.set("endDate", filters.endDate);
+  if (filters?.status) params.set("status", filters.status);
+  if (filters?.billingStatus) params.set("billingStatus", filters.billingStatus);
+  if (filters?.priority) params.set("priority", filters.priority);
+  if (filters?.assigneeId) params.set("assigneeId", filters.assigneeId);
+  if (filters?.search) params.set("search", filters.search);
+  if (filters?.kind) params.set("kind", filters.kind);
+  if (filters?.teamId) params.set("teamId", filters.teamId);
+  if (filters?.technicianId) params.set("technicianId", filters.technicianId);
+  if (filters?.remoteStatus) params.set("remoteStatus", filters.remoteStatus);
+  if (filters?.provider) params.set("provider", filters.provider);
+  if (filters?.invoiceKind) params.set("invoiceKind", filters.invoiceKind);
+  if (filters?.groupBy) params.set("groupBy", filters.groupBy);
+  return apiRequestJson<ReportPreviewResponse>(
+    "GET",
+    `/exports/reporting/preview?${params.toString()}`,
   );
 }
 

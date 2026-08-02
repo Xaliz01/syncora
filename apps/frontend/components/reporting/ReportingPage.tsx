@@ -1,68 +1,27 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import {
-  defaultReportingPeriod,
-  getReportingPeriodError,
-  type ReportingStatsResponse,
-} from "@planwise/shared";
-import * as exportsApi from "@/lib/exports.api";
+import React from "react";
+import Link from "next/link";
 import { useAuth } from "@/components/auth/AuthContext";
-import { useToast } from "@/components/ui/ToastProvider";
 import { hasPermission } from "@/lib/auth-permissions";
 import { useBillingIntegrationAvailability } from "@/lib/hooks/useBillingIntegrationAvailability";
-
-type ExportFormat = "pdf" | "xlsx" | "csv";
-
-function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
-  return (
-    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm">
-      <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">{label}</div>
-      <div className="text-2xl font-bold text-slate-800 dark:text-slate-100 tabular-nums">
-        {value}
-      </div>
-      {sub && <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">{sub}</div>}
-    </div>
-  );
-}
 
 function ReportCard({
   title,
   description,
   icon,
-  onExport,
-  filters,
-  disabled,
-  disabledReason,
+  href,
 }: {
   title: string;
   description: string;
   icon: React.ReactNode;
-  onExport: (format: ExportFormat, filters: Record<string, string>) => Promise<void>;
-  filters?: React.ReactNode;
-  disabled?: boolean;
-  disabledReason?: string;
+  href: string;
 }) {
-  const [loading, setLoading] = useState(false);
-  const [filterValues, setFilterValues] = useState<Record<string, string>>({});
-
-  const handleExport = async (format: ExportFormat) => {
-    if (disabled) return;
-    setLoading(true);
-    try {
-      await onExport(format, filterValues);
-    } catch (err) {
-      console.error("Export error:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const exportDisabled = loading || Boolean(disabled);
-
   return (
-    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm">
+    <Link
+      href={href}
+      className="block rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm hover:border-brand-300 dark:hover:border-brand-700 hover:shadow-md transition"
+    >
       <div className="flex items-start gap-3">
         <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-brand-50 dark:bg-brand-900/30 flex items-center justify-center text-brand-600 dark:text-brand-400">
           {icon}
@@ -72,102 +31,15 @@ function ReportCard({
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{description}</p>
         </div>
       </div>
-
-      {filters && (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {React.Children.map(filters, (child) => {
-            if (React.isValidElement(child)) {
-              return React.cloneElement(
-                child as React.ReactElement<{ onChange?: (v: string) => void }>,
-                {
-                  onChange: (v: string) => {
-                    const name = (child.props as { name?: string }).name ?? "";
-                    setFilterValues((prev) => ({ ...prev, [name]: v }));
-                  },
-                },
-              );
-            }
-            return child;
-          })}
-        </div>
-      )}
-
-      {disabled && disabledReason && (
-        <p className="mt-3 text-[11px] text-amber-700 dark:text-amber-300">{disabledReason}</p>
-      )}
-
-      <div className="mt-4 flex gap-2">
-        <button
-          type="button"
-          onClick={() => handleExport("xlsx")}
-          disabled={exportDisabled}
-          className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition disabled:opacity-50"
-        >
-          <svg
-            className="h-3.5 w-3.5 text-green-600"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"
-            />
-          </svg>
-          Excel
-        </button>
-        <button
-          type="button"
-          onClick={() => handleExport("csv")}
-          disabled={exportDisabled}
-          className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition disabled:opacity-50"
-        >
-          <svg
-            className="h-3.5 w-3.5 text-blue-600"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-            />
-          </svg>
-          CSV
-        </button>
-        <button
-          type="button"
-          onClick={() => handleExport("pdf")}
-          disabled={exportDisabled}
-          className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition disabled:opacity-50"
-        >
-          <svg
-            className="h-3.5 w-3.5 text-red-600"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-            />
-          </svg>
-          PDF
-        </button>
-      </div>
-    </div>
+      <p className="mt-4 text-xs font-medium text-brand-600 dark:text-brand-400">
+        Voir le rapport →
+      </p>
+    </Link>
   );
 }
 
 export function ReportingPage() {
   const { user } = useAuth();
-  const { showToast } = useToast();
   const canExportCases = hasPermission(user, "exports.cases");
   const canExportInterventions = hasPermission(user, "exports.interventions");
   const canExportReporting = hasPermission(user, "exports.reporting");
@@ -177,47 +49,6 @@ export function ReportingPage() {
   const canExportCustomers = hasPermission(user, "exports.customers");
   const canExportUsers = hasPermission(user, "exports.users");
 
-  const initialPeriod = useMemo(() => defaultReportingPeriod(), []);
-  const [startDate, setStartDate] = useState(initialPeriod.startDate);
-  const [endDate, setEndDate] = useState(initialPeriod.endDate);
-
-  const periodError = getReportingPeriodError(startDate, endDate);
-  const periodValid = periodError === null;
-  const periodFilters = { startDate, endDate };
-  const periodDisabledReason = periodError ?? undefined;
-
-  const {
-    data: stats,
-    isLoading: statsLoading,
-    isError: statsError,
-    refetch: refetchStats,
-  } = useQuery<ReportingStatsResponse>({
-    queryKey: ["reporting-stats", startDate, endDate],
-    queryFn: () => exportsApi.getReportingStats(periodFilters),
-    staleTime: 60_000,
-    retry: 2,
-    enabled: periodValid,
-  });
-
-  const runExport = async (fn: () => Promise<void>) => {
-    try {
-      await fn();
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Erreur lors de la génération de l'export";
-      showToast(message, "error");
-      throw err;
-    }
-  };
-
-  const runPeriodExport = async (fn: () => Promise<void>) => {
-    if (!periodValid) {
-      showToast(periodError ?? "Période invalide.", "error");
-      throw new Error(periodError ?? "Période invalide.");
-    }
-    await runExport(fn);
-  };
-
   return (
     <div className="space-y-6">
       <div>
@@ -225,186 +56,72 @@ export function ReportingPage() {
           Reporting
         </h1>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Tableaux de bord et exports pour piloter votre activité.
+          Choisissez un rapport pour le consulter en tableau, puis l&apos;exporter en Excel, CSV ou
+          PDF.
         </p>
       </div>
-
-      <div className="flex flex-wrap gap-2 items-center">
-        <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Période :</span>
-        <input
-          type="date"
-          required
-          value={startDate}
-          onChange={(e) => setStartDate(e.target.value)}
-          className="rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-200"
-        />
-        <span className="text-xs text-slate-400">→</span>
-        <input
-          type="date"
-          required
-          value={endDate}
-          onChange={(e) => setEndDate(e.target.value)}
-          className="rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-200"
-        />
-        <span className="text-[11px] text-slate-400 dark:text-slate-500">
-          Obligatoire · max. 2 ans · défaut : 1 mois
-        </span>
-      </div>
-      {periodError && (
-        <p className="text-xs text-amber-700 dark:text-amber-300 -mt-4">{periodError}</p>
-      )}
-
-      {statsLoading && periodValid && (
-        <div className="text-sm text-slate-500 dark:text-slate-400">
-          Chargement des indicateurs…
-        </div>
-      )}
-
-      {statsError && periodValid && (
-        <div className="rounded-lg border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/30 px-3 py-2 text-sm text-amber-800 dark:text-amber-200 flex flex-wrap items-center gap-2">
-          <span>Impossible de charger les indicateurs (service d’exports indisponible).</span>
-          <button
-            type="button"
-            onClick={() => void refetchStats()}
-            className="underline font-medium hover:no-underline"
-          >
-            Réessayer
-          </button>
-        </div>
-      )}
-
-      {stats && periodValid && (
-        <>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            <StatCard
-              label="Dossiers"
-              value={stats.casesTotal}
-              sub={`${stats.casesCompleted} terminés`}
-            />
-            <StatCard label="En cours" value={stats.casesInProgress} />
-            <StatCard label="En retard" value={stats.casesOverdue} />
-            <StatCard
-              label="Interventions"
-              value={stats.interventionsTotal}
-              sub={`${stats.interventionsCompleted} terminées`}
-            />
-            <StatCard label="Techniciens actifs" value={stats.techniciansActive} />
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            <StatCard label="À facturer" value={stats.casesBillingToInvoice} />
-            <StatCard label="Brouillon facture" value={stats.casesBillingDraft} />
-            <StatCard label="Partiellement facturé" value={stats.casesBillingPartiallyInvoiced} />
-            <StatCard label="Facturé" value={stats.casesBillingInvoiced} />
-            <StatCard label="Payé" value={stats.casesBillingPaid} />
-          </div>
-        </>
-      )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {canExportCases && (
           <ReportCard
             title="Liste des dossiers"
-            description="Export complet des dossiers avec statut, priorité, client et avancement."
+            description="Dossiers avec statut, priorité, client et avancement — consultation puis export."
             icon={<FolderIcon />}
-            disabled={!periodValid}
-            disabledReason={periodDisabledReason}
-            onExport={(format) =>
-              runPeriodExport(() => exportsApi.exportCasesList(format, periodFilters))
-            }
+            href="/reporting/cases_list"
           />
         )}
 
         {canExportInterventions && (
           <ReportCard
             title="Liste des interventions"
-            description="Toutes les interventions avec technicien, équipe, durée et statut."
+            description="Interventions avec technicien, équipe, durée et statut."
             icon={<CalendarIcon />}
-            disabled={!periodValid}
-            disabledReason={periodDisabledReason}
-            onExport={(format) =>
-              runPeriodExport(() => exportsApi.exportInterventionsList(format, periodFilters))
-            }
+            href="/reporting/interventions_list"
           />
         )}
 
         {canExportReporting && (
           <ReportCard
             title="Activité techniciens"
-            description="Rapport d'activité par technicien : interventions assignées directement ou via une équipe, heures travaillées, taux de complétion."
+            description="Interventions, heures travaillées et taux de complétion par technicien."
             icon={<UsersIcon />}
-            disabled={!periodValid}
-            disabledReason={periodDisabledReason}
-            onExport={(format) =>
-              runPeriodExport(() => exportsApi.exportTechniciansActivity(format, periodFilters))
-            }
+            href="/reporting/technicians_activity"
           />
         )}
 
         {canExportReporting && (
           <ReportCard
             title="Rapport kilométrique"
-            description="Distance estimée, consommation de carburant, coût et empreinte CO₂ par équipe."
+            description="Distance estimée, carburant, coût et CO₂ par équipe ou par technicien."
             icon={<TruckIcon />}
-            disabled={!periodValid}
-            disabledReason={periodDisabledReason}
-            onExport={(format) =>
-              runPeriodExport(() => exportsApi.exportMileageReport(format, periodFilters))
-            }
+            href="/reporting/mileage_report"
           />
         )}
 
         {canExportCustomers && (
           <ReportCard
             title="Liste des clients"
-            description="Export des clients avec coordonnées, type et localisation."
+            description="Clients avec coordonnées, type et localisation."
             icon={<ContactIcon />}
-            onExport={(format) => runExport(() => exportsApi.exportCustomersList(format))}
+            href="/reporting/customers_list"
           />
         )}
 
         {canExportUsers && (
           <ReportCard
             title="Liste des utilisateurs"
-            description="Export des utilisateurs avec rôle et statut."
+            description="Utilisateurs avec rôle et statut."
             icon={<ShieldIcon />}
-            onExport={(format) => runExport(() => exportsApi.exportUsersList(format))}
+            href="/reporting/users_list"
           />
         )}
 
         {canExportBilling && billingConnected && (
           <ReportCard
             title="Liste des factures"
-            description="Export des factures synchronisées avec dossier, client et statut."
+            description="Factures synchronisées avec dossier, client et statut."
             icon={<InvoiceIcon />}
-            disabled={!periodValid}
-            disabledReason={periodDisabledReason}
-            onExport={(format, filterValues) =>
-              runPeriodExport(() =>
-                exportsApi.exportInvoicesList(format, {
-                  startDate,
-                  endDate,
-                  remoteStatus: filterValues.remoteStatus,
-                  provider: filterValues.provider,
-                  invoiceKind: filterValues.invoiceKind,
-                }),
-              )
-            }
-            filters={
-              <>
-                <FilterSelect name="remoteStatus" label="Statut">
-                  <option value="">Tous statuts</option>
-                  <option value="draft">Brouillon</option>
-                  <option value="finalized">Finalisée</option>
-                  <option value="paid">Payée</option>
-                  <option value="cancelled">Annulée</option>
-                </FilterSelect>
-                <FilterSelect name="provider" label="Fournisseur">
-                  <option value="">Tous</option>
-                  <option value="pennylane">Pennylane</option>
-                  <option value="qonto">Qonto</option>
-                </FilterSelect>
-              </>
-            }
+            href="/reporting/invoices_list"
           />
         )}
       </div>
@@ -517,29 +234,6 @@ function ShieldIcon() {
         d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"
       />
     </svg>
-  );
-}
-
-function FilterSelect({
-  name,
-  label,
-  children,
-  onChange,
-}: {
-  name: string;
-  label: string;
-  children: React.ReactNode;
-  onChange?: (v: string) => void;
-}) {
-  return (
-    <select
-      name={name}
-      aria-label={label}
-      onChange={(e) => onChange?.(e.target.value)}
-      className="rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1 text-xs text-slate-700 dark:text-slate-200"
-    >
-      {children}
-    </select>
   );
 }
 

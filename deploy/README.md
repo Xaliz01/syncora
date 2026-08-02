@@ -18,6 +18,7 @@ stateless hormis MongoDB et le volume documents).
 | `docker-compose.monitoring.yml` | Stack Grafana/Prometheus (profil `monitoring`, optionnel)        |
 | `monitoring/`                   | Config Prometheus, Blackbox, Tempo, OTel Collector, Grafana      |
 | `Caddyfile`                     | Reverse proxy + HTTPS (Let's Encrypt)                            |
+| `static/maintenance.html`       | Page de secours si le frontend upstream est KO (Caddy 5xx)       |
 | `rolling-edge.sh`               | Bascule blue/green api-gateway + frontend (quasi zero-downtime)  |
 | `.env.production.example`       | Modèle de configuration (à copier en `.env.production`)          |
 

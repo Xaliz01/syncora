@@ -481,12 +481,13 @@ export function RegisterPage() {
 
           <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-300">
             Déjà un compte ?{" "}
-            <Link
+            {/* <a> natif : évite une soft-nav App Router parfois désynchronisée (URL ≠ UI). */}
+            <a
               href="/login"
               className="text-brand-600 dark:text-brand-400 hover:text-brand-500 hover:underline font-medium"
             >
               Se connecter
-            </Link>
+            </a>
           </p>
         </div>
       </main>

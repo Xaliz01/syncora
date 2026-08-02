@@ -15,7 +15,7 @@ import type {
   SignInterventionResponse,
   StartInterventionResponse,
 } from "@planwise/shared";
-import { apiRequestJson, type ApiMethod } from "./api-client";
+import { apiRequestJson, fetchWithUserFacingErrors, type ApiMethod } from "./api-client";
 import { API_BASE, getAccessToken } from "./api-client";
 
 async function casesRequest<TResponse>(
@@ -253,10 +253,13 @@ export async function downloadInterventionReport(interventionId: string): Promis
   const token = getAccessToken();
   if (!token) throw new Error("Session expirée");
 
-  const response = await fetch(`${API_BASE}/cases/interventions/${interventionId}/report`, {
-    method: "GET",
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const response = await fetchWithUserFacingErrors(
+    `${API_BASE}/cases/interventions/${interventionId}/report`,
+    {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));

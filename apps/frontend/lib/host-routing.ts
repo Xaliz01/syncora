@@ -39,7 +39,12 @@ export function getBackofficeOrigin(): string {
 /** Lien vers l'accueil marketing : `/` en dev local, domaine apex en prod. */
 export function getMarketingHomeHref(hostname?: string): string {
   const host = hostname ?? (typeof window !== "undefined" ? window.location.hostname : "");
-  if (host && isLocalDevHost(host)) {
+  if (isLocalDevHost(host)) {
+    return "/";
+  }
+  // SSR sans Host : en développement aligner sur localhost (`/`) pour éviter un
+  // mismatch d'hydratation ; en prod garder l'origine marketing.
+  if (!host && process.env.NODE_ENV === "development") {
     return "/";
   }
   return getMarketingOrigin();

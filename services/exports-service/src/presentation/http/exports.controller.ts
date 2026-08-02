@@ -125,6 +125,8 @@ export class ExportsController {
     @Query("startDate") startDate?: string,
     @Query("endDate") endDate?: string,
     @Query("teamId") teamId?: string,
+    @Query("technicianId") technicianId?: string,
+    @Query("groupBy") groupBy?: string,
     @Res() res?: Response,
   ) {
     const orgId = parseOrganizationIdQuery(organizationId);
@@ -133,6 +135,8 @@ export class ExportsController {
       startDate,
       endDate,
       teamId,
+      technicianId,
+      groupBy: groupBy === "technician" ? "technician" : groupBy === "team" ? "team" : undefined,
     });
     this.sendExport(res!, result);
   }
@@ -185,6 +189,47 @@ export class ExportsController {
       endDate,
     });
     this.sendExport(res!, result);
+  }
+
+  @Get("exports/reporting/preview")
+  async previewReport(
+    @Query("organizationId") organizationId: string,
+    @Query("type") type: string,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+    @Query("status") status?: string,
+    @Query("billingStatus") billingStatus?: string,
+    @Query("priority") priority?: string,
+    @Query("assigneeId") assigneeId?: string,
+    @Query("search") search?: string,
+    @Query("kind") kind?: string,
+    @Query("teamId") teamId?: string,
+    @Query("technicianId") technicianId?: string,
+    @Query("remoteStatus") remoteStatus?: string,
+    @Query("provider") provider?: string,
+    @Query("invoiceKind") invoiceKind?: string,
+    @Query("groupBy") groupBy?: string,
+  ) {
+    const orgId = parseOrganizationIdQuery(organizationId);
+    if (!type?.trim()) {
+      throw new BadRequestException("type est requis");
+    }
+    return this.exportsService.previewReport(orgId, type, {
+      startDate,
+      endDate,
+      status,
+      billingStatus,
+      priority,
+      assigneeId,
+      search,
+      kind,
+      teamId,
+      technicianId,
+      remoteStatus,
+      provider,
+      invoiceKind,
+      groupBy: groupBy === "technician" ? "technician" : groupBy === "team" ? "team" : undefined,
+    });
   }
 
   @Get("exports/reporting/stats")

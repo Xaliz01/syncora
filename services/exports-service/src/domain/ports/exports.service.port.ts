@@ -2,6 +2,8 @@ import type {
   ExportFormat,
   ReportingStatsResponse,
   ExportInvoicesListParams,
+  ReportPreviewQuery,
+  ReportPreviewResponse,
 } from "@planwise/shared";
 
 export interface ExportResult {
@@ -56,7 +58,13 @@ export abstract class AbstractExportsService {
   abstract exportMileageReport(
     organizationId: string,
     format: ExportFormat,
-    filters?: { startDate?: string; endDate?: string; teamId?: string },
+    filters?: {
+      startDate?: string;
+      endDate?: string;
+      teamId?: string;
+      technicianId?: string;
+      groupBy?: "team" | "technician";
+    },
   ): Promise<ExportResult>;
 
   abstract exportDashboardTodoCases(
@@ -70,6 +78,12 @@ export abstract class AbstractExportsService {
     format: ExportFormat,
     filters?: ExportInvoicesListParams,
   ): Promise<ExportResult>;
+
+  abstract previewReport(
+    organizationId: string,
+    reportType: string,
+    filters?: ReportPreviewQuery,
+  ): Promise<ReportPreviewResponse>;
 
   abstract getReportingStats(
     organizationId: string,
