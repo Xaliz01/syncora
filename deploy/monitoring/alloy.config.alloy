@@ -1,17 +1,9 @@
-// Alloy — collecte des logs Docker (réseau Compose `planwise`) → Loki.
+// Alloy — collecte des logs Docker (stack Planwise) → Loki.
 // Doc : https://grafana.com/docs/alloy/latest/collect/logs-in-kubernetes/ (équivalent Docker)
 
 discovery.docker "containers" {
 	host             = "unix:///var/run/docker.sock"
 	refresh_interval = "5s"
-
-	// Tous les services app + monitoring sont sur le réseau nommé `planwise`
-	// (les microservices n'ont pas tous container_name=planwise-* : Compose
-	// les nomme `{projet}-{service}-1`, ex. deploy-cases-service-1).
-	filter {
-		name   = "network"
-		values = ["planwise"]
-	}
 }
 
 discovery.relabel "containers" {
@@ -31,6 +23,30 @@ discovery.relabel "containers" {
 	rule {
 		source_labels = ["__meta_docker_container_log_stream"]
 		target_label  = "stream"
+	}
+
+	// Keep OR :
+	// - container_name planwise-* (mongo, caddy, monitoring…)
+	// - image *planwise-* (microservices Compose sans container_name fixe,
+	//   ex. deploy-cases-service-1 → ghcr.io/…/planwise-cases-service:tag)
+	rule {
+		source_labels = ["__meta_docker_container_name"]
+		regex         = "/planwise-.*"
+		target_label  = "__tmp_keep"
+		replacement   = "yes"
+	}
+
+	rule {
+		source_labels = ["__meta_docker_container_image"]
+		regex         = ".*planwise-.*"
+		target_label  = "__tmp_keep"
+		replacement   = "yes"
+	}
+
+	rule {
+		source_labels = ["__tmp_keep"]
+		regex         = "yes"
+		action        = "keep"
 	}
 
 	// Évite la boucle logs Loki/Alloy.
