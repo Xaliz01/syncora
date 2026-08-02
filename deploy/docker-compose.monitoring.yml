@@ -178,11 +178,18 @@ services:
 
   cadvisor:
     profiles: ["monitoring"]
-    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    image: gcr.io/cadvisor/cadvisor:v0.52.1
     container_name: planwise-cadvisor
     restart: unless-stopped
     networks: [planwise]
     privileged: true
+    # Docker 29 + storage overlayfs/containerd : les métriques disque overlay
+    # cassent la découverte des conteneurs (mount-id manquant). On désactive
+    # disk ; CPU/RAM/réseau restent OK (disque hôte via node-exporter).
+    command:
+      - --docker_only=true
+      - --housekeeping_interval=30s
+      - --disable_metrics=disk,diskIO,referenced_memory,tcp,udp,percpu,sched,process
     environment:
       DOCKER_API_VERSION: "1.44"
     volumes:

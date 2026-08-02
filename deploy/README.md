@@ -425,11 +425,31 @@ Exemples LogQL :
 ```logql
 {compose_service="api-gateway-blue"} |= "ERROR"
 {compose_service=~"cases-service|customers-service"} |= "organizationId"
-{container=~"planwise-.*"} |~ "(?i)exception|fatal"
+{container=~".*(cases-service|api-gateway).*"} |~ "(?i)exception|fatal"
 ```
 
 Les labels utiles : `compose_service`, `container`, `stream` (stdout/stderr), `job=docker`.
-Seuls les conteneurs `planwise-*` sont collectés (Loki/Alloy exclus).
+Seuls les conteneurs du réseau Docker **`planwise`** sont collectés (Loki/Alloy exclus).
+Les microservices n’ont souvent pas de `container_name` fixe : Alloy les reconnaît via
+ce réseau (et le label Compose `compose_service`), pas via le préfixe `planwise-`.
+
+Si Grafana n’affiche que monitoring/Mongo (pas les API) : Alloy filtrait autrefois sur
+`planwise-*` uniquement — redéployer la config Alloy puis :
+
+```bash
+docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml \
+  --env-file .env.production --profile monitoring up -d --force-recreate alloy
+```
+
+Puis Explore → Loki → `{job="docker"}` : vérifier `compose_service` (`cases-service`,
+`api-gateway-blue`, etc.).
+
+### cAdvisor (métriques conteneurs)
+
+Sur Docker 29 avec storage `overlayfs`, cAdvisor peut spammer
+`failed to identify the read-write layer ID` / `mount-id: no such file`. Ce n’est **pas**
+lié aux logs Loki. La stack désactive les métriques disque overlay (`--disable_metrics=disk…`)
+pour garder CPU/RAM/réseau ; le disque hôte reste suivi via node-exporter.
 
 Si Grafana affiche **Datasource loki was not found** : le fichier de provisioning
 n’était pas rechargé, ou Loki n’était pas démarré. Corriger ainsi :
