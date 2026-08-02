@@ -53,7 +53,7 @@ export function PostalAddressFields({
   showLine2 = true,
   showCountry = true,
   compact = false,
-  labelCls: _labelClsProp,
+  labelCls: labelClsProp,
   inputCls: inputClsProp,
   legend,
   idPrefix,
@@ -134,9 +134,11 @@ export function PostalAddressFields({
     });
   };
 
-  const fieldLabelCls = compact
-    ? "mb-0.5 block text-[11px] font-medium text-slate-500 dark:text-slate-400"
-    : "mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400";
+  const fieldLabelCls =
+    labelClsProp ??
+    (compact
+      ? "mb-0.5 block text-[11px] font-medium text-slate-500 dark:text-slate-400"
+      : "mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400");
   const sectionLegendCls = compact
     ? "text-sm font-semibold text-slate-800 dark:text-slate-100"
     : "text-base font-semibold text-slate-800 dark:text-slate-100";
