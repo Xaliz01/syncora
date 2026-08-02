@@ -9,27 +9,28 @@ import {
 } from "@planwise/shared";
 import { ScrollReveal } from "@/components/landing/ScrollReveal";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { LANDING_HERO_HEADING, LANDING_HERO_SUPPORT, LANDING_TAGLINE } from "@/lib/landing-copy";
 
 const PILLARS = [
+  {
+    title: "Accessible dès le premier jour",
+    description:
+      "Indépendant ou petite équipe : démarrez vite grâce aux modèles de dossier et profils prêts à importer — sans consultant ni formation lourde.",
+  },
   {
     title: "Dossiers et interventions centralisés",
     description:
       "Suivez chaque dossier, son avancement, ses tâches et son historique depuis un seul endroit.",
   },
   {
-    title: "Exécution terrain et preuve d'intervention",
+    title: "Terrain et preuve d'intervention",
     description:
-      "Vos techniciens démarrent, documentent en photos, font signer le client et génèrent le rapport PDF depuis le terrain.",
+      "Vos techniciens démarrent, documentent en photos, font signer le client et génèrent le rapport PDF depuis le chantier.",
   },
   {
-    title: "Flotte et équipes alignées",
+    title: "Contrats de maintenance suivis",
     description:
-      "Pilotez équipes, techniciens, agences et véhicules avec une vue opérationnelle cohérente.",
-  },
-  {
-    title: "Clients et accès maîtrisés",
-    description:
-      "Retrouvez vos clients rapidement et sécurisez l'accès via des permissions adaptées.",
+      "Planifiez les visites récurrentes : Planwise génère automatiquement les dossiers et interventions à venir.",
   },
   {
     title: "Facturation sans double saisie",
@@ -52,6 +53,7 @@ const FEATURE_SECTIONS = [
     title: "Dossiers & processus",
     items: [
       "Modèles de dossier paramétrables : étapes, tâches et règles de suivi",
+      "Catalogue de modèles métiers prêts à importer (plomberie, électricité, chauffage…)",
       "Progression visible et historique des actions sur chaque dossier",
       "Documents chantier joints (photos, PDF) au bon endroit",
     ],
@@ -63,6 +65,14 @@ const FEATURE_SECTIONS = [
       "Démarrage et clôture horodatés, géolocalisés, avec photos",
       "Signature client et rapport PDF générés sur place",
       "Prélèvement de stock directement depuis l’intervention",
+    ],
+  },
+  {
+    title: "Contrats de maintenance",
+    items: [
+      "Contrats liés au client : périodicité, durée et prochaines échéances",
+      "Rappel avant échéance et file « à programmer », ou auto-planification à l’échéance",
+      "Suivi des contrats actifs sans tableur ni rappel manuel",
     ],
   },
   {
@@ -94,6 +104,7 @@ const FEATURE_SECTIONS = [
     title: "Gouvernance & collaboration",
     items: [
       "Droits fins par rôle : bureau, terrain, lecture seule…",
+      "Profils de permissions prêts à importer pour démarrer sans tout paramétrer",
       "Invitation des collaborateurs et isolation par organisation",
       "Préférences de notification par type d’événement et par canal",
     ],
@@ -116,7 +127,7 @@ function LandingHeader() {
               Planwise
             </div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
-              CRM des opérations terrain
+              {LANDING_TAGLINE}
             </div>
           </div>
         </Link>
@@ -174,20 +185,17 @@ export function LandingPage() {
             </ScrollReveal>
             <ScrollReveal when="mount" delayMs={80}>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-slate-900 dark:text-white max-w-3xl">
-                Pilotez vos opérations terrain depuis un seul outil
+                {LANDING_HERO_HEADING}
               </h1>
             </ScrollReveal>
             <ScrollReveal when="mount" delayMs={160}>
               <p className="mt-5 text-lg text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed">
-                Centralisez dossiers, interventions, clients, flotte et stocks. Standardisez vos
-                processus, planifiez vos équipes, reliez votre outil de facturation et gardez une
-                vision claire de votre activité. Essayez Planwise pendant{" "}
-                {BASE_SUBSCRIPTION_PLAN.trialDays} jours,{" "}
+                {LANDING_HERO_SUPPORT} Essayez Planwise pendant {BASE_SUBSCRIPTION_PLAN.trialDays}{" "}
+                jours,{" "}
                 <span className="font-semibold text-slate-900 dark:text-slate-100">
                   sans aucun moyen de paiement
-                </span>{" "}
-                : injectez en un clic un jeu de données de démonstration pour explorer l&apos;outil
-                sans tout saisir à la main.
+                </span>
+                .
               </p>
             </ScrollReveal>
             <ScrollReveal when="mount" delayMs={240}>
@@ -216,7 +224,7 @@ export function LandingPage() {
 
         {/* Pillars */}
         <section className="max-w-6xl mx-auto px-4 py-14 sm:py-16">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {PILLARS.map((pillar, index) => (
               <ScrollReveal key={pillar.title} delayMs={index * 70}>
                 <article className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/20 h-full">
@@ -240,11 +248,11 @@ export function LandingPage() {
           <div className="max-w-6xl mx-auto px-4 py-14 sm:py-16">
             <ScrollReveal>
               <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-2">
-                Tout ce dont vous avez besoin sur le terrain
+                Tout ce qu&apos;il faut pour piloter votre activité
               </h2>
               <p className="text-slate-600 dark:text-slate-400 mb-10 max-w-2xl">
-                Des fonctionnalités pensées pour les équipes qui gèrent des interventions, une
-                flotte et des stocks au quotidien.
+                Pensé pour les indépendants comme pour les TPE : interventions, contrats, flotte,
+                stock et facturation — sans surcouche inutile.
               </p>
             </ScrollReveal>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -297,12 +305,12 @@ export function LandingPage() {
           <div className="max-w-6xl mx-auto px-4 py-14 sm:py-16">
             <ScrollReveal>
               <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-2">
-                Une offre simple, sans engagement
+                Un prix clair, pensé pour vous
               </h2>
               <p className="text-slate-600 dark:text-slate-400 mb-10 max-w-2xl">
-                Démarrez par {BASE_SUBSCRIPTION_PLAN.trialDays} jours d&apos;essai gratuit, sans
-                carte bancaire. Vous ne renseignez un moyen de paiement que si vous décidez de
-                continuer.
+                Abordable pour un indépendant, scalable pour une TPE. Démarrez par{" "}
+                {BASE_SUBSCRIPTION_PLAN.trialDays} jours d&apos;essai gratuit, sans carte bancaire —
+                vous ne payez que si vous continuez.
               </p>
             </ScrollReveal>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 max-w-6xl">
@@ -346,25 +354,31 @@ export function LandingPage() {
                       <span className="text-brand-600" aria-hidden>
                         ✓
                       </span>
+                      Contrats de maintenance et planification des visites
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-brand-600" aria-hidden>
+                        ✓
+                      </span>
                       Clients, flotte et stock
                     </li>
                     <li className="flex gap-2">
                       <span className="text-brand-600" aria-hidden>
                         ✓
                       </span>
-                      Gestion granulaire des permissions
+                      Profils et modèles métiers prêts à importer
                     </li>
                     <li className="flex gap-2">
                       <span className="text-brand-600" aria-hidden>
                         ✓
                       </span>
-                      10 Go de stockage documents
+                      Permissions granulaires · 10 Go de documents
                     </li>
                     <li className="flex gap-2">
                       <span className="text-brand-600" aria-hidden>
                         ✓
                       </span>
-                      Jeu de données de démonstration injectable depuis le tableau de bord (essai)
+                      Données de démo injectables pendant l&apos;essai
                     </li>
                   </ul>
                   <Link
@@ -457,12 +471,11 @@ export function LandingPage() {
         <section className="border-t border-slate-200 dark:border-slate-800 bg-brand-600 dark:bg-brand-700">
           <ScrollReveal className="max-w-6xl mx-auto px-4 py-14 sm:py-16 text-center">
             <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">
-              Prêt à structurer vos opérations terrain ?
+              Prêt à structurer votre activité — sans vous ruiner ?
             </h2>
             <p className="max-w-xl mx-auto text-white/80 mb-8">
-              Créez votre organisation en quelques minutes et lancez votre essai gratuit de{" "}
-              {BASE_SUBSCRIPTION_PLAN.trialDays} jours, sans carte bancaire. Injectez des données de
-              démonstration et centralisez votre activité dès aujourd&apos;hui.
+              Que vous soyez indépendant ou TPE, créez votre organisation en quelques minutes et
+              lancez votre essai de {BASE_SUBSCRIPTION_PLAN.trialDays} jours, sans carte bancaire.
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               <Link
@@ -488,7 +501,7 @@ export function LandingPage() {
             <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-brand-600 text-white font-semibold text-xs">
               P
             </span>
-            <span>Planwise — CRM des opérations terrain</span>
+            <span>Planwise — {LANDING_TAGLINE}</span>
           </div>
           <div className="flex flex-wrap justify-center gap-4">
             <Link

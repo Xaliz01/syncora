@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { EventEmitterModule } from "@nestjs/event-emitter";
 import { APP_INTERCEPTOR } from "@nestjs/core";
+import { provideHttpAccessLogInterceptor } from "@planwise/shared/nest";
 import { AppController } from "../presentation/http/app.controller";
 import { AbstractAppService } from "../domain/ports/app.service.port";
 import { AppService } from "../services/app.service";
@@ -56,6 +57,7 @@ import { PlatformModule } from "./platform.module";
     { provide: AbstractAppService, useClass: AppService },
     { provide: APP_INTERCEPTOR, useClass: AppVersionInterceptor },
     { provide: APP_INTERCEPTOR, useClass: NotifyInterceptor },
+    provideHttpAccessLogInterceptor(),
   ],
 })
 export class AppModule {}

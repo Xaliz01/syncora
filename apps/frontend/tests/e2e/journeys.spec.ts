@@ -9,7 +9,7 @@ test.describe("Accès invité", () => {
     await expect(page).toHaveURL("/");
     await expect(
       page.getByRole("heading", {
-        name: "Pilotez vos opérations terrain depuis un seul outil",
+        name: "Le CRM terrain abordable pour indépendants, artisans et TPE",
       }),
     ).toBeVisible();
   });
@@ -46,7 +46,10 @@ test.describe("Parcours navigation auth", () => {
     ]);
     await expect(page.getByRole("heading", { name: "Connexion" })).toBeVisible();
 
-    await page.getByRole("link", { name: /Activer votre compte invité/ }).click();
+    await Promise.all([
+      page.waitForURL(/\/accept-invitation/),
+      page.getByRole("link", { name: /Activer votre compte invité/ }).click(),
+    ]);
     await expect(page.getByRole("heading", { name: "Rejoindre l'organisation" })).toBeVisible();
   });
 
@@ -70,6 +73,8 @@ const ALL_PROTECTED_PATHS = [
   "/my-day",
   "/customers",
   "/customers/new",
+  "/contracts",
+  "/contracts/new",
   "/cases",
   "/cases/new",
   "/cases/calendar",
@@ -202,7 +207,7 @@ test.describe("Navigation catch-all", () => {
     await expect(page).toHaveURL("/");
     await expect(
       page.getByRole("heading", {
-        name: "Pilotez vos opérations terrain depuis un seul outil",
+        name: "Le CRM terrain abordable pour indépendants, artisans et TPE",
       }),
     ).toBeVisible();
   });
@@ -212,7 +217,7 @@ test.describe("Navigation catch-all", () => {
     await expect(page).toHaveURL("/");
     await expect(
       page.getByRole("heading", {
-        name: "Pilotez vos opérations terrain depuis un seul outil",
+        name: "Le CRM terrain abordable pour indépendants, artisans et TPE",
       }),
     ).toBeVisible();
   });
@@ -223,16 +228,20 @@ test.describe("Parcours landing publique", () => {
     await page.goto("/");
     await expect(
       page.getByRole("heading", {
-        name: "Pilotez vos opérations terrain depuis un seul outil",
+        name: "Le CRM terrain abordable pour indépendants, artisans et TPE",
       }),
     ).toBeVisible();
 
-    await page.getByRole("link", { name: "Démarrer mon essai gratuit" }).first().click();
-    await expect(page).toHaveURL(/\/register/);
+    await Promise.all([
+      page.waitForURL(/\/register/),
+      page.getByRole("link", { name: "Démarrer mon essai gratuit" }).first().click(),
+    ]);
 
     await page.goto("/");
-    await page.getByRole("link", { name: "Se connecter" }).first().click();
-    await expect(page).toHaveURL(/\/login/);
+    await Promise.all([
+      page.waitForURL(/\/login/),
+      page.getByRole("link", { name: "Se connecter" }).first().click(),
+    ]);
   });
 
   test("mentionne la facturation et les intégrations disponibles", async ({ page }) => {
@@ -245,6 +254,17 @@ test.describe("Parcours landing publique", () => {
       page.getByText(/Suivi et validation des factures synchronisées depuis Planwise/i),
     ).toBeVisible();
     await expect(page.getByText(/sans ressaisie/i)).toBeVisible();
+  });
+
+  test("met en avant accessibilité prix et contrats de maintenance", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.getByText(/Un prix clair, pensé pour vous/i)).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Contrats de maintenance", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText(/Rappel avant échéance|à programmer|auto-planification/i),
+    ).toBeVisible();
   });
 });
 
@@ -269,7 +289,10 @@ test.describe("Parcours inter-pages publiques complet", () => {
     ]);
     await expect(page.getByRole("heading", { name: "Connexion" })).toBeVisible();
 
-    await page.getByRole("link", { name: /Activer votre compte invité/ }).click();
+    await Promise.all([
+      page.waitForURL(/\/accept-invitation/),
+      page.getByRole("link", { name: /Activer votre compte invité/ }).click(),
+    ]);
     await expect(page.getByRole("heading", { name: "Rejoindre l'organisation" })).toBeVisible();
 
     await page.goto("/login");

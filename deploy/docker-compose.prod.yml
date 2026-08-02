@@ -234,7 +234,7 @@ services:
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
-      SMTP_FROM: ${SMTP_FROM:-Planwise <notifications@planwise.fr>}
+      SMTP_FROM: ${SMTP_FROM:-Planwise <contact@planwise.fr>}
       APP_URL: ${APP_URL:-https://app.planwise.fr}
     healthcheck: *tcp-healthcheck
 

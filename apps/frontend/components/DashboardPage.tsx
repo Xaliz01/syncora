@@ -361,6 +361,7 @@ export function DashboardPage() {
   const [selectedStat, setSelectedStat] = useState<DashboardStatFilter | null>(null);
 
   const canReadCases = hasPermission(user, "cases.read");
+  const canReadContracts = hasPermission(user, "contracts.read");
 
   const { data: dashboard, isLoading } = useQuery({
     queryKey: ["dashboard"],
@@ -550,6 +551,63 @@ export function DashboardPage() {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {canReadCases && canReadContracts && (
+        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 sm:p-4 shadow-sm dark:shadow-slate-950/20 overflow-hidden">
+          <div className="flex shrink-0 items-center justify-between mb-3">
+            <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
+              Visites à programmer
+            </h2>
+            <Link
+              href="/contracts?filter=to_schedule"
+              className="text-xs text-brand-600 dark:text-brand-400 hover:text-brand-500 font-medium"
+            >
+              Voir tout
+            </Link>
+          </div>
+          {!dashboard?.pendingMaintenanceVisits?.length ? (
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Aucune visite de maintenance à programmer.
+            </p>
+          ) : (
+            <DashboardPaginatedList
+              items={dashboard.pendingMaintenanceVisits}
+              getKey={(v) => v.contractId}
+              ariaLabel="Pagination des visites à programmer"
+            >
+              {(v) => (
+                <Link href={`/contracts/${v.contractId}`} className={DASHBOARD_LIST_ROW_CLASS}>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-100 truncate">
+                      {v.title}
+                    </div>
+                    {v.customerName ? (
+                      <div className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                        {v.customerName}
+                      </div>
+                    ) : null}
+                  </div>
+                  <div className="ml-2 sm:ml-3 text-right flex-shrink-0">
+                    <div
+                      className={`text-[11px] sm:text-xs ${
+                        v.overdue
+                          ? "font-medium text-red-600 dark:text-red-400"
+                          : "text-slate-600 dark:text-slate-300"
+                      }`}
+                    >
+                      {v.overdue ? "En retard · " : ""}
+                      {v.nextDueDate}
+                    </div>
+                    <div className="text-[10px] text-brand-600 dark:text-brand-400 font-medium">
+                      Programmer
+                    </div>
+                  </div>
+                </Link>
+              )}
+            </DashboardPaginatedList>
+          )}
         </div>
       )}
 

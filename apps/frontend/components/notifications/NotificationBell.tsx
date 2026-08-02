@@ -29,6 +29,7 @@ const ENTITY_TYPE_LABELS: Record<NotificationEntityType, string> = {
   user: "Utilisateur",
   permission_profile: "Profil de permission",
   document: "Document",
+  maintenance_contract: "Contrat de maintenance",
 };
 
 /** Libellé avec article défini pour « sur le/la/l' … » */
@@ -75,6 +76,8 @@ function getEntityRoute(entityType: NotificationEntityType, entityId: string): s
       return `/organization`;
     case "user":
       return `/users`;
+    case "maintenance_contract":
+      return `/contracts/${entityId}`;
     default:
       return null;
   }

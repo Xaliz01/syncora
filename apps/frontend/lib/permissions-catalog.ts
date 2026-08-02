@@ -146,6 +146,26 @@ export const PERMISSION_METADATA: Record<PermissionCode, PermissionMetadata> = {
     description:
       "Archiver des clients (suppression logique) : ils disparaissent des listes mais l’historique des dossiers reste cohérent.",
   },
+  "contracts.read": {
+    code: "contracts.read",
+    label: "Voir les contrats de maintenance",
+    description: "Consulter la liste et le détail des contrats de maintenance récurrents.",
+  },
+  "contracts.create": {
+    code: "contracts.create",
+    label: "Créer des contrats de maintenance",
+    description: "Créer un contrat de maintenance lié à un client.",
+  },
+  "contracts.update": {
+    code: "contracts.update",
+    label: "Modifier les contrats de maintenance",
+    description: "Mettre à jour un contrat et déclencher une génération manuelle de visite.",
+  },
+  "contracts.delete": {
+    code: "contracts.delete",
+    label: "Supprimer des contrats de maintenance",
+    description: "Supprimer un contrat de maintenance.",
+  },
   "fleet.vehicles.read": {
     code: "fleet.vehicles.read",
     label: "Voir les véhicules",

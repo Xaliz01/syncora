@@ -5,17 +5,22 @@ import { LEGAL_PATHS } from "@/lib/legal/routes";
 
 export const SEO_SITE_NAME = "Planwise";
 
-export const SEO_DEFAULT_TITLE = "Planwise — CRM et interventions pour artisans et TPE";
+export const SEO_DEFAULT_TITLE =
+  "Planwise — CRM terrain accessible pour indépendants, artisans et TPE";
 
 export const SEO_DEFAULT_DESCRIPTION =
-  "CRM orienté opérations terrain : dossiers, interventions, planning techniciens, stock et facturation (Pennylane, Qonto). Conçu pour artisans et TPE.";
+  "CRM abordable pour indépendants, artisans et TPE : dossiers, interventions, contrats de maintenance, planning, stock et facturation. Dès 9,99 €/mois, essai gratuit sans carte bancaire.";
 
 export const SEO_KEYWORDS = [
+  "CRM accessible",
+  "CRM abordable",
+  "CRM indépendant",
   "CRM artisans",
+  "CRM TPE",
   "gestion interventions",
   "logiciel terrain",
   "planning techniciens",
-  "CRM TPE",
+  "contrats de maintenance",
   "suivi de dossiers",
   "facturation artisans",
   "Pennylane",
@@ -124,11 +129,27 @@ export function buildSoftwareApplicationJsonLd(): Record<string, unknown> {
     operatingSystem: "Web, iOS, Android",
     url: base,
     description: SEO_DEFAULT_DESCRIPTION,
+    featureList: [
+      "Gestion de dossiers et interventions",
+      "Contrats de maintenance et planification des visites",
+      "Planning techniciens et calendrier",
+      "Stock multi-emplacements",
+      "Rapports d'intervention et signature client",
+      "Facturation via Pennylane et Qonto",
+      "Profils de permissions et modèles de dossier prêts à importer",
+    ],
+    audience: {
+      "@type": "BusinessAudience",
+      audienceType: "Indépendants, artisans et TPE",
+    },
     offers: {
       "@type": "Offer",
+      name: "Essentiel",
+      price: "9.99",
       priceCurrency: "EUR",
       availability: "https://schema.org/InStock",
       url: `${base}/#tarifs`,
+      description: "Abonnement Essentiel — 9,99 € / mois, sans engagement",
     },
     inLanguage: "fr-FR",
     publisher: {

@@ -1,6 +1,10 @@
 import { Module } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
-import { HealthController, provideHealthServiceName } from "@planwise/shared/nest";
+import {
+  HealthController,
+  provideHealthServiceName,
+  provideHttpAccessLogInterceptor,
+} from "@planwise/shared/nest";
 import { SubscriptionsService } from "../domain/subscriptions.service";
 import { SubscriptionsController } from "../presentation/http/subscriptions.controller";
 import { StripeWebhookController } from "../presentation/http/stripe-webhook.controller";
@@ -18,6 +22,10 @@ import { ProcessedStripeEventSchema } from "../persistence/processed-stripe-even
     ]),
   ],
   controllers: [SubscriptionsController, StripeWebhookController, HealthController],
-  providers: [provideHealthServiceName("planwise-subscriptions-service"), SubscriptionsService],
+  providers: [
+    provideHealthServiceName("planwise-subscriptions-service"),
+    provideHttpAccessLogInterceptor(),
+    SubscriptionsService,
+  ],
 })
 export class AppModule {}

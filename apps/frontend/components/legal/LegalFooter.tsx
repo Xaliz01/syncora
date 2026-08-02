@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LEGAL_NAV_LINKS } from "@/lib/legal/routes";
+import { LANDING_TAGLINE } from "@/lib/landing-copy";
 
 export function LegalLinks({ className = "" }: { className?: string }) {
   return (
@@ -25,7 +26,7 @@ export function LegalFooter() {
     <footer className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
       <div className="max-w-6xl mx-auto px-4 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
         <p className="text-xs text-slate-500 dark:text-slate-400 text-center sm:text-left">
-          © {new Date().getFullYear()} Planwise — CRM des opérations terrain
+          © {new Date().getFullYear()} Planwise — {LANDING_TAGLINE}
         </p>
         <LegalLinks className="justify-center" />
       </div>

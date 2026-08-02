@@ -1,5 +1,6 @@
 import { ForbiddenException } from "@nestjs/common";
 import { of } from "rxjs";
+import { PLATFORM_CRON_JOBS } from "@planwise/shared";
 import { PlatformService } from "../platform.service";
 
 describe("PlatformService", () => {
@@ -167,12 +168,15 @@ describe("PlatformService", () => {
       },
     );
 
+    const expectedTotal =
+      89 + 10 + (PLATFORM_CRON_JOBS.length - 2) * 5; /* 5 runs par défaut pour chaque autre job */
+
     const page1 = await service.listCronRuns({ limit: 50, offset: 0 });
-    expect(page1.total).toBe(104);
+    expect(page1.total).toBe(expectedTotal);
     expect(page1.runs).toHaveLength(50);
 
     const page2 = await service.listCronRuns({ limit: 50, offset: 50 });
-    expect(page2.total).toBe(104);
+    expect(page2.total).toBe(expectedTotal);
     expect(page2.runs.length).toBeGreaterThan(0);
     expect(page2.runs[0]?.id).not.toBe(page1.runs[0]?.id);
   });

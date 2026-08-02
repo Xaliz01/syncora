@@ -1,11 +1,11 @@
 import type { MetadataRoute } from "next";
+import { SEO_DEFAULT_DESCRIPTION, SEO_SITE_NAME } from "@/lib/seo";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Planwise — CRM des opérations terrain",
-    short_name: "Planwise",
-    description:
-      "Gérez vos clients, planifiez vos interventions et pilotez votre activité terrain depuis votre téléphone.",
+    name: `${SEO_SITE_NAME} — CRM accessible aux artisans et TPE`,
+    short_name: SEO_SITE_NAME,
+    description: SEO_DEFAULT_DESCRIPTION,
     start_url: "/login",
     display: "standalone",
     orientation: "portrait",

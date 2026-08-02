@@ -1,6 +1,10 @@
 import { Module } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
-import { HealthController, provideHealthServiceName } from "@planwise/shared/nest";
+import {
+  HealthController,
+  provideHealthServiceName,
+  provideHttpAccessLogInterceptor,
+} from "@planwise/shared/nest";
 import { PermissionsController } from "../presentation/http/permissions.controller";
 import { TestDataController } from "../presentation/http/test-data.controller";
 import { AbstractPermissionsService } from "../domain/ports/permissions.service.port";
@@ -23,6 +27,7 @@ import { InvitationSchema } from "../persistence/invitation.schema";
   controllers: [PermissionsController, TestDataController, HealthController],
   providers: [
     provideHealthServiceName("planwise-permissions-service"),
+    provideHttpAccessLogInterceptor(),
     { provide: AbstractPermissionsService, useClass: PermissionsService },
   ],
 })

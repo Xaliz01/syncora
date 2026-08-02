@@ -5,11 +5,17 @@ export type CronRunStatus = "running" | "ok" | "error" | "skipped";
 export type PlatformCronJobKey =
   | "integrations.invoice-sync"
   | "notifications.intervention-reminders"
-  | "organizations.trial-test-data-cleanup";
+  | "notifications.maintenance-visit-reminders"
+  | "organizations.trial-test-data-cleanup"
+  | "cases.maintenance-contract-visits";
 
 export interface PlatformCronJobDefinition {
   jobKey: PlatformCronJobKey;
-  service: "integrations-service" | "notifications-service" | "organizations-service";
+  service:
+    | "integrations-service"
+    | "notifications-service"
+    | "organizations-service"
+    | "cases-service";
   label: string;
   schedule: string;
   description: string;
@@ -33,11 +39,27 @@ export const PLATFORM_CRON_JOBS: PlatformCronJobDefinition[] = [
     description: "Envoie les rappels in-app / push / email avant les interventions planifiées.",
   },
   {
+    jobKey: "notifications.maintenance-visit-reminders",
+    service: "notifications-service",
+    label: "Rappels visites de maintenance",
+    schedule: "Toutes les heures",
+    description:
+      "Notifie l’équipe lorsqu’une visite de contrat (mode à programmer) entre dans la fenêtre de rappel.",
+  },
+  {
     jobKey: "organizations.trial-test-data-cleanup",
     service: "organizations-service",
     label: "Purge données de démo essai",
     schedule: "Tous les jours à 04:00 (Europe/Paris)",
     description: "Supprime les données de test des organisations dont l’essai est terminé.",
+  },
+  {
+    jobKey: "cases.maintenance-contract-visits",
+    service: "cases-service",
+    label: "Visites contrats de maintenance",
+    schedule: "Toutes les heures",
+    description:
+      "Auto-planifie les contrats en mode auto_plan ; marque « à programmer » les contrats en mode schedule_with_client dans la fenêtre de rappel.",
   },
 ];
 

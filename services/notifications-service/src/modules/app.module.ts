@@ -2,7 +2,11 @@ import { Module } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
 import { ScheduleModule } from "@nestjs/schedule";
 import { HttpModule } from "@nestjs/axios";
-import { HealthController, provideHealthServiceName } from "@planwise/shared/nest";
+import {
+  HealthController,
+  provideHealthServiceName,
+  provideHttpAccessLogInterceptor,
+} from "@planwise/shared/nest";
 import { NotificationsController } from "../presentation/http/notifications.controller";
 import { NotificationPreferencesController } from "../presentation/http/notification-preferences.controller";
 import { PushSubscriptionsController } from "../presentation/http/push-subscriptions.controller";
@@ -16,6 +20,7 @@ import { PushSubscriptionService } from "../domain/push-subscription.service";
 import { AbstractEmailService } from "../domain/ports/email.service.port";
 import { EmailService } from "../domain/email.service";
 import { InterventionReminderScheduler } from "../domain/intervention-reminder.scheduler";
+import { MaintenanceVisitReminderScheduler } from "../domain/maintenance-visit-reminder.scheduler";
 import { NotificationSchema } from "../persistence/notification.schema";
 import { NotificationPreferencesSchema } from "../persistence/notification-preferences.schema";
 import { PushSubscriptionSchema } from "../persistence/push-subscription.schema";
@@ -49,6 +54,7 @@ import { PlatformOpsController } from "../presentation/http/platform-ops.control
   ],
   providers: [
     provideHealthServiceName("planwise-notifications-service"),
+    provideHttpAccessLogInterceptor(),
     { provide: AbstractNotificationsService, useClass: NotificationsService },
     {
       provide: AbstractNotificationPreferencesService,
@@ -58,6 +64,7 @@ import { PlatformOpsController } from "../presentation/http/platform-ops.control
     { provide: AbstractEmailService, useClass: EmailService },
     CronRunRecorder,
     InterventionReminderScheduler,
+    MaintenanceVisitReminderScheduler,
   ],
 })
 export class AppModule {}

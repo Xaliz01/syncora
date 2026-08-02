@@ -433,6 +433,16 @@ Seuls les conteneurs du réseau Docker **`planwise`** sont collectés (Loki/Allo
 Les microservices n’ont souvent pas de `container_name` fixe : Alloy les reconnaît via
 ce réseau (et le label Compose `compose_service`), pas via le préfixe `planwise-`.
 
+Chaque service Nest émet un access log HTTP (hors `/health`) au format :
+`http_access method=GET path=/cases status=200 durationMs=12 organizationId=…`
+
+Exemples :
+
+```logql
+{compose_service="cases-service"} |= "http_access"
+{compose_service=~".+-service|api-gateway.*"} |= "http_access" |= "status=5"
+```
+
 Si Grafana n’affiche que monitoring/Mongo (pas les API) : Alloy filtrait autrefois sur
 `planwise-*` uniquement — redéployer la config Alloy puis :
 

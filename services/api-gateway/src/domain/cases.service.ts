@@ -1447,7 +1447,36 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       this.enrichCaseSummaries(user, dash.assignedCases),
       this.enrichCaseSummaries(user, dash.overdueCases),
     ]);
-    return { ...dash, assignedCases, overdueCases };
+
+    const canReadContracts = (user.permissions ?? []).includes("contracts.read");
+    let pendingMaintenanceVisits = dash.pendingMaintenanceVisits ?? [];
+    if (!canReadContracts) {
+      pendingMaintenanceVisits = [];
+    } else if (pendingMaintenanceVisits.length > 0) {
+      pendingMaintenanceVisits = await this.enrichPendingMaintenanceVisits(
+        user,
+        pendingMaintenanceVisits,
+      );
+    }
+
+    return { ...dash, assignedCases, overdueCases, pendingMaintenanceVisits };
+  }
+
+  private async enrichPendingMaintenanceVisits(
+    user: AuthUser,
+    items: CaseDashboardResponse["pendingMaintenanceVisits"],
+  ): Promise<CaseDashboardResponse["pendingMaintenanceVisits"]> {
+    const ids = [...new Set(items.map((i) => i.customerId).filter(Boolean))];
+    if (ids.length === 0) return items;
+    const customers = await this.customersGateway.listCustomersByIds(user, ids);
+    const map = new Map(customers.map((c) => [c.id, c]));
+    return items.map((item) => {
+      const c = map.get(item.customerId);
+      return {
+        ...item,
+        customerName: c?.displayName ?? item.customerName,
+      };
+    });
   }
 
   async getDashboardTodoCases(

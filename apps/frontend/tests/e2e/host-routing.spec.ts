@@ -19,7 +19,7 @@ import {
   requestWithHost,
 } from "./helpers/host-headers";
 
-const LANDING_HEADING = "Pilotez vos opérations terrain depuis un seul outil";
+const LANDING_HEADING = "Le CRM terrain abordable pour indépendants, artisans et TPE";
 
 const HOSTS_SETUP_HINT =
   "Ajoutez 127.0.0.1 planwise.fr www.planwise.fr app.planwise.fr dans /etc/hosts (voir en-tête de ce fichier).";

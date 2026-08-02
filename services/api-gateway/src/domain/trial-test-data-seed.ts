@@ -13,9 +13,10 @@ import type {
   CreateTechnicianBody,
   CreateVehicleBody,
   CustomerKind,
-  PermissionCode,
-  TemplateStep,
-  TodoDashboardRule,
+} from "@planwise/shared";
+import {
+  DEFAULT_CASE_TEMPLATE_PRESETS,
+  DEFAULT_PERMISSION_PROFILE_PRESETS,
 } from "@planwise/shared";
 
 /** Volumes cibles pour l’injection de démo (vs. jeu initial minimal). */
@@ -161,134 +162,37 @@ const CASE_PRIORITIES: CasePriority[] = ["medium", "high", "low", "urgent", "med
 
 const TEAM_COLORS = ["#7C3AED", "#0EA5E9", "#059669", "#D97706"];
 
-type DemoProfileSeed = Pick<CreatePermissionProfileBody, "name" | "description" | "permissions">;
-
-const DEMO_PERMISSION_PROFILES: DemoProfileSeed[] = [
-  {
-    name: "Démo — Technicien terrain",
-    description: "Lecture dossiers, interventions et clients.",
-    permissions: [
-      "cases.read",
-      "interventions.read",
-      "interventions.update",
-      "customers.read",
-      "fleet.technicians.read",
-      "teams.read",
-    ] as PermissionCode[],
-  },
-  {
-    name: "Démo — Chef d'équipe",
-    description: "Pilotage des équipes et du planning.",
-    permissions: [
-      "cases.read",
-      "cases.update",
-      "cases.assign",
-      "interventions.read",
-      "interventions.create",
-      "interventions.update",
-      "customers.read",
-      "teams.read",
-      "teams.update",
-      "fleet.technicians.read",
-      "fleet.vehicles.read",
-    ] as PermissionCode[],
-  },
-  {
-    name: "Démo — Gestionnaire stock",
-    description: "Articles et mouvements de stock.",
-    permissions: [
-      "stock.articles.read",
-      "stock.articles.create",
-      "stock.articles.update",
-      "stock.movements.read",
-      "stock.movements.create",
-      "cases.read",
-    ] as PermissionCode[],
-  },
-  {
-    name: "Démo — Secrétariat",
-    description: "Accueil client et création de dossiers.",
-    permissions: [
-      "customers.read",
-      "customers.create",
-      "customers.update",
-      "cases.read",
-      "cases.create",
-      "cases.update",
-      "case_templates.read",
-    ] as PermissionCode[],
-  },
-];
-
-/** Règle « Afficher sur le tableau de bord » pour les todos des modèles démo. */
-const DEMO_TODO_DASHBOARD_RULE: TodoDashboardRule = {
-  showOnDashboard: true,
-  visibility: "all",
+type DemoProfileSeed = {
+  name: string;
+  description: string;
+  permissions: CreatePermissionProfileBody["permissions"];
 };
 
-function demoTemplateSteps(kind: string): TemplateStep[] {
-  return [
-    {
-      name: "Prise en charge",
-      order: 0,
-      description: `Étape démo — ${kind}`,
-      todos: [
-        {
-          label: "Contacter le client",
-          description: "Donnée de démonstration",
-          dashboardRule: DEMO_TODO_DASHBOARD_RULE,
-        },
-        { label: "Planifier le créneau", description: "Donnée de démonstration" },
-      ],
-    },
-    {
-      name: "Intervention",
-      order: 1,
-      todos: [
-        {
-          label: "Réaliser l'intervention",
-          description: "Donnée de démonstration",
-          dashboardRule: DEMO_TODO_DASHBOARD_RULE,
-        },
-        { label: "Photos avant / après", description: "Donnée de démonstration" },
-      ],
-    },
-    {
-      name: "Clôture",
-      order: 2,
-      todos: [
-        {
-          label: "Compte-rendu et facturation",
-          description: "Donnée de démonstration",
-          dashboardRule: DEMO_TODO_DASHBOARD_RULE,
-        },
-      ],
-    },
-  ];
-}
+/** Profils démo : sous-ensemble du catalogue produit, préfixés « Démo — ». */
+const DEMO_PERMISSION_PROFILES: DemoProfileSeed[] = DEFAULT_PERMISSION_PROFILE_PRESETS.filter((p) =>
+  ["technician-field", "team-lead", "stock-manager", "secretariat"].includes(p.id),
+).map((p) => ({
+  name: `Démo — ${p.name}`,
+  description: p.description,
+  permissions: [...p.permissions],
+}));
 
-const DEMO_CASE_TEMPLATES: Pick<CreateCaseTemplateBody, "name" | "description" | "steps">[] = [
-  {
-    name: "Démo — Dépannage plomberie",
-    description: "Modèle de dossier pour fuites et dépannages sanitaires.",
-    steps: demoTemplateSteps("plomberie"),
-  },
-  {
-    name: "Démo — Installation électrique",
-    description: "Modèle pour mise aux normes et extensions.",
-    steps: demoTemplateSteps("électricité"),
-  },
-  {
-    name: "Démo — Entretien chauffage",
-    description: "Modèle pour maintenance annuelle chaudière.",
-    steps: demoTemplateSteps("chauffage"),
-  },
-  {
-    name: "Démo — SAV climatisation",
-    description: "Modèle pour diagnostic et recharge.",
-    steps: demoTemplateSteps("climatisation"),
-  },
-];
+/** Modèles démo : 4 métiers du catalogue, préfixés « Démo — ». */
+const DEMO_CASE_TEMPLATE_IDS = [
+  "plumbing-repair",
+  "electrical-install",
+  "heating-service",
+  "hvac-sav",
+] as const;
+
+const DEMO_CASE_TEMPLATES = DEMO_CASE_TEMPLATE_IDS.map((id) => {
+  const preset = DEFAULT_CASE_TEMPLATE_PRESETS.find((t) => t.id === id)!;
+  return {
+    name: `Démo — ${preset.name}`,
+    description: preset.description,
+    steps: preset.steps,
+  };
+});
 
 function padIndex(index: number, width = 3): string {
   return String(index).padStart(width, "0");

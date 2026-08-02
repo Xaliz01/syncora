@@ -11,6 +11,7 @@ import { usePermissions } from "@/lib/hooks/usePermissions";
 import { CustomerCasesSection } from "./CustomerCasesSection";
 import { CustomerEditForm } from "./CustomerEditForm";
 import { CustomerContactsSection } from "./CustomerContactsSection";
+import { CustomerContractsSection } from "./CustomerContractsSection";
 import { CustomerSitesSection } from "./CustomerSitesSection";
 import { CUSTOMER_KIND_LABELS } from "./customer-kind-labels";
 import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
@@ -306,6 +307,8 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
       )}
 
       <CustomerCasesSection customerId={customerId} />
+
+      <CustomerContractsSection customerId={customerId} />
 
       <CustomerSitesSection customer={c} />
 

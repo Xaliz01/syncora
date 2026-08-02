@@ -3,9 +3,12 @@
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { DEFAULT_CASE_TEMPLATE_PRESETS } from "@planwise/shared";
 import * as api from "@/lib/cases.api";
 import { TestDataBadgeIf } from "@/components/test-data/TestDataBadge";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { ImportDefaultsDialog } from "@/components/settings/ImportDefaultsDialog";
+import { useToast } from "@/components/ui/ToastProvider";
 import {
   filterListItems,
   ListCellDefault,
@@ -29,7 +32,10 @@ const GRID = "md:grid-cols-[1.2fr_2fr_0.9fr_auto]";
 export function TemplatesListPage() {
   const queryClient = useQueryClient();
   const confirm = useConfirm();
+  const { showToast } = useToast();
   const [search, setSearch] = useState("");
+  const [importOpen, setImportOpen] = useState(false);
+  const [importing, setImporting] = useState(false);
 
   const { data: templates = [], isLoading } = useQuery({
     queryKey: ["case-templates"],
@@ -40,6 +46,27 @@ export function TemplatesListPage() {
     mutationFn: (id: string) => api.deleteTemplate(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["case-templates"] }),
   });
+
+  const existingNames = useMemo(
+    () => new Set(templates.map((t) => t.name.trim().toLowerCase())),
+    [templates],
+  );
+
+  const importItems = useMemo(
+    () =>
+      DEFAULT_CASE_TEMPLATE_PRESETS.map((t) => {
+        const todoCount = t.steps.reduce((acc, s) => acc + s.todos.length, 0);
+        return {
+          id: t.id,
+          name: t.name,
+          description: t.description,
+          category: t.category,
+          meta: `${t.steps.length} étape${t.steps.length > 1 ? "s" : ""} · ${todoCount} tâche${todoCount > 1 ? "s" : ""}`,
+          alreadyExists: existingNames.has(t.name.trim().toLowerCase()),
+        };
+      }),
+    [existingNames],
+  );
 
   const filtered = useMemo(
     () =>
@@ -52,17 +79,73 @@ export function TemplatesListPage() {
     [templates, search],
   );
 
+  const handleImport = async (ids: string[]) => {
+    setImporting(true);
+    let ok = 0;
+    let failed = 0;
+    try {
+      for (const id of ids) {
+        const preset = DEFAULT_CASE_TEMPLATE_PRESETS.find((p) => p.id === id);
+        if (!preset) continue;
+        if (existingNames.has(preset.name.trim().toLowerCase())) continue;
+        try {
+          await api.createTemplate({
+            name: preset.name,
+            description: preset.description,
+            steps: preset.steps.map((s) => ({
+              name: s.name,
+              description: s.description,
+              order: s.order,
+              todos: s.todos.map((todo) => ({
+                label: todo.label,
+                description: todo.description,
+                dashboardRule: todo.dashboardRule,
+              })),
+            })),
+          });
+          ok += 1;
+        } catch {
+          failed += 1;
+        }
+      }
+      await queryClient.invalidateQueries({ queryKey: ["case-templates"] });
+      setImportOpen(false);
+      if (ok > 0) {
+        showToast(
+          `${ok} modèle${ok > 1 ? "s" : ""} importé${ok > 1 ? "s" : ""}${
+            failed > 0 ? ` (${failed} échec${failed > 1 ? "s" : ""})` : ""
+          }.`,
+        );
+      } else if (failed > 0) {
+        showToast("Aucun modèle importé.", "error");
+      }
+    } finally {
+      setImporting(false);
+    }
+  };
+
   return (
     <ListPageRoot>
       <ListPageHeader
         title="Modèles de dossier"
-        description="Configurez des modèles avec étapes et tâches pour créer rapidement des dossiers typés."
+        description="Importez des modèles métiers prêts à l’emploi, ou créez le vôtre avec étapes et tâches."
         action={
-          <PermissionGate permission="case_templates.create">
-            <ListPrimaryAction href="/settings/case-templates/new">
-              Nouveau modèle
-            </ListPrimaryAction>
-          </PermissionGate>
+          <div className="flex flex-wrap gap-2">
+            <PermissionGate permission="case_templates.create">
+              <button
+                type="button"
+                onClick={() => setImportOpen(true)}
+                className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+              >
+                Importer depuis la librairie
+              </button>
+            </PermissionGate>
+            <PermissionGate permission="case_templates.create">
+              <ListPrimaryAction href="/settings/case-templates/new">
+                Nouveau modèle
+              </ListPrimaryAction>
+            </PermissionGate>
+          </div>
         }
       />
 
@@ -81,12 +164,22 @@ export function TemplatesListPage() {
           message="Aucun modèle de dossier."
           action={
             <PermissionGate permission="case_templates.create">
-              <Link
-                href="/settings/case-templates/new"
-                className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium"
-              >
-                Créer un modèle
-              </Link>
+              <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center">
+                <button
+                  type="button"
+                  onClick={() => setImportOpen(true)}
+                  className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium"
+                >
+                  Importer des modèles métiers
+                </button>
+                <span className="text-slate-400 hidden sm:inline">ou</span>
+                <Link
+                  href="/settings/case-templates/new"
+                  className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium"
+                >
+                  Créer un modèle
+                </Link>
+              </div>
             </PermissionGate>
           }
         />
@@ -160,6 +253,16 @@ export function TemplatesListPage() {
           })}
         </ListTableShell>
       )}
+
+      <ImportDefaultsDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        title="Importer des modèles de dossier"
+        description="Plomberie, électricité, chauffage, serrurerie, maintenance… Les modèles déjà présents (même nom) sont ignorés."
+        items={importItems}
+        importing={importing}
+        onImport={handleImport}
+      />
     </ListPageRoot>
   );
 }

@@ -16,6 +16,8 @@
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",
+    "@nestjs/core": "^11.0.0",
+    "rxjs": "^7.8.0",
     "winston": "^3.17.0"
   },
   "scripts": {

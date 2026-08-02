@@ -1,7 +1,11 @@
 import { Module } from "@nestjs/common";
 import { HttpModule } from "@nestjs/axios";
 import { MongooseModule } from "@nestjs/mongoose";
-import { HealthController, provideHealthServiceName } from "@planwise/shared/nest";
+import {
+  HealthController,
+  provideHealthServiceName,
+  provideHttpAccessLogInterceptor,
+} from "@planwise/shared/nest";
 import { OrganizationsController } from "../presentation/http/organizations.controller";
 import { AnalyticsController } from "../presentation/http/analytics.controller";
 import { OrganizationSchema } from "../persistence/organization.schema";
@@ -35,6 +39,7 @@ import { PlatformOpsController } from "../presentation/http/platform-ops.control
   ],
   providers: [
     provideHealthServiceName("planwise-organizations-service"),
+    provideHttpAccessLogInterceptor(),
     { provide: AbstractOrganizationsService, useClass: OrganizationsService },
     { provide: AbstractAnalyticsService, useClass: AnalyticsService },
     CronRunRecorder,

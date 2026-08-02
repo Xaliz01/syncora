@@ -14,6 +14,7 @@ export function CaseCustomerPicker({
   onChange,
   disabled,
   idPrefix = "case-customer",
+  helpText = "Liez un client existant ou créez-en un rapidement.",
 }: {
   value: string;
   /** Libellé affiché quand le parent connaît déjà le client (ex. fiche dossier) */
@@ -21,6 +22,7 @@ export function CaseCustomerPicker({
   onChange: (customerId: string) => void;
   disabled?: boolean;
   idPrefix?: string;
+  helpText?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -77,9 +79,7 @@ export function CaseCustomerPicker({
       >
         Client
       </label>
-      <p className="text-xs text-slate-500 dark:text-slate-400">
-        Liez un client existant ou créez-en un rapidement pour ce dossier.
-      </p>
+      <p className="text-xs text-slate-500 dark:text-slate-400">{helpText}</p>
 
       <div className="relative">
         <button

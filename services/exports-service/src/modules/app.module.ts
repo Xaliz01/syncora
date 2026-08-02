@@ -1,6 +1,10 @@
 import { Module } from "@nestjs/common";
 import { HttpModule } from "@nestjs/axios";
-import { HealthController, provideHealthServiceName } from "@planwise/shared/nest";
+import {
+  HealthController,
+  provideHealthServiceName,
+  provideHttpAccessLogInterceptor,
+} from "@planwise/shared/nest";
 import { ExportsController } from "../presentation/http/exports.controller";
 import { AbstractExportsService } from "../domain/ports/exports.service.port";
 import { ExportsService } from "../domain/exports.service";
@@ -10,6 +14,7 @@ import { ExportsService } from "../domain/exports.service";
   controllers: [ExportsController, HealthController],
   providers: [
     provideHealthServiceName("planwise-exports-service"),
+    provideHttpAccessLogInterceptor(),
     { provide: AbstractExportsService, useClass: ExportsService },
   ],
 })

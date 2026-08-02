@@ -8,9 +8,11 @@
 
 ## 1. Vision
 
-**Planwise** est un outil SaaS qui aide les **artisans et TPE** à organiser leur activité terrain : clients, dossiers, interventions, équipes et stock léger — sans la complexité des gros logiciels FSM ou ERP.
+**Planwise** est un outil SaaS qui aide les **indépendants, artisans et TPE** à organiser leur activité terrain : clients, dossiers, interventions, contrats de maintenance, équipes et stock léger — sans la complexité ni le prix des gros logiciels FSM ou ERP.
 
 **Promesse** : _« Je sais quoi faire aujourd’hui, pour qui, avec qui, et je peux le prouver au client. »_
+
+**Positionnement prix** : un CRM terrain **accessible à tous** — abordable pour un solo / artisan comme pour une petite équipe.
 
 **Ce que nous ne sommes pas (à court terme)** :
 
@@ -183,14 +185,14 @@ Objectif : stock utile sans WMS enterprise.
 
 Objectif : monter en gamme sans perdre la simplicité TPE.
 
-| #   | Évolution                                                  | Notes                                | Statut |
-| --- | ---------------------------------------------------------- | ------------------------------------ | ------ |
-| 5.1 | **Maintenance récurrente** (contrats, échéances)           | Cible chauffage / contrats entretien | ⬜     |
-| 5.2 | **SMS** client (rappel RDV, « en route »)                  | Complément email                     | ⬜     |
-| 5.3 | Optimisation **tournée journée** (plusieurs interventions) | Extension addon routing              | ⬜     |
-| 5.4 | **API / webhooks** documentés                              | Intégrateurs, partenaires            | ⬜     |
-| 5.5 | **Rapports** (interventions / semaine, retard, stock)      | Pilotage patron                      | ⬜     |
-| 5.6 | Offre **Pro** (voir cible ci-dessous)                      | Alignement valeur / prix             | ⬜     |
+| #   | Évolution                                                                          | Notes                                | Statut |
+| --- | ---------------------------------------------------------------------------------- | ------------------------------------ | ------ |
+| 5.1 | **Maintenance récurrente** (contrats, échéances, rappels à programmer / auto-plan) | Cible chauffage / contrats entretien | 🟡     |
+| 5.2 | **SMS** client (rappel RDV, « en route »)                                          | Complément email                     | ⬜     |
+| 5.3 | Optimisation **tournée journée** (plusieurs interventions)                         | Extension addon routing              | ⬜     |
+| 5.4 | **API / webhooks** documentés                                                      | Intégrateurs, partenaires            | ⬜     |
+| 5.5 | **Rapports** (interventions / semaine, retard, stock)                              | Pilotage patron                      | ⬜     |
+| 5.6 | Offre **Pro** (voir cible ci-dessous)                                              | Alignement valeur / prix             | ⬜     |
 
 #### Offre Pro — cible produit (pas encore commercialisée)
 

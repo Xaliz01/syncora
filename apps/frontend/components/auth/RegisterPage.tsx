@@ -21,6 +21,7 @@ import {
   type OrganizationAddressForm,
 } from "@/lib/organization-address";
 import { LegalConsentCheckbox } from "@/components/legal/LegalConsentCheckbox";
+import { LANDING_TAGLINE } from "@/lib/landing-copy";
 
 type RegisterStep = "account" | "verify-email" | "organization";
 
@@ -187,9 +188,7 @@ export function RegisterPage() {
               <div className="font-semibold text-lg text-slate-900 dark:text-slate-100">
                 Planwise
               </div>
-              <div className="text-xs text-slate-500 dark:text-slate-400">
-                CRM des opérations terrain
-              </div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">{LANDING_TAGLINE}</div>
             </div>
           </Link>
           <ThemeToggle />

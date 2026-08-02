@@ -1,6 +1,10 @@
 import { Module } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
-import { HealthController, provideHealthServiceName } from "@planwise/shared/nest";
+import {
+  HealthController,
+  provideHealthServiceName,
+  provideHttpAccessLogInterceptor,
+} from "@planwise/shared/nest";
 import { FleetController } from "../presentation/http/fleet.controller";
 import { TestDataController } from "../presentation/http/test-data.controller";
 import { VehicleSchema } from "../persistence/vehicle.schema";
@@ -15,6 +19,7 @@ import { FleetService } from "../domain/fleet.service";
   controllers: [FleetController, TestDataController, HealthController],
   providers: [
     provideHealthServiceName("planwise-fleet-service"),
+    provideHttpAccessLogInterceptor(),
     { provide: AbstractFleetService, useClass: FleetService },
   ],
 })

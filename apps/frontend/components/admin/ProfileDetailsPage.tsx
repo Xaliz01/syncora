@@ -88,30 +88,31 @@ export function ProfileDetailsPage({ profileId }: { profileId: string }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-semibold mb-1">Fiche profil</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Consultez ce profil de permissions.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {can("profiles.update") && (
-            <button
-              type="button"
-              onClick={() => setIsEditing((previous) => !previous)}
-              className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
-            >
-              {isEditing ? "Annuler" : "Modifier"}
-            </button>
-          )}
-          <Link
-            href="/settings/profiles"
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Link
+          href="/settings/profiles"
+          className="text-sm font-medium text-brand-600 dark:text-brand-400 hover:text-brand-500"
+        >
+          &larr; Profils
+        </Link>
+        {can("profiles.update") && (
+          <button
+            type="button"
+            onClick={() => setIsEditing((previous) => !previous)}
             className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
           >
-            Retour aux profils
-          </Link>
-        </div>
+            {isEditing ? "Annuler" : "Modifier"}
+          </button>
+        )}
+      </div>
+
+      <div>
+        <h1 className="text-xl sm:text-2xl font-semibold mb-1">
+          {loading ? "Fiche profil" : name || "Fiche profil"}
+        </h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          Consultez ce profil de permissions.
+        </p>
       </div>
 
       {error && (

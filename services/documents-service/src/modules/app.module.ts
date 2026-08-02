@@ -1,6 +1,10 @@
 import { Module } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
-import { HealthController, provideHealthServiceName } from "@planwise/shared/nest";
+import {
+  HealthController,
+  provideHealthServiceName,
+  provideHttpAccessLogInterceptor,
+} from "@planwise/shared/nest";
 import { DocumentsController } from "../presentation/http/documents.controller";
 import { DocumentSchema } from "../persistence/document.schema";
 import { AbstractDocumentsService } from "../domain/ports/documents.service.port";
@@ -21,6 +25,7 @@ const isProduction = process.env.STORAGE_PROVIDER === "s3";
   controllers: [DocumentsController, HealthController],
   providers: [
     provideHealthServiceName("planwise-documents-service"),
+    provideHttpAccessLogInterceptor(),
     {
       provide: AbstractStorageProvider,
       useClass: isProduction ? S3StorageProvider : LocalStorageProvider,

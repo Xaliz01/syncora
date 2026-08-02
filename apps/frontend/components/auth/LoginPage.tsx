@@ -8,6 +8,7 @@ import { getMarketingHomeHref } from "@/lib/host-routing";
 import { postAuthHomePath } from "@/lib/subscription-access";
 import { sanitizeAuthReturnPath } from "@/lib/auth-return-url";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { LANDING_TAGLINE } from "@/lib/landing-copy";
 
 export function LoginPage() {
   const [email, setEmail] = useState("");
@@ -54,9 +55,7 @@ export function LoginPage() {
               <div className="font-semibold text-lg text-slate-900 dark:text-slate-100">
                 Planwise
               </div>
-              <div className="text-xs text-slate-500 dark:text-slate-400">
-                CRM des opérations terrain
-              </div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">{LANDING_TAGLINE}</div>
             </div>
           </Link>
           <ThemeToggle />
@@ -70,8 +69,8 @@ export function LoginPage() {
               Bienvenue sur Planwise
             </h1>
             <p className="text-slate-600 dark:text-slate-300 mb-8 max-w-xl">
-              Le hub opérationnel des artisans et TPE : dossiers, interventions terrain, gestion des
-              équipes et des stocks, facturation connectée.
+              Le CRM terrain accessible aux indépendants, artisans et TPE : dossiers, interventions,
+              contrats de maintenance, équipes, stock et facturation — à un prix clair.
             </p>
 
             <div className="grid gap-4 md:grid-cols-3">

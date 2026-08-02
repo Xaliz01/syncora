@@ -1,0 +1,199 @@
+import type { AssignablePermissionCode } from "./permissions";
+import { TECHNICIAN_FIELD_DEFAULT_PERMISSIONS } from "./permissions";
+
+/** Preset de profil de permissions proposé à l’import (artisans & TPE). */
+export interface DefaultPermissionProfilePreset {
+  id: string;
+  name: string;
+  description: string;
+  /** Regroupement UI (ex. Terrain, Bureau). */
+  category: string;
+  permissions: readonly AssignablePermissionCode[];
+}
+
+/**
+ * Catalogue de profils prêts à l’emploi.
+ * Couvre le terrain, le planning, le bureau, le stock et la facturation légère.
+ */
+export const DEFAULT_PERMISSION_PROFILE_PRESETS: readonly DefaultPermissionProfilePreset[] = [
+  {
+    id: "technician-field",
+    name: "Technicien terrain",
+    description: "Ma journée, dossiers assignés, clôture et preuves d’intervention.",
+    category: "Terrain",
+    permissions: TECHNICIAN_FIELD_DEFAULT_PERMISSIONS,
+  },
+  {
+    id: "team-lead",
+    name: "Chef d’équipe",
+    description: "Planning, affectations, suivi des interventions et lecture flotte.",
+    category: "Terrain",
+    permissions: [
+      "cases.read",
+      "cases.update",
+      "cases.assign",
+      "cases.create",
+      "interventions.read",
+      "interventions.create",
+      "interventions.update",
+      "interventions.sign",
+      "comments.read",
+      "comments.create",
+      "comments.update",
+      "customers.read",
+      "teams.read",
+      "teams.update",
+      "fleet.technicians.read",
+      "fleet.vehicles.read",
+      "contracts.read",
+      "notifications.manage_preferences",
+    ],
+  },
+  {
+    id: "secretariat",
+    name: "Secrétariat / Accueil",
+    description: "Clients, création de dossiers et modèles — sans gestion des droits.",
+    category: "Bureau",
+    permissions: [
+      "customers.read",
+      "customers.create",
+      "customers.update",
+      "cases.read",
+      "cases.create",
+      "cases.update",
+      "case_templates.read",
+      "interventions.read",
+      "interventions.create",
+      "comments.read",
+      "comments.create",
+      "contracts.read",
+      "contracts.create",
+      "quotes.read",
+      "quotes.create",
+    ],
+  },
+  {
+    id: "office-ops",
+    name: "Gestionnaire dossiers",
+    description: "Pilotage complet des dossiers, devis et contrats de maintenance.",
+    category: "Bureau",
+    permissions: [
+      "customers.read",
+      "customers.create",
+      "customers.update",
+      "cases.read",
+      "cases.create",
+      "cases.update",
+      "cases.assign",
+      "cases.manage_billing",
+      "case_templates.read",
+      "interventions.read",
+      "interventions.create",
+      "interventions.update",
+      "quotes.read",
+      "quotes.create",
+      "quotes.update",
+      "contracts.read",
+      "contracts.create",
+      "contracts.update",
+      "comments.read",
+      "comments.create",
+      "comments.update",
+      "exports.cases",
+      "exports.customers",
+      "exports.interventions",
+    ],
+  },
+  {
+    id: "stock-manager",
+    name: "Gestionnaire stock",
+    description: "Catalogue, mouvements, emplacements et consommations chantier.",
+    category: "Stock",
+    permissions: [
+      "stock.articles.read",
+      "stock.articles.create",
+      "stock.articles.update",
+      "stock.articles.delete",
+      "stock.movements.read",
+      "stock.movements.create",
+      "stock.locations.read",
+      "stock.locations.create",
+      "stock.locations.update",
+      "stock.transfers.create",
+      "stock.interventions.read",
+      "stock.interventions.create",
+      "cases.read",
+      "interventions.read",
+      "fleet.vehicles.read",
+      "agences.read",
+    ],
+  },
+  {
+    id: "billing-clerk",
+    name: "Facturation & devis",
+    description: "Devis, statut de facturation et exports vers la compta.",
+    category: "Revenus",
+    permissions: [
+      "customers.read",
+      "cases.read",
+      "cases.update",
+      "cases.manage_billing",
+      "quotes.read",
+      "quotes.create",
+      "quotes.update",
+      "quotes.delete",
+      "exports.billing",
+      "exports.cases",
+      "integrations.pennylane.read",
+      "integrations.pennylane.sync",
+      "integrations.qonto.read",
+      "integrations.qonto.sync",
+    ],
+  },
+  {
+    id: "fleet-manager",
+    name: "Responsable flotte",
+    description: "Véhicules, techniciens, équipes et agences.",
+    category: "Flotte",
+    permissions: [
+      "fleet.vehicles.read",
+      "fleet.vehicles.create",
+      "fleet.vehicles.update",
+      "fleet.vehicles.assign",
+      "fleet.technicians.read",
+      "fleet.technicians.create",
+      "fleet.technicians.update",
+      "teams.read",
+      "teams.create",
+      "teams.update",
+      "agences.read",
+      "agences.create",
+      "agences.update",
+      "cases.read",
+      "interventions.read",
+    ],
+  },
+  {
+    id: "reporting-viewer",
+    name: "Lecture reporting",
+    description: "Consultation du reporting et des exports, sans modification métier.",
+    category: "Pilotage",
+    permissions: [
+      "cases.read",
+      "customers.read",
+      "interventions.read",
+      "contracts.read",
+      "exports.reporting",
+      "exports.cases",
+      "exports.customers",
+      "exports.interventions",
+      "exports.billing",
+    ],
+  },
+];
+
+export function getDefaultPermissionProfilePreset(
+  id: string,
+): DefaultPermissionProfilePreset | undefined {
+  return DEFAULT_PERMISSION_PROFILE_PRESETS.find((p) => p.id === id);
+}

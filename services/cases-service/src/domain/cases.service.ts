@@ -1,8 +1,10 @@
 import {
   BadRequestException,
   ConflictException,
+  Inject,
   Injectable,
   NotFoundException,
+  forwardRef,
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model, Types } from "mongoose";
@@ -54,6 +56,7 @@ import type { InterventionDocument } from "../persistence/intervention.schema";
 import type { QuoteDocument, QuoteLineSubDoc } from "../persistence/quote.schema";
 import type { CommentDocument } from "../persistence/comment.schema";
 import { AbstractCasesService } from "./ports/cases.service.port";
+import { MaintenanceContractsService } from "./maintenance-contracts.service";
 
 @Injectable()
 export class CasesService extends AbstractCasesService {
@@ -70,6 +73,8 @@ export class CasesService extends AbstractCasesService {
     private readonly quoteModel: Model<QuoteDocument>,
     @InjectModel("Comment")
     private readonly commentModel: Model<CommentDocument>,
+    @Inject(forwardRef(() => MaintenanceContractsService))
+    private readonly maintenanceContractsService: MaintenanceContractsService,
   ) {
     super();
   }
@@ -836,6 +841,14 @@ export class CasesService extends AbstractCasesService {
 
     const todoWidgets = await this.computeTodoWidgets(organizationId, userId, userProfileId);
 
+    let pendingMaintenanceVisits: CaseDashboardResponse["pendingMaintenanceVisits"] = [];
+    try {
+      pendingMaintenanceVisits =
+        await this.maintenanceContractsService.listVisitsToSchedule(organizationId);
+    } catch {
+      pendingMaintenanceVisits = [];
+    }
+
     return {
       assignedCases: assignedCases.map((c) => this.toCaseSummary(c)),
       upcomingInterventions: upcomingInterventions.map((i) =>
@@ -843,6 +856,7 @@ export class CasesService extends AbstractCasesService {
       ),
       overdueCases: overdueCases.map((c) => this.toCaseSummary(c)),
       todoWidgets,
+      pendingMaintenanceVisits,
       stats: {
         totalAssigned: assignedCases.length,
         inProgress: assignedCases.filter((c) => c.status === "in_progress").length,

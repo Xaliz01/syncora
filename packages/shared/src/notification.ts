@@ -16,7 +16,8 @@ export type NotificationEntityType =
   | "organization"
   | "user"
   | "permission_profile"
-  | "document";
+  | "document"
+  | "maintenance_contract";
 
 export type NotificationAction = "created" | "updated" | "deleted";
 
@@ -92,6 +93,7 @@ export const NOTIFICATION_EVENT_TYPES = [
   "case_status_changed",
   "case_assigned",
   "entity_updated",
+  "maintenance_visit_reminder",
 ] as const;
 export type NotificationEventType = (typeof NOTIFICATION_EVENT_TYPES)[number];
 
@@ -105,6 +107,7 @@ export const NOTIFICATION_EVENT_TYPE_LABELS: Record<NotificationEventType, strin
   case_status_changed: "Changement de statut de dossier",
   case_assigned: "Dossier assigné",
   entity_updated: "Modification d'entité (général)",
+  maintenance_visit_reminder: "Rappel visite de maintenance à programmer",
 };
 
 /** Délais de rappel possibles (en minutes). */
@@ -155,10 +158,16 @@ export function buildDefaultNotificationPreferences(): NotificationPreferencesDa
       channels: {
         in_app: { enabled: true },
         email: {
-          enabled: eventType === "intervention_assigned" || eventType === "intervention_reminder",
+          enabled:
+            eventType === "intervention_assigned" ||
+            eventType === "intervention_reminder" ||
+            eventType === "maintenance_visit_reminder",
         },
         push: {
-          enabled: eventType === "intervention_assigned" || eventType === "intervention_reminder",
+          enabled:
+            eventType === "intervention_assigned" ||
+            eventType === "intervention_reminder" ||
+            eventType === "maintenance_visit_reminder",
         },
         sms: { enabled: false },
       },

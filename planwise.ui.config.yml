@@ -52,7 +52,7 @@ ui:
         style: "bg-brand-600 text-white font-semibold"
         content: "S"
       title: "Planwise"
-      subtitle: "CRM des opérations terrain"
+      subtitle: "CRM accessible aux artisans et TPE"
     home_sections:
       - key: "customers"
         title: "Portefeuille client"

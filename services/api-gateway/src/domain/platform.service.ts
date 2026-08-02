@@ -46,6 +46,7 @@ import { AbstractSubscriptionsGatewayService } from "./ports/subscriptions.servi
 const ORGANIZATIONS_URL = process.env.ORGANIZATIONS_SERVICE_URL ?? "http://localhost:3001";
 const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
 const PERMISSIONS_URL = process.env.PERMISSIONS_SERVICE_URL ?? "http://localhost:3003";
+const CASES_URL = process.env.CASES_SERVICE_URL ?? "http://localhost:3004";
 const INTEGRATIONS_URL = process.env.INTEGRATIONS_SERVICE_URL ?? "http://localhost:3013";
 const NOTIFICATIONS_URL = process.env.NOTIFICATIONS_SERVICE_URL ?? "http://localhost:3010";
 
@@ -444,6 +445,8 @@ export class PlatformService extends AbstractPlatformService {
         return NOTIFICATIONS_URL;
       case "organizations-service":
         return ORGANIZATIONS_URL;
+      case "cases-service":
+        return CASES_URL;
       default:
         return ORGANIZATIONS_URL;
     }

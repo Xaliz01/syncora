@@ -2,7 +2,11 @@ import { Module } from "@nestjs/common";
 import { HttpModule } from "@nestjs/axios";
 import { MongooseModule } from "@nestjs/mongoose";
 import { ScheduleModule } from "@nestjs/schedule";
-import { HealthController, provideHealthServiceName } from "@planwise/shared/nest";
+import {
+  HealthController,
+  provideHealthServiceName,
+  provideHttpAccessLogInterceptor,
+} from "@planwise/shared/nest";
 import { IntegrationsController } from "../presentation/http/integrations.controller";
 import { AbstractIntegrationsService } from "../domain/ports/integrations.service.port";
 import { IntegrationsService } from "../domain/integrations.service";
@@ -30,6 +34,7 @@ import { CronRunRecorder } from "../domain/cron-run.recorder";
   controllers: [IntegrationsController, HealthController],
   providers: [
     provideHealthServiceName("planwise-integrations-service"),
+    provideHttpAccessLogInterceptor(),
     { provide: AbstractIntegrationsService, useClass: IntegrationsService },
     CronRunRecorder,
     InvoiceSyncScheduler,

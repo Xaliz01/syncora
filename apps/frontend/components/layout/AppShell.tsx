@@ -13,6 +13,7 @@ import { hasActiveSubscriptionAccess } from "@/lib/subscription-access";
 import { OrganizationSwitcher } from "@/components/organization/OrganizationSwitcher";
 import { hasAnyPermission, hasPermission } from "@/lib/auth-permissions";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { LANDING_TAGLINE } from "@/lib/landing-copy";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { CrispHelpButton } from "@/components/support/CrispHelpButton";
 import { appVersionLabel, APP_VERSION } from "@/lib/app-version";
@@ -255,6 +256,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             ...(hasPermission(user, "customers.read")
               ? [{ label: "Clients", href: "/customers" }]
               : []),
+            ...(hasPermission(user, "contracts.read")
+              ? [{ label: "Contrats", href: "/contracts" }]
+              : []),
             ...(hasPermission(user, "cases.read")
               ? [{ label: "Calendrier", href: "/cases/calendar" }]
               : []),
@@ -361,7 +365,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <div className="hidden sm:block">
                 <div className="font-semibold text-sm leading-tight">Planwise</div>
                 <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
-                  CRM des opérations terrain
+                  {LANDING_TAGLINE}
                 </div>
               </div>
             </Link>

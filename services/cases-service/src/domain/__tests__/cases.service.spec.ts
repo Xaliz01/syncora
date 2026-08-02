@@ -4,6 +4,7 @@ import { ConflictException, NotFoundException, BadRequestException } from "@nest
 import { activeDocumentFilter } from "@planwise/shared";
 import { CasesService } from "../cases.service";
 import { AbstractCasesService } from "../ports/cases.service.port";
+import { MaintenanceContractsService } from "../maintenance-contracts.service";
 
 const updateChain = (result: Record<string, unknown> = { matchedCount: 1, modifiedCount: 1 }) => {
   const p = Promise.resolve(result);
@@ -184,6 +185,10 @@ describe("CasesService", () => {
         { provide: getModelToken("Intervention"), useValue: mockInterventionModel },
         { provide: getModelToken("Quote"), useValue: mockQuoteModel },
         { provide: getModelToken("Comment"), useValue: mockCommentModel },
+        {
+          provide: MaintenanceContractsService,
+          useValue: { listVisitsToSchedule: jest.fn().mockResolvedValue([]) },
+        },
       ],
     }).compile();
 

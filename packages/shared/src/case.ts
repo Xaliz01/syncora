@@ -1,6 +1,7 @@
 /** API contracts for cases-service (templates, cases, interventions) */
 
 import type { CustomerKind, PostalAddress } from "./customer";
+import type { DashboardMaintenanceVisitItem } from "./maintenance-contract";
 
 // ── Statuses ──
 
@@ -451,6 +452,8 @@ export interface CaseDashboardResponse {
   upcomingInterventions: InterventionResponse[];
   overdueCases: CaseSummaryResponse[];
   todoWidgets: DashboardTodoItem[];
+  /** Visites de maintenance à programmer avec le client (nécessite contracts.read côté gateway). */
+  pendingMaintenanceVisits: DashboardMaintenanceVisitItem[];
   stats: {
     totalAssigned: number;
     inProgress: number;
