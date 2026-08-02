@@ -429,28 +429,20 @@ Exemples LogQL :
 ```
 
 Les labels utiles : `compose_service`, `container`, `stream` (stdout/stderr), `job=docker`.
-Seuls les conteneurs **Planwise** sont collectés :
-noms `planwise-*` **ou** images `*planwise-*` (microservices sans `container_name`
-fixe, ex. `deploy-cases-service-1`). Loki/Alloy exclus.
+Seuls les conteneurs du réseau Docker **`planwise`** sont collectés (Loki/Alloy exclus).
+Les microservices n’ont souvent pas de `container_name` fixe : Alloy les reconnaît via
+ce réseau (et le label Compose `compose_service`), pas via le préfixe `planwise-`.
 
-Si Grafana n’affiche que monitoring/Mongo (pas les API) : redéployer Alloy après
-mise à jour de `monitoring/alloy.config.alloy` :
+Si Grafana n’affiche que monitoring/Mongo (pas les API) : Alloy filtrait autrefois sur
+`planwise-*` uniquement — redéployer la config Alloy puis :
 
 ```bash
-cd /opt/planwise/deploy   # ou $DEPLOY_PATH/deploy
-# Vérifier que le fichier monté est à jour :
-grep -n 'planwise-' monitoring/alloy.config.alloy | head
 docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml \
   --env-file .env.production --profile monitoring up -d --force-recreate alloy
-docker logs planwise-alloy --tail 50
 ```
 
-Puis Explore → Loki → `{job="docker"}` : label `compose_service` doit lister
-`cases-service`, `api-gateway-blue`, etc. Contrôle rapide sur la VM :
-
-```bash
-docker ps --format '{{.Names}}\t{{.Image}}' | grep -E 'planwise-|cases-service|api-gateway'
-```
+Puis Explore → Loki → `{job="docker"}` : vérifier `compose_service` (`cases-service`,
+`api-gateway-blue`, etc.).
 
 ### cAdvisor (métriques conteneurs)
 
