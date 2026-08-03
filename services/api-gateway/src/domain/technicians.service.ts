@@ -99,9 +99,8 @@ export class TechniciansGatewayService extends AbstractTechniciansGatewayService
         method: "get",
         path: `/users/${technician.userId}`,
       });
-      if (user.organizationId !== currentUser.organizationId) {
-        return technician;
-      }
+      // La réponse est déjà scopée à l’organisation courante (membership org),
+      // même si l’org « primaire » du document user pointe ailleurs (multi-org).
       return { ...technician, linkedUser: this.toLinkedUser(user) };
     } catch {
       return technician;

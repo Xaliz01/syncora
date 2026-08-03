@@ -309,20 +309,31 @@ export class UsersService extends AbstractUsersService {
     }
 
     if (doc.passwordHash) {
-      const ok = await bcrypt.compare(body.password, doc.passwordHash);
-      if (!ok) {
-        throw new UnauthorizedException("Mot de passe incorrect");
+      const trustedSession = body.trustedAuthenticatedUserId?.trim() === id;
+      if (!trustedSession) {
+        if (!body.password?.trim()) {
+          throw new BadRequestException("Mot de passe requis pour rejoindre l'organisation");
+        }
+        const ok = await bcrypt.compare(body.password, doc.passwordHash);
+        if (!ok) {
+          throw new UnauthorizedException("Mot de passe incorrect");
+        }
       }
     } else {
+      if (!body.password?.trim()) {
+        throw new BadRequestException("Mot de passe requis pour activer le compte");
+      }
       assertPasswordPolicy(body.password);
       doc.passwordHash = await bcrypt.hash(body.password, SALT_ROUNDS);
     }
 
     if (body.name) doc.name = body.name;
+    doc.status = "active";
     doc.emailVerified = true;
     doc.emailVerificationCodeHash = undefined;
     doc.emailVerificationExpiresAt = null;
     doc.emailVerificationSentAt = null;
+    // Org « courante » après acceptation (le membership org1 reste actif s’il l’était).
     doc.organizationId = organizationId;
     await doc.save();
 
@@ -524,12 +535,19 @@ export class UsersService extends AbstractUsersService {
     return this.toResponseForOrganization(doc, body.organizationId);
   }
 
-  async findById(id: string): Promise<UserResponse | null> {
+  async findById(id: string, organizationId?: string): Promise<UserResponse | null> {
     const doc = await this.userModel.findOne({ _id: id, ...activeDocumentFilter }).exec();
     if (!doc) return null;
-    if (!doc.organizationId?.trim()) return null;
     await this.ensureMembershipsBackfill(doc);
-    return this.toResponseForOrganization(doc, doc.organizationId);
+    const scopedOrgId = organizationId?.trim() || doc.organizationId?.trim();
+    if (!scopedOrgId) return null;
+    try {
+      return await this.toResponseForOrganization(doc, scopedOrgId);
+    } catch (err) {
+      // Multi-org : l’utilisateur existe mais n’a pas de membership dans l’org demandée.
+      if (organizationId?.trim() && err instanceof NotFoundException) return null;
+      throw err;
+    }
   }
 
   async listByOrganization(organizationId: string): Promise<UserResponse[]> {
@@ -634,14 +652,17 @@ export class UsersService extends AbstractUsersService {
     await this.revokeSession(id);
   }
 
-  async getPreferences(userId: string): Promise<UserPreferencesResponse> {
+  async getPreferences(userId: string, organizationId?: string): Promise<UserPreferencesResponse> {
     const doc = await this.preferencesModel.findOne({ userId }).exec();
     if (!doc) {
-      return { userId, preferences: { ...DEFAULT_USER_PREFERENCES } };
+      return {
+        userId,
+        preferences: this.withOrgScopedPreferences({ ...DEFAULT_USER_PREFERENCES }, organizationId),
+      };
     }
     return {
       userId: doc.userId,
-      preferences: this.toPreferences(doc),
+      preferences: this.withOrgScopedPreferences(this.toPreferences(doc), organizationId),
     };
   }
 
@@ -651,6 +672,16 @@ export class UsersService extends AbstractUsersService {
   ): Promise<UserPreferencesResponse> {
     const user = await this.userModel.findOne({ _id: userId, ...activeDocumentFilter }).exec();
     if (!user) throw new NotFoundException("User not found");
+
+    const orgId = body.organizationId?.trim();
+    if (body.onboardingProfileCompleted !== undefined && !orgId) {
+      throw new BadRequestException(
+        "organizationId is required when updating onboardingProfileCompleted",
+      );
+    }
+    if (body.setupGuideDismissed !== undefined && !orgId) {
+      throw new BadRequestException("organizationId is required when updating setupGuideDismissed");
+    }
 
     const $set: Record<string, unknown> = {};
     if (body.theme !== undefined) $set.theme = body.theme;
@@ -665,40 +696,122 @@ export class UsersService extends AbstractUsersService {
       $set.quickActionIds = normalized;
     }
 
+    const $setOnInsert: Record<string, unknown> = {
+      userId,
+      ...(body.theme === undefined ? { theme: DEFAULT_USER_PREFERENCES.theme } : {}),
+      ...(body.sidebarCollapsed === undefined
+        ? { sidebarCollapsed: DEFAULT_USER_PREFERENCES.sidebarCollapsed }
+        : {}),
+      ...(body.quickActionIds === undefined
+        ? { quickActionIds: [...DEFAULT_USER_PREFERENCES.quickActionIds] }
+        : {}),
+    };
+
+    const update: Record<string, unknown> = {
+      $setOnInsert,
+    };
+    if (Object.keys($set).length > 0) {
+      update.$set = $set;
+    }
+
+    const $addToSet: Record<string, string> = {};
+    const $pull: Record<string, string> = {};
+
+    if (body.onboardingProfileCompleted === true && orgId) {
+      $addToSet.onboardingCompletedOrganizationIds = orgId;
+    } else if (body.onboardingProfileCompleted === false && orgId) {
+      $pull.onboardingCompletedOrganizationIds = orgId;
+    }
+
+    if (body.setupGuideDismissed === true && orgId) {
+      $addToSet.setupGuideDismissedOrganizationIds = orgId;
+    } else if (body.setupGuideDismissed === false && orgId) {
+      $pull.setupGuideDismissedOrganizationIds = orgId;
+    }
+
+    if (Object.keys($addToSet).length > 0) {
+      update.$addToSet = $addToSet;
+    }
+    if (Object.keys($pull).length > 0) {
+      update.$pull = $pull;
+    }
+
+    // Initialiser les listes à l’insert seulement si on ne les touche pas (évite conflit Mongo).
+    if (
+      !$addToSet.onboardingCompletedOrganizationIds &&
+      !$pull.onboardingCompletedOrganizationIds
+    ) {
+      $setOnInsert.onboardingCompletedOrganizationIds = [];
+    }
+    if (
+      !$addToSet.setupGuideDismissedOrganizationIds &&
+      !$pull.setupGuideDismissedOrganizationIds
+    ) {
+      $setOnInsert.setupGuideDismissedOrganizationIds = [];
+    }
+
     const doc = await this.preferencesModel
-      .findOneAndUpdate(
-        { userId },
-        {
-          $set,
-          $setOnInsert: {
-            userId,
-            ...(body.theme === undefined ? { theme: DEFAULT_USER_PREFERENCES.theme } : {}),
-            ...(body.sidebarCollapsed === undefined
-              ? { sidebarCollapsed: DEFAULT_USER_PREFERENCES.sidebarCollapsed }
-              : {}),
-            ...(body.quickActionIds === undefined
-              ? { quickActionIds: [...DEFAULT_USER_PREFERENCES.quickActionIds] }
-              : {}),
-          },
-        },
-        { upsert: true, new: true },
-      )
+      .findOneAndUpdate({ userId }, update, { upsert: true, new: true })
       .exec();
 
     return {
       userId: doc!.userId,
-      preferences: this.toPreferences(doc!),
+      preferences: this.withOrgScopedPreferences(this.toPreferences(doc!), orgId),
     };
+  }
+
+  async findFoundingAdminUserId(organizationId: string): Promise<string | null> {
+    const orgId = organizationId?.trim();
+    if (!orgId) return null;
+    const doc = await this.membershipModel
+      .findOne({
+        organizationId: orgId,
+        role: "admin",
+        deletedAt: null,
+        membershipStatus: { $in: ["active", "invited"] },
+      })
+      .sort({ createdAt: 1 })
+      .exec();
+    return doc?.userId ?? null;
   }
 
   private toPreferences(doc: UserPreferencesDocument): UserPreferences {
     const quickActionIds = normalizeQuickActionIds(doc.quickActionIds) ?? [
       ...DEFAULT_USER_PREFERENCES.quickActionIds,
     ];
+    const onboardingOrgIds = Array.isArray(doc.onboardingCompletedOrganizationIds)
+      ? [...new Set(doc.onboardingCompletedOrganizationIds.filter(Boolean))]
+      : [];
+    const setupGuideOrgIds = Array.isArray(doc.setupGuideDismissedOrganizationIds)
+      ? [...new Set(doc.setupGuideDismissedOrganizationIds.filter(Boolean))]
+      : [];
     return {
       theme: doc.theme,
       sidebarCollapsed: doc.sidebarCollapsed,
       quickActionIds,
+      onboardingCompletedOrganizationIds: onboardingOrgIds,
+      onboardingProfileCompleted: false,
+      setupGuideDismissedOrganizationIds: setupGuideOrgIds,
+      setupGuideDismissed: false,
+    };
+  }
+
+  private withOrgScopedPreferences(
+    preferences: UserPreferences,
+    organizationId?: string,
+  ): UserPreferences {
+    const orgId = organizationId?.trim();
+    if (!orgId) {
+      return {
+        ...preferences,
+        onboardingProfileCompleted: preferences.onboardingCompletedOrganizationIds.length > 0,
+        setupGuideDismissed: preferences.setupGuideDismissedOrganizationIds.length > 0,
+      };
+    }
+    return {
+      ...preferences,
+      onboardingProfileCompleted: preferences.onboardingCompletedOrganizationIds.includes(orgId),
+      setupGuideDismissed: preferences.setupGuideDismissedOrganizationIds.includes(orgId),
     };
   }
 

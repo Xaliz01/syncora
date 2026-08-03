@@ -1,6 +1,8 @@
 import type {
   UpdateUserNameBody,
   ChangePasswordBody,
+  CompleteOnboardingProfileBody,
+  CompleteOnboardingProfileResponse,
   UpdateUserPreferencesBody,
   UserPreferencesResponse,
   UserResponse,
@@ -32,6 +34,13 @@ export function updatePreferences(body: UpdateUserPreferencesBody) {
   return apiRequestJson<UserPreferencesResponse>("PUT", "/account/preferences", {
     body,
     fallbackError: "Impossible de mettre à jour les préférences",
+  });
+}
+
+export function completeOnboardingProfile(body: CompleteOnboardingProfileBody) {
+  return apiRequestJson<CompleteOnboardingProfileResponse>("POST", "/account/onboarding-profile", {
+    body,
+    fallbackError: "Impossible d'enregistrer votre profil",
   });
 }
 

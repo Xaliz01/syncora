@@ -5,11 +5,11 @@ import type { AxiosResponse } from "axios";
 import type { AuthUser, UserPreferencesResponse, UserResponse } from "@planwise/shared";
 import { AccountService } from "../account.service";
 import { AbstractAccountService } from "../ports/account.service.port";
-import { BadRequestException, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, NotFoundException } from "@nestjs/common";
 
 describe("AccountService", () => {
   let service: AccountService;
-  let mockHttpService: { request: jest.Mock };
+  let mockHttpService: { request: jest.Mock; get: jest.Mock; post: jest.Mock; put: jest.Mock };
 
   const mockUser: AuthUser = {
     id: "user-123",
@@ -24,6 +24,9 @@ describe("AccountService", () => {
   beforeEach(async () => {
     mockHttpService = {
       request: jest.fn(),
+      get: jest.fn(),
+      post: jest.fn(),
+      put: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -104,6 +107,10 @@ describe("AccountService", () => {
           theme: "light",
           sidebarCollapsed: "expanded",
           quickActionIds: ["case_new", "cases_list", "calendar", "case_templates"],
+          onboardingCompletedOrganizationIds: [],
+          onboardingProfileCompleted: false,
+          setupGuideDismissedOrganizationIds: [],
+          setupGuideDismissed: false,
         },
       };
       mockHttpService.request.mockReturnValue(of({ data: expected, status: 200 } as AxiosResponse));
@@ -113,7 +120,7 @@ describe("AccountService", () => {
       expect(mockHttpService.request).toHaveBeenCalledWith(
         expect.objectContaining({
           method: "get",
-          url: expect.stringContaining("/users/user-123/preferences"),
+          url: expect.stringContaining("/users/user-123/preferences?organizationId=org-1"),
         }),
       );
       expect(result).toEqual(expected);
@@ -128,6 +135,10 @@ describe("AccountService", () => {
           theme: "dark",
           sidebarCollapsed: "collapsed",
           quickActionIds: ["case_new", "cases_list", "calendar", "case_templates"],
+          onboardingCompletedOrganizationIds: [],
+          onboardingProfileCompleted: false,
+          setupGuideDismissedOrganizationIds: [],
+          setupGuideDismissed: false,
         },
       };
       mockHttpService.request.mockReturnValue(of({ data: expected, status: 200 } as AxiosResponse));
@@ -137,6 +148,16 @@ describe("AccountService", () => {
         sidebarCollapsed: "collapsed",
       });
 
+      expect(mockHttpService.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: "put",
+          data: expect.objectContaining({
+            theme: "dark",
+            sidebarCollapsed: "collapsed",
+            organizationId: "org-1",
+          }),
+        }),
+      );
       expect(result).toEqual(expected);
     });
 
@@ -150,6 +171,108 @@ describe("AccountService", () => {
       await expect(service.updatePreferences(mockUser, { theme: "dark" })).rejects.toThrow(
         NotFoundException,
       );
+    });
+  });
+
+  describe("completeOnboardingProfile", () => {
+    const foundingAdmin: AuthUser = {
+      ...mockUser,
+      role: "admin",
+      isFoundingAdmin: true,
+    };
+
+    it("should create and link a technician when going on interventions", async () => {
+      mockHttpService.get.mockReturnValueOnce(
+        of({ data: { userId: "user-123" }, status: 200 } as AxiosResponse),
+      );
+      mockHttpService.get.mockReturnValueOnce(of({ data: null, status: 200 } as AxiosResponse));
+      mockHttpService.post.mockReturnValue(
+        of({ data: { id: "tech-1" }, status: 201 } as AxiosResponse),
+      );
+      mockHttpService.put.mockReturnValue(
+        of({ data: { id: "tech-1", userId: "user-123" }, status: 200 } as AxiosResponse),
+      );
+      const prefs: UserPreferencesResponse = {
+        userId: "user-123",
+        preferences: {
+          theme: "light",
+          sidebarCollapsed: "expanded",
+          quickActionIds: ["case_new", "cases_list", "calendar", "case_templates"],
+          onboardingCompletedOrganizationIds: ["org-1"],
+          onboardingProfileCompleted: true,
+          setupGuideDismissedOrganizationIds: [],
+          setupGuideDismissed: false,
+        },
+      };
+      mockHttpService.request.mockReturnValue(of({ data: prefs, status: 200 } as AxiosResponse));
+
+      const result = await service.completeOnboardingProfile(foundingAdmin, {
+        goesOnInterventions: true,
+      });
+
+      expect(mockHttpService.post).toHaveBeenCalledWith(
+        expect.stringContaining("/technicians"),
+        expect.objectContaining({
+          organizationId: "org-1",
+          email: "user@example.com",
+          status: "actif",
+        }),
+      );
+      expect(mockHttpService.put).toHaveBeenCalledWith(
+        expect.stringContaining("/technicians/tech-1/link-user"),
+        { userId: "user-123" },
+        expect.objectContaining({ params: { organizationId: "org-1" } }),
+      );
+      expect(mockHttpService.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: "put",
+          data: expect.objectContaining({
+            onboardingProfileCompleted: true,
+            organizationId: "org-1",
+          }),
+        }),
+      );
+      expect(result.technicianId).toBe("tech-1");
+      expect(result.preferences.onboardingProfileCompleted).toBe(true);
+    });
+
+    it("should only mark onboarding complete when office-only", async () => {
+      mockHttpService.get.mockReturnValueOnce(
+        of({ data: { userId: "user-123" }, status: 200 } as AxiosResponse),
+      );
+      mockHttpService.get.mockReturnValueOnce(of({ data: null, status: 200 } as AxiosResponse));
+      const prefs: UserPreferencesResponse = {
+        userId: "user-123",
+        preferences: {
+          theme: "light",
+          sidebarCollapsed: "expanded",
+          quickActionIds: ["case_new", "cases_list", "calendar", "case_templates"],
+          onboardingCompletedOrganizationIds: ["org-1"],
+          onboardingProfileCompleted: true,
+          setupGuideDismissedOrganizationIds: [],
+          setupGuideDismissed: false,
+        },
+      };
+      mockHttpService.request.mockReturnValue(of({ data: prefs, status: 200 } as AxiosResponse));
+
+      const result = await service.completeOnboardingProfile(foundingAdmin, {
+        goesOnInterventions: false,
+      });
+
+      expect(mockHttpService.post).not.toHaveBeenCalled();
+      expect(result.technicianId).toBeUndefined();
+      expect(result.preferences.onboardingProfileCompleted).toBe(true);
+    });
+
+    it("should reject non-founding admins", async () => {
+      mockHttpService.get.mockReturnValue(
+        of({ data: { userId: "other-admin" }, status: 200 } as AxiosResponse),
+      );
+
+      await expect(
+        service.completeOnboardingProfile(foundingAdmin, { goesOnInterventions: false }),
+      ).rejects.toThrow(ForbiddenException);
+      expect(mockHttpService.post).not.toHaveBeenCalled();
     });
   });
 

@@ -87,6 +87,11 @@ export interface AuthUser {
   permissions: PermissionCode[];
   name?: string;
   technicianId?: string;
+  /**
+   * Premier admin de l’organisation (créateur / membership admin le plus ancien).
+   * Sert notamment à l’onboarding profil terrain.
+   */
+  isFoundingAdmin?: boolean;
   /** Présent pendant une session support (impersonation). */
   impersonatorId?: string;
   impersonatorEmail?: string;

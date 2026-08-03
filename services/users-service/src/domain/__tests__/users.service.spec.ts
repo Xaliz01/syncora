@@ -463,6 +463,33 @@ describe("UsersService", () => {
       expect(bcrypt.compare).toHaveBeenCalledWith("existing-pass1", "hashed");
       expect(bcrypt.hash).not.toHaveBeenCalled();
       expect(doc.organizationId).toBe("org-2");
+      expect(doc.status).toBe("active");
+      expect(result.organizationId).toBe("org-2");
+    });
+
+    it("should skip password when trusted authenticated session matches the invitee", async () => {
+      const doc = mockDoc({
+        passwordHash: "hashed",
+        organizationId: "org-1",
+        save: jest.fn().mockImplementation(function (this: typeof doc) {
+          return Promise.resolve(this);
+        }),
+      });
+      mockUserModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+      mockMembershipModel.findOne.mockReturnValue({
+        exec: jest
+          .fn()
+          .mockResolvedValue(mockMemDoc({ organizationId: "org-2", membershipStatus: "invited" })),
+      });
+
+      const result = await service.activateInvitedUser("user-123", {
+        organizationId: "org-2",
+        trustedAuthenticatedUserId: "user-123",
+      });
+
+      expect(bcrypt.compare).not.toHaveBeenCalled();
       expect(result.organizationId).toBe("org-2");
     });
 
@@ -804,6 +831,33 @@ describe("UsersService", () => {
       });
     });
 
+    it("should return membership for the requested organization (multi-org)", async () => {
+      const doc = mockDoc({ organizationId: "org-2" });
+      mockUserModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+      mockMembershipModel.findOne.mockReturnValue({
+        exec: jest
+          .fn()
+          .mockResolvedValue(
+            mockMemDoc({ organizationId: "org-1", membershipStatus: "active", role: "member" }),
+          ),
+      });
+
+      const result = await service.findById("user-123", "org-1");
+
+      expect(mockMembershipModel.findOne).toHaveBeenCalledWith({
+        userId: "user-123",
+        organizationId: "org-1",
+        deletedAt: null,
+      });
+      expect(result).toMatchObject({
+        id: "user-123",
+        organizationId: "org-1",
+        organizationMembershipStatus: "active",
+      });
+    });
+
     it("should return null when user not found", async () => {
       mockUserModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(null),
@@ -1088,7 +1142,7 @@ describe("UsersService", () => {
         exec: jest.fn().mockResolvedValue(null),
       });
 
-      const result = await service.getPreferences("user-123");
+      const result = await service.getPreferences("user-123", "org-1");
 
       expect(result).toEqual({
         userId: "user-123",
@@ -1096,30 +1150,40 @@ describe("UsersService", () => {
           theme: "light",
           sidebarCollapsed: "expanded",
           quickActionIds: ["case_new", "cases_list", "calendar", "case_templates"],
+          onboardingCompletedOrganizationIds: [],
+          onboardingProfileCompleted: false,
+          setupGuideDismissedOrganizationIds: [],
+          setupGuideDismissed: false,
         },
       });
     });
 
-    it("should return stored preferences when they exist", async () => {
+    it("should return stored preferences scoped to the organization", async () => {
       mockPreferencesModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue({
           userId: "user-123",
           theme: "dark",
           sidebarCollapsed: "collapsed",
           quickActionIds: ["my_day", "calendar"],
+          onboardingCompletedOrganizationIds: ["org-1"],
+          setupGuideDismissedOrganizationIds: ["org-1"],
         }),
       });
 
-      const result = await service.getPreferences("user-123");
+      const forOrg1 = await service.getPreferences("user-123", "org-1");
+      const forOrg2 = await service.getPreferences("user-123", "org-2");
 
-      expect(result).toEqual({
-        userId: "user-123",
-        preferences: {
-          theme: "dark",
-          sidebarCollapsed: "collapsed",
-          quickActionIds: ["my_day", "calendar"],
-        },
+      expect(forOrg1.preferences).toEqual({
+        theme: "dark",
+        sidebarCollapsed: "collapsed",
+        quickActionIds: ["my_day", "calendar"],
+        onboardingCompletedOrganizationIds: ["org-1"],
+        onboardingProfileCompleted: true,
+        setupGuideDismissedOrganizationIds: ["org-1"],
+        setupGuideDismissed: true,
       });
+      expect(forOrg2.preferences.onboardingProfileCompleted).toBe(false);
+      expect(forOrg2.preferences.setupGuideDismissed).toBe(false);
     });
 
     it("should fall back to default quickActionIds when stored list is invalid", async () => {
@@ -1129,6 +1193,7 @@ describe("UsersService", () => {
           theme: "light",
           sidebarCollapsed: "expanded",
           quickActionIds: ["case_new"],
+          onboardingCompletedOrganizationIds: [],
         }),
       });
 
@@ -1155,10 +1220,14 @@ describe("UsersService", () => {
           theme: "dark",
           sidebarCollapsed: "expanded",
           quickActionIds: ["case_new", "cases_list", "calendar", "case_templates"],
+          onboardingCompletedOrganizationIds: [],
         }),
       });
 
-      const result = await service.updatePreferences("user-123", { theme: "dark" });
+      const result = await service.updatePreferences("user-123", {
+        theme: "dark",
+        organizationId: "org-1",
+      });
 
       expect(result).toEqual({
         userId: "user-123",
@@ -1166,8 +1235,89 @@ describe("UsersService", () => {
           theme: "dark",
           sidebarCollapsed: "expanded",
           quickActionIds: ["case_new", "cases_list", "calendar", "case_templates"],
+          onboardingCompletedOrganizationIds: [],
+          onboardingProfileCompleted: false,
+          setupGuideDismissedOrganizationIds: [],
+          setupGuideDismissed: false,
         },
       });
+    });
+
+    it("should mark onboarding complete for a specific organization", async () => {
+      const doc = mockDoc();
+      mockUserModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+      mockPreferencesModel.findOneAndUpdate.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({
+          userId: "user-123",
+          theme: "light",
+          sidebarCollapsed: "expanded",
+          quickActionIds: ["case_new", "cases_list", "calendar", "case_templates"],
+          onboardingCompletedOrganizationIds: ["org-2"],
+          setupGuideDismissedOrganizationIds: [],
+        }),
+      });
+
+      const result = await service.updatePreferences("user-123", {
+        onboardingProfileCompleted: true,
+        organizationId: "org-2",
+      });
+
+      expect(mockPreferencesModel.findOneAndUpdate).toHaveBeenCalledWith(
+        { userId: "user-123" },
+        expect.objectContaining({
+          $addToSet: { onboardingCompletedOrganizationIds: "org-2" },
+        }),
+        expect.any(Object),
+      );
+      expect(
+        mockPreferencesModel.findOneAndUpdate.mock.calls[0][1].$setOnInsert,
+      ).not.toHaveProperty("onboardingCompletedOrganizationIds");
+      expect(result.preferences.onboardingCompletedOrganizationIds).toEqual(["org-2"]);
+      expect(result.preferences.onboardingProfileCompleted).toBe(true);
+    });
+
+    it("should dismiss setup guide for a specific organization", async () => {
+      const doc = mockDoc();
+      mockUserModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+      mockPreferencesModel.findOneAndUpdate.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({
+          userId: "user-123",
+          theme: "light",
+          sidebarCollapsed: "expanded",
+          quickActionIds: ["case_new", "cases_list", "calendar", "case_templates"],
+          onboardingCompletedOrganizationIds: ["org-1"],
+          setupGuideDismissedOrganizationIds: ["org-1"],
+        }),
+      });
+
+      const result = await service.updatePreferences("user-123", {
+        setupGuideDismissed: true,
+        organizationId: "org-1",
+      });
+
+      expect(mockPreferencesModel.findOneAndUpdate).toHaveBeenCalledWith(
+        { userId: "user-123" },
+        expect.objectContaining({
+          $addToSet: { setupGuideDismissedOrganizationIds: "org-1" },
+        }),
+        expect.any(Object),
+      );
+      expect(result.preferences.setupGuideDismissed).toBe(true);
+    });
+
+    it("should require organizationId when updating onboardingProfileCompleted", async () => {
+      const doc = mockDoc();
+      mockUserModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+
+      await expect(
+        service.updatePreferences("user-123", { onboardingProfileCompleted: true }),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it("should update quickActionIds", async () => {
@@ -1181,11 +1331,14 @@ describe("UsersService", () => {
           theme: "light",
           sidebarCollapsed: "expanded",
           quickActionIds: ["my_day", "customers", "stock"],
+          onboardingCompletedOrganizationIds: ["org-1"],
+          setupGuideDismissedOrganizationIds: [],
         }),
       });
 
       const result = await service.updatePreferences("user-123", {
         quickActionIds: ["my_day", "customers", "stock"],
+        organizationId: "org-1",
       });
 
       expect(mockPreferencesModel.findOneAndUpdate).toHaveBeenCalledWith(
@@ -1198,6 +1351,7 @@ describe("UsersService", () => {
         expect.any(Object),
       );
       expect(result.preferences.quickActionIds).toEqual(["my_day", "customers", "stock"]);
+      expect(result.preferences.onboardingProfileCompleted).toBe(true);
     });
 
     it("should reject invalid quickActionIds", async () => {
@@ -1219,6 +1373,31 @@ describe("UsersService", () => {
       await expect(service.updatePreferences("non-existent", { theme: "dark" })).rejects.toThrow(
         NotFoundException,
       );
+    });
+  });
+
+  describe("findFoundingAdminUserId", () => {
+    it("should return the earliest admin membership user id", async () => {
+      mockMembershipModel.findOne.mockReturnValue({
+        sort: jest.fn().mockReturnValue({
+          exec: jest.fn().mockResolvedValue(mockMemDoc({ userId: "admin-1", role: "admin" })),
+        }),
+      });
+
+      const result = await service.findFoundingAdminUserId("org-1");
+
+      expect(mockMembershipModel.findOne).toHaveBeenCalledWith({
+        organizationId: "org-1",
+        role: "admin",
+        deletedAt: null,
+        membershipStatus: { $in: ["active", "invited"] },
+      });
+      expect(result).toBe("admin-1");
+    });
+
+    it("should return null when organizationId is empty", async () => {
+      await expect(service.findFoundingAdminUserId("  ")).resolves.toBeNull();
+      expect(mockMembershipModel.findOne).not.toHaveBeenCalled();
     });
   });
 });

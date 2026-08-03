@@ -37,6 +37,7 @@ describe("UsersController", () => {
       changePassword: jest.fn(),
       getPreferences: jest.fn(),
       updatePreferences: jest.fn(),
+      findFoundingAdminUserId: jest.fn(),
       listPlatformDirectory: jest.fn(),
       countUsersByOrganizationIds: jest.fn(),
       createImpersonationAudit: jest.fn(),
@@ -174,7 +175,7 @@ describe("UsersController", () => {
 
       const result = await controller.findById("user-123");
 
-      expect(mockUsersService.findById).toHaveBeenCalledWith("user-123");
+      expect(mockUsersService.findById).toHaveBeenCalledWith("user-123", undefined);
       expect(result).toEqual(user);
     });
 
@@ -259,13 +260,17 @@ describe("UsersController", () => {
           theme: "light",
           sidebarCollapsed: "expanded",
           quickActionIds: ["case_new", "cases_list", "calendar", "case_templates"],
+          onboardingCompletedOrganizationIds: [],
+          onboardingProfileCompleted: false,
+          setupGuideDismissedOrganizationIds: [],
+          setupGuideDismissed: false,
         },
       };
       mockUsersService.getPreferences.mockResolvedValue(expected);
 
-      const result = await controller.getPreferences("user-123");
+      const result = await controller.getPreferences("user-123", "org-1");
 
-      expect(mockUsersService.getPreferences).toHaveBeenCalledWith("user-123");
+      expect(mockUsersService.getPreferences).toHaveBeenCalledWith("user-123", "org-1");
       expect(result).toEqual(expected);
     });
   });
@@ -279,6 +284,10 @@ describe("UsersController", () => {
           theme: "dark",
           sidebarCollapsed: "expanded",
           quickActionIds: ["case_new", "cases_list", "calendar", "case_templates"],
+          onboardingCompletedOrganizationIds: [],
+          onboardingProfileCompleted: false,
+          setupGuideDismissedOrganizationIds: [],
+          setupGuideDismissed: false,
         },
       };
       mockUsersService.updatePreferences.mockResolvedValue(expected);

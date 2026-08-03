@@ -68,6 +68,7 @@ const ALL_PROTECTED_PATHS = [
   "/organization",
   "/subscription",
   "/account",
+  "/onboarding",
   "/search",
   "/stock",
   "/my-day",
@@ -265,6 +266,226 @@ test.describe("Parcours landing publique", () => {
     await expect(
       page.getByText(/Rappel avant échéance|à programmer|auto-planification/i),
     ).toBeVisible();
+  });
+});
+
+test.describe("Route /onboarding protégée", () => {
+  test("la page d'onboarding redirige vers /login sans session", async ({ page }) => {
+    await page.goto("/onboarding");
+    await expect(page).toHaveURL(/\/login/);
+  });
+});
+
+test.describe("Parcours onboarding sans données de démo", () => {
+  const foundingAdmin = {
+    id: "user-e2e",
+    email: "admin@example.com",
+    name: "Alex Admin",
+    organizationId: "org-e2e",
+    role: "admin",
+    status: "active",
+    permissions: [
+      "subscription.active",
+      "customers.create",
+      "customers.read",
+      "organizations.read",
+      "users.invite",
+      "cases.create",
+    ],
+    isFoundingAdmin: true,
+  };
+
+  const incompletePrefs = {
+    userId: "user-e2e",
+    preferences: {
+      theme: "light",
+      sidebarCollapsed: "expanded",
+      quickActionIds: ["case_new", "cases_list", "calendar", "case_templates"],
+      onboardingCompletedOrganizationIds: [],
+      onboardingProfileCompleted: false,
+      setupGuideDismissedOrganizationIds: [],
+      setupGuideDismissed: false,
+    },
+  };
+
+  const completedPrefs = {
+    userId: "user-e2e",
+    preferences: {
+      ...incompletePrefs.preferences,
+      onboardingCompletedOrganizationIds: ["org-e2e"],
+      onboardingProfileCompleted: true,
+      setupGuideDismissedOrganizationIds: [],
+      setupGuideDismissed: false,
+    },
+  };
+
+  const dismissedGuidePrefs = {
+    userId: "user-e2e",
+    preferences: {
+      ...completedPrefs.preferences,
+      setupGuideDismissedOrganizationIds: ["org-e2e"],
+      setupGuideDismissed: true,
+    },
+  };
+
+  test("après refus de la démo, le guide in-app propose de créer un client", async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem("planwise_access_token", "e2e-onboarding-token");
+    });
+
+    let onboardingCompleted = false;
+    let setupGuideDismissed = false;
+
+    await page.route("**/api/**", async (route) => {
+      const req = route.request();
+      const url = new URL(req.url());
+      const path = url.pathname.replace(/^\/api/, "") || url.pathname;
+      const method = req.method();
+
+      if (method === "GET" && path.endsWith("/auth/me")) {
+        await route.fulfill({ json: foundingAdmin });
+        return;
+      }
+      if (method === "GET" && path.includes("/account/preferences")) {
+        if (!onboardingCompleted) {
+          await route.fulfill({ json: incompletePrefs });
+        } else if (setupGuideDismissed) {
+          await route.fulfill({ json: dismissedGuidePrefs });
+        } else {
+          await route.fulfill({ json: completedPrefs });
+        }
+        return;
+      }
+      if (method === "PUT" && path.includes("/account/preferences")) {
+        const body = req.postDataJSON() as { setupGuideDismissed?: boolean };
+        if (body.setupGuideDismissed) setupGuideDismissed = true;
+        await route.fulfill({
+          json: setupGuideDismissed ? dismissedGuidePrefs : completedPrefs,
+        });
+        return;
+      }
+      if (method === "GET" && path.includes("/organizations/mine")) {
+        await route.fulfill({
+          json: {
+            organizations: [{ id: "org-e2e", name: "Orga E2E" }],
+          },
+        });
+        return;
+      }
+      if (method === "POST" && path.includes("/account/onboarding-profile")) {
+        onboardingCompleted = true;
+        await route.fulfill({
+          json: { preferences: completedPrefs.preferences },
+        });
+        return;
+      }
+      // Autres appels (shell, analytics…) : réponse neutre pour ne pas bloquer le parcours.
+      await route.fulfill({ status: 200, json: {} });
+    });
+
+    await page.goto("/onboarding");
+    await expect(
+      page.getByRole("heading", { name: "Comment utilisez-vous Planwise ?" }),
+    ).toBeVisible();
+
+    await page.getByRole("button", { name: /Bureau uniquement/i }).click();
+    await expect(
+      page.getByRole("heading", { name: "Charger des données de démonstration ?" }),
+    ).toBeVisible();
+
+    await page.getByRole("button", { name: /Continuer sans données de démo/i }).click();
+    await expect(page).toHaveURL(/\/$/, { timeout: 15_000 });
+    await expect(page.getByRole("heading", { name: "Bienvenue dans Planwise" })).toBeVisible();
+
+    await page.getByRole("button", { name: /Créer un premier client/i }).click();
+    await expect(page).toHaveURL(/\/customers\/new/, { timeout: 15_000 });
+  });
+});
+
+test.describe("Invitation utilisateur sans profil", () => {
+  const admin = {
+    id: "user-e2e",
+    email: "admin@example.com",
+    name: "Alex Admin",
+    organizationId: "org-e2e",
+    role: "admin",
+    status: "active",
+    permissions: [
+      "subscription.active",
+      "users.invite",
+      "profiles.read",
+      "profiles.create",
+      "organizations.read",
+    ],
+    isFoundingAdmin: false,
+  };
+
+  test("propose import librairie et création de profil", async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem("planwise_access_token", "e2e-invite-token");
+    });
+
+    await page.route("**/api/**", async (route) => {
+      const req = route.request();
+      const url = new URL(req.url());
+      const path = url.pathname.replace(/^\/api/, "") || url.pathname;
+      const method = req.method();
+
+      if (method === "GET" && path.endsWith("/auth/me")) {
+        await route.fulfill({ json: admin });
+        return;
+      }
+      if (method === "GET" && path.includes("/account/preferences")) {
+        await route.fulfill({
+          json: {
+            userId: admin.id,
+            preferences: {
+              theme: "light",
+              sidebarCollapsed: "expanded",
+              quickActionIds: ["case_new", "cases_list", "calendar", "case_templates"],
+              onboardingCompletedOrganizationIds: ["org-e2e"],
+              onboardingProfileCompleted: true,
+              setupGuideDismissedOrganizationIds: ["org-e2e"],
+              setupGuideDismissed: true,
+            },
+          },
+        });
+        return;
+      }
+      if (method === "GET" && path.includes("/organizations/mine")) {
+        await route.fulfill({ json: { organizations: [{ id: "org-e2e", name: "Orga E2E" }] } });
+        return;
+      }
+      if (method === "GET" && path.includes("/admin/permissions/catalog")) {
+        await route.fulfill({ json: { availablePermissions: ["customers.read"] } });
+        return;
+      }
+      if (method === "GET" && path.includes("/admin/permission-profiles")) {
+        await route.fulfill({ json: [] });
+        return;
+      }
+      if (method === "GET" && path.includes("/admin/users")) {
+        await route.fulfill({ json: { users: [] } });
+        return;
+      }
+      if (method === "GET" && path.includes("/subscriptions/current")) {
+        await route.fulfill({ json: { hasAccess: true, maxUsers: 5, status: "trialing" } });
+        return;
+      }
+      await route.fulfill({ status: 200, json: {} });
+    });
+
+    await page.goto("/users/new");
+    await expect(page.getByRole("heading", { name: "Inviter un utilisateur" })).toBeVisible();
+    await expect(page.getByText("Aucun profil de permissions")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Importer depuis la librairie" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Créer un profil" })).toHaveAttribute(
+      "href",
+      "/settings/profiles/new?returnTo=%2Fusers%2Fnew",
+    );
+
+    await page.getByRole("button", { name: "Importer depuis la librairie" }).click();
+    await expect(page.getByRole("heading", { name: "Importer des profils" })).toBeVisible();
   });
 });
 

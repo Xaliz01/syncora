@@ -94,7 +94,10 @@ export class AuthService extends AbstractAuthService {
       role,
     );
     const profile = await this.resolveUserProfile(jwt.sub);
-    const technicianId = await this.resolveTechnicianId(jwt.organizationId, jwt.sub);
+    const [technicianId, isFoundingAdmin] = await Promise.all([
+      this.resolveTechnicianId(jwt.organizationId, jwt.sub),
+      this.resolveIsFoundingAdmin(jwt.organizationId, jwt.sub),
+    ]);
     return {
       id: jwt.sub,
       email: profile?.email ?? jwt.email,
@@ -104,6 +107,7 @@ export class AuthService extends AbstractAuthService {
       permissions,
       name: profile?.name ?? jwt.name,
       technicianId,
+      isFoundingAdmin,
       ...(jwt.impersonatorId
         ? {
             impersonatorId: jwt.impersonatorId,
@@ -579,18 +583,35 @@ export class AuthService extends AbstractAuthService {
 
     let user: UserResponse;
     try {
+      const activateBody: {
+        password?: string;
+        name?: string;
+        organizationId: string;
+        trustedAuthenticatedUserId?: string;
+      } = {
+        name: body.name,
+        organizationId: invitation.organizationId,
+      };
+      const sessionMatchesInvite =
+        Boolean(context?.authenticatedUserId) &&
+        context?.authenticatedUserId === invitation.invitedUserId;
+      if (sessionMatchesInvite) {
+        activateBody.trustedAuthenticatedUserId = invitation.invitedUserId;
+      } else {
+        if (!body.password?.trim()) {
+          throw new UnauthorizedException("Mot de passe requis");
+        }
+        activateBody.password = body.password;
+      }
       const res = await firstValueFrom(
         this.httpService.post<UserResponse>(
           `${USERS_URL}/users/${invitation.invitedUserId}/activate`,
-          {
-            password: body.password,
-            name: body.name,
-            organizationId: invitation.organizationId,
-          },
+          activateBody,
         ),
       );
       user = res.data;
     } catch (err: unknown) {
+      if (err instanceof UnauthorizedException) throw err;
       const status = (err as { response?: { status?: number } })?.response?.status;
       const message = (err as { response?: { data?: { message?: string } } })?.response?.data
         ?.message;
@@ -813,6 +834,8 @@ export class AuthService extends AbstractAuthService {
       ? params.reuseSessionId.trim()
       : await this.createUserSession(params.id, params.userAgent);
 
+    const isFoundingAdmin = await this.resolveIsFoundingAdmin(params.organizationId, params.id);
+
     const authUser: AuthUser = {
       id: params.id,
       email: params.email,
@@ -822,6 +845,7 @@ export class AuthService extends AbstractAuthService {
       permissions: params.permissions,
       name: params.name,
       technicianId: params.technicianId,
+      isFoundingAdmin,
     };
     const payload: JwtPayload = {
       sub: params.id,
@@ -836,5 +860,18 @@ export class AuthService extends AbstractAuthService {
     };
     const accessToken = this.jwtService.sign(payload);
     return { accessToken, user: authUser };
+  }
+
+  private async resolveIsFoundingAdmin(organizationId: string, userId: string): Promise<boolean> {
+    try {
+      const res = await firstValueFrom(
+        this.httpService.get<{ userId: string | null }>(`${USERS_URL}/users/founding-admin`, {
+          params: { organizationId },
+        }),
+      );
+      return Boolean(res.data.userId && res.data.userId === userId);
+    } catch {
+      return false;
+    }
   }
 }

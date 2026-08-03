@@ -2,6 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": ".next",
+    "tsBuildInfoFile": "node_modules/.cache/tsconfig.tsbuildinfo",
     "types": ["@serwist/next/typings"],
     "lib": ["DOM", "DOM.Iterable", "ES2022", "WebWorker"],
     "jsx": "preserve",

@@ -1,6 +1,8 @@
 import type {
   AuthUser,
   ChangePasswordBody,
+  CompleteOnboardingProfileBody,
+  CompleteOnboardingProfileResponse,
   CrispIdentityResponse,
   UpdateUserNameBody,
   UpdateUserPreferencesBody,
@@ -17,6 +19,10 @@ export abstract class AbstractAccountService {
     user: AuthUser,
     body: UpdateUserPreferencesBody,
   ): Promise<UserPreferencesResponse>;
+  abstract completeOnboardingProfile(
+    user: AuthUser,
+    body: CompleteOnboardingProfileBody,
+  ): Promise<CompleteOnboardingProfileResponse>;
   abstract getCrispIdentity(user: AuthUser): Promise<CrispIdentityResponse>;
   abstract listSessions(
     userId: string,

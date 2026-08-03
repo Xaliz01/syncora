@@ -238,10 +238,8 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
   const linkedMembership = technician.linkedUser?.organizationMembershipStatus;
   const technicianUserInvitationPending = Boolean(
     technician.userId &&
-    (linkedMembership === "invited" ||
-      technician.linkedUser?.status === "invited" ||
-      // userId lié mais statut pas encore enrichi : ne pas afficher comme compte actif
-      !technician.linkedUser),
+    technician.linkedUser &&
+    (linkedMembership === "invited" || technician.linkedUser.status === "invited"),
   );
   const technicianUserDisabled = Boolean(
     technician.userId && technician.linkedUser && linkedMembership === "disabled",
@@ -251,8 +249,10 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
     technician.linkedUser &&
     !technicianUserInvitationPending &&
     !technicianUserDisabled &&
-    (linkedMembership === "active" || technician.linkedUser.status === "active"),
+    (linkedMembership === "active" ||
+      (!linkedMembership && technician.linkedUser.status === "active")),
   );
+  const technicianUserLinkedUnknown = Boolean(technician.userId && !technician.linkedUser);
 
   return (
     <div className="space-y-6">
@@ -555,6 +555,10 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
               </>
             ) : null}
             .
+          </div>
+        ) : technicianUserLinkedUnknown ? (
+          <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-3 text-sm text-slate-600 dark:text-slate-300">
+            Compte utilisateur lié (détails indisponibles pour le moment).
           </div>
         ) : (
           <>

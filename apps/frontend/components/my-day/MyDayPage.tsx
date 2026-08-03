@@ -53,6 +53,32 @@ function formatTime(dateStr?: string): string {
   });
 }
 
+function startOfLocalDay(date: Date): Date {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function endOfLocalDay(date: Date): Date {
+  const d = new Date(date);
+  d.setHours(23, 59, 59, 999);
+  return d;
+}
+
+function isSameLocalDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+function shiftLocalDay(date: Date, deltaDays: number): Date {
+  const d = startOfLocalDay(date);
+  d.setDate(d.getDate() + deltaDays);
+  return d;
+}
+
 function formatDuration(start?: string, end?: string): string | null {
   if (!start || !end) return null;
   const ms = new Date(end).getTime() - new Date(start).getTime();
@@ -431,7 +457,7 @@ function EmptyState() {
         </svg>
       </div>
       <h3 className="text-lg font-medium text-slate-700 dark:text-slate-200 mb-1">
-        Aucune intervention aujourd&apos;hui
+        Aucune intervention ce jour
       </h3>
       <p className="text-sm text-slate-500 dark:text-slate-400 max-w-xs">
         Vous n&apos;avez pas d&apos;intervention planifiée pour cette journée. Consultez le
@@ -468,37 +494,30 @@ export function MyDayPage() {
   const queryClient = useQueryClient();
   const [activeFilter, setActiveFilter] = useState<FilterTab>("todo");
   const [actingOnId, setActingOnId] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState(() => startOfLocalDay(new Date()));
 
-  const today = useMemo(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
-  }, []);
+  const dayStart = useMemo(() => startOfLocalDay(selectedDate), [selectedDate]);
+  const dayEnd = useMemo(() => endOfLocalDay(selectedDate), [selectedDate]);
+  const viewingToday = isSameLocalDay(selectedDate, new Date());
 
-  const todayEnd = useMemo(() => {
-    const d = new Date(today);
-    d.setHours(23, 59, 59, 999);
-    return d;
-  }, [today]);
-
-  const todayLabel = today.toLocaleDateString("fr-FR", {
+  const dayLabel = selectedDate.toLocaleDateString("fr-FR", {
     weekday: "long",
     day: "numeric",
     month: "long",
   });
 
   const { data: interventionsData, isLoading } = useQuery({
-    queryKey: ["my-day-interventions", user?.id, today.toISOString()],
+    queryKey: ["my-day-interventions", user?.id, dayStart.toISOString()],
     queryFn: () =>
       api.listInterventions({
         assigneeId: user!.id,
-        startDate: today.toISOString(),
-        endDate: todayEnd.toISOString(),
+        startDate: dayStart.toISOString(),
+        endDate: dayEnd.toISOString(),
         includeTeamAssignments: "true",
         limit: MAX_PAGE_LIMIT_WIDE,
       }),
     enabled: !!user,
-    refetchInterval: 30_000,
+    refetchInterval: viewingToday ? 30_000 : false,
   });
   const interventions = interventionsData?.interventions ?? [];
 
@@ -574,7 +593,35 @@ export function MyDayPage() {
         <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-slate-100">
           Ma journée
         </h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 capitalize">{todayLabel}</p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setSelectedDate((d) => shiftLocalDay(d, -1))}
+            aria-label="Jour précédent"
+            className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+          >
+            &larr;
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelectedDate(startOfLocalDay(new Date()))}
+            disabled={viewingToday}
+            className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition disabled:opacity-40 disabled:pointer-events-none"
+          >
+            Aujourd&apos;hui
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelectedDate((d) => shiftLocalDay(d, 1))}
+            aria-label="Jour suivant"
+            className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+          >
+            &rarr;
+          </button>
+          <p className="text-sm text-slate-500 dark:text-slate-400 capitalize sm:ml-1">
+            {dayLabel}
+          </p>
+        </div>
       </div>
 
       {/* Stats summary */}

@@ -17,6 +17,10 @@ export function isSubscriptionRoute(pathname: string): boolean {
   return pathname === "/subscription" || pathname.startsWith("/subscription/");
 }
 
+export function isOnboardingRoute(pathname: string): boolean {
+  return pathname === "/onboarding" || pathname.startsWith("/onboarding/");
+}
+
 /** Query `modify` : ouvre la modale d’options sur Mon abonnement avec l’addon présélectionné. */
 export function subscriptionModifyAddonsPath(addonCode: AddonCode): string {
   return `/subscription?modify=${encodeURIComponent(addonCode)}`;

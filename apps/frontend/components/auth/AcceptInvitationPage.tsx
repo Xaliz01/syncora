@@ -11,11 +11,12 @@ import * as authApi from "@/lib/auth.api";
 export function AcceptInvitationPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { acceptInvitation } = useAuth();
+  const { acceptInvitation, user: currentUser, isReady } = useAuth();
 
   const tokenFromQuery = useMemo(() => searchParams.get("token")?.trim() ?? "", [searchParams]);
   const hasTokenFromLink = tokenFromQuery.length > 0;
   const [invitationToken, setInvitationToken] = useState(tokenFromQuery);
+  const [invitedEmail, setInvitedEmail] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -29,6 +30,7 @@ export function AcceptInvitationPage() {
     if (!token) {
       setPreviewLoading(false);
       setRequiresPasswordSetup(true);
+      setInvitedEmail("");
       return;
     }
     let cancelled = false;
@@ -38,11 +40,13 @@ export function AcceptInvitationPage() {
       .then((preview) => {
         if (cancelled) return;
         setRequiresPasswordSetup(preview.requiresPasswordSetup);
+        setInvitedEmail(preview.invitedEmail ?? "");
         if (preview.invitedName) setName(preview.invitedName);
       })
       .catch(() => {
         if (cancelled) return;
         setRequiresPasswordSetup(true);
+        setInvitedEmail("");
       })
       .finally(() => {
         if (!cancelled) setPreviewLoading(false);
@@ -52,12 +56,22 @@ export function AcceptInvitationPage() {
     };
   }, [invitationToken]);
 
-  const passwordOk = requiresPasswordSetup
-    ? isPasswordPolicyValid(password)
-    : password.trim().length > 0;
+  const alreadyAuthenticatedAsInvitee = Boolean(
+    isReady &&
+    currentUser?.email &&
+    invitedEmail &&
+    currentUser.email.trim().toLowerCase() === invitedEmail.trim().toLowerCase() &&
+    !requiresPasswordSetup,
+  );
+
+  const passwordOk = alreadyAuthenticatedAsInvitee
+    ? true
+    : requiresPasswordSetup
+      ? isPasswordPolicyValid(password)
+      : password.trim().length > 0;
 
   const canSubmit =
-    invitationToken.trim().length > 0 && passwordOk && legalConsent && !previewLoading;
+    invitationToken.trim().length > 0 && passwordOk && legalConsent && !previewLoading && isReady;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,7 +81,7 @@ export function AcceptInvitationPage() {
     try {
       const user = await acceptInvitation({
         invitationToken: invitationToken.trim(),
-        password,
+        password: alreadyAuthenticatedAsInvitee ? undefined : password,
         name: name.trim() || undefined,
       });
       router.replace(postAuthHomePath(user));
@@ -102,7 +116,9 @@ export function AcceptInvitationPage() {
             {hasTokenFromLink
               ? requiresPasswordSetup
                 ? "Votre lien d'invitation est valide. Définissez votre mot de passe pour activer le compte."
-                : "Votre lien d'invitation est valide. Confirmez votre mot de passe pour rejoindre cette organisation."
+                : alreadyAuthenticatedAsInvitee
+                  ? "Vous êtes déjà connecté avec ce compte. Confirmez pour rejoindre cette organisation."
+                  : "Votre lien d'invitation est valide. Confirmez votre mot de passe pour rejoindre cette organisation."
               : "Ouvrez le lien reçu par e-mail, ou collez le jeton d'invitation si vous l'avez sous la main."}
           </p>
 
@@ -154,35 +170,37 @@ export function AcceptInvitationPage() {
                 />
               </div>
             )}
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1"
-              >
-                {requiresPasswordSetup ? "Mot de passe" : "Mot de passe du compte"}
-              </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={requiresPasswordSetup ? 8 : 1}
-                autoComplete={requiresPasswordSetup ? "new-password" : "current-password"}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-                placeholder="••••••••"
-              />
-              {requiresPasswordSetup ? (
-                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  {PASSWORD_POLICY_HINT}
-                </p>
-              ) : (
-                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  Ce compte existe déjà. Saisissez le mot de passe actuel pour rejoindre
-                  l&apos;organisation.
-                </p>
-              )}
-            </div>
+            {!alreadyAuthenticatedAsInvitee && (
+              <div>
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1"
+                >
+                  {requiresPasswordSetup ? "Mot de passe" : "Mot de passe du compte"}
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={requiresPasswordSetup ? 8 : 1}
+                  autoComplete={requiresPasswordSetup ? "new-password" : "current-password"}
+                  className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                  placeholder="••••••••"
+                />
+                {requiresPasswordSetup ? (
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    {PASSWORD_POLICY_HINT}
+                  </p>
+                ) : (
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    Ce compte existe déjà. Saisissez le mot de passe actuel pour rejoindre
+                    l&apos;organisation.
+                  </p>
+                )}
+              </div>
+            )}
             <LegalConsentCheckbox
               id="invitation-legal-consent"
               checked={legalConsent}

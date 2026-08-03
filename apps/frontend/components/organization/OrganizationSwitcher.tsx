@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import type { SiretLookupResult } from "@planwise/shared";
 import { useAuth } from "@/components/auth/AuthContext";
 import { useOrganization } from "@/lib/organization";
@@ -36,6 +38,8 @@ export function OrganizationSwitcher({
     refetchOrganizations,
   } = useOrganization();
   const { showToast } = useToast();
+  const queryClient = useQueryClient();
+  const router = useRouter();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [orgMenuOpen, setOrgMenuOpen] = useState(false);
   const [newOrgName, setNewOrgName] = useState("");
@@ -113,6 +117,11 @@ export function OrganizationSwitcher({
       });
       setDialogOpen(false);
       resetNewOrgForm();
+      // Même hygiène que le switch d’org : pas de cache métier de l’ancienne org,
+      // et retour à l’accueil pour laisser RequireAuth enchaîner l’onboarding si besoin.
+      await queryClient.cancelQueries();
+      queryClient.clear();
+      router.replace("/");
       showToast("Organisation cr\u00e9\u00e9e. Vous travaillez maintenant dans cet espace.");
       refetchOrganizations();
     } catch (e) {

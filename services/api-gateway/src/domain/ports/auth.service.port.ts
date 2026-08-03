@@ -21,6 +21,8 @@ import type {
 /** Contexte optionnel de la requête HTTP (ex. User-Agent pour les sessions). */
 export interface AuthRequestContext {
   userAgent?: string;
+  /** Si un Bearer JWT valide est présent, id de l’utilisateur authentifié. */
+  authenticatedUserId?: string;
 }
 
 export abstract class AbstractAuthService {

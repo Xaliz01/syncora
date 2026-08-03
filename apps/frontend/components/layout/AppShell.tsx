@@ -16,6 +16,7 @@ import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { LANDING_TAGLINE } from "@/lib/landing-copy";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { CrispHelpButton } from "@/components/support/CrispHelpButton";
+import { SetupGuideHost } from "@/components/onboarding/SetupGuideHost";
 import { appVersionLabel, APP_VERSION } from "@/lib/app-version";
 
 interface MenuLink {
@@ -525,6 +526,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="mx-auto w-full max-w-screen-2xl">{children}</div>
         </main>
       </div>
+      <SetupGuideHost />
     </div>
   );
 }

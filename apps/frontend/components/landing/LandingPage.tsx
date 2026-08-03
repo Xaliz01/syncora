@@ -9,7 +9,12 @@ import {
 } from "@planwise/shared";
 import { ScrollReveal } from "@/components/landing/ScrollReveal";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
-import { LANDING_HERO_HEADING, LANDING_HERO_SUPPORT, LANDING_TAGLINE } from "@/lib/landing-copy";
+import {
+  LANDING_HERO_HEADING,
+  LANDING_HERO_HOOK,
+  LANDING_HERO_SUPPORT,
+  LANDING_TAGLINE,
+} from "@/lib/landing-copy";
 
 const PILLARS = [
   {
@@ -190,9 +195,11 @@ export function LandingPage() {
             </ScrollReveal>
             <ScrollReveal when="mount" delayMs={160}>
               <p className="mt-5 text-lg text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed">
-                {LANDING_HERO_SUPPORT} Essayez Planwise pendant {BASE_SUBSCRIPTION_PLAN.trialDays}{" "}
-                jours,{" "}
-                <span className="font-semibold text-slate-900 dark:text-slate-100">
+                {LANDING_HERO_SUPPORT}
+              </p>
+              <p className="mt-3 text-base text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed">
+                {LANDING_HERO_HOOK} Essai {BASE_SUBSCRIPTION_PLAN.trialDays} jours,{" "}
+                <span className="font-semibold text-slate-800 dark:text-slate-200">
                   sans aucun moyen de paiement
                 </span>
                 .

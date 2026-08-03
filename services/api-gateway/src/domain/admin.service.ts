@@ -301,21 +301,27 @@ export class AdminService extends AbstractAdminService {
   }
 
   async getOrganizationUser(currentUser: AuthUser, userId: string) {
-    const user = await this.callUsersService<UserResponse>({
-      method: "get",
-      path: `/users/${userId}`,
-    });
-    if (user.organizationId !== currentUser.organizationId) {
+    const [user, memberships] = await Promise.all([
+      this.callUsersService<UserResponse>({
+        method: "get",
+        path: `/users/${userId}`,
+      }),
+      this.callUsersService<OrganizationMembershipResponse[]>({
+        method: "get",
+        path: `/users/${userId}/organization-memberships`,
+      }),
+    ]);
+
+    const membershipForOrg = memberships.find(
+      (row) => row.organizationId === currentUser.organizationId,
+    );
+    if (!membershipForOrg) {
       throw new ForbiddenException(
         "Impossible d'accéder à un utilisateur d'une autre organisation",
       );
     }
 
-    const [memberships, assignment, effectivePermissions] = await Promise.all([
-      this.callUsersService<OrganizationMembershipResponse[]>({
-        method: "get",
-        path: `/users/${userId}/organization-memberships`,
-      }),
+    const [assignment, effectivePermissions] = await Promise.all([
       this.callPermissionsService<UserPermissionAssignmentResponse>({
         method: "get",
         path: `/assignments/${user.id}`,
@@ -327,20 +333,17 @@ export class AdminService extends AbstractAdminService {
         body: {
           organizationId: currentUser.organizationId,
           userId: user.id,
-          role: user.role,
+          role: membershipForOrg.role,
         },
       }),
     ]);
 
-    const membershipForOrg = memberships.find(
-      (row) => row.organizationId === currentUser.organizationId,
-    );
-
     return {
       user: {
         ...user,
-        role: membershipForOrg?.role ?? "member",
-        organizationMembershipStatus: membershipForOrg?.membershipStatus,
+        organizationId: currentUser.organizationId,
+        role: membershipForOrg.role,
+        organizationMembershipStatus: membershipForOrg.membershipStatus,
         permissions: effectivePermissions.permissions,
         permissionAssignment: assignment,
       },

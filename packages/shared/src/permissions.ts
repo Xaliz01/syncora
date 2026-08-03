@@ -232,7 +232,8 @@ export interface CancelInvitationResponse {
 
 export interface AcceptInvitationBody {
   invitationToken: string;
-  password: string;
+  /** Requis sauf si l’utilisateur est déjà authentifié avec le compte invité. */
+  password?: string;
   name?: string;
 }
 

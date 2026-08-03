@@ -46,7 +46,7 @@ interface AuthContextValue extends AuthState {
   completeOrganization: (payload: CreateOrganizationBody) => Promise<AuthUser>;
   acceptInvitation: (payload: {
     invitationToken: string;
-    password: string;
+    password?: string;
     name?: string;
   }) => Promise<AuthUser>;
   refreshSession: () => Promise<void>;
@@ -255,7 +255,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const acceptInvitation = useCallback(
-    async (payload: { invitationToken: string; password: string; name?: string }) => {
+    async (payload: { invitationToken: string; password?: string; name?: string }) => {
       const { accessToken, user } = await authApi.acceptInvitation(payload);
       persistAuth(accessToken, user);
       return user;

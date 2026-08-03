@@ -14,14 +14,18 @@ for (const root of roots) {
     const tsconfigPath = join(dir, "tsconfig.json");
     if (!existsSync(pkgPath) || !existsSync(tsconfigPath)) continue;
     const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
-    workspaces.push({ dir, name: pkg.name ?? name.name });
+    workspaces.push({ dir, name: pkg.name ?? name.name, pkg });
   }
 }
 
 workspaces.sort((a, b) => a.name.localeCompare(b.name));
 
-for (const { dir, name } of workspaces) {
+for (const { dir, name, pkg } of workspaces) {
   console.log(`\n>>> Typecheck ${name}`);
+  // Next.js : régénère `.next/types` avant tsc (évite TS6053 si le dossier est partiel / en cours de regen).
+  if (pkg.dependencies?.next || pkg.devDependencies?.next) {
+    execSync("npx next typegen", { cwd: dir, stdio: "inherit" });
+  }
   execSync("npx tsc -p tsconfig.json --noEmit", { cwd: dir, stdio: "inherit" });
 }
 

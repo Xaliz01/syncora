@@ -14,6 +14,7 @@ import type {
   InjectTrialTestDataResponse,
   PermissionProfileResponse,
   PurgeTrialTestDataResponse,
+  TechnicianResponse,
   TrialTestDataStatusResponse,
   UpdateOrganizationTrialTestDataBody,
 } from "@planwise/shared";
@@ -201,9 +202,11 @@ export class TrialTestDataService extends AbstractTrialTestDataService {
       });
       const caseIds = createdCases.map((c) => c.id);
 
+      const assigneeTechnicianId = await this.ensureUserTechnician(user);
+
       await runInBatches(
         buildDemoInterventions(organizationId, caseIds, teamIds, {
-          assigneeUserId: caseAssignee.userId,
+          assigneeTechnicianId,
           userCaseCount: Math.min(
             TRIAL_DEMO_COUNTS.userAssignedCases,
             caseIds.length,
@@ -241,6 +244,48 @@ export class TrialTestDataService extends AbstractTrialTestDataService {
       body,
       errorLabel: `${baseUrl} error`,
     });
+  }
+
+  /**
+   * Les interventions s’assignent à un technicien flotte (pas à un userId nu).
+   * Crée et lie un technicien pour l’injecteur s’il n’en a pas encore.
+   */
+  private async ensureUserTechnician(user: AuthUser): Promise<string> {
+    const organizationId = user.organizationId;
+    const existing = await this.scopedHttp.request<TechnicianResponse | null>({
+      baseUrl: TECHNICIANS_URL,
+      organizationId,
+      method: "get",
+      path: `/technicians/by-user/${user.id}`,
+      validateResponseScope: false,
+      errorLabel: "Technicians service error",
+    });
+    if (existing?.id) return existing.id;
+
+    const nameParts = (user.name?.trim() || user.email).split(/\s+/);
+    const firstName = nameParts[0] || "Admin";
+    const lastName = nameParts.slice(1).join(" ") || firstName;
+    const created = await this.post<TechnicianResponse>(
+      TECHNICIANS_URL,
+      organizationId,
+      "/technicians",
+      {
+        organizationId,
+        firstName,
+        lastName,
+        email: user.email,
+        status: "actif",
+      },
+    );
+    await this.scopedHttp.request({
+      baseUrl: TECHNICIANS_URL,
+      organizationId,
+      method: "put",
+      path: `/technicians/${created.id}/link-user`,
+      body: { userId: user.id },
+      errorLabel: "Technicians service error",
+    });
+    return created.id;
   }
 
   private async assertTrialing(user: AuthUser): Promise<void> {

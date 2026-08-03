@@ -141,6 +141,41 @@ describe("TechniciansGatewayService", () => {
     });
   });
 
+  it("should enrich getTechnician with linked user even when primary org differs", async () => {
+    scopedRequest.mockImplementation(async (options: { path?: string; method?: string }) => {
+      if (options.path === "/technicians/t1" && options.method === "get") {
+        return {
+          id: "t1",
+          organizationId: "org-1",
+          firstName: "Jean",
+          lastName: "Dupont",
+          email: "tech@test.fr",
+          status: "actif",
+          userId: invitedUser.id,
+        };
+      }
+      if (options.path === `/users/${invitedUser.id}` && options.method === "get") {
+        // Membership org-1 actif ; le document user peut avoir organizationId = org-2.
+        return {
+          ...invitedUser,
+          organizationId: "org-1",
+          organizationMembershipStatus: "active",
+          status: "active",
+        };
+      }
+      throw new Error(`Unexpected request: ${options.method} ${options.path}`);
+    });
+
+    const result = await service.getTechnician(admin, "t1");
+
+    expect(result.linkedUser).toEqual(
+      expect.objectContaining({
+        id: invitedUser.id,
+        organizationMembershipStatus: "active",
+      }),
+    );
+  });
+
   it("should enrich getTechnician with linked user membership status", async () => {
     scopedRequest.mockImplementation(async (options: { path?: string; method?: string }) => {
       if (options.path === "/technicians/t1" && options.method === "get") {

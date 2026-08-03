@@ -61,7 +61,7 @@ export abstract class AbstractUsersService {
     organizationId: string,
   ): Promise<UserResponse>;
   abstract patch(id: string, body: PatchUserBody): Promise<UserResponse>;
-  abstract findById(id: string): Promise<UserResponse | null>;
+  abstract findById(id: string, organizationId?: string): Promise<UserResponse | null>;
   abstract listByOrganization(organizationId: string): Promise<UserResponse[]>;
   abstract listOrganizationMemberships(userId: string): Promise<OrganizationMembershipResponse[]>;
   abstract addOrganizationMembership(
@@ -82,11 +82,16 @@ export abstract class AbstractUsersService {
   abstract listSessions(userId: string, currentSessionId?: string): Promise<UserSessionResponse[]>;
   abstract updateName(id: string, body: UpdateUserNameBody): Promise<UserResponse>;
   abstract changePassword(id: string, body: ChangePasswordBody): Promise<void>;
-  abstract getPreferences(userId: string): Promise<UserPreferencesResponse>;
+  abstract getPreferences(
+    userId: string,
+    organizationId?: string,
+  ): Promise<UserPreferencesResponse>;
   abstract updatePreferences(
     userId: string,
     body: UpdateUserPreferencesBody,
   ): Promise<UserPreferencesResponse>;
+  /** Id du premier admin de l’organisation (membership admin le plus ancien), ou null. */
+  abstract findFoundingAdminUserId(organizationId: string): Promise<string | null>;
   abstract listPlatformDirectory(filters?: {
     search?: string;
     organizationId?: string;

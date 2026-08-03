@@ -213,6 +213,7 @@ describe("AuthController", () => {
 
       expect(mockAuthService.acceptInvitation).toHaveBeenCalledWith(body, {
         userAgent: "JestAgent/1.0",
+        authenticatedUserId: undefined,
       });
       expect(result).toEqual(mockAuthResponse);
     });

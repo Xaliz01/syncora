@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Post, Req, UseGuards } from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
 import type { Request } from "express";
 import { AbstractAuthService } from "../../domain/ports/auth.service.port";
 import { JwtAuthGuard } from "../../infrastructure/jwt-auth.guard";
@@ -23,6 +24,7 @@ import type {
   ResendEmailVerificationResponse,
   ResolveInvitationPreviewResponse,
 } from "@planwise/shared";
+import { isOnboardingJwtPayload } from "@planwise/shared";
 
 type CreateOrgRequest = Request & {
   user?: JwtPayload;
@@ -34,9 +36,24 @@ function requestUserAgent(req: Request): string | undefined {
   return typeof ua === "string" ? ua : undefined;
 }
 
+function optionalAuthenticatedUserId(req: Request, jwtService: JwtService): string | undefined {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith("Bearer ")) return undefined;
+  try {
+    const payload = jwtService.verify<JwtPayload | OnboardingJwtPayload>(authHeader.slice(7));
+    if (isOnboardingJwtPayload(payload)) return undefined;
+    return payload.sub?.trim() || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 @Controller("auth")
 export class AuthController {
-  constructor(private readonly authService: AbstractAuthService) {}
+  constructor(
+    private readonly authService: AbstractAuthService,
+    private readonly jwtService: JwtService,
+  ) {}
 
   /** @deprecated Préférer register-account puis create-organization. */
   @Post("register")
@@ -76,7 +93,10 @@ export class AuthController {
     @Body() body: AcceptInvitationBody,
     @Req() req: Request,
   ): Promise<AuthResponse> {
-    return this.authService.acceptInvitation(body, { userAgent: requestUserAgent(req) });
+    return this.authService.acceptInvitation(body, {
+      userAgent: requestUserAgent(req),
+      authenticatedUserId: optionalAuthenticatedUserId(req, this.jwtService),
+    });
   }
 
   @Post("resolve-invitation")

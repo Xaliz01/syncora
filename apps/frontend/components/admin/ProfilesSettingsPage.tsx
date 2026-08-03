@@ -169,29 +169,7 @@ export function ProfilesSettingsPage() {
       {loading ? (
         <ListLoadingState />
       ) : profiles.length === 0 ? (
-        <ListEmptyState
-          message="Aucun profil."
-          action={
-            <PermissionGate permission="profiles.create">
-              <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center">
-                <button
-                  type="button"
-                  onClick={() => setImportOpen(true)}
-                  className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium"
-                >
-                  Importer des modèles prêts à l’emploi
-                </button>
-                <span className="text-slate-400 hidden sm:inline">ou</span>
-                <Link
-                  href="/settings/profiles/new"
-                  className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium"
-                >
-                  Créer votre premier profil
-                </Link>
-              </div>
-            </PermissionGate>
-          }
-        />
+        <ListEmptyState message="Aucun profil." />
       ) : filtered.length === 0 ? (
         <ListNoResults />
       ) : (

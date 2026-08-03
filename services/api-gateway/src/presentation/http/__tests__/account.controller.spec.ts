@@ -24,6 +24,7 @@ describe("AccountController", () => {
       changePassword: jest.fn(),
       getPreferences: jest.fn(),
       updatePreferences: jest.fn(),
+      completeOnboardingProfile: jest.fn(),
       getCrispIdentity: jest.fn(),
       listSessions: jest.fn(),
       revokeSession: jest.fn(),
@@ -94,6 +95,10 @@ describe("AccountController", () => {
           theme: "light",
           sidebarCollapsed: "expanded",
           quickActionIds: ["case_new", "cases_list", "calendar", "case_templates"],
+          onboardingCompletedOrganizationIds: [],
+          onboardingProfileCompleted: false,
+          setupGuideDismissedOrganizationIds: [],
+          setupGuideDismissed: false,
         },
       };
       mockAccountService.getPreferences.mockResolvedValue(expected);
@@ -114,6 +119,10 @@ describe("AccountController", () => {
           theme: "dark",
           sidebarCollapsed: "expanded",
           quickActionIds: ["case_new", "cases_list", "calendar", "case_templates"],
+          onboardingCompletedOrganizationIds: [],
+          onboardingProfileCompleted: false,
+          setupGuideDismissedOrganizationIds: [],
+          setupGuideDismissed: false,
         },
       };
       mockAccountService.updatePreferences.mockResolvedValue(expected);

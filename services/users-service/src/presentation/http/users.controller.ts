@@ -138,6 +138,15 @@ export class UsersController {
     return this.usersService.listByOrganization(organizationId);
   }
 
+  @Get("founding-admin")
+  async getFoundingAdmin(@Query("organizationId") organizationId: string) {
+    if (!organizationId?.trim()) {
+      throw new BadRequestException("organizationId query param is required");
+    }
+    const userId = await this.usersService.findFoundingAdminUserId(organizationId);
+    return { userId };
+  }
+
   @Get("platform/directory")
   async listPlatformDirectory(
     @Query("search") search?: string,
@@ -254,8 +263,8 @@ export class UsersController {
   }
 
   @Get(":id/preferences")
-  async getPreferences(@Param("id") id: string) {
-    return this.usersService.getPreferences(id);
+  async getPreferences(@Param("id") id: string, @Query("organizationId") organizationId?: string) {
+    return this.usersService.getPreferences(id, organizationId?.trim() || undefined);
   }
 
   @Put(":id/preferences")
@@ -269,8 +278,8 @@ export class UsersController {
   }
 
   @Get(":id")
-  async findById(@Param("id") id: string) {
-    const user = await this.usersService.findById(id);
+  async findById(@Param("id") id: string, @Query("organizationId") organizationId?: string) {
+    const user = await this.usersService.findById(id, organizationId?.trim() || undefined);
     if (!user) throw new NotFoundException("User not found");
     return user;
   }

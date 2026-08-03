@@ -47,12 +47,14 @@ export async function resendEmailVerification(payload: { email: string }) {
 
 export async function acceptInvitation(payload: {
   invitationToken: string;
-  password: string;
+  password?: string;
   name?: string;
 }) {
+  const hasSession = Boolean(getAccessToken());
   return apiRequestJson<AuthResponse>("POST", "/auth/accept-invitation", {
     body: payload,
-    bearer: false,
+    // Envoie le JWT si présent pour rejoindre une 2ᵉ org sans ressaisir le mot de passe.
+    bearer: hasSession,
     fallbackError: "Acceptation impossible",
   });
 }

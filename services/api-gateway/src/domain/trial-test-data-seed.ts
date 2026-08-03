@@ -458,7 +458,7 @@ export function buildDemoInterventions(
   organizationId: string,
   caseIds: string[],
   teamIds: string[],
-  options?: { assigneeUserId?: string; userCaseCount?: number },
+  options?: { assigneeTechnicianId?: string; userCaseCount?: number },
 ): CreateInterventionBody[] {
   const base = new Date();
   const userCaseCount = options?.userCaseCount ?? 0;
@@ -482,8 +482,12 @@ export function buildDemoInterventions(
       title: unscheduled
         ? `Intervention démo (à planifier) #${i + 1}`
         : `Intervention démo #${i + 1}`,
-      assignedTeamId: pick(teamIds, i),
-      ...(onUserCase && options?.assigneeUserId ? { assigneeId: options.assigneeUserId } : {}),
+      // Assigner un technicien (pas un userId brut) pour que la selectbox flotte le retrouve.
+      ...(onUserCase && options?.assigneeTechnicianId
+        ? { assigneeId: options.assigneeTechnicianId }
+        : teamIds.length > 0
+          ? { assignedTeamId: pick(teamIds, i) }
+          : {}),
       ...(unscheduled
         ? {}
         : {

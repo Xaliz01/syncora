@@ -19,6 +19,21 @@ export class UserPreferencesDocument extends Document {
     default: () => [...DEFAULT_QUICK_ACTION_IDS],
   })
   quickActionIds!: QuickActionId[];
+
+  /** Organisations pour lesquelles l’onboarding fondateur est terminé. */
+  @Prop({ type: [String], default: [] })
+  onboardingCompletedOrganizationIds!: string[];
+
+  /** Organisations pour lesquelles le guide de démarrage in-app a été masqué. */
+  @Prop({ type: [String], default: [] })
+  setupGuideDismissedOrganizationIds!: string[];
+
+  /**
+   * @deprecated Legacy booléen global — migré vers onboardingCompletedOrganizationIds.
+   * Conservé en lecture pour ne pas re-proposer l’onboarding sur l’org courante si déjà fait.
+   */
+  @Prop({ default: false })
+  onboardingProfileCompleted?: boolean;
 }
 
 export const UserPreferencesSchema = SchemaFactory.createForClass(UserPreferencesDocument);

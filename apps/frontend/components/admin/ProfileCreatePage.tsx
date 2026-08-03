@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import React, { useCallback, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import type { PermissionCode } from "@planwise/shared";
 import * as adminApi from "@/lib/admin.api";
 import { getPermissionLabel } from "@/lib/permissions-catalog";
@@ -13,8 +13,16 @@ function togglePermission(list: PermissionCode[], permission: PermissionCode): P
   return [...list, permission];
 }
 
+function safeInternalReturnPath(raw: string | null): string | null {
+  if (!raw) return null;
+  const path = raw.trim();
+  if (!path.startsWith("/") || path.startsWith("//")) return null;
+  return path;
+}
+
 export function ProfileCreatePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { showToast } = useToast();
   const [catalog, setCatalog] = useState<PermissionCode[]>([]);
   const [name, setName] = useState("");
@@ -23,6 +31,13 @@ export function ProfileCreatePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const returnTo = useMemo(
+    () => safeInternalReturnPath(searchParams.get("returnTo")),
+    [searchParams],
+  );
+  const backHref = returnTo ?? "/settings/profiles";
+  const backLabel = returnTo === "/users/new" ? "Retour à l'invitation" : "Retour aux profils";
 
   const loadCatalog = useCallback(async () => {
     setLoading(true);
@@ -52,7 +67,7 @@ export function ProfileCreatePage() {
         permissions,
       });
       showToast("Profil créé.");
-      router.push("/settings/profiles");
+      router.push(backHref);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Impossible de créer le profil");
     } finally {
@@ -70,10 +85,10 @@ export function ProfileCreatePage() {
           </p>
         </div>
         <Link
-          href="/settings/profiles"
+          href={backHref}
           className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition self-start flex-shrink-0"
         >
-          Retour aux profils
+          {backLabel}
         </Link>
       </div>
 

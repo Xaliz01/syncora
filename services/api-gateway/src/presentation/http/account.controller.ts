@@ -19,6 +19,7 @@ import { CurrentUser } from "../../infrastructure/current-user.decorator";
 import type {
   AuthUser,
   ChangePasswordBody,
+  CompleteOnboardingProfileBody,
   JwtPayload,
   UpdateUserNameBody,
   UpdateUserPreferencesBody,
@@ -48,6 +49,14 @@ export class AccountController {
   @Put("preferences")
   async updatePreferences(@CurrentUser() user: AuthUser, @Body() body: UpdateUserPreferencesBody) {
     return this.accountService.updatePreferences(user, body);
+  }
+
+  @Post("onboarding-profile")
+  async completeOnboardingProfile(
+    @CurrentUser() user: AuthUser,
+    @Body() body: CompleteOnboardingProfileBody,
+  ) {
+    return this.accountService.completeOnboardingProfile(user, body);
   }
 
   @Get("support/crisp-identity")

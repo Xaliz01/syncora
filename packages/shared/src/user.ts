@@ -68,10 +68,16 @@ export interface CreateInvitedUserBody {
 }
 
 export interface ActivateInvitedUserBody {
-  password: string;
+  /** Requis sauf si `trustedAuthenticatedUserId` correspond à l’utilisateur (gateway). */
+  password?: string;
   name?: string;
   /** Organisation de l'invitation à activer (requis pour multi-org). */
   organizationId: string;
+  /**
+   * Rempli uniquement par le gateway après vérification JWT :
+   * l’appelant est déjà authentifié comme cet utilisateur (2ᵉ org, etc.).
+   */
+  trustedAuthenticatedUserId?: string;
 }
 
 /** Indices pour l'écran d'acceptation d'invitation (sans secrets). */
@@ -125,12 +131,31 @@ export interface UserPreferences {
   sidebarCollapsed: SidebarPreference;
   /** Actions rapides du tableau de bord (ordre d'affichage). */
   quickActionIds: QuickActionId[];
+  /**
+   * Organisations pour lesquelles l’onboarding fondateur (profil + démo) est terminé.
+   */
+  onboardingCompletedOrganizationIds: string[];
+  /**
+   * Calculé pour l’organisation courante : true si l’onboarding y est terminé.
+   * Rempli par le gateway / users-service selon le contexte org.
+   */
+  onboardingProfileCompleted: boolean;
+  /**
+   * Organisations pour lesquelles le guide de démarrage in-app a été ignoré / terminé.
+   */
+  setupGuideDismissedOrganizationIds: string[];
+  /** Calculé pour l’org courante : true si le guide de démarrage ne doit plus s’afficher. */
+  setupGuideDismissed: boolean;
 }
 
 export const DEFAULT_USER_PREFERENCES: UserPreferences = {
   theme: "light",
   sidebarCollapsed: "expanded",
   quickActionIds: [...DEFAULT_QUICK_ACTION_IDS],
+  onboardingCompletedOrganizationIds: [],
+  onboardingProfileCompleted: false,
+  setupGuideDismissedOrganizationIds: [],
+  setupGuideDismissed: false,
 };
 
 export interface UpdateUserNameBody {
@@ -146,9 +171,32 @@ export interface UpdateUserPreferencesBody {
   theme?: ThemePreference;
   sidebarCollapsed?: SidebarPreference;
   quickActionIds?: QuickActionId[];
+  /**
+   * Marque l’onboarding terminé (true) pour `organizationId`.
+   * `organizationId` est requis lorsque ce champ est fourni.
+   */
+  onboardingProfileCompleted?: boolean;
+  /**
+   * Masque le guide de démarrage in-app pour `organizationId`.
+   * `organizationId` est requis lorsque ce champ est fourni.
+   */
+  setupGuideDismissed?: boolean;
+  /** Organisation ciblée pour l’onboarding / le guide (multi-tenant). */
+  organizationId?: string;
 }
 
 export interface UserPreferencesResponse {
   userId: string;
   preferences: UserPreferences;
+}
+
+/** Première connexion : le client intervient-il lui-même sur le terrain ? */
+export interface CompleteOnboardingProfileBody {
+  goesOnInterventions: boolean;
+}
+
+export interface CompleteOnboardingProfileResponse {
+  preferences: UserPreferences;
+  /** Présent si un technicien est (ou était déjà) lié au compte. */
+  technicianId?: string;
 }

@@ -2,12 +2,18 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import React, { useCallback, useEffect, useState } from "react";
-import type { PermissionCode, PermissionProfileResponse } from "@planwise/shared";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  DEFAULT_PERMISSION_PROFILE_PRESETS,
+  type PermissionCode,
+  type PermissionProfileResponse,
+} from "@planwise/shared";
 import * as adminApi from "@/lib/admin.api";
 import * as subscriptionsApi from "@/lib/subscriptions.api";
 import { getPermissionLabel } from "@/lib/permissions-catalog";
 import { countOrganizationUserSeats } from "@/lib/organization-user-status";
+import { PermissionGate } from "@/components/auth/PermissionGate";
+import { ImportDefaultsDialog } from "@/components/settings/ImportDefaultsDialog";
 import { useToast } from "@/components/ui/ToastProvider";
 
 function togglePermission(list: PermissionCode[], permission: PermissionCode): PermissionCode[] {
@@ -29,8 +35,11 @@ export function CreateUserPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [seatLimit, setSeatLimit] = useState<{ current: number; max: number } | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importing, setImporting] = useState(false);
   const adminRoleSelected = role === "admin";
   const atSeatLimit = seatLimit !== null && seatLimit.current >= seatLimit.max;
+  const noProfiles = !loading && profiles.length === 0;
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -52,8 +61,10 @@ export function CreateUserPage() {
       } else {
         setSeatLimit(null);
       }
+      return profilesRes;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur de chargement");
+      return [] as PermissionProfileResponse[];
     } finally {
       setLoading(false);
     }
@@ -62,6 +73,74 @@ export function CreateUserPage() {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  const existingNames = useMemo(
+    () => new Set(profiles.map((p) => p.name.trim().toLowerCase())),
+    [profiles],
+  );
+
+  const importItems = useMemo(
+    () =>
+      DEFAULT_PERMISSION_PROFILE_PRESETS.map((p) => ({
+        id: p.id,
+        name: p.name,
+        description: p.description,
+        category: p.category,
+        meta: `${p.permissions.length} permission${p.permissions.length > 1 ? "s" : ""}`,
+        alreadyExists: existingNames.has(p.name.trim().toLowerCase()),
+      })),
+    [existingNames],
+  );
+
+  const selectProfile = useCallback((nextProfileId: string, list: PermissionProfileResponse[]) => {
+    setProfileId(nextProfileId);
+    const profilePermissions =
+      list.find((profile) => profile.id === nextProfileId)?.permissions ?? [];
+    setSelectedPermissions(profilePermissions);
+  }, []);
+
+  const handleImport = async (ids: string[]) => {
+    setImporting(true);
+    let ok = 0;
+    let failed = 0;
+    let firstCreatedId: string | null = null;
+    try {
+      for (const id of ids) {
+        const preset = DEFAULT_PERMISSION_PROFILE_PRESETS.find((p) => p.id === id);
+        if (!preset) continue;
+        if (existingNames.has(preset.name.trim().toLowerCase())) continue;
+        try {
+          const created = await adminApi.createPermissionProfile({
+            name: preset.name,
+            description: preset.description,
+            permissions: [...preset.permissions],
+          });
+          ok += 1;
+          if (!firstCreatedId) firstCreatedId = created.id;
+        } catch {
+          failed += 1;
+        }
+      }
+      const nextProfiles = await refresh();
+      setImportOpen(false);
+      if (firstCreatedId) {
+        selectProfile(firstCreatedId, nextProfiles);
+      } else if (nextProfiles[0]) {
+        selectProfile(nextProfiles[0].id, nextProfiles);
+      }
+      if (ok > 0) {
+        showToast(
+          `${ok} profil${ok > 1 ? "s" : ""} importé${ok > 1 ? "s" : ""}${
+            failed > 0 ? ` (${failed} échec${failed > 1 ? "s" : ""})` : ""
+          }.`,
+        );
+      } else if (failed > 0) {
+        showToast("Aucun profil importé.", "error");
+      }
+    } finally {
+      setImporting(false);
+    }
+  };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -170,14 +249,9 @@ export function CreateUserPage() {
               </select>
               <select
                 value={profileId}
-                onChange={(e) => {
-                  const nextProfileId = e.target.value;
-                  setProfileId(nextProfileId);
-                  const profilePermissions =
-                    profiles.find((profile) => profile.id === nextProfileId)?.permissions ?? [];
-                  setSelectedPermissions(profilePermissions);
-                }}
+                onChange={(e) => selectProfile(e.target.value, profiles)}
                 disabled={adminRoleSelected}
+                aria-label="Profil de permissions"
                 className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:outline-none"
               >
                 <option value="">Aucun profil</option>
@@ -188,6 +262,36 @@ export function CreateUserPage() {
                 ))}
               </select>
             </div>
+            {!adminRoleSelected && noProfiles && (
+              <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 px-3 py-3 text-sm text-slate-600 dark:text-slate-300">
+                <p className="font-medium text-slate-800 dark:text-slate-100 mb-1">
+                  Aucun profil de permissions
+                </p>
+                <p className="mb-2 text-slate-500 dark:text-slate-400">
+                  Créez ou importez un profil pour assigner rapidement des droits au membre invité.
+                </p>
+                <PermissionGate permission="profiles.create">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <button
+                      type="button"
+                      onClick={() => setImportOpen(true)}
+                      className="font-medium text-brand-600 dark:text-brand-400 hover:underline"
+                    >
+                      Importer depuis la librairie
+                    </button>
+                    <span className="text-slate-400" aria-hidden>
+                      ou
+                    </span>
+                    <Link
+                      href="/settings/profiles/new?returnTo=%2Fusers%2Fnew"
+                      className="font-medium text-brand-600 dark:text-brand-400 hover:underline"
+                    >
+                      Créer un profil
+                    </Link>
+                  </div>
+                </PermissionGate>
+              </div>
+            )}
             {adminRoleSelected && (
               <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
                 Un administrateur d&apos;organisation possède automatiquement tous les droits. Aucun
@@ -235,6 +339,16 @@ export function CreateUserPage() {
           </form>
         )}
       </section>
+
+      <ImportDefaultsDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        title="Importer des profils"
+        description="Choisissez des modèles prêts à l’emploi. Les profils déjà présents (même nom) sont ignorés."
+        items={importItems}
+        importing={importing}
+        onImport={handleImport}
+      />
     </div>
   );
 }
