@@ -176,12 +176,6 @@ export function PennylaneIntegrationSection() {
                 connectMutation.mutate();
               }}
             >
-              {!oauthAvailable && (
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  OAuth n’est pas encore activé sur cette instance. Utilisez un token API entreprise
-                  en attendant.
-                </p>
-              )}
               <div>
                 <label
                   htmlFor="pennylane-token"

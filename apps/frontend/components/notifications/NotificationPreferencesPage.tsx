@@ -12,6 +12,7 @@ import {
   REMINDER_LEAD_TIMES,
   REMINDER_LEAD_TIME_LABELS,
   buildDefaultNotificationPreferences,
+  mergeNotificationPreferencesWithDefaults,
   type NotificationChannel,
   type NotificationEventType,
   type NotificationPreferencesData,
@@ -245,12 +246,13 @@ export function NotificationPreferencesPage() {
 
   useEffect(() => {
     if (data?.preferences) {
-      setLocalPrefs(data.preferences);
+      setLocalPrefs(mergeNotificationPreferencesWithDefaults(data.preferences));
     }
   }, [data]);
 
   const saveMutation = useMutation({
-    mutationFn: (prefs: NotificationPreferencesData) => notificationsApi.updatePreferences(prefs),
+    mutationFn: (prefs: NotificationPreferencesData) =>
+      notificationsApi.updatePreferences(mergeNotificationPreferencesWithDefaults(prefs)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notification-preferences"] });
       setDirty(false);
@@ -262,21 +264,21 @@ export function NotificationPreferencesPage() {
   const handleToggleChannel = useCallback(
     (eventType: NotificationEventType, channel: NotificationChannel, enabled: boolean) => {
       setLocalPrefs((prev) => {
-        const current = prev ?? buildDefaultNotificationPreferences();
-        const updated = {
+        const current = mergeNotificationPreferencesWithDefaults(prev);
+        const eventPref = current.events[eventType];
+        return {
           ...current,
           events: {
             ...current.events,
             [eventType]: {
-              ...current.events[eventType],
+              ...eventPref,
               channels: {
-                ...current.events[eventType].channels,
+                ...eventPref.channels,
                 [channel]: { enabled },
               },
             },
           },
         };
-        return updated;
       });
       setDirty(true);
     },
@@ -285,7 +287,7 @@ export function NotificationPreferencesPage() {
 
   const handleReminderLeadTimeChange = useCallback((leadTime: ReminderLeadTime) => {
     setLocalPrefs((prev) => {
-      const current = prev ?? buildDefaultNotificationPreferences();
+      const current = mergeNotificationPreferencesWithDefaults(prev);
       return { ...current, reminderLeadTime: leadTime };
     });
     setDirty(true);

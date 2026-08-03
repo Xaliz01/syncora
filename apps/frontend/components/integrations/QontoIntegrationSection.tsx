@@ -177,12 +177,6 @@ export function QontoIntegrationSection() {
                 connectMutation.mutate();
               }}
             >
-              {!oauthAvailable && (
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  OAuth n’est pas encore activé sur cette instance. Utilisez une clé API Qonto en
-                  attendant.
-                </p>
-              )}
               <div>
                 <label
                   htmlFor="qonto-login"

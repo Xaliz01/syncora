@@ -2,12 +2,14 @@ import Image from "next/image";
 
 const PROVIDERS = {
   pennylane: {
-    src: "/integrations/pennylane.png",
+    src: "/integrations/pennylane.svg",
     alt: "Logo Pennylane",
+    className: "object-contain p-1.5",
   },
   qonto: {
-    src: "/integrations/qonto.svg",
+    src: "/integrations/qonto.png",
     alt: "Logo Qonto",
+    className: "object-contain",
   },
 } as const;
 
@@ -20,19 +22,13 @@ export function IntegrationProviderLogo({
   provider: Provider;
   size?: number;
 }) {
-  const { src, alt } = PROVIDERS[provider];
+  const { src, alt, className } = PROVIDERS[provider];
   return (
     <span
       className="inline-flex shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-600 dark:bg-white"
       style={{ width: size, height: size }}
     >
-      <Image
-        src={src}
-        alt={alt}
-        width={size}
-        height={size}
-        className={provider === "qonto" ? "object-contain p-2" : "object-contain"}
-      />
+      <Image src={src} alt={alt} width={size} height={size} className={className} />
     </span>
   );
 }

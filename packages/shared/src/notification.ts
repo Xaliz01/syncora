@@ -178,6 +178,47 @@ export function buildDefaultNotificationPreferences(): NotificationPreferencesDa
 }
 
 /**
+ * Complète les préférences persistées avec les événements / canaux manquants
+ * (ex. nouvel eventType ajouté après la dernière sauvegarde utilisateur).
+ */
+export function mergeNotificationPreferencesWithDefaults(
+  stored: NotificationPreferencesData | null | undefined,
+): NotificationPreferencesData {
+  const defaults = buildDefaultNotificationPreferences();
+  if (!stored?.events) return defaults;
+
+  const events = {} as Record<NotificationEventType, NotificationEventPreference>;
+  for (const eventType of NOTIFICATION_EVENT_TYPES) {
+    const storedEvent = stored.events[eventType];
+    const defaultEvent = defaults.events[eventType];
+    if (!storedEvent?.channels) {
+      events[eventType] = defaultEvent;
+      continue;
+    }
+    events[eventType] = {
+      channels: {
+        in_app: {
+          enabled: storedEvent.channels.in_app?.enabled ?? defaultEvent.channels.in_app.enabled,
+        },
+        email: {
+          enabled: storedEvent.channels.email?.enabled ?? defaultEvent.channels.email.enabled,
+        },
+        push: { enabled: storedEvent.channels.push?.enabled ?? defaultEvent.channels.push.enabled },
+        sms: { enabled: storedEvent.channels.sms?.enabled ?? defaultEvent.channels.sms.enabled },
+      },
+    };
+  }
+
+  const reminderLeadTime =
+    typeof stored.reminderLeadTime === "number" &&
+    (REMINDER_LEAD_TIMES as readonly number[]).includes(stored.reminderLeadTime)
+      ? stored.reminderLeadTime
+      : defaults.reminderLeadTime;
+
+  return { events, reminderLeadTime };
+}
+
+/**
  * Determine which channels are enabled for a given event type.
  * Falls back to defaults if the user has no preferences.
  */
@@ -185,7 +226,7 @@ export function getEnabledChannels(
   preferences: NotificationPreferencesData | undefined,
   eventType: NotificationEventType,
 ): NotificationChannel[] {
-  const prefs = preferences ?? buildDefaultNotificationPreferences();
+  const prefs = mergeNotificationPreferencesWithDefaults(preferences);
   const eventPref = prefs.events[eventType];
   if (!eventPref) return ["in_app"];
   return NOTIFICATION_CHANNELS.filter((ch) => eventPref.channels[ch]?.enabled);

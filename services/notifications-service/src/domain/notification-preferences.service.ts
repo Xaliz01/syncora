@@ -5,7 +5,10 @@ import type {
   NotificationPreferencesData,
   NotificationPreferencesResponse,
 } from "@planwise/shared";
-import { buildDefaultNotificationPreferences } from "@planwise/shared";
+import {
+  buildDefaultNotificationPreferences,
+  mergeNotificationPreferencesWithDefaults,
+} from "@planwise/shared";
 import type { NotificationPreferencesDocument } from "../persistence/notification-preferences.schema";
 import { AbstractNotificationPreferencesService } from "./ports/notification-preferences.service.port";
 
@@ -38,10 +41,11 @@ export class NotificationPreferencesService extends AbstractNotificationPreferen
     organizationId: string,
     preferences: NotificationPreferencesData,
   ): Promise<NotificationPreferencesResponse> {
+    const normalized = mergeNotificationPreferencesWithDefaults(preferences);
     const doc = await this.preferencesModel
       .findOneAndUpdate(
         { userId, organizationId },
-        { $set: { preferences } },
+        { $set: { preferences: normalized } },
         { new: true, upsert: true },
       )
       .exec();
@@ -53,7 +57,7 @@ export class NotificationPreferencesService extends AbstractNotificationPreferen
       id: doc._id.toString(),
       userId: doc.userId,
       organizationId: doc.organizationId,
-      preferences: doc.preferences,
+      preferences: mergeNotificationPreferencesWithDefaults(doc.preferences),
       createdAt: doc.get("createdAt")?.toISOString(),
       updatedAt: doc.get("updatedAt")?.toISOString(),
     };
