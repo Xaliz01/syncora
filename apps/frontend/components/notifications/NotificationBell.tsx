@@ -111,6 +111,11 @@ function formatNotificationText(n: NotificationResponse): string {
     return `${actor} a déposé le document${docName}${formatRelatedEntityTarget(n)}`;
   }
 
+  if (n.entityType === "maintenance_contract" && n.detail?.trim()) {
+    const title = n.entityLabel?.trim() ? ` (contrat « ${n.entityLabel.trim()} »)` : "";
+    return `${n.detail.trim()}${title}`;
+  }
+
   if (n.entityType === "intervention") {
     const title = n.entityLabel ? ` « ${n.entityLabel} »` : "";
     const dossier = n.relatedEntityLabel?.trim()
@@ -121,6 +126,9 @@ function formatNotificationText(n: NotificationResponse): string {
     }
     if (n.detail === "Intervention terminée") {
       return `${actor} a terminé l'intervention${title}${dossier}`;
+    }
+    if (n.detail === "Rappel : intervention imminente") {
+      return `Rappel : intervention${title} imminente${dossier}`;
     }
     if (n.action === "created") {
       return `${actor} a créé l'intervention${title}${dossier}`;
