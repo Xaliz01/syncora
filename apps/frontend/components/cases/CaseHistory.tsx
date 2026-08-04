@@ -480,6 +480,7 @@ const FIELD_LABELS: Record<string, string> = {
   assignees: "Assignés",
   dueDate: "Échéance",
   customer: "Client",
+  orderGiver: "Donneur d'ordre",
 };
 
 function formatFieldValue(field: string, value?: string): string {

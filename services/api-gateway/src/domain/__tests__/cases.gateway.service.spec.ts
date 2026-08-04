@@ -5,6 +5,7 @@ import type { AuthUser, CaseResponse, CustomerResponse } from "@planwise/shared"
 import { CasesGatewayService } from "../cases.service";
 import { OrganizationScopedHttpClient } from "../../infrastructure/organization-scoped-http.client";
 import { AbstractCustomersGatewayService } from "../ports/customers.service.port";
+import { AbstractOrderGiversGatewayService } from "../ports/order-givers.service.port";
 
 describe("CasesGatewayService", () => {
   let service: CasesGatewayService;
@@ -58,6 +59,10 @@ describe("CasesGatewayService", () => {
       getCustomer: jest.fn(),
       listCustomersByIds: jest.fn(),
     };
+    const orderGiversGateway = {
+      getOrderGiver: jest.fn(),
+      listOrderGiversByIds: jest.fn().mockResolvedValue([]),
+    };
     httpService = {
       get: jest.fn().mockReturnValue(
         of({
@@ -78,6 +83,10 @@ describe("CasesGatewayService", () => {
         CasesGatewayService,
         { provide: OrganizationScopedHttpClient, useValue: scopedHttp },
         { provide: AbstractCustomersGatewayService, useValue: customersGateway },
+        {
+          provide: AbstractOrderGiversGatewayService,
+          useValue: orderGiversGateway,
+        },
         { provide: HttpService, useValue: httpService },
       ],
     }).compile();

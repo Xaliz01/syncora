@@ -5,6 +5,7 @@ import type { AuthUser, CommentResponse } from "@planwise/shared";
 import { CasesGatewayService } from "../cases.service";
 import { OrganizationScopedHttpClient } from "../../infrastructure/organization-scoped-http.client";
 import { AbstractCustomersGatewayService } from "../ports/customers.service.port";
+import { AbstractOrderGiversGatewayService } from "../ports/order-givers.service.port";
 
 describe("CasesGatewayService comments", () => {
   let service: CasesGatewayService;
@@ -54,6 +55,13 @@ describe("CasesGatewayService comments", () => {
         {
           provide: AbstractCustomersGatewayService,
           useValue: {},
+        },
+        {
+          provide: AbstractOrderGiversGatewayService,
+          useValue: {
+            getOrderGiver: jest.fn(),
+            listOrderGiversByIds: jest.fn().mockResolvedValue([]),
+          },
         },
         {
           provide: HttpService,

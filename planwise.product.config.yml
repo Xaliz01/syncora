@@ -15,6 +15,7 @@ product:
     - Gérer des intervenants et les assigner sur des interventions
   core_entities:
     - Customer
+    - OrderGiver
     - Intervention
     - InterventionLifecycle
     - StockItem

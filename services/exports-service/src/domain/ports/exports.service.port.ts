@@ -26,6 +26,8 @@ export abstract class AbstractExportsService {
       search?: string;
       startDate?: string;
       endDate?: string;
+      customerId?: string;
+      orderGiverId?: string;
     },
   ): Promise<ExportResult>;
 

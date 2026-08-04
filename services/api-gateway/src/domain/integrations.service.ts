@@ -16,6 +16,7 @@ import type {
   ConnectPennylaneBody,
   ConnectQontoBody,
   CustomerResponse,
+  OrderGiverResponse,
   PennylaneConnectionStatus,
   PennylaneOAuthStartResponse,
   QontoConnectionStatus,
@@ -39,9 +40,29 @@ import {
 import { AbstractIntegrationsGatewayService } from "./ports/integrations.service.port";
 import { AbstractCasesGatewayService } from "./ports/cases.service.port";
 import { AbstractCustomersGatewayService } from "./ports/customers.service.port";
+import { AbstractOrderGiversGatewayService } from "./ports/order-givers.service.port";
 import { assertAssignablePermission } from "../infrastructure/permission-checks";
 
 const INTEGRATIONS_URL = process.env.INTEGRATIONS_SERVICE_URL ?? "http://localhost:3013";
+
+/** Tiers facturé : donneur d'ordre s'il est rattaché au dossier, sinon client. */
+type InvoiceBillingParty = Pick<
+  CustomerResponse,
+  "id" | "displayName" | "kind" | "firstName" | "lastName" | "email" | "legalIdentifier" | "address"
+>;
+
+function toInvoiceBillingParty(party: CustomerResponse | OrderGiverResponse): InvoiceBillingParty {
+  return {
+    id: party.id,
+    displayName: party.displayName,
+    kind: party.kind,
+    firstName: party.firstName,
+    lastName: party.lastName,
+    email: party.email,
+    legalIdentifier: party.legalIdentifier,
+    address: party.address,
+  };
+}
 
 const TVA_TO_PENNYLANE: Record<TvaRate, string> = {
   0: "FR_0",
@@ -63,6 +84,7 @@ export class IntegrationsGatewayService extends AbstractIntegrationsGatewayServi
     private readonly httpService: HttpService,
     private readonly casesService: AbstractCasesGatewayService,
     private readonly customersService: AbstractCustomersGatewayService,
+    private readonly orderGiversService: AbstractOrderGiversGatewayService,
   ) {
     super();
   }
@@ -285,6 +307,8 @@ export class IntegrationsGatewayService extends AbstractIntegrationsGatewayServi
       invoiceKind?: string;
       startDate?: string;
       endDate?: string;
+      customerId?: string;
+      orderGiverId?: string;
       limit?: number;
       offset?: number;
     },
@@ -297,6 +321,19 @@ export class IntegrationsGatewayService extends AbstractIntegrationsGatewayServi
     if (filters?.endDate) params.endDate = filters.endDate;
     if (filters?.limit != null) params.limit = String(filters.limit);
     if (filters?.offset != null) params.offset = String(filters.offset);
+
+    const customerId = filters?.customerId?.trim();
+    const orderGiverId = filters?.orderGiverId?.trim();
+    if (customerId || orderGiverId) {
+      const caseIds = await this.casesService.listCaseIdsForParty(user, {
+        customerId,
+        orderGiverId,
+      });
+      if (caseIds.length === 0) {
+        return { invoices: [], total: 0 };
+      }
+      params.caseIds = caseIds.join(",");
+    }
 
     const raw = await this.getJson<OrganizationInvoiceSyncsListResponse>(
       "/integrations/invoice-syncs",
@@ -313,23 +350,33 @@ export class IntegrationsGatewayService extends AbstractIntegrationsGatewayServi
 
     const caseById = new Map<string, CaseResponse>();
     const customerIds: string[] = [];
+    const orderGiverIds: string[] = [];
     caseResults.forEach((result, index) => {
       if (result.status !== "fulfilled") return;
       const caseData = result.value;
       caseById.set(caseIds[index]!, caseData);
-      if (caseData.customerId) customerIds.push(caseData.customerId);
+      if (caseData.orderGiverId) orderGiverIds.push(caseData.orderGiverId);
+      else if (caseData.customerId) customerIds.push(caseData.customerId);
     });
 
-    const customers = await this.customersService.listCustomersByIds(user, customerIds);
+    const [customers, orderGivers] = await Promise.all([
+      this.customersService.listCustomersByIds(user, customerIds),
+      this.orderGiversService.listOrderGiversByIds(user, orderGiverIds),
+    ]);
     const customerById = new Map(customers.map((c) => [c.id, c]));
+    const orderGiverById = new Map(orderGivers.map((o) => [o.id, o]));
 
     const invoices: OrganizationInvoiceSyncItem[] = raw.invoices.map((invoice) => {
       const caseData = caseById.get(invoice.caseId);
-      const customer = caseData?.customerId ? customerById.get(caseData.customerId) : undefined;
+      const billedParty = caseData?.orderGiverId
+        ? orderGiverById.get(caseData.orderGiverId)
+        : caseData?.customerId
+          ? customerById.get(caseData.customerId)
+          : undefined;
       return {
         ...invoice,
         caseTitle: caseData?.title,
-        customerDisplayName: customer?.displayName,
+        customerDisplayName: billedParty?.displayName,
       };
     });
 
@@ -463,7 +510,7 @@ export class IntegrationsGatewayService extends AbstractIntegrationsGatewayServi
     providerLabel: string,
   ): Promise<{
     caseData: CaseResponse;
-    customer: CustomerResponse;
+    customer: InvoiceBillingParty;
     lines: Array<{
       label: string;
       quantity: number;
@@ -486,13 +533,17 @@ export class IntegrationsGatewayService extends AbstractIntegrationsGatewayServi
       );
     }
 
-    if (!caseData.customerId) {
+    if (!caseData.customerId && !caseData.orderGiverId) {
       throw new BadRequestException(
-        `Le dossier n’a pas de client. Assignez un client avant l’envoi vers ${providerLabel}.`,
+        `Le dossier n’a pas de client ni de donneur d’ordre. Assignez un destinataire avant l’envoi vers ${providerLabel}.`,
       );
     }
 
-    const customer = await this.customersService.getCustomer(user, caseData.customerId);
+    const customer = caseData.orderGiverId
+      ? toInvoiceBillingParty(
+          await this.orderGiversService.getOrderGiver(user, caseData.orderGiverId),
+        )
+      : toInvoiceBillingParty(await this.customersService.getCustomer(user, caseData.customerId!));
     const invoiceKind: CaseInvoiceKind = options.invoiceKind ?? "full";
     const existing = await this.getCaseInvoiceSync(user, caseId);
     const quote = await this.requireQuoteForInvoice(user, caseData, options.quoteId);

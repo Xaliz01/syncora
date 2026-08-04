@@ -108,6 +108,8 @@ describe("ExportsController", () => {
         undefined,
         undefined,
         undefined,
+        undefined,
+        undefined,
         res,
       );
 
@@ -119,6 +121,8 @@ describe("ExportsController", () => {
         search: undefined,
         startDate: undefined,
         endDate: undefined,
+        customerId: undefined,
+        orderGiverId: undefined,
       });
       expect(res.send).toHaveBeenCalledWith(exportResult.buffer);
     });
@@ -142,6 +146,8 @@ describe("ExportsController", () => {
         undefined,
         undefined,
         undefined,
+        undefined,
+        undefined,
         res,
       );
 
@@ -153,6 +159,8 @@ describe("ExportsController", () => {
         search: undefined,
         startDate: undefined,
         endDate: undefined,
+        customerId: undefined,
+        orderGiverId: undefined,
       });
       expect(res.send).toHaveBeenCalledWith(exportResult.buffer);
     });
@@ -164,6 +172,8 @@ describe("ExportsController", () => {
         controller.exportCasesList(
           mockUser,
           "docx",
+          undefined,
+          undefined,
           undefined,
           undefined,
           undefined,

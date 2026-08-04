@@ -29,6 +29,7 @@ export interface CreateCaseForOrgBody {
   dueDate?: string;
   tags?: string[];
   customerId?: string;
+  orderGiverId?: string;
   interventionSiteId?: string;
 }
 
@@ -42,6 +43,7 @@ export interface UpdateCaseForOrgBody {
   dueDate?: string | null;
   tags?: string[];
   customerId?: string | null;
+  orderGiverId?: string | null;
   interventionSiteId?: string | null;
 }
 
@@ -190,11 +192,17 @@ export abstract class AbstractCasesGatewayService {
       priority?: string;
       search?: string;
       customerId?: string;
+      orderGiverId?: string;
       limit?: number;
       offset?: number;
     },
   ): Promise<CasesListResponse>;
   abstract getCase(user: AuthUser, caseId: string): Promise<CaseResponse>;
+  /** IDs de dossiers pour une partie (client ou donneur d'ordre), sans pagination enrichie. */
+  abstract listCaseIdsForParty(
+    user: AuthUser,
+    filters: { customerId?: string; orderGiverId?: string },
+  ): Promise<string[]>;
   abstract updateCase(
     user: AuthUser,
     caseId: string,

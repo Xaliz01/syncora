@@ -102,6 +102,8 @@ export class ExportsService extends AbstractExportsService {
       search?: string;
       startDate?: string;
       endDate?: string;
+      customerId?: string;
+      orderGiverId?: string;
     },
   ): Promise<ExportResult> {
     const query: Record<string, string> = { organizationId };
@@ -110,6 +112,8 @@ export class ExportsService extends AbstractExportsService {
     if (filters?.priority) query.priority = filters.priority;
     if (filters?.assigneeId) query.assigneeId = filters.assigneeId;
     if (filters?.search) query.search = filters.search;
+    if (filters?.customerId) query.customerId = filters.customerId;
+    if (filters?.orderGiverId) query.orderGiverId = filters.orderGiverId;
 
     let cases = await this.fetchAllPaginated<CaseSummaryResponse>(
       CASES_URL,
@@ -465,6 +469,14 @@ export class ExportsService extends AbstractExportsService {
       query.endDate = period.endDate;
     }
 
+    const partyCaseIds = await this.resolvePartyCaseIds(organizationId, filters);
+    if (partyCaseIds !== undefined && partyCaseIds.length === 0) {
+      return this.buildInvoicesExportResult([], format, period);
+    }
+    if (partyCaseIds?.length) {
+      query.caseIds = partyCaseIds.join(",");
+    }
+
     const invoices = await this.fetchAllPaginated<OrganizationInvoiceSyncItem>(
       INTEGRATIONS_URL,
       "/integrations/invoice-syncs",
@@ -472,11 +484,17 @@ export class ExportsService extends AbstractExportsService {
       query,
     );
     const enriched = await this.enrichInvoiceSyncs(organizationId, invoices);
+    return this.buildInvoicesExportResult(enriched, format, period);
+  }
 
+  private async buildInvoicesExportResult(
+    enriched: OrganizationInvoiceSyncItem[],
+    format: ExportFormat,
+    period: { startDate: string; endDate: string } | undefined,
+  ): Promise<ExportResult> {
     if (format === "csv") {
-      const buffer = this.buildInvoicesListCsv(enriched, period);
       return {
-        buffer,
+        buffer: this.buildInvoicesListCsv(enriched, period),
         contentType: "text/csv; charset=utf-8",
         filename: this.exportFilename("liste-factures", "csv", period),
       };
@@ -497,6 +515,23 @@ export class ExportsService extends AbstractExportsService {
       contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       filename: this.exportFilename("liste-factures", "xlsx", period),
     };
+  }
+
+  /** IDs de dossiers pour un client / donneur d'ordre ; `undefined` si aucun filtre partie. */
+  private async resolvePartyCaseIds(
+    organizationId: string,
+    filters?: { customerId?: string; orderGiverId?: string },
+  ): Promise<string[] | undefined> {
+    const customerId = filters?.customerId?.trim();
+    const orderGiverId = filters?.orderGiverId?.trim();
+    if (!customerId && !orderGiverId) return undefined;
+
+    const result = await this.callService<{ ids: string[] }>(CASES_URL, "/cases/ids", {
+      organizationId,
+      ...(customerId ? { customerId } : {}),
+      ...(orderGiverId ? { orderGiverId } : {}),
+    });
+    return result.ids ?? [];
   }
 
   private async enrichInvoiceSyncs(
@@ -521,15 +556,20 @@ export class ExportsService extends AbstractExportsService {
 
     const caseById = new Map<string, CaseResponse>();
     const customerIds: string[] = [];
+    const orderGiverIds: string[] = [];
     for (const entry of caseEntries) {
       if (!entry) continue;
       const [caseId, caseData] = entry;
       caseById.set(caseId, caseData);
-      if (caseData.customerId) customerIds.push(caseData.customerId);
+      if (caseData.orderGiverId) orderGiverIds.push(caseData.orderGiverId);
+      else if (caseData.customerId) customerIds.push(caseData.customerId);
     }
 
     const uniqueCustomerIds = [...new Set(customerIds)];
+    const uniqueOrderGiverIds = [...new Set(orderGiverIds)];
     const customerById = new Map<string, CustomerResponse>();
+    const orderGiverById = new Map<string, { id: string; displayName: string }>();
+
     if (uniqueCustomerIds.length > 0) {
       try {
         const customersPage = await this.callService<CustomersListResponse>(
@@ -550,13 +590,35 @@ export class ExportsService extends AbstractExportsService {
       }
     }
 
+    if (uniqueOrderGiverIds.length > 0) {
+      try {
+        const orderGiversPage = await this.callService<{
+          orderGivers: Array<{ id: string; displayName: string }>;
+        }>(CUSTOMERS_URL, "/order-givers", {
+          organizationId,
+          ids: uniqueOrderGiverIds.join(","),
+          limit: String(Math.min(uniqueOrderGiverIds.length, 200)),
+          offset: "0",
+        });
+        for (const og of orderGiversPage.orderGivers) {
+          orderGiverById.set(og.id, og);
+        }
+      } catch {
+        // Enrichissement best-effort.
+      }
+    }
+
     return invoices.map((invoice) => {
       const caseData = caseById.get(invoice.caseId);
-      const customer = caseData?.customerId ? customerById.get(caseData.customerId) : undefined;
+      const billedParty = caseData?.orderGiverId
+        ? orderGiverById.get(caseData.orderGiverId)
+        : caseData?.customerId
+          ? customerById.get(caseData.customerId)
+          : undefined;
       return {
         ...invoice,
         caseTitle: caseData?.title ?? invoice.caseTitle,
-        customerDisplayName: customer?.displayName ?? invoice.customerDisplayName,
+        customerDisplayName: billedParty?.displayName ?? invoice.customerDisplayName,
       };
     });
   }
@@ -698,6 +760,8 @@ export class ExportsService extends AbstractExportsService {
     if (filters?.priority) query.priority = filters.priority;
     if (filters?.assigneeId) query.assigneeId = filters.assigneeId;
     if (filters?.search) query.search = filters.search;
+    if (filters?.customerId) query.customerId = filters.customerId;
+    if (filters?.orderGiverId) query.orderGiverId = filters.orderGiverId;
 
     let cases = await this.fetchAllPaginated<CaseSummaryResponse>(
       CASES_URL,
@@ -714,6 +778,7 @@ export class ExportsService extends AbstractExportsService {
       { key: "billingStatus", label: "Facturation" },
       { key: "priority", label: "Priorité" },
       { key: "customer", label: "Client" },
+      { key: "orderGiver", label: "Donneur d'ordre" },
       { key: "progress", label: "Avancement (%)" },
       { key: "interventionCount", label: "Interventions" },
       { key: "dueDate", label: "Échéance" },
@@ -731,6 +796,7 @@ export class ExportsService extends AbstractExportsService {
           c.customer?.id ?? c.customerId,
           c.customer?.displayName ?? "",
         ),
+        orderGiver: c.orderGiver?.displayName ?? null,
         progress: c.progress,
         interventionCount: c.interventionCount,
         dueDate: c.dueDate ? this.formatDateFr(c.dueDate) : null,
@@ -1128,6 +1194,30 @@ export class ExportsService extends AbstractExportsService {
       query.startDate = period.startDate;
       query.endDate = period.endDate;
     }
+
+    const partyCaseIds = await this.resolvePartyCaseIds(organizationId, filters);
+    if (partyCaseIds !== undefined && partyCaseIds.length === 0) {
+      return {
+        reportType: "invoices_list",
+        title: "Liste des factures",
+        columns: [
+          { key: "date", label: "Date" },
+          { key: "number", label: "Numéro" },
+          { key: "case", label: "Dossier" },
+          { key: "customer", label: "Client / Donneur d'ordre" },
+          { key: "kind", label: "Type" },
+          { key: "amountHt", label: "Montant HT" },
+          { key: "status", label: "Statut" },
+          { key: "provider", label: "Fournisseur" },
+        ],
+        rows: [],
+        total: 0,
+      };
+    }
+    if (partyCaseIds?.length) {
+      query.caseIds = partyCaseIds.join(",");
+    }
+
     const invoices = await this.fetchAllPaginated<OrganizationInvoiceSyncItem>(
       INTEGRATIONS_URL,
       "/integrations/invoice-syncs",
@@ -1159,7 +1249,7 @@ export class ExportsService extends AbstractExportsService {
       { key: "date", label: "Date" },
       { key: "number", label: "Numéro" },
       { key: "case", label: "Dossier" },
-      { key: "customer", label: "Client" },
+      { key: "customer", label: "Client / Donneur d'ordre" },
       { key: "kind", label: "Type" },
       { key: "amountHt", label: "Montant HT" },
       { key: "status", label: "Statut" },

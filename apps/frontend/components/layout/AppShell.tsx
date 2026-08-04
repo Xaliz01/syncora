@@ -44,6 +44,9 @@ function isLinkActive(currentPath: string, href: string): boolean {
   if (href === "/customers") {
     return currentPath === "/customers" || currentPath.startsWith("/customers/");
   }
+  if (href === "/order-givers") {
+    return currentPath === "/order-givers" || currentPath.startsWith("/order-givers/");
+  }
   if (href === "/organization") {
     return currentPath === "/organization" || currentPath.startsWith("/organization/");
   }
@@ -256,6 +259,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             ...(hasPermission(user, "cases.read") ? [{ label: "Dossiers", href: "/cases" }] : []),
             ...(hasPermission(user, "customers.read")
               ? [{ label: "Clients", href: "/customers" }]
+              : []),
+            ...(hasPermission(user, "order_givers.read")
+              ? [{ label: "Donneurs d'ordre", href: "/order-givers" }]
               : []),
             ...(hasPermission(user, "contracts.read")
               ? [{ label: "Contrats", href: "/contracts" }]

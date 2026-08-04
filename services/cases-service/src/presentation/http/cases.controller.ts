@@ -84,6 +84,7 @@ export class CasesController {
     @Query("priority") priority?: string,
     @Query("search") search?: string,
     @Query("customerId") customerId?: string,
+    @Query("orderGiverId") orderGiverId?: string,
     @Query("limit") limit?: string,
     @Query("offset") offset?: string,
   ) {
@@ -96,8 +97,23 @@ export class CasesController {
       priority,
       search,
       customerId,
+      orderGiverId,
       ...pagination,
     });
+  }
+
+  @Get("cases/ids")
+  async listCaseIds(
+    @Query("organizationId") organizationId: string,
+    @Query("customerId") customerId?: string,
+    @Query("orderGiverId") orderGiverId?: string,
+  ) {
+    organizationId = parseOrganizationIdQuery(organizationId);
+    const ids = await this.casesService.listCaseIds(organizationId, {
+      customerId,
+      orderGiverId,
+    });
+    return { ids };
   }
 
   @Get("cases/:id")

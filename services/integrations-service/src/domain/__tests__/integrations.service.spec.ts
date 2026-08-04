@@ -1195,6 +1195,16 @@ describe("IntegrationsService", () => {
       expect(result.invoices[0]?.remoteStatus).toBe("finalized");
     });
 
+    it("returns empty when caseIds filter is empty", async () => {
+      const result = await service.listOrganizationInvoiceSyncs("org-1", {
+        caseIds: [],
+        limit: 50,
+        offset: 0,
+      });
+      expect(result).toEqual({ invoices: [], total: 0 });
+      expect(syncModel.find).not.toHaveBeenCalled();
+    });
+
     it("aggregates organization invoice sync stats", async () => {
       syncModel.find.mockReturnValue({
         select: jest.fn().mockReturnValue({

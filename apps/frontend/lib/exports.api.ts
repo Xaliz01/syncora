@@ -54,6 +54,8 @@ export function exportCasesList(
     search?: string;
     startDate?: string;
     endDate?: string;
+    customerId?: string;
+    orderGiverId?: string;
   },
 ): Promise<void> {
   const params = new URLSearchParams();
@@ -65,6 +67,8 @@ export function exportCasesList(
   if (filters?.search) params.set("search", filters.search);
   if (filters?.startDate) params.set("startDate", filters.startDate);
   if (filters?.endDate) params.set("endDate", filters.endDate);
+  if (filters?.customerId) params.set("customerId", filters.customerId);
+  if (filters?.orderGiverId) params.set("orderGiverId", filters.orderGiverId);
   return downloadExport(`/exports/cases?${params.toString()}`, `liste-dossiers.${format}`);
 }
 
@@ -205,6 +209,8 @@ export function getReportPreview(
   if (filters?.remoteStatus) params.set("remoteStatus", filters.remoteStatus);
   if (filters?.provider) params.set("provider", filters.provider);
   if (filters?.invoiceKind) params.set("invoiceKind", filters.invoiceKind);
+  if (filters?.customerId) params.set("customerId", filters.customerId);
+  if (filters?.orderGiverId) params.set("orderGiverId", filters.orderGiverId);
   if (filters?.groupBy) params.set("groupBy", filters.groupBy);
   return apiRequestJson<ReportPreviewResponse>(
     "GET",
@@ -220,6 +226,8 @@ export function exportInvoicesList(
     invoiceKind?: string;
     startDate?: string;
     endDate?: string;
+    customerId?: string;
+    orderGiverId?: string;
   },
 ): Promise<void> {
   const params = new URLSearchParams();
@@ -229,5 +237,7 @@ export function exportInvoicesList(
   if (filters?.invoiceKind) params.set("invoiceKind", filters.invoiceKind);
   if (filters?.startDate) params.set("startDate", filters.startDate);
   if (filters?.endDate) params.set("endDate", filters.endDate);
+  if (filters?.customerId) params.set("customerId", filters.customerId);
+  if (filters?.orderGiverId) params.set("orderGiverId", filters.orderGiverId);
   return downloadExport(`/exports/invoices?${params.toString()}`, `liste-factures.${format}`);
 }

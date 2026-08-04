@@ -176,6 +176,18 @@ export interface CaseCustomerRef {
   sites?: import("./customer").CustomerSiteResponse[];
 }
 
+/** Donneur d'ordre rattaché au dossier (aperçu) — tiers facturé s'il est présent */
+export interface CaseOrderGiverRef {
+  id: string;
+  displayName: string;
+  kind: CustomerKind;
+  email?: string;
+  phone?: string;
+  mobile?: string;
+  address?: PostalAddress;
+  legalIdentifier?: string;
+}
+
 export interface CaseTodoItem {
   id: string;
   label: string;
@@ -204,6 +216,8 @@ export interface CreateCaseBody {
   dueDate?: string;
   tags?: string[];
   customerId?: string;
+  /** Donneur d'ordre optionnel (tiers à facturer à la place du client) */
+  orderGiverId?: string;
   /** Site client sélectionné comme adresse d'intervention */
   interventionSiteId?: string;
   isTestData?: boolean;
@@ -220,6 +234,8 @@ export interface UpdateCaseBody {
   dueDate?: string | null;
   tags?: string[];
   customerId?: string | null;
+  /** Donneur d'ordre optionnel (null pour retirer) */
+  orderGiverId?: string | null;
   /** Site client sélectionné comme adresse d'intervention */
   interventionSiteId?: string | null;
 }
@@ -230,6 +246,8 @@ export interface CaseResponse {
   templateId?: string;
   customerId?: string;
   customer?: CaseCustomerRef;
+  orderGiverId?: string;
+  orderGiver?: CaseOrderGiverRef;
   interventionSiteId?: string;
   /** Adresse d'intervention résolue depuis le site client */
   interventionAddress?: PostalAddress;
@@ -254,6 +272,8 @@ export interface CaseSummaryResponse {
   organizationId: string;
   customerId?: string;
   customer?: CaseCustomerRef;
+  orderGiverId?: string;
+  orderGiver?: CaseOrderGiverRef;
   interventionSiteId?: string;
   interventionAddress?: PostalAddress;
   title: string;

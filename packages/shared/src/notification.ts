@@ -5,6 +5,7 @@ export type NotificationEntityType =
   | "intervention"
   | "case_template"
   | "customer"
+  | "order_giver"
   | "vehicle"
   | "technician"
   | "team"

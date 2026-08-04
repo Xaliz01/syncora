@@ -16,6 +16,7 @@ import { CaseQuotesSection } from "@/components/cases/CaseQuotesSection";
 import { CaseBillingBanner } from "@/components/cases/CaseBillingBanner";
 import { CaseAssigneesTagsInput } from "@/components/cases/CaseAssigneesTagsInput";
 import { CaseCustomerPicker } from "@/components/cases/CaseCustomerPicker";
+import { CaseOrderGiverPicker } from "@/components/cases/CaseOrderGiverPicker";
 import { CaseInterventionSitePicker } from "@/components/cases/CaseInterventionSitePicker";
 import { TeamSuggestionAddonGate } from "@/components/cases/TeamSuggestionAddonGate";
 import { CaseProgressTimeline } from "@/components/cases/CaseProgressTimeline";
@@ -508,6 +509,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   const [editAssigneeIds, setEditAssigneeIds] = useState<string[]>([]);
   const [editDueDate, setEditDueDate] = useState("");
   const [editCustomerId, setEditCustomerId] = useState("");
+  const [editOrderGiverId, setEditOrderGiverId] = useState("");
   const [editInterventionSiteId, setEditInterventionSiteId] = useState("");
   const [editCustomerSites, setEditCustomerSites] = useState<CustomerSiteResponse[]>([]);
   const [editIntTeamId, setEditIntTeamId] = useState("");
@@ -889,6 +891,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
     setEditAssigneeIds(caseData.assignees.map((a) => a.userId));
     setEditDueDate(caseData.dueDate ? caseData.dueDate.split("T")[0] : "");
     setEditCustomerId(caseData.customerId ?? "");
+    setEditOrderGiverId(caseData.orderGiverId ?? "");
     setEditInterventionSiteId(caseData.interventionSiteId ?? "");
     setEditCustomerSites(caseData.customer?.sites ?? []);
     setIsEditing(true);
@@ -916,6 +919,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
       assigneeIds: editAssigneeIds,
       dueDate: editDueDate || null,
       customerId: editCustomerId.trim() ? editCustomerId.trim() : null,
+      orderGiverId: editOrderGiverId.trim() ? editOrderGiverId.trim() : null,
       interventionSiteId: editInterventionSiteId || null,
     });
   };
@@ -1123,6 +1127,14 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                       disabled={updateMutation.isPending}
                     />
 
+                    <CaseOrderGiverPicker
+                      idPrefix="case-edit-order-giver"
+                      value={editOrderGiverId}
+                      initialDisplayName={caseData.orderGiver?.displayName}
+                      onChange={setEditOrderGiverId}
+                      disabled={updateMutation.isPending}
+                    />
+
                     {editCustomerId && editCustomerSites.length > 0 && (
                       <CaseInterventionSitePicker
                         sites={editCustomerSites}
@@ -1193,18 +1205,42 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
               }
               details={
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  {(caseData.customer || caseData.customerId) && (
-                    <div className="min-w-0 flex-1 lg:max-w-xl">
+                  <div className="min-w-0 flex-1 space-y-3 lg:max-w-xl">
+                    {(caseData.customer || caseData.customerId) && (
                       <CaseHeaderCustomerCard
                         customer={caseData.customer}
                         customerId={caseData.customerId}
                         canViewCustomer={can("customers.read")}
                       />
-                    </div>
-                  )}
+                    )}
+                    {(caseData.orderGiver || caseData.orderGiverId) && (
+                      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-600 dark:text-brand-400">
+                          Donneur d&apos;ordre
+                        </p>
+                        <p className="mt-1 text-base font-semibold text-slate-900 dark:text-white">
+                          {caseData.orderGiver?.displayName ?? "Référence enregistrée"}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                          Facturé à la place du client
+                        </p>
+                        {caseData.orderGiver?.id && can("order_givers.read") ? (
+                          <Link
+                            href={`/order-givers/${caseData.orderGiver.id}`}
+                            className="mt-2 inline-block text-sm text-brand-600 hover:underline dark:text-brand-400"
+                          >
+                            Voir la fiche
+                          </Link>
+                        ) : null}
+                      </div>
+                    )}
+                  </div>
                   <div
                     className={`w-full shrink-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20 ${
-                      caseData.customer || caseData.customerId
+                      caseData.customer ||
+                      caseData.customerId ||
+                      caseData.orderGiver ||
+                      caseData.orderGiverId
                         ? "lg:w-[min(100%,20rem)] lg:ml-auto"
                         : "lg:max-w-md lg:ml-auto"
                     }`}
@@ -1268,6 +1304,13 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
           canEdit={canAny(["cases.manage_billing", "cases.update"])}
           pending={billingStatusMutation.isPending}
           onChange={(billingStatus) => billingStatusMutation.mutate(billingStatus)}
+          billingPartyHint={
+            caseData.orderGiver?.displayName
+              ? `À facturer : ${caseData.orderGiver.displayName} (donneur d’ordre)`
+              : caseData.customer?.displayName
+                ? `À facturer : ${caseData.customer.displayName}`
+                : undefined
+          }
           actions={billingActions}
           syncPanel={
             invoiceSyncs.length > 0 ? (

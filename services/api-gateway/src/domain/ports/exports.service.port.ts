@@ -27,6 +27,8 @@ export abstract class AbstractExportsGatewayService {
       search?: string;
       startDate?: string;
       endDate?: string;
+      customerId?: string;
+      orderGiverId?: string;
     },
   ): Promise<ExportResult>;
 

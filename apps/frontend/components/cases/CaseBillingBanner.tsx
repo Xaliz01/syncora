@@ -67,6 +67,7 @@ export function CaseBillingBanner({
   actions,
   syncPanel,
   quoteProgress,
+  billingPartyHint,
 }: {
   status: BillingStatus;
   canEdit: boolean;
@@ -78,6 +79,8 @@ export function CaseBillingBanner({
   syncPanel?: ReactNode;
   /** Synthèse reste à facturer (devis acceptés). */
   quoteProgress?: ReactNode;
+  /** Destinataire de facture (client ou donneur d'ordre). */
+  billingPartyHint?: string;
 }) {
   const styles = BANNER_STYLES[status];
 
@@ -95,6 +98,9 @@ export function CaseBillingBanner({
             {BILLING_STATUS_LABELS[status]}
           </p>
           <p className={`mt-1 text-sm ${styles.hint}`}>{HINTS[status]}</p>
+          {billingPartyHint ? (
+            <p className={`mt-1 text-sm font-medium ${styles.accent}`}>{billingPartyHint}</p>
+          ) : null}
           {quoteProgress ? <div className="mt-2">{quoteProgress}</div> : null}
         </div>
 

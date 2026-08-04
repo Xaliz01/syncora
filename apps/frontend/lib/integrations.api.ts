@@ -157,6 +157,8 @@ export function listOrganizationInvoiceSyncs(filters?: {
   invoiceKind?: string;
   startDate?: string;
   endDate?: string;
+  customerId?: string;
+  orderGiverId?: string;
   limit?: number;
   offset?: number;
 }): Promise<OrganizationInvoiceSyncsListResponse> {
@@ -166,6 +168,8 @@ export function listOrganizationInvoiceSyncs(filters?: {
   if (filters?.invoiceKind) params.set("invoiceKind", filters.invoiceKind);
   if (filters?.startDate) params.set("startDate", filters.startDate);
   if (filters?.endDate) params.set("endDate", filters.endDate);
+  if (filters?.customerId) params.set("customerId", filters.customerId);
+  if (filters?.orderGiverId) params.set("orderGiverId", filters.orderGiverId);
   if (filters?.limit != null) params.set("limit", String(filters.limit));
   if (filters?.offset != null) params.set("offset", String(filters.offset));
   const qs = params.toString();

@@ -8,6 +8,7 @@ export {
 } from "./password";
 export * from "./case";
 export * from "./customer";
+export * from "./order-giver";
 export * from "./organization";
 export * from "./organization-membership";
 export * from "./permissions";

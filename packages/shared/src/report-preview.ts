@@ -97,6 +97,8 @@ export interface ReportPreviewQuery {
   remoteStatus?: string;
   provider?: string;
   invoiceKind?: string;
+  customerId?: string;
+  orderGiverId?: string;
   /** Rapport kilométrique : équipes (défaut) ou techniciens. */
   groupBy?: "team" | "technician";
 }

@@ -29,6 +29,9 @@ import { PermissionGate } from "@/components/auth/PermissionGate";
 import { ExportButton } from "@/components/ui/ExportButton";
 import { EntityRef } from "@/components/ui/EntityRef";
 import * as exportsApi from "@/lib/exports.api";
+import * as orderGiversApi from "@/lib/order-givers.api";
+import { MAX_PAGE_LIMIT } from "@planwise/shared";
+import { usePermissions } from "@/lib/hooks/usePermissions";
 
 const STATUS_LABELS: Record<CaseStatus, string> = {
   draft: "Brouillon",
@@ -79,23 +82,41 @@ const BILLING_STATUS_COLORS: Record<BillingStatus, string> = {
 const GRID = "md:grid-cols-[1.2fr_1fr_0.7fr_0.65fr_0.65fr_0.4fr]";
 
 export function CasesListPage() {
+  const { can } = usePermissions();
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [billingStatusFilter, setBillingStatusFilter] = useState<string>("");
   const [priorityFilter, setPriorityFilter] = useState<string>("");
+  const [orderGiverFilter, setOrderGiverFilter] = useState<string>("");
   const [search, setSearch] = useState("");
   const [offset, setOffset] = useState(0);
 
   useEffect(() => {
     setOffset(0);
-  }, [statusFilter, billingStatusFilter, priorityFilter, search]);
+  }, [statusFilter, billingStatusFilter, priorityFilter, orderGiverFilter, search]);
+
+  const { data: orderGiversData } = useQuery({
+    queryKey: ["order-givers", "cases-list-filter"],
+    queryFn: () => orderGiversApi.listOrderGivers({ limit: MAX_PAGE_LIMIT }),
+    enabled: can("order_givers.read"),
+  });
+  const orderGivers = orderGiversData?.orderGivers ?? [];
 
   const { data, isLoading } = useQuery({
-    queryKey: ["cases", statusFilter, billingStatusFilter, priorityFilter, search, offset],
+    queryKey: [
+      "cases",
+      statusFilter,
+      billingStatusFilter,
+      priorityFilter,
+      orderGiverFilter,
+      search,
+      offset,
+    ],
     queryFn: () =>
       api.listCases({
         status: statusFilter || undefined,
         billingStatus: billingStatusFilter || undefined,
         priority: priorityFilter || undefined,
+        orderGiverId: orderGiverFilter || undefined,
         search: search || undefined,
         limit: LIST_PAGE_SIZE,
         offset,
@@ -106,7 +127,7 @@ export function CasesListPage() {
   const total = data?.total ?? 0;
 
   const hasActiveFilters = Boolean(
-    statusFilter || billingStatusFilter || priorityFilter || search.trim(),
+    statusFilter || billingStatusFilter || priorityFilter || orderGiverFilter || search.trim(),
   );
 
   return (
@@ -123,6 +144,7 @@ export function CasesListPage() {
                     status: statusFilter || undefined,
                     billingStatus: billingStatusFilter || undefined,
                     priority: priorityFilter || undefined,
+                    orderGiverId: orderGiverFilter || undefined,
                     search: search || undefined,
                   })
                 }
@@ -179,6 +201,20 @@ export function CasesListPage() {
             </option>
           ))}
         </select>
+        {orderGivers.length > 0 ? (
+          <select
+            value={orderGiverFilter}
+            onChange={(e) => setOrderGiverFilter(e.target.value)}
+            className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 w-full sm:w-auto"
+          >
+            <option value="">Tous les donneurs d&apos;ordre</option>
+            {orderGivers.map((og) => (
+              <option key={og.id} value={og.id}>
+                {og.displayName}
+              </option>
+            ))}
+          </select>
+        ) : null}
       </ListToolbar>
 
       {isLoading ? (

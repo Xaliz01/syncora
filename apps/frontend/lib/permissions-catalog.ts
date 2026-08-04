@@ -146,6 +146,26 @@ export const PERMISSION_METADATA: Record<PermissionCode, PermissionMetadata> = {
     description:
       "Archiver des clients (suppression logique) : ils disparaissent des listes mais l’historique des dossiers reste cohérent.",
   },
+  "order_givers.read": {
+    code: "order_givers.read",
+    label: "Voir les donneurs d'ordre",
+    description: "Consulter la liste et la fiche des donneurs d'ordre de l'organisation.",
+  },
+  "order_givers.create": {
+    code: "order_givers.create",
+    label: "Créer des donneurs d'ordre",
+    description: "Créer de nouveaux donneurs d'ordre (tiers à facturer sur un dossier).",
+  },
+  "order_givers.update": {
+    code: "order_givers.update",
+    label: "Modifier les donneurs d'ordre",
+    description: "Mettre à jour les fiches donneurs d'ordre existantes.",
+  },
+  "order_givers.delete": {
+    code: "order_givers.delete",
+    label: "Supprimer des donneurs d'ordre",
+    description: "Archiver des donneurs d'ordre (suppression logique).",
+  },
   "contracts.read": {
     code: "contracts.read",
     label: "Voir les contrats de maintenance",

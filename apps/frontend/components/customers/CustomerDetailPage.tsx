@@ -13,6 +13,7 @@ import { CustomerEditForm } from "./CustomerEditForm";
 import { CustomerContactsSection } from "./CustomerContactsSection";
 import { CustomerContractsSection } from "./CustomerContractsSection";
 import { CustomerSitesSection } from "./CustomerSitesSection";
+import { PartyLinkedInvoicesSection } from "@/components/billing/PartyLinkedInvoicesSection";
 import { CUSTOMER_KIND_LABELS } from "./customer-kind-labels";
 import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
 import { AppErrorAlert } from "@/components/ui/AppErrorAlert";
@@ -307,6 +308,11 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
       )}
 
       <CustomerCasesSection customerId={customerId} />
+
+      <PartyLinkedInvoicesSection
+        customerId={customerId}
+        emptyMessage="Aucune facture liée aux dossiers de ce client."
+      />
 
       <CustomerContractsSection customerId={customerId} />
 

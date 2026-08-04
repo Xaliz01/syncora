@@ -176,6 +176,8 @@ export class IntegrationsController {
     @Query("invoiceKind") invoiceKind?: string,
     @Query("startDate") startDate?: string,
     @Query("endDate") endDate?: string,
+    @Query("customerId") customerId?: string,
+    @Query("orderGiverId") orderGiverId?: string,
     @Query("limit") limit?: string,
     @Query("offset") offset?: string,
   ) {
@@ -185,6 +187,8 @@ export class IntegrationsController {
       invoiceKind,
       startDate,
       endDate,
+      customerId,
+      orderGiverId,
       limit: limit != null ? Number(limit) : undefined,
       offset: offset != null ? Number(offset) : undefined,
     });

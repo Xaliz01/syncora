@@ -201,6 +201,7 @@ export class CasesService extends AbstractCasesService {
       organizationId: body.organizationId,
       templateId: body.templateId,
       customerId: body.customerId?.trim() || undefined,
+      orderGiverId: body.orderGiverId?.trim() || undefined,
       interventionSiteId: body.interventionSiteId?.trim() || undefined,
       title: body.title,
       description: body.description,
@@ -225,12 +226,14 @@ export class CasesService extends AbstractCasesService {
       priority?: string;
       search?: string;
       customerId?: string;
+      orderGiverId?: string;
       limit?: number;
       offset?: number;
     },
   ): Promise<CasesListResponse> {
     const query: Record<string, unknown> = { organizationId, ...activeDocumentFilter };
     if (filters?.customerId) query.customerId = filters.customerId;
+    if (filters?.orderGiverId) query.orderGiverId = filters.orderGiverId;
     if (filters?.status) query.status = filters.status;
     if (filters?.billingStatus) query.billingStatus = filters.billingStatus;
     if (filters?.assigneeId) {
@@ -257,6 +260,22 @@ export class CasesService extends AbstractCasesService {
     return { cases: docs.map((d) => this.toCaseSummary(d)), total };
   }
 
+  async listCaseIds(
+    organizationId: string,
+    filters: { customerId?: string; orderGiverId?: string },
+  ): Promise<string[]> {
+    const customerId = filters.customerId?.trim();
+    const orderGiverId = filters.orderGiverId?.trim();
+    if (!customerId && !orderGiverId) return [];
+
+    const query: Record<string, unknown> = { organizationId, ...activeDocumentFilter };
+    if (customerId) query.customerId = customerId;
+    if (orderGiverId) query.orderGiverId = orderGiverId;
+
+    const docs = await this.caseModel.find(query).select({ _id: 1 }).limit(1000).lean().exec();
+    return docs.map((d) => String(d._id));
+  }
+
   async getCase(id: string, organizationId: string): Promise<CaseResponse> {
     const doc = await this.caseModel
       .findOne({ _id: id, organizationId, ...activeDocumentFilter })
@@ -278,6 +297,10 @@ export class CasesService extends AbstractCasesService {
     if (body.tags !== undefined) setUpdate.tags = body.tags;
     if (body.customerId !== undefined) {
       setUpdate.customerId = body.customerId === null ? null : body.customerId.trim() || undefined;
+    }
+    if (body.orderGiverId !== undefined) {
+      setUpdate.orderGiverId =
+        body.orderGiverId === null ? null : body.orderGiverId.trim() || undefined;
     }
     if (body.interventionSiteId !== undefined) {
       setUpdate.interventionSiteId =
@@ -1295,6 +1318,7 @@ export class CasesService extends AbstractCasesService {
       organizationId: doc.organizationId,
       templateId: doc.templateId,
       customerId: doc.customerId,
+      orderGiverId: doc.orderGiverId,
       interventionSiteId: doc.interventionSiteId,
       title: doc.title,
       description: doc.description,
@@ -1331,6 +1355,7 @@ export class CasesService extends AbstractCasesService {
       id: doc._id.toString(),
       organizationId: doc.organizationId,
       customerId: doc.customerId,
+      orderGiverId: doc.orderGiverId,
       interventionSiteId: doc.interventionSiteId,
       title: doc.title,
       status: doc.status,

@@ -17,6 +17,7 @@ const ENTITY_TYPE_LABELS: Record<NotificationEntityType, string> = {
   intervention: "Intervention",
   case_template: "Modèle de dossier",
   customer: "Client",
+  order_giver: "Donneur d'ordre",
   vehicle: "Véhicule",
   technician: "Technicien",
   team: "Équipe",
@@ -36,6 +37,7 @@ const ENTITY_TYPE_LABELS: Record<NotificationEntityType, string> = {
 const RELATED_ENTITY_PHRASES: Partial<Record<NotificationEntityType, string>> = {
   case: "le dossier",
   customer: "le client",
+  order_giver: "le donneur d'ordre",
   vehicle: "le véhicule",
   technician: "le technicien",
   team: "l'équipe",
@@ -60,6 +62,8 @@ function getEntityRoute(entityType: NotificationEntityType, entityId: string): s
       return `/cases/${entityId}`;
     case "customer":
       return `/customers/${entityId}`;
+    case "order_giver":
+      return `/order-givers/${entityId}`;
     case "vehicle":
       return `/fleet/vehicles/${entityId}`;
     case "technician":

@@ -104,6 +104,7 @@ export class CasesController {
     @Query("priority") priority?: string,
     @Query("search") search?: string,
     @Query("customerId") customerId?: string,
+    @Query("orderGiverId") orderGiverId?: string,
     @Query("limit") limit?: string,
     @Query("offset") offset?: string,
   ) {
@@ -115,6 +116,7 @@ export class CasesController {
       priority,
       search,
       customerId,
+      orderGiverId,
       ...pagination,
     });
   }

@@ -5,6 +5,7 @@ import type {
   AuthUser,
   CaseAssignee,
   CaseCustomerRef,
+  CaseOrderGiverRef,
   CaseHistoryChange,
   CaseHistoryAction,
   CaseHistoryEntryResponse,
@@ -20,6 +21,7 @@ import type {
   CaseSummaryResponse,
   CaseTemplateResponse,
   CustomerResponse,
+  OrderGiverResponse,
   DashboardStatFilter,
   DashboardTodoCaseItem,
   DocumentResponse,
@@ -52,6 +54,7 @@ import PDFDocument from "pdfkit";
 import { assertAnyAssignablePermission } from "../infrastructure/permission-checks";
 import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
 import { AbstractCustomersGatewayService } from "./ports/customers.service.port";
+import { AbstractOrderGiversGatewayService } from "./ports/order-givers.service.port";
 import {
   AbstractCasesGatewayService,
   type CreateCaseForOrgBody,
@@ -82,6 +85,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
   constructor(
     private readonly scopedHttp: OrganizationScopedHttpClient,
     private readonly customersGateway: AbstractCustomersGatewayService,
+    private readonly orderGiversGateway: AbstractOrderGiversGatewayService,
     private readonly httpService: HttpService,
   ) {
     super();
@@ -138,9 +142,12 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
   // ── Cases ──
 
   async createCase(user: AuthUser, body: CreateCaseForOrgBody) {
-    const { assigneeIds, customerId, ...rest } = body;
+    const { assigneeIds, customerId, orderGiverId, ...rest } = body;
     if (customerId?.trim()) {
       await this.customersGateway.getCustomer(user, customerId.trim());
+    }
+    if (orderGiverId?.trim()) {
+      await this.orderGiversGateway.getOrderGiver(user, orderGiverId.trim());
     }
     let assignees: CaseAssignee[] | undefined;
     if (assigneeIds !== undefined) {
@@ -154,6 +161,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
         organizationId: user.organizationId,
         ...rest,
         ...(customerId?.trim() ? { customerId: customerId.trim() } : {}),
+        ...(orderGiverId?.trim() ? { orderGiverId: orderGiverId.trim() } : {}),
         ...(assignees !== undefined ? { assignees } : {}),
       } as CreateCaseBody,
     });
@@ -177,6 +185,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       priority?: string;
       search?: string;
       customerId?: string;
+      orderGiverId?: string;
       limit?: number;
       offset?: number;
     },
@@ -193,6 +202,26 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     return { cases, total: response.total };
   }
 
+  async listCaseIdsForParty(
+    user: AuthUser,
+    filters: { customerId?: string; orderGiverId?: string },
+  ): Promise<string[]> {
+    const customerId = filters.customerId?.trim();
+    const orderGiverId = filters.orderGiverId?.trim();
+    if (!customerId && !orderGiverId) return [];
+
+    const response = await this.callCasesService<{ ids: string[] }>(user.organizationId, {
+      method: "get",
+      path: "/cases/ids",
+      query: {
+        organizationId: user.organizationId,
+        ...(customerId ? { customerId } : {}),
+        ...(orderGiverId ? { orderGiverId } : {}),
+      },
+    });
+    return response.ids ?? [];
+  }
+
   async getCase(user: AuthUser, caseId: string) {
     const row = await this.callCasesService<CaseResponse>(user.organizationId, {
       method: "get",
@@ -205,6 +234,9 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
   async updateCase(user: AuthUser, caseId: string, body: UpdateCaseForOrgBody) {
     if (body.customerId !== undefined && body.customerId !== null && body.customerId.trim()) {
       await this.customersGateway.getCustomer(user, body.customerId.trim());
+    }
+    if (body.orderGiverId !== undefined && body.orderGiverId !== null && body.orderGiverId.trim()) {
+      await this.orderGiversGateway.getOrderGiver(user, body.orderGiverId.trim());
     }
 
     let previousCase: CaseResponse | undefined;
@@ -1756,6 +1788,25 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       return;
     }
 
+    if (body.orderGiverId !== undefined && prev && body.orderGiverId !== prev.orderGiverId) {
+      this.recordHistory(
+        user.organizationId,
+        caseId,
+        user.id,
+        actorName,
+        "case_updated",
+        undefined,
+        [
+          {
+            field: "orderGiver",
+            oldValue: prev.orderGiverId ?? "aucun",
+            newValue: body.orderGiverId ?? "aucun",
+          },
+        ],
+      );
+      return;
+    }
+
     const changes: CaseHistoryChange[] = [];
     if (body.title !== undefined && prev && body.title !== prev.title) {
       changes.push({ field: "title", oldValue: prev.title, newValue: body.title });
@@ -1828,6 +1879,19 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     };
   }
 
+  private toCaseOrderGiverRef(o: OrderGiverResponse): CaseOrderGiverRef {
+    return {
+      id: o.id,
+      displayName: o.displayName,
+      kind: o.kind,
+      email: o.email,
+      phone: o.phone,
+      mobile: o.mobile,
+      address: o.address,
+      legalIdentifier: o.legalIdentifier,
+    };
+  }
+
   private resolveInterventionAddress(
     customer: CustomerResponse | undefined,
     interventionSiteId: string | undefined,
@@ -1841,34 +1905,61 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     user: AuthUser,
     rows: CaseSummaryResponse[],
   ): Promise<CaseSummaryResponse[]> {
-    const ids = [...new Set(rows.map((r) => r.customerId).filter(Boolean))] as string[];
-    if (ids.length === 0) return rows;
-    const customers = await this.customersGateway.listCustomersByIds(user, ids);
-    const map = new Map(customers.map((c) => [c.id, c]));
+    const customerIds = [...new Set(rows.map((r) => r.customerId).filter(Boolean))] as string[];
+    const orderGiverIds = [...new Set(rows.map((r) => r.orderGiverId).filter(Boolean))] as string[];
+    const [customers, orderGivers] = await Promise.all([
+      customerIds.length > 0
+        ? this.customersGateway.listCustomersByIds(user, customerIds)
+        : Promise.resolve([]),
+      orderGiverIds.length > 0
+        ? this.orderGiversGateway.listOrderGiversByIds(user, orderGiverIds)
+        : Promise.resolve([]),
+    ]);
+    const customerMap = new Map(customers.map((c) => [c.id, c]));
+    const orderGiverMap = new Map(orderGivers.map((o) => [o.id, o]));
     return rows.map((r) => {
-      const c = r.customerId ? map.get(r.customerId) : undefined;
+      const c = r.customerId ? customerMap.get(r.customerId) : undefined;
+      const o = r.orderGiverId ? orderGiverMap.get(r.orderGiverId) : undefined;
       const interventionAddress = this.resolveInterventionAddress(c, r.interventionSiteId);
       return {
         ...r,
         customer: c ? this.toCaseCustomerRef(c) : undefined,
+        orderGiver: o ? this.toCaseOrderGiverRef(o) : undefined,
         interventionAddress,
       };
     });
   }
 
   private async enrichCaseResponse(user: AuthUser, row: CaseResponse): Promise<CaseResponse> {
-    if (!row.customerId) return { ...row, customer: undefined };
-    try {
-      const c = await this.customersGateway.getCustomer(user, row.customerId);
-      const interventionAddress = this.resolveInterventionAddress(c, row.interventionSiteId);
-      return {
-        ...row,
-        customer: this.toCaseCustomerRef(c),
-        interventionAddress,
-      };
-    } catch {
-      return { ...row, customer: undefined };
+    let customer: CaseCustomerRef | undefined;
+    let interventionAddress: CaseResponse["interventionAddress"];
+    let orderGiver: CaseOrderGiverRef | undefined;
+
+    if (row.customerId) {
+      try {
+        const c = await this.customersGateway.getCustomer(user, row.customerId);
+        customer = this.toCaseCustomerRef(c);
+        interventionAddress = this.resolveInterventionAddress(c, row.interventionSiteId);
+      } catch {
+        customer = undefined;
+      }
     }
+
+    if (row.orderGiverId) {
+      try {
+        const o = await this.orderGiversGateway.getOrderGiver(user, row.orderGiverId);
+        orderGiver = this.toCaseOrderGiverRef(o);
+      } catch {
+        orderGiver = undefined;
+      }
+    }
+
+    return {
+      ...row,
+      customer,
+      orderGiver,
+      interventionAddress,
+    };
   }
 
   private async resolveCaseAssigneesForWrite(

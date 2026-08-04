@@ -74,6 +74,8 @@ const ALL_PROTECTED_PATHS = [
   "/my-day",
   "/customers",
   "/customers/new",
+  "/order-givers",
+  "/order-givers/new",
   "/contracts",
   "/contracts/new",
   "/cases",

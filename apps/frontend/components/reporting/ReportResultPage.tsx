@@ -23,10 +23,12 @@ import {
   getReportingPeriodError,
   isReportEntityRef,
   isReportPreviewType,
+  MAX_PAGE_LIMIT,
   REMOTE_INVOICE_STATUS_LABELS,
 } from "@planwise/shared";
 import * as exportsApi from "@/lib/exports.api";
 import * as fleetApi from "@/lib/fleet.api";
+import * as orderGiversApi from "@/lib/order-givers.api";
 import { EntityRef } from "@/components/ui/EntityRef";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useAuth } from "@/components/auth/AuthContext";
@@ -100,6 +102,7 @@ const URL_FILTER_KEYS = [
   "remoteStatus",
   "provider",
   "invoiceKind",
+  "orderGiverId",
   "groupBy",
 ] as const;
 
@@ -233,6 +236,7 @@ type FilterState = {
   remoteStatus: string;
   provider: string;
   invoiceKind: string;
+  orderGiverId: string;
   groupBy: "team" | "technician";
 };
 
@@ -254,6 +258,7 @@ function readInitialFilters(
     remoteStatus: searchParams.get("remoteStatus") ?? "",
     provider: searchParams.get("provider") ?? "",
     invoiceKind: searchParams.get("invoiceKind") ?? "",
+    orderGiverId: searchParams.get("orderGiverId") ?? "",
     groupBy: groupByRaw === "technician" ? "technician" : "team",
   };
 }
@@ -275,6 +280,7 @@ function buildPreviewFilters(
       if (state.billingStatus) q.billingStatus = state.billingStatus;
       if (state.priority) q.priority = state.priority;
       if (state.search.trim()) q.search = state.search.trim();
+      if (state.orderGiverId) q.orderGiverId = state.orderGiverId;
       break;
     case "interventions_list":
       if (state.status) q.status = state.status;
@@ -296,6 +302,7 @@ function buildPreviewFilters(
       if (state.remoteStatus) q.remoteStatus = state.remoteStatus;
       if (state.provider) q.provider = state.provider;
       if (state.invoiceKind) q.invoiceKind = state.invoiceKind;
+      if (state.orderGiverId) q.orderGiverId = state.orderGiverId;
       break;
     default:
       break;
@@ -351,6 +358,7 @@ export function ReportResultPage() {
     validType === "interventions_list" ||
     validType === "technicians_activity" ||
     (validType === "mileage_report" && filtersState.groupBy === "technician");
+  const needsOrderGivers = validType === "cases_list" || validType === "invoices_list";
 
   const { data: teams = [] } = useQuery({
     queryKey: ["fleet-teams"],
@@ -363,6 +371,15 @@ export function ReportResultPage() {
     queryFn: () => fleetApi.listTechnicians(),
     enabled: Boolean(validType && canAccess && needsTechnicians),
   });
+
+  const { data: orderGiversData } = useQuery({
+    queryKey: ["order-givers", "report-filter"],
+    queryFn: () => orderGiversApi.listOrderGivers({ limit: MAX_PAGE_LIMIT }),
+    enabled: Boolean(
+      validType && canAccess && needsOrderGivers && hasPermission(user, "order_givers.read"),
+    ),
+  });
+  const orderGivers = orderGiversData?.orderGivers ?? [];
 
   useEffect(() => {
     if (!validType || !meta) return;
@@ -413,6 +430,7 @@ export function ReportResultPage() {
             billingStatus: previewFilters.billingStatus,
             priority: previewFilters.priority,
             search: previewFilters.search,
+            orderGiverId: previewFilters.orderGiverId,
           });
           break;
         case "interventions_list":
@@ -453,6 +471,7 @@ export function ReportResultPage() {
             remoteStatus: previewFilters.remoteStatus,
             provider: previewFilters.provider,
             invoiceKind: previewFilters.invoiceKind,
+            orderGiverId: previewFilters.orderGiverId,
           });
           break;
       }
@@ -594,6 +613,21 @@ export function ReportResultPage() {
                   </option>
                 ))}
               </select>
+              {orderGivers.length > 0 ? (
+                <select
+                  value={filtersState.orderGiverId}
+                  onChange={(e) => patchFilters({ orderGiverId: e.target.value })}
+                  className={FILTER_INPUT_CLASS}
+                  aria-label="Donneur d'ordre"
+                >
+                  <option value="">Tous les donneurs d&apos;ordre</option>
+                  {orderGivers.map((og) => (
+                    <option key={og.id} value={og.id}>
+                      {og.displayName}
+                    </option>
+                  ))}
+                </select>
+              ) : null}
             </>
           )}
 
@@ -748,6 +782,21 @@ export function ReportResultPage() {
                   </option>
                 ))}
               </select>
+              {orderGivers.length > 0 ? (
+                <select
+                  value={filtersState.orderGiverId}
+                  onChange={(e) => patchFilters({ orderGiverId: e.target.value })}
+                  className={FILTER_INPUT_CLASS}
+                  aria-label="Donneur d'ordre"
+                >
+                  <option value="">Tous les donneurs d&apos;ordre</option>
+                  {orderGivers.map((og) => (
+                    <option key={og.id} value={og.id}>
+                      {og.displayName}
+                    </option>
+                  ))}
+                </select>
+              ) : null}
             </>
           )}
 

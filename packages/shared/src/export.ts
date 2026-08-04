@@ -24,6 +24,8 @@ export interface ExportCasesListParams {
   search?: string;
   startDate?: string;
   endDate?: string;
+  customerId?: string;
+  orderGiverId?: string;
 }
 
 export interface ExportUsersListParams {
@@ -93,4 +95,6 @@ export interface ExportInvoicesListParams {
   invoiceKind?: string;
   startDate?: string;
   endDate?: string;
+  customerId?: string;
+  orderGiverId?: string;
 }

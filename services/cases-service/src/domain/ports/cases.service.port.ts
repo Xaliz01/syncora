@@ -48,11 +48,17 @@ export abstract class AbstractCasesService {
       priority?: string;
       search?: string;
       customerId?: string;
+      orderGiverId?: string;
       limit?: number;
       offset?: number;
     },
   ): Promise<CasesListResponse>;
   abstract getCase(id: string, organizationId: string): Promise<CaseResponse>;
+  /** IDs bruts (max 1000) pour filtrer factures / agrégats par partie. */
+  abstract listCaseIds(
+    organizationId: string,
+    filters: { customerId?: string; orderGiverId?: string },
+  ): Promise<string[]>;
   abstract updateCase(id: string, body: UpdateCaseBody): Promise<CaseResponse>;
   abstract deleteCase(id: string, organizationId: string): Promise<{ deleted: true }>;
   abstract updateTodo(caseId: string, body: UpdateTodoBody): Promise<CaseResponse>;

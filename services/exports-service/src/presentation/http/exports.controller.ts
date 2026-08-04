@@ -31,6 +31,8 @@ export class ExportsController {
     @Query("search") search?: string,
     @Query("startDate") startDate?: string,
     @Query("endDate") endDate?: string,
+    @Query("customerId") customerId?: string,
+    @Query("orderGiverId") orderGiverId?: string,
     @Res() res?: Response,
   ) {
     const orgId = parseOrganizationIdQuery(organizationId);
@@ -43,6 +45,8 @@ export class ExportsController {
       search,
       startDate,
       endDate,
+      customerId,
+      orderGiverId,
     });
     this.sendExport(res!, result);
   }
@@ -177,6 +181,8 @@ export class ExportsController {
     @Query("invoiceKind") invoiceKind?: string,
     @Query("startDate") startDate?: string,
     @Query("endDate") endDate?: string,
+    @Query("customerId") customerId?: string,
+    @Query("orderGiverId") orderGiverId?: string,
     @Res() res?: Response,
   ) {
     const orgId = parseOrganizationIdQuery(organizationId);
@@ -187,6 +193,8 @@ export class ExportsController {
       invoiceKind,
       startDate,
       endDate,
+      customerId,
+      orderGiverId,
     });
     this.sendExport(res!, result);
   }
@@ -208,6 +216,8 @@ export class ExportsController {
     @Query("remoteStatus") remoteStatus?: string,
     @Query("provider") provider?: string,
     @Query("invoiceKind") invoiceKind?: string,
+    @Query("customerId") customerId?: string,
+    @Query("orderGiverId") orderGiverId?: string,
     @Query("groupBy") groupBy?: string,
   ) {
     const orgId = parseOrganizationIdQuery(organizationId);
@@ -228,6 +238,8 @@ export class ExportsController {
       remoteStatus,
       provider,
       invoiceKind,
+      customerId,
+      orderGiverId,
       groupBy: groupBy === "technician" ? "technician" : groupBy === "team" ? "team" : undefined,
     });
   }

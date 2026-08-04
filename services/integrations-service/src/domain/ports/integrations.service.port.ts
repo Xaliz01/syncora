@@ -58,6 +58,7 @@ export abstract class AbstractIntegrationsService {
       invoiceKind?: string;
       startDate?: string;
       endDate?: string;
+      caseIds?: string[];
       limit?: number;
       offset?: number;
     },

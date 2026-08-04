@@ -124,10 +124,17 @@ export class IntegrationsController {
     @Query("invoiceKind") invoiceKind?: string,
     @Query("startDate") startDate?: string,
     @Query("endDate") endDate?: string,
+    @Query("caseIds") caseIdsCsv?: string,
     @Query("limit") limit?: string,
     @Query("offset") offset?: string,
   ) {
     const pagination = parsePaginationQueryParams(limit, offset);
+    const caseIds = caseIdsCsv
+      ? caseIdsCsv
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : undefined;
     return this.integrationsService.listOrganizationInvoiceSyncs(
       parseOrganizationIdQuery(organizationId),
       {
@@ -136,6 +143,7 @@ export class IntegrationsController {
         invoiceKind,
         startDate,
         endDate,
+        caseIds,
         ...pagination,
       },
     );

@@ -150,6 +150,30 @@ describe("ExportsService", () => {
       );
     });
 
+    it("should forward orderGiverId filter to cases-service", async () => {
+      mockHttpService.get.mockReturnValue(
+        of({
+          data: { cases: [], total: 0 },
+          status: 200,
+          headers: {},
+          statusText: "OK",
+          config: {} as never,
+        }) as never,
+      );
+
+      await service.exportCasesList("org-123", "xlsx", { orderGiverId: "og-1" });
+
+      expect(mockHttpService.get).toHaveBeenCalledWith(
+        expect.stringContaining("/cases"),
+        expect.objectContaining({
+          params: expect.objectContaining({
+            organizationId: "org-123",
+            orderGiverId: "og-1",
+          }),
+        }),
+      );
+    });
+
     it("should generate a PDF buffer for cases list", async () => {
       mockHttpService.get.mockReturnValue(
         of({
@@ -883,6 +907,48 @@ describe("ExportsService", () => {
         expect.objectContaining({
           params: expect.objectContaining({
             ids: "cust-42",
+          }),
+        }),
+      );
+    });
+
+    it("should resolve orderGiverId to caseIds before listing invoices", async () => {
+      mockHttpService.get
+        .mockReturnValueOnce(
+          of({
+            data: { ids: ["case-a", "case-b"] },
+            status: 200,
+            headers: {},
+            statusText: "OK",
+            config: {} as never,
+          }) as never,
+        )
+        .mockReturnValueOnce(
+          of({
+            data: { invoices: [], total: 0 },
+            status: 200,
+            headers: {},
+            statusText: "OK",
+            config: {} as never,
+          }) as never,
+        );
+
+      await service.exportInvoicesList("org-123", "csv", { orderGiverId: "og-9" });
+
+      expect(mockHttpService.get).toHaveBeenCalledWith(
+        expect.stringContaining("/cases/ids"),
+        expect.objectContaining({
+          params: expect.objectContaining({
+            organizationId: "org-123",
+            orderGiverId: "og-9",
+          }),
+        }),
+      );
+      expect(mockHttpService.get).toHaveBeenCalledWith(
+        expect.stringContaining("/integrations/invoice-syncs"),
+        expect.objectContaining({
+          params: expect.objectContaining({
+            caseIds: "case-a,case-b",
           }),
         }),
       );

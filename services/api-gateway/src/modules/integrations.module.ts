@@ -6,6 +6,7 @@ import { IntegrationsGatewayService } from "../domain/integrations.service";
 import { RequirePermissionGuard } from "../infrastructure/require-permission.guard";
 import { CasesModule } from "./cases.module";
 import { CustomersModule } from "./customers.module";
+import { OrderGiversModule } from "./order-givers.module";
 import { SubscriptionsModule } from "./subscriptions.module";
 
 @Module({
@@ -13,6 +14,7 @@ import { SubscriptionsModule } from "./subscriptions.module";
     HttpModule.register({ timeout: 60000, maxRedirects: 0 }),
     CasesModule,
     CustomersModule,
+    OrderGiversModule,
     SubscriptionsModule,
   ],
   controllers: [IntegrationsController],

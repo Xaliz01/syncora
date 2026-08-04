@@ -69,6 +69,8 @@ export abstract class AbstractIntegrationsGatewayService {
       invoiceKind?: string;
       startDate?: string;
       endDate?: string;
+      customerId?: string;
+      orderGiverId?: string;
       limit?: number;
       offset?: number;
     },

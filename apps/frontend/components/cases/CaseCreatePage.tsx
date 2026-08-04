@@ -8,6 +8,7 @@ import * as customersApi from "@/lib/customers.api";
 import { listOrganizationUsers } from "@/lib/admin.api";
 import { CaseAssigneesTagsInput } from "@/components/cases/CaseAssigneesTagsInput";
 import { CaseCustomerPicker } from "@/components/cases/CaseCustomerPicker";
+import { CaseOrderGiverPicker } from "@/components/cases/CaseOrderGiverPicker";
 import { CaseInterventionSitePicker } from "@/components/cases/CaseInterventionSitePicker";
 import type { CasePriority, CustomerSiteResponse } from "@planwise/shared";
 
@@ -33,6 +34,7 @@ export function CaseCreatePage() {
   const [dueDate, setDueDate] = useState("");
   const [tagsInput, setTagsInput] = useState("");
   const [customerId, setCustomerId] = useState("");
+  const [orderGiverId, setOrderGiverId] = useState("");
   const [interventionSiteId, setInterventionSiteId] = useState("");
   const [customerSites, setCustomerSites] = useState<CustomerSiteResponse[]>([]);
   const [error, setError] = useState("");
@@ -90,6 +92,7 @@ export function CaseCreatePage() {
         .map((t) => t.trim())
         .filter(Boolean),
       customerId: customerId.trim() || undefined,
+      orderGiverId: orderGiverId.trim() || undefined,
       interventionSiteId: interventionSiteId || undefined,
     });
   };
@@ -218,6 +221,13 @@ export function CaseCreatePage() {
             idPrefix="case-create-customer"
             value={customerId}
             onChange={handleCustomerChange}
+            disabled={createMutation.isPending}
+          />
+
+          <CaseOrderGiverPicker
+            idPrefix="case-create-order-giver"
+            value={orderGiverId}
+            onChange={setOrderGiverId}
             disabled={createMutation.isPending}
           />
 

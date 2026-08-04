@@ -79,6 +79,7 @@ export interface CreateCasePayload {
   dueDate?: string;
   tags?: string[];
   customerId?: string;
+  orderGiverId?: string;
   interventionSiteId?: string;
 }
 
@@ -92,6 +93,7 @@ export interface UpdateCasePayload {
   dueDate?: string | null;
   tags?: string[];
   customerId?: string | null;
+  orderGiverId?: string | null;
   interventionSiteId?: string | null;
 }
 
@@ -102,6 +104,7 @@ export function listCases(filters?: {
   priority?: string;
   search?: string;
   customerId?: string;
+  orderGiverId?: string;
   limit?: number;
   offset?: number;
 }) {
@@ -112,6 +115,7 @@ export function listCases(filters?: {
   if (filters?.priority) params.set("priority", filters.priority);
   if (filters?.search) params.set("search", filters.search);
   if (filters?.customerId) params.set("customerId", filters.customerId);
+  if (filters?.orderGiverId) params.set("orderGiverId", filters.orderGiverId);
   if (filters?.limit != null) params.set("limit", String(filters.limit));
   if (filters?.offset != null) params.set("offset", String(filters.offset));
   const qs = params.toString();

@@ -832,11 +832,15 @@ export class IntegrationsService extends AbstractIntegrationsService {
       invoiceKind?: string;
       startDate?: string;
       endDate?: string;
+      caseIds?: string[];
       limit?: number;
       offset?: number;
     },
   ): Promise<OrganizationInvoiceSyncsListResponse> {
     const orgId = requireOrganizationId(organizationId);
+    if (filters?.caseIds !== undefined && filters.caseIds.length === 0) {
+      return { invoices: [], total: 0 };
+    }
     const query = this.buildInvoiceSyncListQuery(orgId, filters);
     const { limit, offset } = clampPagination({
       limit: filters?.limit,
@@ -937,9 +941,17 @@ export class IntegrationsService extends AbstractIntegrationsService {
       invoiceKind?: string;
       startDate?: string;
       endDate?: string;
+      caseIds?: string[];
     },
   ): Record<string, unknown> {
     const query: Record<string, unknown> = { ...organizationScopeFilter(organizationId) };
+    if (filters?.caseIds?.length) {
+      const ids = [...new Set(filters.caseIds.map((id) => id.trim()).filter(Boolean))].slice(
+        0,
+        1000,
+      );
+      if (ids.length > 0) query.caseId = { $in: ids };
+    }
     if (filters?.provider?.trim()) query.provider = filters.provider.trim();
     if (filters?.invoiceKind?.trim()) query.invoiceKind = filters.invoiceKind.trim();
     if (filters?.remoteStatus?.trim()) {

@@ -108,7 +108,13 @@ describe("CasesService", () => {
         limit: jest.fn().mockReturnValue({ exec: execMock }),
         exec: execMock,
       }),
-      select: jest.fn().mockReturnValue({ exec: execMock }),
+      select: jest.fn().mockReturnValue({
+        exec: execMock,
+        limit: jest.fn().mockReturnValue({
+          lean: jest.fn().mockReturnValue({ exec: execMock }),
+          exec: execMock,
+        }),
+      }),
       limit: jest.fn().mockReturnValue({ exec: execMock }),
       skip: jest.fn().mockReturnValue({
         limit: jest.fn().mockReturnValue({ exec: execMock }),
@@ -380,6 +386,55 @@ describe("CasesService", () => {
       );
       expect(result.cases).toHaveLength(1);
       expect(result.total).toBe(1);
+    });
+
+    it("should filter by orderGiverId", async () => {
+      mockCaseModel.countDocuments.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(0),
+      });
+      mockCaseModel.find.mockReturnValue({
+        sort: jest.fn().mockReturnValue({
+          skip: jest.fn().mockReturnValue({
+            limit: jest.fn().mockReturnValue({
+              exec: jest.fn().mockResolvedValue([]),
+            }),
+          }),
+        }),
+      });
+
+      await service.listCases("org-1", { orderGiverId: "og-1" });
+
+      expect(mockCaseModel.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          organizationId: "org-1",
+          orderGiverId: "og-1",
+        }),
+      );
+    });
+  });
+
+  describe("listCaseIds", () => {
+    it("returns empty without party filter", async () => {
+      await expect(service.listCaseIds("org-1", {})).resolves.toEqual([]);
+      expect(mockCaseModel.find).not.toHaveBeenCalled();
+    });
+
+    it("returns ids for a customer", async () => {
+      mockCaseModel.find.mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          limit: jest.fn().mockReturnValue({
+            lean: jest.fn().mockReturnValue({
+              exec: jest.fn().mockResolvedValue([{ _id: "case-1" }, { _id: "case-2" }]),
+            }),
+          }),
+        }),
+      });
+
+      const ids = await service.listCaseIds("org-1", { customerId: "cust-1" });
+      expect(ids).toEqual(["case-1", "case-2"]);
+      expect(mockCaseModel.find).toHaveBeenCalledWith(
+        expect.objectContaining({ customerId: "cust-1" }),
+      );
     });
   });
 

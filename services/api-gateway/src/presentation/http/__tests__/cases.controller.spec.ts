@@ -29,6 +29,7 @@ describe("CasesController", () => {
       deleteTemplate: jest.fn(),
       createCase: jest.fn(),
       listCases: jest.fn(),
+      listCaseIdsForParty: jest.fn(),
       getCase: jest.fn(),
       updateCase: jest.fn(),
       deleteCase: jest.fn(),
@@ -173,6 +174,7 @@ describe("CasesController", () => {
         "high",
         "search-term",
         undefined,
+        undefined,
         "25",
         "10",
       );
@@ -184,6 +186,7 @@ describe("CasesController", () => {
         priority: "high",
         search: "search-term",
         customerId: undefined,
+        orderGiverId: undefined,
         limit: 25,
         offset: 10,
       });
@@ -202,6 +205,7 @@ describe("CasesController", () => {
         priority: undefined,
         search: undefined,
         customerId: undefined,
+        orderGiverId: undefined,
         limit: 50,
         offset: 0,
       });
