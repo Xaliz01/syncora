@@ -114,6 +114,10 @@ export interface PlatformOrganizationDetailResponse {
     planName?: string;
     hasAccess: boolean;
     trialEndsAt?: string;
+    billingOpen?: boolean;
+    canExtendTrial?: boolean;
+    trialExtensionCount?: number;
+    maxTrialExtensions?: number;
   };
   integrations: PlatformIntegrationSummary[];
 }

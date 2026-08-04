@@ -22,6 +22,9 @@ export abstract class AbstractPlatformService {
     offset?: number;
   }): Promise<PlatformOrganizationsListResponse>;
   abstract getOrganization(organizationId: string): Promise<PlatformOrganizationDetailResponse>;
+  abstract staffExtendOrganizationTrial(
+    organizationId: string,
+  ): Promise<PlatformOrganizationDetailResponse["subscription"]>;
   abstract listUsers(filters?: {
     search?: string;
     organizationId?: string;

@@ -41,6 +41,12 @@ export class PlatformController {
     return this.platformService.getOrganization(organizationId);
   }
 
+  @Post("organizations/:organizationId/extend-trial")
+  @UseGuards(PlatformJwtAuthGuard)
+  staffExtendTrial(@Param("organizationId") organizationId: string) {
+    return this.platformService.staffExtendOrganizationTrial(organizationId);
+  }
+
   @Get("users")
   @UseGuards(PlatformJwtAuthGuard)
   listUsers(

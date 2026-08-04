@@ -181,6 +181,12 @@ export const BASE_SUBSCRIPTION_PLAN = {
   includedUsers: BASE_SUBSCRIPTION_INCLUDED_USERS,
 } as const;
 
+/**
+ * Nombre max de prolongations d’essai self-service tant que les abonnements
+ * ne sont pas ouverts (`billingOpen === false`). Au-delà : contacter le support.
+ */
+export const MAX_TRIAL_EXTENSIONS = 2;
+
 export function estimateMonthlySubscriptionCents(params: {
   activeAddons: readonly AddonCode[];
   addonQuantities?: AddonQuantities;
@@ -302,8 +308,15 @@ export interface OrganizationSubscriptionResponse {
   hasStripeSubscription: boolean;
   /** Paiement Stripe Checkout disponible (abonnements ouverts au public). */
   billingOpen: boolean;
-  /** Prolongation d'essai locale (phase démo, avant ouverture des abonnements). */
+  /**
+   * Prolongation d’essai self-service possible (billing fermé, essai expiré,
+   * et nombre de prolongations < MAX_TRIAL_EXTENSIONS).
+   */
   canExtendTrial: boolean;
+  /** Nombre de prolongations d’essai déjà utilisées. */
+  trialExtensionCount: number;
+  /** Plafond de prolongations self-service (voir MAX_TRIAL_EXTENSIONS). */
+  maxTrialExtensions: number;
 }
 
 // ── Checkout / billing DTOs ──

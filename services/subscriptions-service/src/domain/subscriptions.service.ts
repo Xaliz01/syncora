@@ -24,6 +24,7 @@ import {
   BASE_SUBSCRIPTION_PLAN,
   BASE_SUBSCRIPTION_PLAN_LABEL,
   BASE_SUBSCRIPTION_STORAGE_BYTES,
+  MAX_TRIAL_EXTENSIONS,
   computeMaxOrganizationUsers,
   computeOrganizationStorageQuotaBytes,
   estimateMonthlySubscriptionCents,
@@ -140,15 +141,17 @@ function computeSubscriptionMeta(
   doc: OrganizationSubscriptionDocument | null,
   status: OrganizationSubscriptionStatus,
   hasAccess: boolean,
-): { billingOpen: boolean; canExtendTrial: boolean } {
+): { billingOpen: boolean; canExtendTrial: boolean; trialExtensionCount: number } {
   const billingOpen = isStripeCheckoutConfigured();
+  const trialExtensionCount = Math.max(0, Number(doc?.trialExtensionCount ?? 0) || 0);
   const canExtendTrial =
     !billingOpen &&
     !!doc?.trialEndsAt &&
     !hasAccess &&
     !hasActiveBaseSubscription(doc) &&
-    (status === "trialing" || status === "none");
-  return { billingOpen, canExtendTrial };
+    (status === "trialing" || status === "none") &&
+    trialExtensionCount < MAX_TRIAL_EXTENSIONS;
+  return { billingOpen, canExtendTrial, trialExtensionCount };
 }
 
 @Injectable()
@@ -196,7 +199,11 @@ export class SubscriptionsService {
     const maxUsers = computeMaxOrganizationUsers(addonQuantities);
     const storageQuotaBytes = computeOrganizationStorageQuotaBytes(addonQuantities);
     const hasAccess = computeHasAccess(status, doc.currentPeriodEnd, trialEndsAt);
-    const { billingOpen, canExtendTrial } = computeSubscriptionMeta(doc, status, hasAccess);
+    const { billingOpen, canExtendTrial, trialExtensionCount } = computeSubscriptionMeta(
+      doc,
+      status,
+      hasAccess,
+    );
     return {
       organizationId: doc.organizationId,
       status,
@@ -204,6 +211,8 @@ export class SubscriptionsService {
       hasStripeSubscription: !!doc.stripeSubscriptionId?.trim(),
       billingOpen,
       canExtendTrial,
+      trialExtensionCount,
+      maxTrialExtensions: MAX_TRIAL_EXTENSIONS,
       trialEndsAt: trialEndsAt ? trialEndsAt.toISOString() : null,
       currentPeriodEnd: currentPeriodEnd ? currentPeriodEnd.toISOString() : null,
       cancelAtPeriodEnd: doc.cancelAtPeriodEnd ?? false,
@@ -230,6 +239,8 @@ export class SubscriptionsService {
       hasAccess: false,
       billingOpen,
       canExtendTrial: false,
+      trialExtensionCount: 0,
+      maxTrialExtensions: MAX_TRIAL_EXTENSIONS,
       trialEndsAt: null,
       currentPeriodEnd: null,
       cancelAtPeriodEnd: false,
@@ -320,6 +331,13 @@ export class SubscriptionsService {
       throw new ConflictException("L'essai gratuit est encore actif.");
     }
 
+    const extensionCount = Math.max(0, Number(existing.trialExtensionCount ?? 0) || 0);
+    if (extensionCount >= MAX_TRIAL_EXTENSIONS) {
+      throw new BadRequestException(
+        `Vous avez atteint la limite de ${MAX_TRIAL_EXTENSIONS} prolongations d'essai. Contactez le support pour continuer pendant la beta.`,
+      );
+    }
+
     const trialDays = Number(process.env.STRIPE_TRIAL_DAYS ?? DEFAULT_TRIAL_DAYS);
     if (!Number.isFinite(trialDays) || trialDays <= 0) {
       throw new InternalServerErrorException("Invalid STRIPE_TRIAL_DAYS");
@@ -332,10 +350,62 @@ export class SubscriptionsService {
       .findOneAndUpdate(
         { organizationId },
         {
-          stripeStatus: "trialing",
-          trialEndsAt,
+          $set: {
+            stripeStatus: "trialing",
+            trialEndsAt,
+          },
+          $inc: { trialExtensionCount: 1 },
         },
         { new: true },
+      )
+      .exec();
+
+    if (!doc) {
+      throw new NotFoundException("Abonnement introuvable pour cette organisation.");
+    }
+
+    return this.toResponse(doc, { monthlyTotalCents: null, monthlyTotalCurrency: null });
+  }
+
+  /**
+   * Prolongation d’essai réservée au backoffice plateforme.
+   * Ignore `billingOpen` et le plafond self-service ; refuse si abonnement Stripe actif.
+   * Prolonge depuis max(now, trialEndsAt) — possible même si l’essai est encore actif.
+   */
+  async staffExtendTrial(organizationId: string): Promise<OrganizationSubscriptionResponse> {
+    const existing = await this.subscriptionModel.findOne({ organizationId }).exec();
+
+    if (existing && hasActiveBaseSubscription(existing)) {
+      throw new ConflictException(
+        "Un abonnement Stripe est déjà en cours pour cette organisation.",
+      );
+    }
+
+    const trialDays = Number(process.env.STRIPE_TRIAL_DAYS ?? DEFAULT_TRIAL_DAYS);
+    if (!Number.isFinite(trialDays) || trialDays <= 0) {
+      throw new InternalServerErrorException("Invalid STRIPE_TRIAL_DAYS");
+    }
+
+    const now = new Date();
+    const base =
+      existing?.trialEndsAt && existing.trialEndsAt.getTime() > now.getTime()
+        ? existing.trialEndsAt
+        : now;
+    const trialEndsAt = new Date(base);
+    trialEndsAt.setDate(trialEndsAt.getDate() + trialDays);
+
+    const doc = await this.subscriptionModel
+      .findOneAndUpdate(
+        { organizationId },
+        {
+          $set: {
+            organizationId,
+            stripeStatus: "trialing",
+            trialEndsAt,
+          },
+          $inc: { trialExtensionCount: 1 },
+        },
+        { upsert: true, new: true },
       )
       .exec();
 

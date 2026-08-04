@@ -9,6 +9,7 @@ import {
 } from "@planwise/shared";
 import { ScrollReveal } from "@/components/landing/ScrollReveal";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { BetaBadge } from "@/components/ui/BetaBadge";
 import {
   LANDING_HERO_HEADING,
   LANDING_HERO_HOOK,
@@ -185,9 +186,13 @@ export function LandingPage() {
           />
           <div className="relative max-w-6xl mx-auto px-4 py-16 sm:py-24">
             <ScrollReveal when="mount">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 dark:border-brand-500/40 bg-brand-50 dark:bg-brand-950/40 px-3 py-1 text-xs font-semibold text-brand-700 dark:text-brand-300 mb-4">
-                <span aria-hidden>✦</span>
-                {BASE_SUBSCRIPTION_PLAN.trialDays} jours d&apos;essai gratuit · sans carte bancaire
+              <span className="inline-flex items-center gap-2 mb-4">
+                <BetaBadge />
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 dark:border-brand-500/40 bg-brand-50 dark:bg-brand-950/40 px-3 py-1 text-xs font-semibold text-brand-700 dark:text-brand-300">
+                  <span aria-hidden>✦</span>
+                  {BASE_SUBSCRIPTION_PLAN.trialDays} jours d&apos;essai gratuit · sans carte
+                  bancaire
+                </span>
               </span>
             </ScrollReveal>
             <ScrollReveal when="mount" delayMs={80}>
@@ -511,6 +516,7 @@ export function LandingPage() {
               P
             </span>
             <span>Planwise — {LANDING_TAGLINE}</span>
+            <BetaBadge />
           </div>
           <div className="flex flex-wrap justify-center gap-4">
             <Link

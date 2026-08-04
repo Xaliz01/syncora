@@ -101,6 +101,14 @@ export class SubscriptionsGatewayService extends AbstractSubscriptionsGatewaySer
     });
   }
 
+  async staffExtendTrial(organizationId: string): Promise<ExtendTrialResponse> {
+    return this.callSubscriptions<ExtendTrialResponse>({
+      method: "post",
+      path: "/subscriptions/staff-extend-trial",
+      body: { organizationId },
+    });
+  }
+
   async createAddonCheckoutSession(
     user: AuthUser,
     body: CreateAddonCheckoutSessionGatewayBody,

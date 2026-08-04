@@ -2,7 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import type { PlatformOrganizationDetailResponse, PlatformUserSummary } from "@planwise/shared";
+import {
+  BASE_SUBSCRIPTION_PLAN,
+  type PlatformOrganizationDetailResponse,
+  type PlatformUserSummary,
+} from "@planwise/shared";
 import * as platformApi from "@/lib/platform.api";
 import { buildSupportSessionHandoffUrl } from "@/lib/support-session";
 
@@ -21,6 +25,8 @@ export function PlatformOrganizationDetailPage({ organizationId }: { organizatio
   const [loading, setLoading] = useState(true);
   const [reasonByUser, setReasonByUser] = useState<Record<string, string>>({});
   const [impersonatingId, setImpersonatingId] = useState<string | null>(null);
+  const [extendingTrial, setExtendingTrial] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -65,10 +71,30 @@ export function PlatformOrganizationDetailPage({ organizationId }: { organizatio
     }
   };
 
+  const extendTrial = async () => {
+    setExtendingTrial(true);
+    setError(null);
+    setSuccessMessage(null);
+    try {
+      const subscription = await platformApi.staffExtendOrganizationTrial(organizationId);
+      setData((prev) => (prev ? { ...prev, subscription } : prev));
+      setSuccessMessage(
+        `Essai prolongé de ${BASE_SUBSCRIPTION_PLAN.trialDays} jours` +
+          (subscription?.trialEndsAt ? ` — fin le ${formatDate(subscription.trialEndsAt)}` : "") +
+          ".",
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Prolongation impossible");
+    } finally {
+      setExtendingTrial(false);
+    }
+  };
+
   if (loading) return <p className="text-sm text-slate-500">Chargement…</p>;
   if (!data) return <p className="text-sm text-red-600">{error ?? "Introuvable"}</p>;
 
   const org = data.organization;
+  const sub = data.subscription;
 
   return (
     <div className="space-y-6">
@@ -85,15 +111,59 @@ export function PlatformOrganizationDetailPage({ organizationId }: { organizatio
         <p className="text-sm text-slate-500">
           {[org.siret, org.email, org.city].filter(Boolean).join(" · ")}
         </p>
-        {data.subscription ? (
-          <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-            Abonnement : {data.subscription.planName ?? "—"} · {data.subscription.status}
-            {data.subscription.hasAccess ? " · accès actif" : " · sans accès"}
-          </p>
-        ) : null}
       </div>
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {successMessage ? (
+        <p className="text-sm text-emerald-700 dark:text-emerald-400">{successMessage}</p>
+      ) : null}
+
+      <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+        <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Abonnement</h2>
+        {sub ? (
+          <>
+            <p className="text-sm text-slate-600 dark:text-slate-300">
+              {sub.planName ?? "—"} · {sub.status}
+              {sub.hasAccess ? " · accès actif" : " · sans accès"}
+              {sub.billingOpen ? " · abonnements ouverts" : " · beta (paiement fermé)"}
+            </p>
+            <p className="text-sm text-slate-500">
+              Fin d’essai : {formatDate(sub.trialEndsAt)}
+              {" · "}
+              Prolongations : {sub.trialExtensionCount ?? 0}/{sub.maxTrialExtensions ?? "—"}{" "}
+              (self-service)
+            </p>
+            <button
+              type="button"
+              disabled={extendingTrial}
+              onClick={() => void extendTrial()}
+              className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-60"
+            >
+              {extendingTrial
+                ? "Prolongation…"
+                : `Prolonger l’essai (+${BASE_SUBSCRIPTION_PLAN.trialDays} j)`}
+            </button>
+            <p className="text-xs text-slate-400">
+              Action support : ignore le plafond self-service et fonctionne même si l’essai est
+              encore actif. Impossible si un abonnement Stripe est déjà en cours.
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="text-sm text-slate-500">Aucun abonnement / essai enregistré.</p>
+            <button
+              type="button"
+              disabled={extendingTrial}
+              onClick={() => void extendTrial()}
+              className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-60"
+            >
+              {extendingTrial
+                ? "Activation…"
+                : `Accorder un essai (+${BASE_SUBSCRIPTION_PLAN.trialDays} j)`}
+            </button>
+          </>
+        )}
+      </section>
 
       <section className="space-y-3">
         <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Intégrations</h2>

@@ -14,6 +14,7 @@ import {
   ADDON_CATALOG,
   BASE_SUBSCRIPTION_INCLUDED_USERS,
   BASE_SUBSCRIPTION_PLAN,
+  MAX_TRIAL_EXTENSIONS,
   formatMoneyFromCents,
   formatStorageBytes,
   isValidAddonCode,
@@ -163,9 +164,14 @@ function SubscriptionSectionInner({ mode = "full" }: { mode?: "full" | "pitchChe
 
   const extendTrialMutation = useMutation({
     mutationFn: () => subscriptionsApi.extendTrial(),
-    onSuccess: async () => {
+    onSuccess: async (data) => {
+      const used = data.trialExtensionCount ?? 0;
+      const max = data.maxTrialExtensions ?? MAX_TRIAL_EXTENSIONS;
+      const remaining = Math.max(0, max - used);
       showToast(
-        `Essai prolongé de ${BASE_SUBSCRIPTION_PLAN.trialDays} jours. Les abonnements ne sont pas encore ouverts au public.`,
+        remaining > 0
+          ? `Essai prolongé de ${BASE_SUBSCRIPTION_PLAN.trialDays} jours (${remaining} prolongation${remaining > 1 ? "s" : ""} restante${remaining > 1 ? "s" : ""}).`
+          : `Essai prolongé de ${BASE_SUBSCRIPTION_PLAN.trialDays} jours. C’était votre dernière prolongation self-service.`,
       );
       await queryClient.invalidateQueries({ queryKey: ["subscription-current"] });
       await queryClient.invalidateQueries({ queryKey: ["organizations", "mine"] });
@@ -216,6 +222,15 @@ function SubscriptionSectionInner({ mode = "full" }: { mode?: "full" | "pitchChe
       (subscription.status === "trialing" &&
         (!subscription.hasStripeSubscription || !subscription.hasAccess)));
   const showExtendTrial = subscription?.canExtendTrial === true;
+  const showTrialExtensionsExhausted =
+    !!subscription &&
+    !subscription.billingOpen &&
+    !subscription.hasAccess &&
+    !subscription.canExtendTrial &&
+    (subscription.trialExtensionCount ?? 0) >=
+      (subscription.maxTrialExtensions ?? MAX_TRIAL_EXTENSIONS) &&
+    Boolean(subscription.trialEndsAt) &&
+    (subscription.status === "trialing" || subscription.status === "none");
 
   useEffect(() => {
     if (isLoading || !subscription || !modifyParam || !isValidAddonCode(modifyParam)) {
@@ -367,8 +382,19 @@ function SubscriptionSectionInner({ mode = "full" }: { mode?: "full" | "pitchChe
           </div>
           {showExtendTrial && (
             <p className="text-xs text-slate-500 dark:text-slate-400 text-center sm:text-left">
-              Les abonnements ne sont pas encore ouverts au public. Prolongez votre essai de{" "}
-              {BASE_SUBSCRIPTION_PLAN.trialDays} jours le temps de finaliser l’ouverture.
+              Planwise est en beta : les abonnements ne sont pas encore ouverts au public. Vous
+              pouvez prolonger l’essai jusqu’à{" "}
+              {subscription?.maxTrialExtensions ?? MAX_TRIAL_EXTENSIONS} fois (
+              {subscription?.trialExtensionCount ?? 0}/
+              {subscription?.maxTrialExtensions ?? MAX_TRIAL_EXTENSIONS} utilisée
+              {(subscription?.trialExtensionCount ?? 0) > 1 ? "s" : ""}
+              ).
+            </p>
+          )}
+          {showTrialExtensionsExhausted && (
+            <p className="text-xs text-slate-500 dark:text-slate-400 text-center sm:text-left">
+              Vous avez utilisé vos {subscription?.maxTrialExtensions ?? MAX_TRIAL_EXTENSIONS}{" "}
+              prolongations d’essai. Contactez le support (chat) pour continuer pendant la beta.
             </p>
           )}
         </div>
@@ -608,6 +634,14 @@ function SubscriptionSectionInner({ mode = "full" }: { mode?: "full" | "pitchChe
                     >
                       {extendTrialMutation.isPending ? "Prolongation…" : "Prolonger l’essai"}
                     </button>
+                  )}
+                  {showTrialExtensionsExhausted && (
+                    <p className="w-full text-xs text-slate-500 dark:text-slate-400">
+                      Prolongations d’essai épuisées (
+                      {subscription?.maxTrialExtensions ?? MAX_TRIAL_EXTENSIONS}/
+                      {subscription?.maxTrialExtensions ?? MAX_TRIAL_EXTENSIONS}). Contactez le
+                      support pour continuer pendant la beta.
+                    </p>
                   )}
                   {canModifyAddons && (
                     <button

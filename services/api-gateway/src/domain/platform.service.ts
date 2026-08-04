@@ -193,6 +193,10 @@ export class PlatformService extends AbstractPlatformService {
         planName: sub.planName,
         hasAccess: sub.hasAccess,
         trialEndsAt: sub.trialEndsAt ?? undefined,
+        billingOpen: sub.billingOpen,
+        canExtendTrial: sub.canExtendTrial,
+        trialExtensionCount: sub.trialExtensionCount,
+        maxTrialExtensions: sub.maxTrialExtensions,
       };
     } catch {
       subscription = undefined;
@@ -215,6 +219,25 @@ export class PlatformService extends AbstractPlatformService {
     }
 
     return { organization, users, subscription, integrations };
+  }
+
+  async staffExtendOrganizationTrial(
+    organizationId: string,
+  ): Promise<PlatformOrganizationDetailResponse["subscription"]> {
+    if (!organizationId?.trim()) {
+      throw new BadRequestException("organizationId est requis");
+    }
+    const sub = await this.subscriptionsGateway.staffExtendTrial(organizationId.trim());
+    return {
+      status: sub.status,
+      planName: sub.planName,
+      hasAccess: sub.hasAccess,
+      trialEndsAt: sub.trialEndsAt ?? undefined,
+      billingOpen: sub.billingOpen,
+      canExtendTrial: sub.canExtendTrial,
+      trialExtensionCount: sub.trialExtensionCount,
+      maxTrialExtensions: sub.maxTrialExtensions,
+    };
   }
 
   async listUsers(filters?: {

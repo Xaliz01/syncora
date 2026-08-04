@@ -9,6 +9,7 @@ describe("SubscriptionsController", () => {
     getByOrganization: jest.Mock;
     startTrial: jest.Mock;
     extendTrial: jest.Mock;
+    staffExtendTrial: jest.Mock;
     createCheckoutSession: jest.Mock;
     createAddonCheckoutSession: jest.Mock;
     createBillingPortalSession: jest.Mock;
@@ -20,6 +21,7 @@ describe("SubscriptionsController", () => {
       getByOrganization: jest.fn(),
       startTrial: jest.fn(),
       extendTrial: jest.fn(),
+      staffExtendTrial: jest.fn(),
       createCheckoutSession: jest.fn(),
       createAddonCheckoutSession: jest.fn(),
       createBillingPortalSession: jest.fn(),
@@ -97,6 +99,22 @@ describe("SubscriptionsController", () => {
       const result = await controller.extendTrial({ organizationId: "org-1" });
 
       expect(mockSubscriptionsService.extendTrial).toHaveBeenCalledWith("org-1");
+      expect(result).toEqual(response);
+    });
+  });
+
+  describe("staffExtendTrial", () => {
+    it("should delegate to service.staffExtendTrial", async () => {
+      const response = {
+        organizationId: "org-1",
+        status: "trialing",
+        hasAccess: true,
+      };
+      mockSubscriptionsService.staffExtendTrial.mockResolvedValue(response);
+
+      const result = await controller.staffExtendTrial({ organizationId: "org-1" });
+
+      expect(mockSubscriptionsService.staffExtendTrial).toHaveBeenCalledWith("org-1");
       expect(result).toEqual(response);
     });
   });

@@ -21,6 +21,10 @@ export class OrganizationSubscriptionDocument extends Document {
   @Prop()
   trialEndsAt?: Date;
 
+  /** Nombre de prolongations d’essai self-service déjà consommées. */
+  @Prop({ default: 0 })
+  trialExtensionCount!: number;
+
   @Prop()
   currentPeriodEnd?: Date;
 

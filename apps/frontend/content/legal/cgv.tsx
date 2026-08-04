@@ -56,10 +56,13 @@ export function CgvContent() {
           Un essai gratuit de {plan.trialDays} jours peut être proposé sans obligation de paiement
           immédiat. Pendant l&apos;essai, le Client peut notamment injecter un jeu de données de
           démonstration et activer un mode de facturation démo (simulation locale, sans connexion à
-          un outil de facturation tiers). À l&apos;issue de l&apos;essai, la souscription est
-          convertie en abonnement payant uniquement si le Client valide un moyen de paiement via
-          Stripe Checkout ou le portail client Stripe. Les données de démonstration peuvent être
-          purgées automatiquement à la fin de la période d&apos;essai.
+          un outil de facturation tiers). Tant que les abonnements payants ne sont pas ouverts au
+          public, le Client peut prolonger l&apos;essai un nombre limité de fois (deux prolongations
+          self-service au maximum) ; au-delà, une prolongation peut être accordée via le support. À
+          l&apos;issue de l&apos;essai, la souscription est convertie en abonnement payant
+          uniquement si le Client valide un moyen de paiement via Stripe Checkout ou le portail
+          client Stripe. Les données de démonstration peuvent être purgées automatiquement à la fin
+          de la période d&apos;essai.
         </LegalParagraph>
       </LegalSection>
 

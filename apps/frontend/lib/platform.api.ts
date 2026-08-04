@@ -78,6 +78,17 @@ export async function getPlatformOrganization(organizationId: string) {
   );
 }
 
+export async function staffExtendOrganizationTrial(organizationId: string) {
+  return apiRequestJson<NonNullable<PlatformOrganizationDetailResponse["subscription"]>>(
+    "POST",
+    `/platform/organizations/${organizationId}/extend-trial`,
+    {
+      platformBearer: true,
+      fallbackError: "Impossible de prolonger l’essai",
+    },
+  );
+}
+
 export async function listPlatformUsers(filters?: {
   search?: string;
   organizationId?: string;

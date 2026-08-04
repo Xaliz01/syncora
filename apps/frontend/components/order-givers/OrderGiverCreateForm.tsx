@@ -25,7 +25,7 @@ export function OrderGiverCreateForm({
 }: Props) {
   const queryClient = useQueryClient();
   const [createError, setCreateError] = useState("");
-  const [newKind, setNewKind] = useState<CustomerKind>("individual");
+  const [newKind, setNewKind] = useState<CustomerKind>("company");
   const [newFirstName, setNewFirstName] = useState("");
   const [newLastName, setNewLastName] = useState("");
   const [newCompanyName, setNewCompanyName] = useState("");
@@ -48,7 +48,7 @@ export function OrderGiverCreateForm({
     : "w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500";
 
   const resetForm = () => {
-    setNewKind("individual");
+    setNewKind("company");
     setNewFirstName("");
     setNewLastName("");
     setNewCompanyName("");

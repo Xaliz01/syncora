@@ -255,6 +255,7 @@ test.describe("Parcours landing publique", () => {
 
   test("mentionne la facturation et les intégrations disponibles", async ({ page }) => {
     await page.goto("/");
+    await expect(page.getByText("Beta", { exact: true }).first()).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Facturation sans double saisie" }),
     ).toBeVisible();

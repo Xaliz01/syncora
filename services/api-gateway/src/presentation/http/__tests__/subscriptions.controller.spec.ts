@@ -25,6 +25,7 @@ describe("SubscriptionsController", () => {
       getCurrentSubscription: jest.fn(),
       startTrial: jest.fn(),
       extendTrial: jest.fn(),
+      staffExtendTrial: jest.fn(),
       createCheckoutSession: jest.fn(),
       createAddonCheckoutSession: jest.fn(),
       createBillingPortalSession: jest.fn(),

@@ -24,6 +24,9 @@ export abstract class AbstractSubscriptionsGatewayService {
 
   abstract extendTrial(user: AuthUser): Promise<ExtendTrialResponse>;
 
+  /** Prolongation d’essai initiée par le backoffice plateforme. */
+  abstract staffExtendTrial(organizationId: string): Promise<ExtendTrialResponse>;
+
   abstract createAddonCheckoutSession(
     user: AuthUser,
     body: CreateAddonCheckoutSessionGatewayBody,

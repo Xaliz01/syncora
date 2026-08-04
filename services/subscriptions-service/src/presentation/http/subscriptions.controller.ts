@@ -31,6 +31,13 @@ export class SubscriptionsController {
     return this.subscriptionsService.extendTrial(body.organizationId);
   }
 
+  /** Prolongation backoffice plateforme (sans plafond self-service). */
+  @Post("staff-extend-trial")
+  staffExtendTrial(@Body() body: StartTrialBody) {
+    this.ensureOrg(body.organizationId);
+    return this.subscriptionsService.staffExtendTrial(body.organizationId);
+  }
+
   @Post("checkout-session")
   createCheckoutSession(@Body() body: CreateCheckoutSessionBody) {
     this.ensureOrg(body.organizationId);

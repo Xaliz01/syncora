@@ -8,6 +8,7 @@ describe("PlatformService", () => {
   const jwtService = { sign: jest.fn().mockReturnValue("platform-token") };
   const subscriptionsGateway = {
     getCurrentSubscription: jest.fn(),
+    staffExtendTrial: jest.fn(),
   };
   const analyticsGateway = {
     trackPageview: jest.fn(),
@@ -179,5 +180,27 @@ describe("PlatformService", () => {
     expect(page2.total).toBe(expectedTotal);
     expect(page2.runs.length).toBeGreaterThan(0);
     expect(page2.runs[0]?.id).not.toBe(page1.runs[0]?.id);
+  });
+
+  it("staff-extends organization trial via subscriptions gateway", async () => {
+    subscriptionsGateway.staffExtendTrial.mockResolvedValue({
+      status: "trialing",
+      planName: "Essentiel",
+      hasAccess: true,
+      trialEndsAt: "2026-09-01T00:00:00.000Z",
+      billingOpen: false,
+      canExtendTrial: false,
+      trialExtensionCount: 3,
+      maxTrialExtensions: 2,
+    });
+
+    const result = await service.staffExtendOrganizationTrial("org-1");
+
+    expect(subscriptionsGateway.staffExtendTrial).toHaveBeenCalledWith("org-1");
+    expect(result).toMatchObject({
+      status: "trialing",
+      hasAccess: true,
+      trialExtensionCount: 3,
+    });
   });
 });
