@@ -219,7 +219,9 @@ export function getTeamCalendarCardAppearance(
   }
 
   return {
-    className: getTeamCalendarCardClasses(undefined, isDark),
+    className: isDark
+      ? "bg-amber-950/55 text-amber-50 border-2 border-dashed border-amber-500/90"
+      : "bg-amber-50 text-amber-950 border-2 border-dashed border-amber-400",
     style: undefined,
   };
 }

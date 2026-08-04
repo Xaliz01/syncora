@@ -163,7 +163,9 @@ export interface UpdateInterventionPayload {
   status?: string;
   billingStatus?: string;
   assigneeId?: string | null;
+  assigneeName?: string | null;
   assignedTeamId?: string | null;
+  assignedTeamName?: string | null;
   scheduledStart?: string | null;
   scheduledEnd?: string | null;
   notes?: string;
