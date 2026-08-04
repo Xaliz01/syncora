@@ -2,7 +2,7 @@
 
 > Document de référence pour l’équipe et les assistants de développement.  
 > Complète `planwise.product.config.yml` (entités, auth) par le **pourquoi**, la **cible** et le **cap** des évolutions.  
-> Dernière mise à jour : juillet 2026.
+> Dernière mise à jour : août 2026.
 
 ---
 
@@ -91,14 +91,14 @@ Référence technique : landing `apps/frontend/components/landing/LandingPage.ts
 - **Pilotage** : tableau de bord (stats cliquables, tâches à faire), recherche globale, notifications in-app.
 - **Abonnement** : Stripe (essai 15 j, 2 users inclus, addons users / suggestion équipe / stockage).
 - **Statut de facturation** : « À facturer » / « Facturé » / « Payé » sur dossiers et interventions, historique, filtre liste et dashboard.
+- **Facturation / intégrations** : devis PDF, export, pont **Pennylane** et **Qonto**, **facturation démo** pendant l’essai (sans OAuth), suivi org des factures sync, guide bienvenue (CTA données démo + outil de facturation).
 - **Addon** : suggestion intelligente d’équipe (distance, trajet, carburant, CO₂ — géocodage adresses).
 - **Support** : Crisp (chat).
 
 ### Limites connues (à assumer dans la com’)
 
 - Application **web PWA** (installable, cache offline des listes du jour) ; pas d’app native.
-- **Une adresse** par client ; pas de multi-sites ni d’équipements installés.
-- Pas de **facturation** métier intégrée (devis léger + pont Pennylane / export).
+- Pas de **facturation légale native** Planwise (devis + ponts compta / démo essai uniquement).
 - Pas de **portail client** ni SMS automatiques métier (email et push PWA opérationnels).
 - Pas de listes de **pièces fréquentes** par type d’intervention (phase 4.2) ni scan code-barres.
 - Clôture intervention depuis le bureau ou le mobile (photos terrain OK) ; **signature client** et **rapport PDF** disponibles sur intervention terminée.
@@ -158,18 +158,35 @@ Objectif : un client pro avec plusieurs lieux d’intervention.
 | 2.2 | **Contacts** optionnels (nom, rôle, téléphone)                                      | Appeler le bon interlocuteur sur site |
 | 2.3 | Enrichir **suggestion d’équipe** avec adresse d’intervention du dossier             | Déjà différenciant ; plus juste       |
 
-### Phase 3 — Revenus légers (sans devenir ERP) `🟡`
+### Phase 3 — Revenus légers (sans devenir ERP) `✅`
 
-Objectif : boucler avec l’outil compta existant de l’artisan.
+Objectif : boucler avec l’outil compta existant de l’artisan — et faire découvrir la boucle facture **pendant l’essai**.
 
-| #   | Évolution                                                   | Pourquoi (TPE)        | Statut |
-| --- | ----------------------------------------------------------- | --------------------- | ------ |
-| 3.1 | **Devis simple** (lignes, TVA, PDF) lié au dossier          | Avant intervention    | ✅     |
-| 3.2 | **Export** dossier / intervention (CSV, PDF)                | Saisie compta externe | ✅     |
-| 3.3 | **Intégration** 1ère brique compta FR (**Pennylane**)       | Réduire double saisie | ✅     |
-| 3.4 | Statut métier « **À facturer** » sur dossier / intervention | Pont vers compta      | ✅     |
+| #   | Évolution                                                               | Pourquoi (TPE)              | Statut |
+| --- | ----------------------------------------------------------------------- | --------------------------- | ------ |
+| 3.1 | **Devis simple** (lignes, TVA, PDF) lié au dossier                      | Avant intervention          | ✅     |
+| 3.2 | **Export** dossier / intervention (CSV, PDF)                            | Saisie compta externe       | ✅     |
+| 3.3 | **Intégration** 1ère brique compta FR (**Pennylane**)                   | Réduire double saisie       | ✅     |
+| 3.4 | Statut métier « **À facturer** » sur dossier / intervention             | Pont vers compta            | ✅     |
+| 3.5 | Intégration **Qonto** (facture depuis dossier, exclusivité 1 provider)  | Choix outil déjà utilisé    | ✅     |
+| 3.6 | **Facturation démo** essai + CTA guide bienvenue + suivi sans connexion | Conversion essai sans OAuth | ✅     |
 
-_Hors scope phase 3_ : gestion complète des paiements, relances, compta générale.
+_Hors scope phase 3_ : gestion complète des paiements, relances, compta générale, facturation légale native.
+
+### Priorités immédiates (backlog ordonné)
+
+Ordre recommandé après consolidation de la boucle essai. Chaque item = issue / PR indépendante.
+
+| Prio   | Issue                                                        | Critères d’acceptation                                                                                                                         | Phase |
+| ------ | ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| **P0** | **Stabiliser boucle essai** (déjà en cours)                  | E2E : guide → activer démo → bouton facture dossier → suivi `/billing` sans bandeau « connectez » ; vision à jour                              | 3.6   |
+| **P1** | **4.2 — Pièces fréquentes** par type / modèle d’intervention | Cataloguer des pièces récurrentes ; saisie rapide depuis intervention terrain ; permissions stock ; tests unitaires + E2E parcours ajout pièce | 4     |
+| **P2** | **5.1 — Contrats maintenance** (finir)                       | Échéances visibles, rappel « à programmer », création dossier / intervention depuis contrat ; permissions ; E2E parcours bureau                | 5     |
+| **P3** | **5.5 — Rapports patron** utiles                             | Au moins 2 rapports actionnables (ex. retards semaine, stock bas / conso) au-delà des listes export ; E2E navigation reporting                 | 5     |
+| **P4** | **5.2 SMS** ou **5.3 tournée** (choisir 1)                   | 2e différenciateur Pro ; ne pas lancer les deux en parallèle                                                                                   | 5     |
+| **P5** | Offre **Pro** catalogue                                      | Prérequis : ≥ 2 items 5.1–5.5 livrés ; prix figé ; landing + Stripe                                                                            | 5.6   |
+
+**Ne pas prioriser maintenant** : nouveau provider compta, facturation légale native, SSO, scan code-barres (4.3 optionnel).
 
 ### Phase 4 — Stock & logistique artisan `🟡`
 

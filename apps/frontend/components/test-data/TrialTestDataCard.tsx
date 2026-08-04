@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import type { TrialTestDataStatus } from "@planwise/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -128,6 +129,18 @@ export function TrialTestDataCard() {
               {new Date(status.injectedAt).toLocaleString("fr-FR")}.
             </p>
           )}
+          {hasReadyData && isTrialing ? (
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Pour tester la facturation sans Pennylane ni Qonto, activez la{" "}
+              <Link
+                href="/settings/integrations"
+                className="font-medium text-violet-700 dark:text-violet-300 underline underline-offset-2 hover:no-underline"
+              >
+                facturation démo
+              </Link>{" "}
+              pendant l’essai.
+            </p>
+          ) : null}
           {actionError && <p className="text-xs text-red-600 dark:text-red-400">{actionError}</p>}
         </div>
         <div className="flex flex-col sm:flex-row gap-2 shrink-0">

@@ -15,12 +15,15 @@ export function CookieConsentBanner() {
   const [visible, setVisible] = useState(false);
   const [customizeOpen, setCustomizeOpen] = useState(false);
   const [supportEnabled, setSupportEnabled] = useState(true);
+  const [embedded, setEmbedded] = useState(false);
 
   useEffect(() => {
+    setEmbedded(window.self !== window.top);
     setVisible(!hasCookieConsentDecision());
   }, []);
 
-  if (!visible) return null;
+  // Aperçus en iframe (ex. facture démo) : pas de bandeau cookies par-dessus le document.
+  if (embedded || !visible) return null;
 
   const close = () => setVisible(false);
 

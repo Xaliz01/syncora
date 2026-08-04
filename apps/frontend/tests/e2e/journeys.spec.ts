@@ -263,6 +263,8 @@ test.describe("Parcours landing publique", () => {
       page.getByText(/Suivi et validation des factures synchronisées depuis Planwise/i),
     ).toBeVisible();
     await expect(page.getByText(/sans ressaisie/i)).toBeVisible();
+    await expect(page.getByText(/Facturation démo pendant l’essai/i).first()).toBeVisible();
+    await expect(page.getByText(/Donneurs d’ordre/i).first()).toBeVisible();
   });
 
   test("met en avant accessibilité prix et contrats de maintenance", async ({ page }) => {

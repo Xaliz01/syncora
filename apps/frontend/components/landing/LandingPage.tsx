@@ -40,7 +40,7 @@ const PILLARS = [
   {
     title: "Facturation sans double saisie",
     description:
-      "Envoyez un dossier vers votre outil de facturation connecté, puis suivez et validez la facture depuis Planwise.",
+      "Connectez votre outil de facturation, ou activez la facturation démo pendant l’essai : créez, suivez et validez vos factures depuis Planwise.",
   },
 ] as const;
 
@@ -92,6 +92,7 @@ const FEATURE_SECTIONS = [
     title: "Clients, flotte & stock",
     items: [
       "Clients particuliers et entreprises avec historique lié aux dossiers",
+      "Donneurs d’ordre : facturez le bon tiers quand le client n’est pas le payeur",
       "Équipes, véhicules et agences alignés sur le planning",
       "Calendrier semaine / mois coloré par équipe",
       "Stock multi-emplacements (entrepôt, agence, véhicule) avec alertes",
@@ -101,7 +102,8 @@ const FEATURE_SECTIONS = [
     title: "Facturation & intégrations",
     items: [
       "Devis liés au dossier, prêts à être transformés en facture",
-      "Envoi vers votre outil de facturation connecté, sans ressaisie",
+      "Pennylane ou Qonto : envoi sans ressaisie, une connexion active à la fois",
+      "Facturation démo pendant l’essai, pour tester le parcours sans OAuth",
       "Suivi et validation des factures synchronisées depuis Planwise",
     ],
   },
@@ -259,7 +261,7 @@ export function LandingPage() {
               </h2>
               <p className="text-slate-600 dark:text-slate-400 mb-10 max-w-2xl">
                 Pensé pour les indépendants comme pour les TPE : interventions, contrats, flotte,
-                stock et facturation — sans surcouche inutile.
+                stock, donneurs d&apos;ordre et facturation — sans surcouche inutile.
               </p>
             </ScrollReveal>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -367,7 +369,7 @@ export function LandingPage() {
                       <span className="text-brand-600" aria-hidden>
                         ✓
                       </span>
-                      Clients, flotte et stock
+                      Clients, donneurs d&apos;ordre, flotte et stock
                     </li>
                     <li className="flex gap-2">
                       <span className="text-brand-600" aria-hidden>
@@ -385,7 +387,7 @@ export function LandingPage() {
                       <span className="text-brand-600" aria-hidden>
                         ✓
                       </span>
-                      Données de démo injectables pendant l&apos;essai
+                      Données de démo et facturation démo pendant l&apos;essai
                     </li>
                   </ul>
                   <Link

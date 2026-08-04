@@ -19,11 +19,13 @@ export function CguContent() {
       <LegalSection title="2. Description du service">
         <LegalParagraph>
           {legal.publisherName} est un CRM orienté opérations terrain permettant notamment de gérer
-          des clients, dossiers, interventions, équipes, stocks et documents associés. Des
-          intégrations optionnelles avec des outils de facturation tiers (notamment Pennylane ou
-          Qonto) peuvent être activées par le Client pour créer et suivre des factures depuis le
-          service. Les fonctionnalités peuvent évoluer ; les CGU applicables sont celles en vigueur
-          à la date d&apos;utilisation.
+          des clients, donneurs d&apos;ordre, dossiers, interventions, équipes, stocks et documents
+          associés. Des intégrations optionnelles avec des outils de facturation tiers (notamment
+          Pennylane ou Qonto) peuvent être activées par le Client pour créer et suivre des factures
+          depuis le service. Pendant l&apos;essai gratuit, un mode de{" "}
+          <strong>facturation démo</strong> peut être proposé : il simule le parcours de facturation
+          sans transmission vers un outil tiers. Les fonctionnalités peuvent évoluer ; les CGU
+          applicables sont celles en vigueur à la date d&apos;utilisation.
         </LegalParagraph>
       </LegalSection>
 
@@ -54,17 +56,24 @@ export function CguContent() {
         <LegalParagraph>
           Le Client reste propriétaire des données qu&apos;il saisit dans le service. Il garantit
           disposer des bases légales nécessaires pour traiter les données de ses propres clients
-          (clients finaux, signataires, techniciens, etc.), conformément au RGPD.
+          (clients finaux, donneurs d&apos;ordre, signataires, techniciens, etc.), conformément au
+          RGPD.
         </LegalParagraph>
         <LegalParagraph>
-          Lorsqu&apos;il active une intégration de facturation, le Client autorise expressément{" "}
-          {legal.publisherName} à transmettre aux outils concernés les données nécessaires à
-          l&apos;émission et au suivi des factures (clients, lignes de devis, montants, TVA,
-          statut), et à stocker les jetons d&apos;accès ainsi que les métadonnées de
-          synchronisation. Le Client demeure seul responsable de son compte et de sa relation
-          contractuelle avec l&apos;éditeur tiers (Pennylane, Qonto, etc.), ainsi que de la
-          conformité de ses propres traitements. {legal.companyName} n&apos;est pas responsable des
-          indisponibilités, erreurs ou traitements réalisés par ces outils tiers.
+          Lorsqu&apos;il active une intégration de facturation (Pennylane, Qonto, etc.), le Client
+          autorise expressément {legal.publisherName} à transmettre aux outils concernés les données
+          nécessaires à l&apos;émission et au suivi des factures (clients ou donneurs d&apos;ordre,
+          lignes de devis, montants, TVA, statut), et à stocker les jetons d&apos;accès ainsi que
+          les métadonnées de synchronisation. Le Client demeure seul responsable de son compte et de
+          sa relation contractuelle avec l&apos;éditeur tiers, ainsi que de la conformité de ses
+          propres traitements. {legal.companyName} n&apos;est pas responsable des indisponibilités,
+          erreurs ou traitements réalisés par ces outils tiers.
+        </LegalParagraph>
+        <LegalParagraph>
+          Le mode facturation démo, lorsqu&apos;il est disponible pendant l&apos;essai, crée des
+          documents simulés locaux à {legal.publisherName} : aucune donnée n&apos;est transmise à
+          Pennylane, Qonto ou un autre éditeur de facturation. Ces documents n&apos;ont pas de
+          valeur comptable ni fiscale.
         </LegalParagraph>
         <LegalParagraph>
           {legal.companyName} accorde au Client une licence d&apos;utilisation non exclusive, non

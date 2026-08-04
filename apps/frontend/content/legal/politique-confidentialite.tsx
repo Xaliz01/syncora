@@ -32,14 +32,16 @@ export function PolitiqueConfidentialiteContent() {
             "Usage : journaux techniques, préférences (thème, sidebar), notifications.",
             "Mesure d'audience first-party : pages vues (chemin, surface landing/app, referrer hôte, pays/région approximatifs dérivés de l'IP sans conservation de l'IP, identifiants aléatoires navigateur), sans publicité ni revente.",
             "Support : échanges via Crisp (si consentement cookies).",
-            "Données saisies par le Client : clients, interventions, géolocalisation optionnelle, photos, signatures, devis et éléments nécessaires à la facturation.",
+            "Données saisies par le Client : clients, donneurs d’ordre, interventions, géolocalisation optionnelle, photos, signatures, devis et éléments nécessaires à la facturation.",
+            "Essai : jeu de données de démonstration injectable, et factures simulées du mode facturation démo (stockées uniquement dans Planwise, sans envoi à un outil de facturation tiers).",
           ]}
         />
         <LegalParagraph>
           Planwise ne réalise pas d&apos;import massif du grand livre ou de l&apos;historique
           comptable de l&apos;outil tiers. Les données échangées avec Pennylane ou Qonto portent
-          principalement sur les clients et factures que le Client choisit de créer ou de suivre
-          depuis Planwise, ainsi que sur le statut de ces factures.
+          principalement sur les clients (ou donneurs d&apos;ordre) et factures que le Client
+          choisit de créer ou de suivre depuis Planwise, ainsi que sur le statut de ces factures. Le
+          mode facturation démo ne transmet aucune donnée à ces éditeurs.
         </LegalParagraph>
       </LegalSection>
 
@@ -56,7 +58,8 @@ export function PolitiqueConfidentialiteContent() {
             <>
               <strong>Intégrations de facturation</strong> — exécution du contrat lorsque le Client
               active volontairement une connexion (Pennylane, Qonto, etc.) afin d&apos;émettre ou de
-              suivre des factures sans double saisie (art. 6.1.b).
+              suivre des factures sans double saisie (art. 6.1.b). Le mode facturation démo (essai)
+              reste local à Planwise et n&apos;implique pas de destinataire tiers de facturation.
             </>,
             <>
               <strong>Support et sécurité</strong> — intérêt légitime (art. 6.1.f), sauf Crisp
@@ -95,13 +98,13 @@ export function PolitiqueConfidentialiteContent() {
         <LegalParagraph>
           Lorsque le Client active une intégration de facturation (notamment{" "}
           <strong>Pennylane</strong> ou <strong>Qonto</strong>), des données nécessaires à
-          l&apos;émission et au suivi des factures (identité / coordonnées clients, lignes de devis,
-          montants, TVA, statut de facture) peuvent être transmises à cet outil,{" "}
-          <strong>sur instruction du Client</strong>. Ces éditeurs sont des prestataires choisis et
-          contractés par le Client ; leurs traitements sont régis par leurs propres conditions et
-          politiques de confidentialité. {legal.companyName} n&apos;est pas responsable des
-          traitements réalisés par ces outils au-delà de la transmission technique opérée pour le
-          compte du Client.
+          l&apos;émission et au suivi des factures (identité / coordonnées du client ou du donneur
+          d&apos;ordre, lignes de devis, montants, TVA, statut de facture) peuvent être transmises à
+          cet outil, <strong>sur instruction du Client</strong>. Ces éditeurs sont des prestataires
+          choisis et contractés par le Client ; leurs traitements sont régis par leurs propres
+          conditions et politiques de confidentialité. {legal.companyName} n&apos;est pas
+          responsable des traitements réalisés par ces outils au-delà de la transmission technique
+          opérée pour le compte du Client.
         </LegalParagraph>
         <LegalParagraph>
           Le Client demeure responsable de traitement pour les données de ses propres clients finaux
@@ -118,6 +121,7 @@ export function PolitiqueConfidentialiteContent() {
             "Factures de l'abonnement Planwise : 10 ans (obligations comptables).",
             "Connexion d'intégration : jusqu'à déconnexion par le Client ou suppression du compte ; les jetons d'accès sont alors supprimés.",
             "Métadonnées de synchronisation de factures : durée de la relation contractuelle ou jusqu'à détachement / suppression demandée par l'organisation.",
+            "Données de démonstration et factures démo d'essai : jusqu'à purge manuelle, fin d'essai, ou suppression du compte.",
             "Journaux techniques : jusqu'à 12 mois.",
             "Mesure d'audience first-party (pages vues, pays/région approximatifs — sans IP stockée) : environ 400 jours.",
             "Données saisies par le Client : selon paramétrage ou demande de suppression de l'organisation.",

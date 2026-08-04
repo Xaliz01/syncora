@@ -54,9 +54,12 @@ export function CgvContent() {
       <LegalSection title="3. Essai gratuit">
         <LegalParagraph>
           Un essai gratuit de {plan.trialDays} jours peut être proposé sans obligation de paiement
-          immédiat. À l&apos;issue de l&apos;essai, la souscription est convertie en abonnement
-          payant uniquement si le Client valide un moyen de paiement via Stripe Checkout ou le
-          portail client Stripe.
+          immédiat. Pendant l&apos;essai, le Client peut notamment injecter un jeu de données de
+          démonstration et activer un mode de facturation démo (simulation locale, sans connexion à
+          un outil de facturation tiers). À l&apos;issue de l&apos;essai, la souscription est
+          convertie en abonnement payant uniquement si le Client valide un moyen de paiement via
+          Stripe Checkout ou le portail client Stripe. Les données de démonstration peuvent être
+          purgées automatiquement à la fin de la période d&apos;essai.
         </LegalParagraph>
       </LegalSection>
 
@@ -97,6 +100,7 @@ export function CgvContent() {
             "Respecter les CGU et la réglementation applicable à ses propres clients finaux.",
             "S'assurer que les utilisateurs invités disposent des autorisations nécessaires.",
             "Lors de l'activation d'une intégration (Pennylane, Qonto, etc.), disposer des droits nécessaires et accepter les conditions de l'éditeur tiers.",
+            "Ne pas présenter les documents de facturation démo comme des factures légales ou fiscales.",
             "Ne pas utiliser le service à des fins illicites ou contraires à l'ordre public.",
           ]}
         />

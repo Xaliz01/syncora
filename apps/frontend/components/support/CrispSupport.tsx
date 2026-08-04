@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/components/auth/AuthContext";
 import { useOrganization } from "@/lib/organization";
@@ -13,6 +14,13 @@ import {
   type CrispUserIdentity,
 } from "@/lib/crisp-client";
 import { useCookieConsentSupport } from "@/components/legal/CookieConsentBanner";
+
+/** Aperçu facture démo (souvent en iframe) : pas de second bubble Crisp. */
+function shouldSuppressCrispChat(pathname: string | null): boolean {
+  if (pathname?.startsWith("/demo-invoice")) return true;
+  if (typeof window !== "undefined" && window.self !== window.top) return true;
+  return false;
+}
 
 function buildCrispIdentity(
   user: NonNullable<ReturnType<typeof useAuth>["user"]>,
@@ -37,19 +45,26 @@ function buildCrispIdentity(
 }
 
 export function CrispSupport() {
+  const pathname = usePathname();
   const { user, isAuthenticated, isReady } = useAuth();
   const { activeOrganization } = useOrganization();
   const websiteId = getCrispWebsiteId();
   const supportConsent = useCookieConsentSupport();
+  const suppressChat = shouldSuppressCrispChat(pathname);
 
   const { data: subscription } = useQuery({
     queryKey: ["subscription-current"],
     queryFn: () => subscriptionsApi.getSubscriptionCurrent(),
-    enabled: Boolean(user && websiteId),
+    enabled: Boolean(user && websiteId && !suppressChat),
     staleTime: 60_000,
   });
 
   useEffect(() => {
+    if (suppressChat) {
+      shutdownCrispSession();
+      return;
+    }
+
     if (!isReady || !websiteId || !isAuthenticated || !user || !supportConsent) {
       if (isReady && (!isAuthenticated || !supportConsent)) {
         shutdownCrispSession();
@@ -88,6 +103,7 @@ export function CrispSupport() {
       cancelled = true;
     };
   }, [
+    suppressChat,
     websiteId,
     isReady,
     isAuthenticated,
