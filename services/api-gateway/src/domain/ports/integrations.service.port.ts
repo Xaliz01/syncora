@@ -5,6 +5,7 @@ import type {
   CaseInvoiceSyncStatus,
   ConnectPennylaneBody,
   ConnectQontoBody,
+  DemoConnectionStatus,
   OrganizationInvoiceSyncStatsResponse,
   OrganizationInvoiceSyncsListResponse,
   PennylaneConnectionStatus,
@@ -12,6 +13,7 @@ import type {
   QontoConnectionStatus,
   QontoOAuthStartResponse,
   SyncCaseInvoiceOptions,
+  SyncCaseToDemoResult,
   SyncCaseToPennylaneResult,
   SyncCaseToQontoResult,
 } from "@planwise/shared";
@@ -60,6 +62,18 @@ export abstract class AbstractIntegrationsGatewayService {
     caseId: string,
     options: SyncCaseInvoiceOptions,
   ): Promise<SyncCaseToQontoResult>;
+
+  abstract getDemoStatus(user: AuthUser): Promise<DemoConnectionStatus>;
+
+  abstract connectDemo(user: AuthUser): Promise<DemoConnectionStatus>;
+
+  abstract disconnectDemo(user: AuthUser): Promise<DemoConnectionStatus>;
+
+  abstract syncCaseToDemo(
+    user: AuthUser,
+    caseId: string,
+    options: SyncCaseInvoiceOptions,
+  ): Promise<SyncCaseToDemoResult>;
 
   abstract listOrganizationInvoiceSyncs(
     user: AuthUser,

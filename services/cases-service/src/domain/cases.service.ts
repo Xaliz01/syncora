@@ -520,6 +520,11 @@ export class CasesService extends AbstractCasesService {
     id: string,
     body: UpdateInterventionBody,
   ): Promise<InterventionResponse> {
+    const existing = await this.interventionModel
+      .findOne({ _id: id, organizationId: body.organizationId, ...activeDocumentFilter })
+      .exec();
+    if (!existing) throw new NotFoundException("Intervention not found");
+
     const update: Record<string, unknown> = {};
     const unset: Record<string, string> = {};
     if (body.title !== undefined) update.title = body.title;
@@ -531,6 +536,44 @@ export class CasesService extends AbstractCasesService {
     const teamTouched = body.assignedTeamId !== undefined;
     const assigneeId = assigneeTouched ? this.normalizeOptionalId(body.assigneeId) : undefined;
     const assignedTeamId = teamTouched ? this.normalizeOptionalId(body.assignedTeamId) : undefined;
+
+    if (assigneeTouched || teamTouched) {
+      const currentAssignee = this.normalizeOptionalId(existing.assigneeId) ?? null;
+      const currentTeam = this.normalizeOptionalId(existing.assignedTeamId) ?? null;
+      const nextAssignee = assigneeTouched ? (assigneeId ?? null) : currentAssignee;
+      const nextTeam = teamTouched ? (assignedTeamId ?? null) : currentTeam;
+      if (
+        existing.status === "completed" &&
+        (nextAssignee !== currentAssignee || nextTeam !== currentTeam)
+      ) {
+        throw new BadRequestException(
+          "Cannot change team or technician assignment on a completed intervention",
+        );
+      }
+    }
+
+    if (existing.status === "completed") {
+      const scheduleTouched = body.scheduledStart !== undefined || body.scheduledEnd !== undefined;
+      if (scheduleTouched) {
+        const currentStart = existing.scheduledStart?.getTime() ?? null;
+        const currentEnd = existing.scheduledEnd?.getTime() ?? null;
+        const nextStart =
+          body.scheduledStart !== undefined
+            ? body.scheduledStart
+              ? new Date(body.scheduledStart).getTime()
+              : null
+            : currentStart;
+        const nextEnd =
+          body.scheduledEnd !== undefined
+            ? body.scheduledEnd
+              ? new Date(body.scheduledEnd).getTime()
+              : null
+            : currentEnd;
+        if (nextStart !== currentStart || nextEnd !== currentEnd) {
+          throw new BadRequestException("Cannot change schedule on a completed intervention");
+        }
+      }
+    }
 
     if (assigneeTouched && teamTouched) {
       this.assertExclusiveInterventionAssignment(assigneeId, assignedTeamId);
@@ -572,7 +615,7 @@ export class CasesService extends AbstractCasesService {
     if (Object.keys(update).length > 0) mongoUpdate.$set = update;
     if (Object.keys(unset).length > 0) mongoUpdate.$unset = unset;
     if (Object.keys(mongoUpdate).length === 0) {
-      return this.getIntervention(id, body.organizationId);
+      return this.toInterventionResponse(existing);
     }
 
     const doc = await this.interventionModel
@@ -959,6 +1002,7 @@ export class CasesService extends AbstractCasesService {
       validUntil: body.validUntil ? new Date(body.validUntil) : undefined,
       lines: (body.lines ?? []).map((l) => ({
         articleId: l.articleId,
+        prestationId: l.prestationId,
         description: l.description,
         quantity: l.quantity,
         unitPrice: l.unitPrice,
@@ -1015,6 +1059,7 @@ export class CasesService extends AbstractCasesService {
     if (body.lines !== undefined) {
       update.lines = body.lines.map((l) => ({
         articleId: l.articleId,
+        prestationId: l.prestationId,
         description: l.description,
         quantity: l.quantity,
         unitPrice: l.unitPrice,
@@ -1039,6 +1084,13 @@ export class CasesService extends AbstractCasesService {
   }
 
   async deleteQuote(id: string, organizationId: string): Promise<{ deleted: true }> {
+    const doc = await this.quoteModel
+      .findOne({ _id: id, organizationId, ...activeDocumentFilter })
+      .exec();
+    if (!doc) throw new NotFoundException("Quote not found");
+    if (doc.status !== "draft") {
+      throw new BadRequestException("Only draft quotes can be deleted");
+    }
     const result = await this.quoteModel
       .updateOne(
         { _id: id, organizationId, ...activeDocumentFilter },
@@ -1071,6 +1123,7 @@ export class CasesService extends AbstractCasesService {
       return {
         id: l.id,
         articleId: l.articleId,
+        prestationId: l.prestationId,
         description: l.description,
         quantity: l.quantity,
         unitPrice: l.unitPrice,

@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from "@nestjs/common";
-import type { AuthUser } from "@planwise/shared";
+import type { AuthUser, SyncCaseInvoiceOptions } from "@planwise/shared";
 import { CurrentUser } from "../../infrastructure/current-user.decorator";
 import {
   RequireAnyPermissions,
@@ -27,6 +27,7 @@ export class IntegrationsController {
     "exports.reporting",
     "integrations.pennylane.read",
     "integrations.qonto.read",
+    "integrations.demo.read",
   )
   getBillingIntegrationAvailability(@CurrentUser() user: AuthUser) {
     return this.integrationsService.getBillingIntegrationAvailability(user);
@@ -66,21 +67,13 @@ export class IntegrationsController {
   syncCase(
     @CurrentUser() user: AuthUser,
     @Param("caseId") caseId: string,
-    @Body()
-    body?: {
-      quoteId?: string;
-      invoiceKind?: string;
-      situationPercent?: number;
-      amountHt?: number;
-    },
+    @Body() body?: SyncCaseInvoiceOptions,
     @Query("quoteId") quoteIdQuery?: string,
   ) {
-    const quoteId = (body?.quoteId || quoteIdQuery || "").trim();
+    const quoteId = (body?.quoteId || quoteIdQuery || "").trim() || undefined;
     return this.integrationsService.syncCaseToPennylane(user, caseId, {
+      ...body,
       quoteId,
-      invoiceKind: body?.invoiceKind as "full" | "situation" | "deposit" | "balance" | undefined,
-      situationPercent: body?.situationPercent,
-      amountHt: body?.amountHt,
     });
   }
 
@@ -133,22 +126,46 @@ export class IntegrationsController {
   syncCaseToQonto(
     @CurrentUser() user: AuthUser,
     @Param("caseId") caseId: string,
-    @Body()
-    body?: {
-      quoteId?: string;
-      invoiceNumber?: string;
-      invoiceKind?: string;
-      situationPercent?: number;
-      amountHt?: number;
-    },
+    @Body() body?: SyncCaseInvoiceOptions,
     @Query("quoteId") quoteIdQuery?: string,
   ) {
     return this.integrationsService.syncCaseToQonto(user, caseId, {
-      quoteId: (body?.quoteId || quoteIdQuery || "").trim(),
-      invoiceNumber: body?.invoiceNumber,
-      invoiceKind: body?.invoiceKind as "full" | "situation" | "deposit" | "balance" | undefined,
-      situationPercent: body?.situationPercent,
-      amountHt: body?.amountHt,
+      ...body,
+      quoteId: (body?.quoteId || quoteIdQuery || "").trim() || undefined,
+    });
+  }
+
+  // ── Demo ──
+
+  @Get("demo")
+  @RequirePermissions("integrations.demo.read")
+  getDemoStatus(@CurrentUser() user: AuthUser) {
+    return this.integrationsService.getDemoStatus(user);
+  }
+
+  @Post("demo/connect")
+  @RequirePermissions("integrations.demo.configure")
+  connectDemo(@CurrentUser() user: AuthUser) {
+    return this.integrationsService.connectDemo(user);
+  }
+
+  @Delete("demo")
+  @RequirePermissions("integrations.demo.configure")
+  disconnectDemo(@CurrentUser() user: AuthUser) {
+    return this.integrationsService.disconnectDemo(user);
+  }
+
+  @Post("demo/cases/:caseId/sync")
+  @RequirePermissions("integrations.demo.sync")
+  syncCaseToDemo(
+    @CurrentUser() user: AuthUser,
+    @Param("caseId") caseId: string,
+    @Body() body?: SyncCaseInvoiceOptions,
+    @Query("quoteId") quoteIdQuery?: string,
+  ) {
+    return this.integrationsService.syncCaseToDemo(user, caseId, {
+      ...body,
+      quoteId: (body?.quoteId || quoteIdQuery || "").trim() || undefined,
     });
   }
 
@@ -195,20 +212,32 @@ export class IntegrationsController {
   }
 
   @Get("cases/:caseId/invoice-sync")
-  @RequireAnyPermissions("integrations.pennylane.read", "integrations.qonto.read")
+  @RequireAnyPermissions(
+    "integrations.pennylane.read",
+    "integrations.qonto.read",
+    "integrations.demo.read",
+  )
   getCaseInvoiceSync(@CurrentUser() user: AuthUser, @Param("caseId") caseId: string) {
     return this.integrationsService.getCaseInvoiceSync(user, caseId);
   }
 
   /** Avant `:syncId` pour ne pas traiter `refresh` comme un identifiant. */
   @Post("cases/:caseId/invoice-sync/refresh")
-  @RequireAnyPermissions("integrations.pennylane.sync", "integrations.qonto.sync")
+  @RequireAnyPermissions(
+    "integrations.pennylane.sync",
+    "integrations.qonto.sync",
+    "integrations.demo.sync",
+  )
   refreshAllCaseInvoiceSyncs(@CurrentUser() user: AuthUser, @Param("caseId") caseId: string) {
     return this.integrationsService.refreshAllCaseInvoiceSyncs(user, caseId);
   }
 
   @Post("cases/:caseId/invoice-sync/:syncId/finalize")
-  @RequireAnyPermissions("integrations.pennylane.sync", "integrations.qonto.sync")
+  @RequireAnyPermissions(
+    "integrations.pennylane.sync",
+    "integrations.qonto.sync",
+    "integrations.demo.sync",
+  )
   finalizeCaseInvoice(
     @CurrentUser() user: AuthUser,
     @Param("caseId") caseId: string,
@@ -218,7 +247,11 @@ export class IntegrationsController {
   }
 
   @Post("cases/:caseId/invoice-sync/:syncId/refresh")
-  @RequireAnyPermissions("integrations.pennylane.sync", "integrations.qonto.sync")
+  @RequireAnyPermissions(
+    "integrations.pennylane.sync",
+    "integrations.qonto.sync",
+    "integrations.demo.sync",
+  )
   refreshCaseInvoiceSync(
     @CurrentUser() user: AuthUser,
     @Param("caseId") caseId: string,
@@ -228,7 +261,11 @@ export class IntegrationsController {
   }
 
   @Delete("cases/:caseId/invoice-sync/:syncId")
-  @RequireAnyPermissions("integrations.pennylane.sync", "integrations.qonto.sync")
+  @RequireAnyPermissions(
+    "integrations.pennylane.sync",
+    "integrations.qonto.sync",
+    "integrations.demo.sync",
+  )
   deleteCaseInvoiceSync(
     @CurrentUser() user: AuthUser,
     @Param("caseId") caseId: string,

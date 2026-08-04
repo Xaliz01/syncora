@@ -35,8 +35,8 @@ export function BillingIntegrationConnectBanner({ variant = "connect", onRetry }
           Connectez votre outil de facturation
         </p>
         <p className="text-sm text-slate-600 dark:text-slate-300 max-w-xl">
-          Reliez votre outil de facturation pour synchroniser et suivre vos factures ici. Sans
-          connexion, le suivi et les exports ne sont pas disponibles.
+          Reliez votre outil de facturation pour créer et actualiser des factures depuis Planwise.
+          Les factures déjà synchronisées restent visibles ci-dessous.
         </p>
       </div>
       <Link

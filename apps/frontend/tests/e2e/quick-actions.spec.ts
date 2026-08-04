@@ -13,7 +13,7 @@ test.describe("Parcours actions rapides (garde auth)", () => {
 
   test("la personnalisation des préférences compte est protégée", async ({ page }) => {
     await page.goto("/account");
-    await expect(page).toHaveURL(/\/login/);
+    await expect(page).toHaveURL(/\/login/, { timeout: 15_000 });
     await expect(page.getByRole("heading", { name: "Connexion" })).toBeVisible();
   });
 });

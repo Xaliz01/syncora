@@ -6,6 +6,7 @@ import type {
   CompleteQontoOAuthBody,
   ConnectPennylaneBody,
   ConnectQontoBody,
+  SyncCaseToDemoBody,
   SyncCaseToPennylaneBody,
   SyncCaseToQontoBody,
 } from "@planwise/shared";
@@ -110,6 +111,42 @@ export class IntegrationsController {
   ) {
     const organizationId = parseOrganizationIdBody(body.organizationId);
     return this.integrationsService.syncCaseToQonto({
+      ...body,
+      organizationId,
+      caseId,
+    });
+  }
+
+  // ── Demo ──
+
+  @Get("integrations/demo")
+  getDemoStatus(@Query("organizationId") organizationId: string) {
+    return this.integrationsService.getDemoStatus(parseOrganizationIdQuery(organizationId));
+  }
+
+  @Post("integrations/demo/connect")
+  connectDemo(@Body() body: { organizationId?: string }) {
+    return this.integrationsService.connectDemo(parseOrganizationIdBody(body.organizationId));
+  }
+
+  @Delete("integrations/demo")
+  disconnectDemo(@Query("organizationId") organizationId: string) {
+    return this.integrationsService.disconnectDemo(parseOrganizationIdQuery(organizationId));
+  }
+
+  @Post("integrations/demo/sync-case")
+  syncCaseToDemo(@Body() body: SyncCaseToDemoBody) {
+    const organizationId = parseOrganizationIdBody(body.organizationId);
+    return this.integrationsService.syncCaseToDemo({ ...body, organizationId });
+  }
+
+  @Post("integrations/demo/cases/:caseId/sync")
+  syncCaseToDemoByParam(
+    @Param("caseId") caseId: string,
+    @Body() body: Omit<SyncCaseToDemoBody, "caseId"> & { caseId?: string },
+  ) {
+    const organizationId = parseOrganizationIdBody(body.organizationId);
+    return this.integrationsService.syncCaseToDemo({
       ...body,
       organizationId,
       caseId,

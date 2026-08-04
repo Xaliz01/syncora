@@ -9,23 +9,30 @@ import { Model } from "mongoose";
 import {
   activeDocumentFilter,
   clampPagination,
+  TVA_RATES,
   type AddInterventionArticleUsageBody,
   type ArticleResponse,
   type ArticlesListResponse,
   type CreateArticleBody,
   type CreateArticleMovementBody,
+  type CreatePrestationBody,
   type CreateStockLocationBody,
   type CreateStockTransferBody,
   type InterventionArticleUsageResponse,
   type LocationStockEntry,
+  type PrestationResponse,
+  type PrestationsListResponse,
   type StockLocationResponse,
   type StockMovementResponse,
   type StockMovementType,
   type StockStatus,
+  type TvaRate,
   type UpdateArticleBody,
+  type UpdatePrestationBody,
   type UpdateStockLocationBody,
 } from "@planwise/shared";
 import type { ArticleDocument } from "../persistence/article.schema";
+import type { PrestationDocument } from "../persistence/prestation.schema";
 import type { StockMovementDocument } from "../persistence/stock-movement.schema";
 import type { StockLocationDocument } from "../persistence/stock-location.schema";
 import { AbstractStockService } from "./ports/stock.service.port";
@@ -35,6 +42,8 @@ export class StockService extends AbstractStockService {
   constructor(
     @InjectModel("Article")
     private readonly articleModel: Model<ArticleDocument>,
+    @InjectModel("Prestation")
+    private readonly prestationModel: Model<PrestationDocument>,
     @InjectModel("StockMovement")
     private readonly stockMovementModel: Model<StockMovementDocument>,
     @InjectModel("StockLocation")
@@ -233,6 +242,129 @@ export class StockService extends AbstractStockService {
     return { deleted: true };
   }
 
+  async createPrestation(body: CreatePrestationBody): Promise<PrestationResponse> {
+    const name = body.name?.trim();
+    if (!name) throw new BadRequestException("Prestation name is required");
+    const reference = this.normalizeArticleReference(body.reference);
+    if (!reference) throw new BadRequestException("Prestation reference is required");
+    const defaultPrice = this.ensureNonNegativeNumber(body.defaultPrice ?? 0, "defaultPrice");
+    const defaultTvaRate = this.normalizeTvaRate(body.defaultTvaRate);
+
+    try {
+      const doc = await this.prestationModel.create({
+        organizationId: body.organizationId,
+        name,
+        reference,
+        description: body.description?.trim() || undefined,
+        unit: body.unit?.trim() || "unité",
+        defaultPrice,
+        defaultTvaRate,
+        isActive: body.isActive ?? true,
+        isTestData: body.isTestData === true,
+      });
+      return this.toPrestationResponse(doc);
+    } catch (err: unknown) {
+      if (this.isDuplicateKeyError(err)) {
+        throw new ConflictException("A prestation with this reference already exists");
+      }
+      throw err;
+    }
+  }
+
+  async listPrestations(
+    organizationId: string,
+    filters?: {
+      search?: string;
+      activeOnly?: boolean;
+      limit?: number;
+      offset?: number;
+    },
+  ): Promise<PrestationsListResponse> {
+    const query: Record<string, unknown> = { organizationId, ...activeDocumentFilter };
+    const activeOnly = filters?.activeOnly ?? true;
+    if (activeOnly) query.isActive = true;
+    if (filters?.search) {
+      query.$or = [
+        { name: { $regex: filters.search, $options: "i" } },
+        { reference: { $regex: filters.search, $options: "i" } },
+      ];
+    }
+    const { limit, offset } = clampPagination({
+      limit: filters?.limit,
+      offset: filters?.offset,
+    });
+    const [total, docs] = await Promise.all([
+      this.prestationModel.countDocuments(query).exec(),
+      this.prestationModel.find(query).sort({ name: 1 }).skip(offset).limit(limit).exec(),
+    ]);
+    return { prestations: docs.map((doc) => this.toPrestationResponse(doc)), total };
+  }
+
+  async getPrestation(id: string, organizationId: string): Promise<PrestationResponse> {
+    const doc = await this.prestationModel
+      .findOne({ _id: id, organizationId, ...activeDocumentFilter })
+      .exec();
+    if (!doc) throw new NotFoundException("Prestation not found");
+    return this.toPrestationResponse(doc);
+  }
+
+  async updatePrestation(id: string, body: UpdatePrestationBody): Promise<PrestationResponse> {
+    const doc = await this.prestationModel
+      .findOne({ _id: id, organizationId: body.organizationId, ...activeDocumentFilter })
+      .exec();
+    if (!doc) throw new NotFoundException("Prestation not found");
+
+    if (body.name !== undefined) {
+      const name = body.name.trim();
+      if (!name) throw new BadRequestException("Prestation name cannot be empty");
+      doc.name = name;
+    }
+    if (body.reference !== undefined) {
+      const reference = this.normalizeArticleReference(body.reference);
+      if (!reference) throw new BadRequestException("Prestation reference cannot be empty");
+      doc.reference = reference;
+    }
+    if (body.description !== undefined) {
+      doc.description = body.description?.trim() || undefined;
+    }
+    if (body.unit !== undefined) {
+      const unit = body.unit.trim();
+      if (!unit) throw new BadRequestException("Unit cannot be empty");
+      doc.unit = unit;
+    }
+    if (body.defaultPrice !== undefined) {
+      doc.defaultPrice = this.ensureNonNegativeNumber(body.defaultPrice, "defaultPrice");
+    }
+    if (body.defaultTvaRate !== undefined) {
+      doc.defaultTvaRate = this.normalizeTvaRate(body.defaultTvaRate);
+    }
+    if (body.isActive !== undefined) {
+      doc.isActive = body.isActive;
+    }
+
+    try {
+      await doc.save();
+      return this.toPrestationResponse(doc);
+    } catch (err: unknown) {
+      if (this.isDuplicateKeyError(err)) {
+        throw new ConflictException("A prestation with this reference already exists");
+      }
+      throw err;
+    }
+  }
+
+  async deletePrestation(id: string, organizationId: string): Promise<{ deleted: true }> {
+    const doc = await this.prestationModel
+      .findOneAndUpdate(
+        { _id: id, organizationId, ...activeDocumentFilter },
+        { $set: { isActive: false, deletedAt: new Date() } },
+        { new: true },
+      )
+      .exec();
+    if (!doc) throw new NotFoundException("Prestation not found");
+    return { deleted: true };
+  }
+
   async purgeTestData(organizationId: string): Promise<{ purged: true }> {
     const testArticles = await this.articleModel
       .find({ organizationId, isTestData: true })
@@ -243,6 +375,7 @@ export class StockService extends AbstractStockService {
       await this.stockMovementModel.deleteMany({ organizationId, articleId: { $in: articleIds } });
     }
     await this.articleModel.deleteMany({ organizationId, isTestData: true }).exec();
+    await this.prestationModel.deleteMany({ organizationId, isTestData: true }).exec();
     await this.stockLocationModel.deleteMany({ organizationId, isTestData: true }).exec();
     return { purged: true };
   }
@@ -456,6 +589,29 @@ export class StockService extends AbstractStockService {
 
   private normalizeArticleReference(value: string): string {
     return value.trim().toUpperCase();
+  }
+
+  private normalizeTvaRate(value: unknown): TvaRate {
+    const n = typeof value === "number" ? value : Number(value);
+    if ((TVA_RATES as readonly number[]).includes(n)) return n as TvaRate;
+    return 20;
+  }
+
+  private toPrestationResponse(doc: PrestationDocument): PrestationResponse {
+    return {
+      id: doc._id.toString(),
+      organizationId: doc.organizationId,
+      name: doc.name,
+      reference: doc.reference,
+      description: doc.description,
+      unit: doc.unit,
+      defaultPrice: doc.defaultPrice,
+      defaultTvaRate: this.normalizeTvaRate(doc.defaultTvaRate),
+      isActive: doc.isActive,
+      createdAt: doc.get("createdAt")?.toISOString(),
+      updatedAt: doc.get("updatedAt")?.toISOString(),
+      isTestData: doc.isTestData === true,
+    };
   }
 
   private ensureNonNegativeNumber(value: number, field: string): number {

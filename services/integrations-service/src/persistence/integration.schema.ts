@@ -16,9 +16,9 @@ export class IntegrationCredentialDocument extends Document {
   @Prop()
   tokenHint?: string;
 
-  /** oauth | api_token — défaut historique = api_token. */
+  /** oauth | api_token | demo — défaut historique = api_token. */
   @Prop({ default: "api_token" })
-  authMethod?: "oauth" | "api_token";
+  authMethod?: "oauth" | "api_token" | "demo";
 
   /** Refresh token OAuth chiffré (rotation RTR Pennylane). */
   @Prop()

@@ -4,7 +4,6 @@ import React from "react";
 import Link from "next/link";
 import { useAuth } from "@/components/auth/AuthContext";
 import { hasPermission } from "@/lib/auth-permissions";
-import { useBillingIntegrationAvailability } from "@/lib/hooks/useBillingIntegrationAvailability";
 
 function ReportCard({
   title,
@@ -44,8 +43,6 @@ export function ReportingPage() {
   const canExportInterventions = hasPermission(user, "exports.interventions");
   const canExportReporting = hasPermission(user, "exports.reporting");
   const canExportBilling = hasPermission(user, "exports.billing");
-  const { data: billingAvailability } = useBillingIntegrationAvailability();
-  const billingConnected = billingAvailability?.connected === true;
   const canExportCustomers = hasPermission(user, "exports.customers");
   const canExportUsers = hasPermission(user, "exports.users");
 
@@ -116,7 +113,7 @@ export function ReportingPage() {
           />
         )}
 
-        {canExportBilling && billingConnected && (
+        {canExportBilling && (
           <ReportCard
             title="Liste des factures"
             description="Factures synchronisées avec dossier, client et statut."

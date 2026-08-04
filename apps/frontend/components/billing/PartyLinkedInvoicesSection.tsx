@@ -16,6 +16,7 @@ import { ListPagination, LIST_PAGE_SIZE } from "@/components/ui/list-page";
 const PROVIDER_LABELS: Record<string, string> = {
   pennylane: "Pennylane",
   qonto: "Qonto",
+  demo: "Démo",
 };
 
 function formatDate(iso?: string): string {

@@ -25,9 +25,11 @@ import type {
   AddInterventionArticleUsageForOrgBody,
   CreateArticleForOrgBody,
   CreateArticleMovementForOrgBody,
+  CreatePrestationForOrgBody,
   CreateStockLocationForOrgBody,
   CreateStockTransferForOrgBody,
   UpdateArticleForOrgBody,
+  UpdatePrestationForOrgBody,
   UpdateStockLocationForOrgBody,
 } from "../../domain/ports/stock.service.port";
 
@@ -88,6 +90,56 @@ export class StockController {
   @NotifyEntity({ type: "article", idParam: "articleId" })
   async deleteArticle(@CurrentUser() user: AuthUser, @Param("articleId") articleId: string) {
     return this.stockService.deleteArticle(user, articleId);
+  }
+
+  // ── Prestations ──
+
+  @Post("prestations")
+  @RequirePermissions("prestations.create")
+  async createPrestation(@CurrentUser() user: AuthUser, @Body() body: CreatePrestationForOrgBody) {
+    return this.stockService.createPrestation(user, body);
+  }
+
+  @Get("prestations")
+  @RequirePermissions("prestations.read")
+  async listPrestations(
+    @CurrentUser() user: AuthUser,
+    @Query("search") search?: string,
+    @Query("activeOnly") activeOnly?: string,
+    @Query("limit") limit?: string,
+    @Query("offset") offset?: string,
+  ) {
+    const pagination = parsePaginationQueryParams(limit, offset);
+    return this.stockService.listPrestations(user, {
+      search,
+      activeOnly: activeOnly === undefined ? true : activeOnly === "true",
+      ...pagination,
+    });
+  }
+
+  @Get("prestations/:prestationId")
+  @RequirePermissions("prestations.read")
+  async getPrestation(@CurrentUser() user: AuthUser, @Param("prestationId") prestationId: string) {
+    return this.stockService.getPrestation(user, prestationId);
+  }
+
+  @Patch("prestations/:prestationId")
+  @RequirePermissions("prestations.update")
+  async updatePrestation(
+    @CurrentUser() user: AuthUser,
+    @Param("prestationId") prestationId: string,
+    @Body() body: UpdatePrestationForOrgBody,
+  ) {
+    return this.stockService.updatePrestation(user, prestationId, body);
+  }
+
+  @Delete("prestations/:prestationId")
+  @RequirePermissions("prestations.delete")
+  async deletePrestation(
+    @CurrentUser() user: AuthUser,
+    @Param("prestationId") prestationId: string,
+  ) {
+    return this.stockService.deletePrestation(user, prestationId);
   }
 
   // ── Movements ──

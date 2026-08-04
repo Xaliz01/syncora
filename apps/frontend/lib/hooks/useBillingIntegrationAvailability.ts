@@ -14,6 +14,7 @@ export function useBillingIntegrationAvailability() {
     "exports.reporting",
     "integrations.pennylane.read",
     "integrations.qonto.read",
+    "integrations.demo.read",
   ]);
 
   return useQuery<BillingIntegrationAvailability>({

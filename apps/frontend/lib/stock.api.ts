@@ -2,9 +2,12 @@ import type {
   ArticleResponse,
   ArticlesListResponse,
   InterventionArticleUsageResponse,
+  PrestationResponse,
+  PrestationsListResponse,
   StockLocationResponse,
   StockLocationType,
   StockMovementResponse,
+  TvaRate,
 } from "@planwise/shared";
 import { apiRequestJson, type ApiMethod } from "./api-client";
 
@@ -123,6 +126,61 @@ export function updateArticle(articleId: string, payload: UpdateArticlePayload) 
 
 export function deleteArticle(articleId: string) {
   return stockRequest<{ deleted: true }>("DELETE", `/stock/articles/${articleId}`);
+}
+
+// ── Prestations ──
+
+export interface CreatePrestationPayload {
+  name: string;
+  reference: string;
+  description?: string;
+  unit?: string;
+  defaultPrice: number;
+  defaultTvaRate?: TvaRate;
+  isActive?: boolean;
+}
+
+export interface UpdatePrestationPayload {
+  name?: string;
+  reference?: string;
+  description?: string;
+  unit?: string;
+  defaultPrice?: number;
+  defaultTvaRate?: TvaRate;
+  isActive?: boolean;
+}
+
+export function listPrestations(filters?: {
+  search?: string;
+  activeOnly?: boolean;
+  limit?: number;
+  offset?: number;
+}) {
+  const params = new URLSearchParams();
+  if (filters?.search) params.set("search", filters.search);
+  if (typeof filters?.activeOnly === "boolean") {
+    params.set("activeOnly", String(filters.activeOnly));
+  }
+  if (filters?.limit != null) params.set("limit", String(filters.limit));
+  if (filters?.offset != null) params.set("offset", String(filters.offset));
+  const qs = params.toString();
+  return stockRequest<PrestationsListResponse>("GET", `/stock/prestations${qs ? `?${qs}` : ""}`);
+}
+
+export function getPrestation(prestationId: string) {
+  return stockRequest<PrestationResponse>("GET", `/stock/prestations/${prestationId}`);
+}
+
+export function createPrestation(payload: CreatePrestationPayload) {
+  return stockRequest<PrestationResponse>("POST", "/stock/prestations", payload);
+}
+
+export function updatePrestation(prestationId: string, payload: UpdatePrestationPayload) {
+  return stockRequest<PrestationResponse>("PATCH", `/stock/prestations/${prestationId}`, payload);
+}
+
+export function deletePrestation(prestationId: string) {
+  return stockRequest<{ deleted: true }>("DELETE", `/stock/prestations/${prestationId}`);
 }
 
 // ── Movements ──

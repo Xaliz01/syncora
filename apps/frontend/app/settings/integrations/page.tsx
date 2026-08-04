@@ -9,7 +9,13 @@ export default function IntegrationsRoutePage() {
   return (
     <RequireAuth>
       <AppShell>
-        <RequirePermission anyOf={["integrations.pennylane.read", "integrations.qonto.read"]}>
+        <RequirePermission
+          anyOf={[
+            "integrations.pennylane.read",
+            "integrations.qonto.read",
+            "integrations.demo.read",
+          ]}
+        >
           <IntegrationsPage />
         </RequirePermission>
       </AppShell>

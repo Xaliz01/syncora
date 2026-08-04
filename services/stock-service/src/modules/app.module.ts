@@ -10,6 +10,7 @@ import { TestDataController } from "../presentation/http/test-data.controller";
 import { AbstractStockService } from "../domain/ports/stock.service.port";
 import { StockService } from "../domain/stock.service";
 import { ArticleSchema } from "../persistence/article.schema";
+import { PrestationSchema } from "../persistence/prestation.schema";
 import { StockMovementSchema } from "../persistence/stock-movement.schema";
 import { StockLocationSchema } from "../persistence/stock-location.schema";
 
@@ -18,6 +19,7 @@ import { StockLocationSchema } from "../persistence/stock-location.schema";
     MongooseModule.forRoot(process.env.MONGODB_URI ?? "mongodb://localhost:27017/planwise-stock"),
     MongooseModule.forFeature([
       { name: "Article", schema: ArticleSchema },
+      { name: "Prestation", schema: PrestationSchema },
       { name: "StockMovement", schema: StockMovementSchema },
       { name: "StockLocation", schema: StockLocationSchema },
     ]),

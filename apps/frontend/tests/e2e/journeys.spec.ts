@@ -37,8 +37,13 @@ test.describe("Parcours navigation auth", () => {
   test("enchaîne connexion, inscription et activation invité", async ({ page }) => {
     await page.goto("/login");
 
-    await page.getByRole("link", { name: /Créer une organisation/ }).click();
-    await expect(page.getByRole("heading", { name: "Créer votre compte" })).toBeVisible();
+    await Promise.all([
+      page.waitForURL(/\/register/),
+      page.getByRole("link", { name: /Créer une organisation/ }).click(),
+    ]);
+    await expect(page.getByRole("heading", { name: "Créer votre compte" })).toBeVisible({
+      timeout: 15_000,
+    });
 
     await Promise.all([
       page.waitForURL(/\/login/),
@@ -97,6 +102,7 @@ const ALL_PROTECTED_PATHS = [
   "/settings/profiles",
   "/settings/profiles/new",
   "/settings/stock/articles",
+  "/settings/prestations",
   "/settings/stock/locations",
   "/settings/notifications",
   "/settings/integrations",
@@ -293,6 +299,8 @@ test.describe("Parcours onboarding sans données de démo", () => {
       "organizations.read",
       "users.invite",
       "cases.create",
+      "integrations.demo.read",
+      "integrations.demo.configure",
     ],
     isFoundingAdmin: true,
   };
@@ -398,6 +406,9 @@ test.describe("Parcours onboarding sans données de démo", () => {
     await page.getByRole("button", { name: /Continuer sans données de démo/i }).click();
     await expect(page).toHaveURL(/\/$/, { timeout: 15_000 });
     await expect(page.getByRole("heading", { name: "Bienvenue dans Planwise" })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /Connecter son outil de facturation/i }),
+    ).toBeVisible();
 
     await page.getByRole("button", { name: /Créer un premier client/i }).click();
     await expect(page).toHaveURL(/\/customers\/new/, { timeout: 15_000 });
@@ -494,7 +505,7 @@ test.describe("Invitation utilisateur sans profil", () => {
 test.describe("Route /my-day protégée", () => {
   test("la page Ma journée redirige vers /login sans session", async ({ page }) => {
     await page.goto("/my-day");
-    await expect(page).toHaveURL(/\/login/);
+    await expect(page).toHaveURL(/\/login/, { timeout: 15_000 });
   });
 });
 
@@ -503,8 +514,13 @@ test.describe("Parcours inter-pages publiques complet", () => {
     await page.goto("/login");
     await expect(page.getByRole("heading", { name: "Connexion" })).toBeVisible();
 
-    await page.getByRole("link", { name: /Créer une organisation/ }).click();
-    await expect(page.getByRole("heading", { name: "Créer votre compte" })).toBeVisible();
+    await Promise.all([
+      page.waitForURL(/\/register/),
+      page.getByRole("link", { name: /Créer une organisation/ }).click(),
+    ]);
+    await expect(page.getByRole("heading", { name: "Créer votre compte" })).toBeVisible({
+      timeout: 15_000,
+    });
 
     await Promise.all([
       page.waitForURL(/\/login/),

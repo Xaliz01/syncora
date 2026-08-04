@@ -6,12 +6,16 @@ import type {
   AuthUser,
   CreateArticleBody,
   CreateArticleMovementBody,
+  CreatePrestationBody,
   CreateStockLocationBody,
   CreateStockTransferBody,
   InterventionArticleUsageResponse,
+  PrestationResponse,
+  PrestationsListResponse,
   StockLocationResponse,
   StockMovementResponse,
   UpdateArticleBody,
+  UpdatePrestationBody,
   UpdateStockLocationBody,
 } from "@planwise/shared";
 import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
@@ -20,9 +24,11 @@ import {
   type AddInterventionArticleUsageForOrgBody,
   type CreateArticleForOrgBody,
   type CreateArticleMovementForOrgBody,
+  type CreatePrestationForOrgBody,
   type CreateStockLocationForOrgBody,
   type CreateStockTransferForOrgBody,
   type UpdateArticleForOrgBody,
+  type UpdatePrestationForOrgBody,
   type UpdateStockLocationForOrgBody,
 } from "./ports/stock.service.port";
 
@@ -94,6 +100,53 @@ export class StockGatewayService extends AbstractStockGatewayService {
     return this.request<{ deleted: true }>(user, {
       method: "delete",
       path: `/articles/${articleId}`,
+      validateResponseScope: false,
+    });
+  }
+
+  async createPrestation(user: AuthUser, body: CreatePrestationForOrgBody) {
+    return this.request<PrestationResponse>(user, {
+      method: "post",
+      path: "/prestations",
+      body: { ...body } as CreatePrestationBody,
+    });
+  }
+
+  async listPrestations(
+    user: AuthUser,
+    filters?: {
+      search?: string;
+      activeOnly?: boolean;
+      limit?: number;
+      offset?: number;
+    },
+  ) {
+    return this.request<PrestationsListResponse>(user, {
+      method: "get",
+      path: "/prestations",
+      query: filters,
+    });
+  }
+
+  async getPrestation(user: AuthUser, prestationId: string) {
+    return this.request<PrestationResponse>(user, {
+      method: "get",
+      path: `/prestations/${prestationId}`,
+    });
+  }
+
+  async updatePrestation(user: AuthUser, prestationId: string, body: UpdatePrestationForOrgBody) {
+    return this.request<PrestationResponse>(user, {
+      method: "patch",
+      path: `/prestations/${prestationId}`,
+      body: { ...body } as UpdatePrestationBody,
+    });
+  }
+
+  async deletePrestation(user: AuthUser, prestationId: string) {
+    return this.request<{ deleted: true }>(user, {
+      method: "delete",
+      path: `/prestations/${prestationId}`,
       validateResponseScope: false,
     });
   }

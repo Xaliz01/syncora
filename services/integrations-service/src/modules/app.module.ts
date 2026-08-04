@@ -10,6 +10,13 @@ import {
 import { IntegrationsController } from "../presentation/http/integrations.controller";
 import { AbstractIntegrationsService } from "../domain/ports/integrations.service.port";
 import { IntegrationsService } from "../domain/integrations.service";
+import {
+  BILLING_PROVIDER_ADAPTERS,
+  type BillingProviderAdapter,
+} from "../domain/providers/billing-provider.adapter";
+import { DemoBillingAdapter } from "../domain/providers/demo.billing.adapter";
+import { PennylaneBillingAdapter } from "../domain/providers/pennylane.billing.adapter";
+import { QontoBillingAdapter } from "../domain/providers/qonto.billing.adapter";
 import { InvoiceSyncScheduler } from "../domain/invoice-sync.scheduler";
 import {
   IntegrationCredentialSchema,
@@ -35,6 +42,23 @@ import { CronRunRecorder } from "../domain/cron-run.recorder";
   providers: [
     provideHealthServiceName("planwise-integrations-service"),
     provideHttpAccessLogInterceptor(),
+    PennylaneBillingAdapter,
+    QontoBillingAdapter,
+    DemoBillingAdapter,
+    {
+      provide: BILLING_PROVIDER_ADAPTERS,
+      useFactory: (
+        pennylane: PennylaneBillingAdapter,
+        qonto: QontoBillingAdapter,
+        demo: DemoBillingAdapter,
+      ) =>
+        new Map<string, BillingProviderAdapter>([
+          [pennylane.provider, pennylane],
+          [qonto.provider, qonto],
+          [demo.provider, demo],
+        ]),
+      inject: [PennylaneBillingAdapter, QontoBillingAdapter, DemoBillingAdapter],
+    },
     { provide: AbstractIntegrationsService, useClass: IntegrationsService },
     CronRunRecorder,
     InvoiceSyncScheduler,

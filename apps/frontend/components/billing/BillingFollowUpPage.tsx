@@ -5,17 +5,22 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import {
   CASE_INVOICE_KIND_LABELS,
+  MAX_PAGE_LIMIT,
   REMOTE_INVOICE_STATUS_LABELS,
   type CaseInvoiceKind,
   type RemoteInvoiceLifecycle,
 } from "@planwise/shared";
 import * as integrationsApi from "@/lib/integrations.api";
 import * as exportsApi from "@/lib/exports.api";
+import * as customersApi from "@/lib/customers.api";
+import * as orderGiversApi from "@/lib/order-givers.api";
 import { useToast } from "@/components/ui/ToastProvider";
 import { ExportButton } from "@/components/ui/ExportButton";
+import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { BillingIntegrationConnectBanner } from "@/components/billing/BillingIntegrationConnectBanner";
 import { useBillingIntegrationAvailability } from "@/lib/hooks/useBillingIntegrationAvailability";
+import { usePermissions } from "@/lib/hooks/usePermissions";
 import {
   ListCellDefault,
   ListCellMuted,
@@ -37,6 +42,7 @@ const GRID = "md:grid-cols-[0.9fr_0.9fr_1.2fr_1fr_0.8fr_0.7fr_0.8fr_0.7fr_0.5fr]
 const PROVIDER_LABELS: Record<string, string> = {
   pennylane: "Pennylane",
   qonto: "Qonto",
+  demo: "Démo",
 };
 
 function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
@@ -73,11 +79,14 @@ function formatAmount(amount?: string): string {
 
 export function BillingFollowUpPage() {
   const { showToast } = useToast();
+  const { can } = usePermissions();
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [remoteStatus, setRemoteStatus] = useState("");
   const [provider, setProvider] = useState("");
   const [invoiceKind, setInvoiceKind] = useState("");
+  const [customerId, setCustomerId] = useState("");
+  const [orderGiverId, setOrderGiverId] = useState("");
   const [offset, setOffset] = useState(0);
 
   const {
@@ -88,7 +97,8 @@ export function BillingFollowUpPage() {
   } = useBillingIntegrationAvailability();
 
   const billingConnected = billingAvailability?.connected === true;
-  const showBillingContent = billingConnected && !availabilityLoading && !availabilityError;
+  /** Les syncs locales restent consultables même sans outil connecté (ou si le check échoue). */
+  const showBillingContent = !availabilityLoading;
 
   const periodFilters = {
     startDate: startDate || undefined,
@@ -100,11 +110,27 @@ export function BillingFollowUpPage() {
     ...periodFilters,
     remoteStatus: remoteStatus || undefined,
     invoiceKind: invoiceKind || undefined,
+    customerId: customerId || undefined,
+    orderGiverId: orderGiverId || undefined,
   };
 
   useEffect(() => {
     setOffset(0);
-  }, [startDate, endDate, remoteStatus, provider, invoiceKind]);
+  }, [startDate, endDate, remoteStatus, provider, invoiceKind, customerId, orderGiverId]);
+
+  const { data: customersData } = useQuery({
+    queryKey: ["customers", "billing-filter"],
+    queryFn: () => customersApi.listCustomers({ limit: MAX_PAGE_LIMIT }),
+    enabled: showBillingContent && can("customers.read"),
+  });
+  const customers = customersData?.customers ?? [];
+
+  const { data: orderGiversData } = useQuery({
+    queryKey: ["order-givers", "billing-filter"],
+    queryFn: () => orderGiversApi.listOrderGivers({ limit: MAX_PAGE_LIMIT }),
+    enabled: showBillingContent && can("order_givers.read"),
+  });
+  const orderGivers = orderGiversData?.orderGivers ?? [];
 
   const {
     data: stats,
@@ -132,7 +158,9 @@ export function BillingFollowUpPage() {
 
   const rows = data?.invoices ?? [];
   const total = data?.total ?? 0;
-  const hasActiveFilters = Boolean(startDate || endDate || remoteStatus || provider || invoiceKind);
+  const hasActiveFilters = Boolean(
+    startDate || endDate || remoteStatus || provider || invoiceKind || customerId || orderGiverId,
+  );
 
   const runExport = async (format: "pdf" | "xlsx" | "csv") => {
     try {
@@ -152,7 +180,7 @@ export function BillingFollowUpPage() {
     <ListPageRoot>
       <ListPageHeader
         title="Facturation"
-        description="Suivi des factures synchronisées depuis votre outil de facturation connecté."
+        description="Suivi des factures synchronisées avec votre outil de facturation (historique conservé même après déconnexion)."
         action={
           showBillingContent ? (
             <PermissionGate permission="exports.billing">
@@ -283,6 +311,37 @@ export function BillingFollowUpPage() {
                   </option>
                 ))}
               </select>
+              {customers.length > 0 ? (
+                <SearchableSelect
+                  value={customerId}
+                  onChange={(next) => {
+                    setCustomerId(next);
+                    if (next) setOrderGiverId("");
+                  }}
+                  options={customers.map((c) => ({ value: c.id, label: c.displayName }))}
+                  emptyLabel="Tous les clients"
+                  placeholder="Rechercher un client…"
+                  aria-label="Client"
+                />
+              ) : null}
+              {orderGivers.length > 0 ? (
+                <select
+                  value={orderGiverId}
+                  onChange={(e) => {
+                    setOrderGiverId(e.target.value);
+                    if (e.target.value) setCustomerId("");
+                  }}
+                  className={selectClassName}
+                  aria-label="Donneur d'ordre"
+                >
+                  <option value="">Tous les donneurs d&apos;ordre</option>
+                  {orderGivers.map((og) => (
+                    <option key={og.id} value={og.id}>
+                      {og.displayName}
+                    </option>
+                  ))}
+                </select>
+              ) : null}
             </div>
           </ListToolbar>
 

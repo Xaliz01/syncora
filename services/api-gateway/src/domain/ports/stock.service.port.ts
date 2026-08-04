@@ -3,9 +3,12 @@ import type {
   ArticlesListResponse,
   AuthUser,
   InterventionArticleUsageResponse,
+  PrestationResponse,
+  PrestationsListResponse,
   StockLocationResponse,
   StockLocationType,
   StockMovementResponse,
+  TvaRate,
 } from "@planwise/shared";
 
 export interface CreateArticleForOrgBody {
@@ -29,6 +32,26 @@ export interface UpdateArticleForOrgBody {
   defaultPrice?: number | null;
   reorderPoint?: number;
   targetStock?: number;
+  isActive?: boolean;
+}
+
+export interface CreatePrestationForOrgBody {
+  name: string;
+  reference: string;
+  description?: string;
+  unit?: string;
+  defaultPrice: number;
+  defaultTvaRate?: TvaRate;
+  isActive?: boolean;
+}
+
+export interface UpdatePrestationForOrgBody {
+  name?: string;
+  reference?: string;
+  description?: string;
+  unit?: string;
+  defaultPrice?: number;
+  defaultTvaRate?: TvaRate;
   isActive?: boolean;
 }
 
@@ -92,6 +115,28 @@ export abstract class AbstractStockGatewayService {
     body: UpdateArticleForOrgBody,
   ): Promise<ArticleResponse>;
   abstract deleteArticle(user: AuthUser, articleId: string): Promise<{ deleted: true }>;
+
+  abstract createPrestation(
+    user: AuthUser,
+    body: CreatePrestationForOrgBody,
+  ): Promise<PrestationResponse>;
+  abstract listPrestations(
+    user: AuthUser,
+    filters?: {
+      search?: string;
+      activeOnly?: boolean;
+      limit?: number;
+      offset?: number;
+    },
+  ): Promise<PrestationsListResponse>;
+  abstract getPrestation(user: AuthUser, prestationId: string): Promise<PrestationResponse>;
+  abstract updatePrestation(
+    user: AuthUser,
+    prestationId: string,
+    body: UpdatePrestationForOrgBody,
+  ): Promise<PrestationResponse>;
+  abstract deletePrestation(user: AuthUser, prestationId: string): Promise<{ deleted: true }>;
+
   abstract createArticleMovement(
     user: AuthUser,
     body: CreateArticleMovementForOrgBody,

@@ -27,6 +27,7 @@ export * from "./report-preview";
 export * from "./reporting-period";
 
 export * from "./quote";
+export * from "./prestation";
 export * from "./integrations";
 export * from "./support";
 export * from "./test-data";

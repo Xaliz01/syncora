@@ -36,6 +36,7 @@ describe("CasesService", () => {
     create: jest.Mock;
     find: jest.Mock;
     findOne: jest.Mock;
+    findOneAndUpdate: jest.Mock;
     updateOne: jest.Mock;
     updateMany: jest.Mock;
     countDocuments: jest.Mock;
@@ -43,6 +44,14 @@ describe("CasesService", () => {
   let mockCaseHistoryModel: {
     create: jest.Mock;
     find: jest.Mock;
+  };
+  let mockQuoteModel: {
+    create: jest.Mock;
+    find: jest.Mock;
+    findOne: jest.Mock;
+    findOneAndUpdate: jest.Mock;
+    updateOne: jest.Mock;
+    countDocuments: jest.Mock;
   };
 
   const mockTemplateDoc = (overrides: Record<string, unknown> = {}) => ({
@@ -143,6 +152,7 @@ describe("CasesService", () => {
       create: jest.fn(),
       find: jest.fn().mockReturnValue(findChain),
       findOne: jest.fn().mockReturnValue({ exec: execMock }),
+      findOneAndUpdate: jest.fn().mockReturnValue({ exec: execMock }),
       updateOne: jest.fn().mockImplementation(() => updateChain()),
       updateMany: jest.fn().mockImplementation(() => updateChain({ modifiedCount: 2 })),
       countDocuments: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(0) }),
@@ -157,7 +167,7 @@ describe("CasesService", () => {
       }),
     };
 
-    const mockQuoteModel = {
+    mockQuoteModel = {
       create: jest.fn(),
       find: jest.fn().mockReturnValue({
         sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue([]) }),
@@ -1120,6 +1130,107 @@ describe("CasesService", () => {
       await expect(service.getInterventionWithSignature("int-unknown", "org-1")).rejects.toThrow(
         NotFoundException,
       );
+    });
+  });
+
+  describe("updateIntervention", () => {
+    it("should reject assignment change on a completed intervention", async () => {
+      const doc = mockInterventionDoc({
+        status: "completed",
+        assignedTeamId: "team-1",
+      });
+      mockInterventionModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+
+      await expect(
+        service.updateIntervention("int-123", {
+          organizationId: "org-1",
+          assignedTeamId: "team-2",
+          assigneeId: null,
+        }),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(mockInterventionModel.findOneAndUpdate).not.toHaveBeenCalled();
+    });
+
+    it("should reject schedule change on a completed intervention", async () => {
+      const doc = mockInterventionDoc({
+        status: "completed",
+        scheduledStart: new Date("2026-06-01T09:00:00.000Z"),
+        scheduledEnd: new Date("2026-06-01T11:00:00.000Z"),
+      });
+      mockInterventionModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+
+      await expect(
+        service.updateIntervention("int-123", {
+          organizationId: "org-1",
+          scheduledStart: "2026-06-02T09:00:00.000Z",
+          scheduledEnd: "2026-06-02T11:00:00.000Z",
+        }),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(mockInterventionModel.findOneAndUpdate).not.toHaveBeenCalled();
+    });
+
+    it("should allow non-assignment updates on a completed intervention", async () => {
+      const existing = mockInterventionDoc({
+        status: "completed",
+        assignedTeamId: "team-1",
+      });
+      const updated = mockInterventionDoc({
+        status: "completed",
+        assignedTeamId: "team-1",
+        title: "Updated title",
+      });
+      mockInterventionModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(existing),
+      });
+      mockInterventionModel.findOneAndUpdate.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(updated),
+      });
+      mockCaseModel.findOne.mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          exec: jest.fn().mockResolvedValue({ title: "Case 1" }),
+        }),
+      });
+
+      const result = await service.updateIntervention("int-123", {
+        organizationId: "org-1",
+        title: "Updated title",
+      });
+
+      expect(result.title).toBe("Updated title");
+      expect(mockInterventionModel.findOneAndUpdate).toHaveBeenCalled();
+    });
+  });
+
+  describe("deleteQuote", () => {
+    it("should soft-delete a draft quote", async () => {
+      mockQuoteModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({
+          _id: { toString: () => "quote-1" },
+          status: "draft",
+        }),
+      });
+      mockQuoteModel.updateOne.mockReturnValue(updateChain());
+
+      await expect(service.deleteQuote("quote-1", "org-1")).resolves.toEqual({ deleted: true });
+      expect(mockQuoteModel.updateOne).toHaveBeenCalled();
+    });
+
+    it("should reject deleting a sent quote", async () => {
+      mockQuoteModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({
+          _id: { toString: () => "quote-1" },
+          status: "sent",
+        }),
+      });
+
+      await expect(service.deleteQuote("quote-1", "org-1")).rejects.toThrow(BadRequestException);
+      expect(mockQuoteModel.updateOne).not.toHaveBeenCalled();
     });
   });
 });

@@ -2,6 +2,7 @@ import type {
   BillingIntegrationAvailability,
   CaseInvoiceSyncListResponse,
   CaseInvoiceSyncStatus,
+  DemoConnectionStatus,
   OrganizationInvoiceSyncStatsResponse,
   OrganizationInvoiceSyncsListResponse,
   PennylaneConnectionStatus,
@@ -9,6 +10,7 @@ import type {
   QontoConnectionStatus,
   QontoOAuthStartResponse,
   SyncCaseInvoiceOptions,
+  SyncCaseToDemoResult,
   SyncCaseToPennylaneResult,
   SyncCaseToQontoResult,
 } from "@planwise/shared";
@@ -54,9 +56,9 @@ export function syncCaseToPennylane(
   caseId: string,
   options: SyncCaseInvoiceOptions,
 ): Promise<SyncCaseToPennylaneResult> {
-  const body: SyncCaseInvoiceOptions = {
-    quoteId: options.quoteId,
-  };
+  const body: SyncCaseInvoiceOptions = {};
+  if (options.quoteId?.trim()) body.quoteId = options.quoteId.trim();
+  if (options.lines?.length) body.lines = options.lines;
   if (options.invoiceKind) body.invoiceKind = options.invoiceKind;
   if (options.situationPercent != null) body.situationPercent = options.situationPercent;
   if (options.amountHt != null) body.amountHt = options.amountHt;
@@ -95,14 +97,41 @@ export function syncCaseToQonto(
   caseId: string,
   options: SyncCaseInvoiceOptions,
 ): Promise<SyncCaseToQontoResult> {
-  const body: SyncCaseInvoiceOptions = {
-    quoteId: options.quoteId,
-  };
+  const body: SyncCaseInvoiceOptions = {};
+  if (options.quoteId?.trim()) body.quoteId = options.quoteId.trim();
+  if (options.lines?.length) body.lines = options.lines;
   if (options.invoiceNumber?.trim()) body.invoiceNumber = options.invoiceNumber.trim();
   if (options.invoiceKind) body.invoiceKind = options.invoiceKind;
   if (options.situationPercent != null) body.situationPercent = options.situationPercent;
   if (options.amountHt != null) body.amountHt = options.amountHt;
   return apiRequestJson<SyncCaseToQontoResult>("POST", `/integrations/qonto/cases/${caseId}/sync`, {
+    body,
+  });
+}
+
+export function getDemoStatus(): Promise<DemoConnectionStatus> {
+  return apiRequestJson<DemoConnectionStatus>("GET", "/integrations/demo");
+}
+
+export function connectDemo(): Promise<DemoConnectionStatus> {
+  return apiRequestJson<DemoConnectionStatus>("POST", "/integrations/demo/connect");
+}
+
+export function disconnectDemo(): Promise<DemoConnectionStatus> {
+  return apiRequestJson<DemoConnectionStatus>("DELETE", "/integrations/demo");
+}
+
+export function syncCaseToDemo(
+  caseId: string,
+  options: SyncCaseInvoiceOptions,
+): Promise<SyncCaseToDemoResult> {
+  const body: SyncCaseInvoiceOptions = {};
+  if (options.quoteId?.trim()) body.quoteId = options.quoteId.trim();
+  if (options.lines?.length) body.lines = options.lines;
+  if (options.invoiceKind) body.invoiceKind = options.invoiceKind;
+  if (options.situationPercent != null) body.situationPercent = options.situationPercent;
+  if (options.amountHt != null) body.amountHt = options.amountHt;
+  return apiRequestJson<SyncCaseToDemoResult>("POST", `/integrations/demo/cases/${caseId}/sync`, {
     body,
   });
 }

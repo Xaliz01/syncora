@@ -5,6 +5,7 @@ import type {
   CompleteQontoOAuthBody,
   ConnectPennylaneBody,
   ConnectQontoBody,
+  DemoConnectionStatus,
   OrganizationInvoiceSyncStatsResponse,
   OrganizationInvoiceSyncsListResponse,
   PennylaneConnectionStatus,
@@ -12,6 +13,8 @@ import type {
   QontoConnectionStatus,
   QontoOAuthStartResponse,
   RefreshPendingInvoiceSyncsResult,
+  SyncCaseToDemoBody,
+  SyncCaseToDemoResult,
   SyncCaseToPennylaneBody,
   SyncCaseToPennylaneResult,
   SyncCaseToQontoBody,
@@ -44,6 +47,14 @@ export abstract class AbstractIntegrationsService {
   abstract disconnectQonto(organizationId: string): Promise<QontoConnectionStatus>;
 
   abstract syncCaseToQonto(body: SyncCaseToQontoBody): Promise<SyncCaseToQontoResult>;
+
+  abstract getDemoStatus(organizationId: string): Promise<DemoConnectionStatus>;
+
+  abstract connectDemo(organizationId: string): Promise<DemoConnectionStatus>;
+
+  abstract disconnectDemo(organizationId: string): Promise<DemoConnectionStatus>;
+
+  abstract syncCaseToDemo(body: SyncCaseToDemoBody): Promise<SyncCaseToDemoResult>;
 
   abstract getCaseInvoiceSync(
     organizationId: string,
@@ -108,7 +119,7 @@ export abstract class AbstractIntegrationsService {
       organizationId: string;
       provider: string;
       connected: boolean;
-      authMethod?: "oauth" | "api_token";
+      authMethod?: "oauth" | "api_token" | "demo";
       companyName?: string;
       companyId?: string;
       tokenHint?: string;

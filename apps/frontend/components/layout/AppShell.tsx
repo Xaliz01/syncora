@@ -257,12 +257,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               ? [{ label: "Ma journée", href: "/my-day" }]
               : []),
             ...(hasPermission(user, "cases.read") ? [{ label: "Dossiers", href: "/cases" }] : []),
-            ...(hasPermission(user, "customers.read")
-              ? [{ label: "Clients", href: "/customers" }]
-              : []),
-            ...(hasPermission(user, "order_givers.read")
-              ? [{ label: "Donneurs d'ordre", href: "/order-givers" }]
-              : []),
             ...(hasPermission(user, "contracts.read")
               ? [{ label: "Contrats", href: "/contracts" }]
               : []),
@@ -295,6 +289,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       ];
   if (subscriptionOk && user) {
     const fleetLinks: MenuLink[] = [];
+    if (hasPermission(user, "customers.read")) {
+      fleetLinks.push({ label: "Clients", href: "/customers" });
+    }
+    if (hasPermission(user, "order_givers.read")) {
+      fleetLinks.push({ label: "Donneurs d'ordre", href: "/order-givers" });
+    }
     if (hasPermission(user, "users.read")) {
       fleetLinks.push({ label: "Utilisateurs", href: "/users" });
     }
@@ -317,6 +317,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     const settingsLinks: MenuLink[] = [];
     if (hasPermission(user, "stock.articles.read")) {
       settingsLinks.push({ label: "Catalogue articles", href: "/settings/stock/articles" });
+    }
+    if (hasPermission(user, "prestations.read")) {
+      settingsLinks.push({ label: "Prestations", href: "/settings/prestations" });
     }
     if (hasPermission(user, "stock.locations.read")) {
       settingsLinks.push({ label: "Emplacements de stock", href: "/settings/stock/locations" });

@@ -79,6 +79,10 @@ export const ASSIGNABLE_PERMISSION_CODES = [
   "stock.articles.create",
   "stock.articles.update",
   "stock.articles.delete",
+  "prestations.read",
+  "prestations.create",
+  "prestations.update",
+  "prestations.delete",
   "stock.movements.read",
   "stock.movements.create",
   "stock.interventions.read",
@@ -102,6 +106,9 @@ export const ASSIGNABLE_PERMISSION_CODES = [
   "integrations.qonto.read",
   "integrations.qonto.configure",
   "integrations.qonto.sync",
+  "integrations.demo.read",
+  "integrations.demo.configure",
+  "integrations.demo.sync",
 ] as const;
 
 export type AssignablePermissionCode = (typeof ASSIGNABLE_PERMISSION_CODES)[number];

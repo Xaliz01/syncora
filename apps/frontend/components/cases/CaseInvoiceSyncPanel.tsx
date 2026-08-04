@@ -15,6 +15,7 @@ const REMOTE_STATUS_LABELS: Record<CaseInvoiceSyncStatus["remoteStatus"], string
 const PROVIDER_LABELS = {
   pennylane: "Pennylane",
   qonto: "Qonto",
+  demo: "Démo",
 } as const;
 
 export function CaseInvoiceSyncPanel({
@@ -27,6 +28,7 @@ export function CaseInvoiceSyncPanel({
   onRefreshOne,
   onRefreshAll,
   onDetach,
+  onDeleteDraft,
 }: {
   invoices: CaseInvoiceSyncStatus[];
   canSync: boolean;
@@ -37,6 +39,8 @@ export function CaseInvoiceSyncPanel({
   onRefreshOne: (syncId: string) => void;
   onRefreshAll: () => void;
   onDetach?: (syncId: string) => void;
+  /** Supprime le brouillon côté provider puis détache du dossier. */
+  onDeleteDraft?: (syncId: string) => void;
 }) {
   if (invoices.length === 0) return null;
 
@@ -63,6 +67,7 @@ export function CaseInvoiceSyncPanel({
         const remoteLabel = REMOTE_STATUS_LABELS[sync.remoteStatus];
         const kindLabel = CASE_INVOICE_KIND_LABELS[sync.invoiceKind];
         const showFinalize = canSync && sync.remoteStatus === "draft";
+        const showDeleteDraft = canSync && Boolean(onDeleteDraft) && sync.remoteStatus === "draft";
         const showDetach =
           canSync &&
           onDetach &&
@@ -127,6 +132,16 @@ export function CaseInvoiceSyncPanel({
                   className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50"
                 >
                   {finalizePendingId === sync.id ? "Validation…" : "Valider"}
+                </button>
+              ) : null}
+              {showDeleteDraft ? (
+                <button
+                  type="button"
+                  disabled={Boolean(detachPendingId) || refreshPending}
+                  onClick={() => onDeleteDraft?.(sync.id)}
+                  className="rounded-lg border border-red-200 dark:border-red-800 px-3 py-1.5 text-sm font-medium text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-50"
+                >
+                  {detachPendingId === sync.id ? "Suppression…" : "Supprimer le brouillon"}
                 </button>
               ) : null}
               {showDetach ? (

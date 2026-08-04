@@ -28,11 +28,15 @@ import {
 } from "@planwise/shared";
 import * as exportsApi from "@/lib/exports.api";
 import * as fleetApi from "@/lib/fleet.api";
+import * as customersApi from "@/lib/customers.api";
 import * as orderGiversApi from "@/lib/order-givers.api";
 import { EntityRef } from "@/components/ui/EntityRef";
+import { SearchableSelect } from "@/components/ui/SearchableSelect";
+import { BillingIntegrationConnectBanner } from "@/components/billing/BillingIntegrationConnectBanner";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useAuth } from "@/components/auth/AuthContext";
 import { hasPermission } from "@/lib/auth-permissions";
+import { useBillingIntegrationAvailability } from "@/lib/hooks/useBillingIntegrationAvailability";
 
 const REPORT_META: Record<
   ReportPreviewType,
@@ -102,6 +106,7 @@ const URL_FILTER_KEYS = [
   "remoteStatus",
   "provider",
   "invoiceKind",
+  "customerId",
   "orderGiverId",
   "groupBy",
 ] as const;
@@ -236,6 +241,7 @@ type FilterState = {
   remoteStatus: string;
   provider: string;
   invoiceKind: string;
+  customerId: string;
   orderGiverId: string;
   groupBy: "team" | "technician";
 };
@@ -258,6 +264,7 @@ function readInitialFilters(
     remoteStatus: searchParams.get("remoteStatus") ?? "",
     provider: searchParams.get("provider") ?? "",
     invoiceKind: searchParams.get("invoiceKind") ?? "",
+    customerId: searchParams.get("customerId") ?? "",
     orderGiverId: searchParams.get("orderGiverId") ?? "",
     groupBy: groupByRaw === "technician" ? "technician" : "team",
   };
@@ -302,6 +309,7 @@ function buildPreviewFilters(
       if (state.remoteStatus) q.remoteStatus = state.remoteStatus;
       if (state.provider) q.provider = state.provider;
       if (state.invoiceKind) q.invoiceKind = state.invoiceKind;
+      if (state.customerId) q.customerId = state.customerId;
       if (state.orderGiverId) q.orderGiverId = state.orderGiverId;
       break;
     default:
@@ -351,6 +359,13 @@ export function ReportResultPage() {
 
   const canAccess = meta ? hasPermission(user, meta.permission) : false;
 
+  const { data: billingAvailability, isLoading: billingAvailabilityLoading } =
+    useBillingIntegrationAvailability();
+  const showBillingConnectBanner =
+    validType === "invoices_list" &&
+    !billingAvailabilityLoading &&
+    billingAvailability?.connected !== true;
+
   const needsTeams =
     validType === "interventions_list" ||
     (validType === "mileage_report" && filtersState.groupBy === "team");
@@ -359,6 +374,7 @@ export function ReportResultPage() {
     validType === "technicians_activity" ||
     (validType === "mileage_report" && filtersState.groupBy === "technician");
   const needsOrderGivers = validType === "cases_list" || validType === "invoices_list";
+  const needsCustomers = validType === "invoices_list";
 
   const { data: teams = [] } = useQuery({
     queryKey: ["fleet-teams"],
@@ -380,6 +396,15 @@ export function ReportResultPage() {
     ),
   });
   const orderGivers = orderGiversData?.orderGivers ?? [];
+
+  const { data: customersData } = useQuery({
+    queryKey: ["customers", "report-filter"],
+    queryFn: () => customersApi.listCustomers({ limit: MAX_PAGE_LIMIT }),
+    enabled: Boolean(
+      validType && canAccess && needsCustomers && hasPermission(user, "customers.read"),
+    ),
+  });
+  const customers = customersData?.customers ?? [];
 
   useEffect(() => {
     if (!validType || !meta) return;
@@ -471,6 +496,7 @@ export function ReportResultPage() {
             remoteStatus: previewFilters.remoteStatus,
             provider: previewFilters.provider,
             invoiceKind: previewFilters.invoiceKind,
+            customerId: previewFilters.customerId,
             orderGiverId: previewFilters.orderGiverId,
           });
           break;
@@ -534,6 +560,8 @@ export function ReportResultPage() {
           onExport={(f) => void runExport(f)}
         />
       </div>
+
+      {showBillingConnectBanner ? <BillingIntegrationConnectBanner /> : null}
 
       {showFilterBar && (
         <div className="flex flex-wrap gap-2 items-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 shadow-sm">
@@ -782,10 +810,30 @@ export function ReportResultPage() {
                   </option>
                 ))}
               </select>
+              {customers.length > 0 ? (
+                <SearchableSelect
+                  value={filtersState.customerId}
+                  onChange={(next) =>
+                    patchFilters({
+                      customerId: next,
+                      orderGiverId: next ? "" : filtersState.orderGiverId,
+                    })
+                  }
+                  options={customers.map((c) => ({ value: c.id, label: c.displayName }))}
+                  emptyLabel="Tous les clients"
+                  placeholder="Rechercher un client…"
+                  aria-label="Client"
+                />
+              ) : null}
               {orderGivers.length > 0 ? (
                 <select
                   value={filtersState.orderGiverId}
-                  onChange={(e) => patchFilters({ orderGiverId: e.target.value })}
+                  onChange={(e) =>
+                    patchFilters({
+                      orderGiverId: e.target.value,
+                      customerId: e.target.value ? "" : filtersState.customerId,
+                    })
+                  }
                   className={FILTER_INPUT_CLASS}
                   aria-label="Donneur d'ordre"
                 >

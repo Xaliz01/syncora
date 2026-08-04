@@ -1,21 +1,22 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as quotesApi from "@/lib/quotes.api";
 import * as stockApi from "@/lib/stock.api";
 import { usePermissions } from "@/lib/hooks/usePermissions";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
-import type {
-  CaseInvoiceSyncStatus,
-  QuoteStatus,
-  TvaRate,
-  ArticleResponse,
-} from "@planwise/shared";
+import {
+  CommercialLinesEditor,
+  EMPTY_COMMERCIAL_LINE,
+  formatCommercialCurrency as formatCurrency,
+  type CatalogPickItem,
+  type CommercialLineDraft,
+} from "@/components/billing/CommercialLinesEditor";
+import type { CaseInvoiceSyncStatus, QuoteStatus, TvaRate } from "@planwise/shared";
 import {
   QUOTE_STATUS_LABELS,
-  TVA_RATES,
   MAX_PAGE_LIMIT,
   quoteInvoicedHt,
   remainingQuoteHt,
@@ -47,107 +48,7 @@ function useInlinePdfPreviewSupported(): boolean {
   return supported;
 }
 
-interface QuoteLine {
-  articleId?: string;
-  description: string;
-  quantity: number;
-  unitPrice: number;
-  tvaRate: TvaRate;
-  unit: string;
-}
-
-const EMPTY_LINE: QuoteLine = {
-  description: "",
-  quantity: 1,
-  unitPrice: 0,
-  tvaRate: 20,
-  unit: "unité",
-};
-
-function formatCurrency(value: number): string {
-  return value.toLocaleString("fr-FR", {
-    style: "currency",
-    currency: "EUR",
-  });
-}
-
-function ArticleAutocomplete({
-  value,
-  articles,
-  onSelect,
-  onChange,
-}: {
-  value: string;
-  articles: ArticleResponse[];
-  onSelect: (article: ArticleResponse) => void;
-  onChange: (value: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const wrapperRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const filtered = articles.filter(
-    (a) =>
-      a.name.toLowerCase().includes(search.toLowerCase()) ||
-      a.reference.toLowerCase().includes(search.toLowerCase()),
-  );
-
-  return (
-    <div ref={wrapperRef} className="relative">
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => {
-          onChange(e.target.value);
-          setSearch(e.target.value);
-          setOpen(true);
-        }}
-        onFocus={() => {
-          setSearch(value);
-          setOpen(true);
-        }}
-        placeholder="Prestation ou article du stock"
-        className="w-full rounded-md border border-slate-200 dark:border-slate-700 px-2 py-1.5 text-xs focus:border-brand-500 focus:outline-none"
-      />
-      {open && filtered.length > 0 && (
-        <div className="absolute z-50 top-full left-0 right-0 mt-1 max-h-40 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg">
-          {filtered.slice(0, 10).map((article) => (
-            <button
-              key={article.id}
-              type="button"
-              className="w-full text-left px-2 py-1.5 text-xs hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800 last:border-0"
-              onClick={() => {
-                onSelect(article);
-                setOpen(false);
-              }}
-            >
-              <span className="font-medium text-slate-700 dark:text-slate-200">{article.name}</span>
-              <span className="ml-2 text-slate-400">[{article.reference}]</span>
-              {article.defaultPrice !== undefined && (
-                <span className="ml-2 text-brand-600 dark:text-brand-400">
-                  {article.defaultPrice.toLocaleString("fr-FR", {
-                    minimumFractionDigits: 2,
-                  })}{" "}
-                  €
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
+type QuoteLine = CommercialLineDraft;
 
 function QuoteForm({
   caseId,
@@ -181,7 +82,7 @@ function QuoteForm({
   const [notes, setNotes] = useState(initialNotes ?? "");
   const [validUntil, setValidUntil] = useState(initialValidUntil?.split("T")[0] ?? "");
   const [lines, setLines] = useState<QuoteLine[]>(
-    initialLines?.length ? initialLines : [{ ...EMPTY_LINE }],
+    initialLines?.length ? initialLines : [{ ...EMPTY_COMMERCIAL_LINE }],
   );
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
@@ -198,22 +99,35 @@ function QuoteForm({
   });
   const articles = articlesData?.articles ?? [];
 
-  const updateLine = (idx: number, patch: Partial<QuoteLine>) => {
-    setLines((prev) => prev.map((l, i) => (i === idx ? { ...l, ...patch } : l)));
-  };
+  const { data: prestationsData } = useQuery({
+    queryKey: ["prestations-for-quotes"],
+    queryFn: () => stockApi.listPrestations({ activeOnly: true, limit: MAX_PAGE_LIMIT }),
+    enabled: can("prestations.read"),
+    staleTime: 60_000,
+  });
+  const prestations = prestationsData?.prestations ?? [];
 
-  const removeLine = (idx: number) => {
-    setLines((prev) => prev.filter((_, i) => i !== idx));
-  };
-
-  const selectArticle = (idx: number, article: ArticleResponse) => {
-    updateLine(idx, {
-      articleId: article.id,
-      description: article.name,
-      unitPrice: article.defaultPrice ?? 0,
-      unit: article.unit ?? "unité",
-    });
-  };
+  const catalogItems = useMemo((): CatalogPickItem[] => {
+    const fromArticles: CatalogPickItem[] = articles.map((a) => ({
+      id: a.id,
+      kind: "article",
+      name: a.name,
+      reference: a.reference,
+      unit: a.unit,
+      defaultPrice: a.defaultPrice,
+      defaultTvaRate: 20,
+    }));
+    const fromPrestations: CatalogPickItem[] = prestations.map((p) => ({
+      id: p.id,
+      kind: "prestation",
+      name: p.name,
+      reference: p.reference,
+      unit: p.unit,
+      defaultPrice: p.defaultPrice,
+      defaultTvaRate: p.defaultTvaRate,
+    }));
+    return [...fromPrestations, ...fromArticles];
+  }, [articles, prestations]);
 
   const importTerrainContribution = async () => {
     setImportingTerrain(true);
@@ -263,8 +177,6 @@ function QuoteForm({
     }
   };
 
-  const totalHt = lines.reduce((s, l) => s + l.quantity * l.unitPrice, 0);
-  const totalTtc = lines.reduce((s, l) => s + l.quantity * l.unitPrice * (1 + l.tvaRate / 100), 0);
   const filledLines = lines.filter((l) => l.description.trim());
 
   useEffect(() => {
@@ -350,147 +262,22 @@ function QuoteForm({
           </div>
         </div>
 
-        <div>
-          <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
-            <h4 className="text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase tracking-wide">
-              Lignes
-            </h4>
-            <div className="flex items-center gap-2">
-              {can("stock.movements.read") || can("stock.articles.read") ? (
-                <button
-                  type="button"
-                  onClick={() => void importTerrainContribution()}
-                  disabled={importingTerrain}
-                  className="text-[11px] text-slate-600 dark:text-slate-300 hover:text-brand-600 font-medium disabled:opacity-50"
-                  title="Importer les articles consommés sur les interventions du dossier"
-                >
-                  {importingTerrain ? "Import…" : "Import terrain"}
-                </button>
-              ) : null}
-              <button
-                type="button"
-                onClick={() => setLines((prev) => [...prev, { ...EMPTY_LINE }])}
-                className="text-[11px] text-brand-600 dark:text-brand-400 hover:text-brand-500 font-medium"
-              >
-                + Ajouter une ligne
-              </button>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            {lines.map((line, idx) => (
-              <div
-                key={idx}
-                className="grid grid-cols-[1fr_64px_88px_72px_56px_28px] gap-1.5 items-end"
-              >
-                <div>
-                  {idx === 0 && (
-                    <span className="text-[10px] text-slate-500 dark:text-slate-400">
-                      Description
-                    </span>
-                  )}
-                  {articles.length > 0 ? (
-                    <ArticleAutocomplete
-                      value={line.description}
-                      articles={articles}
-                      onSelect={(article) => selectArticle(idx, article)}
-                      onChange={(val) =>
-                        updateLine(idx, { description: val, articleId: undefined })
-                      }
-                    />
-                  ) : (
-                    <input
-                      type="text"
-                      value={line.description}
-                      onChange={(e) => updateLine(idx, { description: e.target.value })}
-                      placeholder="Prestation ou article"
-                      className="w-full rounded-md border border-slate-200 dark:border-slate-700 px-2 py-1.5 text-xs focus:border-brand-500 focus:outline-none"
-                    />
-                  )}
-                </div>
-                <div>
-                  {idx === 0 && (
-                    <span className="text-[10px] text-slate-500 dark:text-slate-400">Qté</span>
-                  )}
-                  <input
-                    type="number"
-                    min={0}
-                    step={0.01}
-                    value={line.quantity}
-                    onChange={(e) => updateLine(idx, { quantity: Number(e.target.value) || 0 })}
-                    className="w-full rounded-md border border-slate-200 dark:border-slate-700 px-2 py-1.5 text-xs text-right focus:border-brand-500 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  {idx === 0 && (
-                    <span className="text-[10px] text-slate-500 dark:text-slate-400">Prix HT</span>
-                  )}
-                  <input
-                    type="number"
-                    min={0}
-                    step={0.01}
-                    value={line.unitPrice}
-                    onChange={(e) => updateLine(idx, { unitPrice: Number(e.target.value) || 0 })}
-                    className="w-full rounded-md border border-slate-200 dark:border-slate-700 px-2 py-1.5 text-xs text-right focus:border-brand-500 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  {idx === 0 && (
-                    <span className="text-[10px] text-slate-500 dark:text-slate-400">TVA</span>
-                  )}
-                  <select
-                    value={line.tvaRate}
-                    onChange={(e) =>
-                      updateLine(idx, { tvaRate: Number(e.target.value) as TvaRate })
-                    }
-                    className="w-full rounded-md border border-slate-200 dark:border-slate-700 px-1 py-1.5 text-xs focus:border-brand-500 focus:outline-none"
-                  >
-                    {TVA_RATES.map((r) => (
-                      <option key={r} value={r}>
-                        {r} %
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="text-right text-[11px] font-medium text-slate-700 dark:text-slate-200 py-1.5">
-                  {formatCurrency(Math.round(line.quantity * line.unitPrice * 100) / 100)}
-                </div>
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => removeLine(idx)}
-                    disabled={lines.length <= 1}
-                    className="text-slate-400 hover:text-red-500 disabled:opacity-30 p-1"
-                  >
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-6 text-sm border-t border-slate-200 dark:border-slate-700 pt-3">
-          <div className="text-slate-500 dark:text-slate-400">
-            Total HT :{" "}
-            <span className="font-semibold text-slate-800 dark:text-slate-100">
-              {formatCurrency(totalHt)}
-            </span>
-          </div>
-          <div className="text-slate-500 dark:text-slate-400">
-            Total TTC :{" "}
-            <span className="font-semibold text-slate-800 dark:text-slate-100">
-              {formatCurrency(totalTtc)}
-            </span>
-          </div>
-        </div>
+        <CommercialLinesEditor
+          lines={lines}
+          onChange={setLines}
+          catalogItems={catalogItems}
+          secondaryAction={
+            can("stock.movements.read") || can("stock.articles.read")
+              ? {
+                  label: "Import terrain",
+                  pendingLabel: "Import…",
+                  pending: importingTerrain,
+                  title: "Importer les articles consommés sur les interventions du dossier",
+                  onClick: () => void importTerrainContribution(),
+                }
+              : undefined
+          }
+        />
 
         <div>
           <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
@@ -652,8 +439,9 @@ export function CaseQuotesSection({
   invoiceCreate?: {
     showPennylane: boolean;
     showQonto: boolean;
+    showDemo?: boolean;
     pending: boolean;
-    onCreate: (provider: "pennylane" | "qonto", quoteId: string) => void;
+    onCreate: (provider: "pennylane" | "qonto" | "demo", quoteId: string) => void;
   };
 }) {
   const queryClient = useQueryClient();
@@ -750,6 +538,7 @@ export function CaseQuotesSection({
             initialValidUntil={editingQuote.validUntil}
             initialLines={editingQuote.lines.map((l) => ({
               articleId: l.articleId,
+              prestationId: l.prestationId,
               description: l.description,
               quantity: l.quantity,
               unitPrice: l.unitPrice,
@@ -867,7 +656,18 @@ export function CaseQuotesSection({
                         Facture Qonto
                       </button>
                     ) : null}
-                    {can("quotes.delete") && (
+                    {invoiceCreate?.showDemo ? (
+                      <button
+                        type="button"
+                        disabled={invoiceCreate.pending}
+                        onClick={() => invoiceCreate.onCreate("demo", quote.id)}
+                        className="text-[10px] text-slate-700 hover:text-slate-900 dark:text-slate-200 dark:hover:text-white px-1.5 py-0.5 rounded border border-dashed border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 transition disabled:opacity-50"
+                        title="Créer une facture démo à partir de ce devis"
+                      >
+                        Facture démo
+                      </button>
+                    ) : null}
+                    {can("quotes.delete") && quote.status === "draft" && (
                       <button
                         onClick={async () => {
                           const ok = await confirm({

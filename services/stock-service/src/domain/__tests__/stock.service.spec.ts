@@ -12,15 +12,25 @@ describe("StockService", () => {
     find: jest.Mock;
     findOneAndUpdate: jest.Mock;
     countDocuments: jest.Mock;
+    deleteMany: jest.Mock;
   };
   let mockStockMovementModel: {
     create: jest.Mock;
     find: jest.Mock;
+    deleteMany: jest.Mock;
   };
   let mockStockLocationModel: {
     create: jest.Mock;
     findOne: jest.Mock;
     find: jest.Mock;
+    deleteMany: jest.Mock;
+  };
+  let mockPrestationModel: {
+    create: jest.Mock;
+    findOne: jest.Mock;
+    find: jest.Mock;
+    findOneAndUpdate: jest.Mock;
+    countDocuments: jest.Mock;
     deleteMany: jest.Mock;
   };
 
@@ -73,6 +83,7 @@ describe("StockService", () => {
       find: jest.fn().mockReturnValue({ sort: jest.fn().mockReturnValue({ exec: sortExecMock }) }),
       findOneAndUpdate: jest.fn().mockReturnValue({ exec: execMock }),
       countDocuments: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(0) }),
+      deleteMany: jest.fn().mockReturnValue({ exec: jest.fn() }),
     };
 
     mockStockMovementModel = {
@@ -82,6 +93,7 @@ describe("StockService", () => {
           .fn()
           .mockReturnValue({ limit: jest.fn().mockReturnValue({ exec: limitExecMock }) }),
       }),
+      deleteMany: jest.fn().mockResolvedValue(undefined),
     };
 
     const locationExecMock = jest.fn();
@@ -96,10 +108,26 @@ describe("StockService", () => {
       deleteMany: jest.fn().mockReturnValue({ exec: jest.fn() }),
     };
 
+    mockPrestationModel = {
+      create: jest.fn(),
+      findOne: jest.fn().mockReturnValue({ exec: execMock }),
+      find: jest.fn().mockReturnValue({
+        sort: jest.fn().mockReturnValue({
+          skip: jest.fn().mockReturnValue({
+            limit: jest.fn().mockReturnValue({ exec: sortExecMock }),
+          }),
+        }),
+      }),
+      findOneAndUpdate: jest.fn().mockReturnValue({ exec: execMock }),
+      countDocuments: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(0) }),
+      deleteMany: jest.fn().mockReturnValue({ exec: jest.fn() }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         StockService,
         { provide: getModelToken("Article"), useValue: mockArticleModel },
+        { provide: getModelToken("Prestation"), useValue: mockPrestationModel },
         { provide: getModelToken("StockMovement"), useValue: mockStockMovementModel },
         { provide: getModelToken("StockLocation"), useValue: mockStockLocationModel },
       ],
@@ -110,6 +138,46 @@ describe("StockService", () => {
 
   it("should be defined", () => {
     expect(service).toBeDefined();
+  });
+
+  describe("createPrestation", () => {
+    it("should create a prestation with default TVA 20%", async () => {
+      const doc = {
+        _id: { toString: () => "presta-1" },
+        organizationId: "org-1",
+        name: "Main d'œuvre",
+        reference: "MO-H",
+        unit: "h",
+        defaultPrice: 55,
+        defaultTvaRate: 20,
+        isActive: true,
+        get: jest.fn(),
+        isTestData: false,
+      };
+      mockPrestationModel.create.mockResolvedValue(doc);
+
+      const result = await service.createPrestation({
+        organizationId: "org-1",
+        name: "Main d'œuvre",
+        reference: "mo-h",
+        defaultPrice: 55,
+        unit: "h",
+      });
+
+      expect(result.id).toBe("presta-1");
+      expect(result.reference).toBe("MO-H");
+      expect(result.defaultPrice).toBe(55);
+      expect(result.defaultTvaRate).toBe(20);
+      expect(mockPrestationModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          organizationId: "org-1",
+          name: "Main d'œuvre",
+          reference: "MO-H",
+          defaultPrice: 55,
+          defaultTvaRate: 20,
+        }),
+      );
+    });
   });
 
   describe("createArticle", () => {

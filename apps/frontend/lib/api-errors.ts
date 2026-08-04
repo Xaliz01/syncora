@@ -27,6 +27,14 @@ export function isApiError(error: unknown): error is ApiError {
 
 const GENERIC_FORBIDDEN_MESSAGES = new Set(["Forbidden", "Forbidden resource", "Accès refusé"]);
 
+/** Messages API anglais → libellés FR pour l’UI. */
+const API_MESSAGE_FR: Record<string, string> = {
+  "An article with this reference already exists":
+    "Un article avec cette référence existe déjà. Choisissez une autre référence.",
+  "A prestation with this reference already exists":
+    "Une prestation avec cette référence existe déjà. Choisissez une autre référence.",
+};
+
 const NETWORK_ERROR_PATTERNS = [
   /^failed to fetch$/i,
   /^network\s*error/i,
@@ -59,7 +67,10 @@ export function normalizeApiErrorMessage(
     if (!trimmed || GENERIC_FORBIDDEN_MESSAGES.has(trimmed)) {
       return API_FORBIDDEN_MESSAGE;
     }
-    return trimmed;
+    return API_MESSAGE_FR[trimmed] ?? trimmed;
+  }
+  if (trimmed && API_MESSAGE_FR[trimmed]) {
+    return API_MESSAGE_FR[trimmed];
   }
   return trimmed || fallbackError;
 }

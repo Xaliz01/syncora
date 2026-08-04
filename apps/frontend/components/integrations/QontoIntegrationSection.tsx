@@ -34,18 +34,33 @@ export function QontoIntegrationSection() {
     enabled: canReadPennylane,
   });
 
+  const canReadDemo = hasPermission(user, "integrations.demo.read");
+  const { data: demoStatus } = useQuery({
+    queryKey: ["integrations", "demo"],
+    queryFn: () => integrationsApi.getDemoStatus(),
+    enabled: canReadDemo,
+  });
+
   const invalidateBillingIntegrations = () => {
     queryClient.invalidateQueries({ queryKey: ["integrations", "pennylane"] });
     queryClient.invalidateQueries({ queryKey: ["integrations", "qonto"] });
+    queryClient.invalidateQueries({ queryKey: ["integrations", "demo"] });
     queryClient.invalidateQueries({ queryKey: ["billing-integration-availability"] });
   };
 
   const confirmReplaceOther = async () => {
-    if (!pennylaneStatus?.connected) return true;
+    const other =
+      pennylaneStatus?.connected === true
+        ? "Pennylane"
+        : demoStatus?.connected === true
+          ? "la facturation démo"
+          : null;
+    if (!other) return true;
     return confirm({
-      title: "Remplacer Pennylane par Qonto ?",
-      description:
-        "Une seule intégration de facturation est active à la fois. La connexion Pennylane sera déconnectée.",
+      title: `Remplacer ${other} par Qonto ?`,
+      description: `Une seule intégration de facturation est active à la fois. ${
+        other === "Pennylane" ? "La connexion Pennylane" : "La facturation démo"
+      } sera déconnectée.`,
       confirmLabel: "Connecter Qonto",
       variant: "danger",
     });

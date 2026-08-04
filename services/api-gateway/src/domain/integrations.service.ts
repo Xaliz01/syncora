@@ -16,6 +16,7 @@ import type {
   ConnectPennylaneBody,
   ConnectQontoBody,
   CustomerResponse,
+  DemoConnectionStatus,
   OrderGiverResponse,
   PennylaneConnectionStatus,
   PennylaneOAuthStartResponse,
@@ -23,6 +24,8 @@ import type {
   QontoOAuthStartResponse,
   QuoteResponse,
   SyncCaseInvoiceOptions,
+  SyncCaseToDemoBody,
+  SyncCaseToDemoResult,
   SyncCaseToPennylaneBody,
   SyncCaseToPennylaneResult,
   SyncCaseToQontoBody,
@@ -31,6 +34,7 @@ import type {
 } from "@planwise/shared";
 import {
   aggregateCaseBillingStatus,
+  buildInvoiceLinesFromCustom,
   buildInvoiceLinesFromQuote,
   canCreateCaseInvoice,
   nextSituationNumber,
@@ -41,6 +45,7 @@ import { AbstractIntegrationsGatewayService } from "./ports/integrations.service
 import { AbstractCasesGatewayService } from "./ports/cases.service.port";
 import { AbstractCustomersGatewayService } from "./ports/customers.service.port";
 import { AbstractOrderGiversGatewayService } from "./ports/order-givers.service.port";
+import { AbstractSubscriptionsGatewayService } from "./ports/subscriptions.service.port";
 import { assertAssignablePermission } from "../infrastructure/permission-checks";
 
 const INTEGRATIONS_URL = process.env.INTEGRATIONS_SERVICE_URL ?? "http://localhost:3013";
@@ -78,6 +83,14 @@ const TVA_TO_QONTO: Record<TvaRate, string> = {
   20: "0.20",
 };
 
+function syncPermissionForProvider(
+  provider: string,
+): "integrations.pennylane.sync" | "integrations.qonto.sync" | "integrations.demo.sync" {
+  if (provider === "qonto") return "integrations.qonto.sync";
+  if (provider === "demo") return "integrations.demo.sync";
+  return "integrations.pennylane.sync";
+}
+
 @Injectable()
 export class IntegrationsGatewayService extends AbstractIntegrationsGatewayService {
   constructor(
@@ -85,6 +98,7 @@ export class IntegrationsGatewayService extends AbstractIntegrationsGatewayServi
     private readonly casesService: AbstractCasesGatewayService,
     private readonly customersService: AbstractCustomersGatewayService,
     private readonly orderGiversService: AbstractOrderGiversGatewayService,
+    private readonly subscriptionsGateway: AbstractSubscriptionsGatewayService,
   ) {
     super();
   }
@@ -143,14 +157,121 @@ export class IntegrationsGatewayService extends AbstractIntegrationsGatewayServi
   }
 
   async getBillingIntegrationAvailability(user: AuthUser): Promise<BillingIntegrationAvailability> {
-    const [pennylaneResult, qontoResult] = await Promise.allSettled([
+    const demoAvailable = await this.isDemoBillingAvailable(user);
+    const [pennylaneResult, qontoResult, demoResult] = await Promise.allSettled([
       this.getPennylaneStatus(user),
       this.getQontoStatus(user),
+      this.getDemoStatus(user),
     ]);
     const pennylane =
       pennylaneResult.status === "fulfilled" && pennylaneResult.value.connected === true;
     const qonto = qontoResult.status === "fulfilled" && qontoResult.value.connected === true;
-    return { connected: pennylane || qonto, pennylane, qonto };
+    const demo = demoResult.status === "fulfilled" && demoResult.value.connected === true;
+    return {
+      connected: pennylane || qonto || demo,
+      pennylane,
+      qonto,
+      demo,
+      demoAvailable,
+    };
+  }
+
+  async getDemoStatus(user: AuthUser): Promise<DemoConnectionStatus> {
+    const available = await this.isDemoBillingAvailable(user);
+    const status = await this.getJson<DemoConnectionStatus>("/integrations/demo", {
+      organizationId: user.organizationId,
+    });
+    return { ...status, available };
+  }
+
+  async connectDemo(user: AuthUser): Promise<DemoConnectionStatus> {
+    await this.assertDemoBillingAllowed(user);
+    const status = await this.postJson<DemoConnectionStatus>("/integrations/demo/connect", {
+      organizationId: user.organizationId,
+    });
+    return { ...status, available: true };
+  }
+
+  async disconnectDemo(user: AuthUser): Promise<DemoConnectionStatus> {
+    try {
+      const res = await firstValueFrom(
+        this.httpService.delete<DemoConnectionStatus>(`${INTEGRATIONS_URL}/integrations/demo`, {
+          params: { organizationId: user.organizationId },
+        }),
+      );
+      const available = await this.isDemoBillingAvailable(user);
+      return { ...res.data, available };
+    } catch (err) {
+      this.rethrow(err);
+    }
+  }
+
+  async syncCaseToDemo(
+    user: AuthUser,
+    caseId: string,
+    options: SyncCaseInvoiceOptions,
+  ): Promise<SyncCaseToDemoResult> {
+    await this.assertDemoBillingAllowed(user);
+    const prepared = await this.prepareInvoiceSync(user, caseId, options, "Démo");
+
+    const today = new Date().toISOString().slice(0, 10);
+    const payload: SyncCaseToDemoBody = {
+      organizationId: user.organizationId,
+      caseId: prepared.caseData.id,
+      caseTitle: prepared.caseData.title,
+      externalReference: prepared.externalReference,
+      invoiceDate: today,
+      draft: true,
+      quoteId: prepared.quoteId,
+      invoiceKind: prepared.invoiceKind,
+      situationNumber: prepared.situationNumber,
+      situationPercent: prepared.situationPercent,
+      amountHt: prepared.amountHt,
+      customer: {
+        planwiseCustomerId: prepared.customer.id,
+        name: prepared.customer.displayName,
+        email: prepared.customer.email,
+        vatNumber: prepared.customer.legalIdentifier?.startsWith("FR")
+          ? prepared.customer.legalIdentifier
+          : undefined,
+        addressLine1: prepared.customer.address?.line1,
+        addressLine2: prepared.customer.address?.line2,
+        postalCode: prepared.customer.address?.postalCode,
+        city: prepared.customer.address?.city,
+        country: prepared.customer.address?.country || "FR",
+      },
+      lines: prepared.lines.map((line) => ({
+        label: line.label,
+        quantity: line.quantity,
+        unitPriceHt: line.unitPriceHt,
+        vatRate: TVA_TO_PENNYLANE[line.tvaRate] ?? "FR_200",
+        unit: line.unit,
+      })),
+    };
+
+    const result = await this.postJson<SyncCaseToDemoResult>(
+      "/integrations/demo/sync-case",
+      payload,
+    );
+
+    await this.recomputeCaseBillingStatus(user, caseId, prepared.quoteTotalHt);
+    return result;
+  }
+
+  private async isDemoBillingAvailable(user: AuthUser): Promise<boolean> {
+    try {
+      const sub = await this.subscriptionsGateway.getCurrentSubscription(user);
+      return sub.hasAccess === true && sub.status === "trialing";
+    } catch {
+      return false;
+    }
+  }
+
+  private async assertDemoBillingAllowed(user: AuthUser): Promise<void> {
+    if (await this.isDemoBillingAvailable(user)) return;
+    throw new BadRequestException(
+      "La facturation démo n’est disponible que pendant l’essai gratuit.",
+    );
   }
 
   async startQontoOAuth(user: AuthUser): Promise<QontoOAuthStartResponse> {
@@ -409,10 +530,7 @@ export class IntegrationsGatewayService extends AbstractIntegrationsGatewayServi
     syncId: string,
   ): Promise<CaseInvoiceSyncStatus> {
     const existing = await this.requireSync(user, caseId, syncId);
-    assertAssignablePermission(
-      user,
-      existing.provider === "qonto" ? "integrations.qonto.sync" : "integrations.pennylane.sync",
-    );
+    assertAssignablePermission(user, syncPermissionForProvider(existing.provider));
     const status = await this.postJson<CaseInvoiceSyncStatus>(
       `/integrations/cases/${caseId}/invoice-sync/${syncId}/finalize`,
       { organizationId: user.organizationId },
@@ -427,10 +545,7 @@ export class IntegrationsGatewayService extends AbstractIntegrationsGatewayServi
     syncId: string,
   ): Promise<CaseInvoiceSyncStatus> {
     const existing = await this.requireSync(user, caseId, syncId);
-    assertAssignablePermission(
-      user,
-      existing.provider === "qonto" ? "integrations.qonto.sync" : "integrations.pennylane.sync",
-    );
+    assertAssignablePermission(user, syncPermissionForProvider(existing.provider));
     const status = await this.postJson<CaseInvoiceSyncStatus>(
       `/integrations/cases/${caseId}/invoice-sync/${syncId}/refresh`,
       { organizationId: user.organizationId },
@@ -451,10 +566,7 @@ export class IntegrationsGatewayService extends AbstractIntegrationsGatewayServi
     }
     const providers = new Set(list.invoices.map((i) => i.provider));
     for (const provider of providers) {
-      assertAssignablePermission(
-        user,
-        provider === "qonto" ? "integrations.qonto.sync" : "integrations.pennylane.sync",
-      );
+      assertAssignablePermission(user, syncPermissionForProvider(provider));
     }
     const refreshed = await this.postJson<CaseInvoiceSyncListResponse>(
       `/integrations/cases/${caseId}/invoice-sync/refresh`,
@@ -470,10 +582,7 @@ export class IntegrationsGatewayService extends AbstractIntegrationsGatewayServi
     syncId: string,
   ): Promise<CaseInvoiceSyncListResponse> {
     const existing = await this.requireSync(user, caseId, syncId);
-    assertAssignablePermission(
-      user,
-      existing.provider === "qonto" ? "integrations.qonto.sync" : "integrations.pennylane.sync",
-    );
+    assertAssignablePermission(user, syncPermissionForProvider(existing.provider));
     try {
       const res = await firstValueFrom(
         this.httpService.delete<CaseInvoiceSyncListResponse>(
@@ -519,7 +628,7 @@ export class IntegrationsGatewayService extends AbstractIntegrationsGatewayServi
       unit?: string;
     }>;
     externalReference: string;
-    quoteId: string;
+    quoteId?: string;
     invoiceKind: CaseInvoiceKind;
     situationNumber?: number;
     situationPercent?: number;
@@ -544,9 +653,40 @@ export class IntegrationsGatewayService extends AbstractIntegrationsGatewayServi
           await this.orderGiversService.getOrderGiver(user, caseData.orderGiverId),
         )
       : toInvoiceBillingParty(await this.customersService.getCustomer(user, caseData.customerId!));
+
+    const customLines = options.lines?.filter((l) => l.label?.trim()) ?? [];
+    const hasCustomLines = customLines.length > 0;
+    const quoteIdOpt = options.quoteId?.trim();
+
+    if (!hasCustomLines && !quoteIdOpt) {
+      throw new BadRequestException(
+        "Indiquez un devis ou au moins une ligne de facture (articles / saisie libre).",
+      );
+    }
+
+    if (hasCustomLines) {
+      let built: ReturnType<typeof buildInvoiceLinesFromCustom>;
+      try {
+        built = buildInvoiceLinesFromCustom({ lines: customLines });
+      } catch (err) {
+        throw new BadRequestException(err instanceof Error ? err.message : "Facture invalide.");
+      }
+      const suffix = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+      return {
+        caseData,
+        customer,
+        lines: built.lines,
+        externalReference: `planwise-case-${caseData.id}-${suffix}`,
+        invoiceKind: "full",
+        amountHt: built.amountHt,
+        // Pas de devis de référence → pas de reste « partiel » artificiel.
+        quoteTotalHt: 0,
+      };
+    }
+
     const invoiceKind: CaseInvoiceKind = options.invoiceKind ?? "full";
     const existing = await this.getCaseInvoiceSync(user, caseId);
-    const quote = await this.requireQuoteForInvoice(user, caseData, options.quoteId);
+    const quote = await this.requireQuoteForInvoice(user, caseData, quoteIdOpt);
 
     const quoteLines = quote.lines.map((line) => ({
       label: line.description || caseData.title,

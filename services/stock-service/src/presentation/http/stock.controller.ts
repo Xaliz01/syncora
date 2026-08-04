@@ -6,9 +6,11 @@ import type {
   AddInterventionArticleUsageBody,
   CreateArticleBody,
   CreateArticleMovementBody,
+  CreatePrestationBody,
   CreateStockLocationBody,
   CreateStockTransferBody,
   UpdateArticleBody,
+  UpdatePrestationBody,
   UpdateStockLocationBody,
 } from "@planwise/shared";
 
@@ -59,6 +61,47 @@ export class StockController {
   async deleteArticle(@Param("id") id: string, @Query("organizationId") organizationId: string) {
     organizationId = parseOrganizationIdQuery(organizationId);
     return this.stockService.deleteArticle(id, organizationId);
+  }
+
+  // ── Prestations ──
+
+  @Post("prestations")
+  async createPrestation(@Body() body: CreatePrestationBody) {
+    return this.stockService.createPrestation(body);
+  }
+
+  @Get("prestations")
+  async listPrestations(
+    @Query("organizationId") organizationId: string,
+    @Query("search") search?: string,
+    @Query("activeOnly") activeOnly?: string,
+    @Query("limit") limit?: string,
+    @Query("offset") offset?: string,
+  ) {
+    organizationId = parseOrganizationIdQuery(organizationId);
+    const pagination = parsePaginationQueryParams(limit, offset);
+    return this.stockService.listPrestations(organizationId, {
+      search,
+      activeOnly: activeOnly === undefined ? true : activeOnly === "true",
+      ...pagination,
+    });
+  }
+
+  @Get("prestations/:id")
+  async getPrestation(@Param("id") id: string, @Query("organizationId") organizationId: string) {
+    organizationId = parseOrganizationIdQuery(organizationId);
+    return this.stockService.getPrestation(id, organizationId);
+  }
+
+  @Patch("prestations/:id")
+  async updatePrestation(@Param("id") id: string, @Body() body: UpdatePrestationBody) {
+    return this.stockService.updatePrestation(id, body);
+  }
+
+  @Delete("prestations/:id")
+  async deletePrestation(@Param("id") id: string, @Query("organizationId") organizationId: string) {
+    organizationId = parseOrganizationIdQuery(organizationId);
+    return this.stockService.deletePrestation(id, organizationId);
   }
 
   // ── Movements ──

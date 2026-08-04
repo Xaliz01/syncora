@@ -10,6 +10,9 @@ export class QuoteLineSubDoc {
   @Prop()
   articleId?: string;
 
+  @Prop()
+  prestationId?: string;
+
   @Prop({ required: true })
   description!: string;
 

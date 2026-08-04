@@ -1,6 +1,8 @@
 import {
   aggregateCaseBillingStatus,
+  buildInvoiceLinesFromCustom,
   buildInvoiceLinesFromQuote,
+  invoiceLinesFromArticleUsages,
   nextSituationNumber,
   quoteInvoicedHt,
   remainingQuoteHt,
@@ -136,5 +138,54 @@ describe("invoice sync helpers", () => {
         "q1",
       ),
     ).toBe(3);
+  });
+
+  it("builds invoice lines from custom input", () => {
+    const result = buildInvoiceLinesFromCustom({
+      lines: [
+        { label: "Cable", quantity: 2, unitPriceHt: 10.5, tvaRate: 20, unit: "m" },
+        { label: "Main d'œuvre", quantity: 1, unitPriceHt: 80, tvaRate: 10 },
+      ],
+    });
+    expect(result.amountHt).toBe("101.00");
+    expect(result.lines).toHaveLength(2);
+    expect(result.lines[0]?.unitPriceHt).toBe("10.50");
+  });
+
+  it("rejects empty or zero custom invoice lines", () => {
+    expect(() => buildInvoiceLinesFromCustom({ lines: [] })).toThrow(/au moins une ligne/);
+    expect(() =>
+      buildInvoiceLinesFromCustom({
+        lines: [{ label: "Gratuit", quantity: 1, unitPriceHt: 0, tvaRate: 20 }],
+      }),
+    ).toThrow(/montant HT/);
+  });
+
+  it("prefills invoice lines from article usages and default prices", () => {
+    const articlesById = new Map([
+      ["a1", { defaultPrice: 12.5, name: "Vis", unit: "u", reference: "VIS-1" }],
+      ["a2", { defaultPrice: undefined, name: "Colle", unit: "pot" }],
+    ]);
+    const lines = invoiceLinesFromArticleUsages(
+      [
+        { articleId: "a1", articleName: "Vis", unit: "u", netQuantity: 4 },
+        { articleId: "a1", articleName: "Vis", unit: "u", netQuantity: 2 },
+        { articleId: "a2", articleName: "Colle", unit: "pot", netQuantity: 1 },
+        { articleId: "a3", articleName: "Ignoré", unit: "u", netQuantity: 0 },
+      ],
+      articlesById,
+    );
+    expect(lines).toHaveLength(2);
+    expect(lines[0]).toMatchObject({
+      articleId: "a1",
+      quantity: 6,
+      unitPriceHt: 12.5,
+      label: "Vis (VIS-1)",
+    });
+    expect(lines[1]).toMatchObject({
+      articleId: "a2",
+      quantity: 1,
+      unitPriceHt: 0,
+    });
   });
 });

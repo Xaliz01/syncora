@@ -2,6 +2,7 @@
 
 import { PennylaneIntegrationSection } from "@/components/integrations/PennylaneIntegrationSection";
 import { QontoIntegrationSection } from "@/components/integrations/QontoIntegrationSection";
+import { DemoIntegrationSection } from "@/components/integrations/DemoIntegrationSection";
 import { isCrispEnabled, openCrispChat } from "@/lib/crisp-client";
 
 export function IntegrationsPage() {
@@ -43,6 +44,7 @@ export function IntegrationsPage() {
       </div>
 
       <div className="space-y-4">
+        <DemoIntegrationSection />
         <PennylaneIntegrationSection />
         <QontoIntegrationSection />
       </div>

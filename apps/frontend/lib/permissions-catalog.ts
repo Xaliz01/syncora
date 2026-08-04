@@ -415,6 +415,26 @@ export const PERMISSION_METADATA: Record<PermissionCode, PermissionMetadata> = {
     label: "Désactiver des articles de stock",
     description: "Désactiver des articles du catalogue stock.",
   },
+  "prestations.read": {
+    code: "prestations.read",
+    label: "Voir les prestations",
+    description: "Consulter le catalogue des prestations tarifées.",
+  },
+  "prestations.create": {
+    code: "prestations.create",
+    label: "Créer des prestations",
+    description: "Ajouter des prestations au catalogue commercial.",
+  },
+  "prestations.update": {
+    code: "prestations.update",
+    label: "Modifier des prestations",
+    description: "Modifier le libellé, le tarif ou la TVA d’une prestation.",
+  },
+  "prestations.delete": {
+    code: "prestations.delete",
+    label: "Désactiver des prestations",
+    description: "Désactiver des prestations du catalogue.",
+  },
   "stock.movements.read": {
     code: "stock.movements.read",
     label: "Voir les mouvements de stock",
@@ -521,6 +541,21 @@ export const PERMISSION_METADATA: Record<PermissionCode, PermissionMetadata> = {
     code: "integrations.qonto.sync",
     label: "Envoyer vers Qonto",
     description: "Créer et suivre une facture Qonto depuis un dossier.",
+  },
+  "integrations.demo.read": {
+    code: "integrations.demo.read",
+    label: "Voir la facturation démo",
+    description: "Consulter l’état du mode facturation démo (essai).",
+  },
+  "integrations.demo.configure": {
+    code: "integrations.demo.configure",
+    label: "Configurer la facturation démo",
+    description: "Activer ou désactiver le mode facturation démo pendant l’essai.",
+  },
+  "integrations.demo.sync": {
+    code: "integrations.demo.sync",
+    label: "Facturer en mode démo",
+    description: "Créer et suivre une facture simulée depuis un dossier (essai).",
   },
 };
 

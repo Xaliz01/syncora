@@ -17,6 +17,7 @@ export interface CreateQuotePayload {
   validUntil?: string;
   lines: {
     articleId?: string;
+    prestationId?: string;
     description: string;
     quantity: number;
     unitPrice: number;
@@ -32,6 +33,7 @@ export interface UpdateQuotePayload {
   validUntil?: string | null;
   lines?: {
     articleId?: string;
+    prestationId?: string;
     description: string;
     quantity: number;
     unitPrice: number;

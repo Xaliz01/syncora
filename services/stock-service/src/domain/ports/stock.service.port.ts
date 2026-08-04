@@ -4,12 +4,16 @@ import type {
   ArticlesListResponse,
   CreateArticleBody,
   CreateArticleMovementBody,
+  CreatePrestationBody,
   CreateStockLocationBody,
   CreateStockTransferBody,
   InterventionArticleUsageResponse,
+  PrestationResponse,
+  PrestationsListResponse,
   StockLocationResponse,
   StockMovementResponse,
   UpdateArticleBody,
+  UpdatePrestationBody,
   UpdateStockLocationBody,
 } from "@planwise/shared";
 
@@ -29,6 +33,21 @@ export abstract class AbstractStockService {
   abstract getArticle(id: string, organizationId: string): Promise<ArticleResponse>;
   abstract updateArticle(id: string, body: UpdateArticleBody): Promise<ArticleResponse>;
   abstract deleteArticle(id: string, organizationId: string): Promise<{ deleted: true }>;
+
+  abstract createPrestation(body: CreatePrestationBody): Promise<PrestationResponse>;
+  abstract listPrestations(
+    organizationId: string,
+    filters?: {
+      search?: string;
+      activeOnly?: boolean;
+      limit?: number;
+      offset?: number;
+    },
+  ): Promise<PrestationsListResponse>;
+  abstract getPrestation(id: string, organizationId: string): Promise<PrestationResponse>;
+  abstract updatePrestation(id: string, body: UpdatePrestationBody): Promise<PrestationResponse>;
+  abstract deletePrestation(id: string, organizationId: string): Promise<{ deleted: true }>;
+
   abstract createArticleMovement(body: CreateArticleMovementBody): Promise<StockMovementResponse>;
   abstract addInterventionArticleUsage(
     interventionId: string,

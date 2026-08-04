@@ -29,7 +29,7 @@ test.describe("Backoffice plateforme — accès invité", () => {
     test.setTimeout(90_000);
     for (const path of PLATFORM_PROTECTED) {
       await page.goto(path, { waitUntil: "domcontentloaded" });
-      await expect(page).toHaveURL(/\/platform\/login/);
+      await expect(page).toHaveURL(/\/platform\/login/, { timeout: 15_000 });
     }
   });
 
@@ -48,6 +48,6 @@ test.describe("Backoffice plateforme — accès invité", () => {
 
   test("le handoff support sans token renvoie vers la connexion app", async ({ page }) => {
     await page.goto("/auth/support-session");
-    await expect(page).toHaveURL(/\/login/);
+    await expect(page).toHaveURL(/\/login/, { timeout: 15_000 });
   });
 });

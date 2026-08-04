@@ -16,10 +16,15 @@ import {
 } from "@/lib/team-calendar-colors";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { ExportButton } from "@/components/ui/ExportButton";
+import { useToast } from "@/components/ui/ToastProvider";
 import type { InterventionResponse, TeamResponse, TechnicianResponse } from "@planwise/shared";
 import { MAX_PAGE_LIMIT_WIDE } from "@planwise/shared";
 
 type ViewMode = "week" | "month";
+
+function isInterventionScheduleLocked(intervention: Pick<InterventionResponse, "status">): boolean {
+  return intervention.status === "completed";
+}
 
 function looksLikeObjectId(value: string): boolean {
   return /^[a-f0-9]{24}$/i.test(value.trim());
@@ -413,14 +418,29 @@ function UnscheduledPanel({
             techniciansByAssigneeId,
             isDark,
           );
+          const scheduleLocked = isInterventionScheduleLocked(intervention);
           return (
             <Link
               key={intervention.id}
               href={`/cases/${intervention.caseId}`}
-              draggable
-              onDragStart={(e) => onDragStart(e, intervention)}
-              title={`Ouvrir le dossier${intervention.caseTitle ? ` « ${intervention.caseTitle} »` : ""}`}
-              className={`group block rounded-lg p-2.5 cursor-grab active:cursor-grabbing hover:shadow-md transition-all no-underline text-left text-inherit ${appearance.className}`}
+              draggable={!scheduleLocked}
+              onDragStart={(e) => {
+                if (scheduleLocked) {
+                  e.preventDefault();
+                  return;
+                }
+                onDragStart(e, intervention);
+              }}
+              title={
+                scheduleLocked
+                  ? `Intervention terminée — dates non modifiables${intervention.caseTitle ? ` · ${intervention.caseTitle}` : ""}`
+                  : `Ouvrir le dossier${intervention.caseTitle ? ` « ${intervention.caseTitle} »` : ""}`
+              }
+              className={`group block rounded-lg p-2.5 transition-all no-underline text-left text-inherit ${
+                scheduleLocked
+                  ? "cursor-pointer"
+                  : "cursor-grab active:cursor-grabbing hover:shadow-md"
+              } ${appearance.className}`}
               style={appearance.style}
             >
               <div className="flex items-start gap-2">
@@ -487,6 +507,7 @@ function UnscheduledPanel({
 
 export function CalendarPage() {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const isDark = useIsDarkMode();
   const [view, setView] = useState<ViewMode>("week");
   const [referenceDate, setReferenceDate] = useState(new Date());
@@ -639,6 +660,10 @@ export function CalendarPage() {
   }, [view, referenceDate, interventions, monthWeeks]);
 
   const handleDragStart = (e: React.DragEvent, intervention: InterventionResponse) => {
+    if (isInterventionScheduleLocked(intervention)) {
+      e.preventDefault();
+      return;
+    }
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/plain", intervention.id);
     const fallback = new Date();
@@ -653,6 +678,12 @@ export function CalendarPage() {
     e.preventDefault();
     if (!dragRef.current) return;
     const { intervention, originDate } = dragRef.current;
+
+    if (isInterventionScheduleLocked(intervention)) {
+      showToast("Une intervention terminée ne peut plus être déplacée.", "error");
+      dragRef.current = null;
+      return;
+    }
 
     const newStart = new Date(targetDate);
     if (targetHour !== undefined) {
@@ -683,6 +714,14 @@ export function CalendarPage() {
   };
 
   const handleDropToUnschedule = (interventionId: string) => {
+    const fromDrag = dragRef.current?.intervention;
+    const fromList = (interventions ?? []).find((i) => i.id === interventionId);
+    const intervention = fromDrag?.id === interventionId ? fromDrag : fromList;
+    if (intervention && isInterventionScheduleLocked(intervention)) {
+      showToast("Une intervention terminée ne peut plus être déplanifiée.", "error");
+      dragRef.current = null;
+      return;
+    }
     updateMutation.mutate({
       id: interventionId,
       payload: { scheduledStart: null, scheduledEnd: null },
@@ -830,15 +869,24 @@ export function CalendarPage() {
                               techniciansByAssigneeId,
                               isDark,
                             );
+                            const scheduleLocked = isInterventionScheduleLocked(intervention);
                             return (
                               <Link
                                 key={intervention.id}
                                 href={`/cases/${intervention.caseId}`}
-                                draggable
+                                draggable={!scheduleLocked}
                                 onDragStart={(e) => handleDragStart(e, intervention)}
-                                className={`block rounded px-1.5 py-0.5 text-[10px] cursor-grab active:cursor-grabbing mb-0.5 no-underline text-inherit ${appearance.className}`}
+                                className={`block rounded px-1.5 py-0.5 text-[10px] mb-0.5 no-underline text-inherit ${
+                                  scheduleLocked
+                                    ? "cursor-pointer"
+                                    : "cursor-grab active:cursor-grabbing"
+                                } ${appearance.className}`}
                                 style={appearance.style}
-                                title={`Ouvrir le dossier — ${intervention.title}${intervention.caseTitle ? ` (${intervention.caseTitle})` : ""}${intervention.assignedTeamName ? ` · ${intervention.assignedTeamName}` : ""}`}
+                                title={
+                                  scheduleLocked
+                                    ? `Intervention terminée — dates non modifiables — ${intervention.title}`
+                                    : `Ouvrir le dossier — ${intervention.title}${intervention.caseTitle ? ` (${intervention.caseTitle})` : ""}${intervention.assignedTeamName ? ` · ${intervention.assignedTeamName}` : ""}`
+                                }
                               >
                                 <span className="flex items-center gap-1 min-w-0">
                                   <span
@@ -902,15 +950,24 @@ export function CalendarPage() {
                                   techniciansByAssigneeId,
                                   isDark,
                                 );
+                                const scheduleLocked = isInterventionScheduleLocked(intervention);
                                 return (
                                   <Link
                                     key={intervention.id}
                                     href={`/cases/${intervention.caseId}`}
-                                    draggable
+                                    draggable={!scheduleLocked}
                                     onDragStart={(e) => handleDragStart(e, intervention)}
-                                    className={`flex items-center gap-1 cursor-grab active:cursor-grabbing rounded px-0.5 py-0.5 -mx-0.5 no-underline min-w-0 text-inherit ${appearance.className}`}
+                                    className={`flex items-center gap-1 rounded px-0.5 py-0.5 -mx-0.5 no-underline min-w-0 text-inherit ${
+                                      scheduleLocked
+                                        ? "cursor-pointer"
+                                        : "cursor-grab active:cursor-grabbing"
+                                    } ${appearance.className}`}
                                     style={appearance.style}
-                                    title={`Ouvrir le dossier — ${intervention.title}${intervention.caseTitle ? ` (${intervention.caseTitle})` : ""}${intervention.assignedTeamName ? ` · ${intervention.assignedTeamName}` : ""}`}
+                                    title={
+                                      scheduleLocked
+                                        ? `Intervention terminée — dates non modifiables — ${intervention.title}`
+                                        : `Ouvrir le dossier — ${intervention.title}${intervention.caseTitle ? ` (${intervention.caseTitle})` : ""}${intervention.assignedTeamName ? ` · ${intervention.assignedTeamName}` : ""}`
+                                    }
                                   >
                                     <span
                                       className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ring-1 ring-white/50 dark:ring-black/20 ${STATUS_DOT[intervention.status] ?? "bg-slate-400"}`}

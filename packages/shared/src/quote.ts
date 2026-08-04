@@ -16,6 +16,7 @@ export type TvaRate = (typeof TVA_RATES)[number];
 
 export interface QuoteLineBody {
   articleId?: string;
+  prestationId?: string;
   description: string;
   quantity: number;
   unitPrice: number;
@@ -26,6 +27,7 @@ export interface QuoteLineBody {
 export interface QuoteLineResponse {
   id: string;
   articleId?: string;
+  prestationId?: string;
   description: string;
   quantity: number;
   unitPrice: number;

@@ -1,12 +1,15 @@
 /** Contrats API intégrations compta / banque (Pennylane, Qonto, etc.) — Phase 3.3 */
 
 import type { BillingStatus } from "./case";
+import type { TvaRate } from "./quote";
+import { TVA_RATES } from "./quote";
 
-export const INTEGRATION_PROVIDERS = ["pennylane", "qonto"] as const;
+export const INTEGRATION_PROVIDERS = ["pennylane", "qonto", "demo"] as const;
 export type IntegrationProvider = (typeof INTEGRATION_PROVIDERS)[number];
 
 export type PennylaneAuthMethod = "oauth" | "api_token";
 export type QontoAuthMethod = "oauth" | "api_token";
+export type DemoAuthMethod = "demo";
 
 /** Type de facture CRM (pont vers l’outil de facturation). */
 export const CASE_INVOICE_KINDS = ["full", "situation", "deposit", "balance"] as const;
@@ -212,10 +215,74 @@ export interface SyncCaseToQontoResult {
   invoiceUrl?: string;
 }
 
-/** Options gateway / UI pour créer une facture (toujours liée à un devis). */
+export interface DemoConnectionStatus {
+  provider: "demo";
+  connected: boolean;
+  companyName?: string;
+  connectedAt?: string;
+  /** True si le mode démo est autorisé (essai actif). */
+  available?: boolean;
+}
+
+export interface ConnectDemoBody {
+  organizationId: string;
+}
+
+export interface DisconnectDemoBody {
+  organizationId: string;
+}
+
+export interface SyncCaseToDemoBody {
+  organizationId: string;
+  caseId: string;
+  caseTitle: string;
+  externalReference: string;
+  invoiceDate: string;
+  deadline?: string;
+  draft?: boolean;
+  customer: PennylaneCustomerPayload;
+  lines: PennylaneInvoiceLinePayload[];
+  quoteId?: string;
+  invoiceKind?: CaseInvoiceKind;
+  situationNumber?: number;
+  situationPercent?: number;
+  amountHt?: string;
+}
+
+export interface SyncCaseToDemoResult {
+  provider: "demo";
+  caseId: string;
+  syncId: string;
+  demoCustomerId: string;
+  demoInvoiceId: string;
+  draft: boolean;
+  invoiceUrl?: string;
+}
+
+/** Ligne de facture fournie hors devis (articles interventions / saisie libre). */
+export interface SyncCaseInvoiceLineInput {
+  label: string;
+  quantity: number;
+  /** Prix unitaire HT en euros. */
+  unitPriceHt: number;
+  tvaRate: TvaRate;
+  unit?: string;
+  articleId?: string;
+  prestationId?: string;
+}
+
+/** Options gateway / UI pour créer une facture (devis ou lignes libres). */
 export interface SyncCaseInvoiceOptions {
-  /** Devis source — obligatoire. */
-  quoteId: string;
+  /**
+   * Devis source — requis sauf si `lines` est fourni avec au moins une ligne.
+   * Situations / acomptes / soldes restent liés au devis.
+   */
+  quoteId?: string;
+  /**
+   * Lignes libres (consommations terrain ou saisie manuelle).
+   * Si présentes et non vides, crée une facture complète hors devis (`invoiceKind` forcé à `full`).
+   */
+  lines?: SyncCaseInvoiceLineInput[];
   invoiceNumber?: string;
   invoiceKind?: CaseInvoiceKind;
   /** Pour une situation : pourcentage du devis (1–100). */
@@ -290,6 +357,9 @@ export interface BillingIntegrationAvailability {
   connected: boolean;
   pennylane: boolean;
   qonto: boolean;
+  demo: boolean;
+  /** True si le mode facturation démo peut être activé (essai). */
+  demoAvailable: boolean;
 }
 
 export function billingStatusFromRemoteInvoice(
@@ -569,6 +639,102 @@ function dominantTva(lines: QuoteLineForInvoice[]): 0 | 5.5 | 10 | 20 {
     }
   }
   return best;
+}
+
+/**
+ * Normalise et valide des lignes de facture hors devis (facture complète uniquement).
+ */
+export function buildInvoiceLinesFromCustom(input: { lines: SyncCaseInvoiceLineInput[] }): {
+  lines: QuoteLineForInvoice[];
+  amountHt: string;
+} {
+  if (!input.lines.length) {
+    throw new Error("Ajoutez au moins une ligne de facture.");
+  }
+  const lines: QuoteLineForInvoice[] = [];
+  for (const raw of input.lines) {
+    const label = raw.label?.trim();
+    if (!label) {
+      throw new Error("Chaque ligne doit avoir un libellé.");
+    }
+    const quantity = Number(raw.quantity);
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      throw new Error(`Quantité invalide pour « ${label} ».`);
+    }
+    const unitPrice = Number(raw.unitPriceHt);
+    if (!Number.isFinite(unitPrice) || unitPrice < 0) {
+      throw new Error(`Prix unitaire invalide pour « ${label} ».`);
+    }
+    const tvaRate = (TVA_RATES as readonly number[]).includes(raw.tvaRate)
+      ? (raw.tvaRate as TvaRate)
+      : 20;
+    lines.push({
+      label: label.slice(0, 200),
+      quantity: round2(quantity),
+      unitPriceHt: round2(unitPrice).toFixed(2),
+      tvaRate,
+      unit: raw.unit?.trim() || undefined,
+    });
+  }
+  const amount = round2(
+    lines.reduce((s, l) => s + l.quantity * Number.parseFloat(l.unitPriceHt || "0"), 0),
+  );
+  if (amount <= 0) {
+    throw new Error("Le montant HT de la facture doit être positif.");
+  }
+  return { lines, amountHt: amount.toFixed(2) };
+}
+
+/**
+ * Préremplit des lignes de facture à partir des consommations d’articles (qty nette > 0).
+ * Prix = `defaultPrice` de l’article (0 si absent) ; TVA par défaut 20 %.
+ */
+export function invoiceLinesFromArticleUsages(
+  usages: Array<{
+    articleId: string;
+    articleName: string;
+    unit?: string;
+    netQuantity: number;
+  }>,
+  articlesById: Map<
+    string,
+    { defaultPrice?: number | null; name?: string; unit?: string; reference?: string }
+  >,
+  defaultTva: TvaRate = 20,
+): SyncCaseInvoiceLineInput[] {
+  const byArticle = new Map<
+    string,
+    { articleId: string; label: string; unit?: string; quantity: number }
+  >();
+  for (const u of usages) {
+    if (!(u.netQuantity > 0.000_001)) continue;
+    const article = articlesById.get(u.articleId);
+    const existing = byArticle.get(u.articleId);
+    if (existing) {
+      existing.quantity = round2(existing.quantity + u.netQuantity);
+      continue;
+    }
+    const ref = article?.reference?.trim();
+    const name = (article?.name || u.articleName || "Article").trim();
+    byArticle.set(u.articleId, {
+      articleId: u.articleId,
+      label: ref ? `${name} (${ref})` : name,
+      unit: article?.unit || u.unit || undefined,
+      quantity: round2(u.netQuantity),
+    });
+  }
+  return [...byArticle.values()].map((row) => {
+    const article = articlesById.get(row.articleId);
+    const price = article?.defaultPrice;
+    return {
+      articleId: row.articleId,
+      label: row.label,
+      quantity: row.quantity,
+      unitPriceHt: typeof price === "number" && Number.isFinite(price) ? round2(price) : 0,
+      tvaRate: defaultTva,
+      unit: row.unit,
+    };
+  });
 }
 
 export interface RefreshPendingInvoiceSyncsResult {

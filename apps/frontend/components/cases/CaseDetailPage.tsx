@@ -28,7 +28,10 @@ import {
 import { InterventionPhotos } from "@/components/interventions/InterventionPhotos";
 import { InterventionSignatureDialog } from "@/components/interventions/InterventionSignatureDialog";
 import { QontoInvoiceNumberDialog } from "@/components/cases/QontoInvoiceNumberDialog";
-import { CreateCaseInvoiceDialog } from "@/components/cases/CreateCaseInvoiceDialog";
+import {
+  CreateCaseInvoiceOverlay,
+  type CreatedCaseInvoiceResult,
+} from "@/components/cases/CreateCaseInvoiceOverlay";
 import { CaseInvoiceSyncPanel } from "@/components/cases/CaseInvoiceSyncPanel";
 import { CUSTOMER_KIND_LABELS } from "@/components/customers/customer-kind-labels";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
@@ -363,17 +366,23 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   const canAssignCase = canAny(["cases.assign", "cases.update"]);
   const canSyncPennylane = can("integrations.pennylane.sync");
   const canSyncQonto = can("integrations.qonto.sync");
+  const canSyncDemo = can("integrations.demo.sync");
   const canReadPennylane = can("integrations.pennylane.read");
   const canReadQonto = can("integrations.qonto.read");
+  const canReadDemo = can("integrations.demo.read");
   const canOpenIntegrations = canAny([
     "integrations.pennylane.read",
     "integrations.qonto.read",
+    "integrations.demo.read",
     "integrations.pennylane.configure",
     "integrations.qonto.configure",
+    "integrations.demo.configure",
   ]);
   const canViewInterventionArticles = can("stock.interventions.read");
   const canAddInterventionArticles = can("stock.interventions.create");
   const showInterventionArticles = canViewInterventionArticles || canAddInterventionArticles;
+  const needArticlesForInvoice = canSyncPennylane || canSyncQonto || canSyncDemo;
+  const loadStockForCase = showInterventionArticles || needArticlesForInvoice;
   const [showNewIntervention, setShowNewIntervention] = useState(false);
   const [editingInterventionId, setEditingInterventionId] = useState<string | null>(null);
 
@@ -401,7 +410,13 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
     enabled: canReadQonto,
   });
 
-  const canReadInvoiceSync = canReadPennylane || canReadQonto;
+  const { data: demoStatus, isLoading: demoStatusLoading } = useQuery({
+    queryKey: ["integrations", "demo"],
+    queryFn: () => integrationsApi.getDemoStatus(),
+    enabled: canReadDemo,
+  });
+
+  const canReadInvoiceSync = canReadPennylane || canReadQonto || canReadDemo;
   const { data: invoiceSyncList } = useQuery({
     queryKey: ["integrations", "invoice-sync", caseId],
     queryFn: () => integrationsApi.getCaseInvoiceSync(caseId),
@@ -412,7 +427,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   const { data: caseQuotes = [] } = useQuery({
     queryKey: ["quotes", caseId],
     queryFn: () => quotesApi.listQuotes({ caseId }),
-    enabled: can("quotes.read") || canSyncPennylane || canSyncQonto,
+    enabled: can("quotes.read") || canSyncPennylane || canSyncQonto || canSyncDemo,
   });
 
   const { data: interventionsData } = useQuery({
@@ -457,9 +472,16 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   const { data: articlesData } = useQuery({
     queryKey: ["articles", "intervention-usage"],
     queryFn: () => stockApi.listArticles({ activeOnly: true, limit: MAX_PAGE_LIMIT }),
-    enabled: canAddInterventionArticles,
+    enabled: can("stock.articles.read") && (canAddInterventionArticles || needArticlesForInvoice),
   });
   const articles = articlesData?.articles;
+
+  const { data: prestationsData } = useQuery({
+    queryKey: ["prestations", "invoice-catalog"],
+    queryFn: () => stockApi.listPrestations({ activeOnly: true, limit: MAX_PAGE_LIMIT }),
+    enabled: can("prestations.read") && needArticlesForInvoice,
+  });
+  const prestations = prestationsData?.prestations;
 
   const { data: stockLocations = [] } = useQuery({
     queryKey: ["stock-locations", "intervention-usage"],
@@ -487,7 +509,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   const { data: stockMovements } = useQuery({
     queryKey: ["stock-movements", caseId],
     queryFn: () => stockApi.listArticleMovements({ caseId, limit: 200 }),
-    enabled: showInterventionArticles,
+    enabled: loadStockForCase,
   });
 
   const [newIntTitle, setNewIntTitle] = useState("");
@@ -524,14 +546,25 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   );
   const [signDialogInterventionId, setSignDialogInterventionId] = useState<string | null>(null);
   const [qontoInvoiceNumberDialogOpen, setQontoInvoiceNumberDialogOpen] = useState(false);
-  const [createInvoiceProvider, setCreateInvoiceProvider] = useState<"pennylane" | "qonto" | null>(
-    null,
-  );
+  const [createInvoiceProvider, setCreateInvoiceProvider] = useState<
+    "pennylane" | "qonto" | "demo" | null
+  >(null);
   const [createInvoiceQuoteId, setCreateInvoiceQuoteId] = useState<string | null>(null);
   const [pendingInvoiceOptions, setPendingInvoiceOptions] = useState<SyncCaseInvoiceOptions | null>(
     null,
   );
+  const [createdInvoiceResult, setCreatedInvoiceResult] = useState<CreatedCaseInvoiceResult | null>(
+    null,
+  );
   const [downloadingReportId, setDownloadingReportId] = useState<string | null>(null);
+
+  const closeInvoiceOverlay = () => {
+    setCreateInvoiceProvider(null);
+    setCreateInvoiceQuoteId(null);
+    setPendingInvoiceOptions(null);
+    setCreatedInvoiceResult(null);
+    setQontoInvoiceNumberDialogOpen(false);
+  };
 
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: ["case", caseId] });
@@ -567,9 +600,8 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
     mutationFn: (options: SyncCaseInvoiceOptions) =>
       integrationsApi.syncCaseToPennylane(caseId, options),
     onSuccess: (result) => {
-      setCreateInvoiceProvider(null);
-      setCreateInvoiceQuoteId(null);
       setPendingInvoiceOptions(null);
+      setCreatedInvoiceResult(result);
       invalidateAll();
       queryClient.invalidateQueries({ queryKey: ["integrations", "invoice-sync", caseId] });
       showToast(
@@ -584,9 +616,8 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
       integrationsApi.syncCaseToQonto(caseId, options),
     onSuccess: (result) => {
       setQontoInvoiceNumberDialogOpen(false);
-      setCreateInvoiceProvider(null);
-      setCreateInvoiceQuoteId(null);
       setPendingInvoiceOptions(null);
+      setCreatedInvoiceResult(result);
       invalidateAll();
       queryClient.invalidateQueries({ queryKey: ["integrations", "invoice-sync", caseId] });
       showToast(result.draft ? "Facture brouillon créée dans Qonto." : "Facture créée dans Qonto.");
@@ -598,6 +629,19 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
       }
       showToast(err.message, "error");
     },
+  });
+
+  const demoSyncMutation = useMutation({
+    mutationFn: (options: SyncCaseInvoiceOptions) =>
+      integrationsApi.syncCaseToDemo(caseId, options),
+    onSuccess: (result) => {
+      setPendingInvoiceOptions(null);
+      setCreatedInvoiceResult(result);
+      invalidateAll();
+      queryClient.invalidateQueries({ queryKey: ["integrations", "invoice-sync", caseId] });
+      showToast(result.draft ? "Facture brouillon démo créée." : "Facture démo créée.");
+    },
+    onError: (err: Error) => showToast(err.message, "error"),
   });
 
   const finalizeInvoiceMutation = useMutation({
@@ -641,7 +685,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
     onSuccess: () => {
       invalidateAll();
       queryClient.invalidateQueries({ queryKey: ["integrations", "invoice-sync", caseId] });
-      showToast("Facture détachée du dossier.");
+      showToast("Facture retirée du dossier.");
     },
     onError: (err: Error) => showToast(err.message, "error"),
   });
@@ -758,6 +802,38 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
     return map;
   }, [articles, stockMovements]);
 
+  const caseArticleUsagesForInvoice = useMemo(() => {
+    const byArticle = new Map<
+      string,
+      { articleId: string; articleName: string; unit?: string; netQuantity: number }
+    >();
+    for (const items of interventionUsageMap.values()) {
+      for (const item of items) {
+        if (!(item.netQuantity > 0)) continue;
+        const existing = byArticle.get(item.articleId);
+        if (existing) {
+          existing.netQuantity += item.netQuantity;
+        } else {
+          byArticle.set(item.articleId, {
+            articleId: item.articleId,
+            articleName: item.articleName,
+            unit: item.unit,
+            netQuantity: item.netQuantity,
+          });
+        }
+      }
+    }
+    return [...byArticle.values()];
+  }, [interventionUsageMap]);
+
+  const articlePriceById = useMemo(() => {
+    const map = new Map<string, number | undefined>();
+    for (const article of articles ?? []) {
+      map.set(article.id, article.defaultPrice);
+    }
+    return map;
+  }, [articles]);
+
   const teamsById = useMemo(() => {
     const map = new Map<string, TeamResponse>();
     for (const team of teamsData ?? []) {
@@ -824,27 +900,35 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   );
 
   const integrationsStatusLoading =
-    (canReadPennylane && pennylaneStatusLoading) || (canReadQonto && qontoStatusLoading);
+    (canReadPennylane && pennylaneStatusLoading) ||
+    (canReadQonto && qontoStatusLoading) ||
+    (canReadDemo && demoStatusLoading);
   const showPennylaneSend =
     canSyncPennylane && Boolean(pennylaneStatus?.connected) && !integrationsStatusLoading;
   const showQontoSend =
     canSyncQonto && Boolean(qontoStatus?.connected) && !integrationsStatusLoading;
+  const showDemoSend = canSyncDemo && Boolean(demoStatus?.connected) && !integrationsStatusLoading;
   const showConnectBillingTool =
     canCreateCaseInvoice(caseData.billingStatus) &&
     !integrationsStatusLoading &&
     !showPennylaneSend &&
     !showQontoSend &&
-    (canOpenIntegrations || canSyncPennylane || canSyncQonto);
+    !showDemoSend &&
+    (canOpenIntegrations || canSyncPennylane || canSyncQonto || canSyncDemo);
+
+  const anyInvoiceSyncPending =
+    pennylaneSyncMutation.isPending || qontoSyncMutation.isPending || demoSyncMutation.isPending;
 
   const billingActions =
     canCreateCaseInvoice(caseData.billingStatus) && !integrationsStatusLoading ? (
-      showPennylaneSend || showQontoSend ? (
+      showPennylaneSend || showQontoSend || showDemoSend ? (
         <>
           {showPennylaneSend ? (
             <button
               type="button"
-              disabled={pennylaneSyncMutation.isPending || qontoSyncMutation.isPending}
+              disabled={anyInvoiceSyncPending}
               onClick={() => {
+                setCreatedInvoiceResult(null);
                 setCreateInvoiceQuoteId(null);
                 setCreateInvoiceProvider("pennylane");
               }}
@@ -856,14 +940,29 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
           {showQontoSend ? (
             <button
               type="button"
-              disabled={qontoSyncMutation.isPending || pennylaneSyncMutation.isPending}
+              disabled={anyInvoiceSyncPending}
               onClick={() => {
+                setCreatedInvoiceResult(null);
                 setCreateInvoiceQuoteId(null);
                 setCreateInvoiceProvider("qonto");
               }}
               className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-medium text-slate-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 shadow-sm"
             >
               {qontoSyncMutation.isPending ? "Envoi Qonto…" : "Créer une facture Qonto"}
+            </button>
+          ) : null}
+          {showDemoSend ? (
+            <button
+              type="button"
+              disabled={anyInvoiceSyncPending}
+              onClick={() => {
+                setCreatedInvoiceResult(null);
+                setCreateInvoiceQuoteId(null);
+                setCreateInvoiceProvider("demo");
+              }}
+              className="rounded-lg border border-dashed border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-medium text-slate-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 shadow-sm"
+            >
+              {demoSyncMutation.isPending ? "Création démo…" : "Créer une facture démo"}
             </button>
           ) : null}
         </>
@@ -1317,7 +1416,11 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
               <CaseInvoiceSyncPanel
                 invoices={invoiceSyncs}
                 canSync={
-                  invoiceSyncs.some((i) => i.provider === "qonto") ? canSyncQonto : canSyncPennylane
+                  invoiceSyncs.some((i) => i.provider === "demo")
+                    ? canSyncDemo
+                    : invoiceSyncs.some((i) => i.provider === "qonto")
+                      ? canSyncQonto
+                      : canSyncPennylane
                 }
                 finalizePendingId={
                   finalizeInvoiceMutation.isPending
@@ -1347,6 +1450,16 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                     description:
                       "La liaison avec le dossier sera supprimée. La facture distante (annulée) n’est pas modifiée.",
                     confirmLabel: "Détacher",
+                    variant: "danger",
+                  });
+                  if (ok) detachInvoiceMutation.mutate(syncId);
+                }}
+                onDeleteDraft={async (syncId) => {
+                  const ok = await confirm({
+                    title: "Supprimer ce brouillon ?",
+                    description:
+                      "Le brouillon sera supprimé dans l’outil de facturation (Pennylane/Qonto) et retiré du dossier. Cette action est irréversible.",
+                    confirmLabel: "Supprimer",
                     variant: "danger",
                   });
                   if (ok) detachInvoiceMutation.mutate(syncId);
@@ -1537,6 +1650,9 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                     (item) => item.netQuantity > 0,
                   );
                   const isEditingThis = editingInterventionId === intervention.id;
+                  const isCompleted = intervention.status === "completed";
+                  const assignmentLocked = isCompleted;
+                  const scheduleLocked = isCompleted;
 
                   const startEditingIntervention = () => {
                     setEditingInterventionId(intervention.id);
@@ -1566,15 +1682,23 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                         payload: {
                           title: editIntTitle.trim(),
                           description: editIntDesc.trim() || undefined,
-                          ...(editIntTeamId
-                            ? { assignedTeamId: editIntTeamId, assigneeId: null }
-                            : editIntAssignee
-                              ? { assigneeId: editIntAssignee, assignedTeamId: null }
-                              : { assigneeId: null, assignedTeamId: null }),
-                          scheduledStart: editIntStart
-                            ? new Date(editIntStart).toISOString()
-                            : null,
-                          scheduledEnd: editIntEnd ? new Date(editIntEnd).toISOString() : null,
+                          ...(assignmentLocked
+                            ? {}
+                            : editIntTeamId
+                              ? { assignedTeamId: editIntTeamId, assigneeId: null }
+                              : editIntAssignee
+                                ? { assigneeId: editIntAssignee, assignedTeamId: null }
+                                : { assigneeId: null, assignedTeamId: null }),
+                          ...(scheduleLocked
+                            ? {}
+                            : {
+                                scheduledStart: editIntStart
+                                  ? new Date(editIntStart).toISOString()
+                                  : null,
+                                scheduledEnd: editIntEnd
+                                  ? new Date(editIntEnd).toISOString()
+                                  : null,
+                              }),
                         },
                       },
                       { onSuccess: () => setEditingInterventionId(null) },
@@ -1610,7 +1734,8 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                                 setEditIntTeamId(value);
                                 if (value) setEditIntAssignee("");
                               }}
-                              className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
+                              disabled={assignmentLocked}
+                              className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60"
                             >
                               <option value="">Équipe (aucune)</option>
                               {teamsData?.map((t) => (
@@ -1626,7 +1751,8 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                                 setEditIntAssignee(value);
                                 if (value) setEditIntTeamId("");
                               }}
-                              className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
+                              disabled={assignmentLocked}
+                              className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60"
                               aria-label="Technicien assigné"
                             >
                               <option value="">Technicien (aucun)</option>
@@ -1640,9 +1766,9 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                             <p className="sm:col-span-2 text-xs text-slate-500 dark:text-slate-400 inline-flex items-start gap-1.5">
                               <InterventionAssigneeHint />
                               <span>
-                                Assignez soit une équipe, soit un technicien. Les techniciens sans
-                                compte utilisateur peuvent être affectés ; seules les notifications
-                                nécessitent un compte lié.
+                                {assignmentLocked
+                                  ? "L’assignation équipe / technicien ne peut plus être modifiée une fois l’intervention terminée."
+                                  : "Assignez soit une équipe, soit un technicien. Les techniciens sans compte utilisateur peuvent être affectés ; seules les notifications nécessitent un compte lié."}
                               </span>
                             </p>
                             {plannerCustomerLoading && plannerCustomerId ? (
@@ -1650,7 +1776,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                                 <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-48 mb-3" />
                                 <div className="h-24 bg-slate-100 dark:bg-slate-800 rounded-xl" />
                               </div>
-                            ) : (
+                            ) : assignmentLocked ? null : (
                               <div className="sm:col-span-2">
                                 <TeamSuggestionAddonGate
                                   teams={teamsData ?? []}
@@ -1677,7 +1803,8 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                                 type="datetime-local"
                                 value={editIntStart}
                                 onChange={(e) => setEditIntStart(e.target.value)}
-                                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
+                                disabled={scheduleLocked}
+                                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60"
                               />
                             </div>
                             <div>
@@ -1688,9 +1815,16 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                                 type="datetime-local"
                                 value={editIntEnd}
                                 onChange={(e) => setEditIntEnd(e.target.value)}
-                                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
+                                disabled={scheduleLocked}
+                                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60"
                               />
                             </div>
+                            {scheduleLocked ? (
+                              <p className="sm:col-span-2 text-xs text-slate-500 dark:text-slate-400">
+                                Les dates ne peuvent plus être modifiées une fois
+                                l&apos;intervention terminée.
+                              </p>
+                            ) : null}
                           </div>
                           <div className="flex gap-2">
                             <button
@@ -1838,25 +1972,40 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                               </div>
                               {canViewInterventionArticles && usedArticles.length > 0 ? (
                                 <ul className="mt-2 space-y-1">
-                                  {usedArticles.map((item) => (
-                                    <li
-                                      key={item.articleId}
-                                      className="flex flex-wrap items-baseline justify-between gap-2 text-xs text-slate-600 dark:text-slate-300"
-                                    >
-                                      <span>
-                                        {item.articleName}
-                                        {item.articleReference ? (
-                                          <span className="text-slate-400 dark:text-slate-500">
-                                            {" "}
-                                            · {item.articleReference}
-                                          </span>
-                                        ) : null}
-                                      </span>
-                                      <span className="tabular-nums font-medium text-slate-700 dark:text-slate-200">
-                                        {item.netQuantity} {item.unit}
-                                      </span>
-                                    </li>
-                                  ))}
+                                  {usedArticles.map((item) => {
+                                    const unitPrice = articlePriceById.get(item.articleId);
+                                    const lineHt =
+                                      typeof unitPrice === "number" && Number.isFinite(unitPrice)
+                                        ? item.netQuantity * unitPrice
+                                        : null;
+                                    return (
+                                      <li
+                                        key={item.articleId}
+                                        className="flex flex-wrap items-baseline justify-between gap-2 text-xs text-slate-600 dark:text-slate-300"
+                                      >
+                                        <span>
+                                          {item.articleName}
+                                          {item.articleReference ? (
+                                            <span className="text-slate-400 dark:text-slate-500">
+                                              {" "}
+                                              · {item.articleReference}
+                                            </span>
+                                          ) : null}
+                                        </span>
+                                        <span className="tabular-nums font-medium text-slate-700 dark:text-slate-200 text-right">
+                                          {item.netQuantity} {item.unit}
+                                          {lineHt != null ? (
+                                            <span className="block text-[11px] font-normal text-slate-500 dark:text-slate-400">
+                                              ~ {lineHt.toFixed(2)} € HT
+                                              {typeof unitPrice === "number"
+                                                ? ` · ${unitPrice.toFixed(2)} € / ${item.unit}`
+                                                : ""}
+                                            </span>
+                                          ) : null}
+                                        </span>
+                                      </li>
+                                    );
+                                  })}
                                 </ul>
                               ) : canViewInterventionArticles ? (
                                 <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
@@ -2002,30 +2151,48 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
         pending={qontoSyncMutation.isPending}
         onClose={() => setQontoInvoiceNumberDialogOpen(false)}
         onSubmit={(invoiceNumber) => {
-          if (!pendingInvoiceOptions?.quoteId) {
-            showToast("Sélectionnez un devis avant d’envoyer la facture.", "error");
+          if (!pendingInvoiceOptions?.quoteId && !pendingInvoiceOptions?.lines?.length) {
+            showToast("Complétez la facture avant l’envoi.", "error");
             return;
           }
           qontoSyncMutation.mutate({ ...pendingInvoiceOptions, invoiceNumber });
         }}
       />
 
-      <CreateCaseInvoiceDialog
+      <CreateCaseInvoiceOverlay
         open={createInvoiceProvider != null}
-        pending={pennylaneSyncMutation.isPending || qontoSyncMutation.isPending}
-        providerLabel={createInvoiceProvider === "qonto" ? "Qonto" : "Pennylane"}
+        pending={anyInvoiceSyncPending}
+        finalizePending={finalizeInvoiceMutation.isPending}
+        providerLabel={
+          createInvoiceProvider === "qonto"
+            ? "Qonto"
+            : createInvoiceProvider === "demo"
+              ? "Démo"
+              : "Pennylane"
+        }
         quotes={caseQuotes}
         invoices={invoiceSyncs}
         initialQuoteId={createInvoiceQuoteId}
-        onClose={() => {
-          setCreateInvoiceProvider(null);
-          setCreateInvoiceQuoteId(null);
-          setPendingInvoiceOptions(null);
+        articleUsages={caseArticleUsagesForInvoice}
+        articles={articles ?? []}
+        prestations={prestations ?? []}
+        createdResult={createdInvoiceResult}
+        onClose={closeInvoiceOverlay}
+        onValidateLater={() => {
+          showToast("Brouillon conservé — vous pourrez le valider plus tard.", "success");
+          closeInvoiceOverlay();
+        }}
+        onFinalizeNow={(syncId) => {
+          finalizeInvoiceMutation.mutate(syncId, {
+            onSuccess: () => closeInvoiceOverlay(),
+          });
         }}
         onSubmit={(options) => {
           setPendingInvoiceOptions(options);
           if (createInvoiceProvider === "qonto") {
             qontoSyncMutation.mutate(options);
+          } else if (createInvoiceProvider === "demo") {
+            demoSyncMutation.mutate(options);
           } else {
             pennylaneSyncMutation.mutate(options);
           }
@@ -2040,8 +2207,10 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
             ? {
                 showPennylane: showPennylaneSend,
                 showQonto: showQontoSend,
-                pending: pennylaneSyncMutation.isPending || qontoSyncMutation.isPending,
+                showDemo: showDemoSend,
+                pending: anyInvoiceSyncPending,
                 onCreate: (provider, quoteId) => {
+                  setCreatedInvoiceResult(null);
                   setCreateInvoiceQuoteId(quoteId);
                   setCreateInvoiceProvider(provider);
                 },

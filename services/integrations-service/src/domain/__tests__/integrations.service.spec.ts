@@ -5,6 +5,10 @@ import {
 } from "@nestjs/common";
 import { of } from "rxjs";
 import { IntegrationsService } from "../integrations.service";
+import type { BillingProviderAdapter } from "../providers/billing-provider.adapter";
+import { DemoBillingAdapter } from "../providers/demo.billing.adapter";
+import { PennylaneBillingAdapter } from "../providers/pennylane.billing.adapter";
+import { QontoBillingAdapter } from "../providers/qonto.billing.adapter";
 import { signOAuthState } from "../oauth-state";
 
 describe("IntegrationsService", () => {
@@ -26,12 +30,33 @@ describe("IntegrationsService", () => {
     get: jest.fn(),
     post: jest.fn(),
     patch: jest.fn(),
+    put: jest.fn(),
+    delete: jest.fn(),
   };
 
-  const service = new IntegrationsService(
+  const pennylaneAdapter = new PennylaneBillingAdapter(
     httpService as never,
     credentialModel as never,
     syncModel as never,
+  );
+  const qontoAdapter = new QontoBillingAdapter(
+    httpService as never,
+    credentialModel as never,
+    syncModel as never,
+  );
+  const demoAdapter = new DemoBillingAdapter(credentialModel as never, syncModel as never);
+
+  const service = new IntegrationsService(
+    credentialModel as never,
+    syncModel as never,
+    pennylaneAdapter,
+    qontoAdapter,
+    demoAdapter,
+    new Map<string, BillingProviderAdapter>([
+      [pennylaneAdapter.provider, pennylaneAdapter],
+      [qontoAdapter.provider, qontoAdapter],
+      [demoAdapter.provider, demoAdapter],
+    ]),
   );
 
   const oauthEnv = {
@@ -1041,6 +1066,43 @@ describe("IntegrationsService", () => {
         expect(list).toEqual({ invoices: [] });
       });
 
+      it("deletes a Qonto draft invoice remotely then locally", async () => {
+        process.env.INTEGRATIONS_ENCRYPTION_KEY =
+          "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+        const { encryptSecret } = await import("../secret-crypto");
+        const doc = {
+          _id: "sync-draft",
+          organizationId: "org-1",
+          provider: "qonto",
+          caseId: "c1",
+          providerCustomerId: "client-1",
+          providerInvoiceId: "inv-draft",
+          draft: true,
+          remoteStatus: "draft",
+          invoiceKind: "full",
+        };
+        syncModel.findOne.mockReturnValue({ exec: async () => doc });
+        syncModel.deleteOne.mockReturnValue({ exec: async () => ({ deletedCount: 1 }) });
+        syncModel.find.mockReturnValue({
+          sort: () => ({ exec: async () => [] }),
+        });
+        credentialModel.findOne.mockReturnValue({
+          exec: async () => ({
+            authMethod: "api_token",
+            encryptedToken: encryptSecret("login:secret"),
+          }),
+        });
+        httpService.delete.mockReturnValue(of({ data: undefined, status: 204 }) as never);
+
+        const list = await service.deleteCaseInvoiceSync("org-1", "c1", "sync-draft");
+        expect(httpService.delete).toHaveBeenCalledWith(
+          expect.stringContaining("/client_invoices/inv-draft"),
+          expect.any(Object),
+        );
+        expect(syncModel.deleteOne).toHaveBeenCalled();
+        expect(list).toEqual({ invoices: [] });
+      });
+
       it("refuses to detach a finalized invoice", async () => {
         syncModel.findOne.mockReturnValue({
           exec: async () => ({
@@ -1235,6 +1297,119 @@ describe("IntegrationsService", () => {
       expect(stats.amountHtTotal).toBe("900.00");
       expect(stats.byKind.full).toBe(2);
       expect(stats.byKind.situation).toBe(1);
+    });
+  });
+
+  describe("Demo billing", () => {
+    it("connects demo and clears other billing providers", async () => {
+      credentialModel.findOneAndUpdate.mockReturnValue({ exec: async () => ({}) });
+      credentialModel.deleteOne.mockReturnValue({ exec: async () => ({ deletedCount: 1 }) });
+      credentialModel.findOne.mockReturnValue({
+        exec: async () => ({
+          companyName: "Facturation démo",
+          authMethod: "demo",
+          connectedAt: new Date("2026-01-01T00:00:00Z"),
+        }),
+      });
+
+      const status = await service.connectDemo("org-1");
+      expect(status).toMatchObject({
+        provider: "demo",
+        connected: true,
+        companyName: "Facturation démo",
+      });
+      expect(credentialModel.deleteOne).toHaveBeenCalledWith(
+        expect.objectContaining({ provider: "pennylane" }),
+      );
+      expect(credentialModel.deleteOne).toHaveBeenCalledWith(
+        expect.objectContaining({ provider: "qonto" }),
+      );
+    });
+
+    it("syncs a draft demo invoice", async () => {
+      process.env.APP_URL = "https://app.test";
+      credentialModel.findOne.mockReturnValue({
+        exec: async () => ({ authMethod: "demo", companyName: "Facturation démo" }),
+      });
+      syncModel.create.mockImplementation(async (doc: Record<string, unknown>) => ({
+        ...doc,
+        _id: "sync-demo-1",
+      }));
+
+      const result = await service.syncCaseToDemo({
+        organizationId: "org-1",
+        caseId: "c1",
+        caseTitle: "Chantier démo",
+        externalReference: "ref-demo",
+        invoiceDate: "2026-07-18",
+        customer: {
+          planwiseCustomerId: "cust-1",
+          name: "Client Démo",
+        },
+        lines: [{ label: "Prestation", quantity: 2, unitPriceHt: "50.00", vatRate: "FR_200" }],
+      });
+
+      expect(result.provider).toBe("demo");
+      expect(result.draft).toBe(true);
+      expect(result.syncId).toBe("sync-demo-1");
+      expect(result.invoiceUrl).toContain("https://app.test/demo-invoice?");
+      expect(result.invoiceUrl).toContain("draft=1");
+      expect(syncModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          provider: "demo",
+          caseId: "c1",
+          draft: true,
+          remoteStatus: "draft",
+        }),
+      );
+    });
+
+    it("finalizes a demo draft locally", async () => {
+      const doc = {
+        _id: "sync-demo-1",
+        organizationId: "org-1",
+        provider: "demo",
+        caseId: "c1",
+        providerCustomerId: "cust-1",
+        providerInvoiceId: "inv-demo-1",
+        draft: true,
+        remoteStatus: "draft",
+        invoiceKind: "full",
+        invoiceNumber: "BROUILLON-DEMO-ABCD",
+        invoiceUrl: "https://app.test/demo-invoice?draft=1&number=BROUILLON-DEMO-ABCD",
+        save: jest.fn().mockResolvedValue(undefined),
+      };
+      syncModel.findOne.mockReturnValue({ exec: async () => doc });
+
+      const status = await service.finalizeCaseInvoice("org-1", "c1", "sync-demo-1");
+      expect(status.remoteStatus).toBe("finalized");
+      expect(status.draft).toBe(false);
+      expect(status.provider).toBe("demo");
+      expect(status.invoiceUrl).toContain("draft=0");
+      expect(doc.save).toHaveBeenCalled();
+    });
+
+    it("deletes a demo draft without remote call", async () => {
+      const doc = {
+        _id: "sync-demo-1",
+        organizationId: "org-1",
+        provider: "demo",
+        caseId: "c1",
+        providerInvoiceId: "inv-demo-1",
+        draft: true,
+        remoteStatus: "draft",
+      };
+      syncModel.findOne.mockReturnValue({ exec: async () => doc });
+      syncModel.deleteOne.mockReturnValue({ exec: async () => ({ deletedCount: 1 }) });
+      syncModel.find.mockReturnValue({
+        sort: () => ({ exec: async () => [] }),
+      });
+
+      await expect(service.deleteCaseInvoiceSync("org-1", "c1", "sync-demo-1")).resolves.toEqual({
+        invoices: [],
+      });
+      expect(httpService.delete).not.toHaveBeenCalled();
+      expect(syncModel.deleteOne).toHaveBeenCalled();
     });
   });
 });

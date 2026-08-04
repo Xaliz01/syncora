@@ -25,7 +25,7 @@ function useBodyScrollLock(locked: boolean) {
   }, [locked]);
 }
 
-type SetupActionId = "customer" | "invite" | "case" | "demo";
+type SetupActionId = "customer" | "invite" | "case" | "demo" | "billing";
 
 /**
  * Guide de bienvenue in-app (fondateur admin) après l’onboarding.
@@ -125,6 +125,7 @@ export function SetupGuideHost() {
     if (id === "customer") router.push("/customers/new");
     else if (id === "invite") router.push("/users/new");
     else if (id === "case") router.push("/cases/new");
+    else if (id === "billing") router.push("/settings/integrations");
   };
 
   if (!open) return null;
@@ -158,6 +159,18 @@ export function SetupGuideHost() {
       title: "Charger des données de démo",
       description: "Peuplez l’app avec des exemples pour explorer rapidement.",
       visible: !demoAlreadyLoaded,
+    },
+    {
+      id: "billing",
+      title: "Connecter son outil de facturation",
+      description: "Pennylane, Qonto, ou facturation démo pendant l’essai.",
+      visible:
+        hasPermission(user, "integrations.pennylane.read") ||
+        hasPermission(user, "integrations.qonto.read") ||
+        hasPermission(user, "integrations.demo.read") ||
+        hasPermission(user, "integrations.pennylane.configure") ||
+        hasPermission(user, "integrations.qonto.configure") ||
+        hasPermission(user, "integrations.demo.configure"),
     },
   ];
 

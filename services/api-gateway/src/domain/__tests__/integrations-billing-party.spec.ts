@@ -13,6 +13,7 @@ import { IntegrationsGatewayService } from "../integrations.service";
 import { AbstractCasesGatewayService } from "../ports/cases.service.port";
 import { AbstractCustomersGatewayService } from "../ports/customers.service.port";
 import { AbstractOrderGiversGatewayService } from "../ports/order-givers.service.port";
+import { AbstractSubscriptionsGatewayService } from "../ports/subscriptions.service.port";
 
 describe("IntegrationsGatewayService prepareInvoiceSync billing party", () => {
   let service: IntegrationsGatewayService;
@@ -126,6 +127,15 @@ describe("IntegrationsGatewayService prepareInvoiceSync billing party", () => {
         { provide: AbstractCasesGatewayService, useValue: casesService },
         { provide: AbstractCustomersGatewayService, useValue: customersService },
         { provide: AbstractOrderGiversGatewayService, useValue: orderGiversService },
+        {
+          provide: AbstractSubscriptionsGatewayService,
+          useValue: {
+            getCurrentSubscription: jest.fn().mockResolvedValue({
+              status: "trialing",
+              hasAccess: true,
+            }),
+          },
+        },
       ],
     }).compile();
 
@@ -157,6 +167,47 @@ describe("IntegrationsGatewayService prepareInvoiceSync billing party", () => {
     const payload = httpService.post.mock.calls[0][1];
     expect(payload.customer.name).toBe("Donneur SA");
     expect(payload.customer.planwiseCustomerId).toBe("og-1");
+  });
+
+  it("syncs a draft invoice from custom lines without a quote", async () => {
+    casesService.getCase.mockResolvedValue(baseCase);
+
+    await service.syncCaseToPennylane(user, "case-1", {
+      lines: [
+        { label: "Pièce", quantity: 2, unitPriceHt: 25, tvaRate: 20, unit: "u" },
+        { label: "Main d'œuvre", quantity: 1, unitPriceHt: 50, tvaRate: 20 },
+      ],
+    });
+
+    expect(casesService.getQuote).not.toHaveBeenCalled();
+    const payload = httpService.post.mock.calls[0][1];
+    expect(payload.quoteId).toBeUndefined();
+    expect(payload.invoiceKind).toBe("full");
+    expect(payload.amountHt).toBe("100.00");
+    expect(payload.lines).toEqual([
+      {
+        label: "Pièce",
+        quantity: 2,
+        unitPriceHt: "25.00",
+        vatRate: "FR_200",
+        unit: "u",
+      },
+      {
+        label: "Main d'œuvre",
+        quantity: 1,
+        unitPriceHt: "50.00",
+        vatRate: "FR_200",
+        unit: undefined,
+      },
+    ]);
+  });
+
+  it("rejects sync without quote and without lines", async () => {
+    casesService.getCase.mockResolvedValue(baseCase);
+
+    await expect(service.syncCaseToPennylane(user, "case-1", {})).rejects.toThrow(
+      BadRequestException,
+    );
   });
 
   it("rejects when neither customer nor order giver is set", async () => {
