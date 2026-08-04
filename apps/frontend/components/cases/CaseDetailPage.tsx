@@ -1536,6 +1536,14 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                     rows={2}
                     className="sm:col-span-2 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
                   />
+                  <p className="sm:col-span-2 text-xs text-slate-500 dark:text-slate-400 inline-flex items-start gap-1.5">
+                    <InterventionAssigneeHint />
+                    <span>
+                      Assignez soit une équipe, soit un technicien. Les techniciens sans compte
+                      utilisateur peuvent être affectés ; seules les notifications nécessitent un
+                      compte lié.
+                    </span>
+                  </p>
                   <select
                     value={newIntTeamId}
                     onChange={(e) => {
@@ -1570,14 +1578,6 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                       </option>
                     ))}
                   </select>
-                  <p className="sm:col-span-2 text-xs text-slate-500 dark:text-slate-400 inline-flex items-start gap-1.5">
-                    <InterventionAssigneeHint />
-                    <span>
-                      Assignez soit une équipe, soit un technicien. Les techniciens sans compte
-                      utilisateur peuvent être affectés ; seules les notifications nécessitent un
-                      compte lié.
-                    </span>
-                  </p>
                   {plannerCustomerLoading && plannerCustomerId ? (
                     <div className="sm:col-span-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 p-4 animate-pulse">
                       <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-48 mb-3" />
@@ -1727,6 +1727,14 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                               rows={2}
                               className="sm:col-span-2 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
                             />
+                            <p className="sm:col-span-2 text-xs text-slate-500 dark:text-slate-400 inline-flex items-start gap-1.5">
+                              <InterventionAssigneeHint />
+                              <span>
+                                {assignmentLocked
+                                  ? "L’assignation équipe / technicien ne peut plus être modifiée une fois l’intervention terminée."
+                                  : "Assignez soit une équipe, soit un technicien. Les techniciens sans compte utilisateur peuvent être affectés ; seules les notifications nécessitent un compte lié."}
+                              </span>
+                            </p>
                             <select
                               value={editIntTeamId}
                               onChange={(e) => {
@@ -1763,14 +1771,6 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                                 </option>
                               ))}
                             </select>
-                            <p className="sm:col-span-2 text-xs text-slate-500 dark:text-slate-400 inline-flex items-start gap-1.5">
-                              <InterventionAssigneeHint />
-                              <span>
-                                {assignmentLocked
-                                  ? "L’assignation équipe / technicien ne peut plus être modifiée une fois l’intervention terminée."
-                                  : "Assignez soit une équipe, soit un technicien. Les techniciens sans compte utilisateur peuvent être affectés ; seules les notifications nécessitent un compte lié."}
-                              </span>
-                            </p>
                             {plannerCustomerLoading && plannerCustomerId ? (
                               <div className="sm:col-span-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 p-4 animate-pulse">
                                 <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-48 mb-3" />

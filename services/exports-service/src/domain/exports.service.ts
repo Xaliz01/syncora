@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
 import type {
+  AgenceResponse,
   CaseResponse,
   CaseSummaryResponse,
   CasesListResponse,
@@ -14,6 +15,7 @@ import type {
   InterventionsListResponse,
   OrganizationInvoiceSyncItem,
   OrganizationInvoiceSyncsListResponse,
+  PostalAddress,
   ReportCellValue,
   ReportEntityRef,
   ReportPreviewQuery,
@@ -44,6 +46,28 @@ const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
 const CUSTOMERS_URL = process.env.CUSTOMERS_SERVICE_URL ?? "http://localhost:3009";
 const TECHNICIANS_URL = process.env.TECHNICIANS_SERVICE_URL ?? "http://localhost:3006";
 const INTEGRATIONS_URL = process.env.INTEGRATIONS_SERVICE_URL ?? "http://localhost:3013";
+
+/** Aligné sur la suggestion d’équipe front (vol d’oiseau → route approx.). */
+const ROAD_FACTOR = 1.18;
+const LITERS_PER_KM = 0.082;
+const DIESEL_EUR_PER_L = 1.75;
+const CO2_KG_PER_L = 2.65;
+const BAN_GEOCODE_URL = "https://data.geopf.fr/geocodage/search";
+
+type GeoPoint = { lat: number; lon: number };
+
+type MileageRow = {
+  subjectId: string;
+  subjectLabel: string;
+  interventionCount: number;
+  /** Agence → site (BAN + facteur route), aller simple. */
+  estimatedKm: number;
+  /** GPS début → fin d’intervention (si capturé), aller simple. */
+  actualKm: number;
+  fuelLiters: number;
+  fuelCostEur: number;
+  co2Kg: number;
+};
 
 @Injectable()
 export class ExportsService extends AbstractExportsService {
@@ -978,10 +1002,11 @@ export class ExportsService extends AbstractExportsService {
     const columns = [
       { key: subjectKey, label: subjectLabel },
       { key: "interventionCount", label: "Interventions" },
-      { key: "estimatedKm", label: "Distance estimée (km)" },
-      { key: "fuelLiters", label: "Carburant (L)" },
-      { key: "fuelCostEur", label: "Coût carburant (€)" },
-      { key: "co2Kg", label: "CO₂ (kg)" },
+      { key: "estimatedKm", label: "Km estimés" },
+      { key: "actualKm", label: "Km effectifs" },
+      { key: "fuelLiters", label: "Carburant estimé (L)" },
+      { key: "fuelCostEur", label: "Coût estimé (€)" },
+      { key: "co2Kg", label: "CO₂ estimé (kg)" },
     ];
 
     const rows = mileageRows.map((row) => ({
@@ -992,6 +1017,7 @@ export class ExportsService extends AbstractExportsService {
             : this.ref("team", row.subjectId, row.subjectLabel),
         interventionCount: row.interventionCount,
         estimatedKm: row.estimatedKm,
+        actualKm: row.actualKm,
         fuelLiters: row.fuelLiters,
         fuelCostEur: row.fuelCostEur,
         co2Kg: row.co2Kg,
@@ -1015,17 +1041,7 @@ export class ExportsService extends AbstractExportsService {
       teamId?: string;
       technicianId?: string;
     },
-  ): Promise<
-    Array<{
-      subjectId: string;
-      subjectLabel: string;
-      interventionCount: number;
-      estimatedKm: number;
-      fuelLiters: number;
-      fuelCostEur: number;
-      co2Kg: number;
-    }>
-  > {
+  ): Promise<MileageRow[]> {
     const interventions = await this.fetchAllPaginated<InterventionResponse>(
       CASES_URL,
       "/interventions",
@@ -1033,9 +1049,37 @@ export class ExportsService extends AbstractExportsService {
       { organizationId, ...this.toServiceDateRange(period) },
     );
 
-    const completedWithLocations = interventions.filter(
-      (i) => i.status === "completed" && i.startLocation && i.endLocation,
-    );
+    /** Interventions terminées — km estimés (agence→site) et effectifs (GPS). */
+    const completed = interventions.filter((i) => i.status === "completed");
+
+    const [teams, agences] = await Promise.all([
+      this.callService<TeamResponse[]>(TECHNICIANS_URL, "/teams", { organizationId }).catch(
+        () => [] as TeamResponse[],
+      ),
+      this.callService<AgenceResponse[]>(TECHNICIANS_URL, "/agences", { organizationId }).catch(
+        () => [] as AgenceResponse[],
+      ),
+    ]);
+
+    const teamById = new Map(teams.map((t) => [t.id, t]));
+    const agenceById = new Map(agences.map((a) => [a.id, a]));
+    const geocodeCache = new Map<string, GeoPoint | null>();
+    const caseCache = new Map<string, CaseResponse | null>();
+    const customerCache = new Map<string, CustomerResponse | null>();
+
+    const estimatedKmById = new Map<string, number>();
+    const actualKmById = new Map<string, number>();
+    for (const intervention of completed) {
+      const estimatedKm = await this.estimateAgencyToSiteKm(organizationId, intervention, {
+        teamById,
+        agenceById,
+        geocodeCache,
+        caseCache,
+        customerCache,
+      });
+      estimatedKmById.set(intervention.id, estimatedKm);
+      actualKmById.set(intervention.id, this.actualGpsKm(intervention));
+    }
 
     if (filters.groupBy === "technician") {
       const technicians = await this.callService<TechnicianResponse[]>(
@@ -1047,7 +1091,7 @@ export class ExportsService extends AbstractExportsService {
       return technicians
         .filter((t) => !filters.technicianId || t.id === filters.technicianId)
         .map((tech) => {
-          const techInterventions = completedWithLocations.filter(
+          const techInterventions = completed.filter(
             (i) =>
               Boolean(i.assigneeId) && (i.assigneeId === tech.id || i.assigneeId === tech.userId),
           );
@@ -1055,22 +1099,27 @@ export class ExportsService extends AbstractExportsService {
             tech.id,
             `${tech.firstName} ${tech.lastName}`.trim(),
             techInterventions,
+            estimatedKmById,
+            actualKmById,
           );
         });
     }
 
-    const teams = await this.callService<TeamResponse[]>(TECHNICIANS_URL, "/teams", {
-      organizationId,
-    });
     const filteredInterventions = filters.teamId
-      ? completedWithLocations.filter((i) => i.assignedTeamId === filters.teamId)
-      : completedWithLocations;
+      ? completed.filter((i) => i.assignedTeamId === filters.teamId)
+      : completed;
 
     return teams
       .filter((t) => !filters.teamId || t.id === filters.teamId)
       .map((team) => {
         const teamInterventions = filteredInterventions.filter((i) => i.assignedTeamId === team.id);
-        return this.toMileageRow(team.id, team.name, teamInterventions);
+        return this.toMileageRow(
+          team.id,
+          team.name,
+          teamInterventions,
+          estimatedKmById,
+          actualKmById,
+        );
       });
   }
 
@@ -1078,40 +1127,160 @@ export class ExportsService extends AbstractExportsService {
     subjectId: string,
     subjectLabel: string,
     interventions: InterventionResponse[],
-  ): {
-    subjectId: string;
-    subjectLabel: string;
-    interventionCount: number;
-    estimatedKm: number;
-    fuelLiters: number;
-    fuelCostEur: number;
-    co2Kg: number;
-  } {
-    const estimatedKm = interventions.reduce((sum, i) => {
-      if (i.startLocation && i.endLocation) {
-        return (
-          sum +
-          this.haversineDistance(
-            i.startLocation.latitude,
-            i.startLocation.longitude,
-            i.endLocation.latitude,
-            i.endLocation.longitude,
-          ) *
-            1.18
-        );
-      }
-      return sum;
-    }, 0);
+    estimatedKmById: Map<string, number>,
+    actualKmById: Map<string, number>,
+  ): MileageRow {
+    const estimatedKm = interventions.reduce((sum, i) => sum + (estimatedKmById.get(i.id) ?? 0), 0);
+    const actualKm = interventions.reduce((sum, i) => sum + (actualKmById.get(i.id) ?? 0), 0);
 
     return {
       subjectId,
       subjectLabel,
       interventionCount: interventions.length,
       estimatedKm: Math.round(estimatedKm * 10) / 10,
-      fuelLiters: Math.round(estimatedKm * 0.082 * 10) / 10,
-      fuelCostEur: Math.round(estimatedKm * 0.082 * 1.75 * 100) / 100,
-      co2Kg: Math.round(estimatedKm * 0.082 * 2.65 * 10) / 10,
+      actualKm: Math.round(actualKm * 10) / 10,
+      fuelLiters: Math.round(estimatedKm * LITERS_PER_KM * 10) / 10,
+      fuelCostEur: Math.round(estimatedKm * LITERS_PER_KM * DIESEL_EUR_PER_L * 100) / 100,
+      co2Kg: Math.round(estimatedKm * LITERS_PER_KM * CO2_KG_PER_L * 10) / 10,
     };
+  }
+
+  /** Estimation planif. : agence de l’équipe → adresse d’intervention. */
+  private async estimateAgencyToSiteKm(
+    organizationId: string,
+    intervention: InterventionResponse,
+    ctx: {
+      teamById: Map<string, TeamResponse>;
+      agenceById: Map<string, AgenceResponse>;
+      geocodeCache: Map<string, GeoPoint | null>;
+      caseCache: Map<string, CaseResponse | null>;
+      customerCache: Map<string, CustomerResponse | null>;
+    },
+  ): Promise<number> {
+    const team = intervention.assignedTeamId
+      ? ctx.teamById.get(intervention.assignedTeamId)
+      : undefined;
+    const agence = team?.agenceId ? ctx.agenceById.get(team.agenceId) : undefined;
+    const agenceQuery = agence ? this.agenceAddressQuery(agence) : "";
+    const siteQuery = await this.resolveInterventionSiteQuery(organizationId, intervention.caseId, {
+      caseCache: ctx.caseCache,
+      customerCache: ctx.customerCache,
+    });
+
+    if (!agenceQuery || !siteQuery) return 0;
+
+    const [from, to] = await Promise.all([
+      this.geocodeBan(agenceQuery, ctx.geocodeCache),
+      this.geocodeBan(siteQuery, ctx.geocodeCache),
+    ]);
+    if (!from || !to) return 0;
+
+    return this.haversineDistance(from.lat, from.lon, to.lat, to.lon) * ROAD_FACTOR;
+  }
+
+  /** Distance GPS réelle début → fin (Ma journée / terrain). */
+  private actualGpsKm(intervention: InterventionResponse): number {
+    if (!intervention.startLocation || !intervention.endLocation) return 0;
+    return (
+      this.haversineDistance(
+        intervention.startLocation.latitude,
+        intervention.startLocation.longitude,
+        intervention.endLocation.latitude,
+        intervention.endLocation.longitude,
+      ) * ROAD_FACTOR
+    );
+  }
+
+  private async resolveInterventionSiteQuery(
+    organizationId: string,
+    caseId: string,
+    ctx: {
+      caseCache: Map<string, CaseResponse | null>;
+      customerCache: Map<string, CustomerResponse | null>;
+    },
+  ): Promise<string> {
+    let caseData = ctx.caseCache.get(caseId);
+    if (caseData === undefined) {
+      try {
+        caseData = await this.callService<CaseResponse>(CASES_URL, `/cases/${caseId}`, {
+          organizationId,
+        });
+      } catch {
+        caseData = null;
+      }
+      ctx.caseCache.set(caseId, caseData);
+    }
+    if (!caseData) return "";
+
+    if (caseData.interventionAddress) {
+      const formatted = this.formatPostalAddressQuery(caseData.interventionAddress);
+      if (formatted) return formatted;
+    }
+
+    const customerId = caseData.customerId;
+    if (!customerId) return "";
+
+    let customer = ctx.customerCache.get(customerId);
+    if (customer === undefined) {
+      try {
+        customer = await this.callService<CustomerResponse>(
+          CUSTOMERS_URL,
+          `/customers/${customerId}`,
+          { organizationId },
+        );
+      } catch {
+        customer = null;
+      }
+      ctx.customerCache.set(customerId, customer);
+    }
+
+    return customer?.address ? this.formatPostalAddressQuery(customer.address) : "";
+  }
+
+  private formatPostalAddressQuery(addr: PostalAddress): string {
+    return [
+      addr.line1,
+      addr.line2,
+      [addr.postalCode, addr.city].filter(Boolean).join(" "),
+      addr.country && addr.country !== "FR" ? addr.country : "",
+    ]
+      .filter((p) => p && String(p).trim().length > 0)
+      .map((p) => String(p).trim())
+      .join(", ");
+  }
+
+  private agenceAddressQuery(agence: AgenceResponse): string {
+    return [agence.address, [agence.postalCode, agence.city].filter(Boolean).join(" ")]
+      .filter((p) => p && String(p).trim().length > 0)
+      .join(", ")
+      .trim();
+  }
+
+  private async geocodeBan(
+    query: string,
+    cache: Map<string, GeoPoint | null>,
+  ): Promise<GeoPoint | null> {
+    const key = query.trim().toLowerCase();
+    if (key.length < 3) return null;
+    if (cache.has(key)) return cache.get(key) ?? null;
+
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get<{
+          features?: Array<{ geometry?: { coordinates?: [number, number] } }>;
+        }>(BAN_GEOCODE_URL, {
+          params: { q: query, limit: 1 },
+          timeout: 8_000,
+        }),
+      );
+      const coords = response.data.features?.[0]?.geometry?.coordinates;
+      const point = coords && coords.length >= 2 ? { lon: coords[0], lat: coords[1] } : null;
+      cache.set(key, point);
+      return point;
+    } catch {
+      cache.set(key, null);
+      return null;
+    }
   }
 
   private async previewCustomersList(
@@ -1858,14 +2027,7 @@ export class ExportsService extends AbstractExportsService {
   }
 
   private buildMileageReportPdf(
-    data: Array<{
-      subjectLabel: string;
-      interventionCount: number;
-      estimatedKm: number;
-      fuelLiters: number;
-      fuelCostEur: number;
-      co2Kg: number;
-    }>,
+    data: MileageRow[],
     period: { startDate: string; endDate: string },
     groupBy: "team" | "technician",
   ): Promise<Buffer> {
@@ -1873,11 +2035,20 @@ export class ExportsService extends AbstractExportsService {
     const subjectHeader = groupBy === "technician" ? "Technicien" : "Équipe";
     return this.buildTablePdf(
       `Rapport kilométrique — ${periodLabel}`,
-      [subjectHeader, "Interventions", "Distance (km)", "Carburant (L)", "Coût (€)", "CO₂ (kg)"],
+      [
+        subjectHeader,
+        "Interventions",
+        "Km estimés",
+        "Km effectifs",
+        "Carburant est. (L)",
+        "Coût est. (€)",
+        "CO₂ est. (kg)",
+      ],
       data.map((d) => [
         d.subjectLabel,
         d.interventionCount.toString(),
         d.estimatedKm.toString(),
+        d.actualKm.toString(),
         d.fuelLiters.toString(),
         d.fuelCostEur.toFixed(2),
         d.co2Kg.toString(),
@@ -1886,14 +2057,7 @@ export class ExportsService extends AbstractExportsService {
   }
 
   private async buildMileageReportXlsx(
-    data: Array<{
-      subjectLabel: string;
-      interventionCount: number;
-      estimatedKm: number;
-      fuelLiters: number;
-      fuelCostEur: number;
-      co2Kg: number;
-    }>,
+    data: MileageRow[],
     period: { startDate: string; endDate: string },
     groupBy: "team" | "technician",
   ): Promise<Buffer> {
@@ -1903,10 +2067,11 @@ export class ExportsService extends AbstractExportsService {
     ws.columns = [
       { key: "subject", width: 25 },
       { key: "count", width: 14 },
-      { key: "km", width: 22 },
-      { key: "fuel", width: 14 },
-      { key: "cost", width: 18 },
-      { key: "co2", width: 12 },
+      { key: "estimatedKm", width: 14 },
+      { key: "actualKm", width: 14 },
+      { key: "fuel", width: 18 },
+      { key: "cost", width: 16 },
+      { key: "co2", width: 14 },
     ];
 
     ws.addRow([`Période : ${periodLabel}`]);
@@ -1916,17 +2081,19 @@ export class ExportsService extends AbstractExportsService {
     this.addStyledHeaderRow(ws, [
       subjectHeader,
       "Interventions",
-      "Distance estimée (km)",
-      "Carburant (L)",
-      "Coût carburant (€)",
-      "CO₂ (kg)",
+      "Km estimés",
+      "Km effectifs",
+      "Carburant estimé (L)",
+      "Coût estimé (€)",
+      "CO₂ estimé (kg)",
     ]);
 
     for (const d of data) {
       ws.addRow({
         subject: d.subjectLabel,
         count: d.interventionCount,
-        km: d.estimatedKm,
+        estimatedKm: d.estimatedKm,
+        actualKm: d.actualKm,
         fuel: d.fuelLiters,
         cost: d.fuelCostEur,
         co2: d.co2Kg,
@@ -1936,18 +2103,20 @@ export class ExportsService extends AbstractExportsService {
     const totals = data.reduce(
       (acc, d) => ({
         count: acc.count + d.interventionCount,
-        km: acc.km + d.estimatedKm,
+        estimatedKm: acc.estimatedKm + d.estimatedKm,
+        actualKm: acc.actualKm + d.actualKm,
         fuel: acc.fuel + d.fuelLiters,
         cost: acc.cost + d.fuelCostEur,
         co2: acc.co2 + d.co2Kg,
       }),
-      { count: 0, km: 0, fuel: 0, cost: 0, co2: 0 },
+      { count: 0, estimatedKm: 0, actualKm: 0, fuel: 0, cost: 0, co2: 0 },
     );
 
     ws.addRow({
       subject: "TOTAL",
       count: totals.count,
-      km: Math.round(totals.km * 10) / 10,
+      estimatedKm: Math.round(totals.estimatedKm * 10) / 10,
+      actualKm: Math.round(totals.actualKm * 10) / 10,
       fuel: Math.round(totals.fuel * 10) / 10,
       cost: Math.round(totals.cost * 100) / 100,
       co2: Math.round(totals.co2 * 10) / 10,
@@ -2271,14 +2440,7 @@ export class ExportsService extends AbstractExportsService {
   }
 
   private buildMileageReportCsv(
-    data: Array<{
-      subjectLabel: string;
-      interventionCount: number;
-      estimatedKm: number;
-      fuelLiters: number;
-      fuelCostEur: number;
-      co2Kg: number;
-    }>,
+    data: MileageRow[],
     period: { startDate: string; endDate: string },
     groupBy: "team" | "technician",
   ): Buffer {
@@ -2286,15 +2448,17 @@ export class ExportsService extends AbstractExportsService {
     const headers = [
       subjectHeader,
       "Interventions",
-      "Distance estimée (km)",
-      "Carburant (L)",
-      "Coût carburant (€)",
-      "CO₂ (kg)",
+      "Km estimés",
+      "Km effectifs",
+      "Carburant estimé (L)",
+      "Coût estimé (€)",
+      "CO₂ estimé (kg)",
     ];
     const rows = data.map((d) => [
       d.subjectLabel,
       d.interventionCount.toString(),
       d.estimatedKm.toString(),
+      d.actualKm.toString(),
       d.fuelLiters.toString(),
       d.fuelCostEur.toFixed(2),
       d.co2Kg.toString(),

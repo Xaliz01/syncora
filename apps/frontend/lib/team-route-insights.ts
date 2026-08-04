@@ -133,7 +133,8 @@ export async function rankTeamsForCustomerSite(
     const ag = t.agenceId ? agenceById.get(t.agenceId) : undefined;
     const agLabel = ag?.name ?? t.agenceName;
     let geocodeTeamOk = false;
-    let roadKm = 999;
+    /** Distance inconnue (géocode KO) — ne doit pas être confondue avec un long trajet réel. */
+    let roadKm: number | null = null;
 
     if (clientPoint && t.agenceId) {
       const apt = agencePointCache.get(t.agenceId);
@@ -144,8 +145,9 @@ export async function rankTeamsForCustomerSite(
       }
     }
 
-    const driveMinutes = roadKm > 0 && roadKm < 900 ? (roadKm / AVG_SPEED_KMH) * 60 : 0;
-    const fuelLitersOneWay = roadKm > 0 && roadKm < 900 ? roadKm * (LITERS_PER_100KM / 100) : 0;
+    const routeKm = geocodeTeamOk && roadKm != null && roadKm > 0 ? roadKm : 0;
+    const driveMinutes = routeKm > 0 ? (routeKm / AVG_SPEED_KMH) * 60 : 0;
+    const fuelLitersOneWay = routeKm > 0 ? routeKm * (LITERS_PER_100KM / 100) : 0;
     const co2KgOneWay = fuelLitersOneWay * CO2_KG_PER_LITER_DIESEL;
     const fuelCostEurOneWay = fuelLitersOneWay * ESTIMATED_DIESEL_EUR_PER_LITER;
 
@@ -154,7 +156,7 @@ export async function rankTeamsForCustomerSite(
       teamName: t.name,
       agenceId: t.agenceId,
       agenceLabel: agLabel,
-      roadKm: Math.round(roadKm * 10) / 10,
+      roadKm: roadKm != null ? Math.round(roadKm * 10) / 10 : Number.POSITIVE_INFINITY,
       driveMinutes: Math.round(driveMinutes),
       fuelLitersOneWay: Math.round(fuelLitersOneWay * 100) / 100,
       fuelCostEurOneWay: Math.round(fuelCostEurOneWay * 100) / 100,
@@ -164,7 +166,7 @@ export async function rankTeamsForCustomerSite(
     });
   }
 
-  const validDistances = raw.filter((r) => r.geocodeTeamOk && r.roadKm < 900).map((r) => r.roadKm);
+  const validDistances = raw.filter((r) => r.geocodeTeamOk).map((r) => r.roadKm);
   const maxKm = validDistances.length ? Math.max(...validDistances) : 1;
 
   const scored = raw.map((r) => {

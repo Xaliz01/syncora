@@ -1,7 +1,9 @@
 "use client";
 
 import React from "react";
+import { ADDON_CATALOG } from "@planwise/shared";
 import { AddonLockedOverlay } from "@/components/addon/AddonLockedOverlay";
+import { useAddon } from "@/lib/hooks/useAddon";
 import {
   InterventionTeamOptimizer,
   type InterventionTeamOptimizerProps,
@@ -88,12 +90,20 @@ function TeamSuggestionPreview() {
  * Gate spécifique à l'addon « team_suggestion ».
  *
  * Utilise le composant générique AddonLockedOverlay :
- * - addon actif  → affiche InterventionTeamOptimizer
+ * - addon actif (achat ou inclus essai) → affiche InterventionTeamOptimizer
  * - addon absent → affiche un teaser visuel spécifique + CTA d'achat
  */
 export function TeamSuggestionAddonGate(optimizerProps: InterventionTeamOptimizerProps) {
+  const { includedViaTrial } = useAddon("team_suggestion");
+
   return (
     <AddonLockedOverlay addonCode="team_suggestion" preview={<TeamSuggestionPreview />}>
+      {includedViaTrial ? (
+        <p className="mb-2 rounded-lg border border-amber-200 dark:border-amber-800/60 bg-amber-50/80 dark:bg-amber-950/30 px-3 py-2 text-[11px] text-amber-900 dark:text-amber-100 leading-relaxed">
+          Inclus pendant votre essai — l’option coûtera {ADDON_CATALOG.team_suggestion.priceLabel}{" "}
+          après l’abonnement si vous la conservez.
+        </p>
+      ) : null}
       <InterventionTeamOptimizer {...optimizerProps} />
     </AddonLockedOverlay>
   );

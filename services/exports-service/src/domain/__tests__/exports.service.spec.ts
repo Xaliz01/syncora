@@ -1104,6 +1104,24 @@ describe("ExportsService", () => {
             config: {} as never,
           }) as never;
         }
+        if (String(url).includes("/teams")) {
+          return of({
+            data: [],
+            status: 200,
+            headers: {},
+            statusText: "OK",
+            config: {} as never,
+          }) as never;
+        }
+        if (String(url).includes("/agences")) {
+          return of({
+            data: [],
+            status: 200,
+            headers: {},
+            statusText: "OK",
+            config: {} as never,
+          }) as never;
+        }
         return of({
           data: { interventions, total: interventions.length },
           status: 200,
@@ -1120,8 +1138,142 @@ describe("ExportsService", () => {
       });
 
       const csv = result.buffer.toString("utf-8");
-      expect(csv).toContain("Technicien;Interventions");
+      expect(csv).toContain("Technicien;Interventions;Km estimés;Km effectifs");
       expect(csv).toContain("Alice Martin");
+      // Pas d'équipe/agence → km estimés à 0 ; GPS début/fin → km effectifs > 0
+      expect(csv).toMatch(/Alice Martin;1;0;1\.4;/);
+    });
+
+    it("reports both estimated agency→site km and actual GPS km", async () => {
+      const teams = [
+        {
+          id: "team-1",
+          organizationId: "org-123",
+          name: "Équipe démo 1",
+          agenceId: "agence-lyon",
+          technicianIds: [] as string[],
+          status: "actif" as const,
+        },
+      ];
+      const agences = [
+        {
+          id: "agence-lyon",
+          organizationId: "org-123",
+          name: "Agence démo Lyon",
+          address: "1 rue de Lyon",
+          postalCode: "69001",
+          city: "Lyon",
+        },
+      ];
+      const interventions: InterventionResponse[] = [
+        {
+          id: "int-1",
+          organizationId: "org-123",
+          caseId: "case-1",
+          title: "Intervention Haveluy",
+          status: "completed",
+          billingStatus: "none",
+          assignedTeamId: "team-1",
+          assignedTeamName: "Équipe démo 1",
+          scheduledStart: "2024-01-16T08:00:00Z",
+          startLocation: { latitude: 50.35, longitude: 3.58 },
+          endLocation: { latitude: 50.36, longitude: 3.59 },
+          createdAt: "2024-01-16T07:00:00Z",
+        },
+      ];
+      const caseData: CaseResponse = {
+        id: "case-1",
+        organizationId: "org-123",
+        title: "Dossier Haveluy",
+        status: "in_progress",
+        billingStatus: "none",
+        priority: "medium",
+        assignees: [],
+        tags: [],
+        steps: [],
+        progress: 0,
+        interventionCount: 1,
+        interventionAddress: {
+          line1: "Rue D",
+          postalCode: "59255",
+          city: "Haveluy",
+          country: "FR",
+        },
+      };
+
+      mockHttpService.get.mockImplementation((url: string, config?: { params?: unknown }) => {
+        const u = String(url);
+        if (u.includes("/interventions")) {
+          return of({
+            data: { interventions, total: interventions.length },
+            status: 200,
+            headers: {},
+            statusText: "OK",
+            config: {} as never,
+          }) as never;
+        }
+        if (u.includes("/teams")) {
+          return of({
+            data: teams,
+            status: 200,
+            headers: {},
+            statusText: "OK",
+            config: {} as never,
+          }) as never;
+        }
+        if (u.includes("/agences")) {
+          return of({
+            data: agences,
+            status: 200,
+            headers: {},
+            statusText: "OK",
+            config: {} as never,
+          }) as never;
+        }
+        if (u.includes("/cases/case-1")) {
+          return of({
+            data: caseData,
+            status: 200,
+            headers: {},
+            statusText: "OK",
+            config: {} as never,
+          }) as never;
+        }
+        if (u.includes("geocodage")) {
+          const q = String((config as { params?: { q?: string } })?.params?.q ?? "");
+          const isLyon = /lyon/i.test(q);
+          const coords: [number, number] = isLyon ? [4.8357, 45.764] : [3.58, 50.35];
+          return of({
+            data: { features: [{ geometry: { coordinates: coords } }] },
+            status: 200,
+            headers: {},
+            statusText: "OK",
+            config: {} as never,
+          }) as never;
+        }
+        return of({
+          data: {},
+          status: 200,
+          headers: {},
+          statusText: "OK",
+          config: {} as never,
+        }) as never;
+      });
+
+      const result = await service.exportMileageReport("org-123", "csv", {
+        startDate: "2024-01-01",
+        endDate: "2024-01-31",
+        groupBy: "team",
+      });
+
+      const csv = result.buffer.toString("utf-8");
+      expect(csv).toContain("Km estimés;Km effectifs");
+      expect(csv).toContain("Équipe démo 1");
+      const rowMatch = csv.match(/Équipe démo 1;1;([0-9.]+);([0-9.]+);/);
+      expect(rowMatch).toBeTruthy();
+      expect(Number(rowMatch![1])).toBeGreaterThan(500);
+      expect(Number(rowMatch![2])).toBeGreaterThan(0);
+      expect(Number(rowMatch![2])).toBeLessThan(20);
     });
   });
 });

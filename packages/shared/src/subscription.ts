@@ -118,6 +118,46 @@ export function addonAllowsStandaloneCheckout(code: AddonCode): boolean {
   return !addonRequiresBaseSubscription(code);
 }
 
+/**
+ * Addons utilisables pendant l’essai (sans achat Stripe), pour découvrir la valeur.
+ * Non persistés dans `activeAddons` — retirés automatiquement à la fin de l’essai.
+ */
+export const TRIAL_INCLUDED_ADDON_CODES: readonly AddonCode[] = ["team_suggestion"];
+
+export function isTrialIncludedAddon(code: AddonCode): boolean {
+  return (TRIAL_INCLUDED_ADDON_CODES as readonly string[]).includes(code);
+}
+
+/** Accès effectif à un addon (achat Stripe ou inclus essai). */
+export function organizationHasAddon(
+  subscription:
+    | (Pick<OrganizationSubscriptionResponse, "status" | "hasAccess"> & {
+        activeAddons: readonly AddonCode[];
+      })
+    | null
+    | undefined,
+  code: AddonCode,
+): boolean {
+  if (!subscription) return false;
+  if (subscription.activeAddons.includes(code)) return true;
+  return subscription.hasAccess && subscription.status === "trialing" && isTrialIncludedAddon(code);
+}
+
+/** True si l’addon est disponible uniquement via l’essai (pas encore souscrit). */
+export function organizationHasAddonViaTrialOnly(
+  subscription:
+    | (Pick<OrganizationSubscriptionResponse, "status" | "hasAccess"> & {
+        activeAddons: readonly AddonCode[];
+      })
+    | null
+    | undefined,
+  code: AddonCode,
+): boolean {
+  if (!subscription) return false;
+  if (subscription.activeAddons.includes(code)) return false;
+  return organizationHasAddon(subscription, code);
+}
+
 /** Raccourcis rétro-compatibles. */
 export const ADDON_LABELS: Record<AddonCode, string> = Object.fromEntries(
   Object.values(ADDON_CATALOG).map((d) => [d.code, d.label]),

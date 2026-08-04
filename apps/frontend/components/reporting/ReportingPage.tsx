@@ -89,7 +89,7 @@ export function ReportingPage() {
         {canExportReporting && (
           <ReportCard
             title="Rapport kilométrique"
-            description="Distance estimée, carburant, coût et CO₂ par équipe ou par technicien."
+            description="Km estimés (agence → chantier) et km effectifs (GPS), carburant et CO₂ par équipe ou technicien."
             icon={<TruckIcon />}
             href="/reporting/mileage_report"
           />

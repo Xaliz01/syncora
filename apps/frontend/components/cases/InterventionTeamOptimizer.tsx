@@ -218,7 +218,7 @@ export function InterventionTeamOptimizer({
   const queryKey = useMemo(
     () => [
       "team-route-insights",
-      "v2-fuelcost",
+      "v3-long-routes",
       teams
         .map((t) => t.id)
         .sort()

@@ -2,7 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import type { AddonCode } from "@planwise/shared";
+import {
+  organizationHasAddon,
+  organizationHasAddonViaTrialOnly,
+  type AddonCode,
+} from "@planwise/shared";
 import * as subscriptionsApi from "@/lib/subscriptions.api";
 import { useAuth } from "@/components/auth/AuthContext";
 import { hasPermission } from "@/lib/auth-permissions";
@@ -17,7 +21,8 @@ export function useAddon(addonCode: AddonCode) {
     queryFn: () => subscriptionsApi.getSubscriptionCurrent(),
   });
 
-  const hasAddon = subscription?.activeAddons?.includes(addonCode) ?? false;
+  const hasAddon = organizationHasAddon(subscription, addonCode);
+  const includedViaTrial = organizationHasAddonViaTrialOnly(subscription, addonCode);
   const canManageBilling = hasPermission(user, "subscriptions.manage_billing");
 
   const openSubscriptionModify = () => {
@@ -26,6 +31,7 @@ export function useAddon(addonCode: AddonCode) {
 
   return {
     hasAddon,
+    includedViaTrial,
     isLoading,
     canManageBilling,
     subscription,

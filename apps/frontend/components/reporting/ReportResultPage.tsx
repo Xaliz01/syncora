@@ -856,6 +856,20 @@ export function ReportResultPage() {
         </div>
       )}
 
+      {validType === "mileage_report" && periodValid && (
+        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+          Interventions <span className="font-medium">terminées</span> dont la date planifiée est
+          dans la période. <span className="font-medium">Km estimés</span> = aller simple agence →
+          adresse d’intervention (comme la suggestion d’équipe).{" "}
+          <span className="font-medium">Km effectifs</span> = distance entre la position GPS au{" "}
+          <span className="font-medium">démarrage</span> et à la{" "}
+          <span className="font-medium">fin</span> de l’intervention. Pour les enregistrer, utilisez{" "}
+          <span className="font-medium">Ma journée</span> (autoriser la localisation du navigateur)
+          : Démarrer puis Terminer sur place. Sans ces deux points GPS, la colonne reste à 0.
+          Carburant / coût / CO₂ sont dérivés des km estimés.
+        </p>
+      )}
+
       {periodError && <p className="text-sm text-amber-700 dark:text-amber-300">{periodError}</p>}
 
       {error && periodValid && (
