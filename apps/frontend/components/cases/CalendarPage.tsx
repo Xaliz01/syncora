@@ -4,6 +4,7 @@ import Link from "next/link";
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useIsDarkMode } from "@/lib/use-is-dark-mode";
+import { useIsCoarsePointer } from "@/lib/use-is-coarse-pointer";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as api from "@/lib/cases.api";
 import * as fleetApi from "@/lib/fleet.api";
@@ -603,6 +604,7 @@ function UnscheduledPanel({
   assignBusyId,
   isDark,
   calendarHeight,
+  allowDrag,
 }: {
   onDragStart: (e: React.DragEvent, intervention: InterventionResponse) => void;
   onDropToUnschedule: (interventionId: string) => void;
@@ -616,6 +618,8 @@ function UnscheduledPanel({
   isDark: boolean;
   /** Hauteur du bloc calendrier (desktop) pour aligner le panneau et activer le scroll. */
   calendarHeight?: number;
+  /** Désactivé sur mobile (pointer coarse) — le DnD HTML5 y est peu fiable. */
+  allowDrag: boolean;
 }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [collapsed, setCollapsed] = useState(false);
@@ -669,19 +673,19 @@ function UnscheduledPanel({
     }
   };
 
-  // Collapsed state – still acts as a drop zone
+  // Collapsed state – still acts as a drop zone (desktop only)
   if (collapsed) {
     return (
       <div
         className={`flex-shrink-0 self-stretch flex flex-col items-center gap-2 rounded-xl border-2 border-dashed p-2 transition-colors ${
-          dropHover
+          allowDrag && dropHover
             ? "border-brand-600 bg-brand-50"
             : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900"
         }`}
-        onDragEnter={handleDragEnter}
-        onDragLeave={handleDragLeave}
-        onDragOver={handleDragOver}
-        onDrop={handleDrop}
+        onDragEnter={allowDrag ? handleDragEnter : undefined}
+        onDragLeave={allowDrag ? handleDragLeave : undefined}
+        onDragOver={allowDrag ? handleDragOver : undefined}
+        onDrop={allowDrag ? handleDrop : undefined}
       >
         <button
           onClick={() => setCollapsed(false)}
@@ -719,15 +723,15 @@ function UnscheduledPanel({
           ? "lg:h-[var(--calendar-sync-h)] lg:max-h-[var(--calendar-sync-h)]"
           : ""
       } ${
-        dropHover
+        allowDrag && dropHover
           ? "border-brand-600 bg-brand-50/30"
           : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900"
       }`}
       style={panelStyle}
-      onDragEnter={handleDragEnter}
-      onDragLeave={handleDragLeave}
-      onDragOver={handleDragOver}
-      onDrop={handleDrop}
+      onDragEnter={allowDrag ? handleDragEnter : undefined}
+      onDragLeave={allowDrag ? handleDragLeave : undefined}
+      onDragOver={allowDrag ? handleDragOver : undefined}
+      onDrop={allowDrag ? handleDrop : undefined}
     >
       {/* Header */}
       <div className="flex-shrink-0 flex items-center justify-between px-3 py-2.5 border-b border-slate-200 dark:border-slate-700">
@@ -869,9 +873,9 @@ function UnscheduledPanel({
             >
               <Link
                 href={`/cases/${intervention.caseId}`}
-                draggable={!scheduleLocked}
+                draggable={allowDrag && !scheduleLocked}
                 onDragStart={(e) => {
-                  if (scheduleLocked) {
+                  if (!allowDrag || scheduleLocked) {
                     e.preventDefault();
                     return;
                   }
@@ -883,25 +887,29 @@ function UnscheduledPanel({
                     : `Ouvrir le dossier${intervention.caseTitle ? ` « ${intervention.caseTitle} »` : ""}`
                 }
                 className={`block p-2.5 no-underline text-inherit ${
-                  scheduleLocked ? "cursor-pointer" : "cursor-grab active:cursor-grabbing"
+                  scheduleLocked || !allowDrag
+                    ? "cursor-pointer"
+                    : "cursor-grab active:cursor-grabbing"
                 }`}
               >
                 <div className="flex items-start gap-2">
-                  <div className="mt-1 flex-shrink-0 opacity-70">
-                    <svg
-                      className="w-3.5 h-3.5 transition group-hover:opacity-100"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M3.75 9h16.5m-16.5 6.75h16.5"
-                      />
-                    </svg>
-                  </div>
+                  {allowDrag && !scheduleLocked && (
+                    <div className="mt-1 flex-shrink-0 opacity-70">
+                      <svg
+                        className="w-3.5 h-3.5 transition group-hover:opacity-100"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M3.75 9h16.5m-16.5 6.75h16.5"
+                        />
+                      </svg>
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium truncate text-inherit">
                       {intervention.title}
@@ -973,6 +981,7 @@ export function CalendarPage() {
   const { showToast } = useToast();
   const { user } = useAuth();
   const isDark = useIsDarkMode();
+  const allowDrag = !useIsCoarsePointer();
   const canAssign = hasPermission(user, "interventions.update");
   const [view, setView] = useState<ViewMode>("week");
   const [referenceDate, setReferenceDate] = useState(new Date());
@@ -1389,7 +1398,7 @@ export function CalendarPage() {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold">Calendrier</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold">Planning</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             Couleur de carte = équipe / personne assignée (ambre pointillé si aucune). Cliquez pour
             le dossier, glissez-déposez pour planifier, tirez le bas pour la durée, bouton Assigner
@@ -1651,8 +1660,14 @@ export function CalendarPage() {
                             >
                               <Link
                                 href={`/cases/${intervention.caseId}`}
-                                draggable={!scheduleLocked && !resizingThis}
-                                onDragStart={(e) => handleDragStart(e, intervention)}
+                                draggable={allowDrag && !scheduleLocked && !resizingThis}
+                                onDragStart={(e) => {
+                                  if (!allowDrag || scheduleLocked || resizingThis) {
+                                    e.preventDefault();
+                                    return;
+                                  }
+                                  handleDragStart(e, intervention);
+                                }}
                                 onClick={(e) => {
                                   if (suppressNextClickRef.current) {
                                     e.preventDefault();
@@ -1660,7 +1675,7 @@ export function CalendarPage() {
                                   }
                                 }}
                                 className={`absolute inset-0 overflow-hidden rounded-md px-1.5 pt-1 pb-2 no-underline text-inherit ${
-                                  scheduleLocked
+                                  scheduleLocked || !allowDrag
                                     ? "cursor-pointer"
                                     : resizingThis
                                       ? "cursor-ns-resize"
@@ -1721,7 +1736,7 @@ export function CalendarPage() {
                                   />
                                 </div>
                               )}
-                              {!scheduleLocked && (
+                              {!scheduleLocked && allowDrag && (
                                 <span
                                   role="separator"
                                   aria-orientation="horizontal"
@@ -1806,10 +1821,16 @@ export function CalendarPage() {
                                   <Link
                                     key={intervention.id}
                                     href={`/cases/${intervention.caseId}`}
-                                    draggable={!scheduleLocked}
-                                    onDragStart={(e) => handleDragStart(e, intervention)}
+                                    draggable={allowDrag && !scheduleLocked}
+                                    onDragStart={(e) => {
+                                      if (!allowDrag || scheduleLocked) {
+                                        e.preventDefault();
+                                        return;
+                                      }
+                                      handleDragStart(e, intervention);
+                                    }}
                                     className={`flex items-center gap-1 rounded px-0.5 py-0.5 -mx-0.5 no-underline min-w-0 text-inherit ${
-                                      scheduleLocked
+                                      scheduleLocked || !allowDrag
                                         ? "cursor-pointer"
                                         : "cursor-grab active:cursor-grabbing"
                                     } ${appearance.className}`}
@@ -1860,6 +1881,7 @@ export function CalendarPage() {
           assignBusyId={assignBusyId}
           isDark={isDark}
           calendarHeight={calendarAreaHeight}
+          allowDrag={allowDrag}
         />
       </div>
 

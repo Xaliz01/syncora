@@ -13,7 +13,8 @@ import type {
 
 const TEAM_STATUSES: TeamStatus[] = ["active", "inactive"];
 import * as fleetApi from "@/lib/fleet.api";
-import { normalizeCalendarColorHex } from "@/lib/team-calendar-colors";
+import { normalizeCalendarColorHex, teamLegendSwatchStyle } from "@/lib/team-calendar-colors";
+import { useIsDarkMode } from "@/lib/use-is-dark-mode";
 import { useToast } from "@/components/ui/ToastProvider";
 import { usePermissions } from "@/lib/hooks/usePermissions";
 import { useRouter } from "next/navigation";
@@ -36,6 +37,7 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const { can } = usePermissions();
+  const isDark = useIsDarkMode();
   const [team, setTeam] = useState<TeamResponse | null>(null);
   const [technicians, setTechnicians] = useState<TechnicianResponse[]>([]);
   const [agences, setAgences] = useState<AgenceResponse[]>([]);
@@ -244,12 +246,10 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
                   <>
                     <span
                       className="team-cal-legend-swatch h-6 w-10 rounded border shrink-0"
-                      style={
-                        {
-                          "--team-cal-border":
-                            normalizeCalendarColorHex(team.calendarColor) ?? team.calendarColor,
-                        } as React.CSSProperties
-                      }
+                      style={teamLegendSwatchStyle(
+                        normalizeCalendarColorHex(team.calendarColor) ?? team.calendarColor,
+                        isDark,
+                      )}
                     />
                     <code className="text-xs text-slate-600 dark:text-slate-300">
                       {normalizeCalendarColorHex(team.calendarColor)}

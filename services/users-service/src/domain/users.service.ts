@@ -928,9 +928,9 @@ export class UsersService extends AbstractUsersService {
       lastSeenAt: now,
     });
 
-    // Nettoyage legacy (session unique sur le document user).
+    // Stamp de connexion (login, acceptation d'invitation, register, etc.).
     await this.userModel
-      .updateOne({ _id: userId }, { $unset: { activeSessionId: "" } })
+      .updateOne({ _id: userId }, { $set: { lastLoginAt: now }, $unset: { activeSessionId: "" } })
       .exec()
       .catch(() => undefined);
 
@@ -949,6 +949,16 @@ export class UsersService extends AbstractUsersService {
       session.lastSeenAt = new Date(now);
       await session.save().catch(() => undefined);
     }
+
+    // Auto-réparation : sessions créées avant le stamp (ex. acceptation d'invitation).
+    await this.userModel
+      .updateOne(
+        { _id: userId, lastLoginAt: null },
+        { $set: { lastLoginAt: session.createdAt ?? new Date(now) } },
+      )
+      .exec()
+      .catch(() => undefined);
+
     return { valid: true };
   }
 

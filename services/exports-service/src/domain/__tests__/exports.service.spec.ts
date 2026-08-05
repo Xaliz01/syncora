@@ -318,6 +318,7 @@ describe("ExportsService", () => {
           interventionCount: 1,
           createdAt: "2024-01-10T08:00:00Z",
           customer: { id: "cust-x", displayName: "Client X", kind: "company" as const },
+          orderGiver: { id: "og-1", displayName: "Syndic Alpha", kind: "company" as const },
         },
         {
           id: "case-2",
@@ -352,9 +353,9 @@ describe("ExportsService", () => {
 
       const content = result.buffer.toString("utf-8");
       expect(content.startsWith("\uFEFF")).toBe(true);
-      expect(content).toContain("Dossier;Statut;Facturation;Priorité;Client");
-      expect(content).toContain("Dossier A;Ouvert;—;Moyenne;Client X");
-      expect(content).toContain('"Dossier ""B""";En cours;À facturer;Haute;');
+      expect(content).toContain("Dossier;Statut;Facturation;Priorité;Client;Donneur d'ordre");
+      expect(content).toContain("Dossier A;Ouvert;—;Moyenne;Client X;Syndic Alpha");
+      expect(content).toContain('"Dossier ""B""";En cours;À facturer;Haute;;;');
     });
   });
 

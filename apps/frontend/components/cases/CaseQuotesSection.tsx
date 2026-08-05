@@ -319,7 +319,11 @@ function QuoteForm({
         </div>
       </div>
 
-      <div className="min-w-0 min-h-[50vh] sm:min-h-[55vh] xl:min-h-0 flex flex-col xl:h-full">
+      <div
+        className={`min-w-0 flex flex-col xl:h-full xl:min-h-0 ${
+          previewUrl ? "min-h-[40vh]" : "hidden xl:flex"
+        }`}
+      >
         <div className="flex items-center justify-between gap-2 mb-2 shrink-0">
           <h4 className="text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase tracking-wide">
             Aperçu PDF
@@ -338,16 +342,16 @@ function QuoteForm({
             )}
           </div>
         </div>
-        <div className="flex-1 min-h-[45vh] xl:min-h-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-950 overflow-hidden">
+        <div className="flex-1 min-h-[40vh] xl:min-h-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-950 overflow-hidden">
           {previewUrl ? (
             inlinePdfSupported ? (
               <iframe
                 title="Aperçu du devis"
                 src={previewUrl}
-                className="h-full w-full min-h-[45vh] xl:min-h-0 bg-white"
+                className="h-full w-full min-h-[40vh] xl:min-h-0 bg-white"
               />
             ) : (
-              <div className="flex h-full min-h-[45vh] flex-col items-center justify-center gap-3 px-6 text-center">
+              <div className="flex h-full min-h-[40vh] flex-col items-center justify-center gap-3 px-6 text-center">
                 <p className="text-sm text-slate-600 dark:text-slate-300">
                   L&apos;aperçu intégré n&apos;est pas disponible sur cet appareil.
                 </p>
@@ -362,7 +366,7 @@ function QuoteForm({
               </div>
             )
           ) : (
-            <div className="flex h-full min-h-[45vh] items-center justify-center px-6 text-center text-sm text-slate-500 dark:text-slate-400">
+            <div className="flex h-full min-h-0 items-center justify-center px-6 text-center text-sm text-slate-500 dark:text-slate-400">
               {previewError ? previewError : "Ajoutez une ligne pour prévisualiser le devis."}
             </div>
           )}

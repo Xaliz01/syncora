@@ -170,7 +170,7 @@ function InvoiceProviderPreview({
 }) {
   if (!invoiceUrl) {
     return (
-      <div className="flex h-full min-h-[50vh] xl:min-h-0 flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-6 text-center">
+      <div className="hidden xl:flex h-full min-h-0 flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-6 text-center">
         <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
           Aperçu {providerLabel}
         </p>
@@ -180,7 +180,7 @@ function InvoiceProviderPreview({
   }
 
   return (
-    <div className="flex h-full min-h-[50vh] xl:min-h-0 flex-col rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden">
+    <div className="flex h-full min-h-[40vh] sm:min-h-[45vh] xl:min-h-0 flex-col rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden">
       <div className="shrink-0 flex items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-700 px-3 py-2">
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
           Aperçu {providerLabel}
@@ -197,7 +197,7 @@ function InvoiceProviderPreview({
       <iframe
         title={`Aperçu facture ${providerLabel}`}
         src={invoiceUrl}
-        className="flex-1 w-full min-h-[55vh] xl:min-h-0 bg-white"
+        className="flex-1 w-full min-h-[40vh] sm:min-h-[45vh] xl:min-h-0 bg-white"
         // Certains providers bloquent l’iframe (X-Frame-Options) — le lien ci-dessus reste la fallback.
         sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
         referrerPolicy="no-referrer"
@@ -464,11 +464,12 @@ export function CreateCaseInvoiceOverlay({
           ) : (
             <form
               onSubmit={handleSubmit}
-              className="space-y-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5"
+              className="space-y-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 sm:p-5"
             >
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 Planwise prépare les lignes ; {providerLabel} crée la facture brouillon.
-                L&apos;aperçu s&apos;affichera à droite après l&apos;envoi.
+                L&apos;aperçu s&apos;affichera après l&apos;envoi
+                <span className="hidden xl:inline"> (à droite)</span>.
               </p>
 
               <fieldset className="space-y-2">

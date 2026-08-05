@@ -261,7 +261,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               ? [{ label: "Contrats", href: "/contracts" }]
               : []),
             ...(hasPermission(user, "cases.read")
-              ? [{ label: "Calendrier", href: "/cases/calendar" }]
+              ? [{ label: "Planning", href: "/cases/calendar" }]
               : []),
             ...(hasPermission(user, "stock.movements.read")
               ? [{ label: "Mouvements de stock", href: "/stock" }]

@@ -324,98 +324,120 @@ export function CommercialLinesEditor({
       </div>
 
       <div className="space-y-2">
-        {lines.map((line, idx) => (
-          <div
-            key={idx}
-            className="grid grid-cols-[minmax(0,1fr)_64px_88px_72px_56px_28px] gap-1.5 items-end"
-          >
-            <div>
-              {idx === 0 && (
-                <span className="text-[10px] text-slate-500 dark:text-slate-400">Description</span>
-              )}
-              <CatalogAutocomplete
-                value={line.description}
-                items={catalogItems}
-                lineHints={{
-                  unitPrice: line.unitPrice,
-                  tvaRate: line.tvaRate,
-                  unit: line.unit,
-                }}
-                onSelect={(item) => selectCatalogItem(idx, item)}
-                onChange={(val) =>
-                  updateLine(idx, {
-                    description: val,
-                    articleId: undefined,
-                    prestationId: undefined,
-                  })
-                }
-              />
-            </div>
-            <div>
-              {idx === 0 && (
-                <span className="text-[10px] text-slate-500 dark:text-slate-400">Qté</span>
-              )}
-              <input
-                type="number"
-                min={0}
-                step={0.01}
-                value={line.quantity}
-                onChange={(e) => updateLine(idx, { quantity: Number(e.target.value) || 0 })}
-                className="w-full rounded-md border border-slate-200 dark:border-slate-700 px-2 py-1.5 text-xs text-right focus:border-brand-500 focus:outline-none"
-              />
-            </div>
-            <div>
-              {idx === 0 && (
-                <span className="text-[10px] text-slate-500 dark:text-slate-400">Prix HT</span>
-              )}
-              <input
-                type="number"
-                min={0}
-                step={0.01}
-                value={line.unitPrice}
-                onChange={(e) => updateLine(idx, { unitPrice: Number(e.target.value) || 0 })}
-                className="w-full rounded-md border border-slate-200 dark:border-slate-700 px-2 py-1.5 text-xs text-right focus:border-brand-500 focus:outline-none"
-              />
-            </div>
-            <div>
-              {idx === 0 && (
-                <span className="text-[10px] text-slate-500 dark:text-slate-400">TVA</span>
-              )}
-              <select
-                value={line.tvaRate}
-                onChange={(e) => updateLine(idx, { tvaRate: Number(e.target.value) as TvaRate })}
-                className="w-full rounded-md border border-slate-200 dark:border-slate-700 px-1 py-1.5 text-xs focus:border-brand-500 focus:outline-none"
-              >
-                {TVA_RATES.map((r) => (
-                  <option key={r} value={r}>
-                    {r} %
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="text-right text-[11px] font-medium text-slate-700 dark:text-slate-200 py-1.5">
-              {formatCommercialCurrency(Math.round(line.quantity * line.unitPrice * 100) / 100)}
-            </div>
-            <div>
-              <button
-                type="button"
-                onClick={() => removeLine(idx)}
-                disabled={lines.length <= 1}
-                className="text-slate-400 hover:text-red-500 disabled:opacity-30 p-1"
-                aria-label="Retirer la ligne"
-              >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
+        {lines.map((line, idx) => {
+          const lineHt = Math.round(line.quantity * line.unitPrice * 100) / 100;
+          return (
+            <div
+              key={idx}
+              className="rounded-lg border border-slate-200 dark:border-slate-700 p-2.5 space-y-2 sm:rounded-none sm:border-0 sm:p-0 sm:space-y-0 sm:grid sm:grid-cols-[minmax(0,1fr)_64px_88px_72px_56px_28px] sm:gap-1.5 sm:items-end"
+            >
+              <div className="min-w-0">
+                <span
+                  className={`text-[10px] text-slate-500 dark:text-slate-400 ${idx === 0 ? "sm:inline" : "sm:hidden"} inline`}
+                >
+                  Description
+                </span>
+                <CatalogAutocomplete
+                  value={line.description}
+                  items={catalogItems}
+                  lineHints={{
+                    unitPrice: line.unitPrice,
+                    tvaRate: line.tvaRate,
+                    unit: line.unit,
+                  }}
+                  onSelect={(item) => selectCatalogItem(idx, item)}
+                  onChange={(val) =>
+                    updateLine(idx, {
+                      description: val,
+                      articleId: undefined,
+                      prestationId: undefined,
+                    })
+                  }
+                />
+              </div>
+              <div className="grid grid-cols-3 gap-2 sm:contents">
+                <div>
+                  <span
+                    className={`text-[10px] text-slate-500 dark:text-slate-400 ${idx === 0 ? "sm:inline" : "sm:hidden"} inline`}
+                  >
+                    Qté
+                  </span>
+                  <input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    inputMode="decimal"
+                    value={line.quantity}
+                    onChange={(e) => updateLine(idx, { quantity: Number(e.target.value) || 0 })}
+                    className="w-full rounded-md border border-slate-200 dark:border-slate-700 px-2 py-1.5 text-xs text-right focus:border-brand-500 focus:outline-none"
                   />
-                </svg>
-              </button>
+                </div>
+                <div>
+                  <span
+                    className={`text-[10px] text-slate-500 dark:text-slate-400 ${idx === 0 ? "sm:inline" : "sm:hidden"} inline`}
+                  >
+                    Prix HT
+                  </span>
+                  <input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    inputMode="decimal"
+                    value={line.unitPrice}
+                    onChange={(e) => updateLine(idx, { unitPrice: Number(e.target.value) || 0 })}
+                    className="w-full rounded-md border border-slate-200 dark:border-slate-700 px-2 py-1.5 text-xs text-right focus:border-brand-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <span
+                    className={`text-[10px] text-slate-500 dark:text-slate-400 ${idx === 0 ? "sm:inline" : "sm:hidden"} inline`}
+                  >
+                    TVA
+                  </span>
+                  <select
+                    value={line.tvaRate}
+                    onChange={(e) =>
+                      updateLine(idx, { tvaRate: Number(e.target.value) as TvaRate })
+                    }
+                    className="w-full rounded-md border border-slate-200 dark:border-slate-700 px-1 py-1.5 text-xs focus:border-brand-500 focus:outline-none"
+                  >
+                    {TVA_RATES.map((r) => (
+                      <option key={r} value={r}>
+                        {r} %
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="flex items-center justify-between gap-2 sm:contents">
+                <div className="text-right text-[11px] font-medium text-slate-700 dark:text-slate-200 py-1.5">
+                  <span className="sm:hidden text-slate-500 dark:text-slate-400 font-normal mr-1">
+                    HT
+                  </span>
+                  {formatCommercialCurrency(lineHt)}
+                </div>
+                <div className="sm:flex sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={() => removeLine(idx)}
+                    disabled={lines.length <= 1}
+                    className="text-slate-400 hover:text-red-500 disabled:opacity-30 p-1"
+                    aria-label="Retirer la ligne"
+                  >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="flex justify-end gap-6 text-sm border-t border-slate-200 dark:border-slate-700 pt-3 mt-3">

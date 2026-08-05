@@ -12,6 +12,10 @@ import type {
   UserResponse,
   CustomerResponse,
   CustomersListResponse,
+  OrderGiverResponse,
+  OrderGiversListResponse,
+  PrestationResponse,
+  PrestationsListResponse,
   TeamResponse,
   AgenceResponse,
 } from "@planwise/shared";
@@ -46,21 +50,25 @@ export class SearchGatewayService extends AbstractSearchService {
       cases,
       interventions,
       customers,
+      orderGivers,
       vehicles,
       technicians,
       teams,
       agences,
       articles,
+      prestations,
       users,
     ] = await Promise.allSettled([
       this.fetchCases(user, normalizedQuery),
       this.fetchInterventions(user, normalizedQuery),
       this.fetchCustomers(user, normalizedQuery),
+      this.fetchOrderGivers(user, normalizedQuery),
       this.fetchVehicles(user),
       this.fetchTechnicians(user),
       this.fetchTeams(user),
       this.fetchAgences(user),
       this.fetchArticles(user, normalizedQuery),
+      this.fetchPrestations(user, normalizedQuery),
       user.role === "admin" ? this.fetchUsers(user) : Promise.resolve([]),
     ]);
 
@@ -142,6 +150,34 @@ export class SearchGatewayService extends AbstractSearchService {
       }
     }
 
+    for (const orderGiver of this.settled(orderGivers)) {
+      if (
+        this.matches(
+          normalizedQuery,
+          orderGiver.displayName,
+          orderGiver.companyName,
+          orderGiver.firstName,
+          orderGiver.lastName,
+          orderGiver.email,
+          orderGiver.phone,
+          orderGiver.mobile,
+          orderGiver.legalIdentifier,
+        )
+      ) {
+        const kindLabel = orderGiver.kind === "company" ? "Entreprise" : "Particulier";
+        const detail = [orderGiver.email, orderGiver.legalIdentifier].filter(Boolean).join(" · ");
+        results.push({
+          id: orderGiver.id,
+          type: "order_giver",
+          title: orderGiver.displayName,
+          subtitle: detail
+            ? `Donneur d'ordre · ${kindLabel} · ${detail}`
+            : `Donneur d'ordre · ${kindLabel}`,
+          url: `/order-givers/${orderGiver.id}`,
+        });
+      }
+    }
+
     for (const v of this.settled(vehicles)) {
       if (
         this.matches(
@@ -214,6 +250,22 @@ export class SearchGatewayService extends AbstractSearchService {
       }
     }
 
+    for (const p of this.settled(prestations)) {
+      if (this.matches(normalizedQuery, p.name, p.reference, p.description)) {
+        const priceLabel = Number.isFinite(p.defaultPrice)
+          ? `${p.defaultPrice.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT`
+          : undefined;
+        const subtitle = [priceLabel, p.unit].filter(Boolean).join(" · ") || "Prestation";
+        results.push({
+          id: p.id,
+          type: "prestation",
+          title: `${p.name} (${p.reference})`,
+          subtitle,
+          url: `/settings/prestations?q=${encodeURIComponent(p.reference || p.name)}`,
+        });
+      }
+    }
+
     for (const u of this.settled(users)) {
       if (this.matches(normalizedQuery, u.name, u.email)) {
         results.push({
@@ -234,8 +286,16 @@ export class SearchGatewayService extends AbstractSearchService {
     return { query, results, counts };
   }
 
+  /** Chaque mot de la requête doit apparaître dans l’ensemble des champs (ex. « Jean Moulin »). */
   private matches(query: string, ...fields: (string | undefined | null)[]): boolean {
-    return fields.some((f) => f && f.toLowerCase().includes(query));
+    const haystack = fields
+      .filter((f): f is string => Boolean(f && String(f).trim()))
+      .join(" ")
+      .toLowerCase();
+    if (!haystack) return false;
+    const tokens = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
+    if (tokens.length === 0) return false;
+    return tokens.every((token) => haystack.includes(token));
   }
 
   private settled<T>(result: PromiseSettledResult<T[]>): T[] {
@@ -322,6 +382,19 @@ export class SearchGatewayService extends AbstractSearchService {
       .then((response) => response.customers);
   }
 
+  private fetchOrderGivers(user: AuthUser, search: string): Promise<OrderGiverResponse[]> {
+    return this.scopedHttp
+      .request<OrderGiversListResponse>({
+        baseUrl: CUSTOMERS_URL,
+        organizationId: user.organizationId,
+        method: "get",
+        path: "/order-givers",
+        query: { search, limit: DEFAULT_PAGE_LIMIT, offset: 0 },
+        errorLabel: "Order givers service error",
+      })
+      .then((response) => response.orderGivers);
+  }
+
   private fetchVehicles(user: AuthUser): Promise<VehicleResponse[]> {
     return this.scopedHttp.request<VehicleResponse[]>({
       baseUrl: FLEET_URL,
@@ -373,6 +446,19 @@ export class SearchGatewayService extends AbstractSearchService {
         errorLabel: "Stock service error",
       })
       .then((response) => response.articles);
+  }
+
+  private fetchPrestations(user: AuthUser, search: string): Promise<PrestationResponse[]> {
+    return this.scopedHttp
+      .request<PrestationsListResponse>({
+        baseUrl: STOCK_URL,
+        organizationId: user.organizationId,
+        method: "get",
+        path: "/prestations",
+        query: { search, limit: DEFAULT_PAGE_LIMIT, offset: 0 },
+        errorLabel: "Stock service error",
+      })
+      .then((response) => response.prestations);
   }
 
   private fetchUsers(user: AuthUser): Promise<UserResponse[]> {

@@ -4,6 +4,7 @@ import type { PermissionCode } from "./permissions";
 export type EntityKind =
   | "case"
   | "customer"
+  | "order_giver"
   | "technician"
   | "team"
   | "vehicle"
@@ -16,6 +17,7 @@ export type EntityKind =
 export const ENTITY_READ_PERMISSIONS: Record<EntityKind, readonly PermissionCode[]> = {
   case: ["cases.read"],
   customer: ["customers.read"],
+  order_giver: ["order_givers.read"],
   technician: ["fleet.technicians.read", "technicians.read"],
   team: ["teams.read"],
   vehicle: ["fleet.vehicles.read"],

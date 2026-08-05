@@ -504,7 +504,7 @@ export function DashboardPage() {
                 href="/cases/calendar"
                 className="text-xs text-brand-600 dark:text-brand-400 hover:text-brand-500 font-medium"
               >
-                Calendrier
+                Planning
               </Link>
             </div>
             {!dashboard?.upcomingInterventions?.length ? (

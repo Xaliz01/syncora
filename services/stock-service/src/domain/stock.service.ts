@@ -284,10 +284,18 @@ export class StockService extends AbstractStockService {
     const activeOnly = filters?.activeOnly ?? true;
     if (activeOnly) query.isActive = true;
     if (filters?.search) {
-      query.$or = [
-        { name: { $regex: filters.search, $options: "i" } },
-        { reference: { $regex: filters.search, $options: "i" } },
-      ];
+      const raw = filters.search.trim();
+      const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const tokens = raw.split(/\s+/).filter(Boolean).map(escapeRegex);
+      const fields = ["name", "reference", "description"] as const;
+      if (tokens.length <= 1) {
+        const escaped = escapeRegex(raw);
+        query.$or = fields.map((field) => ({ [field]: { $regex: escaped, $options: "i" } }));
+      } else {
+        query.$and = tokens.map((token) => ({
+          $or: fields.map((field) => ({ [field]: { $regex: token, $options: "i" } })),
+        }));
+      }
     }
     const { limit, offset } = clampPagination({
       limit: filters?.limit,

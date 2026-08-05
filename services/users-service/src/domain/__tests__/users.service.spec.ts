@@ -688,6 +688,13 @@ describe("UsersService", () => {
           deviceClass: "desktop",
         }),
       );
+      expect(mockUserModel.updateOne).toHaveBeenCalledWith(
+        { _id: "user-123" },
+        expect.objectContaining({
+          $set: expect.objectContaining({ lastLoginAt: expect.any(Date) }),
+          $unset: { activeSessionId: "" },
+        }),
+      );
     });
 
     it("should replace the previous session of the same device class", async () => {
@@ -715,7 +722,9 @@ describe("UsersService", () => {
     });
 
     it("should validate an existing session and touch lastSeenAt when stale", async () => {
+      const createdAt = new Date("2026-01-15T10:00:00.000Z");
       const session = {
+        createdAt,
         lastSeenAt: new Date(Date.now() - 10 * 60 * 1000),
         save: jest.fn().mockResolvedValue(undefined),
       };
@@ -727,6 +736,10 @@ describe("UsersService", () => {
         valid: true,
       });
       expect(session.save).toHaveBeenCalled();
+      expect(mockUserModel.updateOne).toHaveBeenCalledWith(
+        { _id: "user-123", lastLoginAt: null },
+        { $set: { lastLoginAt: createdAt } },
+      );
 
       mockSessionModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(null),

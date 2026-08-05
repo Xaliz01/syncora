@@ -26,6 +26,7 @@ import type {
   CustomerSiteSubDoc,
 } from "../persistence/customer.schema";
 import { AbstractCustomersService } from "./ports/customers.service.port";
+import { buildPersonSearchOr } from "./person-search.query";
 
 @Injectable()
 export class CustomersService extends AbstractCustomersService {
@@ -79,15 +80,7 @@ export class CustomersService extends AbstractCustomersService {
 
     const q = filters?.search?.trim();
     if (q && ids.length === 0) {
-      query.$or = [
-        { companyName: { $regex: q, $options: "i" } },
-        { firstName: { $regex: q, $options: "i" } },
-        { lastName: { $regex: q, $options: "i" } },
-        { email: { $regex: q, $options: "i" } },
-        { phone: { $regex: q, $options: "i" } },
-        { mobile: { $regex: q, $options: "i" } },
-        { legalIdentifier: { $regex: q, $options: "i" } },
-      ];
+      query.$or = buildPersonSearchOr(q);
     }
 
     if (ids.length > 0) {

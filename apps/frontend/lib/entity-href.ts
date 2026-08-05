@@ -8,6 +8,8 @@ export function getEntityHref(kind: EntityKind, id: string): string | null {
       return `/cases/${id}`;
     case "customer":
       return `/customers/${id}`;
+    case "order_giver":
+      return `/order-givers/${id}`;
     case "technician":
       return `/fleet/technicians/${id}`;
     case "team":

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { TVA_RATES, type TvaRate } from "@planwise/shared";
 import * as api from "@/lib/stock.api";
@@ -39,7 +40,9 @@ export function PrestationsPage() {
   const confirm = useConfirm();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
-  const [search, setSearch] = useState("");
+  const searchParams = useSearchParams();
+  const initialSearch = searchParams.get("q")?.trim() ?? "";
+  const [search, setSearch] = useState(initialSearch);
   const [offset, setOffset] = useState(0);
   const [showInactive, setShowInactive] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
@@ -56,6 +59,11 @@ export function PrestationsPage() {
   useEffect(() => {
     setOffset(0);
   }, [search, showInactive]);
+
+  useEffect(() => {
+    const fromUrl = searchParams.get("q")?.trim() ?? "";
+    setSearch(fromUrl);
+  }, [searchParams]);
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["prestations", search, showInactive, offset],

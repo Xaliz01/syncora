@@ -95,7 +95,7 @@ const FEATURE_SECTIONS = [
       "Clients particuliers et entreprises avec historique lié aux dossiers",
       "Donneurs d’ordre : facturez le bon tiers quand le client n’est pas le payeur",
       "Équipes, véhicules et agences alignés sur le planning",
-      "Calendrier semaine / mois coloré par équipe",
+      "Planning semaine / mois coloré par équipe",
       "Stock multi-emplacements (entrepôt, agence, véhicule) avec alertes",
     ],
   },

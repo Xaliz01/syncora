@@ -932,7 +932,7 @@ export function ReportResultPage() {
                         return (
                           <td
                             key={col.key}
-                            className="px-3 py-2 align-middle text-slate-700 dark:text-slate-200 max-w-[16rem]"
+                            className="px-3 py-2 align-middle text-slate-700 dark:text-slate-200 max-w-[16rem] overflow-hidden"
                           >
                             {isReportEntityRef(cell) ? (
                               <EntityRef kind={cell.kind} id={cell.id} label={cell.label} />

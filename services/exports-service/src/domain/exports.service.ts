@@ -147,6 +147,7 @@ export class ExportsService extends AbstractExportsService {
     );
     const period = this.resolveOptionalReportingPeriod(filters);
     cases = this.filterCasesByPeriod(cases, period?.startDate, period?.endDate);
+    cases = await this.enrichCaseSummaries(organizationId, cases);
 
     if (format === "pdf") {
       const buffer = await this.buildCasesListPdf(cases, period);
@@ -647,6 +648,98 @@ export class ExportsService extends AbstractExportsService {
     });
   }
 
+  /**
+   * Le cases-service ne renvoie que `customerId` / `orderGiverId`.
+   * On enrichit pour le reporting (colonne Client / Donneur d'ordre).
+   */
+  private async enrichCaseSummaries(
+    organizationId: string,
+    cases: CaseSummaryResponse[],
+  ): Promise<CaseSummaryResponse[]> {
+    if (cases.length === 0) return cases;
+
+    const customerIds = [
+      ...new Set(cases.map((c) => c.customerId).filter((id): id is string => Boolean(id))),
+    ];
+    const orderGiverIds = [
+      ...new Set(cases.map((c) => c.orderGiverId).filter((id): id is string => Boolean(id))),
+    ];
+
+    const customerById = new Map<string, CustomerResponse>();
+    const orderGiverById = new Map<
+      string,
+      { id: string; displayName: string; kind: CustomerResponse["kind"] }
+    >();
+
+    if (customerIds.length > 0) {
+      try {
+        const customersPage = await this.callService<CustomersListResponse>(
+          CUSTOMERS_URL,
+          "/customers",
+          {
+            organizationId,
+            ids: customerIds.join(","),
+            limit: String(Math.min(Math.max(customerIds.length, 1), 200)),
+            offset: "0",
+          },
+        );
+        for (const customer of customersPage.customers) {
+          customerById.set(customer.id, customer);
+        }
+      } catch {
+        // Best-effort.
+      }
+    }
+
+    if (orderGiverIds.length > 0) {
+      try {
+        const orderGiversPage = await this.callService<{
+          orderGivers: Array<{
+            id: string;
+            displayName: string;
+            kind: CustomerResponse["kind"];
+          }>;
+        }>(CUSTOMERS_URL, "/order-givers", {
+          organizationId,
+          ids: orderGiverIds.join(","),
+          limit: String(Math.min(Math.max(orderGiverIds.length, 1), 200)),
+          offset: "0",
+        });
+        for (const og of orderGiversPage.orderGivers) {
+          orderGiverById.set(og.id, og);
+        }
+      } catch {
+        // Best-effort.
+      }
+    }
+
+    return cases.map((c) => {
+      const customer = c.customerId ? customerById.get(c.customerId) : undefined;
+      const orderGiver = c.orderGiverId ? orderGiverById.get(c.orderGiverId) : undefined;
+      return {
+        ...c,
+        customer: customer
+          ? {
+              id: customer.id,
+              displayName: customer.displayName,
+              kind: customer.kind,
+              email: customer.email,
+              phone: customer.phone,
+              mobile: customer.mobile,
+              address: customer.address,
+            }
+          : c.customer,
+        orderGiver: orderGiver
+          ? {
+              id: orderGiver.id,
+              displayName: orderGiver.displayName,
+              kind: orderGiver.kind,
+            }
+          : c.orderGiver,
+      };
+    });
+  }
+
   // ── Reporting preview (tableau in-app) ──
 
   async previewReport(
@@ -795,6 +888,7 @@ export class ExportsService extends AbstractExportsService {
     );
     const period = this.resolveOptionalReportingPeriod(filters);
     cases = this.filterCasesByPeriod(cases, period?.startDate, period?.endDate);
+    cases = await this.enrichCaseSummaries(organizationId, cases);
 
     const columns = [
       { key: "title", label: "Dossier" },
@@ -820,7 +914,11 @@ export class ExportsService extends AbstractExportsService {
           c.customer?.id ?? c.customerId,
           c.customer?.displayName ?? "",
         ),
-        orderGiver: c.orderGiver?.displayName ?? null,
+        orderGiver: this.ref(
+          "order_giver",
+          c.orderGiver?.id ?? c.orderGiverId,
+          c.orderGiver?.displayName ?? "",
+        ),
         progress: c.progress,
         interventionCount: c.interventionCount,
         dueDate: c.dueDate ? this.formatDateFr(c.dueDate) : null,
@@ -1706,12 +1804,23 @@ export class ExportsService extends AbstractExportsService {
     const periodLabel = period ? this.formatPeriodLabel(period.startDate, period.endDate) : "";
     return this.buildTablePdf(
       `Liste des dossiers${periodLabel ? ` — ${periodLabel}` : ""}`,
-      ["Dossier", "Statut", "Facturation", "Priorité", "Avancement", "Échéance"],
+      [
+        "Dossier",
+        "Statut",
+        "Facturation",
+        "Priorité",
+        "Client",
+        "Donneur d'ordre",
+        "Avancement",
+        "Échéance",
+      ],
       cases.map((c) => [
         c.title,
         this.translateStatus(c.status),
         this.translateBillingStatus(c.billingStatus),
         this.translatePriority(c.priority),
+        c.customer?.displayName ?? "—",
+        c.orderGiver?.displayName ?? "—",
         `${c.progress}%`,
         c.dueDate ? this.formatDateFr(c.dueDate) : "—",
       ]),
@@ -1730,6 +1839,7 @@ export class ExportsService extends AbstractExportsService {
       { key: "billingStatus", width: 18 },
       { key: "priority", width: 12 },
       { key: "customer", width: 25 },
+      { key: "orderGiver", width: 25 },
       { key: "progress", width: 12 },
       { key: "interventions", width: 14 },
       { key: "dueDate", width: 14 },
@@ -1748,6 +1858,7 @@ export class ExportsService extends AbstractExportsService {
       "Facturation",
       "Priorité",
       "Client",
+      "Donneur d'ordre",
       "Avancement",
       "Interventions",
       "Échéance",
@@ -1761,6 +1872,7 @@ export class ExportsService extends AbstractExportsService {
         billingStatus: this.translateBillingStatus(c.billingStatus),
         priority: this.translatePriority(c.priority),
         customer: c.customer?.displayName ?? "",
+        orderGiver: c.orderGiver?.displayName ?? "",
         progress: c.progress,
         interventions: c.interventionCount,
         dueDate: c.dueDate ? this.formatDateFr(c.dueDate) : "",
@@ -2314,6 +2426,7 @@ export class ExportsService extends AbstractExportsService {
       "Facturation",
       "Priorité",
       "Client",
+      "Donneur d'ordre",
       "Avancement (%)",
       "Interventions",
       "Échéance",
@@ -2325,6 +2438,7 @@ export class ExportsService extends AbstractExportsService {
       this.translateBillingStatus(c.billingStatus),
       this.translatePriority(c.priority),
       c.customer?.displayName ?? "",
+      c.orderGiver?.displayName ?? "",
       c.progress.toString(),
       c.interventionCount.toString(),
       c.dueDate ? this.formatDateFr(c.dueDate) : "",

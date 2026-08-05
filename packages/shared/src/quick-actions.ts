@@ -41,7 +41,7 @@ export const QUICK_ACTION_CATALOG: readonly QuickActionDefinition[] = [
   },
   {
     id: "calendar",
-    label: "Calendrier",
+    label: "Planning",
     href: "/cases/calendar",
     permission: "cases.read",
   },

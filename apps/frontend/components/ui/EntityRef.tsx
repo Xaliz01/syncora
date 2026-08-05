@@ -29,8 +29,8 @@ export function EntityRef({
   const classes =
     className ??
     (canOpen
-      ? "truncate text-brand-600 dark:text-brand-400 hover:underline font-medium"
-      : "truncate");
+      ? "block max-w-full truncate text-brand-600 dark:text-brand-400 hover:underline font-medium"
+      : "block max-w-full truncate");
 
   if (!canOpen || !href) {
     return <span className={classes}>{text}</span>;

@@ -6,11 +6,13 @@ export interface SearchResultItem {
     | "case"
     | "intervention"
     | "customer"
+    | "order_giver"
     | "vehicle"
     | "technician"
     | "team"
     | "agence"
     | "article"
+    | "prestation"
     | "user";
   title: string;
   subtitle?: string;

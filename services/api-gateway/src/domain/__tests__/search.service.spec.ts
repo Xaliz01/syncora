@@ -48,6 +48,30 @@ describe("SearchGatewayService", () => {
                 email: "contact@acme.fr",
                 legalIdentifier: "12345678900012",
               },
+              {
+                id: "cust-2",
+                organizationId: "org-1",
+                kind: "individual",
+                displayName: "Jean Moulin",
+                firstName: "Jean",
+                lastName: "Moulin",
+                email: "jean.moulin@example.fr",
+              },
+            ],
+            total: 2,
+          };
+        }
+        if (options.path === "/order-givers") {
+          return {
+            orderGivers: [
+              {
+                id: "og-1",
+                organizationId: "org-1",
+                kind: "company",
+                displayName: "Syndic Alpha",
+                companyName: "Syndic Alpha",
+                email: "contact@syndic-alpha.fr",
+              },
             ],
             total: 1,
           };
@@ -72,6 +96,24 @@ describe("SearchGatewayService", () => {
             total: 1,
           };
         }
+        if (options.path === "/prestations") {
+          return {
+            prestations: [
+              {
+                id: "prest-1",
+                organizationId: "org-1",
+                name: "Main d'œuvre plomberie",
+                reference: "MO-PLB",
+                description: "Intervention sur site",
+                unit: "heure",
+                defaultPrice: 55,
+                defaultTvaRate: 20,
+                isActive: true,
+              },
+            ],
+            total: 1,
+          };
+        }
         if (options.path === "/users") return [];
         return [];
       },
@@ -88,6 +130,27 @@ describe("SearchGatewayService", () => {
         url: "/settings/stock/articles/art-42",
       }),
     ]);
+  });
+
+  it("should include prestations in global search", async () => {
+    const result = await service.search(user, "plomberie");
+
+    expect(result.results).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "prest-1",
+          type: "prestation",
+          title: "Main d'œuvre plomberie (MO-PLB)",
+          url: "/settings/prestations?q=MO-PLB",
+        }),
+      ]),
+    );
+    expect(scopedRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: "/prestations",
+        query: expect.objectContaining({ search: "plomberie", limit: 50, offset: 0 }),
+      }),
+    );
   });
 
   it("should return customers matching company name (raison sociale)", async () => {
@@ -107,6 +170,42 @@ describe("SearchGatewayService", () => {
       expect.objectContaining({
         path: "/customers",
         query: expect.objectContaining({ search: "acme", limit: 50, offset: 0 }),
+      }),
+    );
+  });
+
+  it("should match customers when query tokens span first and last name", async () => {
+    const result = await service.search(user, "Jean Moulin");
+
+    expect(result.results).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "cust-2",
+          type: "customer",
+          title: "Jean Moulin",
+          url: "/customers/cust-2",
+        }),
+      ]),
+    );
+  });
+
+  it("should include order givers in global search", async () => {
+    const result = await service.search(user, "syndic");
+
+    expect(result.results).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "og-1",
+          type: "order_giver",
+          title: "Syndic Alpha",
+          url: "/order-givers/og-1",
+        }),
+      ]),
+    );
+    expect(scopedRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: "/order-givers",
+        query: expect.objectContaining({ search: "syndic", limit: 50, offset: 0 }),
       }),
     );
   });
@@ -135,6 +234,12 @@ describe("SearchGatewayService", () => {
     expect(scopedRequest).toHaveBeenCalledWith(
       expect.objectContaining({
         path: "/articles",
+        query: expect.objectContaining({ search: "cable", limit: 50, offset: 0 }),
+      }),
+    );
+    expect(scopedRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: "/prestations",
         query: expect.objectContaining({ search: "cable", limit: 50, offset: 0 }),
       }),
     );
