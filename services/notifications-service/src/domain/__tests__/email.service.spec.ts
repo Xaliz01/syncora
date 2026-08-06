@@ -116,6 +116,30 @@ describe("EmailService (configured)", () => {
     );
   });
 
+  it("should use the default account footer for transactional emails", async () => {
+    await service.sendTransactionalEmail("user@example.com", "Code", "Votre code est 123456");
+
+    const call = mockSendMail.mock.calls[0][0];
+    expect(call.html).toContain(
+      "Cet e-mail a été envoyé dans le cadre de la création ou de la sécurisation de votre compte Planwise.",
+    );
+  });
+
+  it("should allow overriding the transactional footer", async () => {
+    await service.sendTransactionalEmail(
+      "prospect@example.com",
+      "Présentation",
+      "Body",
+      "/",
+      "Découvrir Planwise",
+      "Présentation Planwise. Répondez STOP pour ne plus être contacté.",
+    );
+
+    const call = mockSendMail.mock.calls[0][0];
+    expect(call.html).toContain("Présentation Planwise. Répondez STOP pour ne plus être contacté.");
+    expect(call.html).not.toContain("création ou de la sécurisation de votre compte");
+  });
+
   it("should include the Planwise logo in html", async () => {
     await service.sendNotificationEmail("user@example.com", "Subject", "Body");
 

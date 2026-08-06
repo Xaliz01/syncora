@@ -54,6 +54,7 @@ export class EmailController {
       body.body ?? "",
       body.url,
       body.ctaLabel,
+      body.footer,
     );
   }
 

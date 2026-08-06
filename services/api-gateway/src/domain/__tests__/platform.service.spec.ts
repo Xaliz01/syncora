@@ -399,6 +399,7 @@ describe("PlatformService", () => {
           companyName: "Plomberie Dupont",
           toEmail: "jean@example.fr",
           contactName: "Jean Dupont",
+          postalCode: "75011",
         },
       );
 
@@ -408,6 +409,8 @@ describe("PlatformService", () => {
         expect.objectContaining({
           to: "jean@example.fr",
           subject: expect.stringContaining("Planwise"),
+          body: expect.not.stringContaining("Landerneau"),
+          footer: expect.stringContaining("présentation de Planwise"),
         }),
       );
       expect(httpService.post).toHaveBeenCalledWith(
@@ -416,6 +419,28 @@ describe("PlatformService", () => {
           siren: "123456789",
           status: "sent",
           sentByUserId: "staff-1",
+        }),
+      );
+    });
+
+    it("adds Landerneau local touch for Brittany postal codes", async () => {
+      httpService.get.mockReturnValue(of({ data: { outreaches: [] } }));
+      httpService.post.mockReturnValue(of({ data: { sent: true } }));
+
+      await service.sendProspectOutreach(
+        { id: "staff-1", email: "staff@planwise.fr" },
+        {
+          siren: "123456789",
+          companyName: "Plomberie Landerneau",
+          toEmail: "contact@example.fr",
+          postalCode: "29800",
+        },
+      );
+
+      expect(httpService.post).toHaveBeenCalledWith(
+        expect.stringContaining("/email/transactional"),
+        expect.objectContaining({
+          body: expect.stringContaining("Éditeur basé à Landerneau (29)"),
         }),
       );
     });

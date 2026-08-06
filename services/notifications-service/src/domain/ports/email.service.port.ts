@@ -15,6 +15,7 @@ export abstract class AbstractEmailService {
     body: string,
     url?: string,
     ctaLabel?: string,
+    footer?: string,
   ): Promise<SendEmailNotificationResponse>;
 
   abstract isConfigured(): boolean;

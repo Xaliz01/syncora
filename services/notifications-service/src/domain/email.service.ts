@@ -56,8 +56,9 @@ export class EmailService extends AbstractEmailService {
     body: string,
     url?: string,
     ctaLabel?: string,
+    footer?: string,
   ): Promise<SendEmailNotificationResponse> {
-    return this.sendMail(to, subject, body, url, "transactional", ctaLabel);
+    return this.sendMail(to, subject, body, url, "transactional", ctaLabel, footer);
   }
 
   private async sendMail(
@@ -67,6 +68,7 @@ export class EmailService extends AbstractEmailService {
     url: string | undefined,
     kind: "notification" | "transactional",
     ctaLabel?: string,
+    footer?: string,
   ): Promise<SendEmailNotificationResponse> {
     if (!this.transporter) {
       return { sent: false, reason: "smtp_not_configured" };
@@ -80,7 +82,7 @@ export class EmailService extends AbstractEmailService {
     }
 
     try {
-      const html = this.buildHtml(subject, body, url, kind, ctaLabel);
+      const html = this.buildHtml(subject, body, url, kind, ctaLabel, footer);
       await this.transporter.sendMail({
         from: this.fromAddress,
         to,
@@ -128,6 +130,7 @@ export class EmailService extends AbstractEmailService {
     url: string | undefined,
     kind: "notification" | "transactional",
     ctaLabel?: string,
+    footerOverride?: string,
   ): string {
     const base = this.appBaseUrl();
     const logoUrl = `${base}/planwise-logo-512.png`;
@@ -136,10 +139,12 @@ export class EmailService extends AbstractEmailService {
       ? `<p style="margin-top:16px;"><a href="${this.resolveActionUrl(url)}" style="display:inline-block;padding:10px 20px;background-color:#4338ca;color:#ffffff;text-decoration:none;border-radius:6px;font-size:14px;">${label}</a></p>`
       : "";
 
+    const customFooter = footerOverride?.trim();
     const footer =
-      kind === "transactional"
+      customFooter ||
+      (kind === "transactional"
         ? "Cet e-mail a été envoyé dans le cadre de la création ou de la sécurisation de votre compte Planwise."
-        : "Vous recevez cet email car les notifications email sont activées dans vos préférences Planwise.";
+        : "Vous recevez cet email car les notifications email sont activées dans vos préférences Planwise.");
 
     return `<!DOCTYPE html>
 <html lang="fr">

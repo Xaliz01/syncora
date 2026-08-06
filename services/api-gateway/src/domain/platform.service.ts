@@ -71,6 +71,16 @@ const IMPERSONATION_TTL_MS = 45 * 60 * 1000;
 const MIN_REASON_LENGTH = 10;
 const PROSPECT_OUTREACH_SUBJECT =
   "Planwise — un CRM simple et abordable pour démarrer votre activité";
+const PROSPECT_OUTREACH_FOOTER =
+  "Cet e-mail est une présentation de Planwise destinée aux entreprises récemment créées. Répondez STOP pour ne plus être contacté.";
+/** Départements historiques de Bretagne (hors 44). */
+const BRITTANY_DEPARTEMENT_PREFIXES = ["22", "29", "35", "56"] as const;
+
+function isBrittanyPostalCode(postalCode?: string): boolean {
+  const digits = postalCode?.trim().replace(/\s/g, "") ?? "";
+  if (!/^\d{5}$/.test(digits)) return false;
+  return (BRITTANY_DEPARTEMENT_PREFIXES as readonly string[]).includes(digits.slice(0, 2));
+}
 
 @Injectable()
 export class PlatformService extends AbstractPlatformService {
@@ -596,6 +606,9 @@ export class PlatformService extends AbstractPlatformService {
     const contact = body.contactName?.trim();
     const greeting = contact ? `Bonjour ${contact},` : "Bonjour,";
     const landingUrl = APP_PUBLIC_URL.replace(/\/$/, "") || "https://planwise.fr";
+    const localTouch = isBrittanyPostalCode(body.postalCode)
+      ? "\nÉditeur basé à Landerneau (29)"
+      : "";
     const emailBody = `${greeting}
 
 Vous avez créé récemment votre entreprise : c’est le bon moment pour structurer votre activité sans vous ruiner en outils.
@@ -606,7 +619,7 @@ Découvrez Planwise : ${landingUrl}
 
 Si vous n’êtes pas intéressé, répondez STOP à cet e-mail pour ne plus être contacté.
 
-L’équipe Planwise`;
+L’équipe Planwise${localTouch}`;
 
     let sent = false;
     let reason: string | undefined;
@@ -620,6 +633,7 @@ L’équipe Planwise`;
             body: emailBody,
             url: "/",
             ctaLabel: "Découvrir Planwise",
+            footer: PROSPECT_OUTREACH_FOOTER,
           },
         ),
       );

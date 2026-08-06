@@ -124,6 +124,7 @@ export function PlatformProspectionPage() {
         companyName: prospect.name,
         toEmail,
         contactName: prospect.dirigeants?.[0],
+        postalCode: prospect.postalCode,
       });
       if (res.sent) {
         showToast("Invitation envoyée.", "success");

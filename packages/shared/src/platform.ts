@@ -232,6 +232,8 @@ export interface PlatformProspectOutreachBody {
   companyName: string;
   toEmail: string;
   contactName?: string;
+  /** Code postal du siège — sert à personnaliser le mail (ex. proximité Bretagne). */
+  postalCode?: string;
   /** Renvoi même si déjà contacté (défaut false). */
   force?: boolean;
 }

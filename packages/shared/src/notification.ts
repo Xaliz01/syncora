@@ -278,6 +278,11 @@ export interface SendTransactionalEmailBody {
   url?: string;
   /** Libellé du bouton (défaut : « Voir dans Planwise »). */
   ctaLabel?: string;
+  /**
+   * Pied de page HTML (défaut : texte compte / sécurisation).
+   * Utile pour les envois hors compte (ex. prospection).
+   */
+  footer?: string;
 }
 
 export interface SendEmailNotificationResponse {
