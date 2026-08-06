@@ -1,5 +1,6 @@
 import type {
   PlatformAnalyticsOverviewResponse,
+  PlatformLandingToAppVisitsResponse,
   PlatformLandingVisitsResponse,
   TrackPageviewBody,
   TrackPageviewResponse,
@@ -13,4 +14,9 @@ export abstract class AbstractAnalyticsService {
     limit?: number;
     offset?: number;
   }): Promise<PlatformLandingVisitsResponse>;
+  abstract listLandingToAppVisits(options?: {
+    days?: number;
+    limit?: number;
+    offset?: number;
+  }): Promise<PlatformLandingToAppVisitsResponse>;
 }

@@ -37,8 +37,10 @@ import type {
   PlatformProspectOutreachResponse,
   PlatformProspectSummary,
   PlatformProspectsSearchResponse,
+  PlatformProspectSearchSort,
   PlatformUserSummary,
   PlatformAnalyticsOverviewResponse,
+  PlatformLandingToAppVisitsResponse,
   PlatformLandingVisitsResponse,
   PlatformUsersListResponse,
   ProspectOutreachesBySirensResponse,
@@ -57,6 +59,7 @@ import {
 import { AbstractAnalyticsGatewayService } from "./ports/analytics.gateway.service.port";
 import { AbstractPlatformService } from "./ports/platform.service.port";
 import { AbstractSubscriptionsGatewayService } from "./ports/subscriptions.service.port";
+import { buildPappersSearchCacheKey, PappersSearchCache } from "./pappers-search-cache";
 
 const ORGANIZATIONS_URL = process.env.ORGANIZATIONS_SERVICE_URL ?? "http://localhost:3001";
 const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
@@ -84,9 +87,17 @@ function isBrittanyPostalCode(postalCode?: string): boolean {
   return (BRITTANY_DEPARTEMENT_PREFIXES as readonly string[]).includes(digits.slice(0, 2));
 }
 
+/** Compare dates Pappers (YYYY-MM-DD ou ISO) — plus récent d’abord. */
+function compareProspectCreatedAtDesc(a?: string, b?: string): number {
+  const ta = a ? Date.parse(a.includes("T") ? a : `${a}T00:00:00Z`) : 0;
+  const tb = b ? Date.parse(b.includes("T") ? b : `${b}T00:00:00Z`) : 0;
+  return (Number.isFinite(tb) ? tb : 0) - (Number.isFinite(ta) ? ta : 0);
+}
+
 @Injectable()
 export class PlatformService extends AbstractPlatformService {
   private readonly logger = new Logger(PlatformService.name);
+  private readonly pappersSearchCache = new PappersSearchCache();
 
   constructor(
     private readonly httpService: HttpService,
@@ -500,19 +511,57 @@ export class PlatformService extends AbstractPlatformService {
     return this.analyticsGateway.listLandingVisits(options);
   }
 
+  listLandingToAppVisits(options?: {
+    days?: number;
+    limit?: number;
+    offset?: number;
+  }): Promise<PlatformLandingToAppVisitsResponse> {
+    return this.analyticsGateway.listLandingToAppVisits(options);
+  }
+
   async searchProspects(filters?: {
     page?: number;
     perPage?: number;
     departement?: string;
     codeNaf?: string;
     preset?: string;
+    sort?: PlatformProspectSearchSort;
+    dateCreationMin?: string;
+    refresh?: boolean;
   }): Promise<PlatformProspectsSearchResponse> {
     const apiKey = this.requirePappersApiKey();
     const page = Math.max(filters?.page ?? 1, 1);
     const perPage = Math.min(Math.max(filters?.perPage ?? 20, 1), 50);
+    const sort: PlatformProspectSearchSort =
+      filters?.sort === "created_at_desc" ? "created_at_desc" : "default";
     const codeNaf =
       filters?.codeNaf?.trim() || getPlatformProspectNafCodes(filters?.preset).join(",");
-    const dateCreationMin = this.formatPappersDate(this.daysAgo(365));
+    const dateCreationMin =
+      this.parsePappersDateCreationMin(filters?.dateCreationMin) ??
+      this.formatPappersDate(this.daysAgo(365));
+    const departement = filters?.departement?.trim() || "";
+
+    const cacheKey = buildPappersSearchCacheKey({
+      preset: filters?.preset,
+      codeNaf: filters?.codeNaf,
+      departement,
+      page,
+      perPage,
+      sort,
+      dateCreationMin,
+    });
+
+    if (!filters?.refresh) {
+      const cached = this.pappersSearchCache.get(cacheKey);
+      if (cached) {
+        const credits = await this.fetchPappersCredits(apiKey).catch(() => undefined);
+        return {
+          ...cached,
+          fromCache: true,
+          ...(credits != null ? { creditsRemaining: credits } : {}),
+        };
+      }
+    }
 
     const params: Record<string, string | number> = {
       api_token: apiKey,
@@ -522,7 +571,6 @@ export class PlatformService extends AbstractPlatformService {
       page,
       par_page: perPage,
     };
-    const departement = filters?.departement?.trim();
     if (departement) params.departement = departement;
 
     let pappers: PappersRechercheResponse;
@@ -558,7 +606,7 @@ export class PlatformService extends AbstractPlatformService {
     const sirens = mapped.map((r) => r.siren).filter(Boolean);
     const outreachBySiren = await this.loadOutreachBySirens(sirens);
 
-    const results: PlatformProspectSummary[] = mapped.map((r) => {
+    let results: PlatformProspectSummary[] = mapped.map((r) => {
       const prior = outreachBySiren.get(r.siren);
       return {
         ...r,
@@ -569,15 +617,23 @@ export class PlatformService extends AbstractPlatformService {
       };
     });
 
+    if (sort === "created_at_desc") {
+      results = [...results].sort((a, b) => compareProspectCreatedAtDesc(a.createdAt, b.createdAt));
+    }
+
     const credits = await this.fetchPappersCredits(apiKey).catch(() => undefined);
 
-    return {
+    const response: PlatformProspectsSearchResponse = {
       results,
       total: pappers.total ?? results.length,
       page: pappers.page ?? page,
       perPage,
+      sort,
+      fromCache: false,
       ...(credits != null ? { creditsRemaining: credits } : {}),
     };
+    this.pappersSearchCache.set(cacheKey, response);
+    return response;
   }
 
   async getProspectCredits(): Promise<PlatformProspectCreditsResponse> {
@@ -793,6 +849,42 @@ L’équipe Planwise${localTouch}`;
     const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
     const yyyy = date.getUTCFullYear();
     return `${dd}-${mm}-${yyyy}`;
+  }
+
+  /**
+   * Accepte `YYYY-MM-DD` (input HTML date) ou `JJ-MM-AAAA` (Pappers).
+   * Retourne le format Pappers ou undefined si invalide.
+   */
+  private parsePappersDateCreationMin(raw?: string): string | undefined {
+    const value = raw?.trim();
+    if (!value) return undefined;
+    const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+    if (iso) {
+      const [, yyyy, mm, dd] = iso;
+      const date = new Date(Date.UTC(Number(yyyy), Number(mm) - 1, Number(dd)));
+      if (
+        date.getUTCFullYear() !== Number(yyyy) ||
+        date.getUTCMonth() !== Number(mm) - 1 ||
+        date.getUTCDate() !== Number(dd)
+      ) {
+        throw new BadRequestException("dateCreationMin invalide");
+      }
+      return `${dd}-${mm}-${yyyy}`;
+    }
+    const fr = /^(\d{2})-(\d{2})-(\d{4})$/.exec(value);
+    if (fr) {
+      const [, dd, mm, yyyy] = fr;
+      const date = new Date(Date.UTC(Number(yyyy), Number(mm) - 1, Number(dd)));
+      if (
+        date.getUTCFullYear() !== Number(yyyy) ||
+        date.getUTCMonth() !== Number(mm) - 1 ||
+        date.getUTCDate() !== Number(dd)
+      ) {
+        throw new BadRequestException("dateCreationMin invalide");
+      }
+      return `${dd}-${mm}-${yyyy}`;
+    }
+    throw new BadRequestException("dateCreationMin invalide (attendu YYYY-MM-DD)");
   }
 
   private mapPappersEntreprise(row: PappersEntrepriseRow): PlatformProspectSummary {

@@ -262,4 +262,71 @@ describe("AnalyticsService", () => {
       );
     });
   });
+
+  describe("listLandingToAppVisits", () => {
+    it("filters app pageviews referred from marketing hosts", async () => {
+      const prev = process.env.MARKETING_DOMAIN;
+      process.env.MARKETING_DOMAIN = "planwise.fr";
+
+      const visitorId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+      const viewedAt = new Date("2026-08-03T09:00:00.000Z");
+
+      mockPageViewModel.aggregate
+        .mockReturnValueOnce({
+          exec: jest.fn().mockResolvedValue([
+            {
+              pageviews: 1,
+              visitors: [visitorId],
+              sessions: ["bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"],
+            },
+          ]),
+        })
+        .mockReturnValueOnce({
+          exec: jest.fn().mockResolvedValue([{ _id: visitorId, firstAt: viewedAt }]),
+        });
+      mockPageViewModel.countDocuments.mockReturnValue({ exec: jest.fn().mockResolvedValue(1) });
+      mockPageViewModel.find.mockReturnValue({
+        sort: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        lean: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue([
+          {
+            _id: "app1",
+            path: "/login",
+            visitorId,
+            sessionId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+            referrerHost: "planwise.fr",
+            country: "FR",
+            createdAt: viewedAt,
+          },
+        ]),
+      });
+
+      try {
+        const res = await service.listLandingToAppVisits({ days: 7, limit: 50, offset: 0 });
+
+        expect(mockPageViewModel.find).toHaveBeenCalledWith(
+          expect.objectContaining({
+            surface: "app",
+            referrerHost: { $in: ["planwise.fr", "www.planwise.fr"] },
+          }),
+        );
+        expect(res.totals.pageviews).toBe(1);
+        expect(res.items[0]).toEqual(
+          expect.objectContaining({
+            id: "app1",
+            path: "/login",
+            referrerHost: "planwise.fr",
+            isReturningVisitor: false,
+            visitorKey: "aaaaaaaa",
+          }),
+        );
+      } finally {
+        if (prev === undefined) delete process.env.MARKETING_DOMAIN;
+        else process.env.MARKETING_DOMAIN = prev;
+      }
+    });
+  });
 });

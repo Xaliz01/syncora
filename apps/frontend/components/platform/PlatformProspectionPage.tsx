@@ -1,9 +1,10 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import {
   PLATFORM_PROSPECT_NAF_PRESETS,
   PROSPECT_OUTREACH_COMMENT_MAX_LENGTH,
+  type PlatformProspectSearchSort,
   type PlatformProspectSummary,
   type ProspectOutreachResponse,
   type ProspectOutreachStatus,
@@ -15,6 +16,12 @@ import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 const PER_PAGE = 20;
 const TRACKED_PAGE_LIMIT = 50;
+
+function defaultDateCreationMinIso(): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() - 365);
+  return d.toISOString().slice(0, 10);
+}
 
 const STATUS_LABELS: Record<ProspectOutreachStatus, string> = {
   sent: "Contacté",
@@ -51,9 +58,14 @@ export function PlatformProspectionPage() {
   const confirm = useConfirm();
   const [preset, setPreset] = useState<string>("artisans_terrain");
   const [departement, setDepartement] = useState("");
+  const [dateCreationMin, setDateCreationMin] = useState(defaultDateCreationMinIso);
+  const [startPageInput, setStartPageInput] = useState("1");
+  const [sort, setSort] = useState<PlatformProspectSearchSort>("created_at_desc");
+  const [hideTreated, setHideTreated] = useState(true);
   const [page, setPage] = useState(1);
   const [results, setResults] = useState<PlatformProspectSummary[]>([]);
   const [total, setTotal] = useState(0);
+  const [fromCache, setFromCache] = useState(false);
   const [creditsRemaining, setCreditsRemaining] = useState<number | undefined>();
   const [pappersConfigured, setPappersConfigured] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -67,8 +79,12 @@ export function PlatformProspectionPage() {
   const [activeQuery, setActiveQuery] = useState<{
     preset: string;
     departement: string;
+    sort: PlatformProspectSearchSort;
+    dateCreationMin: string;
   } | null>(null);
   const [searchNonce, setSearchNonce] = useState(0);
+  const [forceRefresh, setForceRefresh] = useState(false);
+  const refreshOnNextLoad = useRef(false);
 
   const [tracked, setTracked] = useState<ProspectOutreachResponse[]>([]);
   const [trackedTotal, setTrackedTotal] = useState(0);
@@ -120,16 +136,22 @@ export function PlatformProspectionPage() {
   const loadProspects = useCallback(() => {
     if (!activeQuery) return;
     setLoading(true);
+    const refresh = refreshOnNextLoad.current;
+    refreshOnNextLoad.current = false;
     platformApi
       .searchPlatformProspects({
         page,
         perPage: PER_PAGE,
         preset: activeQuery.preset,
         departement: activeQuery.departement || undefined,
+        sort: activeQuery.sort,
+        dateCreationMin: activeQuery.dateCreationMin,
+        refresh,
       })
       .then((res) => {
         setResults(res.results);
         setTotal(res.total);
+        setFromCache(Boolean(res.fromCache));
         if (res.creditsRemaining != null) setCreditsRemaining(res.creditsRemaining);
         setError(null);
         setEmails((prev) => {
@@ -151,6 +173,7 @@ export function PlatformProspectionPage() {
         setError(err instanceof Error ? err.message : "Erreur");
         setResults([]);
         setTotal(0);
+        setFromCache(false);
       })
       .finally(() => setLoading(false));
   }, [page, activeQuery]);
@@ -170,8 +193,17 @@ export function PlatformProspectionPage() {
 
   const onFilterSubmit = (e: FormEvent) => {
     e.preventDefault();
-    setPage(1);
-    setActiveQuery({ preset, departement: departement.trim() });
+    const parsedPage = Number.parseInt(startPageInput, 10);
+    const nextPage = Number.isFinite(parsedPage) && parsedPage >= 1 ? parsedPage : 1;
+    setStartPageInput(String(nextPage));
+    setPage(nextPage);
+    refreshOnNextLoad.current = forceRefresh;
+    setActiveQuery({
+      preset,
+      departement: departement.trim(),
+      sort,
+      dateCreationMin: dateCreationMin.trim() || defaultDateCreationMinIso(),
+    });
     setSearchNonce((n) => n + 1);
   };
 
@@ -291,6 +323,9 @@ export function PlatformProspectionPage() {
   };
 
   const offset = (page - 1) * PER_PAGE;
+  const visibleResults = hideTreated
+    ? results.filter((r) => !r.alreadyContacted && !r.emailNotFound)
+    : results;
 
   return (
     <div className="space-y-6">
@@ -518,13 +553,88 @@ export function PlatformProspectionPage() {
               className="w-24 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-3 py-2 text-sm"
             />
           </div>
+          <div>
+            <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+              Créée depuis
+            </label>
+            <input
+              type="date"
+              value={dateCreationMin}
+              max={new Date().toISOString().slice(0, 10)}
+              onChange={(e) => setDateCreationMin(e.target.value)}
+              className="rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-3 py-2 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+              Page de départ
+            </label>
+            <input
+              type="number"
+              min={1}
+              inputMode="numeric"
+              value={startPageInput}
+              onChange={(e) => setStartPageInput(e.target.value)}
+              className="w-20 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-3 py-2 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+              Tri (page courante)
+            </label>
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as PlatformProspectSearchSort)}
+              className="rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-3 py-2 text-sm"
+              title="Pappers ne propose pas de tri global : on trie uniquement la page renvoyée."
+            >
+              <option value="created_at_desc">Création ↓ (récentes d’abord)</option>
+              <option value="default">Ordre Pappers</option>
+            </select>
+          </div>
+          <label className="flex items-center gap-2 pb-2 text-sm text-slate-600 dark:text-slate-300">
+            <input
+              type="checkbox"
+              checked={hideTreated}
+              onChange={(e) => setHideTreated(e.target.checked)}
+              className="rounded border-slate-300"
+            />
+            Masquer déjà traités
+          </label>
+          <label className="flex items-center gap-2 pb-2 text-sm text-slate-600 dark:text-slate-300">
+            <input
+              type="checkbox"
+              checked={forceRefresh}
+              onChange={(e) => setForceRefresh(e.target.checked)}
+              className="rounded border-slate-300"
+            />
+            Ignorer le cache
+          </label>
           <button
             type="submit"
             className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500"
           >
-            {activeQuery ? "Actualiser la recherche" : "Rechercher"}
+            Rechercher
           </button>
         </form>
+
+        {activeQuery && (
+          <p className="text-xs text-slate-500">
+            Page {page}
+            {fromCache ? (
+              <span className="ml-2 rounded-full bg-emerald-50 px-2 py-0.5 font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
+                Cache — 0 crédit
+              </span>
+            ) : (
+              <span className="ml-2 rounded-full bg-amber-50 px-2 py-0.5 font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-200">
+                Appel Pappers
+              </span>
+            )}
+            <span className="ml-2 text-slate-400">
+              (tri page locale ; pagination suivante utilise le cache si déjà vue)
+            </span>
+          </p>
+        )}
 
         {error && (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -554,16 +664,18 @@ export function PlatformProspectionPage() {
                     Chargement…
                   </td>
                 </tr>
-              ) : results.length === 0 ? (
+              ) : visibleResults.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="px-3 py-8 text-center text-slate-500">
                     {activeQuery
-                      ? "Aucun prospect pour ces critères."
+                      ? hideTreated && results.length > 0
+                        ? "Tous les résultats de cette page sont déjà traités (décochez le filtre pour les voir)."
+                        : "Aucun prospect pour ces critères."
                       : "Choisissez vos filtres puis cliquez sur Rechercher (consomme des crédits Pappers)."}
                   </td>
                 </tr>
               ) : (
-                results.map((p) => (
+                visibleResults.map((p) => (
                   <tr
                     key={p.siren}
                     className="border-t border-slate-100 dark:border-slate-800 hover:bg-slate-50/80 dark:hover:bg-slate-800/40"
@@ -714,7 +826,11 @@ export function PlatformProspectionPage() {
           total={total}
           offset={offset}
           limit={PER_PAGE}
-          onOffsetChange={(nextOffset) => setPage(Math.floor(nextOffset / PER_PAGE) + 1)}
+          onOffsetChange={(nextOffset) => {
+            const nextPage = Math.floor(nextOffset / PER_PAGE) + 1;
+            setPage(nextPage);
+            setStartPageInput(String(nextPage));
+          }}
         />
       </section>
     </div>

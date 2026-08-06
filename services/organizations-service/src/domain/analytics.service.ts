@@ -4,6 +4,7 @@ import { Model } from "mongoose";
 import type {
   AnalyticsSurface,
   PlatformAnalyticsOverviewResponse,
+  PlatformLandingToAppVisitsResponse,
   PlatformLandingVisit,
   PlatformLandingVisitsResponse,
   TrackPageviewBody,
@@ -18,6 +19,19 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-
 const SURFACES = new Set<AnalyticsSurface>(["marketing", "app", "platform"]);
 const LANDING_SURFACE: AnalyticsSurface = "marketing";
 const LANDING_PATH = "/";
+const APP_SURFACE: AnalyticsSurface = "app";
+
+function marketingReferrerHosts(): string[] {
+  const raw = (process.env.MARKETING_DOMAIN || process.env.APP_PUBLIC_URL || "planwise.fr").trim();
+  let root = "planwise.fr";
+  try {
+    const host = new URL(raw.includes("://") ? raw : `https://${raw}`).hostname.toLowerCase();
+    root = host.replace(/^www\./, "") || root;
+  } catch {
+    root = raw.replace(/^www\./, "") || root;
+  }
+  return [root, `www.${root}`];
+}
 
 @Injectable()
 export class AnalyticsService extends AbstractAnalyticsService {
@@ -196,11 +210,42 @@ export class AnalyticsService extends AbstractAnalyticsService {
       offset: options?.offset,
     });
     const { from, to } = this.windowBounds(windowDays);
-    const match = {
-      surface: LANDING_SURFACE,
-      path: LANDING_PATH,
-      createdAt: { $gte: from, $lte: to },
-    };
+    return this.listVisitsPage(
+      {
+        surface: LANDING_SURFACE,
+        path: LANDING_PATH,
+        createdAt: { $gte: from, $lte: to },
+      },
+      { windowDays, from, to, limit, offset },
+    );
+  }
+
+  async listLandingToAppVisits(options?: {
+    days?: number;
+    limit?: number;
+    offset?: number;
+  }): Promise<PlatformLandingToAppVisitsResponse> {
+    const windowDays = Math.min(Math.max(Math.floor(options?.days ?? 30) || 30, 1), 90);
+    const { limit, offset } = clampPagination({
+      limit: options?.limit,
+      offset: options?.offset,
+    });
+    const { from, to } = this.windowBounds(windowDays);
+    return this.listVisitsPage(
+      {
+        surface: APP_SURFACE,
+        referrerHost: { $in: marketingReferrerHosts() },
+        createdAt: { $gte: from, $lte: to },
+      },
+      { windowDays, from, to, limit, offset },
+    );
+  }
+
+  private async listVisitsPage(
+    match: Record<string, unknown>,
+    meta: { windowDays: number; from: Date; to: Date; limit: number; offset: number },
+  ): Promise<PlatformLandingVisitsResponse> {
+    const { windowDays, from, to, limit, offset } = meta;
 
     const [totalsAgg, total, docs] = await Promise.all([
       this.pageViewModel

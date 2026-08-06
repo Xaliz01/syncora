@@ -278,6 +278,127 @@ describe("PlatformService", () => {
       expect(result.creditsRemaining).toBe(87.5);
     });
 
+    it("serves a second identical search from cache without calling Pappers again", async () => {
+      httpService.get.mockImplementation((url: string) => {
+        if (String(url).includes("/recherche")) {
+          return of({
+            data: {
+              total: 1,
+              page: 1,
+              resultats: [
+                {
+                  siren: "123456789",
+                  nom_entreprise: "Plomberie Dupont",
+                  date_creation: "2026-01-15",
+                },
+              ],
+            },
+          });
+        }
+        if (String(url).includes("prospect-outreaches")) {
+          return of({ data: { outreaches: [] } });
+        }
+        if (String(url).includes("suivi-jetons")) {
+          return of({ data: { jetons: 80 } });
+        }
+        return of({ data: {} });
+      });
+
+      const first = await service.searchProspects({
+        page: 1,
+        perPage: 20,
+        sort: "created_at_desc",
+      });
+      expect(first.fromCache).toBe(false);
+      const rechercheCalls = httpService.get.mock.calls.filter((c) =>
+        String(c[0]).includes("/recherche"),
+      ).length;
+
+      const second = await service.searchProspects({
+        page: 1,
+        perPage: 20,
+        sort: "created_at_desc",
+      });
+      expect(second.fromCache).toBe(true);
+      expect(second.results[0]?.siren).toBe("123456789");
+      expect(
+        httpService.get.mock.calls.filter((c) => String(c[0]).includes("/recherche")).length,
+      ).toBe(rechercheCalls);
+    });
+
+    it("sorts the current page by creation date descending", async () => {
+      httpService.get.mockImplementation((url: string) => {
+        if (String(url).includes("/recherche")) {
+          return of({
+            data: {
+              total: 2,
+              page: 1,
+              resultats: [
+                {
+                  siren: "111111111",
+                  nom_entreprise: "Ancienne",
+                  date_creation: "2025-09-01",
+                },
+                {
+                  siren: "222222222",
+                  nom_entreprise: "Recente",
+                  date_creation: "2026-07-01",
+                },
+              ],
+            },
+          });
+        }
+        if (String(url).includes("prospect-outreaches")) {
+          return of({ data: { outreaches: [] } });
+        }
+        if (String(url).includes("suivi-jetons")) {
+          return of({ data: { jetons: 10 } });
+        }
+        return of({ data: {} });
+      });
+
+      const result = await service.searchProspects({
+        page: 1,
+        perPage: 20,
+        sort: "created_at_desc",
+        refresh: true,
+      });
+
+      expect(result.results.map((r) => r.siren)).toEqual(["222222222", "111111111"]);
+      expect(result.sort).toBe("created_at_desc");
+    });
+
+    it("forwards a custom dateCreationMin to Pappers", async () => {
+      httpService.get.mockImplementation((url: string) => {
+        if (String(url).includes("/recherche")) {
+          return of({ data: { total: 0, page: 1, resultats: [] } });
+        }
+        if (String(url).includes("prospect-outreaches")) {
+          return of({ data: { outreaches: [] } });
+        }
+        if (String(url).includes("suivi-jetons")) {
+          return of({ data: { jetons: 10 } });
+        }
+        return of({ data: {} });
+      });
+
+      await service.searchProspects({
+        page: 1,
+        perPage: 20,
+        dateCreationMin: "2026-06-01",
+        refresh: true,
+      });
+
+      expect(httpService.get).toHaveBeenCalledWith(
+        expect.stringContaining("/recherche"),
+        expect.objectContaining({
+          params: expect.objectContaining({
+            date_creation_min: "01-06-2026",
+          }),
+        }),
+      );
+    });
+
     it("marks email not found without sending mail", async () => {
       httpService.get.mockReturnValue(of({ data: { outreaches: [] } }));
       httpService.post.mockReturnValue(of({ data: { id: "o1", status: "email_not_found" } }));

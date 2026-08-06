@@ -3,13 +3,14 @@
 import { useEffect, useState } from "react";
 import type {
   PlatformAnalyticsOverviewResponse,
+  PlatformLandingToAppVisitsResponse,
   PlatformLandingVisitsResponse,
 } from "@planwise/shared";
 import * as platformApi from "@/lib/platform.api";
 import { ListPagination } from "@/components/ui/list-page";
 
 const DAY_OPTIONS = [7, 30, 90] as const;
-const LANDING_PAGE_LIMIT = 50;
+const VISITS_PAGE_LIMIT = 50;
 
 const SURFACE_LABELS: Record<string, string> = {
   marketing: "Landing",
@@ -45,14 +46,18 @@ function formatCountry(code?: string): string {
 export function PlatformAudiencePage() {
   const [days, setDays] = useState<(typeof DAY_OPTIONS)[number]>(30);
   const [landingOffset, setLandingOffset] = useState(0);
+  const [landingToAppOffset, setLandingToAppOffset] = useState(0);
   const [overview, setOverview] = useState<PlatformAnalyticsOverviewResponse | null>(null);
   const [landing, setLanding] = useState<PlatformLandingVisitsResponse | null>(null);
+  const [landingToApp, setLandingToApp] = useState<PlatformLandingToAppVisitsResponse | null>(null);
   const [loadingOverview, setLoadingOverview] = useState(true);
   const [loadingLanding, setLoadingLanding] = useState(true);
+  const [loadingLandingToApp, setLoadingLandingToApp] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setLandingOffset(0);
+    setLandingToAppOffset(0);
   }, [days]);
 
   useEffect(() => {
@@ -70,7 +75,7 @@ export function PlatformAudiencePage() {
   useEffect(() => {
     setLoadingLanding(true);
     platformApi
-      .getPlatformLandingVisits({ days, limit: LANDING_PAGE_LIMIT, offset: landingOffset })
+      .getPlatformLandingVisits({ days, limit: VISITS_PAGE_LIMIT, offset: landingOffset })
       .then((res) => {
         setLanding(res);
         setError(null);
@@ -79,8 +84,27 @@ export function PlatformAudiencePage() {
       .finally(() => setLoadingLanding(false));
   }, [days, landingOffset]);
 
+  useEffect(() => {
+    setLoadingLandingToApp(true);
+    platformApi
+      .getPlatformLandingToAppVisits({
+        days,
+        limit: VISITS_PAGE_LIMIT,
+        offset: landingToAppOffset,
+      })
+      .then((res) => {
+        setLandingToApp(res);
+        setError(null);
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : "Erreur"))
+      .finally(() => setLoadingLandingToApp(false));
+  }, [days, landingToAppOffset]);
+
   const maxDayViews = Math.max(1, ...(overview?.byDay.map((d) => d.pageviews) ?? [1]));
-  const loading = (loadingOverview && !overview) || (loadingLanding && !landing);
+  const loading =
+    (loadingOverview && !overview) ||
+    (loadingLanding && !landing) ||
+    (loadingLandingToApp && !landingToApp);
 
   return (
     <div className="space-y-6">
@@ -89,7 +113,7 @@ export function PlatformAudiencePage() {
           <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Audience</h1>
           <p className="text-sm text-slate-500">
             Mesure first-party (pages vues, pays approximatif via IP — IP non stockée, ~400 jours),
-            avec un détail des visites de la landing marketing.
+            avec le détail landing et les passages landing → application.
           </p>
         </div>
         <div className="flex gap-1 rounded-lg border border-slate-200 p-1 dark:border-slate-700">
@@ -215,6 +239,115 @@ export function PlatformAudiencePage() {
                     limit={landing.limit}
                     offset={landing.offset}
                     onOffsetChange={setLandingOffset}
+                  />
+                </div>
+              </div>
+            </>
+          ) : null}
+
+          {landingToApp ? (
+            <>
+              <div>
+                <h2 className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                  Passage landing → application
+                </h2>
+                <p className="mt-1 text-xs text-slate-500">
+                  Pages vues sur l’app dont le referrer est la landing marketing (ex. planwise.fr →
+                  app). Le chemin indique la page d’arrivée (souvent `/login`).
+                </p>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                {[
+                  { label: "Passages", value: landingToApp.totals.pageviews },
+                  { label: "Visiteurs", value: landingToApp.totals.visitors },
+                  { label: "Sessions", value: landingToApp.totals.sessions },
+                ].map((stat) => (
+                  <div
+                    key={stat.label}
+                    className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900"
+                  >
+                    <p className="text-xs uppercase tracking-wide text-slate-500">{stat.label}</p>
+                    <p className="mt-1 text-2xl font-semibold tabular-nums text-slate-900 dark:text-slate-100">
+                      {formatNumber(stat.value)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                <div className="border-b border-slate-100 px-4 py-3 text-sm font-medium dark:border-slate-800">
+                  Arrivées depuis la landing (plus récentes d’abord)
+                </div>
+                <table className="min-w-full text-left text-sm">
+                  <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-950 dark:text-slate-400">
+                    <tr>
+                      <th className="px-4 py-2.5 font-medium">Date / heure</th>
+                      <th className="px-4 py-2.5 font-medium">Chemin app</th>
+                      <th className="px-4 py-2.5 font-medium">Visiteur</th>
+                      <th className="px-4 py-2.5 font-medium">Type</th>
+                      <th className="px-4 py-2.5 font-medium">Session</th>
+                      <th className="px-4 py-2.5 font-medium">Pays</th>
+                      <th className="px-4 py-2.5 font-medium">Referrer</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {landingToApp.items.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
+                          Aucun passage landing → app sur cette période.
+                        </td>
+                      </tr>
+                    ) : (
+                      landingToApp.items.map((visit) => (
+                        <tr
+                          key={visit.id}
+                          className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40"
+                        >
+                          <td className="px-4 py-2.5 tabular-nums text-slate-800 dark:text-slate-100">
+                            {formatDateTime(visit.viewedAt)}
+                          </td>
+                          <td className="px-4 py-2.5 font-mono text-xs text-slate-700 dark:text-slate-200">
+                            {visit.path}
+                          </td>
+                          <td className="px-4 py-2.5">
+                            <code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs dark:bg-slate-800">
+                              {visit.visitorKey}
+                            </code>
+                          </td>
+                          <td className="px-4 py-2.5">
+                            {visit.isReturningVisitor ? (
+                              <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                                Retour
+                              </span>
+                            ) : (
+                              <span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
+                                Nouveau
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-2.5">
+                            <code className="font-mono text-xs text-slate-500">
+                              {visit.sessionKey}
+                            </code>
+                          </td>
+                          <td className="px-4 py-2.5 text-slate-700 dark:text-slate-200">
+                            {formatCountry(visit.country)}
+                          </td>
+                          <td className="px-4 py-2.5 text-slate-500">
+                            {visit.referrerHost ?? "—"}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+                <div className="px-4 py-1">
+                  <ListPagination
+                    total={landingToApp.total}
+                    limit={landingToApp.limit}
+                    offset={landingToApp.offset}
+                    onOffsetChange={setLandingToAppOffset}
                   />
                 </div>
               </div>

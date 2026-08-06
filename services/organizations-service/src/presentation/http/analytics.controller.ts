@@ -28,4 +28,17 @@ export class AnalyticsController {
       offset: offset ? Number.parseInt(offset, 10) : undefined,
     });
   }
+
+  @Get("platform/analytics/landing-to-app-visits")
+  listLandingToAppVisits(
+    @Query("days") days?: string,
+    @Query("limit") limit?: string,
+    @Query("offset") offset?: string,
+  ) {
+    return this.analyticsService.listLandingToAppVisits({
+      days: days ? Number.parseInt(days, 10) : undefined,
+      limit: limit ? Number.parseInt(limit, 10) : undefined,
+      offset: offset ? Number.parseInt(offset, 10) : undefined,
+    });
+  }
 }

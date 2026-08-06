@@ -132,6 +132,20 @@ export class PlatformController {
     });
   }
 
+  @Get("analytics/landing-to-app-visits")
+  @UseGuards(PlatformJwtAuthGuard)
+  listLandingToAppVisits(
+    @Query("days") days?: string,
+    @Query("limit") limit?: string,
+    @Query("offset") offset?: string,
+  ) {
+    return this.platformService.listLandingToAppVisits({
+      days: days ? Number.parseInt(days, 10) : undefined,
+      limit: limit ? Number.parseInt(limit, 10) : undefined,
+      offset: offset ? Number.parseInt(offset, 10) : undefined,
+    });
+  }
+
   @Get("prospects")
   @UseGuards(PlatformJwtAuthGuard)
   searchProspects(
@@ -140,6 +154,9 @@ export class PlatformController {
     @Query("departement") departement?: string,
     @Query("codeNaf") codeNaf?: string,
     @Query("preset") preset?: string,
+    @Query("sort") sort?: string,
+    @Query("dateCreationMin") dateCreationMin?: string,
+    @Query("refresh") refresh?: string,
   ) {
     return this.platformService.searchProspects({
       page: page ? Number.parseInt(page, 10) : undefined,
@@ -147,6 +164,9 @@ export class PlatformController {
       departement,
       codeNaf,
       preset,
+      sort: sort === "created_at_desc" ? "created_at_desc" : "default",
+      dateCreationMin,
+      refresh: refresh === "1" || refresh === "true",
     });
   }
 

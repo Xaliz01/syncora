@@ -14,10 +14,12 @@ import type {
   PlatformProspectOutreachBody,
   PlatformProspectOutreachResponse,
   PlatformProspectsSearchResponse,
+  PlatformProspectSearchSort,
   ProspectOutreachesListResponse,
   PlatformUsersListResponse,
   StartImpersonationBody,
   PlatformAnalyticsOverviewResponse,
+  PlatformLandingToAppVisitsResponse,
   PlatformLandingVisitsResponse,
 } from "@planwise/shared";
 
@@ -61,12 +63,21 @@ export abstract class AbstractPlatformService {
     limit?: number;
     offset?: number;
   }): Promise<PlatformLandingVisitsResponse>;
+  abstract listLandingToAppVisits(options?: {
+    days?: number;
+    limit?: number;
+    offset?: number;
+  }): Promise<PlatformLandingToAppVisitsResponse>;
   abstract searchProspects(filters?: {
     page?: number;
     perPage?: number;
     departement?: string;
     codeNaf?: string;
     preset?: string;
+    sort?: PlatformProspectSearchSort;
+    /** Date de création min (YYYY-MM-DD ou JJ-MM-AAAA). Défaut : il y a 365 jours. */
+    dateCreationMin?: string;
+    refresh?: boolean;
   }): Promise<PlatformProspectsSearchResponse>;
   abstract getProspectCredits(): Promise<PlatformProspectCreditsResponse>;
   abstract listTrackedProspects(options?: {

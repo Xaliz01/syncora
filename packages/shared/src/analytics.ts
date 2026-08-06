@@ -98,3 +98,10 @@ export interface PlatformLandingVisitsResponse {
   limit: number;
   offset: number;
 }
+
+/**
+ * Visites app dont le referrer est la landing marketing
+ * (passage planwise.fr → app.planwise.fr).
+ * Même forme que les visites landing.
+ */
+export type PlatformLandingToAppVisitsResponse = PlatformLandingVisitsResponse;

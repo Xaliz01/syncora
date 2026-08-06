@@ -2,6 +2,7 @@ import type {
   AuthResponse,
   CronRunsListResponse,
   PlatformAnalyticsOverviewResponse,
+  PlatformLandingToAppVisitsResponse,
   PlatformLandingVisitsResponse,
   PlatformAuthResponse,
   PlatformAuthUser,
@@ -202,12 +203,36 @@ export async function getPlatformLandingVisits(filters?: {
   );
 }
 
+export async function getPlatformLandingToAppVisits(filters?: {
+  days?: number;
+  limit?: number;
+  offset?: number;
+}) {
+  const params = new URLSearchParams();
+  if (filters?.days != null) params.set("days", String(filters.days));
+  if (filters?.limit != null) params.set("limit", String(filters.limit));
+  if (filters?.offset != null) params.set("offset", String(filters.offset));
+  const qs = params.toString();
+  return apiRequestJson<PlatformLandingToAppVisitsResponse>(
+    "GET",
+    `/platform/analytics/landing-to-app-visits${qs ? `?${qs}` : ""}`,
+    {
+      platformBearer: true,
+      fallbackError: "Impossible de charger les passages landing → app",
+    },
+  );
+}
+
 export async function searchPlatformProspects(filters?: {
   page?: number;
   perPage?: number;
   departement?: string;
   codeNaf?: string;
   preset?: string;
+  sort?: "default" | "created_at_desc";
+  /** YYYY-MM-DD — date de création minimale. */
+  dateCreationMin?: string;
+  refresh?: boolean;
 }) {
   const params = new URLSearchParams();
   if (filters?.page != null) params.set("page", String(filters.page));
@@ -215,6 +240,9 @@ export async function searchPlatformProspects(filters?: {
   if (filters?.departement) params.set("departement", filters.departement);
   if (filters?.codeNaf) params.set("codeNaf", filters.codeNaf);
   if (filters?.preset) params.set("preset", filters.preset);
+  if (filters?.sort && filters.sort !== "default") params.set("sort", filters.sort);
+  if (filters?.dateCreationMin) params.set("dateCreationMin", filters.dateCreationMin);
+  if (filters?.refresh) params.set("refresh", "1");
   const qs = params.toString();
   return apiRequestJson<PlatformProspectsSearchResponse>(
     "GET",

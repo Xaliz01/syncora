@@ -220,7 +220,14 @@ export interface PlatformProspectsSearchResponse {
   page: number;
   perPage: number;
   creditsRemaining?: number;
+  /** true si la page vient du cache serveur (aucun crédit Pappers consommé). */
+  fromCache?: boolean;
+  /** Tri appliqué sur la page courante (Pappers n’offre pas de tri global). */
+  sort?: PlatformProspectSearchSort;
 }
+
+/** Tri local de la page de résultats (l’API Pappers n’expose pas d’ordre global). */
+export type PlatformProspectSearchSort = "default" | "created_at_desc";
 
 export interface PlatformProspectCreditsResponse {
   creditsRemaining?: number;
