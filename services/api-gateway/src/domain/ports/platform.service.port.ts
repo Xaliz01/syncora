@@ -14,9 +14,11 @@ import type {
   PlatformProspectOutreachBody,
   PlatformProspectOutreachResponse,
   PlatformProspectsSearchResponse,
+  ProspectOutreachesListResponse,
   PlatformUsersListResponse,
   StartImpersonationBody,
   PlatformAnalyticsOverviewResponse,
+  PlatformLandingVisitsResponse,
 } from "@planwise/shared";
 
 export abstract class AbstractPlatformService {
@@ -54,6 +56,11 @@ export abstract class AbstractPlatformService {
     offset?: number;
   }): Promise<CronRunsListResponse>;
   abstract getAnalyticsOverview(days?: number): Promise<PlatformAnalyticsOverviewResponse>;
+  abstract listLandingVisits(options?: {
+    days?: number;
+    limit?: number;
+    offset?: number;
+  }): Promise<PlatformLandingVisitsResponse>;
   abstract searchProspects(filters?: {
     page?: number;
     perPage?: number;
@@ -62,6 +69,10 @@ export abstract class AbstractPlatformService {
     preset?: string;
   }): Promise<PlatformProspectsSearchResponse>;
   abstract getProspectCredits(): Promise<PlatformProspectCreditsResponse>;
+  abstract listTrackedProspects(options?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<ProspectOutreachesListResponse>;
   abstract sendProspectOutreach(
     staff: PlatformAuthUser,
     body: PlatformProspectOutreachBody,

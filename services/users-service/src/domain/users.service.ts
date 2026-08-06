@@ -19,6 +19,7 @@ import type { ProspectOutreachDocument } from "../persistence/prospect-outreach.
 import type { UserSessionDocument } from "../persistence/user-session.schema";
 import {
   activeDocumentFilter,
+  clampPagination,
   DEFAULT_USER_PREFERENCES,
   getPasswordPolicyError,
   normalizeQuickActionIds,
@@ -40,6 +41,7 @@ import {
   type ProspectOutreachResponse,
   type ProspectOutreachStatus,
   type ProspectOutreachesBySirensResponse,
+  type ProspectOutreachesListResponse,
   type UpsertProspectCommentBody,
   PROSPECT_OUTREACH_COMMENT_MAX_LENGTH,
   type UpdateUserNameBody,
@@ -1229,6 +1231,23 @@ export class UsersService extends AbstractUsersService {
     if (normalized.length === 0) return { outreaches: [] };
     const docs = await this.prospectOutreachModel.find({ siren: { $in: normalized } }).exec();
     return { outreaches: docs.map((d) => this.toProspectOutreachResponse(d)) };
+  }
+
+  async listProspectOutreaches(options?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<ProspectOutreachesListResponse> {
+    const { limit, offset } = clampPagination(options);
+    const [total, docs] = await Promise.all([
+      this.prospectOutreachModel.countDocuments({}).exec(),
+      this.prospectOutreachModel.find({}).sort({ sentAt: -1 }).skip(offset).limit(limit).exec(),
+    ]);
+    return {
+      outreaches: docs.map((d) => this.toProspectOutreachResponse(d)),
+      total,
+      limit,
+      offset,
+    };
   }
 
   private normalizeProspectComment(raw: string): string {

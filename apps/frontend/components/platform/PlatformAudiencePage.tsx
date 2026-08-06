@@ -1,10 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { PlatformAnalyticsOverviewResponse } from "@planwise/shared";
+import type {
+  PlatformAnalyticsOverviewResponse,
+  PlatformLandingVisitsResponse,
+} from "@planwise/shared";
 import * as platformApi from "@/lib/platform.api";
+import { ListPagination } from "@/components/ui/list-page";
 
 const DAY_OPTIONS = [7, 30, 90] as const;
+const LANDING_PAGE_LIMIT = 50;
 
 const SURFACE_LABELS: Record<string, string> = {
   marketing: "Landing",
@@ -16,7 +21,19 @@ function formatNumber(n: number) {
   return new Intl.NumberFormat("fr-FR").format(n);
 }
 
-function formatCountry(code: string): string {
+function formatDateTime(iso: string) {
+  try {
+    return new Intl.DateTimeFormat("fr-FR", {
+      dateStyle: "short",
+      timeStyle: "medium",
+    }).format(new Date(iso));
+  } catch {
+    return iso;
+  }
+}
+
+function formatCountry(code?: string): string {
+  if (!code) return "—";
   try {
     const name = new Intl.DisplayNames(["fr"], { type: "region" }).of(code);
     return name ? `${name} (${code})` : code;
@@ -27,23 +44,43 @@ function formatCountry(code: string): string {
 
 export function PlatformAudiencePage() {
   const [days, setDays] = useState<(typeof DAY_OPTIONS)[number]>(30);
-  const [data, setData] = useState<PlatformAnalyticsOverviewResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [landingOffset, setLandingOffset] = useState(0);
+  const [overview, setOverview] = useState<PlatformAnalyticsOverviewResponse | null>(null);
+  const [landing, setLanding] = useState<PlatformLandingVisitsResponse | null>(null);
+  const [loadingOverview, setLoadingOverview] = useState(true);
+  const [loadingLanding, setLoadingLanding] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setLoading(true);
+    setLandingOffset(0);
+  }, [days]);
+
+  useEffect(() => {
+    setLoadingOverview(true);
     platformApi
       .getPlatformAnalyticsOverview(days)
       .then((res) => {
-        setData(res);
+        setOverview(res);
         setError(null);
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Erreur"))
-      .finally(() => setLoading(false));
+      .finally(() => setLoadingOverview(false));
   }, [days]);
 
-  const maxDayViews = Math.max(1, ...(data?.byDay.map((d) => d.pageviews) ?? [1]));
+  useEffect(() => {
+    setLoadingLanding(true);
+    platformApi
+      .getPlatformLandingVisits({ days, limit: LANDING_PAGE_LIMIT, offset: landingOffset })
+      .then((res) => {
+        setLanding(res);
+        setError(null);
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : "Erreur"))
+      .finally(() => setLoadingLanding(false));
+  }, [days, landingOffset]);
+
+  const maxDayViews = Math.max(1, ...(overview?.byDay.map((d) => d.pageviews) ?? [1]));
+  const loading = (loadingOverview && !overview) || (loadingLanding && !landing);
 
   return (
     <div className="space-y-6">
@@ -51,7 +88,8 @@ export function PlatformAudiencePage() {
         <div>
           <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Audience</h1>
           <p className="text-sm text-slate-500">
-            Mesure first-party (pages vues, pays approximatif via IP — IP non stockée, ~400 jours).
+            Mesure first-party (pages vues, pays approximatif via IP — IP non stockée, ~400 jours),
+            avec un détail des visites de la landing marketing.
           </p>
         </div>
         <div className="flex gap-1 rounded-lg border border-slate-200 p-1 dark:border-slate-700">
@@ -74,147 +112,271 @@ export function PlatformAudiencePage() {
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
-      {loading || !data ? (
+      {loading ? (
         <p className="text-sm text-slate-500">Chargement…</p>
       ) : (
         <>
-          <div className="grid gap-3 sm:grid-cols-3">
-            {[
-              { label: "Pages vues", value: data.totals.pageviews },
-              { label: "Visiteurs", value: data.totals.visitors },
-              { label: "Sessions", value: data.totals.sessions },
-            ].map((stat) => (
-              <div
-                key={stat.label}
-                className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900"
-              >
-                <p className="text-xs uppercase tracking-wide text-slate-500">{stat.label}</p>
-                <p className="mt-1 text-2xl font-semibold tabular-nums text-slate-900 dark:text-slate-100">
-                  {formatNumber(stat.value)}
+          {landing ? (
+            <>
+              <div>
+                <h2 className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                  Landing marketing (`/`)
+                </h2>
+                <p className="mt-1 text-xs text-slate-500">
+                  Chaque visite avec date/heure. Le code visiteur (stable navigateur) distingue les
+                  visiteurs ; badge Nouveau / Retour sur la période.
                 </p>
               </div>
-            ))}
-          </div>
 
-          <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
-            <h2 className="text-sm font-medium text-slate-900 dark:text-slate-100">Par jour</h2>
-            <div className="mt-4 flex h-32 items-end gap-0.5">
-              {data.byDay.map((day) => (
-                <div
-                  key={day.date}
-                  className="flex min-w-0 flex-1 flex-col items-center justify-end"
-                  title={`${day.date} · ${day.pageviews} vues · ${day.visitors} visiteurs`}
-                >
+              <div className="grid gap-3 sm:grid-cols-3">
+                {[
+                  { label: "Vues landing", value: landing.totals.pageviews },
+                  { label: "Visiteurs landing", value: landing.totals.visitors },
+                  { label: "Sessions landing", value: landing.totals.sessions },
+                ].map((stat) => (
                   <div
-                    className="w-full rounded-t bg-brand-500/80 dark:bg-brand-400/70"
-                    style={{
-                      height: `${Math.max(2, (day.pageviews / maxDayViews) * 100)}%`,
-                    }}
+                    key={stat.label}
+                    className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900"
+                  >
+                    <p className="text-xs uppercase tracking-wide text-slate-500">{stat.label}</p>
+                    <p className="mt-1 text-2xl font-semibold tabular-nums text-slate-900 dark:text-slate-100">
+                      {formatNumber(stat.value)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                <div className="border-b border-slate-100 px-4 py-3 text-sm font-medium dark:border-slate-800">
+                  Visites landing (plus récentes d’abord)
+                </div>
+                <table className="min-w-full text-left text-sm">
+                  <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-950 dark:text-slate-400">
+                    <tr>
+                      <th className="px-4 py-2.5 font-medium">Date / heure</th>
+                      <th className="px-4 py-2.5 font-medium">Visiteur</th>
+                      <th className="px-4 py-2.5 font-medium">Type</th>
+                      <th className="px-4 py-2.5 font-medium">Session</th>
+                      <th className="px-4 py-2.5 font-medium">Pays</th>
+                      <th className="px-4 py-2.5 font-medium">Referrer</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {landing.items.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
+                          Aucune visite landing sur cette période.
+                        </td>
+                      </tr>
+                    ) : (
+                      landing.items.map((visit) => (
+                        <tr
+                          key={visit.id}
+                          className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40"
+                        >
+                          <td className="px-4 py-2.5 tabular-nums text-slate-800 dark:text-slate-100">
+                            {formatDateTime(visit.viewedAt)}
+                          </td>
+                          <td className="px-4 py-2.5">
+                            <code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs dark:bg-slate-800">
+                              {visit.visitorKey}
+                            </code>
+                          </td>
+                          <td className="px-4 py-2.5">
+                            {visit.isReturningVisitor ? (
+                              <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                                Retour
+                              </span>
+                            ) : (
+                              <span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
+                                Nouveau
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-2.5">
+                            <code className="font-mono text-xs text-slate-500">
+                              {visit.sessionKey}
+                            </code>
+                          </td>
+                          <td className="px-4 py-2.5 text-slate-700 dark:text-slate-200">
+                            {formatCountry(visit.country)}
+                          </td>
+                          <td className="px-4 py-2.5 text-slate-500">
+                            {visit.referrerHost ?? "—"}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+                <div className="px-4 py-1">
+                  <ListPagination
+                    total={landing.total}
+                    limit={landing.limit}
+                    offset={landing.offset}
+                    onOffsetChange={setLandingOffset}
                   />
                 </div>
-              ))}
-            </div>
-            <div className="mt-2 flex justify-between text-xs text-slate-500">
-              <span>{data.byDay[0]?.date}</span>
-              <span>{data.byDay[data.byDay.length - 1]?.date}</span>
-            </div>
-          </div>
-
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
-              <div className="border-b border-slate-100 px-4 py-3 text-sm font-medium dark:border-slate-800">
-                Par surface
               </div>
-              <table className="w-full text-left text-sm">
-                <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-950">
-                  <tr>
-                    <th className="px-4 py-2">Surface</th>
-                    <th className="px-4 py-2">Vues</th>
-                    <th className="px-4 py-2">Visiteurs</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {data.bySurface.length === 0 ? (
-                    <tr>
-                      <td colSpan={3} className="px-4 py-6 text-center text-slate-500">
-                        Aucune donnée
-                      </td>
-                    </tr>
-                  ) : (
-                    data.bySurface.map((row) => (
-                      <tr key={row.surface}>
-                        <td className="px-4 py-2">{SURFACE_LABELS[row.surface] ?? row.surface}</td>
-                        <td className="px-4 py-2 tabular-nums">{formatNumber(row.pageviews)}</td>
-                        <td className="px-4 py-2 tabular-nums">{formatNumber(row.visitors)}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+            </>
+          ) : null}
 
-            <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
-              <div className="border-b border-slate-100 px-4 py-3 text-sm font-medium dark:border-slate-800">
-                Pages les plus vues
+          {overview ? (
+            <>
+              <div>
+                <h2 className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                  Vue d’ensemble
+                </h2>
+                <p className="mt-1 text-xs text-slate-500">
+                  Toutes surfaces confondues (landing, application, backoffice).
+                </p>
               </div>
-              <table className="w-full text-left text-sm">
-                <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-950">
-                  <tr>
-                    <th className="px-4 py-2">Chemin</th>
-                    <th className="px-4 py-2">Vues</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {data.topPaths.length === 0 ? (
-                    <tr>
-                      <td colSpan={2} className="px-4 py-6 text-center text-slate-500">
-                        Aucune donnée
-                      </td>
-                    </tr>
-                  ) : (
-                    data.topPaths.map((row) => (
-                      <tr key={row.path}>
-                        <td className="px-4 py-2 font-mono text-xs">{row.path}</td>
-                        <td className="px-4 py-2 tabular-nums">{formatNumber(row.pageviews)}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
 
-          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
-            <div className="border-b border-slate-100 px-4 py-3 text-sm font-medium dark:border-slate-800">
-              Par pays
-            </div>
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-950">
-                <tr>
-                  <th className="px-4 py-2">Pays</th>
-                  <th className="px-4 py-2">Vues</th>
-                  <th className="px-4 py-2">Visiteurs</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {(data.topCountries ?? []).length === 0 ? (
-                  <tr>
-                    <td colSpan={3} className="px-4 py-6 text-center text-slate-500">
-                      Aucune donnée
-                    </td>
-                  </tr>
-                ) : (
-                  data.topCountries.map((row) => (
-                    <tr key={row.country}>
-                      <td className="px-4 py-2">{formatCountry(row.country)}</td>
-                      <td className="px-4 py-2 tabular-nums">{formatNumber(row.pageviews)}</td>
-                      <td className="px-4 py-2 tabular-nums">{formatNumber(row.visitors)}</td>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {[
+                  { label: "Pages vues", value: overview.totals.pageviews },
+                  { label: "Visiteurs", value: overview.totals.visitors },
+                  { label: "Sessions", value: overview.totals.sessions },
+                ].map((stat) => (
+                  <div
+                    key={stat.label}
+                    className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900"
+                  >
+                    <p className="text-xs uppercase tracking-wide text-slate-500">{stat.label}</p>
+                    <p className="mt-1 text-2xl font-semibold tabular-nums text-slate-900 dark:text-slate-100">
+                      {formatNumber(stat.value)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+                <h2 className="text-sm font-medium text-slate-900 dark:text-slate-100">Par jour</h2>
+                <div className="mt-4 flex h-32 items-end gap-0.5">
+                  {overview.byDay.map((day) => (
+                    <div
+                      key={day.date}
+                      className="flex min-w-0 flex-1 flex-col items-center justify-end"
+                      title={`${day.date} · ${day.pageviews} vues · ${day.visitors} visiteurs`}
+                    >
+                      <div
+                        className="w-full rounded-t bg-brand-500/80 dark:bg-brand-400/70"
+                        style={{
+                          height: `${Math.max(2, (day.pageviews / maxDayViews) * 100)}%`,
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-2 flex justify-between text-xs text-slate-500">
+                  <span>{overview.byDay[0]?.date}</span>
+                  <span>{overview.byDay[overview.byDay.length - 1]?.date}</span>
+                </div>
+              </div>
+
+              <div className="grid gap-4 lg:grid-cols-2">
+                <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+                  <div className="border-b border-slate-100 px-4 py-3 text-sm font-medium dark:border-slate-800">
+                    Par surface
+                  </div>
+                  <table className="w-full text-left text-sm">
+                    <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-950">
+                      <tr>
+                        <th className="px-4 py-2">Surface</th>
+                        <th className="px-4 py-2">Vues</th>
+                        <th className="px-4 py-2">Visiteurs</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                      {overview.bySurface.length === 0 ? (
+                        <tr>
+                          <td colSpan={3} className="px-4 py-6 text-center text-slate-500">
+                            Aucune donnée
+                          </td>
+                        </tr>
+                      ) : (
+                        overview.bySurface.map((row) => (
+                          <tr key={row.surface}>
+                            <td className="px-4 py-2">
+                              {SURFACE_LABELS[row.surface] ?? row.surface}
+                            </td>
+                            <td className="px-4 py-2 tabular-nums">
+                              {formatNumber(row.pageviews)}
+                            </td>
+                            <td className="px-4 py-2 tabular-nums">{formatNumber(row.visitors)}</td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+                  <div className="border-b border-slate-100 px-4 py-3 text-sm font-medium dark:border-slate-800">
+                    Pages les plus vues
+                  </div>
+                  <table className="w-full text-left text-sm">
+                    <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-950">
+                      <tr>
+                        <th className="px-4 py-2">Chemin</th>
+                        <th className="px-4 py-2">Vues</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                      {overview.topPaths.length === 0 ? (
+                        <tr>
+                          <td colSpan={2} className="px-4 py-6 text-center text-slate-500">
+                            Aucune donnée
+                          </td>
+                        </tr>
+                      ) : (
+                        overview.topPaths.map((row) => (
+                          <tr key={row.path}>
+                            <td className="px-4 py-2 font-mono text-xs">{row.path}</td>
+                            <td className="px-4 py-2 tabular-nums">
+                              {formatNumber(row.pageviews)}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+                <div className="border-b border-slate-100 px-4 py-3 text-sm font-medium dark:border-slate-800">
+                  Par pays
+                </div>
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-950">
+                    <tr>
+                      <th className="px-4 py-2">Pays</th>
+                      <th className="px-4 py-2">Vues</th>
+                      <th className="px-4 py-2">Visiteurs</th>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {(overview.topCountries ?? []).length === 0 ? (
+                      <tr>
+                        <td colSpan={3} className="px-4 py-6 text-center text-slate-500">
+                          Aucune donnée
+                        </td>
+                      </tr>
+                    ) : (
+                      overview.topCountries.map((row) => (
+                        <tr key={row.country}>
+                          <td className="px-4 py-2">{formatCountry(row.country)}</td>
+                          <td className="px-4 py-2 tabular-nums">{formatNumber(row.pageviews)}</td>
+                          <td className="px-4 py-2 tabular-nums">{formatNumber(row.visitors)}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          ) : null}
         </>
       )}
     </div>

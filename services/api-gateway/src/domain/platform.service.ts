@@ -39,8 +39,10 @@ import type {
   PlatformProspectsSearchResponse,
   PlatformUserSummary,
   PlatformAnalyticsOverviewResponse,
+  PlatformLandingVisitsResponse,
   PlatformUsersListResponse,
   ProspectOutreachesBySirensResponse,
+  ProspectOutreachesListResponse,
   SendEmailNotificationResponse,
   StartImpersonationBody,
   UserResponse,
@@ -490,6 +492,14 @@ export class PlatformService extends AbstractPlatformService {
     return this.analyticsGateway.getOverview(days);
   }
 
+  listLandingVisits(options?: {
+    days?: number;
+    limit?: number;
+    offset?: number;
+  }): Promise<PlatformLandingVisitsResponse> {
+    return this.analyticsGateway.listLandingVisits(options);
+  }
+
   async searchProspects(filters?: {
     page?: number;
     perPage?: number;
@@ -578,6 +588,30 @@ export class PlatformService extends AbstractPlatformService {
       return { configured: true, creditsRemaining };
     } catch {
       return { configured: true };
+    }
+  }
+
+  async listTrackedProspects(options?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<ProspectOutreachesListResponse> {
+    try {
+      const res = await firstValueFrom(
+        this.httpService.get<ProspectOutreachesListResponse>(
+          `${USERS_URL}/users/platform/prospect-outreaches`,
+          {
+            params: {
+              ...(options?.limit != null ? { limit: options.limit } : {}),
+              ...(options?.offset != null ? { offset: options.offset } : {}),
+            },
+            timeout: 10_000,
+          },
+        ),
+      );
+      return res.data;
+    } catch (err: unknown) {
+      this.logger.warn(`Failed to list tracked prospects: ${(err as Error).message}`);
+      throw new ServiceUnavailableException("Impossible de charger les prospects suivis");
     }
   }
 

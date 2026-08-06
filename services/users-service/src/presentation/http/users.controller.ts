@@ -184,12 +184,22 @@ export class UsersController {
   }
 
   @Get("platform/prospect-outreaches")
-  async listProspectOutreaches(@Query("sirens") sirens?: string) {
-    const list = (sirens ?? "")
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-    return this.usersService.listProspectOutreachesBySirens(list);
+  async listProspectOutreaches(
+    @Query("sirens") sirens?: string,
+    @Query("limit") limit?: string,
+    @Query("offset") offset?: string,
+  ) {
+    if (sirens?.trim()) {
+      const list = sirens
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      return this.usersService.listProspectOutreachesBySirens(list);
+    }
+    return this.usersService.listProspectOutreaches({
+      limit: limit ? Number.parseInt(limit, 10) : undefined,
+      offset: offset ? Number.parseInt(offset, 10) : undefined,
+    });
   }
 
   @Post("platform/prospect-outreaches")

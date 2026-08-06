@@ -2,6 +2,7 @@ import type {
   AuthResponse,
   CronRunsListResponse,
   PlatformAnalyticsOverviewResponse,
+  PlatformLandingVisitsResponse,
   PlatformAuthResponse,
   PlatformAuthUser,
   PlatformCronJobsOverviewResponse,
@@ -14,6 +15,7 @@ import type {
   PlatformProspectOutreachBody,
   PlatformProspectOutreachResponse,
   PlatformProspectsSearchResponse,
+  ProspectOutreachesListResponse,
   PlatformUsersListResponse,
   StartImpersonationBody,
 } from "@planwise/shared";
@@ -180,6 +182,26 @@ export async function getPlatformAnalyticsOverview(days?: number) {
   );
 }
 
+export async function getPlatformLandingVisits(filters?: {
+  days?: number;
+  limit?: number;
+  offset?: number;
+}) {
+  const params = new URLSearchParams();
+  if (filters?.days != null) params.set("days", String(filters.days));
+  if (filters?.limit != null) params.set("limit", String(filters.limit));
+  if (filters?.offset != null) params.set("offset", String(filters.offset));
+  const qs = params.toString();
+  return apiRequestJson<PlatformLandingVisitsResponse>(
+    "GET",
+    `/platform/analytics/landing-visits${qs ? `?${qs}` : ""}`,
+    {
+      platformBearer: true,
+      fallbackError: "Impossible de charger les visites landing",
+    },
+  );
+}
+
 export async function searchPlatformProspects(filters?: {
   page?: number;
   perPage?: number;
@@ -209,6 +231,21 @@ export async function getPlatformProspectCredits() {
     platformBearer: true,
     fallbackError: "Impossible de charger les crédits Pappers",
   });
+}
+
+export async function listPlatformTrackedProspects(filters?: { limit?: number; offset?: number }) {
+  const params = new URLSearchParams();
+  if (filters?.limit != null) params.set("limit", String(filters.limit));
+  if (filters?.offset != null) params.set("offset", String(filters.offset));
+  const qs = params.toString();
+  return apiRequestJson<ProspectOutreachesListResponse>(
+    "GET",
+    `/platform/prospects/tracked${qs ? `?${qs}` : ""}`,
+    {
+      platformBearer: true,
+      fallbackError: "Impossible de charger les prospects suivis",
+    },
+  );
 }
 
 export async function sendPlatformProspectOutreach(body: PlatformProspectOutreachBody) {

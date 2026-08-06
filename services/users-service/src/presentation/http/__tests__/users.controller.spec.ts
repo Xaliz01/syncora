@@ -44,6 +44,7 @@ describe("UsersController", () => {
       createProspectOutreach: jest.fn(),
       upsertProspectComment: jest.fn(),
       listProspectOutreachesBySirens: jest.fn(),
+      listProspectOutreaches: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({

@@ -16,6 +16,7 @@ import type {
   PlatformUserSummary,
   ProspectOutreachResponse,
   ProspectOutreachesBySirensResponse,
+  ProspectOutreachesListResponse,
   UpdateUserNameBody,
   UpdateUserPreferencesBody,
   UpsertProspectCommentBody,
@@ -115,4 +116,8 @@ export abstract class AbstractUsersService {
   abstract listProspectOutreachesBySirens(
     sirens: string[],
   ): Promise<ProspectOutreachesBySirensResponse>;
+  abstract listProspectOutreaches(options?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<ProspectOutreachesListResponse>;
 }

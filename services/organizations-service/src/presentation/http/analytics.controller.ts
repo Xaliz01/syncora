@@ -15,4 +15,17 @@ export class AnalyticsController {
   getOverview(@Query("days") days?: string) {
     return this.analyticsService.getOverview(days ? Number.parseInt(days, 10) : undefined);
   }
+
+  @Get("platform/analytics/landing-visits")
+  listLandingVisits(
+    @Query("days") days?: string,
+    @Query("limit") limit?: string,
+    @Query("offset") offset?: string,
+  ) {
+    return this.analyticsService.listLandingVisits({
+      days: days ? Number.parseInt(days, 10) : undefined,
+      limit: limit ? Number.parseInt(limit, 10) : undefined,
+      offset: offset ? Number.parseInt(offset, 10) : undefined,
+    });
+  }
 }

@@ -4,15 +4,20 @@ import { Model } from "mongoose";
 import type {
   AnalyticsSurface,
   PlatformAnalyticsOverviewResponse,
+  PlatformLandingVisit,
+  PlatformLandingVisitsResponse,
   TrackPageviewBody,
   TrackPageviewResponse,
 } from "@planwise/shared";
+import { clampPagination } from "@planwise/shared";
 import type { PageViewDocument } from "../persistence/page-view.schema";
 import { AbstractAnalyticsService } from "./ports/analytics.service.port";
 
 const MAX_PATH_LENGTH = 200;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const SURFACES = new Set<AnalyticsSurface>(["marketing", "app", "platform"]);
+const LANDING_SURFACE: AnalyticsSurface = "marketing";
+const LANDING_PATH = "/";
 
 @Injectable()
 export class AnalyticsService extends AbstractAnalyticsService {
@@ -56,10 +61,7 @@ export class AnalyticsService extends AbstractAnalyticsService {
 
   async getOverview(days = 30): Promise<PlatformAnalyticsOverviewResponse> {
     const windowDays = Math.min(Math.max(Math.floor(days) || 30, 1), 90);
-    const to = new Date();
-    const from = new Date(to);
-    from.setUTCDate(from.getUTCDate() - (windowDays - 1));
-    from.setUTCHours(0, 0, 0, 0);
+    const { from, to } = this.windowBounds(windowDays);
 
     const match = { createdAt: { $gte: from, $lte: to } };
 
@@ -181,6 +183,119 @@ export class AnalyticsService extends AbstractAnalyticsService {
         visitors: row.visitors.length,
       })),
     };
+  }
+
+  async listLandingVisits(options?: {
+    days?: number;
+    limit?: number;
+    offset?: number;
+  }): Promise<PlatformLandingVisitsResponse> {
+    const windowDays = Math.min(Math.max(Math.floor(options?.days ?? 30) || 30, 1), 90);
+    const { limit, offset } = clampPagination({
+      limit: options?.limit,
+      offset: options?.offset,
+    });
+    const { from, to } = this.windowBounds(windowDays);
+    const match = {
+      surface: LANDING_SURFACE,
+      path: LANDING_PATH,
+      createdAt: { $gte: from, $lte: to },
+    };
+
+    const [totalsAgg, total, docs] = await Promise.all([
+      this.pageViewModel
+        .aggregate<{ pageviews: number; visitors: string[]; sessions: string[] }>([
+          { $match: match },
+          {
+            $group: {
+              _id: null,
+              pageviews: { $sum: 1 },
+              visitors: { $addToSet: "$visitorId" },
+              sessions: { $addToSet: "$sessionId" },
+            },
+          },
+        ])
+        .exec(),
+      this.pageViewModel.countDocuments(match).exec(),
+      this.pageViewModel
+        .find(match)
+        .sort({ createdAt: -1 })
+        .skip(offset)
+        .limit(limit)
+        .select({
+          path: 1,
+          visitorId: 1,
+          sessionId: 1,
+          country: 1,
+          region: 1,
+          referrerHost: 1,
+          createdAt: 1,
+        })
+        .lean()
+        .exec(),
+    ]);
+
+    const visitorIds = [...new Set(docs.map((d) => d.visitorId).filter(Boolean))];
+    const firstVisitByVisitor = new Map<string, Date>();
+    if (visitorIds.length > 0) {
+      const firsts = await this.pageViewModel
+        .aggregate<{
+          _id: string;
+          firstAt: Date;
+        }>([
+          { $match: { ...match, visitorId: { $in: visitorIds } } },
+          { $group: { _id: "$visitorId", firstAt: { $min: "$createdAt" } } },
+        ])
+        .exec();
+      for (const row of firsts) {
+        firstVisitByVisitor.set(row._id, row.firstAt);
+      }
+    }
+
+    const items: PlatformLandingVisit[] = docs.map((doc) => {
+      const viewedAt = doc.createdAt instanceof Date ? doc.createdAt : new Date(doc.createdAt);
+      const firstAt = firstVisitByVisitor.get(doc.visitorId);
+      const isReturningVisitor = Boolean(firstAt && viewedAt.getTime() > firstAt.getTime());
+      return {
+        id: String(doc._id),
+        viewedAt: viewedAt.toISOString(),
+        path: doc.path,
+        visitorKey: this.shortKey(doc.visitorId),
+        sessionKey: this.shortKey(doc.sessionId),
+        isReturningVisitor,
+        ...(doc.country ? { country: doc.country } : {}),
+        ...(doc.region ? { region: doc.region } : {}),
+        ...(doc.referrerHost ? { referrerHost: doc.referrerHost } : {}),
+      };
+    });
+
+    const totalsRow = totalsAgg[0];
+    return {
+      days: windowDays,
+      from: from.toISOString(),
+      to: to.toISOString(),
+      totals: {
+        pageviews: totalsRow?.pageviews ?? 0,
+        visitors: totalsRow?.visitors.length ?? 0,
+        sessions: totalsRow?.sessions.length ?? 0,
+      },
+      items,
+      total,
+      limit,
+      offset,
+    };
+  }
+
+  private windowBounds(windowDays: number): { from: Date; to: Date } {
+    const to = new Date();
+    const from = new Date(to);
+    from.setUTCDate(from.getUTCDate() - (windowDays - 1));
+    from.setUTCHours(0, 0, 0, 0);
+    return { from, to };
+  }
+
+  private shortKey(id: string): string {
+    return id.replace(/-/g, "").slice(0, 8);
   }
 
   private normalizePath(raw: string): string {

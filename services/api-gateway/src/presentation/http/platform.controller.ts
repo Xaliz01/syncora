@@ -118,6 +118,20 @@ export class PlatformController {
     return this.platformService.getAnalyticsOverview(days ? Number.parseInt(days, 10) : undefined);
   }
 
+  @Get("analytics/landing-visits")
+  @UseGuards(PlatformJwtAuthGuard)
+  listLandingVisits(
+    @Query("days") days?: string,
+    @Query("limit") limit?: string,
+    @Query("offset") offset?: string,
+  ) {
+    return this.platformService.listLandingVisits({
+      days: days ? Number.parseInt(days, 10) : undefined,
+      limit: limit ? Number.parseInt(limit, 10) : undefined,
+      offset: offset ? Number.parseInt(offset, 10) : undefined,
+    });
+  }
+
   @Get("prospects")
   @UseGuards(PlatformJwtAuthGuard)
   searchProspects(
@@ -140,6 +154,15 @@ export class PlatformController {
   @UseGuards(PlatformJwtAuthGuard)
   getProspectCredits() {
     return this.platformService.getProspectCredits();
+  }
+
+  @Get("prospects/tracked")
+  @UseGuards(PlatformJwtAuthGuard)
+  listTrackedProspects(@Query("limit") limit?: string, @Query("offset") offset?: string) {
+    return this.platformService.listTrackedProspects({
+      limit: limit ? Number.parseInt(limit, 10) : undefined,
+      offset: offset ? Number.parseInt(offset, 10) : undefined,
+    });
   }
 
   @Post("prospects/outreach")

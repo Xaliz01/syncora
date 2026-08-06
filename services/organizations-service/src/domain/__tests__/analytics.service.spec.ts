@@ -9,12 +9,23 @@ describe("AnalyticsService", () => {
   let mockPageViewModel: {
     create: jest.Mock;
     aggregate: jest.Mock;
+    countDocuments: jest.Mock;
+    find: jest.Mock;
   };
 
   beforeEach(async () => {
     mockPageViewModel = {
       create: jest.fn().mockResolvedValue({}),
       aggregate: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue([]) }),
+      countDocuments: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(0) }),
+      find: jest.fn().mockReturnValue({
+        sort: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        lean: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue([]),
+      }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -154,6 +165,101 @@ describe("AnalyticsService", () => {
       expect(overview.topPaths).toEqual([{ path: "/", pageviews: 5 }]);
       expect(overview.topCountries).toEqual([{ country: "FR", pageviews: 8, visitors: 2 }]);
       expect(overview.byDay).toHaveLength(1);
+    });
+  });
+
+  describe("listLandingVisits", () => {
+    it("returns empty landing visits", async () => {
+      const res = await service.listLandingVisits({ days: 7, limit: 50, offset: 0 });
+      expect(res.days).toBe(7);
+      expect(res.totals).toEqual({ pageviews: 0, visitors: 0, sessions: 0 });
+      expect(res.items).toEqual([]);
+      expect(res.total).toBe(0);
+    });
+
+    it("marks returning visitors and short keys", async () => {
+      const visitorA = "11111111-1111-4111-8111-111111111111";
+      const visitorB = "22222222-2222-4222-8222-222222222222";
+      const firstAt = new Date("2026-08-01T10:00:00.000Z");
+      const secondAt = new Date("2026-08-02T11:00:00.000Z");
+
+      mockPageViewModel.aggregate
+        .mockReturnValueOnce({
+          exec: jest.fn().mockResolvedValue([
+            {
+              pageviews: 3,
+              visitors: [visitorA, visitorB],
+              sessions: ["s1", "s2"],
+            },
+          ]),
+        })
+        .mockReturnValueOnce({
+          exec: jest.fn().mockResolvedValue([
+            { _id: visitorA, firstAt },
+            { _id: visitorB, firstAt: secondAt },
+          ]),
+        });
+      mockPageViewModel.countDocuments.mockReturnValue({ exec: jest.fn().mockResolvedValue(3) });
+      mockPageViewModel.find.mockReturnValue({
+        sort: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        lean: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue([
+          {
+            _id: "v2",
+            path: "/",
+            visitorId: visitorA,
+            sessionId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            country: "FR",
+            createdAt: secondAt,
+          },
+          {
+            _id: "v1",
+            path: "/",
+            visitorId: visitorA,
+            sessionId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+            createdAt: firstAt,
+          },
+          {
+            _id: "v3",
+            path: "/",
+            visitorId: visitorB,
+            sessionId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+            referrerHost: "google.com",
+            createdAt: secondAt,
+          },
+        ]),
+      });
+
+      const res = await service.listLandingVisits({ days: 30, limit: 50, offset: 0 });
+
+      expect(res.total).toBe(3);
+      expect(res.totals.visitors).toBe(2);
+      expect(res.items[0]).toEqual(
+        expect.objectContaining({
+          id: "v2",
+          visitorKey: "11111111",
+          isReturningVisitor: true,
+          country: "FR",
+        }),
+      );
+      expect(res.items[1]).toEqual(
+        expect.objectContaining({
+          id: "v1",
+          visitorKey: "11111111",
+          isReturningVisitor: false,
+        }),
+      );
+      expect(res.items[2]).toEqual(
+        expect.objectContaining({
+          id: "v3",
+          visitorKey: "22222222",
+          isReturningVisitor: false,
+          referrerHost: "google.com",
+        }),
+      );
     });
   });
 });

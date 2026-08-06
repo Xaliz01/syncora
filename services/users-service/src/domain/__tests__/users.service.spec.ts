@@ -49,6 +49,7 @@ describe("UsersService", () => {
     findOne: jest.Mock;
     findOneAndUpdate: jest.Mock;
     find: jest.Mock;
+    countDocuments: jest.Mock;
     create: jest.Mock;
   };
 
@@ -162,6 +163,9 @@ describe("UsersService", () => {
       }),
       find: jest.fn().mockReturnValue({
         exec: jest.fn().mockResolvedValue([]),
+      }),
+      countDocuments: jest.fn().mockReturnValue({
+        exec: jest.fn().mockResolvedValue(0),
       }),
       create: jest.fn().mockResolvedValue({
         _id: { toString: () => "out-note" },
@@ -1617,6 +1621,48 @@ describe("UsersService", () => {
       });
       expect(result.outreaches).toHaveLength(1);
       expect(result.outreaches[0]?.siren).toBe("123456789");
+    });
+
+    it("should list all outreaches paginated by sentAt desc", async () => {
+      mockProspectOutreachModel.countDocuments.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(2),
+      });
+      mockProspectOutreachModel.find.mockReturnValue({
+        sort: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue([
+          {
+            _id: { toString: () => "o2" },
+            siren: "987654321",
+            companyName: "B",
+            email: "",
+            sentByUserId: "u1",
+            sentByEmail: "staff@planwise.fr",
+            subject: "Email non trouvé",
+            status: "email_not_found",
+            sentAt: new Date("2026-08-02T10:00:00.000Z"),
+          },
+          {
+            _id: { toString: () => "o1" },
+            siren: "123456789",
+            companyName: "A",
+            email: "a@b.fr",
+            sentByUserId: "u1",
+            sentByEmail: "staff@planwise.fr",
+            subject: "Hello",
+            status: "sent",
+            sentAt: new Date("2026-08-01T10:00:00.000Z"),
+          },
+        ]),
+      });
+
+      const result = await service.listProspectOutreaches({ limit: 50, offset: 0 });
+
+      expect(result.total).toBe(2);
+      expect(result.outreaches).toHaveLength(2);
+      expect(result.outreaches[0]?.status).toBe("email_not_found");
+      expect(mockProspectOutreachModel.find).toHaveBeenCalledWith({});
     });
   });
 });

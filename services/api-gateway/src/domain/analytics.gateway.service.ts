@@ -8,6 +8,7 @@ import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
 import type {
   PlatformAnalyticsOverviewResponse,
+  PlatformLandingVisitsResponse,
   TrackPageviewBody,
   TrackPageviewResponse,
 } from "@planwise/shared";
@@ -57,6 +58,25 @@ export class AnalyticsGatewayService extends AbstractAnalyticsGatewayService {
       return res.data;
     } catch (err: unknown) {
       this.logger.warn(`analytics overview failed: ${(err as Error).message}`);
+      throw new ServiceUnavailableException("Statistiques temporairement indisponibles");
+    }
+  }
+
+  async listLandingVisits(options?: {
+    days?: number;
+    limit?: number;
+    offset?: number;
+  }): Promise<PlatformLandingVisitsResponse> {
+    try {
+      const res = await firstValueFrom(
+        this.httpService.get<PlatformLandingVisitsResponse>(
+          `${ORGANIZATIONS_URL}/platform/analytics/landing-visits`,
+          { params: options, timeout: 10000 },
+        ),
+      );
+      return res.data;
+    } catch (err: unknown) {
+      this.logger.warn(`analytics landing visits failed: ${(err as Error).message}`);
       throw new ServiceUnavailableException("Statistiques temporairement indisponibles");
     }
   }

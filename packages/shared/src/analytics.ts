@@ -68,3 +68,33 @@ export interface PlatformAnalyticsOverviewResponse {
   topPaths: AnalyticsPathStat[];
   topCountries: AnalyticsCountryStat[];
 }
+
+/** Visite individuelle de la landing marketing (`surface=marketing`, `path=/`). */
+export interface PlatformLandingVisit {
+  id: string;
+  viewedAt: string;
+  path: string;
+  /** Prefixe du visitorId (stable navigateur) pour distinguer les visiteurs. */
+  visitorKey: string;
+  sessionKey: string;
+  /** true si ce visitorId avait déjà visité la landing avant cette vue (sur la fenêtre). */
+  isReturningVisitor: boolean;
+  country?: string;
+  region?: string;
+  referrerHost?: string;
+}
+
+export interface PlatformLandingVisitsResponse {
+  days: number;
+  from: string;
+  to: string;
+  totals: {
+    pageviews: number;
+    visitors: number;
+    sessions: number;
+  };
+  items: PlatformLandingVisit[];
+  total: number;
+  limit: number;
+  offset: number;
+}

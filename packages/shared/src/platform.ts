@@ -293,3 +293,10 @@ export interface ProspectOutreachResponse {
 export interface ProspectOutreachesBySirensResponse {
   outreaches: ProspectOutreachResponse[];
 }
+
+export interface ProspectOutreachesListResponse {
+  outreaches: ProspectOutreachResponse[];
+  total: number;
+  limit: number;
+  offset: number;
+}
