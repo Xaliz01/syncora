@@ -18,6 +18,7 @@ import type {
   ProspectOutreachesBySirensResponse,
   UpdateUserNameBody,
   UpdateUserPreferencesBody,
+  UpsertProspectCommentBody,
   UserPreferencesResponse,
   UserResponse,
   UserSessionResponse,
@@ -107,6 +108,9 @@ export abstract class AbstractUsersService {
   abstract createImpersonationAudit(body: CreateImpersonationAuditBody): Promise<{ id: string }>;
   abstract createProspectOutreach(
     body: CreateProspectOutreachBody,
+  ): Promise<ProspectOutreachResponse>;
+  abstract upsertProspectComment(
+    body: UpsertProspectCommentBody,
   ): Promise<ProspectOutreachResponse>;
   abstract listProspectOutreachesBySirens(
     sirens: string[],

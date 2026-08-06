@@ -1,7 +1,11 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
-import { PLATFORM_PROSPECT_NAF_PRESETS, type PlatformProspectSummary } from "@planwise/shared";
+import {
+  PLATFORM_PROSPECT_NAF_PRESETS,
+  PROSPECT_OUTREACH_COMMENT_MAX_LENGTH,
+  type PlatformProspectSummary,
+} from "@planwise/shared";
 import * as platformApi from "@/lib/platform.api";
 import { ListPagination } from "@/components/ui/list-page";
 import { useToast } from "@/components/ui/ToastProvider";
@@ -33,7 +37,10 @@ export function PlatformProspectionPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [emails, setEmails] = useState<Record<string, string>>({});
+  const [comments, setComments] = useState<Record<string, string>>({});
   const [sendingSiren, setSendingSiren] = useState<string | null>(null);
+  const [markingSiren, setMarkingSiren] = useState<string | null>(null);
+  const [savingCommentSiren, setSavingCommentSiren] = useState<string | null>(null);
 
   const loadCredits = useCallback(() => {
     platformApi
@@ -63,6 +70,13 @@ export function PlatformProspectionPage() {
           const next = { ...prev };
           for (const r of res.results) {
             if (next[r.siren] === undefined) next[r.siren] = "";
+          }
+          return next;
+        });
+        setComments((prev) => {
+          const next = { ...prev };
+          for (const r of res.results) {
+            next[r.siren] = r.comment ?? "";
           }
           return next;
         });
@@ -116,7 +130,12 @@ export function PlatformProspectionPage() {
         setResults((rows) =>
           rows.map((r) =>
             r.siren === prospect.siren
-              ? { ...r, alreadyContacted: true, lastContactedAt: new Date().toISOString() }
+              ? {
+                  ...r,
+                  alreadyContacted: true,
+                  emailNotFound: false,
+                  lastContactedAt: new Date().toISOString(),
+                }
               : r,
           ),
         );
@@ -130,6 +149,65 @@ export function PlatformProspectionPage() {
     }
   };
 
+  const markEmailNotFound = async (prospect: PlatformProspectSummary) => {
+    const ok = await confirm({
+      title: "Marquer « Email non trouvé » ?",
+      description: `« ${prospect.name} » (${prospect.siren}) restera visible comme déjà recherché. Vous pourrez toujours envoyer une invitation plus tard si vous trouvez un e-mail.`,
+      confirmLabel: "Marquer",
+    });
+    if (!ok) return;
+
+    setMarkingSiren(prospect.siren);
+    try {
+      await platformApi.markPlatformProspectEmailNotFound({
+        siren: prospect.siren,
+        companyName: prospect.name,
+      });
+      showToast("Marqué : email non trouvé.", "success");
+      setResults((rows) =>
+        rows.map((r) =>
+          r.siren === prospect.siren
+            ? {
+                ...r,
+                emailNotFound: true,
+                lastContactedAt: new Date().toISOString(),
+              }
+            : r,
+        ),
+      );
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Erreur", "error");
+    } finally {
+      setMarkingSiren(null);
+    }
+  };
+
+  const saveComment = async (prospect: PlatformProspectSummary) => {
+    const comment = (comments[prospect.siren] ?? "").trim();
+    setSavingCommentSiren(prospect.siren);
+    try {
+      const res = await platformApi.savePlatformProspectNote({
+        siren: prospect.siren,
+        companyName: prospect.name,
+        comment,
+      });
+      showToast("Commentaire enregistré.", "success");
+      setResults((rows) =>
+        rows.map((r) =>
+          r.siren === prospect.siren ? { ...r, comment: res.comment ?? (comment || undefined) } : r,
+        ),
+      );
+      setComments((prev) => ({
+        ...prev,
+        [prospect.siren]: res.comment ?? comment,
+      }));
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Erreur", "error");
+    } finally {
+      setSavingCommentSiren(null);
+    }
+  };
+
   const offset = (page - 1) * PER_PAGE;
 
   return (
@@ -138,7 +216,8 @@ export function PlatformProspectionPage() {
         <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-50">Prospection</h1>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           Entreprises françaises créées il y a moins d’un an (API Pappers), secteurs artisans / TPE.
-          Saisissez un e-mail puis envoyez l’invitation beta Planwise.
+          Saisissez un e-mail puis envoyez l’invitation, ou marquez « Email non trouvé » si la
+          recherche a échoué.
         </p>
       </div>
 
@@ -221,19 +300,20 @@ export function PlatformProspectionPage() {
               <th className="px-3 py-2.5 font-medium">Ville</th>
               <th className="px-3 py-2.5 font-medium">Dirigeant</th>
               <th className="px-3 py-2.5 font-medium min-w-[12rem]">E-mail</th>
+              <th className="px-3 py-2.5 font-medium min-w-[12rem]">Commentaire</th>
               <th className="px-3 py-2.5 font-medium">Action</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={8} className="px-3 py-8 text-center text-slate-500">
+                <td colSpan={9} className="px-3 py-8 text-center text-slate-500">
                   Chargement…
                 </td>
               </tr>
             ) : results.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-3 py-8 text-center text-slate-500">
+                <td colSpan={9} className="px-3 py-8 text-center text-slate-500">
                   Aucun prospect pour ces critères.
                 </td>
               </tr>
@@ -284,6 +364,22 @@ export function PlatformProspectionPage() {
                         Déjà contacté
                         {p.lastContactedAt ? ` · ${formatDate(p.lastContactedAt)}` : ""}
                       </span>
+                    ) : p.emailNotFound ? (
+                      <div className="space-y-1.5">
+                        <span className="block text-xs text-amber-700 dark:text-amber-300">
+                          Email non trouvé
+                          {p.lastContactedAt ? ` · ${formatDate(p.lastContactedAt)}` : ""}
+                        </span>
+                        <input
+                          type="email"
+                          value={emails[p.siren] ?? ""}
+                          onChange={(e) =>
+                            setEmails((prev) => ({ ...prev, [p.siren]: e.target.value }))
+                          }
+                          placeholder="trouvé plus tard…"
+                          className="w-full min-w-[10rem] rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-2 py-1.5 text-xs"
+                        />
+                      </div>
                     ) : (
                       <input
                         type="email"
@@ -297,17 +393,62 @@ export function PlatformProspectionPage() {
                     )}
                   </td>
                   <td className="px-3 py-2 align-middle">
+                    <div className="flex flex-col gap-1 min-w-[11rem]">
+                      <textarea
+                        value={comments[p.siren] ?? ""}
+                        onChange={(e) =>
+                          setComments((prev) => ({ ...prev, [p.siren]: e.target.value }))
+                        }
+                        maxLength={PROSPECT_OUTREACH_COMMENT_MAX_LENGTH}
+                        rows={2}
+                        placeholder="Note (site, LinkedIn…)"
+                        className="w-full rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-2 py-1.5 text-xs resize-y min-h-[2.5rem]"
+                      />
+                      <button
+                        type="button"
+                        disabled={
+                          savingCommentSiren === p.siren ||
+                          (comments[p.siren] ?? "") === (p.comment ?? "")
+                        }
+                        onClick={() => void saveComment(p)}
+                        className="self-start rounded-md border border-slate-200 dark:border-slate-600 px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40"
+                      >
+                        {savingCommentSiren === p.siren ? "…" : "Enregistrer"}
+                      </button>
+                    </div>
+                  </td>
+                  <td className="px-3 py-2 align-middle">
                     {p.alreadyContacted ? (
                       <span className="text-xs text-slate-400">—</span>
                     ) : (
-                      <button
-                        type="button"
-                        disabled={sendingSiren === p.siren}
-                        onClick={() => void sendOutreach(p)}
-                        className="rounded-md bg-brand-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-brand-500 disabled:opacity-50"
-                      >
-                        {sendingSiren === p.siren ? "Envoi…" : "Inviter"}
-                      </button>
+                      <div className="flex flex-col gap-1.5 items-stretch min-w-[7.5rem]">
+                        <button
+                          type="button"
+                          disabled={
+                            sendingSiren === p.siren ||
+                            markingSiren === p.siren ||
+                            savingCommentSiren === p.siren
+                          }
+                          onClick={() => void sendOutreach(p)}
+                          className="rounded-md bg-brand-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-brand-500 disabled:opacity-50"
+                        >
+                          {sendingSiren === p.siren ? "Envoi…" : "Inviter"}
+                        </button>
+                        {!p.emailNotFound && (
+                          <button
+                            type="button"
+                            disabled={
+                              sendingSiren === p.siren ||
+                              markingSiren === p.siren ||
+                              savingCommentSiren === p.siren
+                            }
+                            onClick={() => void markEmailNotFound(p)}
+                            className="rounded-md border border-slate-200 dark:border-slate-600 px-2.5 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50"
+                          >
+                            {markingSiren === p.siren ? "…" : "Email non trouvé"}
+                          </button>
+                        )}
+                      </div>
                     )}
                   </td>
                 </tr>

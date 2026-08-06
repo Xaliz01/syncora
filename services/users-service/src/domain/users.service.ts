@@ -38,7 +38,10 @@ import {
   type AccountUserResponse,
   type PlatformUserSummary,
   type ProspectOutreachResponse,
+  type ProspectOutreachStatus,
   type ProspectOutreachesBySirensResponse,
+  type UpsertProspectCommentBody,
+  PROSPECT_OUTREACH_COMMENT_MAX_LENGTH,
   type UpdateUserNameBody,
   type UpdateUserPreferencesBody,
   type UserPreferences,
@@ -1144,31 +1147,76 @@ export class UsersService extends AbstractUsersService {
     if (!/^\d{9}$/.test(siren)) {
       throw new BadRequestException("SIREN invalide");
     }
+    const status: ProspectOutreachStatus =
+      body.status === "failed"
+        ? "failed"
+        : body.status === "email_not_found"
+          ? "email_not_found"
+          : body.status === "noted"
+            ? "noted"
+            : "sent";
     const email = body.email.trim().toLowerCase();
-    if (!email.includes("@")) {
+    if (status !== "email_not_found" && status !== "noted" && !email.includes("@")) {
       throw new BadRequestException("E-mail invalide");
     }
-    const status = body.status === "failed" ? "failed" : "sent";
+
+    const existing = await this.prospectOutreachModel.findOne({ siren }).exec();
+    if (existing?.status === "sent" && status === "email_not_found") {
+      throw new ConflictException("Cette entreprise a déjà été contactée");
+    }
+
     const sentAt = new Date();
+    const $set: Record<string, unknown> = {
+      siren,
+      companyName: body.companyName.trim(),
+      email: status === "email_not_found" || status === "noted" ? email || "" : email,
+      sentByUserId: body.sentByUserId,
+      sentByEmail: body.sentByEmail.trim().toLowerCase(),
+      subject: body.subject.trim(),
+      status,
+      sentAt,
+    };
+    if (body.comment !== undefined) {
+      $set.comment = this.normalizeProspectComment(body.comment);
+    }
+
     const doc = await this.prospectOutreachModel
-      .findOneAndUpdate(
-        { siren },
-        {
-          $set: {
-            siren,
-            companyName: body.companyName.trim(),
-            email,
-            sentByUserId: body.sentByUserId,
-            sentByEmail: body.sentByEmail.trim().toLowerCase(),
-            subject: body.subject.trim(),
-            status,
-            sentAt,
-          },
-        },
-        { upsert: true, new: true },
-      )
+      .findOneAndUpdate({ siren }, { $set }, { upsert: true, new: true })
       .exec();
     if (!doc) throw new BadRequestException("Impossible d’enregistrer le contact");
+    return this.toProspectOutreachResponse(doc);
+  }
+
+  async upsertProspectComment(body: UpsertProspectCommentBody): Promise<ProspectOutreachResponse> {
+    const siren = body.siren.trim().replace(/\s/g, "");
+    if (!/^\d{9}$/.test(siren)) {
+      throw new BadRequestException("SIREN invalide");
+    }
+    const comment = this.normalizeProspectComment(body.comment);
+    const companyName = body.companyName.trim() || `SIREN ${siren}`;
+    const sentByEmail = body.sentByEmail.trim().toLowerCase();
+    const existing = await this.prospectOutreachModel.findOne({ siren }).exec();
+
+    if (existing) {
+      existing.comment = comment;
+      existing.companyName = companyName || existing.companyName;
+      existing.sentByUserId = body.sentByUserId;
+      existing.sentByEmail = sentByEmail;
+      await existing.save();
+      return this.toProspectOutreachResponse(existing);
+    }
+
+    const doc = await this.prospectOutreachModel.create({
+      siren,
+      companyName,
+      email: "",
+      sentByUserId: body.sentByUserId,
+      sentByEmail,
+      subject: "Note prospection",
+      status: "noted",
+      sentAt: new Date(),
+      comment,
+    });
     return this.toProspectOutreachResponse(doc);
   }
 
@@ -1183,6 +1231,11 @@ export class UsersService extends AbstractUsersService {
     return { outreaches: docs.map((d) => this.toProspectOutreachResponse(d)) };
   }
 
+  private normalizeProspectComment(raw: string): string {
+    const comment = raw.trim().slice(0, PROSPECT_OUTREACH_COMMENT_MAX_LENGTH);
+    return comment;
+  }
+
   private toProspectOutreachResponse(doc: ProspectOutreachDocument): ProspectOutreachResponse {
     return {
       id: doc._id.toString(),
@@ -1194,6 +1247,7 @@ export class UsersService extends AbstractUsersService {
       subject: doc.subject,
       status: doc.status,
       sentAt: doc.sentAt.toISOString(),
+      ...(doc.comment?.trim() ? { comment: doc.comment } : {}),
     };
   }
 

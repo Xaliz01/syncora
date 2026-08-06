@@ -272,9 +272,83 @@ describe("PlatformService", () => {
         siren: "123456789",
         name: "Plomberie Dupont",
         alreadyContacted: true,
+        emailNotFound: false,
         city: "Lyon",
       });
       expect(result.creditsRemaining).toBe(87.5);
+    });
+
+    it("marks email not found without sending mail", async () => {
+      httpService.get.mockReturnValue(of({ data: { outreaches: [] } }));
+      httpService.post.mockReturnValue(of({ data: { id: "o1", status: "email_not_found" } }));
+
+      const result = await service.markProspectEmailNotFound(
+        { id: "staff-1", email: "staff@planwise.fr" },
+        { siren: "123456789", companyName: "Plomberie Dupont" },
+      );
+
+      expect(result).toEqual({ ok: true });
+      expect(httpService.post).toHaveBeenCalledWith(
+        expect.stringContaining("/prospect-outreaches"),
+        expect.objectContaining({
+          siren: "123456789",
+          status: "email_not_found",
+          subject: "Email non trouvé",
+        }),
+      );
+      expect(httpService.post).not.toHaveBeenCalledWith(
+        expect.stringContaining("/email/transactional"),
+        expect.anything(),
+      );
+    });
+
+    it("rejects email-not-found when already contacted", async () => {
+      httpService.get.mockReturnValue(
+        of({
+          data: {
+            outreaches: [
+              {
+                id: "o1",
+                siren: "123456789",
+                status: "sent",
+                sentAt: "2026-07-01T00:00:00.000Z",
+              },
+            ],
+          },
+        }),
+      );
+
+      await expect(
+        service.markProspectEmailNotFound(
+          { id: "staff-1", email: "staff@planwise.fr" },
+          { siren: "123456789", companyName: "X" },
+        ),
+      ).rejects.toBeInstanceOf(ConflictException);
+    });
+
+    it("saves a prospect note via users-service", async () => {
+      httpService.post.mockReturnValue(
+        of({ data: { id: "o1", status: "noted", comment: "Pas d’e-mail sur le site" } }),
+      );
+
+      const result = await service.saveProspectNote(
+        { id: "staff-1", email: "staff@planwise.fr" },
+        {
+          siren: "123456789",
+          companyName: "Plomberie Dupont",
+          comment: "Pas d’e-mail sur le site",
+        },
+      );
+
+      expect(result).toEqual({ ok: true, comment: "Pas d’e-mail sur le site" });
+      expect(httpService.post).toHaveBeenCalledWith(
+        expect.stringContaining("/prospect-outreaches/comment"),
+        expect.objectContaining({
+          siren: "123456789",
+          comment: "Pas d’e-mail sur le site",
+          sentByUserId: "staff-1",
+        }),
+      );
     });
 
     it("rejects outreach without email", async () => {

@@ -7,6 +7,8 @@ import {
 import type {
   LoginBody,
   PlatformAuthUser,
+  PlatformProspectEmailNotFoundBody,
+  PlatformProspectNoteBody,
   PlatformProspectOutreachBody,
   StartImpersonationBody,
 } from "@planwise/shared";
@@ -147,5 +149,23 @@ export class PlatformController {
     @Body() body: PlatformProspectOutreachBody,
   ) {
     return this.platformService.sendProspectOutreach(user, body);
+  }
+
+  @Post("prospects/email-not-found")
+  @UseGuards(PlatformJwtAuthGuard)
+  markProspectEmailNotFound(
+    @CurrentPlatformUser() user: PlatformAuthUser,
+    @Body() body: PlatformProspectEmailNotFoundBody,
+  ) {
+    return this.platformService.markProspectEmailNotFound(user, body);
+  }
+
+  @Post("prospects/note")
+  @UseGuards(PlatformJwtAuthGuard)
+  saveProspectNote(
+    @CurrentPlatformUser() user: PlatformAuthUser,
+    @Body() body: PlatformProspectNoteBody,
+  ) {
+    return this.platformService.saveProspectNote(user, body);
   }
 }

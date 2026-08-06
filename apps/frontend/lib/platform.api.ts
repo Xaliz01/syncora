@@ -9,6 +9,8 @@ import type {
   PlatformOrganizationDetailResponse,
   PlatformOrganizationsListResponse,
   PlatformProspectCreditsResponse,
+  PlatformProspectEmailNotFoundBody,
+  PlatformProspectNoteBody,
   PlatformProspectOutreachBody,
   PlatformProspectOutreachResponse,
   PlatformProspectsSearchResponse,
@@ -214,5 +216,21 @@ export async function sendPlatformProspectOutreach(body: PlatformProspectOutreac
     body,
     platformBearer: true,
     fallbackError: "Envoi de l’invitation impossible",
+  });
+}
+
+export async function markPlatformProspectEmailNotFound(body: PlatformProspectEmailNotFoundBody) {
+  return apiRequestJson<{ ok: true }>("POST", "/platform/prospects/email-not-found", {
+    body,
+    platformBearer: true,
+    fallbackError: "Impossible d’enregistrer le statut",
+  });
+}
+
+export async function savePlatformProspectNote(body: PlatformProspectNoteBody) {
+  return apiRequestJson<{ ok: true; comment?: string }>("POST", "/platform/prospects/note", {
+    body,
+    platformBearer: true,
+    fallbackError: "Impossible d’enregistrer le commentaire",
   });
 }

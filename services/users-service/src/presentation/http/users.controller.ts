@@ -202,10 +202,25 @@ export class UsersController {
       sentByUserId: string;
       sentByEmail: string;
       subject: string;
-      status?: "sent" | "failed";
+      status?: "sent" | "failed" | "email_not_found" | "noted";
+      comment?: string;
     },
   ) {
     return this.usersService.createProspectOutreach(body);
+  }
+
+  @Post("platform/prospect-outreaches/comment")
+  async upsertProspectComment(
+    @Body()
+    body: {
+      siren: string;
+      companyName: string;
+      comment: string;
+      sentByUserId: string;
+      sentByEmail: string;
+    },
+  ) {
+    return this.usersService.upsertProspectComment(body);
   }
 
   @Get(":userId/organization-memberships")

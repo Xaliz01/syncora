@@ -42,6 +42,7 @@ describe("UsersController", () => {
       countUsersByOrganizationIds: jest.fn(),
       createImpersonationAudit: jest.fn(),
       createProspectOutreach: jest.fn(),
+      upsertProspectComment: jest.fn(),
       listProspectOutreachesBySirens: jest.fn(),
     };
 

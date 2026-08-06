@@ -207,7 +207,11 @@ export interface PlatformProspectSummary {
   dirigeants?: string[];
   website?: string;
   alreadyContacted: boolean;
+  /** Recherche d’e-mail déjà tentée sans succès (staff). */
+  emailNotFound: boolean;
   lastContactedAt?: string;
+  /** Note libre staff (recherche e-mail, contexte…). */
+  comment?: string;
 }
 
 export interface PlatformProspectsSearchResponse {
@@ -237,6 +241,21 @@ export interface PlatformProspectOutreachResponse {
   reason?: string;
 }
 
+export interface PlatformProspectEmailNotFoundBody {
+  siren: string;
+  companyName: string;
+}
+
+export interface PlatformProspectNoteBody {
+  siren: string;
+  companyName: string;
+  comment: string;
+}
+
+export type ProspectOutreachStatus = "sent" | "failed" | "email_not_found" | "noted";
+
+export const PROSPECT_OUTREACH_COMMENT_MAX_LENGTH = 2000;
+
 export interface CreateProspectOutreachBody {
   siren: string;
   companyName: string;
@@ -244,7 +263,16 @@ export interface CreateProspectOutreachBody {
   sentByUserId: string;
   sentByEmail: string;
   subject: string;
-  status?: "sent" | "failed";
+  status?: ProspectOutreachStatus;
+  comment?: string;
+}
+
+export interface UpsertProspectCommentBody {
+  siren: string;
+  companyName: string;
+  comment: string;
+  sentByUserId: string;
+  sentByEmail: string;
 }
 
 export interface ProspectOutreachResponse {
@@ -255,8 +283,9 @@ export interface ProspectOutreachResponse {
   sentByUserId: string;
   sentByEmail: string;
   subject: string;
-  status: "sent" | "failed";
+  status: ProspectOutreachStatus;
   sentAt: string;
+  comment?: string;
 }
 
 export interface ProspectOutreachesBySirensResponse {

@@ -31,6 +31,8 @@ import type {
   PlatformOrganizationSummary,
   PlatformOrganizationsListResponse,
   PlatformProspectCreditsResponse,
+  PlatformProspectEmailNotFoundBody,
+  PlatformProspectNoteBody,
   PlatformProspectOutreachBody,
   PlatformProspectOutreachResponse,
   PlatformProspectSummary,
@@ -541,7 +543,9 @@ export class PlatformService extends AbstractPlatformService {
       return {
         ...r,
         alreadyContacted: Boolean(prior && prior.status === "sent"),
+        emailNotFound: Boolean(prior && prior.status === "email_not_found"),
         lastContactedAt: prior?.sentAt,
+        ...(prior?.comment ? { comment: prior.comment } : {}),
       };
     });
 
@@ -649,6 +653,76 @@ L’équipe Planwise`;
     return { sent, ...(reason ? { reason } : {}) };
   }
 
+  async markProspectEmailNotFound(
+    staff: PlatformAuthUser,
+    body: PlatformProspectEmailNotFoundBody,
+  ): Promise<{ ok: true }> {
+    const siren = body.siren?.trim().replace(/\s/g, "") ?? "";
+    if (!/^\d{9}$/.test(siren)) {
+      throw new BadRequestException("SIREN invalide");
+    }
+    const companyName = body.companyName?.trim() || `SIREN ${siren}`;
+
+    const existing = await this.loadOutreachBySirens([siren]);
+    const prior = existing.get(siren);
+    if (prior?.status === "sent") {
+      throw new ConflictException("Cette entreprise a déjà été contactée");
+    }
+
+    try {
+      await firstValueFrom(
+        this.httpService.post(`${USERS_URL}/users/platform/prospect-outreaches`, {
+          siren,
+          companyName,
+          email: "",
+          sentByUserId: staff.id,
+          sentByEmail: staff.email,
+          subject: "Email non trouvé",
+          status: "email_not_found",
+        }),
+      );
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 409) {
+        throw new ConflictException("Cette entreprise a déjà été contactée");
+      }
+      this.logger.warn(`Failed to mark prospect email not found: ${(err as Error).message}`);
+      throw new ServiceUnavailableException("Impossible d’enregistrer le statut");
+    }
+    return { ok: true };
+  }
+
+  async saveProspectNote(
+    staff: PlatformAuthUser,
+    body: PlatformProspectNoteBody,
+  ): Promise<{ ok: true; comment?: string }> {
+    const siren = body.siren?.trim().replace(/\s/g, "") ?? "";
+    if (!/^\d{9}$/.test(siren)) {
+      throw new BadRequestException("SIREN invalide");
+    }
+    const companyName = body.companyName?.trim() || `SIREN ${siren}`;
+    const comment = typeof body.comment === "string" ? body.comment : "";
+
+    try {
+      const res = await firstValueFrom(
+        this.httpService.post<{ comment?: string }>(
+          `${USERS_URL}/users/platform/prospect-outreaches/comment`,
+          {
+            siren,
+            companyName,
+            comment,
+            sentByUserId: staff.id,
+            sentByEmail: staff.email,
+          },
+        ),
+      );
+      return { ok: true, ...(res.data.comment ? { comment: res.data.comment } : {}) };
+    } catch (err: unknown) {
+      this.logger.warn(`Failed to save prospect note: ${(err as Error).message}`);
+      throw new ServiceUnavailableException("Impossible d’enregistrer le commentaire");
+    }
+  }
+
   private requirePappersApiKey(): string {
     const key = process.env.PAPPERS_API_KEY?.trim();
     if (!key) {
@@ -694,13 +768,14 @@ L’équipe Planwise`;
       dirigeants: dirigeants.length ? dirigeants : undefined,
       website: row.domaine || row.site_internet || row.website || undefined,
       alreadyContacted: false,
+      emailNotFound: false,
     };
   }
 
   private async loadOutreachBySirens(
     sirens: string[],
-  ): Promise<Map<string, { status: string; sentAt: string }>> {
-    const map = new Map<string, { status: string; sentAt: string }>();
+  ): Promise<Map<string, { status: string; sentAt: string; comment?: string }>> {
+    const map = new Map<string, { status: string; sentAt: string; comment?: string }>();
     if (sirens.length === 0) return map;
     try {
       const res = await firstValueFrom(
@@ -710,7 +785,11 @@ L’équipe Planwise`;
         ),
       );
       for (const o of res.data.outreaches ?? []) {
-        map.set(o.siren, { status: o.status, sentAt: o.sentAt });
+        map.set(o.siren, {
+          status: o.status,
+          sentAt: o.sentAt,
+          ...(o.comment ? { comment: o.comment } : {}),
+        });
       }
     } catch {
       /* best-effort */

@@ -9,7 +9,7 @@ export class ProspectOutreachDocument extends Document {
   @Prop({ required: true })
   companyName!: string;
 
-  @Prop({ required: true })
+  @Prop({ required: false, default: "" })
   email!: string;
 
   @Prop({ required: true, index: true })
@@ -22,10 +22,13 @@ export class ProspectOutreachDocument extends Document {
   subject!: string;
 
   @Prop({ required: true, default: "sent" })
-  status!: "sent" | "failed";
+  status!: "sent" | "failed" | "email_not_found" | "noted";
 
   @Prop({ required: true })
   sentAt!: Date;
+
+  @Prop({ required: false, default: "" })
+  comment?: string;
 }
 
 export const ProspectOutreachSchema = SchemaFactory.createForClass(ProspectOutreachDocument);

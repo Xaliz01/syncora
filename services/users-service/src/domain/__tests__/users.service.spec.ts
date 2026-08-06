@@ -46,8 +46,10 @@ describe("UsersService", () => {
     deleteMany: jest.Mock;
   };
   let mockProspectOutreachModel: {
+    findOne: jest.Mock;
     findOneAndUpdate: jest.Mock;
     find: jest.Mock;
+    create: jest.Mock;
   };
 
   const mockDoc = (overrides: Record<string, unknown> = {}) => ({
@@ -142,6 +144,9 @@ describe("UsersService", () => {
     };
 
     mockProspectOutreachModel = {
+      findOne: jest.fn().mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null),
+      }),
       findOneAndUpdate: jest.fn().mockReturnValue({
         exec: jest.fn().mockResolvedValue({
           _id: { toString: () => "out-1" },
@@ -157,6 +162,18 @@ describe("UsersService", () => {
       }),
       find: jest.fn().mockReturnValue({
         exec: jest.fn().mockResolvedValue([]),
+      }),
+      create: jest.fn().mockResolvedValue({
+        _id: { toString: () => "out-note" },
+        siren: "123456789",
+        companyName: "Demo SARL",
+        email: "",
+        sentByUserId: "staff-1",
+        sentByEmail: "staff@planwise.fr",
+        subject: "Note prospection",
+        status: "noted",
+        sentAt: new Date("2026-08-01T10:00:00.000Z"),
+        comment: "Pas de site",
       }),
     };
 
@@ -1464,17 +1481,116 @@ describe("UsersService", () => {
       expect(result.email).toBe("demo@example.fr");
     });
 
-    it("should reject invalid siren", async () => {
-      await expect(
-        service.createProspectOutreach({
-          siren: "abc",
-          companyName: "X",
-          email: "a@b.fr",
+    it("should upsert email_not_found without requiring an email", async () => {
+      mockProspectOutreachModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null),
+      });
+      mockProspectOutreachModel.findOneAndUpdate.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({
+          _id: { toString: () => "out-2" },
+          siren: "123456789",
+          companyName: "Demo SARL",
+          email: "",
           sentByUserId: "staff-1",
           sentByEmail: "staff@planwise.fr",
-          subject: "Sujet",
+          subject: "Email non trouvé",
+          status: "email_not_found",
+          sentAt: new Date("2026-08-01T10:00:00.000Z"),
         }),
-      ).rejects.toThrow(BadRequestException);
+      });
+
+      const result = await service.createProspectOutreach({
+        siren: "123456789",
+        companyName: "Demo SARL",
+        email: "",
+        sentByUserId: "staff-1",
+        sentByEmail: "staff@planwise.fr",
+        subject: "Email non trouvé",
+        status: "email_not_found",
+      });
+
+      expect(result.status).toBe("email_not_found");
+      expect(mockProspectOutreachModel.findOneAndUpdate).toHaveBeenCalledWith(
+        { siren: "123456789" },
+        expect.objectContaining({
+          $set: expect.objectContaining({ status: "email_not_found", email: "" }),
+        }),
+        { upsert: true, new: true },
+      );
+    });
+
+    it("should reject email_not_found when already sent", async () => {
+      mockProspectOutreachModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({ status: "sent" }),
+      });
+
+      await expect(
+        service.createProspectOutreach({
+          siren: "123456789",
+          companyName: "X",
+          email: "",
+          sentByUserId: "staff-1",
+          sentByEmail: "staff@planwise.fr",
+          subject: "Email non trouvé",
+          status: "email_not_found",
+        }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it("should create a noted outreach with comment", async () => {
+      mockProspectOutreachModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null),
+      });
+
+      const result = await service.upsertProspectComment({
+        siren: "123456789",
+        companyName: "Demo SARL",
+        comment: "  Pas de site  ",
+        sentByUserId: "staff-1",
+        sentByEmail: "staff@planwise.fr",
+      });
+
+      expect(mockProspectOutreachModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          siren: "123456789",
+          status: "noted",
+          comment: "Pas de site",
+        }),
+      );
+      expect(result.comment).toBe("Pas de site");
+    });
+
+    it("should update comment on existing outreach without changing status", async () => {
+      const existing = {
+        _id: { toString: () => "out-1" },
+        siren: "123456789",
+        companyName: "Demo SARL",
+        email: "a@b.fr",
+        sentByUserId: "staff-1",
+        sentByEmail: "staff@planwise.fr",
+        subject: "Sujet",
+        status: "sent" as const,
+        sentAt: new Date("2026-08-01T10:00:00.000Z"),
+        comment: "old",
+        save: jest.fn().mockResolvedValue(undefined),
+      };
+      mockProspectOutreachModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(existing),
+      });
+
+      const result = await service.upsertProspectComment({
+        siren: "123456789",
+        companyName: "Demo SARL",
+        comment: "nouveau commentaire",
+        sentByUserId: "staff-2",
+        sentByEmail: "other@planwise.fr",
+      });
+
+      expect(existing.save).toHaveBeenCalled();
+      expect(existing.comment).toBe("nouveau commentaire");
+      expect(existing.status).toBe("sent");
+      expect(result.status).toBe("sent");
+      expect(result.comment).toBe("nouveau commentaire");
     });
 
     it("should list outreaches by sirens", async () => {

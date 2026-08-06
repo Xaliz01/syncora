@@ -9,6 +9,8 @@ import type {
   PlatformOrganizationDetailResponse,
   PlatformOrganizationsListResponse,
   PlatformProspectCreditsResponse,
+  PlatformProspectEmailNotFoundBody,
+  PlatformProspectNoteBody,
   PlatformProspectOutreachBody,
   PlatformProspectOutreachResponse,
   PlatformProspectsSearchResponse,
@@ -64,4 +66,12 @@ export abstract class AbstractPlatformService {
     staff: PlatformAuthUser,
     body: PlatformProspectOutreachBody,
   ): Promise<PlatformProspectOutreachResponse>;
+  abstract markProspectEmailNotFound(
+    staff: PlatformAuthUser,
+    body: PlatformProspectEmailNotFoundBody,
+  ): Promise<{ ok: true }>;
+  abstract saveProspectNote(
+    staff: PlatformAuthUser,
+    body: PlatformProspectNoteBody,
+  ): Promise<{ ok: true; comment?: string }>;
 }
