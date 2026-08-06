@@ -24,6 +24,11 @@ const PILLARS = [
       "Indépendant ou petite équipe : démarrez vite grâce aux modèles de dossier et profils prêts à importer — sans consultant ni formation lourde.",
   },
   {
+    title: "Planning interactif",
+    description:
+      "Vue jour, semaine ou mois, couleurs par équipe : glissez-déposez les interventions, réassignez en un geste et visualisez la charge de chacun.",
+  },
+  {
     title: "Dossiers et interventions centralisés",
     description:
       "Suivez chaque dossier, son avancement, ses tâches et son historique depuis un seul endroit.",
@@ -52,7 +57,15 @@ const FEATURE_SECTIONS = [
       "Tableau de bord orienté action : retards, dossiers en cours, interventions du jour",
       "Tâches à faire pilotées par vos modèles de dossier",
       "Notifications multi-canaux (in-app, push mobile, e-mail) pour rester réactif sur le terrain comme au bureau",
-      "Essai avec données de démonstration injectables en un clic",
+    ],
+  },
+  {
+    title: "Planning interactif",
+    items: [
+      "Vue jour, semaine ou mois pour voir d’un coup d’œil qui fait quoi",
+      "Glisser-déposer pour déplacer ou réorganiser une intervention",
+      "Couleurs par équipe et affectation rapide des techniciens",
+      "Aligné avec les dossiers, la flotte et les contrats de maintenance",
     ],
   },
   {
@@ -95,7 +108,6 @@ const FEATURE_SECTIONS = [
       "Clients particuliers et entreprises avec historique lié aux dossiers",
       "Donneurs d’ordre : facturez le bon tiers quand le client n’est pas le payeur",
       "Équipes, véhicules et agences alignés sur le planning",
-      "Planning semaine / mois coloré par équipe",
       "Stock multi-emplacements (entrepôt, agence, véhicule) avec alertes",
     ],
   },
@@ -103,8 +115,7 @@ const FEATURE_SECTIONS = [
     title: "Facturation & intégrations",
     items: [
       "Devis liés au dossier, prêts à être transformés en facture",
-      "Pennylane ou Qonto : envoi sans ressaisie, une connexion active à la fois",
-      "Facturation démo pendant l’essai, pour tester le parcours sans OAuth",
+      "Connexion à votre outil de facturation : envoi sans ressaisie, une connexion active à la fois",
       "Suivi et validation des factures synchronisées depuis Planwise",
     ],
   },
@@ -238,7 +249,7 @@ export function LandingPage() {
 
         {/* Pillars */}
         <section className="max-w-6xl mx-auto px-4 py-14 sm:py-16">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {PILLARS.map((pillar, index) => (
               <ScrollReveal key={pillar.title} delayMs={index * 70}>
                 <article className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/20 h-full">
@@ -265,8 +276,8 @@ export function LandingPage() {
                 Tout ce qu&apos;il faut pour piloter votre activité
               </h2>
               <p className="text-slate-600 dark:text-slate-400 mb-10 max-w-2xl">
-                Pensé pour les indépendants comme pour les TPE : interventions, contrats, flotte,
-                stock, donneurs d&apos;ordre et facturation — sans surcouche inutile.
+                Pensé pour les indépendants comme pour les TPE : planning interactif, interventions,
+                contrats, flotte, stock et facturation — sans surcouche inutile.
               </p>
             </ScrollReveal>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -362,7 +373,7 @@ export function LandingPage() {
                       <span className="text-brand-600" aria-hidden>
                         ✓
                       </span>
-                      Dossiers, interventions et calendrier
+                      Dossiers, interventions et planning interactif
                     </li>
                     <li className="flex gap-2">
                       <span className="text-brand-600" aria-hidden>
@@ -386,13 +397,13 @@ export function LandingPage() {
                       <span className="text-brand-600" aria-hidden>
                         ✓
                       </span>
-                      Permissions granulaires · 10 Go de documents
+                      Permissions granulaires
                     </li>
                     <li className="flex gap-2">
                       <span className="text-brand-600" aria-hidden>
                         ✓
                       </span>
-                      Données de démo et facturation démo pendant l&apos;essai
+                      10 Go de stockage de documents (≈ 10&nbsp;000 photos ou PDF)
                     </li>
                   </ul>
                   <Link

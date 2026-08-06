@@ -8,6 +8,10 @@ import type {
   PlatformIntegrationsListResponse,
   PlatformOrganizationDetailResponse,
   PlatformOrganizationsListResponse,
+  PlatformProspectCreditsResponse,
+  PlatformProspectOutreachBody,
+  PlatformProspectOutreachResponse,
+  PlatformProspectsSearchResponse,
   PlatformUsersListResponse,
   StartImpersonationBody,
   PlatformAnalyticsOverviewResponse,
@@ -48,4 +52,16 @@ export abstract class AbstractPlatformService {
     offset?: number;
   }): Promise<CronRunsListResponse>;
   abstract getAnalyticsOverview(days?: number): Promise<PlatformAnalyticsOverviewResponse>;
+  abstract searchProspects(filters?: {
+    page?: number;
+    perPage?: number;
+    departement?: string;
+    codeNaf?: string;
+    preset?: string;
+  }): Promise<PlatformProspectsSearchResponse>;
+  abstract getProspectCredits(): Promise<PlatformProspectCreditsResponse>;
+  abstract sendProspectOutreach(
+    staff: PlatformAuthUser,
+    body: PlatformProspectOutreachBody,
+  ): Promise<PlatformProspectOutreachResponse>;
 }

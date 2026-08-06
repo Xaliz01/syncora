@@ -1,4 +1,4 @@
-import { ForbiddenException } from "@nestjs/common";
+import { BadRequestException, ConflictException, ForbiddenException } from "@nestjs/common";
 import { of } from "rxjs";
 import { PLATFORM_CRON_JOBS } from "@planwise/shared";
 import { PlatformService } from "../platform.service";
@@ -201,6 +201,169 @@ describe("PlatformService", () => {
       status: "trialing",
       hasAccess: true,
       trialExtensionCount: 3,
+    });
+  });
+
+  describe("prospects (Pappers)", () => {
+    beforeEach(() => {
+      process.env.PAPPERS_API_KEY = "test-pappers-key";
+    });
+
+    it("maps Pappers results and marks already contacted sirens", async () => {
+      httpService.get.mockImplementation((url: string) => {
+        if (String(url).includes("/recherche")) {
+          return of({
+            data: {
+              total: 1,
+              page: 1,
+              resultats: [
+                {
+                  siren: "123456789",
+                  nom_entreprise: "Plomberie Dupont",
+                  code_naf: "43.22A",
+                  libelle_code_naf: "Travaux de plomberie",
+                  date_creation: "2026-01-15",
+                  siege: { ville: "Lyon", code_postal: "69001", siret: "12345678900012" },
+                  dirigeants: [{ prenoms: "Jean", nom: "Dupont" }],
+                },
+              ],
+            },
+          });
+        }
+        if (String(url).includes("prospect-outreaches")) {
+          return of({
+            data: {
+              outreaches: [
+                {
+                  id: "o1",
+                  siren: "123456789",
+                  companyName: "Plomberie Dupont",
+                  email: "jean@example.fr",
+                  sentByUserId: "staff-1",
+                  sentByEmail: "staff@planwise.fr",
+                  subject: "Sujet",
+                  status: "sent",
+                  sentAt: "2026-07-01T00:00:00.000Z",
+                },
+              ],
+            },
+          });
+        }
+        if (String(url).includes("suivi-jetons")) {
+          return of({ data: { jetons: 87.5 } });
+        }
+        return of({ data: {} });
+      });
+
+      const result = await service.searchProspects({ page: 1, perPage: 20 });
+
+      expect(httpService.get).toHaveBeenCalledWith(
+        expect.stringContaining("/recherche"),
+        expect.objectContaining({
+          params: expect.objectContaining({
+            api_token: "test-pappers-key",
+            entreprise_cessee: "false",
+            date_creation_min: expect.stringMatching(/^\d{2}-\d{2}-\d{4}$/),
+          }),
+        }),
+      );
+      expect(result.results).toHaveLength(1);
+      expect(result.results[0]).toMatchObject({
+        siren: "123456789",
+        name: "Plomberie Dupont",
+        alreadyContacted: true,
+        city: "Lyon",
+      });
+      expect(result.creditsRemaining).toBe(87.5);
+    });
+
+    it("rejects outreach without email", async () => {
+      await expect(
+        service.sendProspectOutreach(
+          { id: "staff-1", email: "staff@planwise.fr" },
+          { siren: "123456789", companyName: "X", toEmail: "" },
+        ),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it("rejects outreach when already contacted", async () => {
+      httpService.get.mockReturnValue(
+        of({
+          data: {
+            outreaches: [
+              {
+                id: "o1",
+                siren: "123456789",
+                status: "sent",
+                sentAt: "2026-07-01T00:00:00.000Z",
+              },
+            ],
+          },
+        }),
+      );
+
+      await expect(
+        service.sendProspectOutreach(
+          { id: "staff-1", email: "staff@planwise.fr" },
+          {
+            siren: "123456789",
+            companyName: "X",
+            toEmail: "a@b.fr",
+          },
+        ),
+      ).rejects.toBeInstanceOf(ConflictException);
+    });
+
+    it("sends transactional email and logs outreach", async () => {
+      httpService.get.mockReturnValue(of({ data: { outreaches: [] } }));
+      httpService.post.mockReturnValue(of({ data: { sent: true } }));
+
+      const result = await service.sendProspectOutreach(
+        { id: "staff-1", email: "staff@planwise.fr" },
+        {
+          siren: "123456789",
+          companyName: "Plomberie Dupont",
+          toEmail: "jean@example.fr",
+          contactName: "Jean Dupont",
+        },
+      );
+
+      expect(result.sent).toBe(true);
+      expect(httpService.post).toHaveBeenCalledWith(
+        expect.stringContaining("/email/transactional"),
+        expect.objectContaining({
+          to: "jean@example.fr",
+          subject: expect.stringContaining("Planwise"),
+        }),
+      );
+      expect(httpService.post).toHaveBeenCalledWith(
+        expect.stringContaining("/prospect-outreaches"),
+        expect.objectContaining({
+          siren: "123456789",
+          status: "sent",
+          sentByUserId: "staff-1",
+        }),
+      );
+    });
+
+    it("returns configured false when PAPPERS_API_KEY is missing", async () => {
+      delete process.env.PAPPERS_API_KEY;
+      const credits = await service.getProspectCredits();
+      expect(credits).toEqual({ configured: false });
+    });
+
+    it("parses suivi-jetons pay-as-you-go remaining credits", async () => {
+      httpService.get.mockReturnValue(
+        of({
+          data: {
+            jetons_abonnement: 0,
+            jetons_abonnement_utilises: 0,
+            jetons_pay_as_you_go_restants: 99,
+          },
+        }),
+      );
+      const credits = await service.getProspectCredits();
+      expect(credits).toEqual({ configured: true, creditsRemaining: 99 });
     });
   });
 });

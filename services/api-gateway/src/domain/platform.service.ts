@@ -1,8 +1,11 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
+  ServiceUnavailableException,
   UnauthorizedException,
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
@@ -27,15 +30,23 @@ import type {
   PlatformOrganizationDetailResponse,
   PlatformOrganizationSummary,
   PlatformOrganizationsListResponse,
+  PlatformProspectCreditsResponse,
+  PlatformProspectOutreachBody,
+  PlatformProspectOutreachResponse,
+  PlatformProspectSummary,
+  PlatformProspectsSearchResponse,
   PlatformUserSummary,
   PlatformAnalyticsOverviewResponse,
   PlatformUsersListResponse,
+  ProspectOutreachesBySirensResponse,
+  SendEmailNotificationResponse,
   StartImpersonationBody,
   UserResponse,
   ValidateCredentialsResponse,
 } from "@planwise/shared";
 import {
   ASSIGNABLE_PERMISSION_CODES,
+  getPlatformProspectNafCodes,
   isPlatformStaffEmail,
   PLATFORM_CRON_JOBS,
 } from "@planwise/shared";
@@ -49,13 +60,20 @@ const PERMISSIONS_URL = process.env.PERMISSIONS_SERVICE_URL ?? "http://localhost
 const CASES_URL = process.env.CASES_SERVICE_URL ?? "http://localhost:3004";
 const INTEGRATIONS_URL = process.env.INTEGRATIONS_SERVICE_URL ?? "http://localhost:3013";
 const NOTIFICATIONS_URL = process.env.NOTIFICATIONS_SERVICE_URL ?? "http://localhost:3010";
+/** Recherche / suivi-jetons sont sur l’API v2 (la v3 ne couvre que la surveillance). */
+const PAPPERS_API_URL = process.env.PAPPERS_API_URL ?? "https://api.pappers.fr/v2";
+const APP_PUBLIC_URL = process.env.APP_PUBLIC_URL ?? "https://planwise.fr";
 
 const IMPERSONATION_TTL = "45m";
 const IMPERSONATION_TTL_MS = 45 * 60 * 1000;
 const MIN_REASON_LENGTH = 10;
+const PROSPECT_OUTREACH_SUBJECT =
+  "Planwise — un CRM simple et abordable pour démarrer votre activité";
 
 @Injectable()
 export class PlatformService extends AbstractPlatformService {
+  private readonly logger = new Logger(PlatformService.name);
+
   constructor(
     private readonly httpService: HttpService,
     private readonly jwtService: JwtService,
@@ -460,6 +478,284 @@ export class PlatformService extends AbstractPlatformService {
     return this.analyticsGateway.getOverview(days);
   }
 
+  async searchProspects(filters?: {
+    page?: number;
+    perPage?: number;
+    departement?: string;
+    codeNaf?: string;
+    preset?: string;
+  }): Promise<PlatformProspectsSearchResponse> {
+    const apiKey = this.requirePappersApiKey();
+    const page = Math.max(filters?.page ?? 1, 1);
+    const perPage = Math.min(Math.max(filters?.perPage ?? 20, 1), 50);
+    const codeNaf =
+      filters?.codeNaf?.trim() || getPlatformProspectNafCodes(filters?.preset).join(",");
+    const dateCreationMin = this.formatPappersDate(this.daysAgo(365));
+
+    const params: Record<string, string | number> = {
+      api_token: apiKey,
+      code_naf: codeNaf,
+      date_creation_min: dateCreationMin,
+      entreprise_cessee: "false",
+      page,
+      par_page: perPage,
+    };
+    const departement = filters?.departement?.trim();
+    if (departement) params.departement = departement;
+
+    let pappers: PappersRechercheResponse;
+    try {
+      const res = await firstValueFrom(
+        this.httpService.get<PappersRechercheResponse>(`${PAPPERS_API_URL}/recherche`, {
+          params,
+          timeout: 20_000,
+        }),
+      );
+      pappers = res.data;
+    } catch (err: unknown) {
+      const axiosErr = err as {
+        message?: string;
+        response?: {
+          status?: number;
+          data?: { detail?: string; title?: string; message?: string };
+        };
+      };
+      const detail =
+        axiosErr.response?.data?.detail ||
+        axiosErr.response?.data?.message ||
+        axiosErr.response?.data?.title ||
+        axiosErr.message;
+      this.logger.warn(`Pappers recherche failed (${axiosErr.response?.status ?? "?"}): ${detail}`);
+      throw new ServiceUnavailableException(
+        "Impossible de récupérer les prospects Pappers. Vérifiez la clé API et les crédits.",
+      );
+    }
+
+    const rawResults = pappers.resultats ?? pappers.entreprises ?? [];
+    const mapped = rawResults.map((row) => this.mapPappersEntreprise(row));
+    const sirens = mapped.map((r) => r.siren).filter(Boolean);
+    const outreachBySiren = await this.loadOutreachBySirens(sirens);
+
+    const results: PlatformProspectSummary[] = mapped.map((r) => {
+      const prior = outreachBySiren.get(r.siren);
+      return {
+        ...r,
+        alreadyContacted: Boolean(prior && prior.status === "sent"),
+        lastContactedAt: prior?.sentAt,
+      };
+    });
+
+    const credits = await this.fetchPappersCredits(apiKey).catch(() => undefined);
+
+    return {
+      results,
+      total: pappers.total ?? results.length,
+      page: pappers.page ?? page,
+      perPage,
+      ...(credits != null ? { creditsRemaining: credits } : {}),
+    };
+  }
+
+  async getProspectCredits(): Promise<PlatformProspectCreditsResponse> {
+    const apiKey = process.env.PAPPERS_API_KEY?.trim();
+    if (!apiKey) return { configured: false };
+    try {
+      const creditsRemaining = await this.fetchPappersCredits(apiKey);
+      return { configured: true, creditsRemaining };
+    } catch {
+      return { configured: true };
+    }
+  }
+
+  async sendProspectOutreach(
+    staff: PlatformAuthUser,
+    body: PlatformProspectOutreachBody,
+  ): Promise<PlatformProspectOutreachResponse> {
+    const siren = body.siren?.trim().replace(/\s/g, "") ?? "";
+    if (!/^\d{9}$/.test(siren)) {
+      throw new BadRequestException("SIREN invalide");
+    }
+    const toEmail = body.toEmail?.trim().toLowerCase() ?? "";
+    if (!toEmail.includes("@")) {
+      throw new BadRequestException("E-mail destinataire requis");
+    }
+    const companyName = body.companyName?.trim() || `SIREN ${siren}`;
+
+    if (!body.force) {
+      const existing = await this.loadOutreachBySirens([siren]);
+      const prior = existing.get(siren);
+      if (prior?.status === "sent") {
+        throw new ConflictException("Cette entreprise a déjà été contactée");
+      }
+    }
+
+    const contact = body.contactName?.trim();
+    const greeting = contact ? `Bonjour ${contact},` : "Bonjour,";
+    const landingUrl = APP_PUBLIC_URL.replace(/\/$/, "") || "https://planwise.fr";
+    const emailBody = `${greeting}
+
+Vous avez créé récemment votre entreprise : c’est le bon moment pour structurer votre activité sans vous ruiner en outils.
+
+Planwise est un CRM pensé pour les indépendants, artisans et TPE. Il est actuellement en beta : simple, abordable, et adapté à une structure qui démarre. En rejoignant la beta, vous bénéficierez d’avantages réservés aux premiers utilisateurs.
+
+Découvrez Planwise : ${landingUrl}
+
+Si vous n’êtes pas intéressé, répondez STOP à cet e-mail pour ne plus être contacté.
+
+L’équipe Planwise`;
+
+    let sent = false;
+    let reason: string | undefined;
+    try {
+      const res = await firstValueFrom(
+        this.httpService.post<SendEmailNotificationResponse>(
+          `${NOTIFICATIONS_URL}/email/transactional`,
+          {
+            to: toEmail,
+            subject: PROSPECT_OUTREACH_SUBJECT,
+            body: emailBody,
+            url: "/",
+            ctaLabel: "Découvrir Planwise",
+          },
+        ),
+      );
+      sent = Boolean(res.data.sent);
+      reason = res.data.reason;
+      if (!sent) {
+        this.logger.warn(`Prospect outreach not sent to ${toEmail}: ${reason ?? "unknown"}`);
+      }
+    } catch (err: unknown) {
+      this.logger.warn(`Prospect outreach SMTP error: ${(err as Error).message}`);
+      reason = "Erreur d’envoi e-mail";
+      sent = false;
+    }
+
+    try {
+      await firstValueFrom(
+        this.httpService.post(`${USERS_URL}/users/platform/prospect-outreaches`, {
+          siren,
+          companyName,
+          email: toEmail,
+          sentByUserId: staff.id,
+          sentByEmail: staff.email,
+          subject: PROSPECT_OUTREACH_SUBJECT,
+          status: sent ? "sent" : "failed",
+        }),
+      );
+    } catch (err: unknown) {
+      this.logger.warn(`Failed to log prospect outreach: ${(err as Error).message}`);
+    }
+
+    return { sent, ...(reason ? { reason } : {}) };
+  }
+
+  private requirePappersApiKey(): string {
+    const key = process.env.PAPPERS_API_KEY?.trim();
+    if (!key) {
+      throw new ServiceUnavailableException(
+        "PAPPERS_API_KEY non configurée. Ajoutez la clé API Pappers côté api-gateway.",
+      );
+    }
+    return key;
+  }
+
+  private daysAgo(days: number): Date {
+    const d = new Date();
+    d.setUTCDate(d.getUTCDate() - days);
+    return d;
+  }
+
+  /** Format Pappers JJ-MM-AAAA. */
+  private formatPappersDate(date: Date): string {
+    const dd = String(date.getUTCDate()).padStart(2, "0");
+    const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
+    const yyyy = date.getUTCFullYear();
+    return `${dd}-${mm}-${yyyy}`;
+  }
+
+  private mapPappersEntreprise(row: PappersEntrepriseRow): PlatformProspectSummary {
+    const siren = String(row.siren ?? "").replace(/\s/g, "");
+    const siege = row.siege;
+    const dirigeants = (row.dirigeants ?? [])
+      .map((d) => {
+        const name = [d.prenom, d.prenoms, d.nom].filter(Boolean).join(" ").trim();
+        return name || undefined;
+      })
+      .filter((n): n is string => Boolean(n));
+    return {
+      siren,
+      siret: row.siret ? String(row.siret) : siege?.siret ? String(siege.siret) : undefined,
+      name: row.nom_entreprise || row.denomination || row.nom || `SIREN ${siren}`,
+      naf: row.code_naf || row.naf || undefined,
+      nafLabel: row.libelle_code_naf || row.libelle_naf || undefined,
+      createdAt: row.date_creation || undefined,
+      city: siege?.ville || row.ville || undefined,
+      postalCode: siege?.code_postal || row.code_postal || undefined,
+      dirigeants: dirigeants.length ? dirigeants : undefined,
+      website: row.domaine || row.site_internet || row.website || undefined,
+      alreadyContacted: false,
+    };
+  }
+
+  private async loadOutreachBySirens(
+    sirens: string[],
+  ): Promise<Map<string, { status: string; sentAt: string }>> {
+    const map = new Map<string, { status: string; sentAt: string }>();
+    if (sirens.length === 0) return map;
+    try {
+      const res = await firstValueFrom(
+        this.httpService.get<ProspectOutreachesBySirensResponse>(
+          `${USERS_URL}/users/platform/prospect-outreaches`,
+          { params: { sirens: sirens.join(",") } },
+        ),
+      );
+      for (const o of res.data.outreaches ?? []) {
+        map.set(o.siren, { status: o.status, sentAt: o.sentAt });
+      }
+    } catch {
+      /* best-effort */
+    }
+    return map;
+  }
+
+  private async fetchPappersCredits(apiKey: string): Promise<number | undefined> {
+    const res = await firstValueFrom(
+      this.httpService.get<{
+        jetons?: number;
+        credits?: number;
+        solde?: number;
+        jetons_pay_as_you_go_restants?: number;
+        jetons_abonnement?: number;
+        jetons_abonnement_utilises?: number;
+      }>(`${PAPPERS_API_URL}/suivi-jetons`, {
+        params: { api_token: apiKey },
+        timeout: 10_000,
+      }),
+    );
+    return this.parsePappersCredits(res.data);
+  }
+
+  private parsePappersCredits(data: {
+    jetons?: number;
+    credits?: number;
+    solde?: number;
+    jetons_pay_as_you_go_restants?: number;
+    jetons_abonnement?: number;
+    jetons_abonnement_utilises?: number;
+  }): number | undefined {
+    if (typeof data.jetons === "number") return data.jetons;
+    if (typeof data.credits === "number") return data.credits;
+    if (typeof data.solde === "number") return data.solde;
+    const payg = data.jetons_pay_as_you_go_restants;
+    const abo = data.jetons_abonnement;
+    const used = data.jetons_abonnement_utilises ?? 0;
+    if (typeof payg === "number" || typeof abo === "number") {
+      const aboRestant = typeof abo === "number" ? Math.max(0, abo - used) : 0;
+      return (typeof payg === "number" ? payg : 0) + aboRestant;
+    }
+    return undefined;
+  }
+
   private cronServiceBaseUrl(service: (typeof PLATFORM_CRON_JOBS)[number]["service"]): string {
     switch (service) {
       case "integrations-service":
@@ -520,3 +816,40 @@ export class PlatformService extends AbstractPlatformService {
     }
   }
 }
+
+type PappersDirigeant = {
+  nom?: string;
+  prenom?: string;
+  prenoms?: string;
+};
+
+type PappersEntrepriseRow = {
+  siren?: string | number;
+  siret?: string | number;
+  nom_entreprise?: string;
+  denomination?: string;
+  nom?: string;
+  code_naf?: string;
+  naf?: string;
+  libelle_code_naf?: string;
+  libelle_naf?: string;
+  date_creation?: string;
+  ville?: string;
+  code_postal?: string;
+  domaine?: string;
+  site_internet?: string;
+  website?: string;
+  siege?: {
+    siret?: string | number;
+    ville?: string;
+    code_postal?: string;
+  };
+  dirigeants?: PappersDirigeant[];
+};
+
+type PappersRechercheResponse = {
+  resultats?: PappersEntrepriseRow[];
+  entreprises?: PappersEntrepriseRow[];
+  total?: number;
+  page?: number;
+};

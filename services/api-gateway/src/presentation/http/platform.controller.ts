@@ -4,7 +4,12 @@ import {
   CurrentPlatformUser,
   PlatformJwtAuthGuard,
 } from "../../infrastructure/platform-jwt-auth.guard";
-import type { LoginBody, PlatformAuthUser, StartImpersonationBody } from "@planwise/shared";
+import type {
+  LoginBody,
+  PlatformAuthUser,
+  PlatformProspectOutreachBody,
+  StartImpersonationBody,
+} from "@planwise/shared";
 
 @Controller("platform")
 export class PlatformController {
@@ -109,5 +114,38 @@ export class PlatformController {
   @UseGuards(PlatformJwtAuthGuard)
   getAnalyticsOverview(@Query("days") days?: string) {
     return this.platformService.getAnalyticsOverview(days ? Number.parseInt(days, 10) : undefined);
+  }
+
+  @Get("prospects")
+  @UseGuards(PlatformJwtAuthGuard)
+  searchProspects(
+    @Query("page") page?: string,
+    @Query("perPage") perPage?: string,
+    @Query("departement") departement?: string,
+    @Query("codeNaf") codeNaf?: string,
+    @Query("preset") preset?: string,
+  ) {
+    return this.platformService.searchProspects({
+      page: page ? Number.parseInt(page, 10) : undefined,
+      perPage: perPage ? Number.parseInt(perPage, 10) : undefined,
+      departement,
+      codeNaf,
+      preset,
+    });
+  }
+
+  @Get("prospects/credits")
+  @UseGuards(PlatformJwtAuthGuard)
+  getProspectCredits() {
+    return this.platformService.getProspectCredits();
+  }
+
+  @Post("prospects/outreach")
+  @UseGuards(PlatformJwtAuthGuard)
+  sendProspectOutreach(
+    @CurrentPlatformUser() user: PlatformAuthUser,
+    @Body() body: PlatformProspectOutreachBody,
+  ) {
+    return this.platformService.sendProspectOutreach(user, body);
   }
 }

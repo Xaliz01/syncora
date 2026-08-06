@@ -8,6 +8,10 @@ import type {
   PlatformIntegrationsListResponse,
   PlatformOrganizationDetailResponse,
   PlatformOrganizationsListResponse,
+  PlatformProspectCreditsResponse,
+  PlatformProspectOutreachBody,
+  PlatformProspectOutreachResponse,
+  PlatformProspectsSearchResponse,
   PlatformUsersListResponse,
   StartImpersonationBody,
 } from "@planwise/shared";
@@ -172,4 +176,43 @@ export async function getPlatformAnalyticsOverview(days?: number) {
       fallbackError: "Impossible de charger l’audience",
     },
   );
+}
+
+export async function searchPlatformProspects(filters?: {
+  page?: number;
+  perPage?: number;
+  departement?: string;
+  codeNaf?: string;
+  preset?: string;
+}) {
+  const params = new URLSearchParams();
+  if (filters?.page != null) params.set("page", String(filters.page));
+  if (filters?.perPage != null) params.set("perPage", String(filters.perPage));
+  if (filters?.departement) params.set("departement", filters.departement);
+  if (filters?.codeNaf) params.set("codeNaf", filters.codeNaf);
+  if (filters?.preset) params.set("preset", filters.preset);
+  const qs = params.toString();
+  return apiRequestJson<PlatformProspectsSearchResponse>(
+    "GET",
+    `/platform/prospects${qs ? `?${qs}` : ""}`,
+    {
+      platformBearer: true,
+      fallbackError: "Impossible de charger les prospects",
+    },
+  );
+}
+
+export async function getPlatformProspectCredits() {
+  return apiRequestJson<PlatformProspectCreditsResponse>("GET", "/platform/prospects/credits", {
+    platformBearer: true,
+    fallbackError: "Impossible de charger les crédits Pappers",
+  });
+}
+
+export async function sendPlatformProspectOutreach(body: PlatformProspectOutreachBody) {
+  return apiRequestJson<PlatformProspectOutreachResponse>("POST", "/platform/prospects/outreach", {
+    body,
+    platformBearer: true,
+    fallbackError: "Envoi de l’invitation impossible",
+  });
 }

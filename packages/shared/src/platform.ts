@@ -149,3 +149,116 @@ export interface StartImpersonationBody {
 export type PlatformLoginBody = LoginBody;
 
 export type { AuthResponse, AuthUser, UserResponse };
+
+/** Preset NAF pour prospection artisans / TPE terrain (BTP, install, paysage…). */
+export const PLATFORM_PROSPECT_NAF_PRESETS = {
+  artisans_terrain: {
+    id: "artisans_terrain" as const,
+    label: "Artisans / terrain (BTP, install, paysage)",
+    codes: [
+      "41.20A",
+      "41.20B",
+      "43.21A",
+      "43.21B",
+      "43.22A",
+      "43.22B",
+      "43.29A",
+      "43.29B",
+      "43.31Z",
+      "43.32A",
+      "43.32B",
+      "43.33Z",
+      "43.34Z",
+      "43.39Z",
+      "43.91A",
+      "43.91B",
+      "43.99A",
+      "43.99B",
+      "43.99C",
+      "43.99D",
+      "43.99E",
+      "81.21Z",
+      "81.22Z",
+      "81.30Z",
+      "96.01A",
+    ],
+  },
+} as const;
+
+export type PlatformProspectNafPresetId = keyof typeof PLATFORM_PROSPECT_NAF_PRESETS;
+
+export function getPlatformProspectNafCodes(preset?: string | null): string[] {
+  const id = (preset?.trim() || "artisans_terrain") as PlatformProspectNafPresetId;
+  return [
+    ...(PLATFORM_PROSPECT_NAF_PRESETS[id]?.codes ??
+      PLATFORM_PROSPECT_NAF_PRESETS.artisans_terrain.codes),
+  ];
+}
+
+export interface PlatformProspectSummary {
+  siren: string;
+  siret?: string;
+  name: string;
+  naf?: string;
+  nafLabel?: string;
+  createdAt?: string;
+  city?: string;
+  postalCode?: string;
+  dirigeants?: string[];
+  website?: string;
+  alreadyContacted: boolean;
+  lastContactedAt?: string;
+}
+
+export interface PlatformProspectsSearchResponse {
+  results: PlatformProspectSummary[];
+  total: number;
+  page: number;
+  perPage: number;
+  creditsRemaining?: number;
+}
+
+export interface PlatformProspectCreditsResponse {
+  creditsRemaining?: number;
+  configured: boolean;
+}
+
+export interface PlatformProspectOutreachBody {
+  siren: string;
+  companyName: string;
+  toEmail: string;
+  contactName?: string;
+  /** Renvoi même si déjà contacté (défaut false). */
+  force?: boolean;
+}
+
+export interface PlatformProspectOutreachResponse {
+  sent: boolean;
+  reason?: string;
+}
+
+export interface CreateProspectOutreachBody {
+  siren: string;
+  companyName: string;
+  email: string;
+  sentByUserId: string;
+  sentByEmail: string;
+  subject: string;
+  status?: "sent" | "failed";
+}
+
+export interface ProspectOutreachResponse {
+  id: string;
+  siren: string;
+  companyName: string;
+  email: string;
+  sentByUserId: string;
+  sentByEmail: string;
+  subject: string;
+  status: "sent" | "failed";
+  sentAt: string;
+}
+
+export interface ProspectOutreachesBySirensResponse {
+  outreaches: ProspectOutreachResponse[];
+}

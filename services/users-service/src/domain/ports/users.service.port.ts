@@ -6,6 +6,7 @@ import type {
   CreateAccountResult,
   CreateInvitedUserBody,
   CreateOrganizationMembershipBody,
+  CreateProspectOutreachBody,
   CreateUserBody,
   CreateUserSessionResponse,
   InvitationActivationHintsResponse,
@@ -13,6 +14,8 @@ import type {
   OrganizationMembershipResponse,
   PatchUserBody,
   PlatformUserSummary,
+  ProspectOutreachResponse,
+  ProspectOutreachesBySirensResponse,
   UpdateUserNameBody,
   UpdateUserPreferencesBody,
   UserPreferencesResponse,
@@ -102,4 +105,10 @@ export abstract class AbstractUsersService {
     organizationIds: string[],
   ): Promise<Record<string, { userCount: number; lastUserLoginAt?: string }>>;
   abstract createImpersonationAudit(body: CreateImpersonationAuditBody): Promise<{ id: string }>;
+  abstract createProspectOutreach(
+    body: CreateProspectOutreachBody,
+  ): Promise<ProspectOutreachResponse>;
+  abstract listProspectOutreachesBySirens(
+    sirens: string[],
+  ): Promise<ProspectOutreachesBySirensResponse>;
 }

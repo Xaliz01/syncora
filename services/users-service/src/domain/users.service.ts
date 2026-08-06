@@ -15,6 +15,7 @@ import type { UserDocument } from "../persistence/user.schema";
 import type { OrganizationMembershipDocument } from "../persistence/organization-membership.schema";
 import type { UserPreferencesDocument } from "../persistence/user-preferences.schema";
 import type { SupportImpersonationAuditDocument } from "../persistence/support-impersonation-audit.schema";
+import type { ProspectOutreachDocument } from "../persistence/prospect-outreach.schema";
 import type { UserSessionDocument } from "../persistence/user-session.schema";
 import {
   activeDocumentFilter,
@@ -27,6 +28,7 @@ import {
   type CreateAccountResult,
   type CreateInvitedUserBody,
   type CreateOrganizationMembershipBody,
+  type CreateProspectOutreachBody,
   type CreateUserBody,
   type CreateUserSessionResponse,
   type InvitationActivationHintsResponse,
@@ -35,6 +37,8 @@ import {
   type PatchUserBody,
   type AccountUserResponse,
   type PlatformUserSummary,
+  type ProspectOutreachResponse,
+  type ProspectOutreachesBySirensResponse,
   type UpdateUserNameBody,
   type UpdateUserPreferencesBody,
   type UserPreferences,
@@ -75,6 +79,8 @@ export class UsersService extends AbstractUsersService {
     private readonly preferencesModel: Model<UserPreferencesDocument>,
     @InjectModel("SupportImpersonationAudit")
     private readonly impersonationAuditModel: Model<SupportImpersonationAuditDocument>,
+    @InjectModel("ProspectOutreach")
+    private readonly prospectOutreachModel: Model<ProspectOutreachDocument>,
     @InjectModel("UserSession")
     private readonly sessionModel: Model<UserSessionDocument>,
   ) {
@@ -1129,6 +1135,66 @@ export class UsersService extends AbstractUsersService {
       expiresAt: body.expiresAt ? new Date(body.expiresAt) : undefined,
     });
     return { id: doc._id.toString() };
+  }
+
+  async createProspectOutreach(
+    body: CreateProspectOutreachBody,
+  ): Promise<ProspectOutreachResponse> {
+    const siren = body.siren.trim().replace(/\s/g, "");
+    if (!/^\d{9}$/.test(siren)) {
+      throw new BadRequestException("SIREN invalide");
+    }
+    const email = body.email.trim().toLowerCase();
+    if (!email.includes("@")) {
+      throw new BadRequestException("E-mail invalide");
+    }
+    const status = body.status === "failed" ? "failed" : "sent";
+    const sentAt = new Date();
+    const doc = await this.prospectOutreachModel
+      .findOneAndUpdate(
+        { siren },
+        {
+          $set: {
+            siren,
+            companyName: body.companyName.trim(),
+            email,
+            sentByUserId: body.sentByUserId,
+            sentByEmail: body.sentByEmail.trim().toLowerCase(),
+            subject: body.subject.trim(),
+            status,
+            sentAt,
+          },
+        },
+        { upsert: true, new: true },
+      )
+      .exec();
+    if (!doc) throw new BadRequestException("Impossible d’enregistrer le contact");
+    return this.toProspectOutreachResponse(doc);
+  }
+
+  async listProspectOutreachesBySirens(
+    sirens: string[],
+  ): Promise<ProspectOutreachesBySirensResponse> {
+    const normalized = [
+      ...new Set(sirens.map((s) => s.trim().replace(/\s/g, "")).filter((s) => /^\d{9}$/.test(s))),
+    ].slice(0, 200);
+    if (normalized.length === 0) return { outreaches: [] };
+    const docs = await this.prospectOutreachModel.find({ siren: { $in: normalized } }).exec();
+    return { outreaches: docs.map((d) => this.toProspectOutreachResponse(d)) };
+  }
+
+  private toProspectOutreachResponse(doc: ProspectOutreachDocument): ProspectOutreachResponse {
+    return {
+      id: doc._id.toString(),
+      siren: doc.siren,
+      companyName: doc.companyName,
+      email: doc.email,
+      sentByUserId: doc.sentByUserId,
+      sentByEmail: doc.sentByEmail,
+      subject: doc.subject,
+      status: doc.status,
+      sentAt: doc.sentAt.toISOString(),
+    };
   }
 
   private membershipToResponse(

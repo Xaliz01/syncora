@@ -183,6 +183,31 @@ export class UsersController {
     return this.usersService.createImpersonationAudit(body);
   }
 
+  @Get("platform/prospect-outreaches")
+  async listProspectOutreaches(@Query("sirens") sirens?: string) {
+    const list = (sirens ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return this.usersService.listProspectOutreachesBySirens(list);
+  }
+
+  @Post("platform/prospect-outreaches")
+  async createProspectOutreach(
+    @Body()
+    body: {
+      siren: string;
+      companyName: string;
+      email: string;
+      sentByUserId: string;
+      sentByEmail: string;
+      subject: string;
+      status?: "sent" | "failed";
+    },
+  ) {
+    return this.usersService.createProspectOutreach(body);
+  }
+
   @Get(":userId/organization-memberships")
   listOrganizationMemberships(@Param("userId") userId: string) {
     return this.usersService.listOrganizationMemberships(userId);

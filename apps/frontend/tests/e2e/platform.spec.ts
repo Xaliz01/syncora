@@ -10,6 +10,7 @@ const PLATFORM_PROTECTED = [
   "/platform/users",
   "/platform/organizations/org-demo",
   "/platform/integrations",
+  "/platform/prospection",
   "/platform/audience",
   "/platform/crons",
 ];

@@ -9,7 +9,7 @@ export const SEO_DEFAULT_TITLE =
   "Planwise — CRM terrain accessible pour indépendants, artisans et TPE";
 
 export const SEO_DEFAULT_DESCRIPTION =
-  "CRM abordable pour indépendants, artisans et TPE : dossiers, interventions, contrats de maintenance, donneurs d’ordre, planning, stock et facturation (Pennylane, Qonto ou démo essai). Dès 9,99 €/mois, essai gratuit sans carte bancaire.";
+  "CRM abordable pour indépendants, artisans et TPE : dossiers, interventions, contrats de maintenance, planning, stock et facturation via votre outil comptable. Dès 9,99 €/mois, essai gratuit sans carte bancaire.";
 
 export const SEO_KEYWORDS = [
   "CRM accessible",
@@ -135,7 +135,7 @@ export function buildSoftwareApplicationJsonLd(): Record<string, unknown> {
       "Planning techniciens et calendrier",
       "Stock multi-emplacements",
       "Rapports d'intervention et signature client",
-      "Facturation via Pennylane, Qonto ou mode démo pendant l’essai",
+      "Facturation via votre outil comptable, ou mode démo pendant l’essai",
       "Profils de permissions et modèles de dossier prêts à importer",
     ],
     audience: {

@@ -45,6 +45,10 @@ describe("UsersService", () => {
     deleteOne: jest.Mock;
     deleteMany: jest.Mock;
   };
+  let mockProspectOutreachModel: {
+    findOneAndUpdate: jest.Mock;
+    find: jest.Mock;
+  };
 
   const mockDoc = (overrides: Record<string, unknown> = {}) => ({
     _id: { toString: () => "user-123" },
@@ -137,6 +141,25 @@ describe("UsersService", () => {
         .mockReturnValue({ exec: jest.fn().mockResolvedValue({ deletedCount: 1 }) }),
     };
 
+    mockProspectOutreachModel = {
+      findOneAndUpdate: jest.fn().mockReturnValue({
+        exec: jest.fn().mockResolvedValue({
+          _id: { toString: () => "out-1" },
+          siren: "123456789",
+          companyName: "Demo SARL",
+          email: "demo@example.fr",
+          sentByUserId: "staff-1",
+          sentByEmail: "staff@planwise.fr",
+          subject: "Sujet",
+          status: "sent",
+          sentAt: new Date("2026-08-01T10:00:00.000Z"),
+        }),
+      }),
+      find: jest.fn().mockReturnValue({
+        exec: jest.fn().mockResolvedValue([]),
+      }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         { provide: AbstractUsersService, useClass: UsersService },
@@ -144,6 +167,7 @@ describe("UsersService", () => {
         { provide: getModelToken("OrganizationMembership"), useValue: mockMembershipModel },
         { provide: getModelToken("UserPreferences"), useValue: mockPreferencesModel },
         { provide: getModelToken("UserSession"), useValue: mockSessionModel },
+        { provide: getModelToken("ProspectOutreach"), useValue: mockProspectOutreachModel },
         {
           provide: getModelToken("SupportImpersonationAudit"),
           useValue: { create: jest.fn().mockResolvedValue({ _id: { toString: () => "audit-1" } }) },
@@ -1411,6 +1435,72 @@ describe("UsersService", () => {
     it("should return null when organizationId is empty", async () => {
       await expect(service.findFoundingAdminUserId("  ")).resolves.toBeNull();
       expect(mockMembershipModel.findOne).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("prospect outreaches", () => {
+    it("should upsert a prospect outreach by siren", async () => {
+      const result = await service.createProspectOutreach({
+        siren: "123 456 789",
+        companyName: "Demo SARL",
+        email: "Demo@Example.fr",
+        sentByUserId: "staff-1",
+        sentByEmail: "staff@planwise.fr",
+        subject: "Sujet",
+      });
+
+      expect(mockProspectOutreachModel.findOneAndUpdate).toHaveBeenCalledWith(
+        { siren: "123456789" },
+        expect.objectContaining({
+          $set: expect.objectContaining({
+            siren: "123456789",
+            email: "demo@example.fr",
+            status: "sent",
+          }),
+        }),
+        { upsert: true, new: true },
+      );
+      expect(result.siren).toBe("123456789");
+      expect(result.email).toBe("demo@example.fr");
+    });
+
+    it("should reject invalid siren", async () => {
+      await expect(
+        service.createProspectOutreach({
+          siren: "abc",
+          companyName: "X",
+          email: "a@b.fr",
+          sentByUserId: "staff-1",
+          sentByEmail: "staff@planwise.fr",
+          subject: "Sujet",
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("should list outreaches by sirens", async () => {
+      mockProspectOutreachModel.find.mockReturnValue({
+        exec: jest.fn().mockResolvedValue([
+          {
+            _id: { toString: () => "out-1" },
+            siren: "123456789",
+            companyName: "Demo",
+            email: "a@b.fr",
+            sentByUserId: "staff-1",
+            sentByEmail: "staff@planwise.fr",
+            subject: "Sujet",
+            status: "sent",
+            sentAt: new Date("2026-08-01T10:00:00.000Z"),
+          },
+        ]),
+      });
+
+      const result = await service.listProspectOutreachesBySirens(["123456789", "bad"]);
+
+      expect(mockProspectOutreachModel.find).toHaveBeenCalledWith({
+        siren: { $in: ["123456789"] },
+      });
+      expect(result.outreaches).toHaveLength(1);
+      expect(result.outreaches[0]?.siren).toBe("123456789");
     });
   });
 });

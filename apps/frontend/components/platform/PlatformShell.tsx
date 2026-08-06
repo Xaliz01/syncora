@@ -11,6 +11,7 @@ const NAV = [
   { href: "/platform", label: "Organisations" },
   { href: "/platform/users", label: "Utilisateurs" },
   { href: "/platform/integrations", label: "Intégrations" },
+  { href: "/platform/prospection", label: "Prospection" },
   { href: "/platform/audience", label: "Audience" },
   { href: "/platform/crons", label: "Crons" },
 ] as const;

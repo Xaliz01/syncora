@@ -41,6 +41,8 @@ describe("UsersController", () => {
       listPlatformDirectory: jest.fn(),
       countUsersByOrganizationIds: jest.fn(),
       createImpersonationAudit: jest.fn(),
+      createProspectOutreach: jest.fn(),
+      listProspectOutreachesBySirens: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
