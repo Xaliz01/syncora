@@ -254,6 +254,19 @@ export async function searchPlatformProspects(filters?: {
   );
 }
 
+export async function lookupPlatformProspectBySiret(siret: string) {
+  const params = new URLSearchParams();
+  params.set("siret", siret.trim());
+  return apiRequestJson<PlatformProspectsSearchResponse>(
+    "GET",
+    `/platform/prospects/by-siret?${params.toString()}`,
+    {
+      platformBearer: true,
+      fallbackError: "Impossible de récupérer cette entreprise",
+    },
+  );
+}
+
 export async function getPlatformProspectCredits() {
   return apiRequestJson<PlatformProspectCreditsResponse>("GET", "/platform/prospects/credits", {
     platformBearer: true,

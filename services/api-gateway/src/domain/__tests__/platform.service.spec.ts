@@ -1,5 +1,10 @@
-import { BadRequestException, ConflictException, ForbiddenException } from "@nestjs/common";
-import { of } from "rxjs";
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+} from "@nestjs/common";
+import { of, throwError } from "rxjs";
 import { PLATFORM_CRON_JOBS } from "@planwise/shared";
 import { PlatformService } from "../platform.service";
 
@@ -396,6 +401,72 @@ describe("PlatformService", () => {
             date_creation_min: "01-06-2026",
           }),
         }),
+      );
+    });
+
+    it("looks up a single company by SIRET via /entreprise", async () => {
+      httpService.get.mockImplementation((url: string) => {
+        if (String(url).includes("/entreprise")) {
+          return of({
+            data: {
+              siren: "123456789",
+              siret: "12345678900012",
+              nom_entreprise: "Plomberie Dupont",
+              code_naf: "43.22A",
+              date_creation: "2026-01-15",
+              siege: { ville: "Lyon", code_postal: "69001", siret: "12345678900012" },
+              dirigeants: [{ prenoms: "Jean", nom: "Dupont" }],
+            },
+          });
+        }
+        if (String(url).includes("prospect-outreaches")) {
+          return of({ data: { outreaches: [] } });
+        }
+        if (String(url).includes("suivi-jetons")) {
+          return of({ data: { jetons: 42 } });
+        }
+        return of({ data: {} });
+      });
+
+      const result = await service.lookupProspectBySiret("12345678900012");
+
+      expect(httpService.get).toHaveBeenCalledWith(
+        expect.stringContaining("/entreprise"),
+        expect.objectContaining({
+          params: expect.objectContaining({
+            api_token: "test-pappers-key",
+            siret: "12345678900012",
+          }),
+        }),
+      );
+      expect(result.total).toBe(1);
+      expect(result.results[0]).toMatchObject({
+        siren: "123456789",
+        siret: "12345678900012",
+        name: "Plomberie Dupont",
+        alreadyContacted: false,
+        city: "Lyon",
+      });
+      expect(result.creditsRemaining).toBe(42);
+    });
+
+    it("rejects invalid SIRET/SIREN for lookup", async () => {
+      await expect(service.lookupProspectBySiret("123")).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+    });
+
+    it("returns 404 when Pappers has no company for SIRET", async () => {
+      httpService.get.mockReturnValue(
+        throwError(() =>
+          Object.assign(new Error("Not found"), {
+            response: { status: 404, data: { detail: "Entreprise introuvable" } },
+          }),
+        ),
+      );
+
+      await expect(service.lookupProspectBySiret("12345678900012")).rejects.toBeInstanceOf(
+        NotFoundException,
       );
     });
 

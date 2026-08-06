@@ -636,6 +636,83 @@ export class PlatformService extends AbstractPlatformService {
     return response;
   }
 
+  async lookupProspectBySiret(raw: string): Promise<PlatformProspectsSearchResponse> {
+    const apiKey = this.requirePappersApiKey();
+    const id = raw?.trim().replace(/\s/g, "") ?? "";
+    const isSiret = /^\d{14}$/.test(id);
+    const isSiren = /^\d{9}$/.test(id);
+    if (!isSiret && !isSiren) {
+      throw new BadRequestException("SIRET (14 chiffres) ou SIREN (9 chiffres) requis");
+    }
+
+    let row: PappersEntrepriseRow;
+    try {
+      const res = await firstValueFrom(
+        this.httpService.get<PappersEntrepriseRow>(`${PAPPERS_API_URL}/entreprise`, {
+          params: {
+            api_token: apiKey,
+            ...(isSiret ? { siret: id } : { siren: id }),
+          },
+          timeout: 20_000,
+        }),
+      );
+      row = res.data;
+    } catch (err: unknown) {
+      const axiosErr = err as {
+        message?: string;
+        response?: {
+          status?: number;
+          data?: { detail?: string; title?: string; message?: string };
+        };
+      };
+      const status = axiosErr.response?.status;
+      if (status === 404) {
+        throw new NotFoundException(
+          isSiret ? "Aucune entreprise pour ce SIRET" : "Aucune entreprise pour ce SIREN",
+        );
+      }
+      const detail =
+        axiosErr.response?.data?.detail ||
+        axiosErr.response?.data?.message ||
+        axiosErr.response?.data?.title ||
+        axiosErr.message;
+      this.logger.warn(`Pappers entreprise failed (${status ?? "?"}): ${detail}`);
+      throw new ServiceUnavailableException(
+        "Impossible de récupérer la fiche Pappers. Vérifiez la clé API et les crédits.",
+      );
+    }
+
+    if (!row?.siren && !row?.siret) {
+      throw new NotFoundException(
+        isSiret ? "Aucune entreprise pour ce SIRET" : "Aucune entreprise pour ce SIREN",
+      );
+    }
+
+    const mapped = this.mapPappersEntreprise(row);
+    if (isSiret && !mapped.siret) {
+      mapped.siret = id;
+    }
+    const outreachBySiren = await this.loadOutreachBySirens([mapped.siren].filter(Boolean));
+    const prior = outreachBySiren.get(mapped.siren);
+    const result: PlatformProspectSummary = {
+      ...mapped,
+      alreadyContacted: Boolean(prior && prior.status === "sent"),
+      emailNotFound: Boolean(prior && prior.status === "email_not_found"),
+      lastContactedAt: prior?.sentAt,
+      ...(prior?.comment ? { comment: prior.comment } : {}),
+    };
+
+    const credits = await this.fetchPappersCredits(apiKey).catch(() => undefined);
+    return {
+      results: [result],
+      total: 1,
+      page: 1,
+      perPage: 1,
+      fromCache: false,
+      ...(credits != null ? { creditsRemaining: credits } : {}),
+    };
+  }
+
   async getProspectCredits(): Promise<PlatformProspectCreditsResponse> {
     const apiKey = process.env.PAPPERS_API_KEY?.trim();
     if (!apiKey) return { configured: false };

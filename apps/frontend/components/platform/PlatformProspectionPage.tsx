@@ -85,6 +85,8 @@ export function PlatformProspectionPage() {
   const [searchNonce, setSearchNonce] = useState(0);
   const [forceRefresh, setForceRefresh] = useState(false);
   const refreshOnNextLoad = useRef(false);
+  const [siretInput, setSiretInput] = useState("");
+  const [isSiretLookup, setIsSiretLookup] = useState(false);
 
   const [tracked, setTracked] = useState<ProspectOutreachResponse[]>([]);
   const [trackedTotal, setTrackedTotal] = useState(0);
@@ -197,6 +199,7 @@ export function PlatformProspectionPage() {
     const nextPage = Number.isFinite(parsedPage) && parsedPage >= 1 ? parsedPage : 1;
     setStartPageInput(String(nextPage));
     setPage(nextPage);
+    setIsSiretLookup(false);
     refreshOnNextLoad.current = forceRefresh;
     setActiveQuery({
       preset,
@@ -205,6 +208,48 @@ export function PlatformProspectionPage() {
       dateCreationMin: dateCreationMin.trim() || defaultDateCreationMinIso(),
     });
     setSearchNonce((n) => n + 1);
+  };
+
+  const onSiretLookup = (e: FormEvent) => {
+    e.preventDefault();
+    const id = siretInput.trim().replace(/\s/g, "");
+    if (!/^\d{9}$/.test(id) && !/^\d{14}$/.test(id)) {
+      showToast("Saisissez un SIRET (14 chiffres) ou un SIREN (9 chiffres).", "error");
+      return;
+    }
+    setActiveQuery(null);
+    setIsSiretLookup(true);
+    setPage(1);
+    setLoading(true);
+    setError(null);
+    platformApi
+      .lookupPlatformProspectBySiret(id)
+      .then((res) => {
+        setResults(res.results);
+        setTotal(res.total);
+        setFromCache(false);
+        if (res.creditsRemaining != null) setCreditsRemaining(res.creditsRemaining);
+        setEmails((prev) => {
+          const next = { ...prev };
+          for (const r of res.results) {
+            if (next[r.siren] === undefined) next[r.siren] = "";
+          }
+          return next;
+        });
+        setComments((prev) => {
+          const next = { ...prev };
+          for (const r of res.results) {
+            next[r.siren] = r.comment ?? "";
+          }
+          return next;
+        });
+      })
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : "Erreur");
+        setResults([]);
+        setTotal(0);
+      })
+      .finally(() => setLoading(false));
   };
 
   const sendOutreach = async (prospect: {
@@ -515,9 +560,37 @@ export function PlatformProspectionPage() {
             Recherche Pappers
           </h2>
           <p className="mt-1 text-xs text-slate-500">
-            Consomme des crédits. Lancez une recherche pour découvrir de nouvelles entreprises.
+            Consomme des crédits. Recherchez une entreprise par SIRET, ou lancez une recherche par
+            secteur.
           </p>
         </div>
+
+        <form
+          onSubmit={onSiretLookup}
+          className="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4"
+        >
+          <div className="min-w-[14rem] flex-1">
+            <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+              Entreprise unique (SIRET ou SIREN)
+            </label>
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={17}
+              placeholder="14 ou 9 chiffres"
+              value={siretInput}
+              onChange={(e) => setSiretInput(e.target.value)}
+              className="w-full max-w-xs rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-3 py-2 text-sm font-mono"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-4 py-2 text-sm font-medium text-slate-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50"
+          >
+            Chercher cette entreprise
+          </button>
+        </form>
 
         <form
           onSubmit={onFilterSubmit}
@@ -618,21 +691,32 @@ export function PlatformProspectionPage() {
           </button>
         </form>
 
-        {activeQuery && (
+        {(activeQuery || isSiretLookup) && (
           <p className="text-xs text-slate-500">
-            Page {page}
-            {fromCache ? (
-              <span className="ml-2 rounded-full bg-emerald-50 px-2 py-0.5 font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
-                Cache — 0 crédit
-              </span>
+            {isSiretLookup ? (
+              <>Fiche unique (SIRET / SIREN)</>
             ) : (
+              <>
+                Page {page}
+                {fromCache ? (
+                  <span className="ml-2 rounded-full bg-emerald-50 px-2 py-0.5 font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
+                    Cache — 0 crédit
+                  </span>
+                ) : (
+                  <span className="ml-2 rounded-full bg-amber-50 px-2 py-0.5 font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-200">
+                    Appel Pappers
+                  </span>
+                )}
+                <span className="ml-2 text-slate-400">
+                  (tri page locale ; pagination suivante utilise le cache si déjà vue)
+                </span>
+              </>
+            )}
+            {isSiretLookup ? (
               <span className="ml-2 rounded-full bg-amber-50 px-2 py-0.5 font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-200">
                 Appel Pappers
               </span>
-            )}
-            <span className="ml-2 text-slate-400">
-              (tri page locale ; pagination suivante utilise le cache si déjà vue)
-            </span>
+            ) : null}
           </p>
         )}
 
@@ -671,7 +755,11 @@ export function PlatformProspectionPage() {
                       ? hideTreated && results.length > 0
                         ? "Tous les résultats de cette page sont déjà traités (décochez le filtre pour les voir)."
                         : "Aucun prospect pour ces critères."
-                      : "Choisissez vos filtres puis cliquez sur Rechercher (consomme des crédits Pappers)."}
+                      : isSiretLookup
+                        ? hideTreated && results.length > 0
+                          ? "Cette entreprise est déjà traitée (décochez le filtre pour la voir)."
+                          : "Aucune entreprise trouvée pour ce SIRET / SIREN."
+                        : "Choisissez vos filtres puis cliquez sur Rechercher (consomme des crédits Pappers)."}
                   </td>
                 </tr>
               ) : (
@@ -822,16 +910,18 @@ export function PlatformProspectionPage() {
           </table>
         </div>
 
-        <ListPagination
-          total={total}
-          offset={offset}
-          limit={PER_PAGE}
-          onOffsetChange={(nextOffset) => {
-            const nextPage = Math.floor(nextOffset / PER_PAGE) + 1;
-            setPage(nextPage);
-            setStartPageInput(String(nextPage));
-          }}
-        />
+        {!isSiretLookup ? (
+          <ListPagination
+            total={total}
+            offset={offset}
+            limit={PER_PAGE}
+            onOffsetChange={(nextOffset) => {
+              const nextPage = Math.floor(nextOffset / PER_PAGE) + 1;
+              setPage(nextPage);
+              setStartPageInput(String(nextPage));
+            }}
+          />
+        ) : null}
       </section>
     </div>
   );

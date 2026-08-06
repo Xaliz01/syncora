@@ -79,6 +79,8 @@ export abstract class AbstractPlatformService {
     dateCreationMin?: string;
     refresh?: boolean;
   }): Promise<PlatformProspectsSearchResponse>;
+  /** Fiche unique Pappers par SIRET (14) ou SIREN (9). */
+  abstract lookupProspectBySiret(siret: string): Promise<PlatformProspectsSearchResponse>;
   abstract getProspectCredits(): Promise<PlatformProspectCreditsResponse>;
   abstract listTrackedProspects(options?: {
     limit?: number;

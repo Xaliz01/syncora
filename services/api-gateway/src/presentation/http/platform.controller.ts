@@ -170,6 +170,12 @@ export class PlatformController {
     });
   }
 
+  @Get("prospects/by-siret")
+  @UseGuards(PlatformJwtAuthGuard)
+  lookupProspectBySiret(@Query("siret") siret?: string) {
+    return this.platformService.lookupProspectBySiret(siret ?? "");
+  }
+
   @Get("prospects/credits")
   @UseGuards(PlatformJwtAuthGuard)
   getProspectCredits() {
