@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState, Suspense } from "react";
 import { SidebarNavIcon } from "@/components/layout/sidebar-nav-icons";
 import { readSidebarCollapsed, writeSidebarCollapsed } from "@/lib/sidebar-preference";
 import { notifySidebarPreferenceChanged, USER_PREFERENCES_APPLIED } from "@/lib/user-preferences";
 import * as accountApi from "@/lib/account.api";
 import type { SidebarPreference } from "@planwise/shared";
+import { QUICK_ACTION_DND_MIME } from "@planwise/shared";
 import { useAuth } from "@/components/auth/AuthContext";
 import { hasActiveSubscriptionAccess } from "@/lib/subscription-access";
 import { OrganizationSwitcher } from "@/components/organization/OrganizationSwitcher";
@@ -17,6 +18,9 @@ import { LANDING_TAGLINE } from "@/lib/landing-copy";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { CrispHelpButton } from "@/components/support/CrispHelpButton";
 import { SetupGuideHost } from "@/components/onboarding/SetupGuideHost";
+import { QuickActionsBar } from "@/components/dashboard/QuickActionsSection";
+import { QuickActionLabelProvider } from "@/components/dashboard/QuickActionLabelContext";
+import { NavigationHistoryTracker } from "@/components/dashboard/NavigationHistoryTracker";
 import { appVersionLabel, APP_VERSION } from "@/lib/app-version";
 
 interface MenuLink {
@@ -65,26 +69,39 @@ function NavLink({
   currentPath,
   collapsed,
   onClick,
+  allowDrag = false,
 }: {
   href: string;
   label: string;
   currentPath: string;
   collapsed?: boolean;
   onClick?: () => void;
+  allowDrag?: boolean;
 }) {
   const isActive = isLinkActive(currentPath, href);
   return (
     <Link
       href={href}
       onClick={onClick}
-      title={collapsed ? label : undefined}
+      title={collapsed ? label : allowDrag ? `${label} — glisser vers Actions rapides` : undefined}
+      draggable={allowDrag}
+      onDragStart={
+        allowDrag
+          ? (e) => {
+              e.dataTransfer.effectAllowed = "copy";
+              const payload = JSON.stringify({ href, label });
+              e.dataTransfer.setData(QUICK_ACTION_DND_MIME, payload);
+              e.dataTransfer.setData("text/plain", payload);
+            }
+          : undefined
+      }
       className={`flex items-center rounded-md text-sm transition ${
         collapsed ? "justify-center p-2" : "gap-3 px-3 py-2"
       } ${
         isActive
           ? "bg-brand-600/10 text-brand-600 dark:text-brand-400 font-medium"
           : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100"
-      }`}
+      } ${allowDrag ? "cursor-grab active:cursor-grabbing" : ""}`}
     >
       <SidebarNavIcon href={href} />
       {!collapsed && <span className="truncate">{label}</span>}
@@ -133,11 +150,13 @@ function SidebarContent({
   pathname,
   collapsed,
   onNavigate,
+  allowDrag = false,
 }: {
   menuSections: MenuSection[];
   pathname: string;
   collapsed?: boolean;
   onNavigate?: () => void;
+  allowDrag?: boolean;
 }) {
   return (
     <div className="flex flex-1 flex-col">
@@ -163,6 +182,7 @@ function SidebarContent({
                   currentPath={pathname}
                   collapsed={collapsed}
                   onClick={onNavigate}
+                  allowDrag={allowDrag}
                 />
               ))}
             </div>
@@ -342,111 +362,73 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   const visibleSections = menuSections.filter((s) => s.links.length > 0);
+  const menuLinks = visibleSections.flatMap((s) => s.links);
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
-      <header className="sticky top-0 z-30 w-full border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur">
-        <div className="flex items-center justify-between px-4 py-3 lg:px-6">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen((prev) => !prev)}
-              className="lg:hidden -ml-1 rounded-md p-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200"
-              aria-label="Menu"
-            >
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
+    <QuickActionLabelProvider>
+      <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+        <header className="sticky top-0 z-30 w-full border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur">
+          <div className="flex items-center justify-between px-4 py-3 lg:px-6">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen((prev) => !prev)}
+                className="lg:hidden -ml-1 rounded-md p-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200"
+                aria-label="Menu"
               >
-                {mobileMenuOpen ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-                )}
-              </svg>
-            </button>
-            <Link href="/" className="flex items-center gap-2.5">
-              <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white font-semibold text-sm">
-                P
-              </span>
-              <div className="hidden sm:block">
-                <div className="font-semibold text-sm leading-tight">Planwise</div>
-                <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
-                  {LANDING_TAGLINE}
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  {mobileMenuOpen ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  ) : (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M4 6h16M4 12h16M4 18h16"
+                    />
+                  )}
+                </svg>
+              </button>
+              <Link href="/" className="flex items-center gap-2.5">
+                <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white font-semibold text-sm">
+                  P
+                </span>
+                <div className="hidden sm:block">
+                  <div className="font-semibold text-sm leading-tight">Planwise</div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+                    {LANDING_TAGLINE}
+                  </div>
                 </div>
-              </div>
-            </Link>
-          </div>
-          <div className="flex items-center gap-2 sm:gap-3">
-            <button
-              type="button"
-              onClick={() => setMobileSearchOpen(true)}
-              className="sm:hidden -mr-0.5 rounded-md p-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200"
-              aria-label="Rechercher"
-            >
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-                aria-hidden
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
-                />
-              </svg>
-            </button>
-            <form onSubmit={submitSearch} className="relative hidden sm:block">
-              <svg
-                className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-                aria-hidden
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
-                />
-              </svg>
-              <input
-                type="search"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Rechercher…"
-                className="w-48 lg:w-64 rounded-md border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 py-1.5 pl-8 pr-3 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-brand-500 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-brand-500 transition"
-              />
-            </form>
-            <div className="hidden sm:flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
-              <span className="font-medium">Bonjour, {user?.name ?? user?.email}</span>
-              <span className="rounded-full bg-brand-600/10 px-2 py-0.5 text-xs font-medium text-brand-600 dark:text-brand-400">
-                {user?.role === "admin" ? "Administrateur" : "Membre"}
-              </span>
+              </Link>
             </div>
-            <NotificationBell />
-            <CrispHelpButton />
-            <ThemeToggle />
-            <button
-              type="button"
-              onClick={logout}
-              className="rounded-md border border-slate-200 dark:border-slate-600 px-3 py-1.5 text-xs font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition"
-            >
-              Déconnexion
-            </button>
-          </div>
-        </div>
-        {mobileSearchOpen && (
-          <div className="sm:hidden border-t border-slate-200 dark:border-slate-800 px-4 py-2.5">
-            <form onSubmit={submitSearch} className="flex items-center gap-2">
-              <div className="relative min-w-0 flex-1">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <button
+                type="button"
+                onClick={() => setMobileSearchOpen(true)}
+                className="sm:hidden -mr-0.5 rounded-md p-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200"
+                aria-label="Rechercher"
+              >
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  aria-hidden
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+                  />
+                </svg>
+              </button>
+              <form onSubmit={submitSearch} className="relative hidden sm:block">
                 <svg
                   className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500"
                   fill="none"
@@ -462,80 +444,138 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   />
                 </svg>
                 <input
-                  ref={mobileSearchInputRef}
                   type="search"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Escape") setMobileSearchOpen(false);
-                  }}
                   placeholder="Rechercher…"
-                  aria-label="Rechercher"
-                  className="w-full rounded-md border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 py-2 pl-8 pr-3 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-brand-500 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-brand-500 transition"
+                  className="w-48 lg:w-64 rounded-md border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 py-1.5 pl-8 pr-3 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-brand-500 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-brand-500 transition"
                 />
+              </form>
+              <div className="hidden sm:flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                <span className="font-medium">Bonjour, {user?.name ?? user?.email}</span>
+                <span className="rounded-full bg-brand-600/10 px-2 py-0.5 text-xs font-medium text-brand-600 dark:text-brand-400">
+                  {user?.role === "admin" ? "Administrateur" : "Membre"}
+                </span>
               </div>
+              <NotificationBell />
+              <CrispHelpButton />
+              <ThemeToggle />
               <button
                 type="button"
-                onClick={() => setMobileSearchOpen(false)}
-                className="shrink-0 rounded-md px-2.5 py-2 text-xs font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                onClick={logout}
+                className="rounded-md border border-slate-200 dark:border-slate-600 px-3 py-1.5 text-xs font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition"
               >
-                Fermer
+                Déconnexion
               </button>
-            </form>
+            </div>
           </div>
-        )}
-      </header>
+          {mobileSearchOpen && (
+            <div className="sm:hidden border-t border-slate-200 dark:border-slate-800 px-4 py-2.5">
+              <form onSubmit={submitSearch} className="flex items-center gap-2">
+                <div className="relative min-w-0 flex-1">
+                  <svg
+                    className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    aria-hidden
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+                    />
+                  </svg>
+                  <input
+                    ref={mobileSearchInputRef}
+                    type="search"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") setMobileSearchOpen(false);
+                    }}
+                    placeholder="Rechercher…"
+                    aria-label="Rechercher"
+                    className="w-full rounded-md border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 py-2 pl-8 pr-3 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-brand-500 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-brand-500 transition"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setMobileSearchOpen(false)}
+                  className="shrink-0 rounded-md px-2.5 py-2 text-xs font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                >
+                  Fermer
+                </button>
+              </form>
+            </div>
+          )}
+        </header>
 
-      <div className="flex flex-1">
-        {/* Desktop sidebar */}
-        <aside
-          className={`hidden lg:flex lg:flex-col lg:flex-shrink-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-[57px] h-[calc(100vh-57px)] overflow-y-auto overflow-x-hidden transition-[width] duration-200 ${
-            sidebarPrefReady && sidebarCollapsed ? "lg:w-[4.5rem]" : "lg:w-[260px]"
-          }`}
-        >
-          <SidebarCollapseToggle collapsed={sidebarCollapsed} onToggle={toggleSidebarCollapsed} />
-          <OrganizationSwitcher collapsed={sidebarCollapsed} />
-          <SidebarContent
-            menuSections={visibleSections}
-            pathname={pathname}
-            collapsed={sidebarCollapsed}
-          />
-        </aside>
-
-        {/* Mobile sidebar overlay */}
-        {mobileMenuOpen && (
-          <div className="fixed inset-0 z-40 lg:hidden">
-            <div
-              className="absolute inset-0 bg-slate-900/30 backdrop-blur-sm"
-              onClick={() => setMobileMenuOpen(false)}
+        <div className="flex flex-1">
+          {/* Desktop sidebar */}
+          <aside
+            className={`hidden lg:flex lg:flex-col lg:flex-shrink-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-[57px] h-[calc(100vh-57px)] overflow-y-auto overflow-x-hidden transition-[width] duration-200 ${
+              sidebarPrefReady && sidebarCollapsed ? "lg:w-[4.5rem]" : "lg:w-[260px]"
+            }`}
+          >
+            <SidebarCollapseToggle collapsed={sidebarCollapsed} onToggle={toggleSidebarCollapsed} />
+            <OrganizationSwitcher collapsed={sidebarCollapsed} />
+            <SidebarContent
+              menuSections={visibleSections}
+              pathname={pathname}
+              collapsed={sidebarCollapsed}
+              allowDrag
             />
-            <aside className="absolute top-0 left-0 bottom-0 w-[280px] bg-white dark:bg-slate-900 shadow-xl overflow-y-auto border-r border-slate-200 dark:border-slate-800">
-              <div className="flex items-center gap-2.5 border-b border-slate-200 dark:border-slate-800 px-4 py-3">
-                <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white font-semibold text-sm">
-                  P
-                </span>
-                <div>
-                  <div className="font-semibold text-sm leading-tight">Planwise</div>
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
-                    Espace organisation
+          </aside>
+
+          {/* Mobile sidebar overlay */}
+          {mobileMenuOpen && (
+            <div className="fixed inset-0 z-40 lg:hidden">
+              <div
+                className="absolute inset-0 bg-slate-900/30 backdrop-blur-sm"
+                onClick={() => setMobileMenuOpen(false)}
+              />
+              <aside className="absolute top-0 left-0 bottom-0 w-[280px] bg-white dark:bg-slate-900 shadow-xl overflow-y-auto border-r border-slate-200 dark:border-slate-800">
+                <div className="flex items-center gap-2.5 border-b border-slate-200 dark:border-slate-800 px-4 py-3">
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white font-semibold text-sm">
+                    P
+                  </span>
+                  <div>
+                    <div className="font-semibold text-sm leading-tight">Planwise</div>
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+                      Espace organisation
+                    </div>
                   </div>
                 </div>
-              </div>
-              <OrganizationSwitcher />
-              <SidebarContent
-                menuSections={visibleSections}
-                pathname={pathname}
-                onNavigate={() => setMobileMenuOpen(false)}
-              />
-            </aside>
-          </div>
-        )}
+                <OrganizationSwitcher />
+                <SidebarContent
+                  menuSections={visibleSections}
+                  pathname={pathname}
+                  onNavigate={() => setMobileMenuOpen(false)}
+                />
+              </aside>
+            </div>
+          )}
 
-        <main className="flex-1 min-w-0 p-4 pb-20 sm:p-6 sm:pb-24 lg:p-8 lg:pb-24">
-          <div className="mx-auto w-full max-w-screen-2xl">{children}</div>
-        </main>
+          <div className="flex min-w-0 flex-1 flex-col">
+            {subscriptionOk ? (
+              <div className="sticky top-[57px] z-20">
+                <QuickActionsBar menuLinks={menuLinks} />
+              </div>
+            ) : null}
+            <main className="flex-1 min-w-0 p-4 pb-20 sm:p-6 sm:pb-24 lg:p-8 lg:pb-24">
+              <div className="mx-auto w-full max-w-screen-2xl">{children}</div>
+            </main>
+          </div>
+        </div>
+        <SetupGuideHost />
+        {subscriptionOk ? (
+          <Suspense fallback={null}>
+            <NavigationHistoryTracker menuLinks={menuLinks} />
+          </Suspense>
+        ) : null}
       </div>
-      <SetupGuideHost />
-    </div>
+    </QuickActionLabelProvider>
   );
 }

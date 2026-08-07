@@ -1,8 +1,11 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { NotFoundException, BadRequestException, UnauthorizedException } from "@nestjs/common";
 import type { UserPreferencesResponse } from "@planwise/shared";
+import { DEFAULT_QUICK_ACTIONS } from "@planwise/shared";
 import { UsersController } from "../users.controller";
 import { AbstractUsersService } from "../../../domain/ports/users.service.port";
+
+const defaultQuickActions = DEFAULT_QUICK_ACTIONS.map((b) => ({ ...b }));
 
 describe("UsersController", () => {
   let controller: UsersController;
@@ -263,7 +266,7 @@ describe("UsersController", () => {
         preferences: {
           theme: "light",
           sidebarCollapsed: "expanded",
-          quickActionIds: ["case_new", "cases_list", "calendar", "case_templates"],
+          quickActions: defaultQuickActions,
           onboardingCompletedOrganizationIds: [],
           onboardingProfileCompleted: false,
           setupGuideDismissedOrganizationIds: [],
@@ -287,7 +290,7 @@ describe("UsersController", () => {
         preferences: {
           theme: "dark",
           sidebarCollapsed: "expanded",
-          quickActionIds: ["case_new", "cases_list", "calendar", "case_templates"],
+          quickActions: defaultQuickActions,
           onboardingCompletedOrganizationIds: [],
           onboardingProfileCompleted: false,
           setupGuideDismissedOrganizationIds: [],

@@ -28,6 +28,14 @@ const FEATURE_SECTIONS = [
     ],
   },
   {
+    title: "Favoris & historique",
+    items: [
+      "Barre de favoris personnalisable : glissez un lien du menu ou épinglez la page courante",
+      "Raccourcis par organisation — vos fiches dossier ou client ne se mélangent pas entre sociétés",
+      "Historique de navigation : retrouvez rapidement les dernières pages visitées",
+    ],
+  },
+  {
     title: "Planning interactif",
     items: [
       "Vue jour, semaine ou mois pour voir d’un coup d’œil qui fait quoi",
@@ -341,7 +349,7 @@ export function LandingPage() {
                       <span className="text-brand-600" aria-hidden>
                         ✓
                       </span>
-                      Dossiers, interventions et planning interactif
+                      Dossiers, interventions, planning, favoris et historique de navigation
                     </li>
                     <li className="flex gap-2">
                       <span className="text-brand-600" aria-hidden>

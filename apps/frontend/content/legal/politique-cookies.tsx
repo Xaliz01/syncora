@@ -19,7 +19,7 @@ export function PolitiqueCookiesContent() {
         <LegalParagraph>
           Un cookie est un petit fichier déposé sur votre terminal. Nous utilisons également le{" "}
           <strong>localStorage</strong> du navigateur pour certaines fonctionnalités équivalentes
-          (session, préférences).
+          (session, préférences d&apos;interface, historique de navigation).
         </LegalParagraph>
       </LegalSection>
 
@@ -39,7 +39,17 @@ export function PolitiqueCookiesContent() {
             </>,
             <>
               <strong>Préférences UI</strong> — thème clair/sombre, état de la barre latérale
-              (localStorage).
+              (localStorage, miroir des préférences compte).
+            </>,
+            <>
+              <strong>Historique de navigation</strong> — liste locale des pages récemment visitées
+              dans l&apos;application (clés{" "}
+              <code className="text-xs bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">
+                planwise:nav-history:…
+              </code>
+              , scopées par compte et organisation). Données : chemin, libellé affiché, horodatage.
+              Conservées uniquement dans votre navigateur, limitées (environ 50 entrées). Aucun
+              envoi serveur ; effaçables en vidant le stockage du site.
             </>,
             <>
               <strong>Service worker (PWA)</strong> — mise en cache pour le mode hors ligne.

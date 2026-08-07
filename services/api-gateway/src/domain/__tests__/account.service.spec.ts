@@ -3,9 +3,12 @@ import { HttpService } from "@nestjs/axios";
 import { of, throwError } from "rxjs";
 import type { AxiosResponse } from "axios";
 import type { AuthUser, UserPreferencesResponse, UserResponse } from "@planwise/shared";
+import { DEFAULT_QUICK_ACTIONS } from "@planwise/shared";
 import { AccountService } from "../account.service";
 import { AbstractAccountService } from "../ports/account.service.port";
 import { BadRequestException, ForbiddenException, NotFoundException } from "@nestjs/common";
+
+const defaultQuickActions = DEFAULT_QUICK_ACTIONS.map((b) => ({ ...b }));
 
 describe("AccountService", () => {
   let service: AccountService;
@@ -106,7 +109,7 @@ describe("AccountService", () => {
         preferences: {
           theme: "light",
           sidebarCollapsed: "expanded",
-          quickActionIds: ["case_new", "cases_list", "calendar", "case_templates"],
+          quickActions: defaultQuickActions,
           onboardingCompletedOrganizationIds: [],
           onboardingProfileCompleted: false,
           setupGuideDismissedOrganizationIds: [],
@@ -134,7 +137,7 @@ describe("AccountService", () => {
         preferences: {
           theme: "dark",
           sidebarCollapsed: "collapsed",
-          quickActionIds: ["case_new", "cases_list", "calendar", "case_templates"],
+          quickActions: defaultQuickActions,
           onboardingCompletedOrganizationIds: [],
           onboardingProfileCompleted: false,
           setupGuideDismissedOrganizationIds: [],
@@ -197,7 +200,7 @@ describe("AccountService", () => {
         preferences: {
           theme: "light",
           sidebarCollapsed: "expanded",
-          quickActionIds: ["case_new", "cases_list", "calendar", "case_templates"],
+          quickActions: defaultQuickActions,
           onboardingCompletedOrganizationIds: ["org-1"],
           onboardingProfileCompleted: true,
           setupGuideDismissedOrganizationIds: [],
@@ -246,7 +249,7 @@ describe("AccountService", () => {
         preferences: {
           theme: "light",
           sidebarCollapsed: "expanded",
-          quickActionIds: ["case_new", "cases_list", "calendar", "case_templates"],
+          quickActions: defaultQuickActions,
           onboardingCompletedOrganizationIds: ["org-1"],
           onboardingProfileCompleted: true,
           setupGuideDismissedOrganizationIds: [],

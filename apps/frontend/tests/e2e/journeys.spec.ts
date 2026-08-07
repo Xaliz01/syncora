@@ -307,7 +307,16 @@ test.describe("Parcours onboarding sans données de démo", () => {
     preferences: {
       theme: "light",
       sidebarCollapsed: "expanded",
-      quickActionIds: ["case_new", "cases_list", "calendar", "case_templates"],
+      quickActions: [
+        { id: "qa_default_case_new", href: "/cases/new", label: "Nouveau dossier" },
+        { id: "qa_default_cases_list", href: "/cases", label: "Tous les dossiers" },
+        { id: "qa_default_calendar", href: "/cases/calendar", label: "Planning" },
+        {
+          id: "qa_default_case_templates",
+          href: "/settings/case-templates",
+          label: "Modèles de dossier",
+        },
+      ],
       onboardingCompletedOrganizationIds: [],
       onboardingProfileCompleted: false,
       setupGuideDismissedOrganizationIds: [],
@@ -452,7 +461,16 @@ test.describe("Invitation utilisateur sans profil", () => {
             preferences: {
               theme: "light",
               sidebarCollapsed: "expanded",
-              quickActionIds: ["case_new", "cases_list", "calendar", "case_templates"],
+              quickActions: [
+                { id: "qa_default_case_new", href: "/cases/new", label: "Nouveau dossier" },
+                { id: "qa_default_cases_list", href: "/cases", label: "Tous les dossiers" },
+                { id: "qa_default_calendar", href: "/cases/calendar", label: "Planning" },
+                {
+                  id: "qa_default_case_templates",
+                  href: "/settings/case-templates",
+                  label: "Modèles de dossier",
+                },
+              ],
               onboardingCompletedOrganizationIds: ["org-e2e"],
               onboardingProfileCompleted: true,
               setupGuideDismissedOrganizationIds: ["org-e2e"],

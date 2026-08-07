@@ -14,6 +14,7 @@ import { PartyLinkedInvoicesSection } from "@/components/billing/PartyLinkedInvo
 import { CUSTOMER_KIND_LABELS } from "@/components/customers/customer-kind-labels";
 import { AppErrorAlert } from "@/components/ui/AppErrorAlert";
 import { TestDataBadgeIf } from "@/components/test-data/TestDataBadge";
+import { useRegisterQuickActionLabel } from "@/components/dashboard/QuickActionLabelContext";
 
 function formatDate(iso?: string) {
   if (!iso) return null;
@@ -73,6 +74,8 @@ export function OrderGiverDetailPage({ orderGiverId }: { orderGiverId: string })
     },
     onError: (err: Error) => setMutationError(err.message),
   });
+
+  useRegisterQuickActionLabel(og?.displayName);
 
   if (isLoading) {
     return <div className="text-sm text-slate-500 dark:text-slate-400">Chargement…</div>;

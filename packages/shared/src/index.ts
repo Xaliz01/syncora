@@ -14,6 +14,7 @@ export * from "./organization-membership";
 export * from "./permissions";
 export * from "./user";
 export * from "./quick-actions";
+export * from "./navigation-history";
 export * from "./fleet";
 export * from "./stock";
 export * from "./subscription";
@@ -23,6 +24,7 @@ export * from "./comment";
 export * from "./soft-delete";
 export * from "./organization-scope";
 export * from "./export";
+export * from "./pdf-text";
 export * from "./report-preview";
 export * from "./reporting-period";
 

@@ -165,4 +165,82 @@ describe("NotificationEventListener", () => {
       }),
     );
   });
+
+  describe("handleAccountRegistered", () => {
+    const previousAlertEmail = process.env.PLATFORM_SIGNUP_ALERT_EMAIL;
+
+    afterEach(() => {
+      if (previousAlertEmail === undefined) {
+        delete process.env.PLATFORM_SIGNUP_ALERT_EMAIL;
+      } else {
+        process.env.PLATFORM_SIGNUP_ALERT_EMAIL = previousAlertEmail;
+      }
+    });
+
+    it("sends a transactional ops alert email asynchronously", async () => {
+      delete process.env.PLATFORM_SIGNUP_ALERT_EMAIL;
+      mockHttpService.post.mockReturnValue(of({ data: { sent: true } }));
+
+      await listener.handleAccountRegistered({
+        userId: "user-new",
+        email: "new@example.com",
+        name: "Alice",
+      });
+
+      expect(mockHttpService.post).toHaveBeenCalledWith(
+        expect.stringContaining("/email/transactional"),
+        expect.objectContaining({
+          to: "mail@benoistbabin.fr",
+          subject: "Nouvel utilisateur inscrit",
+          body: expect.stringContaining("new@example.com"),
+        }),
+      );
+    });
+
+    it("skips when PLATFORM_SIGNUP_ALERT_EMAIL is blank", async () => {
+      process.env.PLATFORM_SIGNUP_ALERT_EMAIL = " ";
+
+      await listener.handleAccountRegistered({
+        userId: "user-new",
+        email: "new@example.com",
+      });
+
+      expect(mockHttpService.post).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("handleOrganizationCreated", () => {
+    const previousAlertEmail = process.env.PLATFORM_SIGNUP_ALERT_EMAIL;
+
+    afterEach(() => {
+      if (previousAlertEmail === undefined) {
+        delete process.env.PLATFORM_SIGNUP_ALERT_EMAIL;
+      } else {
+        process.env.PLATFORM_SIGNUP_ALERT_EMAIL = previousAlertEmail;
+      }
+    });
+
+    it("sends a transactional ops alert email asynchronously", async () => {
+      delete process.env.PLATFORM_SIGNUP_ALERT_EMAIL;
+      mockHttpService.post.mockReturnValue(of({ data: { sent: true } }));
+
+      await listener.handleOrganizationCreated({
+        organizationId: "org-new",
+        name: "Plomberie Dupont",
+        siret: "12345678901234",
+        email: "facturation@dupont.fr",
+        createdByUserId: "user-1",
+        createdByEmail: "admin@dupont.fr",
+      });
+
+      expect(mockHttpService.post).toHaveBeenCalledWith(
+        expect.stringContaining("/email/transactional"),
+        expect.objectContaining({
+          to: "mail@benoistbabin.fr",
+          subject: "Nouvelle organisation créée",
+          body: expect.stringContaining("Plomberie Dupont"),
+        }),
+      );
+    });
+  });
 });

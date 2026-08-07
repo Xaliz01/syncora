@@ -8,6 +8,7 @@ import {
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { HttpService } from "@nestjs/axios";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import { firstValueFrom } from "rxjs";
 import type {
   AcceptInvitationBody,
@@ -51,6 +52,14 @@ import {
 } from "@planwise/shared";
 import { AbstractAuthService, type AuthRequestContext } from "./ports/auth.service.port";
 import { AbstractSubscriptionsGatewayService } from "./ports/subscriptions.service.port";
+import {
+  ACCOUNT_REGISTERED_EVENT,
+  type AccountRegisteredEvent,
+} from "../infrastructure/account-registered.event";
+import {
+  ORGANIZATION_CREATED_EVENT,
+  type OrganizationCreatedEvent,
+} from "../infrastructure/organization-created.event";
 
 function buildOrganizationCreatePayload(body: CreateOrganizationBody): CreateOrganizationBody {
   const email = body.email?.trim() ?? "";
@@ -87,6 +96,7 @@ export class AuthService extends AbstractAuthService {
     private readonly httpService: HttpService,
     private readonly jwtService: JwtService,
     private readonly subscriptionsGateway: AbstractSubscriptionsGatewayService,
+    private readonly eventEmitter: EventEmitter2,
   ) {
     super();
   }
@@ -164,6 +174,15 @@ export class AuthService extends AbstractAuthService {
       throw err;
     }
 
+    this.eventEmitter.emit(ORGANIZATION_CREATED_EVENT, {
+      organizationId: org.id,
+      name: org.name,
+      ...(org.siret ? { siret: org.siret } : {}),
+      ...(org.email ? { email: org.email } : { email: body.adminEmail }),
+      createdByUserId: user.id,
+      createdByEmail: user.email,
+    } satisfies OrganizationCreatedEvent);
+
     const permissions = await this.mergePermissionsWithSubscription(
       user.organizationId,
       user.id,
@@ -208,6 +227,13 @@ export class AuthService extends AbstractAuthService {
     }
 
     await this.sendEmailVerificationCode(created.user.email, created.emailVerificationCode);
+
+    const registered: AccountRegisteredEvent = {
+      userId: created.user.id,
+      email: created.user.email,
+      ...(created.user.name ? { name: created.user.name } : {}),
+    };
+    this.eventEmitter.emit(ACCOUNT_REGISTERED_EVENT, registered);
 
     const response: EmailVerificationRequiredResponse = {
       status: "email_verification_required",
@@ -470,6 +496,15 @@ export class AuthService extends AbstractAuthService {
       if (status === 404) throw new UnauthorizedException("Utilisateur introuvable");
       throw err;
     }
+
+    this.eventEmitter.emit(ORGANIZATION_CREATED_EVENT, {
+      organizationId: org.id,
+      name: org.name,
+      ...(org.siret ? { siret: org.siret } : {}),
+      ...(org.email ? { email: org.email } : {}),
+      createdByUserId: user.id,
+      createdByEmail: user.email,
+    } satisfies OrganizationCreatedEvent);
 
     const permissions = await this.mergePermissionsWithSubscription(
       user.organizationId,

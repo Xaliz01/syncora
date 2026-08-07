@@ -3,6 +3,14 @@ import { OnEvent } from "@nestjs/event-emitter";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
 import type { PlanwiseDomainEvent } from "../infrastructure/notify.interceptor";
+import {
+  ACCOUNT_REGISTERED_EVENT,
+  type AccountRegisteredEvent,
+} from "../infrastructure/account-registered.event";
+import {
+  ORGANIZATION_CREATED_EVENT,
+  type OrganizationCreatedEvent,
+} from "../infrastructure/organization-created.event";
 import type {
   AuthUser,
   CreateNotificationBody,
@@ -11,6 +19,7 @@ import type {
   NotificationAction,
   NotificationEventType,
   NotificationPreferencesResponse,
+  SendEmailNotificationResponse,
   UserResponse,
 } from "@planwise/shared";
 import { getEnabledChannels, withNotificationOrganizationId } from "@planwise/shared";
@@ -18,6 +27,7 @@ import { AbstractSubscriptionsGatewayService } from "./ports/subscriptions.servi
 
 const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
 const NOTIFICATIONS_URL = process.env.NOTIFICATIONS_SERVICE_URL ?? "http://localhost:3010";
+const DEFAULT_SIGNUP_ALERT_EMAIL = "mail@benoistbabin.fr";
 
 @Injectable()
 export class NotificationEventListener {
@@ -27,6 +37,75 @@ export class NotificationEventListener {
     private readonly httpService: HttpService,
     private readonly subscriptionsGateway: AbstractSubscriptionsGatewayService,
   ) {}
+
+  @OnEvent(ACCOUNT_REGISTERED_EVENT, { async: true })
+  async handleAccountRegistered(event: AccountRegisteredEvent): Promise<void> {
+    const name = event.name?.trim();
+    await this.sendOpsAlertEmail({
+      subject: "Nouvel utilisateur inscrit",
+      body: [
+        "Un nouveau compte utilisateur a été créé sur Planwise.",
+        "",
+        `E-mail : ${event.email}`,
+        ...(name ? [`Nom : ${name}`] : []),
+        `Id : ${event.userId}`,
+      ].join("\n"),
+      footer: "Alerte ops Planwise — inscription compte.",
+      context: event.email,
+    });
+  }
+
+  @OnEvent(ORGANIZATION_CREATED_EVENT, { async: true })
+  async handleOrganizationCreated(event: OrganizationCreatedEvent): Promise<void> {
+    await this.sendOpsAlertEmail({
+      subject: "Nouvelle organisation créée",
+      body: [
+        "Une nouvelle organisation a été créée sur Planwise.",
+        "",
+        `Nom : ${event.name}`,
+        `Id : ${event.organizationId}`,
+        ...(event.siret ? [`SIRET : ${event.siret}`] : []),
+        ...(event.email ? [`E-mail facturation : ${event.email}`] : []),
+        ...(event.createdByEmail ? [`Créée par : ${event.createdByEmail}`] : []),
+        ...(event.createdByUserId ? [`Id utilisateur : ${event.createdByUserId}`] : []),
+      ].join("\n"),
+      footer: "Alerte ops Planwise — création organisation.",
+      context: event.name,
+    });
+  }
+
+  private async sendOpsAlertEmail(params: {
+    subject: string;
+    body: string;
+    footer: string;
+    context: string;
+  }): Promise<void> {
+    const to = (process.env.PLATFORM_SIGNUP_ALERT_EMAIL ?? DEFAULT_SIGNUP_ALERT_EMAIL).trim();
+    if (!to.includes("@")) {
+      return;
+    }
+
+    try {
+      const res = await firstValueFrom(
+        this.httpService.post<SendEmailNotificationResponse>(
+          `${NOTIFICATIONS_URL}/email/transactional`,
+          {
+            to,
+            subject: params.subject,
+            body: params.body,
+            footer: params.footer,
+          },
+        ),
+      );
+      if (!res.data.sent) {
+        this.logger.warn(
+          `Ops alert email not sent to ${to} (${params.context}): ${res.data.reason ?? "unknown"}`,
+        );
+      }
+    } catch (err) {
+      this.logger.warn(`Failed to send ops alert for ${params.context}`, (err as Error).message);
+    }
+  }
 
   @OnEvent("planwise.entity.changed", { async: true })
   async handleEntityChanged(event: PlanwiseDomainEvent): Promise<void> {

@@ -8,9 +8,16 @@ import {
   ForbiddenException,
 } from "@nestjs/common";
 import * as bcrypt from "bcrypt";
-import { activeDocumentFilter } from "@planwise/shared";
+import {
+  activeDocumentFilter,
+  DEFAULT_QUICK_ACTIONS,
+  migrateQuickActionIdsToBookmarks,
+} from "@planwise/shared";
 import { UsersService } from "../users.service";
 import { AbstractUsersService } from "../ports/users.service.port";
+
+const defaultQuickActions = DEFAULT_QUICK_ACTIONS.map((b) => ({ ...b }));
+const bookmarksFrom = (ids: string[]) => migrateQuickActionIdsToBookmarks(ids)!;
 
 jest.mock("bcrypt", () => ({
   hash: jest.fn().mockResolvedValue("hashed"),
@@ -1207,7 +1214,7 @@ describe("UsersService", () => {
         preferences: {
           theme: "light",
           sidebarCollapsed: "expanded",
-          quickActionIds: ["case_new", "cases_list", "calendar", "case_templates"],
+          quickActions: defaultQuickActions,
           onboardingCompletedOrganizationIds: [],
           onboardingProfileCompleted: false,
           setupGuideDismissedOrganizationIds: [],
@@ -1222,7 +1229,10 @@ describe("UsersService", () => {
           userId: "user-123",
           theme: "dark",
           sidebarCollapsed: "collapsed",
-          quickActionIds: ["my_day", "calendar"],
+          quickActions: bookmarksFrom(["my_day", "calendar"]),
+          quickActionsByOrganizationId: {
+            "org-1": bookmarksFrom(["my_day", "calendar"]),
+          },
           onboardingCompletedOrganizationIds: ["org-1"],
           setupGuideDismissedOrganizationIds: ["org-1"],
         }),
@@ -1234,7 +1244,7 @@ describe("UsersService", () => {
       expect(forOrg1.preferences).toEqual({
         theme: "dark",
         sidebarCollapsed: "collapsed",
-        quickActionIds: ["my_day", "calendar"],
+        quickActions: bookmarksFrom(["my_day", "calendar"]),
         onboardingCompletedOrganizationIds: ["org-1"],
         onboardingProfileCompleted: true,
         setupGuideDismissedOrganizationIds: ["org-1"],
@@ -1242,27 +1252,70 @@ describe("UsersService", () => {
       });
       expect(forOrg2.preferences.onboardingProfileCompleted).toBe(false);
       expect(forOrg2.preferences.setupGuideDismissed).toBe(false);
+      // Org sans entrée map : legacy catalogue uniquement (pas les fiches métier).
+      expect(forOrg2.preferences.quickActions).toEqual(bookmarksFrom(["my_day", "calendar"]));
     });
 
-    it("should fall back to default quickActionIds when stored list is invalid", async () => {
+    it("should not leak entity bookmarks from legacy prefs to another organization", async () => {
+      const caseHref = "/cases/507f1f77bcf86cd799439011";
       mockPreferencesModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue({
           userId: "user-123",
           theme: "light",
           sidebarCollapsed: "expanded",
-          quickActionIds: ["case_new"],
+          quickActions: [
+            { id: "qa_case", href: caseHref, label: "Dossier org1" },
+            ...bookmarksFrom(["cases_list"]),
+          ],
+          quickActionsByOrganizationId: {
+            "org-1": [
+              { id: "qa_case", href: caseHref, label: "Dossier org1" },
+              ...bookmarksFrom(["cases_list"]),
+            ],
+          },
+          onboardingCompletedOrganizationIds: [],
+          setupGuideDismissedOrganizationIds: [],
+        }),
+      });
+
+      const forOrg1 = await service.getPreferences("user-123", "org-1");
+      const forOrg2 = await service.getPreferences("user-123", "org-2");
+
+      expect(forOrg1.preferences.quickActions.map((b) => b.href)).toContain(caseHref);
+      expect(forOrg2.preferences.quickActions.map((b) => b.href)).not.toContain(caseHref);
+      expect(forOrg2.preferences.quickActions.map((b) => b.href)).toContain("/cases");
+    });
+
+    it("should migrate legacy quickActionIds when quickActions is absent", async () => {
+      mockPreferencesModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({
+          userId: "user-123",
+          theme: "light",
+          sidebarCollapsed: "expanded",
+          quickActionIds: ["case_new", "calendar"],
           onboardingCompletedOrganizationIds: [],
         }),
       });
 
       const result = await service.getPreferences("user-123");
 
-      expect(result.preferences.quickActionIds).toEqual([
-        "case_new",
-        "cases_list",
-        "calendar",
-        "case_templates",
-      ]);
+      expect(result.preferences.quickActions).toEqual(bookmarksFrom(["case_new", "calendar"]));
+    });
+
+    it("should fall back to default quickActions when stored list is invalid", async () => {
+      mockPreferencesModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({
+          userId: "user-123",
+          theme: "light",
+          sidebarCollapsed: "expanded",
+          quickActionIds: ["not_a_real_id"],
+          onboardingCompletedOrganizationIds: [],
+        }),
+      });
+
+      const result = await service.getPreferences("user-123");
+
+      expect(result.preferences.quickActions).toEqual(defaultQuickActions);
     });
   });
 
@@ -1277,7 +1330,7 @@ describe("UsersService", () => {
           userId: "user-123",
           theme: "dark",
           sidebarCollapsed: "expanded",
-          quickActionIds: ["case_new", "cases_list", "calendar", "case_templates"],
+          quickActions: defaultQuickActions,
           onboardingCompletedOrganizationIds: [],
         }),
       });
@@ -1292,7 +1345,7 @@ describe("UsersService", () => {
         preferences: {
           theme: "dark",
           sidebarCollapsed: "expanded",
-          quickActionIds: ["case_new", "cases_list", "calendar", "case_templates"],
+          quickActions: defaultQuickActions,
           onboardingCompletedOrganizationIds: [],
           onboardingProfileCompleted: false,
           setupGuideDismissedOrganizationIds: [],
@@ -1311,7 +1364,7 @@ describe("UsersService", () => {
           userId: "user-123",
           theme: "light",
           sidebarCollapsed: "expanded",
-          quickActionIds: ["case_new", "cases_list", "calendar", "case_templates"],
+          quickActions: defaultQuickActions,
           onboardingCompletedOrganizationIds: ["org-2"],
           setupGuideDismissedOrganizationIds: [],
         }),
@@ -1346,7 +1399,7 @@ describe("UsersService", () => {
           userId: "user-123",
           theme: "light",
           sidebarCollapsed: "expanded",
-          quickActionIds: ["case_new", "cases_list", "calendar", "case_templates"],
+          quickActions: defaultQuickActions,
           onboardingCompletedOrganizationIds: ["org-1"],
           setupGuideDismissedOrganizationIds: ["org-1"],
         }),
@@ -1378,8 +1431,9 @@ describe("UsersService", () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it("should update quickActionIds", async () => {
+    it("should update quickActions", async () => {
       const doc = mockDoc();
+      const next = bookmarksFrom(["my_day", "customers", "stock"]);
       mockUserModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(doc),
       });
@@ -1388,14 +1442,15 @@ describe("UsersService", () => {
           userId: "user-123",
           theme: "light",
           sidebarCollapsed: "expanded",
-          quickActionIds: ["my_day", "customers", "stock"],
+          quickActions: defaultQuickActions,
+          quickActionsByOrganizationId: { "org-1": next },
           onboardingCompletedOrganizationIds: ["org-1"],
           setupGuideDismissedOrganizationIds: [],
         }),
       });
 
       const result = await service.updatePreferences("user-123", {
-        quickActionIds: ["my_day", "customers", "stock"],
+        quickActions: next,
         organizationId: "org-1",
       });
 
@@ -1403,23 +1458,39 @@ describe("UsersService", () => {
         { userId: "user-123" },
         expect.objectContaining({
           $set: expect.objectContaining({
-            quickActionIds: ["my_day", "customers", "stock"],
+            "quickActionsByOrganizationId.org-1": next,
           }),
         }),
         expect.any(Object),
       );
-      expect(result.preferences.quickActionIds).toEqual(["my_day", "customers", "stock"]);
+      expect(result.preferences.quickActions).toEqual(next);
       expect(result.preferences.onboardingProfileCompleted).toBe(true);
     });
 
-    it("should reject invalid quickActionIds", async () => {
+    it("should reject quickActions without organizationId", async () => {
       const doc = mockDoc();
       mockUserModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(doc),
       });
 
       await expect(
-        service.updatePreferences("user-123", { quickActionIds: ["case_new"] }),
+        service.updatePreferences("user-123", {
+          quickActions: bookmarksFrom(["my_day"]),
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("should reject invalid quickActions", async () => {
+      const doc = mockDoc();
+      mockUserModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+
+      await expect(
+        service.updatePreferences("user-123", {
+          quickActions: "not-an-array" as never,
+          organizationId: "org-1",
+        }),
       ).rejects.toThrow(BadRequestException);
     });
 

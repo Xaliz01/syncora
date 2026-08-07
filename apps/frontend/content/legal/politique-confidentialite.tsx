@@ -29,7 +29,7 @@ export function PolitiqueConfidentialiteContent() {
             "Organisation : raison sociale, SIRET, adresse postale.",
             "Facturation de l'abonnement Planwise : identifiants Stripe, historique d'abonnement (via Stripe).",
             "Intégrations de facturation (optionnelles, activées par le Client) : jetons d'accès OAuth ou clés API (stockés chiffrés), identifiants techniques de connexion (ex. nom / identifiant d'entreprise côté outil), métadonnées de synchronisation des factures créées depuis Planwise (statut distant, numéro, lien, montants associés).",
-            "Usage : journaux techniques, préférences (thème, sidebar), notifications.",
+            "Usage : journaux techniques, préférences compte (thème, sidebar, favoris / raccourcis par organisation), historique de navigation stocké uniquement dans le navigateur (localStorage), notifications.",
             "Mesure d'audience first-party : pages vues (chemin, surface landing/app, referrer hôte, pays/région approximatifs dérivés de l'IP sans conservation de l'IP, identifiants aléatoires navigateur), sans publicité ni revente.",
             "Support : échanges via Crisp (si consentement cookies).",
             "Données saisies par le Client : clients, donneurs d’ordre, interventions, géolocalisation optionnelle, photos, signatures, devis et éléments nécessaires à la facturation.",

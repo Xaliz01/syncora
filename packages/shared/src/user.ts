@@ -2,8 +2,8 @@
 
 import type { UserRole } from "./auth";
 import type { OrganizationMembershipStatus } from "./organization-membership";
-import type { QuickActionId } from "./quick-actions";
-import { DEFAULT_QUICK_ACTION_IDS } from "./quick-actions";
+import type { QuickActionBookmark } from "./quick-actions";
+import { DEFAULT_QUICK_ACTIONS } from "./quick-actions";
 
 export type UserStatus = "active" | "invited";
 
@@ -129,8 +129,8 @@ export type SidebarPreference = "expanded" | "collapsed";
 export interface UserPreferences {
   theme: ThemePreference;
   sidebarCollapsed: SidebarPreference;
-  /** Actions rapides du tableau de bord (ordre d'affichage). */
-  quickActionIds: QuickActionId[];
+  /** Favoris / actions rapides (URL + libellé, ordre d'affichage). */
+  quickActions: QuickActionBookmark[];
   /**
    * Organisations pour lesquelles l’onboarding fondateur (profil + démo) est terminé.
    */
@@ -151,7 +151,7 @@ export interface UserPreferences {
 export const DEFAULT_USER_PREFERENCES: UserPreferences = {
   theme: "light",
   sidebarCollapsed: "expanded",
-  quickActionIds: [...DEFAULT_QUICK_ACTION_IDS],
+  quickActions: [...DEFAULT_QUICK_ACTIONS],
   onboardingCompletedOrganizationIds: [],
   onboardingProfileCompleted: false,
   setupGuideDismissedOrganizationIds: [],
@@ -170,7 +170,11 @@ export interface ChangePasswordBody {
 export interface UpdateUserPreferencesBody {
   theme?: ThemePreference;
   sidebarCollapsed?: SidebarPreference;
-  quickActionIds?: QuickActionId[];
+  /**
+   * Favoris pour l’organisation courante (`organizationId` requis).
+   * Stockés par org — une fiche dossier d’une org ne fuit pas vers une autre.
+   */
+  quickActions?: QuickActionBookmark[];
   /**
    * Marque l’onboarding terminé (true) pour `organizationId`.
    * `organizationId` est requis lorsque ce champ est fourni.
@@ -181,7 +185,7 @@ export interface UpdateUserPreferencesBody {
    * `organizationId` est requis lorsque ce champ est fourni.
    */
   setupGuideDismissed?: boolean;
-  /** Organisation ciblée pour l’onboarding / le guide (multi-tenant). */
+  /** Organisation ciblée pour l’onboarding / le guide / les favoris (multi-tenant). */
   organizationId?: string;
 }
 

@@ -49,7 +49,7 @@ import type {
   CreateCommentBody,
   UpdateCommentBody,
 } from "@planwise/shared";
-import { shouldSetToInvoiceOnQuoteAccepted } from "@planwise/shared";
+import { sanitizePdfText, shouldSetToInvoiceOnQuoteAccepted } from "@planwise/shared";
 import PDFDocument from "pdfkit";
 import { assertAnyAssignablePermission } from "../infrastructure/permission-checks";
 import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
@@ -900,28 +900,24 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       if (logo) {
         try {
           doc.image(logo, 50, 28, { fit: [120, 48] });
-          doc
-            .fontSize(20)
-            .fillColor(brandColor)
-            .text(`Devis ${quote.quoteNumber}`, 185, 36, { width: 310 });
+          doc.fontSize(20).fillColor(brandColor);
+          this.pdfText(doc, `Devis ${quote.quoteNumber}`, 185, 36, { width: 310 });
           if (options?.organizationName) {
-            doc
-              .fontSize(9)
-              .fillColor(mutedColor)
-              .text(options.organizationName, 185, 58, { width: 310 });
+            doc.fontSize(9).fillColor(mutedColor);
+            this.pdfText(doc, options.organizationName, 185, 58, { width: 310 });
           }
           headerBottom = 88;
         } catch {
-          doc.fontSize(22).fillColor(brandColor).text(`Devis ${quote.quoteNumber}`, 50, 40);
+          doc.fontSize(22).fillColor(brandColor);
+          this.pdfText(doc, `Devis ${quote.quoteNumber}`, 50, 40);
           headerBottom = 72;
         }
       } else {
-        doc.fontSize(22).fillColor(brandColor).text(`Devis ${quote.quoteNumber}`, 50, 40);
+        doc.fontSize(22).fillColor(brandColor);
+        this.pdfText(doc, `Devis ${quote.quoteNumber}`, 50, 40);
         if (options?.organizationName) {
-          doc
-            .fontSize(9)
-            .fillColor(mutedColor)
-            .text(options.organizationName, 50, 64, { width: 495 });
+          doc.fontSize(9).fillColor(mutedColor);
+          this.pdfText(doc, options.organizationName, 50, 64, { width: 495 });
           headerBottom = 82;
         }
       }
@@ -935,10 +931,8 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       doc.y = headerBottom + 18;
 
       if (quote.subject) {
-        doc
-          .fontSize(11)
-          .fillColor(textColor)
-          .text(quote.subject, 50, doc.y + 5, { width: 495 });
+        doc.fontSize(11).fillColor(textColor);
+        this.pdfText(doc, quote.subject, 50, doc.y + 5, { width: 495 });
         doc.y += 5;
       }
       doc.y += 10;
@@ -981,15 +975,13 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
 
       const colX = { desc: 50, qty: 310, unit: 355, price: 405, tva: 460, total: 500 };
       const headerY = doc.y;
-      doc
-        .fontSize(8)
-        .fillColor(mutedColor)
-        .text("Description", colX.desc, headerY)
-        .text("Qté", colX.qty, headerY)
-        .text("Unité", colX.unit, headerY)
-        .text("P.U. HT", colX.price, headerY)
-        .text("TVA", colX.tva, headerY)
-        .text("Total HT", colX.total, headerY);
+      doc.fontSize(8).fillColor(mutedColor);
+      this.pdfText(doc, "Description", colX.desc, headerY);
+      this.pdfText(doc, "Qté", colX.qty, headerY);
+      this.pdfText(doc, "Unité", colX.unit, headerY);
+      this.pdfText(doc, "P.U. HT", colX.price, headerY);
+      this.pdfText(doc, "TVA", colX.tva, headerY);
+      this.pdfText(doc, "Total HT", colX.total, headerY);
       doc.y = headerY + 14;
       doc.moveTo(50, doc.y).lineTo(545, doc.y).strokeColor("#e2e8f0").lineWidth(0.5).stroke();
       doc.y += 6;
@@ -1000,17 +992,15 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
           doc.y = 50;
         }
         const lineY = doc.y;
-        doc
-          .fontSize(9)
-          .fillColor(textColor)
-          .text(line.description, colX.desc, lineY, { width: 255 });
-        const descHeight = doc.heightOfString(line.description, { width: 255 });
-        doc
-          .text(String(line.quantity), colX.qty, lineY, { width: 40 })
-          .text(line.unit ?? "unité", colX.unit, lineY, { width: 45 })
-          .text(this.formatNumber(line.unitPrice), colX.price, lineY, { width: 50 })
-          .text(`${line.tvaRate}%`, colX.tva, lineY, { width: 35 })
-          .text(this.formatNumber(line.totalHt), colX.total, lineY, { width: 45 });
+        const safeDesc = sanitizePdfText(line.description);
+        doc.fontSize(9).fillColor(textColor);
+        this.pdfText(doc, safeDesc, colX.desc, lineY, { width: 255 });
+        const descHeight = doc.heightOfString(safeDesc, { width: 255 });
+        this.pdfText(doc, String(line.quantity), colX.qty, lineY, { width: 40 });
+        this.pdfText(doc, line.unit ?? "unité", colX.unit, lineY, { width: 45 });
+        this.pdfText(doc, this.formatNumber(line.unitPrice), colX.price, lineY, { width: 50 });
+        this.pdfText(doc, `${line.tvaRate}%`, colX.tva, lineY, { width: 35 });
+        this.pdfText(doc, this.formatNumber(line.totalHt), colX.total, lineY, { width: 45 });
         doc.y = lineY + Math.max(descHeight, 14) + 4;
       }
 
@@ -1023,24 +1013,28 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       doc.moveTo(380, doc.y).lineTo(545, doc.y).strokeColor("#e2e8f0").lineWidth(0.5).stroke();
       doc.y += 8;
 
-      doc
-        .fontSize(9)
-        .fillColor(mutedColor)
-        .text("Total HT :", 380, doc.y, { width: 80 })
-        .fillColor(textColor)
-        .text(this.formatCurrencyPdf(quote.totalHt), 460, doc.y, { width: 85, align: "right" });
+      doc.fontSize(9).fillColor(mutedColor);
+      this.pdfText(doc, "Total HT :", 380, doc.y, { width: 80 });
+      doc.fillColor(textColor);
+      this.pdfText(doc, this.formatCurrencyPdf(quote.totalHt), 460, doc.y, {
+        width: 85,
+        align: "right",
+      });
       doc.y += 14;
-      doc
-        .fillColor(mutedColor)
-        .text("TVA :", 380, doc.y, { width: 80 })
-        .fillColor(textColor)
-        .text(this.formatCurrencyPdf(quote.totalTva), 460, doc.y, { width: 85, align: "right" });
+      doc.fillColor(mutedColor);
+      this.pdfText(doc, "TVA :", 380, doc.y, { width: 80 });
+      doc.fillColor(textColor);
+      this.pdfText(doc, this.formatCurrencyPdf(quote.totalTva), 460, doc.y, {
+        width: 85,
+        align: "right",
+      });
       doc.y += 14;
-      doc
-        .fontSize(10)
-        .fillColor(brandColor)
-        .text("Total TTC :", 380, doc.y, { width: 80 })
-        .text(this.formatCurrencyPdf(quote.totalTtc), 460, doc.y, { width: 85, align: "right" });
+      doc.fontSize(10).fillColor(brandColor);
+      this.pdfText(doc, "Total TTC :", 380, doc.y, { width: 80 });
+      this.pdfText(doc, this.formatCurrencyPdf(quote.totalTtc), 460, doc.y, {
+        width: 85,
+        align: "right",
+      });
       doc.y += 20;
 
       // Notes
@@ -1050,7 +1044,8 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
           doc.y = 50;
         }
         this.pdfSection(doc, "Conditions");
-        doc.fontSize(9).fillColor(textColor).text(quote.notes, 50, doc.y, { width: 495 });
+        doc.fontSize(9).fillColor(textColor);
+        this.pdfText(doc, quote.notes, 50, doc.y, { width: 495 });
         doc.y += 10;
       }
 
@@ -1236,20 +1231,18 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       const contentBottom = () => doc.page.height - 70;
 
       // Header
-      doc
-        .fontSize(22)
-        .fillColor(brandColor)
-        .text("Planwise", 50, 40)
-        .fontSize(10)
-        .fillColor(mutedColor)
-        .text("Rapport d'intervention", 50, 65);
+      doc.fontSize(22).fillColor(brandColor);
+      this.pdfText(doc, "Planwise", 50, 40);
+      doc.fontSize(10).fillColor(mutedColor);
+      this.pdfText(doc, "Rapport d'intervention", 50, 65);
 
       doc.moveTo(50, 85).lineTo(545, 85).strokeColor("#e2e8f0").lineWidth(1).stroke();
 
       doc.y = 100;
 
       // Intervention title & status
-      doc.fontSize(16).fillColor(textColor).text(intervention.title, 50, doc.y, { width: 495 });
+      doc.fontSize(16).fillColor(textColor);
+      this.pdfText(doc, intervention.title, 50, doc.y, { width: 495 });
 
       const statusLabels: Record<string, string> = {
         planned: "Planifiée",
@@ -1257,14 +1250,13 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
         completed: "Terminée",
         cancelled: "Annulée",
       };
-      doc
-        .fontSize(10)
-        .fillColor(mutedColor)
-        .text(
-          `Statut : ${statusLabels[intervention.status] ?? intervention.status}`,
-          50,
-          doc.y + 5,
-        );
+      doc.fontSize(10).fillColor(mutedColor);
+      this.pdfText(
+        doc,
+        `Statut : ${statusLabels[intervention.status] ?? intervention.status}`,
+        50,
+        doc.y + 5,
+      );
 
       doc.y += 15;
 
@@ -1394,6 +1386,20 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     });
   }
 
+  private pdfText(
+    doc: PDFKit.PDFDocument,
+    text: string,
+    x?: number,
+    y?: number,
+    options?: PDFKit.Mixins.TextOptions,
+  ): PDFKit.PDFDocument {
+    const safe = sanitizePdfText(text);
+    if (x !== undefined && y !== undefined) {
+      return options ? doc.text(safe, x, y, options) : doc.text(safe, x, y);
+    }
+    return options ? doc.text(safe, options) : doc.text(safe);
+  }
+
   /** Pied de page sur chaque page, sans créer de page blanche. */
   private stampGeneratedByFooter(doc: PDFKit.PDFDocument): void {
     const label = `Généré le ${this.formatDateTimeFr(new Date().toISOString())} — Planwise`;
@@ -1413,14 +1419,12 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
           .strokeColor("#e2e8f0")
           .lineWidth(0.5)
           .stroke();
-        doc
-          .fontSize(7)
-          .fillColor("#94a3b8")
-          .text(label, 50, textY, {
-            align: "center",
-            width: doc.page.width - 100,
-            lineBreak: false,
-          });
+        doc.fontSize(7).fillColor("#94a3b8");
+        this.pdfText(doc, label, 50, textY, {
+          align: "center",
+          width: doc.page.width - 100,
+          lineBreak: false,
+        });
       } finally {
         margins.bottom = prevBottom;
       }
@@ -1429,19 +1433,18 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
 
   private pdfSection(doc: PDFKit.PDFDocument, title: string): void {
     doc.y += 10;
-    doc.fontSize(12).fillColor("#6d28d9").text(title, 50, doc.y, { width: 495 });
+    doc.fontSize(12).fillColor("#6d28d9");
+    this.pdfText(doc, title, 50, doc.y, { width: 495 });
     doc.y += 3;
     doc.moveTo(50, doc.y).lineTo(545, doc.y).strokeColor("#e2e8f0").lineWidth(0.5).stroke();
     doc.y += 8;
   }
 
   private pdfField(doc: PDFKit.PDFDocument, label: string, value: string): void {
-    doc
-      .fontSize(9)
-      .fillColor("#64748b")
-      .text(`${label} :`, 50, doc.y, { continued: true, width: 100 })
-      .fillColor("#1e293b")
-      .text(` ${value}`, { width: 395 });
+    doc.fontSize(9).fillColor("#64748b");
+    this.pdfText(doc, `${label} :`, 50, doc.y, { continued: true, width: 100 });
+    doc.fillColor("#1e293b");
+    this.pdfText(doc, ` ${value}`, undefined, undefined, { width: 395 });
     doc.y += 3;
   }
 

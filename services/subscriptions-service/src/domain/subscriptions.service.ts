@@ -3,6 +3,7 @@ import {
   ConflictException,
   Injectable,
   InternalServerErrorException,
+  Logger,
   NotFoundException,
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
@@ -156,6 +157,8 @@ function computeSubscriptionMeta(
 
 @Injectable()
 export class SubscriptionsService {
+  private readonly logger = new Logger(SubscriptionsService.name);
+
   constructor(
     @InjectModel("OrganizationSubscription")
     private readonly subscriptionModel: Model<OrganizationSubscriptionDocument>,
@@ -1305,6 +1308,7 @@ export class SubscriptionsService {
     sub: Stripe.Subscription,
   ): Promise<void> {
     const existing = await this.subscriptionModel.findOne({ organizationId }).lean().exec();
+    const previousStatus = existing?.stripeStatus;
     const { booleanAddons, quantities } = this.parseSubscriptionAddonState(sub);
     const activeAddons = this.mergeActiveAddons(existing?.activeAddons, booleanAddons);
 
@@ -1328,6 +1332,15 @@ export class SubscriptionsService {
       )
       .exec();
 
+    if (sub.status === "active" && previousStatus !== "active") {
+      void this.notifyOpsPaidSubscription({
+        organizationId,
+        stripeSubscriptionId: sub.id,
+        stripeCustomerId,
+        previousStatus,
+      });
+    }
+
     const stripe = getStripe();
     try {
       const c = await stripe.customers.retrieve(stripeCustomerId);
@@ -1342,6 +1355,79 @@ export class SubscriptionsService {
       });
     } catch {
       /* best-effort : ne pas faire échouer le webhook */
+    }
+  }
+
+  /** Alerte ops async — ne doit pas bloquer ni faire échouer le webhook Stripe. */
+  private async notifyOpsPaidSubscription(params: {
+    organizationId: string;
+    stripeSubscriptionId: string;
+    stripeCustomerId: string;
+    previousStatus?: string;
+  }): Promise<void> {
+    const to = (process.env.PLATFORM_SIGNUP_ALERT_EMAIL?.trim() || "mail@benoistbabin.fr").trim();
+    if (!to.includes("@")) {
+      return;
+    }
+
+    const notificationsUrl = (
+      process.env.NOTIFICATIONS_SERVICE_URL ?? "http://localhost:3010"
+    ).replace(/\/$/, "");
+
+    let organizationName: string | undefined;
+    try {
+      const organizationsUrl = (
+        process.env.ORGANIZATIONS_SERVICE_URL ?? "http://localhost:3001"
+      ).replace(/\/$/, "");
+      const orgRes = await fetch(`${organizationsUrl}/organizations/${params.organizationId}`);
+      if (orgRes.ok) {
+        const org = (await orgRes.json()) as { name?: string };
+        if (org.name?.trim()) organizationName = org.name.trim();
+      }
+    } catch {
+      /* best-effort */
+    }
+
+    const lines = [
+      "Une organisation vient de s’abonner à Planwise (paiement Stripe actif).",
+      "",
+      ...(organizationName ? [`Organisation : ${organizationName}`] : []),
+      `Id organisation : ${params.organizationId}`,
+      `Abonnement Stripe : ${params.stripeSubscriptionId}`,
+      `Client Stripe : ${params.stripeCustomerId}`,
+      ...(params.previousStatus
+        ? [`Statut précédent : ${params.previousStatus}`]
+        : ["Statut précédent : (aucun)"]),
+    ];
+
+    try {
+      const res = await fetch(`${notificationsUrl}/email/transactional`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to,
+          subject: "Nouvel abonnement Planwise",
+          body: lines.join("\n"),
+          footer: "Alerte ops Planwise — abonnement payant.",
+        }),
+      });
+      if (!res.ok) {
+        this.logger.warn(
+          `Ops subscription alert HTTP ${res.status} for org ${params.organizationId}`,
+        );
+        return;
+      }
+      const data = (await res.json()) as { sent?: boolean; reason?: string };
+      if (!data.sent) {
+        this.logger.warn(
+          `Ops subscription alert not sent for org ${params.organizationId}: ${data.reason ?? "unknown"}`,
+        );
+      }
+    } catch (err) {
+      this.logger.warn(
+        `Failed to send ops subscription alert for org ${params.organizationId}`,
+        err instanceof Error ? err.message : String(err),
+      );
     }
   }
 }

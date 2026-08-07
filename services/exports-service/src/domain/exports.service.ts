@@ -35,6 +35,7 @@ import {
   parseReportingPeriod,
   reportingPeriodFilenameSuffix,
   ReportingPeriodError,
+  sanitizePdfText,
   type BillingStatus,
 } from "@planwise/shared";
 import PDFDocument from "pdfkit";
@@ -1691,10 +1692,8 @@ export class ExportsService extends AbstractExportsService {
 
       this.pdfHeader(doc, "Récapitulatif de dossier");
 
-      doc
-        .fontSize(16)
-        .fillColor("#1e293b")
-        .text(caseData.title, 50, doc.y + 10, { width: 495 });
+      doc.fontSize(16).fillColor("#1e293b");
+      this.pdfText(doc, caseData.title, 50, doc.y + 10, { width: 495 });
       const statusLabels: Record<string, string> = {
         draft: "Brouillon",
         open: "Ouvert",
@@ -1709,17 +1708,16 @@ export class ExportsService extends AbstractExportsService {
         high: "Haute",
         urgent: "Urgente",
       };
-      doc
-        .fontSize(10)
-        .fillColor("#64748b")
-        .text(
-          `Statut : ${statusLabels[caseData.status] ?? caseData.status} | Priorité : ${priorityLabels[caseData.priority] ?? caseData.priority} | Avancement : ${caseData.progress}%`,
-          50,
-          doc.y + 5,
-        );
+      doc.fontSize(10).fillColor("#64748b");
+      this.pdfText(
+        doc,
+        `Statut : ${statusLabels[caseData.status] ?? caseData.status} | Priorité : ${priorityLabels[caseData.priority] ?? caseData.priority} | Avancement : ${caseData.progress}%`,
+        50,
+        doc.y + 5,
+      );
 
       if (caseData.dueDate) {
-        doc.text(`Échéance : ${this.formatDateFr(caseData.dueDate)}`, 50, doc.y + 3);
+        this.pdfText(doc, `Échéance : ${this.formatDateFr(caseData.dueDate)}`, 50, doc.y + 3);
       }
       doc.y += 10;
 
@@ -1742,26 +1740,20 @@ export class ExportsService extends AbstractExportsService {
 
       if (caseData.assignees.length > 0) {
         this.pdfSectionTitle(doc, "Assignés");
-        doc
-          .fontSize(10)
-          .fillColor("#1e293b")
-          .text(caseData.assignees.map((a) => a.name).join(", "), 50, doc.y + 3);
+        doc.fontSize(10).fillColor("#1e293b");
+        this.pdfText(doc, caseData.assignees.map((a) => a.name).join(", "), 50, doc.y + 3);
         doc.y += 5;
       }
 
       if (caseData.steps.length > 0) {
         this.pdfSectionTitle(doc, "Étapes et tâches");
         for (const step of caseData.steps) {
-          doc
-            .fontSize(11)
-            .fillColor("#6d28d9")
-            .text(`${step.order}. ${step.name}`, 50, doc.y + 5);
+          doc.fontSize(11).fillColor("#6d28d9");
+          this.pdfText(doc, `${step.order}. ${step.name}`, 50, doc.y + 5);
           for (const todo of step.todos) {
-            const icon = todo.status === "done" ? "✓" : todo.status === "skipped" ? "—" : "○";
-            doc
-              .fontSize(9)
-              .fillColor("#334155")
-              .text(`  ${icon} ${todo.label}`, 60, doc.y + 3);
+            const icon = todo.status === "done" ? "[x]" : todo.status === "skipped" ? "-" : "[ ]";
+            doc.fontSize(9).fillColor("#334155");
+            this.pdfText(doc, `  ${icon} ${todo.label}`, 60, doc.y + 3);
           }
         }
         doc.y += 5;
@@ -1777,18 +1769,15 @@ export class ExportsService extends AbstractExportsService {
         };
         for (const intv of interventions) {
           if (doc.y > doc.page.height - 70) doc.addPage();
-          doc
-            .fontSize(10)
-            .fillColor("#1e293b")
-            .text(`• ${intv.title}`, 55, doc.y + 4);
-          doc
-            .fontSize(9)
-            .fillColor("#64748b")
-            .text(
-              `  ${iStatusLabels[intv.status] ?? intv.status}${intv.assigneeName ? ` — ${intv.assigneeName}` : ""}${intv.scheduledStart ? ` — ${this.formatDateFr(intv.scheduledStart)}` : ""}`,
-              60,
-              doc.y + 2,
-            );
+          doc.fontSize(10).fillColor("#1e293b");
+          this.pdfText(doc, `- ${intv.title}`, 55, doc.y + 4);
+          doc.fontSize(9).fillColor("#64748b");
+          this.pdfText(
+            doc,
+            `  ${iStatusLabels[intv.status] ?? intv.status}${intv.assigneeName ? ` — ${intv.assigneeName}` : ""}${intv.scheduledStart ? ` — ${this.formatDateFr(intv.scheduledStart)}` : ""}`,
+            60,
+            doc.y + 2,
+          );
         }
       }
 
@@ -2626,7 +2615,7 @@ export class ExportsService extends AbstractExportsService {
       const headerY = doc.y + 6;
       doc.fontSize(8).fillColor("#ffffff");
       headers.forEach((h, i) => {
-        doc.text(h, startX + i * colWidth + cellPadX, headerY, {
+        this.pdfText(doc, h, startX + i * colWidth + cellPadX, headerY, {
           width: colWidth - cellPadX * 2,
           lineBreak: false,
         });
@@ -2635,10 +2624,11 @@ export class ExportsService extends AbstractExportsService {
 
       doc.fillColor("#1e293b");
       rows.forEach((row, rowIndex) => {
-        const cellHeights = row.map((cell) =>
+        const safeCells = row.map((cell) => sanitizePdfText(cell ?? ""));
+        const cellHeights = safeCells.map((cell) =>
           Math.max(
             minRowHeight,
-            doc.heightOfString(String(cell ?? ""), {
+            doc.heightOfString(cell, {
               width: colWidth - cellPadX * 2,
             }) +
               cellPadY * 2,
@@ -2653,7 +2643,7 @@ export class ExportsService extends AbstractExportsService {
           const hY = doc.y + 6;
           doc.fontSize(8).fillColor("#ffffff");
           headers.forEach((h, i) => {
-            doc.text(h, startX + i * colWidth + cellPadX, hY, {
+            this.pdfText(doc, h, startX + i * colWidth + cellPadX, hY, {
               width: colWidth - cellPadX * 2,
               lineBreak: false,
             });
@@ -2669,8 +2659,8 @@ export class ExportsService extends AbstractExportsService {
 
         const rowY = doc.y + cellPadY;
         doc.fontSize(8);
-        row.forEach((cell, i) => {
-          doc.text(String(cell ?? ""), startX + i * colWidth + cellPadX, rowY, {
+        safeCells.forEach((cell, i) => {
+          this.pdfText(doc, cell, startX + i * colWidth + cellPadX, rowY, {
             width: colWidth - cellPadX * 2,
           });
         });
@@ -2682,7 +2672,8 @@ export class ExportsService extends AbstractExportsService {
         doc.y = 50;
       }
       doc.y += 10;
-      doc.fontSize(8).fillColor("#94a3b8").text(`${rows.length} enregistrement(s)`, 50, doc.y);
+      doc.fontSize(8).fillColor("#94a3b8");
+      this.pdfText(doc, `${rows.length} enregistrement(s)`, 50, doc.y);
 
       this.pdfFooter(doc);
       doc.end();
@@ -2691,9 +2682,25 @@ export class ExportsService extends AbstractExportsService {
 
   // ── PDF Helpers ──
 
+  private pdfText(
+    doc: PDFKit.PDFDocument,
+    text: string,
+    x?: number,
+    y?: number,
+    options?: PDFKit.Mixins.TextOptions,
+  ): PDFKit.PDFDocument {
+    const safe = sanitizePdfText(text);
+    if (x !== undefined && y !== undefined) {
+      return options ? doc.text(safe, x, y, options) : doc.text(safe, x, y);
+    }
+    return options ? doc.text(safe, options) : doc.text(safe);
+  }
+
   private pdfHeader(doc: PDFKit.PDFDocument, subtitle: string): void {
-    doc.fontSize(22).fillColor("#6d28d9").text("Planwise", 50, 40);
-    doc.fontSize(10).fillColor("#64748b").text(subtitle, 50, 65);
+    doc.fontSize(22).fillColor("#6d28d9");
+    this.pdfText(doc, "Planwise", 50, 40);
+    doc.fontSize(10).fillColor("#64748b");
+    this.pdfText(doc, subtitle, 50, 65);
     doc
       .moveTo(50, 85)
       .lineTo(doc.page.width - 50, 85)
@@ -2721,14 +2728,12 @@ export class ExportsService extends AbstractExportsService {
           .strokeColor("#e2e8f0")
           .lineWidth(0.5)
           .stroke();
-        doc
-          .fontSize(7)
-          .fillColor("#94a3b8")
-          .text(label, 50, textY, {
-            align: "center",
-            width: doc.page.width - 100,
-            lineBreak: false,
-          });
+        doc.fontSize(7).fillColor("#94a3b8");
+        this.pdfText(doc, label, 50, textY, {
+          align: "center",
+          width: doc.page.width - 100,
+          lineBreak: false,
+        });
       } finally {
         margins.bottom = prevBottom;
       }
@@ -2737,7 +2742,8 @@ export class ExportsService extends AbstractExportsService {
 
   private pdfSectionTitle(doc: PDFKit.PDFDocument, title: string): void {
     doc.y += 8;
-    doc.fontSize(12).fillColor("#6d28d9").text(title, 50, doc.y);
+    doc.fontSize(12).fillColor("#6d28d9");
+    this.pdfText(doc, title, 50, doc.y);
     doc
       .moveTo(50, doc.y + 2)
       .lineTo(200, doc.y + 2)
@@ -2748,12 +2754,10 @@ export class ExportsService extends AbstractExportsService {
   }
 
   private pdfField(doc: PDFKit.PDFDocument, label: string, value: string): void {
-    doc
-      .fontSize(9)
-      .fillColor("#64748b")
-      .text(`${label} :`, 55, doc.y + 3, { continued: true })
-      .fillColor("#1e293b")
-      .text(` ${value}`);
+    doc.fontSize(9).fillColor("#64748b");
+    this.pdfText(doc, `${label} :`, 55, doc.y + 3, { continued: true });
+    doc.fillColor("#1e293b");
+    this.pdfText(doc, ` ${value}`);
   }
 
   // ── Excel Helpers ──

@@ -1,8 +1,11 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import type { AuthUser, UserPreferencesResponse, UserResponse } from "@planwise/shared";
+import { DEFAULT_QUICK_ACTIONS } from "@planwise/shared";
 import { AccountController } from "../account.controller";
 import { AbstractAccountService } from "../../../domain/ports/account.service.port";
 import { JwtAuthGuard } from "../../../infrastructure/jwt-auth.guard";
+
+const defaultQuickActions = DEFAULT_QUICK_ACTIONS.map((b) => ({ ...b }));
 
 describe("AccountController", () => {
   let controller: AccountController;
@@ -94,7 +97,7 @@ describe("AccountController", () => {
         preferences: {
           theme: "light",
           sidebarCollapsed: "expanded",
-          quickActionIds: ["case_new", "cases_list", "calendar", "case_templates"],
+          quickActions: defaultQuickActions,
           onboardingCompletedOrganizationIds: [],
           onboardingProfileCompleted: false,
           setupGuideDismissedOrganizationIds: [],
@@ -118,7 +121,7 @@ describe("AccountController", () => {
         preferences: {
           theme: "dark",
           sidebarCollapsed: "expanded",
-          quickActionIds: ["case_new", "cases_list", "calendar", "case_templates"],
+          quickActions: defaultQuickActions,
           onboardingCompletedOrganizationIds: [],
           onboardingProfileCompleted: false,
           setupGuideDismissedOrganizationIds: [],

@@ -39,6 +39,7 @@ import { useToast } from "@/components/ui/ToastProvider";
 import { ResourceNotFoundPanel } from "@/components/ui/AppErrorAlert";
 import { ExportButton } from "@/components/ui/ExportButton";
 import { EntityRef } from "@/components/ui/EntityRef";
+import { useRegisterQuickActionLabel } from "@/components/dashboard/QuickActionLabelContext";
 import * as exportsApi from "@/lib/exports.api";
 import * as integrationsApi from "@/lib/integrations.api";
 import * as quotesApi from "@/lib/quotes.api";
@@ -878,6 +879,8 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
     if (!assigneeId) return "";
     return techniciansByAssigneeKey.get(assigneeId)?.id ?? assigneeId;
   };
+
+  useRegisterQuickActionLabel(caseData?.title);
 
   if (waitingForOrgSwitch || isLoading) {
     return <div className="text-sm text-slate-500 dark:text-slate-400">Chargement…</div>;

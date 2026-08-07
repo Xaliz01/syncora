@@ -18,6 +18,7 @@ import { CUSTOMER_KIND_LABELS } from "./customer-kind-labels";
 import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
 import { AppErrorAlert } from "@/components/ui/AppErrorAlert";
 import { TestDataBadgeIf } from "@/components/test-data/TestDataBadge";
+import { useRegisterQuickActionLabel } from "@/components/dashboard/QuickActionLabelContext";
 
 function formatDate(iso?: string) {
   if (!iso) return null;
@@ -77,6 +78,8 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
     },
     onError: (err: Error) => setMutationError(err.message),
   });
+
+  useRegisterQuickActionLabel(c?.displayName);
 
   if (isLoading) {
     return <div className="text-sm text-slate-500 dark:text-slate-400">Chargement…</div>;

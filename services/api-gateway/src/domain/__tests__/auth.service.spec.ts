@@ -2,17 +2,21 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { JwtModule, JwtService } from "@nestjs/jwt";
 import { HttpModule, HttpService } from "@nestjs/axios";
 import { UnauthorizedException, ForbiddenException } from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import { of, throwError } from "rxjs";
 import type { AxiosResponse } from "axios";
 import { AuthService } from "../auth.service";
 import { AbstractAuthService } from "../ports/auth.service.port";
 import { AbstractSubscriptionsGatewayService } from "../ports/subscriptions.service.port";
+import { ACCOUNT_REGISTERED_EVENT } from "../../infrastructure/account-registered.event";
+import { ORGANIZATION_CREATED_EVENT } from "../../infrastructure/organization-created.event";
 
 describe("AuthService", () => {
   let service: AuthService;
   let httpService: HttpService;
   let jwtService: JwtService;
   let jwtSignSpy: jest.SpyInstance;
+  let eventEmitter: { emit: jest.Mock };
 
   const mockOrgResponse = {
     id: "org-123",
@@ -71,6 +75,8 @@ describe("AuthService", () => {
   };
 
   beforeEach(async () => {
+    eventEmitter = { emit: jest.fn() };
+
     const module: TestingModule = await Test.createTestingModule({
       imports: [
         HttpModule.register({ timeout: 5000 }),
@@ -82,6 +88,7 @@ describe("AuthService", () => {
       providers: [
         { provide: AbstractAuthService, useClass: AuthService },
         { provide: AbstractSubscriptionsGatewayService, useValue: mockSubscriptionsGateway },
+        { provide: EventEmitter2, useValue: eventEmitter },
       ],
     }).compile();
 
@@ -140,6 +147,15 @@ describe("AuthService", () => {
       expect(result.user.email).toBe("admin@example.com");
       expect(result.user.organizationId).toBe("org-123");
       expect(jwtSignSpy).toHaveBeenCalled();
+      expect(eventEmitter.emit).toHaveBeenCalledWith(
+        ORGANIZATION_CREATED_EVENT,
+        expect.objectContaining({
+          organizationId: "org-123",
+          name: "Test Org",
+          createdByUserId: "user-123",
+          createdByEmail: "admin@example.com",
+        }),
+      );
     });
   });
 
@@ -178,6 +194,11 @@ describe("AuthService", () => {
         email: "new@example.com",
       });
       expect(jwtSignSpy).not.toHaveBeenCalled();
+      expect(eventEmitter.emit).toHaveBeenCalledWith(ACCOUNT_REGISTERED_EVENT, {
+        userId: "user-new",
+        email: "new@example.com",
+        name: "New Admin",
+      });
     });
 
     it("should verify email and return onboarding JWT", async () => {

@@ -22,7 +22,8 @@ import {
   clampPagination,
   DEFAULT_USER_PREFERENCES,
   getPasswordPolicyError,
-  normalizeQuickActionIds,
+  normalizeQuickActions,
+  resolveQuickActionsForOrganization,
   type ActivateInvitedUserBody,
   type ChangePasswordBody,
   type CreateAccountBody,
@@ -673,7 +674,10 @@ export class UsersService extends AbstractUsersService {
     }
     return {
       userId: doc.userId,
-      preferences: this.withOrgScopedPreferences(this.toPreferences(doc), organizationId),
+      preferences: this.withOrgScopedPreferences(
+        this.toPreferences(doc, organizationId),
+        organizationId,
+      ),
     };
   }
 
@@ -693,18 +697,21 @@ export class UsersService extends AbstractUsersService {
     if (body.setupGuideDismissed !== undefined && !orgId) {
       throw new BadRequestException("organizationId is required when updating setupGuideDismissed");
     }
+    if (body.quickActions !== undefined && !orgId) {
+      throw new BadRequestException("organizationId is required when updating quickActions");
+    }
 
     const $set: Record<string, unknown> = {};
     if (body.theme !== undefined) $set.theme = body.theme;
     if (body.sidebarCollapsed !== undefined) $set.sidebarCollapsed = body.sidebarCollapsed;
-    if (body.quickActionIds !== undefined) {
-      const normalized = normalizeQuickActionIds(body.quickActionIds);
+    if (body.quickActions !== undefined && orgId) {
+      const normalized = normalizeQuickActions(body.quickActions);
       if (!normalized) {
         throw new BadRequestException(
-          `quickActionIds must contain between 2 and 6 valid unique action ids`,
+          `quickActions must be an array of { id?, href, label } bookmarks (max 50)`,
         );
       }
-      $set.quickActionIds = normalized;
+      $set[`quickActionsByOrganizationId.${orgId}`] = normalized;
     }
 
     const $setOnInsert: Record<string, unknown> = {
@@ -713,9 +720,10 @@ export class UsersService extends AbstractUsersService {
       ...(body.sidebarCollapsed === undefined
         ? { sidebarCollapsed: DEFAULT_USER_PREFERENCES.sidebarCollapsed }
         : {}),
-      ...(body.quickActionIds === undefined
-        ? { quickActionIds: [...DEFAULT_USER_PREFERENCES.quickActionIds] }
+      ...(body.quickActions === undefined
+        ? { quickActions: DEFAULT_USER_PREFERENCES.quickActions.map((b) => ({ ...b })) }
         : {}),
+      ...(body.quickActions === undefined ? { quickActionsByOrganizationId: {} } : {}),
     };
 
     const update: Record<string, unknown> = {
@@ -767,7 +775,7 @@ export class UsersService extends AbstractUsersService {
 
     return {
       userId: doc!.userId,
-      preferences: this.withOrgScopedPreferences(this.toPreferences(doc!), orgId),
+      preferences: this.withOrgScopedPreferences(this.toPreferences(doc!, orgId), orgId),
     };
   }
 
@@ -786,10 +794,13 @@ export class UsersService extends AbstractUsersService {
     return doc?.userId ?? null;
   }
 
-  private toPreferences(doc: UserPreferencesDocument): UserPreferences {
-    const quickActionIds = normalizeQuickActionIds(doc.quickActionIds) ?? [
-      ...DEFAULT_USER_PREFERENCES.quickActionIds,
-    ];
+  private toPreferences(doc: UserPreferencesDocument, organizationId?: string): UserPreferences {
+    const quickActions = resolveQuickActionsForOrganization({
+      organizationId,
+      quickActionsByOrganizationId: doc.quickActionsByOrganizationId,
+      quickActions: doc.quickActions,
+      quickActionIds: doc.quickActionIds,
+    });
     const onboardingOrgIds = Array.isArray(doc.onboardingCompletedOrganizationIds)
       ? [...new Set(doc.onboardingCompletedOrganizationIds.filter(Boolean))]
       : [];
@@ -799,7 +810,7 @@ export class UsersService extends AbstractUsersService {
     return {
       theme: doc.theme,
       sidebarCollapsed: doc.sidebarCollapsed,
-      quickActionIds,
+      quickActions,
       onboardingCompletedOrganizationIds: onboardingOrgIds,
       onboardingProfileCompleted: false,
       setupGuideDismissedOrganizationIds: setupGuideOrgIds,

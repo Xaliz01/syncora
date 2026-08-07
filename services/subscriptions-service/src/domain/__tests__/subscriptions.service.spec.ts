@@ -941,4 +941,101 @@ describe("SubscriptionsService", () => {
       );
     });
   });
+
+  describe("persistSubscription ops alert", () => {
+    const originalFetch = global.fetch;
+
+    afterEach(() => {
+      global.fetch = originalFetch;
+    });
+
+    const stripeSub = (status: string) =>
+      ({
+        id: "sub_paid",
+        status,
+        trial_end: null,
+        current_period_end: Math.floor(Date.now() / 1000) + 30 * 86400,
+        cancel_at_period_end: false,
+        items: { data: [] },
+      }) as never;
+
+    it("sends ops alert when Stripe status becomes active", async () => {
+      mockSubscriptionModel.findOne.mockReturnValue({
+        lean: jest.fn().mockReturnValue({
+          exec: jest.fn().mockResolvedValue({
+            stripeStatus: "trialing",
+            activeAddons: [],
+          }),
+        }),
+      });
+      mockSubscriptionModel.findOneAndUpdate.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({}),
+      });
+      mockCustomersRetrieve.mockResolvedValue({
+        id: "cus_123",
+        metadata: { organizationId: "org-1" },
+      });
+
+      const fetchMock = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ sent: true }),
+      });
+      global.fetch = fetchMock as typeof fetch;
+
+      await (
+        service as unknown as {
+          persistSubscription: (
+            organizationId: string,
+            stripeCustomerId: string,
+            sub: unknown,
+          ) => Promise<void>;
+        }
+      ).persistSubscription("org-1", "cus_123", stripeSub("active"));
+
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining("/email/transactional"),
+        expect.objectContaining({
+          method: "POST",
+          body: expect.stringContaining("Nouvel abonnement Planwise"),
+        }),
+      );
+    });
+
+    it("does not send ops alert when already active", async () => {
+      mockSubscriptionModel.findOne.mockReturnValue({
+        lean: jest.fn().mockReturnValue({
+          exec: jest.fn().mockResolvedValue({
+            stripeStatus: "active",
+            activeAddons: [],
+          }),
+        }),
+      });
+      mockSubscriptionModel.findOneAndUpdate.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({}),
+      });
+      mockCustomersRetrieve.mockResolvedValue({
+        id: "cus_123",
+        metadata: { organizationId: "org-1" },
+      });
+
+      const fetchMock = jest.fn();
+      global.fetch = fetchMock as typeof fetch;
+
+      await (
+        service as unknown as {
+          persistSubscription: (
+            organizationId: string,
+            stripeCustomerId: string,
+            sub: unknown,
+          ) => Promise<void>;
+        }
+      ).persistSubscription("org-1", "cus_123", stripeSub("active"));
+
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+  });
 });
