@@ -188,6 +188,8 @@ export class UsersController {
     @Query("sirens") sirens?: string,
     @Query("limit") limit?: string,
     @Query("offset") offset?: string,
+    @Query("status") status?: string,
+    @Query("search") search?: string,
   ) {
     if (sirens?.trim()) {
       const list = sirens
@@ -196,9 +198,15 @@ export class UsersController {
         .filter(Boolean);
       return this.usersService.listProspectOutreachesBySirens(list);
     }
+    const normalizedStatus =
+      status === "sent" || status === "failed" || status === "email_not_found" || status === "noted"
+        ? status
+        : undefined;
     return this.usersService.listProspectOutreaches({
       limit: limit ? Number.parseInt(limit, 10) : undefined,
       offset: offset ? Number.parseInt(offset, 10) : undefined,
+      status: normalizedStatus,
+      search: search?.trim() || undefined,
     });
   }
 

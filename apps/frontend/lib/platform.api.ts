@@ -17,6 +17,7 @@ import type {
   PlatformProspectOutreachBody,
   PlatformProspectOutreachResponse,
   PlatformProspectsSearchResponse,
+  ProspectOutreachStatus,
   ProspectOutreachesListResponse,
   PlatformUsersListResponse,
   StartImpersonationBody,
@@ -275,10 +276,17 @@ export async function getPlatformProspectCredits() {
   });
 }
 
-export async function listPlatformTrackedProspects(filters?: { limit?: number; offset?: number }) {
+export async function listPlatformTrackedProspects(filters?: {
+  limit?: number;
+  offset?: number;
+  status?: ProspectOutreachStatus;
+  search?: string;
+}) {
   const params = new URLSearchParams();
   if (filters?.limit != null) params.set("limit", String(filters.limit));
   if (filters?.offset != null) params.set("offset", String(filters.offset));
+  if (filters?.status) params.set("status", filters.status);
+  if (filters?.search?.trim()) params.set("search", filters.search.trim());
   const qs = params.toString();
   return apiRequestJson<ProspectOutreachesListResponse>(
     "GET",

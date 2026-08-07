@@ -316,3 +316,13 @@ export interface ProspectOutreachesListResponse {
   limit: number;
   offset: number;
 }
+
+/** Filtres liste prospects suivis (gateway + users-service). */
+export interface ProspectOutreachesListFilters {
+  limit?: number;
+  offset?: number;
+  /** Filtre exact sur le statut. */
+  status?: ProspectOutreachStatus;
+  /** Recherche libre : nom, SIREN, e-mail, commentaire. */
+  search?: string;
+}

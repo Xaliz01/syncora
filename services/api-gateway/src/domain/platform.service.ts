@@ -46,6 +46,7 @@ import type {
   PlatformUsersListResponse,
   ProspectOutreachesBySirensResponse,
   ProspectOutreachesListResponse,
+  ProspectOutreachStatus,
   SendEmailNotificationResponse,
   StartImpersonationBody,
   UserResponse,
@@ -728,6 +729,8 @@ export class PlatformService extends AbstractPlatformService {
   async listTrackedProspects(options?: {
     limit?: number;
     offset?: number;
+    status?: ProspectOutreachStatus;
+    search?: string;
   }): Promise<ProspectOutreachesListResponse> {
     try {
       const res = await firstValueFrom(
@@ -737,6 +740,8 @@ export class PlatformService extends AbstractPlatformService {
             params: {
               ...(options?.limit != null ? { limit: options.limit } : {}),
               ...(options?.offset != null ? { offset: options.offset } : {}),
+              ...(options?.status ? { status: options.status } : {}),
+              ...(options?.search?.trim() ? { search: options.search.trim() } : {}),
             },
             timeout: 10_000,
           },

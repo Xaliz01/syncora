@@ -1236,11 +1236,41 @@ export class UsersService extends AbstractUsersService {
   async listProspectOutreaches(options?: {
     limit?: number;
     offset?: number;
+    status?: ProspectOutreachStatus;
+    search?: string;
   }): Promise<ProspectOutreachesListResponse> {
     const { limit, offset } = clampPagination(options);
+    const query: Record<string, unknown> = {};
+
+    const status = options?.status;
+    if (
+      status === "sent" ||
+      status === "failed" ||
+      status === "email_not_found" ||
+      status === "noted"
+    ) {
+      query.status = status;
+    }
+
+    const search = options?.search?.trim();
+    if (search) {
+      const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const digits = search.replace(/\D/g, "");
+      const or: Record<string, unknown>[] = [
+        { companyName: { $regex: escaped, $options: "i" } },
+        { email: { $regex: escaped, $options: "i" } },
+        { comment: { $regex: escaped, $options: "i" } },
+        { siren: { $regex: escaped, $options: "i" } },
+      ];
+      if (digits.length > 0 && digits !== search) {
+        or.push({ siren: { $regex: digits } });
+      }
+      query.$or = or;
+    }
+
     const [total, docs] = await Promise.all([
-      this.prospectOutreachModel.countDocuments({}).exec(),
-      this.prospectOutreachModel.find({}).sort({ sentAt: -1 }).skip(offset).limit(limit).exec(),
+      this.prospectOutreachModel.countDocuments(query).exec(),
+      this.prospectOutreachModel.find(query).sort({ sentAt: -1 }).skip(offset).limit(limit).exec(),
     ]);
     return {
       outreaches: docs.map((d) => this.toProspectOutreachResponse(d)),

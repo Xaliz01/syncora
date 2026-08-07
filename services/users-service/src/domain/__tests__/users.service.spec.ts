@@ -1664,5 +1664,48 @@ describe("UsersService", () => {
       expect(result.outreaches[0]?.status).toBe("email_not_found");
       expect(mockProspectOutreachModel.find).toHaveBeenCalledWith({});
     });
+
+    it("should filter outreaches by status and search", async () => {
+      mockProspectOutreachModel.countDocuments.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(1),
+      });
+      mockProspectOutreachModel.find.mockReturnValue({
+        sort: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue([
+          {
+            _id: { toString: () => "o1" },
+            siren: "123456789",
+            companyName: "Plomberie Dupont",
+            email: "contact@dupont.fr",
+            sentByUserId: "u1",
+            sentByEmail: "staff@planwise.fr",
+            subject: "Ajout manuel",
+            status: "noted",
+            sentAt: new Date("2026-08-01T10:00:00.000Z"),
+          },
+        ]),
+      });
+
+      await service.listProspectOutreaches({
+        limit: 50,
+        offset: 0,
+        status: "noted",
+        search: "Dupont",
+      });
+
+      expect(mockProspectOutreachModel.find).toHaveBeenCalledWith({
+        status: "noted",
+        $or: expect.arrayContaining([
+          { companyName: { $regex: "Dupont", $options: "i" } },
+          { siren: { $regex: "Dupont", $options: "i" } },
+        ]),
+      });
+      expect(mockProspectOutreachModel.countDocuments).toHaveBeenCalledWith({
+        status: "noted",
+        $or: expect.any(Array),
+      });
+    });
   });
 });

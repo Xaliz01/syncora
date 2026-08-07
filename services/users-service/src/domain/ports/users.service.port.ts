@@ -15,6 +15,7 @@ import type {
   PatchUserBody,
   PlatformUserSummary,
   ProspectOutreachResponse,
+  ProspectOutreachStatus,
   ProspectOutreachesBySirensResponse,
   ProspectOutreachesListResponse,
   UpdateUserNameBody,
@@ -119,5 +120,7 @@ export abstract class AbstractUsersService {
   abstract listProspectOutreaches(options?: {
     limit?: number;
     offset?: number;
+    status?: ProspectOutreachStatus;
+    search?: string;
   }): Promise<ProspectOutreachesListResponse>;
 }

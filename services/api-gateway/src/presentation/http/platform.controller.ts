@@ -185,10 +185,21 @@ export class PlatformController {
 
   @Get("prospects/tracked")
   @UseGuards(PlatformJwtAuthGuard)
-  listTrackedProspects(@Query("limit") limit?: string, @Query("offset") offset?: string) {
+  listTrackedProspects(
+    @Query("limit") limit?: string,
+    @Query("offset") offset?: string,
+    @Query("status") status?: string,
+    @Query("search") search?: string,
+  ) {
+    const normalizedStatus =
+      status === "sent" || status === "failed" || status === "email_not_found" || status === "noted"
+        ? status
+        : undefined;
     return this.platformService.listTrackedProspects({
       limit: limit ? Number.parseInt(limit, 10) : undefined,
       offset: offset ? Number.parseInt(offset, 10) : undefined,
+      status: normalizedStatus,
+      search: search?.trim() || undefined,
     });
   }
 

@@ -93,6 +93,9 @@ export function PlatformProspectionPage() {
   const [trackedOffset, setTrackedOffset] = useState(0);
   const [trackedLoading, setTrackedLoading] = useState(true);
   const [trackedError, setTrackedError] = useState<string | null>(null);
+  const [trackedSearchInput, setTrackedSearchInput] = useState("");
+  const [trackedSearch, setTrackedSearch] = useState("");
+  const [trackedStatus, setTrackedStatus] = useState<"" | ProspectOutreachStatus>("");
   const [manualSiren, setManualSiren] = useState("");
   const [manualCompanyName, setManualCompanyName] = useState("");
   const [manualEmail, setManualEmail] = useState("");
@@ -112,7 +115,12 @@ export function PlatformProspectionPage() {
   const loadTracked = useCallback(() => {
     setTrackedLoading(true);
     platformApi
-      .listPlatformTrackedProspects({ limit: TRACKED_PAGE_LIMIT, offset: trackedOffset })
+      .listPlatformTrackedProspects({
+        limit: TRACKED_PAGE_LIMIT,
+        offset: trackedOffset,
+        search: trackedSearch || undefined,
+        status: trackedStatus || undefined,
+      })
       .then((res) => {
         setTracked(res.outreaches);
         setTrackedTotal(res.total);
@@ -138,7 +146,11 @@ export function PlatformProspectionPage() {
         setTrackedTotal(0);
       })
       .finally(() => setTrackedLoading(false));
-  }, [trackedOffset]);
+  }, [trackedOffset, trackedSearch, trackedStatus]);
+
+  useEffect(() => {
+    setTrackedOffset(0);
+  }, [trackedSearch, trackedStatus]);
 
   const loadProspects = useCallback(() => {
     if (!activeQuery) return;
@@ -519,6 +531,67 @@ export function PlatformProspectionPage() {
           </button>
         </form>
 
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            setTrackedSearch(trackedSearchInput.trim());
+          }}
+          className="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4"
+        >
+          <div className="min-w-[14rem] flex-1">
+            <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+              Recherche
+            </label>
+            <input
+              type="search"
+              value={trackedSearchInput}
+              onChange={(e) => setTrackedSearchInput(e.target.value)}
+              placeholder="Nom, SIREN, e-mail, commentaire…"
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-3 py-2 text-sm"
+            />
+          </div>
+          <div className="min-w-[10rem]">
+            <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Statut</label>
+            <select
+              value={trackedStatus}
+              onChange={(e) => {
+                setTrackedStatus(e.target.value as "" | ProspectOutreachStatus);
+              }}
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-3 py-2 text-sm"
+            >
+              <option value="">Tous les statuts</option>
+              {(Object.keys(STATUS_LABELS) as ProspectOutreachStatus[]).map((key) => (
+                <option key={key} value={key}>
+                  {STATUS_LABELS[key]}
+                </option>
+              ))}
+            </select>
+          </div>
+          <button
+            type="submit"
+            className="rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-4 py-2 text-sm font-medium text-slate-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800"
+          >
+            Filtrer
+          </button>
+          {(trackedSearch || trackedStatus) && (
+            <button
+              type="button"
+              onClick={() => {
+                setTrackedSearchInput("");
+                setTrackedSearch("");
+                setTrackedStatus("");
+              }}
+              className="rounded-lg px-3 py-2 text-sm text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+            >
+              Réinitialiser
+            </button>
+          )}
+          <p className="w-full text-xs text-slate-500 dark:text-slate-400">
+            {trackedTotal} prospect{trackedTotal === 1 ? "" : "s"}
+            {trackedSearch || trackedStatus ? " (filtrés)" : ""}
+          </p>
+        </form>
+
         {trackedError ? <p className="text-sm text-red-600">{trackedError}</p> : null}
 
         <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm">
@@ -544,7 +617,9 @@ export function PlatformProspectionPage() {
               ) : tracked.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-3 py-8 text-center text-slate-500">
-                    Aucun prospect suivi. Ajoutez-en un ci-dessus ou lancez une recherche Pappers.
+                    {trackedSearch || trackedStatus
+                      ? "Aucun prospect ne correspond à ces filtres."
+                      : "Aucun prospect suivi. Ajoutez-en un ci-dessus ou lancez une recherche Pappers."}
                   </td>
                 </tr>
               ) : (

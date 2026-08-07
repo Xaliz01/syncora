@@ -16,6 +16,7 @@ import type {
   PlatformProspectOutreachResponse,
   PlatformProspectsSearchResponse,
   PlatformProspectSearchSort,
+  ProspectOutreachStatus,
   ProspectOutreachesListResponse,
   PlatformUsersListResponse,
   StartImpersonationBody,
@@ -86,6 +87,8 @@ export abstract class AbstractPlatformService {
   abstract listTrackedProspects(options?: {
     limit?: number;
     offset?: number;
+    status?: ProspectOutreachStatus;
+    search?: string;
   }): Promise<ProspectOutreachesListResponse>;
   abstract sendProspectOutreach(
     staff: PlatformAuthUser,
