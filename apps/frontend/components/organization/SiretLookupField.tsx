@@ -19,6 +19,7 @@ export interface SiretLookupFieldProps {
   onSelect?: (result: SiretLookupResult) => void;
   disabled?: boolean;
   readOnly?: boolean;
+  autoFocus?: boolean;
   label?: string;
   labelCls?: string;
   inputCls?: string;
@@ -30,6 +31,7 @@ export function SiretLookupField({
   onSelect,
   disabled = false,
   readOnly = false,
+  autoFocus = false,
   label = "SIRET",
   labelCls,
   inputCls,
@@ -112,6 +114,7 @@ export function SiretLookupField({
         role="combobox"
         aria-autocomplete="list"
         autoComplete="off"
+        autoFocus={autoFocus}
         placeholder="Rechercher par SIRET, SIREN ou nom…"
         value={searchText}
         disabled={disabled}

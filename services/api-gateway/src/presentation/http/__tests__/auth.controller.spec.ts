@@ -175,7 +175,7 @@ describe("AuthController", () => {
 
   describe("createOrganization", () => {
     it("should call authService.createOrganization when the member has organizations.create", async () => {
-      const body = { name: "New Org", siret: "98765432109876" };
+      const body = { name: "New Org", siret: "98765432109876", email: "facturation@example.com" };
       const jwtPayload: JwtPayload = {
         sub: "user-123",
         organizationId: "org-123",

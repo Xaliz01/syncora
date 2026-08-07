@@ -51,7 +51,7 @@ export function OrganizationPage() {
     mutationFn: () =>
       organizationsApi.updateMine({
         name: form.name.trim() || undefined,
-        email: form.email.trim() || null,
+        email: form.email.trim(),
         phone: form.phone.trim() || null,
         addressLine1: form.addressLine1.trim() || null,
         addressLine2: form.addressLine2.trim() || null,
@@ -72,7 +72,10 @@ export function OrganizationPage() {
     },
   });
 
-  const canSave = useMemo(() => form.name.trim().length > 0, [form.name]);
+  const canSave = useMemo(
+    () => form.name.trim().length > 0 && form.email.trim().includes("@"),
+    [form.name, form.email],
+  );
 
   const cancelEdit = () => {
     setIsEditing(false);
@@ -166,13 +169,20 @@ export function OrganizationPage() {
               </p>
             </div>
             <label className="block">
-              <span className="text-xs text-slate-500 dark:text-slate-400">Email</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                Email de facturation
+              </span>
               <input
                 type="email"
+                required
                 value={form.email}
                 onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
                 className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-100"
               />
+              <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                Obligatoire pour la facturation. L&apos;utilisation de Planwise n&apos;aura aucun
+                coût durant la beta.
+              </p>
             </label>
             <label className="block">
               <span className="text-xs text-slate-500 dark:text-slate-400">Téléphone</span>
@@ -216,7 +226,7 @@ export function OrganizationPage() {
               </dd>
             </div>
             <div>
-              <dt className="text-slate-500 dark:text-slate-400">Email</dt>
+              <dt className="text-slate-500 dark:text-slate-400">Email de facturation</dt>
               <dd className="mt-0.5 text-slate-800 dark:text-slate-100">
                 {formatValue(activeOrganization?.email)}
               </dd>

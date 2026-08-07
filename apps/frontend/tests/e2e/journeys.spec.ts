@@ -34,12 +34,12 @@ test.describe("Accès invité", () => {
 });
 
 test.describe("Parcours navigation auth", () => {
-  test("enchaîne connexion, inscription et activation invité", async ({ page }) => {
+  test("enchaîne connexion et inscription", async ({ page }) => {
     await page.goto("/login");
 
     await Promise.all([
       page.waitForURL(/\/register/),
-      page.getByRole("link", { name: /Créer une organisation/ }).click(),
+      page.getByRole("link", { name: /Créer un compte/ }).click(),
     ]);
     await expect(page.getByRole("heading", { name: "Créer votre compte" })).toBeVisible({
       timeout: 15_000,
@@ -50,12 +50,6 @@ test.describe("Parcours navigation auth", () => {
       page.getByRole("link", { name: "Se connecter" }).click(),
     ]);
     await expect(page.getByRole("heading", { name: "Connexion" })).toBeVisible();
-
-    await Promise.all([
-      page.waitForURL(/\/accept-invitation/),
-      page.getByRole("link", { name: /Activer votre compte invité/ }).click(),
-    ]);
-    await expect(page.getByRole("heading", { name: "Rejoindre l'organisation" })).toBeVisible();
   });
 
   test("utilise le token d'invitation depuis l'URL sans champ manuel", async ({ page }) => {
@@ -513,13 +507,13 @@ test.describe("Route /my-day protégée", () => {
 });
 
 test.describe("Parcours inter-pages publiques complet", () => {
-  test("enchaîne login → register → login → accept-invitation → login", async ({ page }) => {
+  test("enchaîne login → register → login", async ({ page }) => {
     await page.goto("/login");
     await expect(page.getByRole("heading", { name: "Connexion" })).toBeVisible();
 
     await Promise.all([
       page.waitForURL(/\/register/),
-      page.getByRole("link", { name: /Créer une organisation/ }).click(),
+      page.getByRole("link", { name: /Créer un compte/ }).click(),
     ]);
     await expect(page.getByRole("heading", { name: "Créer votre compte" })).toBeVisible({
       timeout: 15_000,
@@ -529,15 +523,6 @@ test.describe("Parcours inter-pages publiques complet", () => {
       page.waitForURL(/\/login/),
       page.getByRole("link", { name: "Se connecter" }).click(),
     ]);
-    await expect(page.getByRole("heading", { name: "Connexion" })).toBeVisible();
-
-    await Promise.all([
-      page.waitForURL(/\/accept-invitation/),
-      page.getByRole("link", { name: /Activer votre compte invité/ }).click(),
-    ]);
-    await expect(page.getByRole("heading", { name: "Rejoindre l'organisation" })).toBeVisible();
-
-    await page.goto("/login");
     await expect(page.getByRole("heading", { name: "Connexion" })).toBeVisible();
   });
 });

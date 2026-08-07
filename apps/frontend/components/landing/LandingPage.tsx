@@ -14,41 +14,9 @@ import {
   LANDING_HERO_HEADING,
   LANDING_HERO_HOOK,
   LANDING_HERO_SUPPORT,
+  LANDING_PILLARS,
   LANDING_TAGLINE,
 } from "@/lib/landing-copy";
-
-const PILLARS = [
-  {
-    title: "Accessible dès le premier jour",
-    description:
-      "Indépendant ou petite équipe : démarrez vite grâce aux modèles de dossier et profils prêts à importer — sans consultant ni formation lourde.",
-  },
-  {
-    title: "Planning interactif",
-    description:
-      "Vue jour, semaine ou mois, couleurs par équipe : glissez-déposez les interventions, réassignez en un geste et visualisez la charge de chacun.",
-  },
-  {
-    title: "Dossiers et interventions centralisés",
-    description:
-      "Suivez chaque dossier, son avancement, ses tâches et son historique depuis un seul endroit.",
-  },
-  {
-    title: "Terrain et preuve d'intervention",
-    description:
-      "Vos techniciens démarrent, documentent en photos, font signer le client et génèrent le rapport PDF depuis le chantier.",
-  },
-  {
-    title: "Contrats de maintenance suivis",
-    description:
-      "Planifiez les visites récurrentes : Planwise génère automatiquement les dossiers et interventions à venir.",
-  },
-  {
-    title: "Facturation sans double saisie",
-    description:
-      "Connectez votre outil de facturation, ou activez la facturation démo pendant l’essai : créez, suivez et validez vos factures depuis Planwise.",
-  },
-] as const;
 
 const FEATURE_SECTIONS = [
   {
@@ -250,7 +218,7 @@ export function LandingPage() {
         {/* Pillars */}
         <section className="max-w-6xl mx-auto px-4 py-14 sm:py-16">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {PILLARS.map((pillar, index) => (
+            {LANDING_PILLARS.map((pillar, index) => (
               <ScrollReveal key={pillar.title} delayMs={index * 70}>
                 <article className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/20 h-full">
                   <h2 className="font-semibold text-slate-900 dark:text-slate-100 mb-2">
@@ -541,12 +509,6 @@ export function LandingPage() {
               className="hover:text-brand-600 dark:hover:text-brand-400 transition"
             >
               Inscription
-            </Link>
-            <Link
-              href="/accept-invitation"
-              className="hover:text-brand-600 dark:hover:text-brand-400 transition"
-            >
-              Invitation
             </Link>
           </div>
           <div className="w-full border-t border-slate-100 dark:border-slate-800 pt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 text-xs">

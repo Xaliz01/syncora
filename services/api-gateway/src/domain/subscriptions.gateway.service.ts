@@ -10,7 +10,11 @@ import {
 import { HttpService } from "@nestjs/axios";
 import axios from "axios";
 import { firstValueFrom } from "rxjs";
-import type { AuthUser, OrganizationStorageUsageResponse } from "@planwise/shared";
+import type {
+  AuthUser,
+  OrganizationResponse,
+  OrganizationStorageUsageResponse,
+} from "@planwise/shared";
 import type {
   CreateAddonCheckoutSessionGatewayBody,
   CreateBillingPortalGatewayBody,
@@ -32,6 +36,7 @@ import { AbstractSubscriptionsGatewayService } from "./ports/subscriptions.servi
 
 const SUBSCRIPTIONS_URL = process.env.SUBSCRIPTIONS_SERVICE_URL ?? "http://localhost:3008";
 const DOCUMENTS_URL = process.env.DOCUMENTS_SERVICE_URL ?? "http://localhost:3011";
+const ORGANIZATIONS_URL = process.env.ORGANIZATIONS_SERVICE_URL ?? "http://localhost:3001";
 
 @Injectable()
 export class SubscriptionsGatewayService extends AbstractSubscriptionsGatewayService {
@@ -73,12 +78,13 @@ export class SubscriptionsGatewayService extends AbstractSubscriptionsGatewaySer
     user: AuthUser,
     body: CreateCheckoutSessionGatewayBody,
   ): Promise<CreateCheckoutSessionResponse> {
+    const customerEmail = await this.resolveOrganizationBillingEmail(user.organizationId);
     return this.callSubscriptions<CreateCheckoutSessionResponse>({
       method: "post",
       path: "/subscriptions/checkout-session",
       body: {
         organizationId: user.organizationId,
-        customerEmail: body.customerEmail,
+        customerEmail,
         successUrl: body.successUrl,
         cancelUrl: body.cancelUrl,
       },
@@ -113,13 +119,14 @@ export class SubscriptionsGatewayService extends AbstractSubscriptionsGatewaySer
     user: AuthUser,
     body: CreateAddonCheckoutSessionGatewayBody,
   ): Promise<CreateCheckoutSessionResponse> {
+    const customerEmail = await this.resolveOrganizationBillingEmail(user.organizationId);
     return this.callSubscriptions<CreateCheckoutSessionResponse>({
       method: "post",
       path: "/subscriptions/addon-checkout-session",
       body: {
         organizationId: user.organizationId,
         addonCode: body.addonCode,
-        customerEmail: body.customerEmail,
+        customerEmail,
         successUrl: body.successUrl,
         cancelUrl: body.cancelUrl,
       },
@@ -155,6 +162,26 @@ export class SubscriptionsGatewayService extends AbstractSubscriptionsGatewaySer
         successUrl: body.successUrl,
       },
     });
+  }
+
+  private async resolveOrganizationBillingEmail(organizationId: string): Promise<string> {
+    try {
+      const res = await firstValueFrom(
+        this.httpService.get<OrganizationResponse>(
+          `${ORGANIZATIONS_URL}/organizations/${organizationId}`,
+        ),
+      );
+      const email = res.data.email?.trim() ?? "";
+      if (!email || !email.includes("@")) {
+        throw new BadRequestException(
+          "E-mail de facturation de l’organisation requis. Renseignez-le dans Organisation avant de vous abonner.",
+        );
+      }
+      return email;
+    } catch (err: unknown) {
+      if (err instanceof BadRequestException) throw err;
+      this.rethrowAsHttpException(err);
+    }
   }
 
   private async callSubscriptions<T>(params: {

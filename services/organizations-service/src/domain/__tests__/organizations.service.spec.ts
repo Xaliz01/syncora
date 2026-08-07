@@ -56,13 +56,18 @@ describe("OrganizationsService", () => {
   });
 
   describe("create", () => {
-    it("should create an organization with name and siret", async () => {
-      const doc = mockDoc({ name: "Acme Corp", siret: "12345678901234" });
+    it("should create an organization with name, siret and billing email", async () => {
+      const doc = mockDoc({
+        name: "Acme Corp",
+        siret: "12345678901234",
+        email: "billing@acme.fr",
+      });
       mockOrganizationModel.create.mockResolvedValue(doc);
 
       const result = await service.create({
         name: "Acme Corp",
         siret: "12345678901234",
+        email: "billing@acme.fr",
         addressLine1: "1 rue de Paris",
         postalCode: "75001",
         city: "Paris",
@@ -72,6 +77,7 @@ describe("OrganizationsService", () => {
       expect(mockOrganizationModel.create).toHaveBeenCalledWith({
         name: "Acme Corp",
         siret: "12345678901234",
+        email: "billing@acme.fr",
         addressLine1: "1 rue de Paris",
         addressLine2: undefined,
         postalCode: "75001",
@@ -82,8 +88,20 @@ describe("OrganizationsService", () => {
         id: "org-123",
         name: "Acme Corp",
         siret: "12345678901234",
+        email: "billing@acme.fr",
         createdAt: new Date("2025-01-01").toISOString(),
       });
+    });
+
+    it("should reject create without billing email", async () => {
+      await expect(
+        service.create({
+          name: "Acme Corp",
+          siret: "12345678901234",
+          email: "",
+        }),
+      ).rejects.toThrow("L’e-mail de facturation de l’organisation est requis");
+      expect(mockOrganizationModel.create).not.toHaveBeenCalled();
     });
   });
 

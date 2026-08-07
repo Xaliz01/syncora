@@ -44,6 +44,7 @@ export function OrganizationSwitcher({
   const [orgMenuOpen, setOrgMenuOpen] = useState(false);
   const [newOrgName, setNewOrgName] = useState("");
   const [newOrgSiret, setNewOrgSiret] = useState("");
+  const [newOrgEmail, setNewOrgEmail] = useState("");
   const [newOrgAddress, setNewOrgAddress] = useState<OrganizationAddressForm>(EMPTY_ORG_ADDRESS);
   const [creating, setCreating] = useState(false);
   const [portalReady, setPortalReady] = useState(false);
@@ -64,6 +65,7 @@ export function OrganizationSwitcher({
   const resetNewOrgForm = () => {
     setNewOrgName("");
     setNewOrgSiret("");
+    setNewOrgEmail("");
     setNewOrgAddress(EMPTY_ORG_ADDRESS);
   };
 
@@ -104,6 +106,11 @@ export function OrganizationSwitcher({
       showToast("Indiquez le SIRET de l\u2019organisation.", "error");
       return;
     }
+    const email = newOrgEmail.trim();
+    if (!email.includes("@")) {
+      showToast("Indiquez l\u2019e-mail de facturation de l\u2019organisation.", "error");
+      return;
+    }
     if (!isOrganizationAddressComplete(newOrgAddress)) {
       showToast("Renseignez l\u2019adresse postale (rue, code postal et ville).", "error");
       return;
@@ -113,6 +120,7 @@ export function OrganizationSwitcher({
       await createOrganization({
         name,
         siret,
+        email,
         ...toCreateOrganizationAddress(newOrgAddress),
       });
       setDialogOpen(false);
@@ -265,7 +273,7 @@ export function OrganizationSwitcher({
             }}
           >
             <div
-              className="my-auto w-full max-w-md max-h-[calc(100dvh-5rem)] sm:max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl p-5"
+              className="my-auto w-full max-w-3xl max-h-[calc(100dvh-5rem)] sm:max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl p-5 sm:p-6"
               onClick={(e) => e.stopPropagation()}
             >
               <h2
@@ -277,70 +285,109 @@ export function OrganizationSwitcher({
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 Un espace distinct sera créé et votre session y sera associée.
               </p>
-              <div className="mt-4 space-y-3">
-                <SiretLookupField
-                  value={newOrgSiret}
-                  onChange={setNewOrgSiret}
-                  onSelect={handleSiretSelect}
-                  disabled={creating}
-                  labelCls="block text-xs font-medium text-slate-600 dark:text-slate-300"
-                  inputCls="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-100"
-                />
-                <div>
-                  <label
-                    htmlFor="planwise-new-org-name"
-                    className="block text-xs font-medium text-slate-600 dark:text-slate-300"
-                  >
-                    Nom
-                  </label>
-                  <input
-                    id="planwise-new-org-name"
-                    type="text"
-                    value={newOrgName}
-                    onChange={(e) => setNewOrgName(e.target.value)}
-                    placeholder="Ex. Ma société"
-                    className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-100"
-                    disabled={creating}
-                    autoFocus
-                  />
+              <div className="mt-4 grid gap-6 md:grid-cols-2 md:items-stretch">
+                <div className="flex flex-col gap-4">
+                  <div>
+                    <SiretLookupField
+                      value={newOrgSiret}
+                      onChange={setNewOrgSiret}
+                      onSelect={handleSiretSelect}
+                      disabled={creating}
+                      autoFocus
+                      labelCls="block text-xs font-medium text-slate-600 dark:text-slate-300"
+                      inputCls="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-100"
+                    />
+                    <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                      Saisissez un SIRET, SIREN ou nom pour rechercher votre entreprise.
+                    </p>
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="planwise-new-org-name"
+                      className="block text-xs font-medium text-slate-600 dark:text-slate-300"
+                    >
+                      Nom
+                    </label>
+                    <input
+                      id="planwise-new-org-name"
+                      type="text"
+                      value={newOrgName}
+                      onChange={(e) => setNewOrgName(e.target.value)}
+                      placeholder="Ex. Ma société"
+                      className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-100"
+                      disabled={creating}
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="planwise-new-org-email"
+                      className="block text-xs font-medium text-slate-600 dark:text-slate-300"
+                    >
+                      E-mail de facturation
+                    </label>
+                    <input
+                      id="planwise-new-org-email"
+                      type="email"
+                      required
+                      value={newOrgEmail}
+                      onChange={(e) => setNewOrgEmail(e.target.value)}
+                      placeholder="facturation@exemple.fr"
+                      className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-100"
+                      disabled={creating}
+                      autoComplete="organization"
+                    />
+                    <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                      Obligatoire pour la facturation. L&apos;utilisation de Planwise n&apos;aura
+                      aucun coût durant la beta.
+                    </p>
+                  </div>
+                  <div className="mt-auto flex flex-wrap gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDialogOpen(false);
+                        resetNewOrgForm();
+                      }}
+                      disabled={creating}
+                      className="rounded-lg border border-slate-200 dark:border-slate-600 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50"
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleCreateOrganization()}
+                      disabled={creating}
+                      className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50"
+                    >
+                      {creating ? "Cr\u00e9ation\u2026" : "Cr\u00e9er"}
+                    </button>
+                  </div>
                 </div>
-                <PostalAddressFields
-                  legend="Adresse postale"
-                  compact
-                  line1={newOrgAddress.addressLine1}
-                  line2={newOrgAddress.addressLine2}
-                  postalCode={newOrgAddress.postalCode}
-                  city={newOrgAddress.city}
-                  country={newOrgAddress.country}
-                  onLine1Change={(v) => setNewOrgAddress((prev) => ({ ...prev, addressLine1: v }))}
-                  onLine2Change={(v) => setNewOrgAddress((prev) => ({ ...prev, addressLine2: v }))}
-                  onPostalChange={(v) => setNewOrgAddress((prev) => ({ ...prev, postalCode: v }))}
-                  onCityChange={(v) => setNewOrgAddress((prev) => ({ ...prev, city: v }))}
-                  onCountryChange={(v) => setNewOrgAddress((prev) => ({ ...prev, country: v }))}
-                  labelCls="block text-xs font-medium text-slate-600 dark:text-slate-300"
-                  inputCls="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-100"
-                />
-              </div>
-              <div className="mt-5 flex flex-wrap justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDialogOpen(false);
-                    resetNewOrgForm();
-                  }}
-                  disabled={creating}
-                  className="rounded-lg border border-slate-200 dark:border-slate-600 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void handleCreateOrganization()}
-                  disabled={creating}
-                  className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50"
-                >
-                  {creating ? "Cr\u00e9ation\u2026" : "Cr\u00e9er"}
-                </button>
+                <div className="space-y-2">
+                  <PostalAddressFields
+                    legend="Adresse postale"
+                    line1={newOrgAddress.addressLine1}
+                    line2={newOrgAddress.addressLine2}
+                    postalCode={newOrgAddress.postalCode}
+                    city={newOrgAddress.city}
+                    country={newOrgAddress.country}
+                    onLine1Change={(v) =>
+                      setNewOrgAddress((prev) => ({ ...prev, addressLine1: v }))
+                    }
+                    onLine2Change={(v) =>
+                      setNewOrgAddress((prev) => ({ ...prev, addressLine2: v }))
+                    }
+                    onPostalChange={(v) => setNewOrgAddress((prev) => ({ ...prev, postalCode: v }))}
+                    onCityChange={(v) => setNewOrgAddress((prev) => ({ ...prev, city: v }))}
+                    onCountryChange={(v) => setNewOrgAddress((prev) => ({ ...prev, country: v }))}
+                    labelCls="block text-xs font-medium text-slate-600 dark:text-slate-300"
+                    inputCls="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-100"
+                  />
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    L&apos;adresse est préremplie lors de la sélection SIRET ; vous pouvez la
+                    corriger si besoin.
+                  </p>
+                </div>
               </div>
             </div>
           </div>,

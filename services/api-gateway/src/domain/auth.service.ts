@@ -49,11 +49,18 @@ import {
   getPasswordPolicyError,
   isOnboardingJwtPayload,
 } from "@planwise/shared";
+import { AbstractAuthService, type AuthRequestContext } from "./ports/auth.service.port";
+import { AbstractSubscriptionsGatewayService } from "./ports/subscriptions.service.port";
 
 function buildOrganizationCreatePayload(body: CreateOrganizationBody): CreateOrganizationBody {
+  const email = body.email?.trim() ?? "";
+  if (!email || !email.includes("@")) {
+    throw new BadRequestException("L’e-mail de facturation de l’organisation est requis");
+  }
   return {
     name: body.name.trim(),
     siret: body.siret.trim(),
+    email,
     addressLine1: body.addressLine1?.trim() || undefined,
     addressLine2: body.addressLine2?.trim() || undefined,
     postalCode: body.postalCode?.trim() || undefined,
@@ -61,8 +68,6 @@ function buildOrganizationCreatePayload(body: CreateOrganizationBody): CreateOrg
     country: body.country?.trim() || undefined,
   };
 }
-import { AbstractAuthService, type AuthRequestContext } from "./ports/auth.service.port";
-import { AbstractSubscriptionsGatewayService } from "./ports/subscriptions.service.port";
 
 const ORGANIZATIONS_URL = process.env.ORGANIZATIONS_SERVICE_URL ?? "http://localhost:3001";
 const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
@@ -130,6 +135,7 @@ export class AuthService extends AbstractAuthService {
           buildOrganizationCreatePayload({
             name: body.organizationName,
             siret: body.organizationSiret.trim(),
+            email: body.adminEmail,
           }),
         ),
       );

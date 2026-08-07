@@ -372,6 +372,11 @@ export interface CreateCheckoutSessionBody {
 
 /** Corps côté client → API gateway (sans organizationId). */
 export interface CreateCheckoutSessionGatewayBody {
+  /**
+   * Ignoré par la gateway : l’e-mail Stripe est toujours celui de facturation
+   * de l’organisation (`Organization.email`).
+   * @deprecated Conservé pour compatibilité client ; ne pas s’y fier.
+   */
   customerEmail?: string;
   successUrl: string;
   cancelUrl: string;
@@ -427,6 +432,11 @@ export interface CreateAddonCheckoutSessionBody {
 /** Corps côté client → API gateway (sans organizationId). */
 export interface CreateAddonCheckoutSessionGatewayBody {
   addonCode: AddonCode;
+  /**
+   * Ignoré par la gateway : l’e-mail Stripe est toujours celui de facturation
+   * de l’organisation (`Organization.email`).
+   * @deprecated Conservé pour compatibilité client ; ne pas s’y fier.
+   */
   customerEmail?: string;
   successUrl: string;
   cancelUrl: string;

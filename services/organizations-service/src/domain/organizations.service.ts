@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import type { OrganizationDocument } from "../persistence/organization.schema";
@@ -12,6 +12,14 @@ import {
   type UpdateOrganizationTrialTestDataBody,
 } from "@planwise/shared";
 import { AbstractOrganizationsService } from "./ports/organizations.service.port";
+
+function requireBillingEmail(raw: string | null | undefined): string {
+  const email = raw?.trim() ?? "";
+  if (!email || !email.includes("@")) {
+    throw new BadRequestException("L’e-mail de facturation de l’organisation est requis");
+  }
+  return email;
+}
 
 @Injectable()
 export class OrganizationsService extends AbstractOrganizationsService {
@@ -48,9 +56,11 @@ export class OrganizationsService extends AbstractOrganizationsService {
   }
 
   async create(body: CreateOrganizationBody): Promise<OrganizationResponse> {
+    const email = requireBillingEmail(body.email);
     const doc = await this.organizationModel.create({
       name: body.name.trim(),
       siret: body.siret.trim(),
+      email,
       addressLine1: body.addressLine1?.trim() || undefined,
       addressLine2: body.addressLine2?.trim() || undefined,
       postalCode: body.postalCode?.trim() || undefined,
@@ -69,7 +79,7 @@ export class OrganizationsService extends AbstractOrganizationsService {
   async update(id: string, body: UpdateOrganizationBody): Promise<OrganizationResponse | null> {
     const update: Record<string, unknown> = {};
     if (body.name !== undefined) update.name = body.name;
-    if (body.email !== undefined) update.email = body.email || null;
+    if (body.email !== undefined) update.email = requireBillingEmail(body.email);
     if (body.phone !== undefined) update.phone = body.phone || null;
     if (body.addressLine1 !== undefined) update.addressLine1 = body.addressLine1 || null;
     if (body.addressLine2 !== undefined) update.addressLine2 = body.addressLine2 || null;

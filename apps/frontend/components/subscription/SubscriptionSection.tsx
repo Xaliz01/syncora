@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/components/auth/AuthContext";
+import { useOrganization } from "@/lib/organization";
 import { useToast } from "@/components/ui/ToastProvider";
 import * as subscriptionsApi from "@/lib/subscriptions.api";
 import * as authApi from "@/lib/auth.api";
@@ -85,7 +86,9 @@ function SubscriptionSectionInner({ mode = "full" }: { mode?: "full" | "pitchChe
   const pitchCheckout = mode === "pitchCheckout";
   const router = useRouter();
   const { user, refreshSession } = useAuth();
+  const { activeOrganization } = useOrganization();
   const { showToast } = useToast();
+  const hasBillingEmail = Boolean(activeOrganization?.email?.trim()?.includes("@"));
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const [modifyAddonsOpen, setModifyAddonsOpen] = useState(false);
@@ -126,9 +129,15 @@ function SubscriptionSectionInner({ mode = "full" }: { mode?: "full" | "pitchChe
 
   const checkoutMutation = useMutation({
     mutationFn: () => {
+      const billingEmail = activeOrganization?.email?.trim() ?? "";
+      if (!billingEmail.includes("@")) {
+        throw new Error(
+          "Renseignez l’e-mail de facturation de l’organisation (page Organisation) avant de vous abonner.",
+        );
+      }
       const origin = window.location.origin;
       return subscriptionsApi.createCheckoutSession({
-        customerEmail: user?.email,
+        customerEmail: billingEmail,
         successUrl: `${origin}/subscription?checkout=success`,
         cancelUrl: `${origin}/subscription?checkout=canceled`,
       });
@@ -358,11 +367,17 @@ function SubscriptionSectionInner({ mode = "full" }: { mode?: "full" | "pitchChe
       )}
       {!isLoading && !error && subscription && canManageBilling && showSubscribeCheckout && (
         <div className="space-y-3">
+          {!hasBillingEmail && (
+            <p className="text-xs text-amber-700 dark:text-amber-300 text-center sm:text-left">
+              Renseignez l’e-mail de facturation de l’organisation (page Organisation) avant de vous
+              abonner.
+            </p>
+          )}
           <div className="flex flex-wrap gap-3 justify-center sm:justify-start">
             <button
               type="button"
               onClick={() => checkoutMutation.mutate()}
-              disabled={checkoutMutation.isPending}
+              disabled={checkoutMutation.isPending || !hasBillingEmail}
               className="rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
             >
               {subscription.status === "trialing" && !subscription.hasAccess
@@ -615,7 +630,7 @@ function SubscriptionSectionInner({ mode = "full" }: { mode?: "full" | "pitchChe
                     <button
                       type="button"
                       onClick={() => checkoutMutation.mutate()}
-                      disabled={checkoutMutation.isPending}
+                      disabled={checkoutMutation.isPending || !hasBillingEmail}
                       className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
                     >
                       {subscription.status === "trialing" && !subscription.hasStripeSubscription
@@ -624,6 +639,11 @@ function SubscriptionSectionInner({ mode = "full" }: { mode?: "full" | "pitchChe
                           ? "S’abonner pour continuer"
                           : "Finaliser ou recommencer le paiement"}
                     </button>
+                  )}
+                  {showSubscribeCheckout && !hasBillingEmail && (
+                    <p className="w-full text-xs text-amber-700 dark:text-amber-300">
+                      E-mail de facturation requis (page Organisation) avant l’abonnement Stripe.
+                    </p>
                   )}
                   {showExtendTrial && (
                     <button

@@ -36,12 +36,17 @@ describe("OrganizationsController", () => {
   });
 
   describe("create", () => {
-    it("should call service.create with body.name and body.siret", async () => {
-      const body = { name: "SARL Test", siret: "12345678901234" };
+    it("should call service.create with body", async () => {
+      const body = {
+        name: "SARL Test",
+        siret: "12345678901234",
+        email: "facturation@test.fr",
+      };
       const expected = {
         id: "org-456",
         name: "SARL Test",
         siret: "12345678901234",
+        email: "facturation@test.fr",
         createdAt: "2025-01-01T00:00:00.000Z",
       };
       mockOrganizationsService.create.mockResolvedValue(expected);

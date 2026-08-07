@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
+  BASE_SUBSCRIPTION_PLAN,
   isPasswordPolicyValid,
   PASSWORD_POLICY_HINT,
   type SiretLookupResult,
@@ -21,6 +22,7 @@ import {
   type OrganizationAddressForm,
 } from "@/lib/organization-address";
 import { LegalConsentCheckbox } from "@/components/legal/LegalConsentCheckbox";
+import { BetaBadge } from "@/components/ui/BetaBadge";
 import { LANDING_TAGLINE } from "@/lib/landing-copy";
 
 type RegisterStep = "account" | "verify-email" | "organization";
@@ -44,6 +46,8 @@ export function RegisterPage() {
   const [debugVerificationCode, setDebugVerificationCode] = useState<string | undefined>();
   const [organizationName, setOrganizationName] = useState("");
   const [organizationSiret, setOrganizationSiret] = useState("");
+  const [organizationEmail, setOrganizationEmail] = useState("");
+  const organizationEmailSeeded = useRef(false);
   const [organizationAddress, setOrganizationAddress] =
     useState<OrganizationAddressForm>(EMPTY_ORG_ADDRESS);
   const [error, setError] = useState<string | null>(null);
@@ -56,6 +60,7 @@ export function RegisterPage() {
     completeOrganization,
     isOnboarding,
     isAuthenticated,
+    onboardingUser,
   } = useAuth();
   const router = useRouter();
 
@@ -70,6 +75,14 @@ export function RegisterPage() {
       setStep("organization");
     }
   }, [initialStep, isOnboarding]);
+
+  useEffect(() => {
+    if (step !== "organization" || organizationEmailSeeded.current) return;
+    const fallback = adminEmail.trim() || onboardingUser?.email?.trim() || "";
+    if (!fallback) return;
+    setOrganizationEmail(fallback);
+    organizationEmailSeeded.current = true;
+  }, [step, adminEmail, onboardingUser?.email]);
 
   const handleSiretSelect = (result: SiretLookupResult) => {
     if (result.nom && !organizationName.trim()) {
@@ -86,6 +99,7 @@ export function RegisterPage() {
   const canSubmitOrganization =
     organizationSiret.trim().length > 0 &&
     organizationName.trim().length > 0 &&
+    organizationEmail.trim().includes("@") &&
     isOrganizationAddressComplete(organizationAddress);
 
   const handleAccountSubmit = async (e: React.FormEvent) => {
@@ -120,6 +134,8 @@ export function RegisterPage() {
         email: adminEmail,
         code: verificationCode.trim(),
       });
+      setOrganizationEmail((prev) => prev.trim() || adminEmail.trim());
+      organizationEmailSeeded.current = true;
       setStep("organization");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Vérification impossible");
@@ -153,6 +169,7 @@ export function RegisterPage() {
       const user = await completeOrganization({
         name: organizationName.trim(),
         siret: organizationSiret.trim(),
+        email: organizationEmail.trim(),
         ...toCreateOrganizationAddress(organizationAddress),
       });
       router.replace(postAuthHomePath(user));
@@ -195,8 +212,12 @@ export function RegisterPage() {
         </div>
       </header>
 
-      <main className="flex-1 flex items-center justify-center px-4 py-10">
-        <div className="w-full max-w-md">
+      <main className="relative flex-1 flex items-start justify-center px-4 py-10 overflow-hidden">
+        <div
+          className="pointer-events-none absolute inset-0 bg-gradient-to-br from-brand-600/10 via-transparent to-violet-600/5 dark:from-brand-600/20 dark:to-violet-950/30"
+          aria-hidden
+        />
+        <div className="relative w-full max-w-6xl">
           <div className="mb-6 flex flex-wrap items-center gap-2 text-xs font-medium">
             <span
               className={`flex h-6 w-6 items-center justify-center rounded-full ${stepBadgeClass(step === "account", step !== "account")}`}
@@ -241,240 +262,336 @@ export function RegisterPage() {
           <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-slate-100 mb-2">
             {headerTitle}
           </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 max-w-xl">
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 max-w-2xl">
             {headerSubtitle}
           </p>
 
           {step === "account" ? (
-            <form
-              onSubmit={handleAccountSubmit}
-              className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm dark:shadow-slate-950/20 space-y-4"
-            >
-              {error && (
-                <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm p-3">
-                  {error}
+            <div className="grid gap-6 md:grid-cols-2 md:items-stretch">
+              <aside className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 p-8 shadow-sm dark:shadow-slate-950/20">
+                <div className="mb-4 flex flex-wrap items-center gap-2">
+                  <BetaBadge />
+                  <span className="inline-flex items-center rounded-full border border-brand-200 dark:border-brand-500/40 bg-brand-50 dark:bg-brand-950/40 px-3 py-1 text-xs font-semibold text-brand-700 dark:text-brand-300">
+                    {BASE_SUBSCRIPTION_PLAN.trialDays} jours d&apos;essai · sans carte bancaire
+                  </span>
                 </div>
-              )}
-              <div>
-                <label
-                  htmlFor="adminName"
-                  className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1"
-                >
-                  Votre nom (optionnel)
-                </label>
-                <input
-                  id="adminName"
-                  type="text"
-                  value={adminName}
-                  onChange={(e) => setAdminName(e.target.value)}
-                  className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-                  placeholder="Jean Dupont"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="adminEmail"
-                  className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1"
-                >
-                  Email administrateur
-                </label>
-                <input
-                  id="adminEmail"
-                  type="email"
-                  value={adminEmail}
-                  onChange={(e) => setAdminEmail(e.target.value)}
-                  required
-                  autoComplete="email"
-                  className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-                  placeholder="admin@exemple.fr"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="adminPassword"
-                  className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1"
-                >
-                  Mot de passe
-                </label>
-                <input
-                  id="adminPassword"
-                  type="password"
-                  value={adminPassword}
-                  onChange={(e) => setAdminPassword(e.target.value)}
-                  required
-                  autoComplete="new-password"
-                  minLength={8}
-                  className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-                  placeholder="••••••••"
-                />
-                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  {PASSWORD_POLICY_HINT}
+                <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-3">
+                  Démarrez Planwise en quelques minutes
+                </h2>
+                <p className="text-sm text-slate-600 dark:text-slate-300 mb-5 leading-relaxed">
+                  Créez votre compte administrateur, vérifiez votre e-mail, puis renseignez votre
+                  entreprise (SIRET). Vous pourrez ensuite explorer avec des données de démo.
                 </p>
-              </div>
-              <LegalConsentCheckbox checked={legalConsent} onChange={setLegalConsent} />
-              <button
-                type="submit"
-                disabled={loading || !canSubmitAccount}
-                className="w-full rounded-lg bg-brand-600 py-2.5 font-medium text-white hover:bg-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-50 transition"
+                <ul className="space-y-2.5 text-sm text-slate-600 dark:text-slate-300">
+                  {[
+                    "CRM terrain pour indépendants, artisans et TPE",
+                    "Planning, interventions, contrats et facturation",
+                    "Sans engagement · résiliable à tout moment",
+                  ].map((item) => (
+                    <li key={item} className="flex gap-2.5 leading-snug">
+                      <span
+                        className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-600"
+                        aria-hidden
+                      />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </aside>
+              <form
+                onSubmit={handleAccountSubmit}
+                className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-8 shadow-sm dark:shadow-slate-950/20 space-y-5 flex flex-col justify-center"
               >
-                {loading ? "Création…" : "Continuer"}
-              </button>
-            </form>
+                {error && (
+                  <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm p-3">
+                    {error}
+                  </div>
+                )}
+                <div>
+                  <label
+                    htmlFor="adminName"
+                    className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1"
+                  >
+                    Votre nom (optionnel)
+                  </label>
+                  <input
+                    id="adminName"
+                    type="text"
+                    value={adminName}
+                    onChange={(e) => setAdminName(e.target.value)}
+                    className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                    placeholder="Jean Dupont"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="adminEmail"
+                    className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1"
+                  >
+                    Email administrateur
+                  </label>
+                  <input
+                    id="adminEmail"
+                    type="email"
+                    value={adminEmail}
+                    onChange={(e) => setAdminEmail(e.target.value)}
+                    required
+                    autoComplete="email"
+                    className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                    placeholder="admin@exemple.fr"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="adminPassword"
+                    className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1"
+                  >
+                    Mot de passe
+                  </label>
+                  <input
+                    id="adminPassword"
+                    type="password"
+                    value={adminPassword}
+                    onChange={(e) => setAdminPassword(e.target.value)}
+                    required
+                    autoComplete="new-password"
+                    minLength={8}
+                    className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                    placeholder="••••••••"
+                  />
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    {PASSWORD_POLICY_HINT}
+                  </p>
+                </div>
+                <LegalConsentCheckbox checked={legalConsent} onChange={setLegalConsent} />
+                <button
+                  type="submit"
+                  disabled={loading || !canSubmitAccount}
+                  className="w-full rounded-lg bg-brand-600 py-3 font-medium text-white hover:bg-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-50 transition"
+                >
+                  {loading ? "Création…" : "Continuer"}
+                </button>
+              </form>
+            </div>
           ) : step === "verify-email" ? (
-            <form
-              onSubmit={handleVerifySubmit}
-              className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm dark:shadow-slate-950/20 space-y-4"
-            >
-              {error && (
-                <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm p-3">
-                  {error}
-                </div>
-              )}
-              {debugVerificationCode && (
-                <div className="rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm p-3">
-                  Mode développement : code{" "}
-                  <span className="font-mono font-semibold">{debugVerificationCode}</span>
-                </div>
-              )}
-              <div>
-                <label
-                  htmlFor="verificationCode"
-                  className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1"
-                >
-                  Code de vérification
-                </label>
-                <input
-                  id="verificationCode"
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  maxLength={6}
-                  value={verificationCode}
-                  onChange={(e) =>
-                    setVerificationCode(e.target.value.replace(/\D/g, "").slice(0, 6))
-                  }
-                  required
-                  className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 tracking-widest text-center text-lg font-mono"
-                  placeholder="000000"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={loading || !canSubmitVerification}
-                className="w-full rounded-lg bg-brand-600 py-2.5 font-medium text-white hover:bg-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-50 transition"
+            <div className="grid gap-6 md:grid-cols-2 md:items-stretch">
+              <aside className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 p-8 shadow-sm dark:shadow-slate-950/20">
+                <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-3">
+                  Vérification de votre e-mail
+                </h2>
+                <p className="text-sm text-slate-600 dark:text-slate-300 mb-4 leading-relaxed">
+                  Un code à 6 chiffres a été envoyé à{" "}
+                  <span className="font-medium text-slate-800 dark:text-slate-100">
+                    {adminEmail}
+                  </span>
+                  . Il expire rapidement : saisissez-le pour continuer.
+                </p>
+                <ul className="space-y-2.5 text-sm text-slate-600 dark:text-slate-300">
+                  {[
+                    "Vérifiez aussi vos spams / courrier indésirable",
+                    "Vous pourrez renvoyer un code si besoin",
+                    "Ensuite : création de votre organisation",
+                  ].map((item) => (
+                    <li key={item} className="flex gap-2.5 leading-snug">
+                      <span
+                        className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-600"
+                        aria-hidden
+                      />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </aside>
+              <form
+                onSubmit={handleVerifySubmit}
+                className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-8 shadow-sm dark:shadow-slate-950/20 space-y-5 flex flex-col justify-center"
               >
-                {loading ? "Vérification…" : "Vérifier mon e-mail"}
-              </button>
-              <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
-                Vous n&apos;avez pas reçu le code ?{" "}
+                {error && (
+                  <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm p-3">
+                    {error}
+                  </div>
+                )}
+                {debugVerificationCode && (
+                  <div className="rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm p-3">
+                    Mode développement : code{" "}
+                    <span className="font-mono font-semibold">{debugVerificationCode}</span>
+                  </div>
+                )}
+                <div>
+                  <label
+                    htmlFor="verificationCode"
+                    className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1"
+                  >
+                    Code de vérification
+                  </label>
+                  <input
+                    id="verificationCode"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    value={verificationCode}
+                    onChange={(e) =>
+                      setVerificationCode(e.target.value.replace(/\D/g, "").slice(0, 6))
+                    }
+                    required
+                    className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-3 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 tracking-widest text-center text-xl font-mono"
+                    placeholder="000000"
+                  />
+                </div>
                 <button
-                  type="button"
-                  onClick={handleResendCode}
-                  disabled={loading}
-                  className="text-brand-600 dark:text-brand-400 underline font-medium disabled:opacity-50"
+                  type="submit"
+                  disabled={loading || !canSubmitVerification}
+                  className="w-full rounded-lg bg-brand-600 py-3 font-medium text-white hover:bg-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-50 transition"
                 >
-                  Renvoyer
+                  {loading ? "Vérification…" : "Vérifier mon e-mail"}
                 </button>
-              </p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStep("account");
-                    setVerificationCode("");
-                    setDebugVerificationCode(undefined);
-                    setError(null);
-                  }}
-                  className="underline font-medium"
-                >
-                  Modifier l&apos;adresse e-mail
-                </button>
-              </p>
-            </form>
+                <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
+                  Vous n&apos;avez pas reçu le code ?{" "}
+                  <button
+                    type="button"
+                    onClick={handleResendCode}
+                    disabled={loading}
+                    className="text-brand-600 dark:text-brand-400 underline font-medium disabled:opacity-50"
+                  >
+                    Renvoyer
+                  </button>
+                </p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStep("account");
+                      setVerificationCode("");
+                      setDebugVerificationCode(undefined);
+                      setError(null);
+                    }}
+                    className="underline font-medium"
+                  >
+                    Modifier l&apos;adresse e-mail
+                  </button>
+                </p>
+              </form>
+            </div>
           ) : (
             <form
               onSubmit={handleOrganizationSubmit}
-              className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-sm dark:shadow-slate-950/20 space-y-4"
+              className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-8 shadow-sm dark:shadow-slate-950/20 space-y-5"
             >
               {error && (
                 <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm p-3">
                   {error}
                 </div>
               )}
-              <div>
-                <SiretLookupField
-                  value={organizationSiret}
-                  onChange={setOrganizationSiret}
-                  onSelect={handleSiretSelect}
-                  disabled={loading}
-                  labelCls="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1"
-                  inputCls="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-                />
-                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  Saisissez un SIRET, SIREN ou nom pour rechercher votre entreprise.
-                </p>
+              <div className="grid gap-6 md:grid-cols-2 md:items-stretch">
+                <div className="flex flex-col gap-4">
+                  <div>
+                    <SiretLookupField
+                      value={organizationSiret}
+                      onChange={setOrganizationSiret}
+                      onSelect={handleSiretSelect}
+                      disabled={loading}
+                      autoFocus
+                      labelCls="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1"
+                      inputCls="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                    />
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      Saisissez un SIRET, SIREN ou nom pour rechercher votre entreprise.
+                    </p>
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="organizationName"
+                      className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1"
+                    >
+                      Nom de l&apos;organisation
+                    </label>
+                    <input
+                      id="organizationName"
+                      type="text"
+                      value={organizationName}
+                      onChange={(e) => setOrganizationName(e.target.value)}
+                      required
+                      className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                      placeholder="Mon entreprise"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="organizationEmail"
+                      className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1"
+                    >
+                      E-mail de facturation
+                    </label>
+                    <input
+                      id="organizationEmail"
+                      type="email"
+                      value={organizationEmail}
+                      onChange={(e) => setOrganizationEmail(e.target.value)}
+                      required
+                      autoComplete="organization"
+                      className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                      placeholder="facturation@exemple.fr"
+                    />
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      Obligatoire pour la facturation. L&apos;utilisation de Planwise n&apos;aura
+                      aucun coût durant la beta.
+                    </p>
+                  </div>
+
+                  <div className="mt-auto pt-2">
+                    <button
+                      type="submit"
+                      disabled={loading || !canSubmitOrganization || !isOnboarding}
+                      className="inline-flex w-full sm:w-auto justify-center rounded-lg bg-brand-600 px-6 py-2.5 font-medium text-white hover:bg-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-50 transition"
+                    >
+                      {loading ? "Création…" : "Créer l'organisation"}
+                    </button>
+                    {!isOnboarding && (
+                      <p className="mt-3 text-xs text-amber-600 dark:text-amber-400">
+                        Session expirée.{" "}
+                        <button
+                          type="button"
+                          onClick={() => setStep("account")}
+                          className="underline font-medium"
+                        >
+                          Recommencer à l&apos;étape 1
+                        </button>
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <PostalAddressFields
+                    legend="Adresse postale"
+                    line1={organizationAddress.addressLine1}
+                    line2={organizationAddress.addressLine2}
+                    postalCode={organizationAddress.postalCode}
+                    city={organizationAddress.city}
+                    country={organizationAddress.country}
+                    onLine1Change={(v) =>
+                      setOrganizationAddress((prev) => ({ ...prev, addressLine1: v }))
+                    }
+                    onLine2Change={(v) =>
+                      setOrganizationAddress((prev) => ({ ...prev, addressLine2: v }))
+                    }
+                    onPostalChange={(v) =>
+                      setOrganizationAddress((prev) => ({ ...prev, postalCode: v }))
+                    }
+                    onCityChange={(v) => setOrganizationAddress((prev) => ({ ...prev, city: v }))}
+                    onCountryChange={(v) =>
+                      setOrganizationAddress((prev) => ({ ...prev, country: v }))
+                    }
+                    labelCls="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1"
+                    inputCls="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                  />
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    L&apos;adresse est préremplie lors de la sélection SIRET ; vous pouvez la
+                    corriger si besoin.
+                  </p>
+                </div>
               </div>
-              <div>
-                <label
-                  htmlFor="organizationName"
-                  className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1"
-                >
-                  Nom de l&apos;organisation
-                </label>
-                <input
-                  id="organizationName"
-                  type="text"
-                  value={organizationName}
-                  onChange={(e) => setOrganizationName(e.target.value)}
-                  required
-                  className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-                  placeholder="Mon entreprise"
-                />
-              </div>
-              <PostalAddressFields
-                legend="Adresse postale"
-                line1={organizationAddress.addressLine1}
-                line2={organizationAddress.addressLine2}
-                postalCode={organizationAddress.postalCode}
-                city={organizationAddress.city}
-                country={organizationAddress.country}
-                onLine1Change={(v) =>
-                  setOrganizationAddress((prev) => ({ ...prev, addressLine1: v }))
-                }
-                onLine2Change={(v) =>
-                  setOrganizationAddress((prev) => ({ ...prev, addressLine2: v }))
-                }
-                onPostalChange={(v) =>
-                  setOrganizationAddress((prev) => ({ ...prev, postalCode: v }))
-                }
-                onCityChange={(v) => setOrganizationAddress((prev) => ({ ...prev, city: v }))}
-                onCountryChange={(v) => setOrganizationAddress((prev) => ({ ...prev, country: v }))}
-                labelCls="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1"
-                inputCls="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-              />
-              <p className="text-xs text-slate-500 dark:text-slate-400 -mt-2">
-                L&apos;adresse est préremplie lors de la sélection SIRET ; vous pouvez la corriger
-                si besoin.
-              </p>
-              <button
-                type="submit"
-                disabled={loading || !canSubmitOrganization || !isOnboarding}
-                className="w-full rounded-lg bg-brand-600 py-2.5 font-medium text-white hover:bg-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-50 transition"
-              >
-                {loading ? "Création…" : "Créer l'organisation"}
-              </button>
-              {!isOnboarding && (
-                <p className="text-xs text-amber-600 dark:text-amber-400 text-center">
-                  Session expirée.{" "}
-                  <button
-                    type="button"
-                    onClick={() => setStep("account")}
-                    className="underline font-medium"
-                  >
-                    Recommencer à l&apos;étape 1
-                  </button>
-                </p>
-              )}
             </form>
           )}
 
