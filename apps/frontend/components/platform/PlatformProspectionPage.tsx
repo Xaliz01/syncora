@@ -27,7 +27,7 @@ const STATUS_LABELS: Record<ProspectOutreachStatus, string> = {
   sent: "Contacté",
   failed: "Échec envoi",
   email_not_found: "Email non trouvé",
-  noted: "Note seule",
+  noted: "À contacter",
 };
 
 function formatDate(iso?: string) {
@@ -93,6 +93,11 @@ export function PlatformProspectionPage() {
   const [trackedOffset, setTrackedOffset] = useState(0);
   const [trackedLoading, setTrackedLoading] = useState(true);
   const [trackedError, setTrackedError] = useState<string | null>(null);
+  const [manualSiren, setManualSiren] = useState("");
+  const [manualCompanyName, setManualCompanyName] = useState("");
+  const [manualEmail, setManualEmail] = useState("");
+  const [manualComment, setManualComment] = useState("");
+  const [addingManual, setAddingManual] = useState(false);
 
   const loadCredits = useCallback(() => {
     platformApi
@@ -367,6 +372,38 @@ export function PlatformProspectionPage() {
     }
   };
 
+  const onManualAdd = async (e: FormEvent) => {
+    e.preventDefault();
+    const companyName = manualCompanyName.trim();
+    if (!companyName) {
+      showToast("Indiquez le nom de l’entreprise.", "error");
+      return;
+    }
+    setAddingManual(true);
+    try {
+      await platformApi.createPlatformManualProspect({
+        siren: manualSiren,
+        companyName,
+        email: manualEmail.trim() || undefined,
+        comment: manualComment.trim() || undefined,
+      });
+      showToast("Prospect ajouté.", "success");
+      setManualSiren("");
+      setManualCompanyName("");
+      setManualEmail("");
+      setManualComment("");
+      if (trackedOffset !== 0) {
+        setTrackedOffset(0);
+      } else {
+        loadTracked();
+      }
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Erreur", "error");
+    } finally {
+      setAddingManual(false);
+    }
+  };
+
   const offset = (page - 1) * PER_PAGE;
   const visibleResults = hideTreated
     ? results.filter((r) => !r.alreadyContacted && !r.emailNotFound)
@@ -407,9 +444,80 @@ export function PlatformProspectionPage() {
             Prospects suivis
           </h2>
           <p className="mt-1 text-xs text-slate-500">
-            Historique local (invitations, e-mails non trouvés, notes) — aucun appel Pappers.
+            Historique local (invitations, e-mails non trouvés, notes, ajouts manuels) — aucun appel
+            Pappers.
           </p>
         </div>
+
+        <form
+          onSubmit={(e) => void onManualAdd(e)}
+          className="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4"
+        >
+          <div className="min-w-[10rem]">
+            <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+              SIREN ou SIRET
+            </label>
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={17}
+              required
+              placeholder="9 ou 14 chiffres"
+              value={manualSiren}
+              onChange={(e) => setManualSiren(e.target.value)}
+              className="w-full max-w-[12rem] rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-3 py-2 text-sm font-mono"
+              disabled={addingManual}
+            />
+          </div>
+          <div className="min-w-[12rem] flex-1">
+            <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+              Nom de l’entreprise
+            </label>
+            <input
+              type="text"
+              required
+              placeholder="Ex. Plomberie Dupont"
+              value={manualCompanyName}
+              onChange={(e) => setManualCompanyName(e.target.value)}
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-3 py-2 text-sm"
+              disabled={addingManual}
+            />
+          </div>
+          <div className="min-w-[12rem] flex-1">
+            <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+              E-mail (optionnel)
+            </label>
+            <input
+              type="email"
+              placeholder="contact@…"
+              value={manualEmail}
+              onChange={(e) => setManualEmail(e.target.value)}
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-3 py-2 text-sm"
+              disabled={addingManual}
+            />
+          </div>
+          <div className="min-w-[12rem] flex-1">
+            <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+              Commentaire (optionnel)
+            </label>
+            <input
+              type="text"
+              maxLength={PROSPECT_OUTREACH_COMMENT_MAX_LENGTH}
+              placeholder="Source, LinkedIn…"
+              value={manualComment}
+              onChange={(e) => setManualComment(e.target.value)}
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-3 py-2 text-sm"
+              disabled={addingManual}
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={addingManual}
+            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50"
+          >
+            {addingManual ? "Ajout…" : "Ajouter"}
+          </button>
+        </form>
 
         {trackedError ? <p className="text-sm text-red-600">{trackedError}</p> : null}
 
@@ -436,7 +544,7 @@ export function PlatformProspectionPage() {
               ) : tracked.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-3 py-8 text-center text-slate-500">
-                    Aucun prospect suivi pour l’instant. Lancez une recherche Pappers ci-dessous.
+                    Aucun prospect suivi. Ajoutez-en un ci-dessus ou lancez une recherche Pappers.
                   </td>
                 </tr>
               ) : (

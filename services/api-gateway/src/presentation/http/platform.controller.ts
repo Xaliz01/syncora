@@ -8,6 +8,7 @@ import type {
   LoginBody,
   PlatformAuthUser,
   PlatformProspectEmailNotFoundBody,
+  PlatformProspectManualCreateBody,
   PlatformProspectNoteBody,
   PlatformProspectOutreachBody,
   StartImpersonationBody,
@@ -216,5 +217,14 @@ export class PlatformController {
     @Body() body: PlatformProspectNoteBody,
   ) {
     return this.platformService.saveProspectNote(user, body);
+  }
+
+  @Post("prospects/manual")
+  @UseGuards(PlatformJwtAuthGuard)
+  createManualProspect(
+    @CurrentPlatformUser() user: PlatformAuthUser,
+    @Body() body: PlatformProspectManualCreateBody,
+  ) {
+    return this.platformService.createManualProspect(user, body);
   }
 }

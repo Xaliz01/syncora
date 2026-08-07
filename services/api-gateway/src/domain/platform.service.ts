@@ -33,6 +33,7 @@ import type {
   PlatformProspectCreditsResponse,
   PlatformProspectEmailNotFoundBody,
   PlatformProspectNoteBody,
+  PlatformProspectManualCreateBody,
   PlatformProspectOutreachBody,
   PlatformProspectOutreachResponse,
   PlatformProspectSummary,
@@ -902,6 +903,50 @@ L’équipe Planwise${localTouch}`;
       this.logger.warn(`Failed to save prospect note: ${(err as Error).message}`);
       throw new ServiceUnavailableException("Impossible d’enregistrer le commentaire");
     }
+  }
+
+  async createManualProspect(
+    staff: PlatformAuthUser,
+    body: PlatformProspectManualCreateBody,
+  ): Promise<{ ok: true }> {
+    const digits = (body.siren?.trim() ?? "").replace(/\D/g, "");
+    const siren = digits.length === 14 ? digits.slice(0, 9) : digits;
+    if (!/^\d{9}$/.test(siren)) {
+      throw new BadRequestException("SIREN invalide (9 chiffres, ou SIRET 14 chiffres)");
+    }
+    const companyName = body.companyName?.trim() ?? "";
+    if (!companyName) {
+      throw new BadRequestException("Nom de l’entreprise requis");
+    }
+    const email = body.email?.trim().toLowerCase() ?? "";
+    if (email && !email.includes("@")) {
+      throw new BadRequestException("E-mail invalide");
+    }
+    const comment = typeof body.comment === "string" ? body.comment : undefined;
+
+    const existing = await this.loadOutreachBySirens([siren]);
+    if (existing.has(siren)) {
+      throw new ConflictException("Ce prospect est déjà suivi");
+    }
+
+    try {
+      await firstValueFrom(
+        this.httpService.post(`${USERS_URL}/users/platform/prospect-outreaches`, {
+          siren,
+          companyName,
+          email,
+          sentByUserId: staff.id,
+          sentByEmail: staff.email,
+          subject: "Ajout manuel",
+          status: "noted",
+          ...(comment !== undefined ? { comment } : {}),
+        }),
+      );
+    } catch (err: unknown) {
+      this.logger.warn(`Failed to create manual prospect: ${(err as Error).message}`);
+      throw new ServiceUnavailableException("Impossible d’ajouter le prospect");
+    }
+    return { ok: true };
   }
 
   private requirePappersApiKey(): string {

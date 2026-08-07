@@ -543,6 +543,60 @@ describe("PlatformService", () => {
       );
     });
 
+    it("creates a manual prospect without Pappers", async () => {
+      httpService.get.mockReturnValue(of({ data: { outreaches: [] } }));
+      httpService.post.mockReturnValue(of({ data: { id: "o1", status: "noted" } }));
+
+      const result = await service.createManualProspect(
+        { id: "staff-1", email: "staff@planwise.fr" },
+        {
+          siren: "12345678901234",
+          companyName: "Plomberie Dupont",
+          email: "contact@dupont.fr",
+          comment: "Vu sur LinkedIn",
+        },
+      );
+
+      expect(result).toEqual({ ok: true });
+      expect(httpService.post).toHaveBeenCalledWith(
+        expect.stringContaining("/prospect-outreaches"),
+        expect.objectContaining({
+          siren: "123456789",
+          companyName: "Plomberie Dupont",
+          email: "contact@dupont.fr",
+          status: "noted",
+          subject: "Ajout manuel",
+          comment: "Vu sur LinkedIn",
+          sentByUserId: "staff-1",
+        }),
+      );
+    });
+
+    it("rejects manual prospect when already tracked", async () => {
+      httpService.get.mockReturnValue(
+        of({
+          data: {
+            outreaches: [
+              {
+                id: "o1",
+                siren: "123456789",
+                status: "noted",
+                sentAt: "2026-07-01T00:00:00.000Z",
+              },
+            ],
+          },
+        }),
+      );
+
+      await expect(
+        service.createManualProspect(
+          { id: "staff-1", email: "staff@planwise.fr" },
+          { siren: "123456789", companyName: "X" },
+        ),
+      ).rejects.toBeInstanceOf(ConflictException);
+      expect(httpService.post).not.toHaveBeenCalled();
+    });
+
     it("rejects outreach without email", async () => {
       await expect(
         service.sendProspectOutreach(

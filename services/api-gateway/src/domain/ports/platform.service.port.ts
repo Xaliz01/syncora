@@ -11,6 +11,7 @@ import type {
   PlatformProspectCreditsResponse,
   PlatformProspectEmailNotFoundBody,
   PlatformProspectNoteBody,
+  PlatformProspectManualCreateBody,
   PlatformProspectOutreachBody,
   PlatformProspectOutreachResponse,
   PlatformProspectsSearchResponse,
@@ -98,4 +99,8 @@ export abstract class AbstractPlatformService {
     staff: PlatformAuthUser,
     body: PlatformProspectNoteBody,
   ): Promise<{ ok: true; comment?: string }>;
+  abstract createManualProspect(
+    staff: PlatformAuthUser,
+    body: PlatformProspectManualCreateBody,
+  ): Promise<{ ok: true }>;
 }

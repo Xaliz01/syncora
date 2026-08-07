@@ -261,6 +261,15 @@ export interface PlatformProspectNoteBody {
   comment: string;
 }
 
+/** Ajout manuel d’un prospect suivi (sans Pappers). */
+export interface PlatformProspectManualCreateBody {
+  siren: string;
+  companyName: string;
+  /** E-mail de contact optionnel (pour invitation ultérieure). */
+  email?: string;
+  comment?: string;
+}
+
 export type ProspectOutreachStatus = "sent" | "failed" | "email_not_found" | "noted";
 
 export const PROSPECT_OUTREACH_COMMENT_MAX_LENGTH = 2000;

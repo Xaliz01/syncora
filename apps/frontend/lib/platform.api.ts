@@ -12,6 +12,7 @@ import type {
   PlatformOrganizationsListResponse,
   PlatformProspectCreditsResponse,
   PlatformProspectEmailNotFoundBody,
+  PlatformProspectManualCreateBody,
   PlatformProspectNoteBody,
   PlatformProspectOutreachBody,
   PlatformProspectOutreachResponse,
@@ -310,5 +311,13 @@ export async function savePlatformProspectNote(body: PlatformProspectNoteBody) {
     body,
     platformBearer: true,
     fallbackError: "Impossible d’enregistrer le commentaire",
+  });
+}
+
+export async function createPlatformManualProspect(body: PlatformProspectManualCreateBody) {
+  return apiRequestJson<{ ok: true }>("POST", "/platform/prospects/manual", {
+    body,
+    platformBearer: true,
+    fallbackError: "Impossible d’ajouter le prospect",
   });
 }
