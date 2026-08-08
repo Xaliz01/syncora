@@ -180,6 +180,20 @@ describe("EmailService (configured)", () => {
     expect(call.html).toContain('alt="Planwise"');
   });
 
+  it("should render **bold** markers as strong in html and strip them in text", async () => {
+    await service.sendNotificationEmail(
+      "user@example.com",
+      "Subject",
+      "Reste **gratuit** puis **9,99 €** / mois",
+    );
+
+    const call = mockSendMail.mock.calls[0][0];
+    expect(call.html).toContain("<strong>gratuit</strong>");
+    expect(call.html).toContain("<strong>9,99 €</strong>");
+    expect(call.text).toBe("Reste gratuit puis 9,99 € / mois");
+    expect(call.text).not.toContain("**");
+  });
+
   it("should handle send errors gracefully", async () => {
     mockSendMail.mockRejectedValueOnce(new Error("SMTP connection refused"));
 

@@ -126,7 +126,7 @@ export class EmailService extends AbstractEmailService {
   }
 
   private buildPlainText(body: string, url?: string, ctaLabel?: string): string {
-    let text = body;
+    let text = stripEmailBoldMarkers(body);
     if (url) {
       const label = (ctaLabel?.trim() || "Voir dans Planwise").slice(0, 80);
       text += `\n\n${label} : ${this.resolveActionUrl(url)}`;
@@ -174,11 +174,11 @@ export class EmailService extends AbstractEmailService {
         <span style="font-size:18px;font-weight:600;color:#1e293b;letter-spacing:-0.01em;">Planwise</span>
       </a>
     </div>
-    <h2 style="margin:0 0 8px;color:#1e293b;font-size:18px;">${subject}</h2>
-    <p style="margin:0;color:#475569;font-size:14px;line-height:1.5;white-space:pre-wrap;">${body}</p>
+    <h2 style="margin:0 0 8px;color:#1e293b;font-size:18px;">${escapeHtml(subject)}</h2>
+    <p style="margin:0;color:#475569;font-size:14px;line-height:1.5;white-space:pre-wrap;">${formatEmailBodyHtml(body)}</p>
     ${linkHtml}
     <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0;" />
-    <p style="margin:0;color:#94a3b8;font-size:12px;">${footer}</p>
+    <p style="margin:0;color:#94a3b8;font-size:12px;">${escapeHtml(footer)}</p>
   </div>
 </body>
 </html>`;
@@ -192,4 +192,21 @@ function normalizeEmailAddress(raw: string | undefined): string | undefined {
   const angle = trimmed.match(/<([^>]+)>/);
   const email = (angle?.[1] ?? trimmed).trim().toLowerCase();
   return email.includes("@") ? email : undefined;
+}
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/** `**texte**` → gras HTML (après échappement). */
+function formatEmailBodyHtml(body: string): string {
+  return escapeHtml(body).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+}
+
+function stripEmailBoldMarkers(body: string): string {
+  return body.replace(/\*\*(.+?)\*\*/g, "$1");
 }

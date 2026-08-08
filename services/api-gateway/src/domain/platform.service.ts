@@ -74,14 +74,6 @@ const PROSPECT_OUTREACH_SUBJECT =
   "Planwise — un CRM simple et abordable pour démarrer votre activité";
 const PROSPECT_OUTREACH_FOOTER =
   "Cet e-mail est une présentation de Planwise destinée aux entreprises récemment créées. Répondez STOP pour ne plus être contacté.";
-/** Départements historiques de Bretagne (hors 44). */
-const BRITTANY_DEPARTEMENT_PREFIXES = ["22", "29", "35", "56"] as const;
-
-function isBrittanyPostalCode(postalCode?: string): boolean {
-  const digits = postalCode?.trim().replace(/\s/g, "") ?? "";
-  if (!/^\d{5}$/.test(digits)) return false;
-  return (BRITTANY_DEPARTEMENT_PREFIXES as readonly string[]).includes(digits.slice(0, 2));
-}
 
 /** Compare dates Pappers (YYYY-MM-DD ou ISO) — plus récent d’abord. */
 function compareProspectCreatedAtDesc(a?: string, b?: string): number {
@@ -773,20 +765,18 @@ export class PlatformService extends AbstractPlatformService {
     const contact = body.contactName?.trim();
     const greeting = contact ? `Bonjour ${contact},` : "Bonjour,";
     const landingUrl = APP_PUBLIC_URL.replace(/\/$/, "") || "https://planwise.fr";
-    const localTouch = isBrittanyPostalCode(body.postalCode)
-      ? "\nÉditeur basé à Landerneau (29)"
-      : "";
     const emailBody = `${greeting}
 
 Vous avez créé récemment votre entreprise : c’est le bon moment pour structurer votre activité sans vous ruiner en outils.
 
-Planwise est un CRM pensé pour les indépendants, artisans et TPE. Il est actuellement en beta : simple, abordable, et adapté à une structure qui démarre. En rejoignant la beta, vous bénéficierez d’avantages réservés aux premiers utilisateurs.
+Planwise est un CRM pensé pour les indépendants, artisans et TPE. Il est actuellement en beta : simple, abordable, et adapté à une structure qui démarre. Pendant toute la beta, Planwise reste **gratuit**. Ensuite, l’abonnement Essentiel sera à **9,99 €** par mois. En rejoignant la beta, vous bénéficierez d’avantages réservés aux premiers utilisateurs.
 
 Découvrez Planwise : ${landingUrl}
 
 Si vous n’êtes pas intéressé, répondez STOP à cet e-mail pour ne plus être contacté.
 
-L’équipe Planwise${localTouch}`;
+L’équipe Planwise
+Éditeur basé à Landerneau (29)`;
 
     let sent = false;
     let reason: string | undefined;
