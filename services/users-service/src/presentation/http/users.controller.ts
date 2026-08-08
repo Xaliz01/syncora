@@ -15,6 +15,10 @@ import {
   UnauthorizedException,
 } from "@nestjs/common";
 import { AbstractUsersService } from "../../domain/ports/users.service.port";
+import { AbstractUserSessionsService } from "../../domain/ports/user-sessions.service.port";
+import { AbstractUserPreferencesService } from "../../domain/ports/user-preferences.service.port";
+import { AbstractProspectOutreachService } from "../../domain/ports/prospect-outreach.service.port";
+import { AbstractImpersonationAuditService } from "../../domain/ports/impersonation-audit.service.port";
 import type {
   ActivateInvitedUserBody,
   ChangePasswordBody,
@@ -34,7 +38,13 @@ import type {
 
 @Controller("users")
 export class UsersController {
-  constructor(private readonly usersService: AbstractUsersService) {}
+  constructor(
+    private readonly usersService: AbstractUsersService,
+    private readonly sessionsService: AbstractUserSessionsService,
+    private readonly preferencesService: AbstractUserPreferencesService,
+    private readonly prospectOutreachService: AbstractProspectOutreachService,
+    private readonly impersonationAuditService: AbstractImpersonationAuditService,
+  ) {}
 
   @Post("accounts")
   async createAccount(@Body() body: CreateAccountBody) {
@@ -92,12 +102,12 @@ export class UsersController {
     if (!body.userId?.trim() || !body.sessionId?.trim()) {
       throw new BadRequestException("userId and sessionId are required");
     }
-    return this.usersService.validateSession(body.userId, body.sessionId);
+    return this.sessionsService.validateSession(body.userId, body.sessionId);
   }
 
   @Post(":id/sessions")
   async createSession(@Param("id") id: string, @Body() body?: CreateUserSessionBody) {
-    return this.usersService.createSession(id, { userAgent: body?.userAgent });
+    return this.sessionsService.createSession(id, { userAgent: body?.userAgent });
   }
 
   @Get(":id/sessions")
@@ -105,14 +115,14 @@ export class UsersController {
     @Param("id") id: string,
     @Query("currentSessionId") currentSessionId?: string,
   ) {
-    const sessions = await this.usersService.listSessions(id, currentSessionId);
+    const sessions = await this.sessionsService.listSessions(id, currentSessionId);
     return { sessions };
   }
 
   @Post(":id/sessions/revoke")
   @HttpCode(HttpStatus.NO_CONTENT)
   async revokeSession(@Param("id") id: string, @Body() body: { sessionId?: string }) {
-    await this.usersService.revokeSession(id, body.sessionId);
+    await this.sessionsService.revokeSession(id, body.sessionId);
   }
 
   @Post(":id/sessions/revoke-others")
@@ -121,13 +131,13 @@ export class UsersController {
     if (!body.keepSessionId?.trim()) {
       throw new BadRequestException("keepSessionId is required");
     }
-    await this.usersService.revokeOtherSessions(id, body.keepSessionId);
+    await this.sessionsService.revokeOtherSessions(id, body.keepSessionId);
   }
 
   @Delete(":id/sessions/:sessionId")
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteSession(@Param("id") id: string, @Param("sessionId") sessionId: string) {
-    await this.usersService.revokeSession(id, sessionId);
+    await this.sessionsService.revokeSession(id, sessionId);
   }
 
   @Get()
@@ -180,7 +190,7 @@ export class UsersController {
       expiresAt?: string;
     },
   ) {
-    return this.usersService.createImpersonationAudit(body);
+    return this.impersonationAuditService.createImpersonationAudit(body);
   }
 
   @Get("platform/prospect-outreaches")
@@ -196,13 +206,13 @@ export class UsersController {
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean);
-      return this.usersService.listProspectOutreachesBySirens(list);
+      return this.prospectOutreachService.listProspectOutreachesBySirens(list);
     }
     const normalizedStatus =
       status === "sent" || status === "failed" || status === "email_not_found" || status === "noted"
         ? status
         : undefined;
-    return this.usersService.listProspectOutreaches({
+    return this.prospectOutreachService.listProspectOutreaches({
       limit: limit ? Number.parseInt(limit, 10) : undefined,
       offset: offset ? Number.parseInt(offset, 10) : undefined,
       status: normalizedStatus,
@@ -224,7 +234,7 @@ export class UsersController {
       comment?: string;
     },
   ) {
-    return this.usersService.createProspectOutreach(body);
+    return this.prospectOutreachService.createProspectOutreach(body);
   }
 
   @Post("platform/prospect-outreaches/comment")
@@ -238,7 +248,7 @@ export class UsersController {
       sentByEmail: string;
     },
   ) {
-    return this.usersService.upsertProspectComment(body);
+    return this.prospectOutreachService.upsertProspectComment(body);
   }
 
   @Get(":userId/organization-memberships")
@@ -322,12 +332,12 @@ export class UsersController {
 
   @Get(":id/preferences")
   async getPreferences(@Param("id") id: string, @Query("organizationId") organizationId?: string) {
-    return this.usersService.getPreferences(id, organizationId?.trim() || undefined);
+    return this.preferencesService.getPreferences(id, organizationId?.trim() || undefined);
   }
 
   @Put(":id/preferences")
   async updatePreferences(@Param("id") id: string, @Body() body: UpdateUserPreferencesBody) {
-    return this.usersService.updatePreferences(id, body);
+    return this.preferencesService.updatePreferences(id, body);
   }
 
   @Patch(":id")
