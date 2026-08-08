@@ -131,6 +131,8 @@ test.describe("Domaine app (app.planwise.fr)", () => {
   test("la racine affiche le formulaire de connexion", async ({ page }) => {
     await page.goto(appUrl("/"));
     await expect(page).toHaveURL(appUrl("/"));
+    await page.getByRole("banner").getByRole("button", { name: "Se connecter" }).click();
+    await expect(page.getByRole("dialog", { name: "Connexion" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Connexion" })).toBeVisible();
   });
 
@@ -145,6 +147,8 @@ test.describe("Domaine app (app.planwise.fr)", () => {
 
   test("les pages d'authentification restent accessibles", async ({ page }) => {
     await page.goto(appUrl("/login"));
+    await page.getByRole("banner").getByRole("button", { name: "Se connecter" }).click();
+    await expect(page.getByRole("dialog", { name: "Connexion" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Connexion" })).toBeVisible();
 
     await page.goto(appUrl("/register"));
