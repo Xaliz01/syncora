@@ -39,6 +39,7 @@ import {
 import type { OrganizationSubscriptionDocument } from "../persistence/organization-subscription.schema";
 import type { ProcessedStripeEventDocument } from "../persistence/processed-stripe-event.schema";
 import { buildStripeCheckoutLegalParams } from "./stripe-legal-params";
+import { toSubscriptionResponse } from "./mappers/subscription.mapper";
 
 const DEFAULT_TRIAL_DAYS = 15;
 const PLAN_LABEL = BASE_SUBSCRIPTION_PLAN_LABEL;
@@ -138,23 +139,6 @@ function computeHasAccess(
   return false;
 }
 
-function computeSubscriptionMeta(
-  doc: OrganizationSubscriptionDocument | null,
-  status: OrganizationSubscriptionStatus,
-  hasAccess: boolean,
-): { billingOpen: boolean; canExtendTrial: boolean; trialExtensionCount: number } {
-  const billingOpen = isStripeCheckoutConfigured();
-  const trialExtensionCount = Math.max(0, Number(doc?.trialExtensionCount ?? 0) || 0);
-  const canExtendTrial =
-    !billingOpen &&
-    !!doc?.trialEndsAt &&
-    !hasAccess &&
-    !hasActiveBaseSubscription(doc) &&
-    (status === "trialing" || status === "none") &&
-    trialExtensionCount < MAX_TRIAL_EXTENSIONS;
-  return { billingOpen, canExtendTrial, trialExtensionCount };
-}
-
 @Injectable()
 export class SubscriptionsService {
   private readonly logger = new Logger(SubscriptionsService.name);
@@ -185,53 +169,6 @@ export class SubscriptionsService {
       }
     }
     return sanitizeAddonQuantities(fromMap);
-  }
-
-  private toResponse(
-    doc: OrganizationSubscriptionDocument,
-    monthly: { monthlyTotalCents: number | null; monthlyTotalCurrency: string | null },
-  ): OrganizationSubscriptionResponse {
-    const status = mapStripeStatus(doc.stripeStatus);
-    const trialEndsAt = doc.trialEndsAt ?? null;
-    const currentPeriodEnd = doc.currentPeriodEnd ?? null;
-    const activeAddons = (doc.activeAddons ?? []).filter(
-      (code): code is AddonCode => isValidAddonCode(code) && isBooleanAddonCode(code),
-    );
-    const addonQuantities = this.readAddonQuantities(doc);
-    const includedUsers = BASE_SUBSCRIPTION_INCLUDED_USERS;
-    const maxUsers = computeMaxOrganizationUsers(addonQuantities);
-    const storageQuotaBytes = computeOrganizationStorageQuotaBytes(addonQuantities);
-    const hasAccess = computeHasAccess(status, doc.currentPeriodEnd, trialEndsAt);
-    const { billingOpen, canExtendTrial, trialExtensionCount } = computeSubscriptionMeta(
-      doc,
-      status,
-      hasAccess,
-    );
-    return {
-      organizationId: doc.organizationId,
-      status,
-      hasAccess,
-      hasStripeSubscription: !!doc.stripeSubscriptionId?.trim(),
-      billingOpen,
-      canExtendTrial,
-      trialExtensionCount,
-      maxTrialExtensions: MAX_TRIAL_EXTENSIONS,
-      trialEndsAt: trialEndsAt ? trialEndsAt.toISOString() : null,
-      currentPeriodEnd: currentPeriodEnd ? currentPeriodEnd.toISOString() : null,
-      cancelAtPeriodEnd: doc.cancelAtPeriodEnd ?? false,
-      planName: BASE_SUBSCRIPTION_PLAN.name,
-      planLabel: PLAN_LABEL,
-      activeAddons,
-      addonQuantities,
-      includedUsers,
-      maxUsers,
-      storageQuotaBytes,
-      storageUsedBytes: 0,
-      storageWarning: false,
-      includedStorageBytes: BASE_SUBSCRIPTION_STORAGE_BYTES,
-      monthlyTotalCents: monthly.monthlyTotalCents,
-      monthlyTotalCurrency: monthly.monthlyTotalCurrency,
-    };
   }
 
   private buildNoneResponse(organizationId: string): OrganizationSubscriptionResponse {
@@ -308,7 +245,10 @@ export class SubscriptionsService {
       )
       .exec();
 
-    return this.toResponse(doc, { monthlyTotalCents: null, monthlyTotalCurrency: null });
+    return toSubscriptionResponse(doc, this.readAddonQuantities(doc), {
+      monthlyTotalCents: null,
+      monthlyTotalCurrency: null,
+    });
   }
 
   async extendTrial(organizationId: string): Promise<OrganizationSubscriptionResponse> {
@@ -367,7 +307,10 @@ export class SubscriptionsService {
       throw new NotFoundException("Abonnement introuvable pour cette organisation.");
     }
 
-    return this.toResponse(doc, { monthlyTotalCents: null, monthlyTotalCurrency: null });
+    return toSubscriptionResponse(doc, this.readAddonQuantities(doc), {
+      monthlyTotalCents: null,
+      monthlyTotalCurrency: null,
+    });
   }
 
   /**
@@ -416,7 +359,10 @@ export class SubscriptionsService {
       throw new NotFoundException("Abonnement introuvable pour cette organisation.");
     }
 
-    return this.toResponse(doc, { monthlyTotalCents: null, monthlyTotalCurrency: null });
+    return toSubscriptionResponse(doc, this.readAddonQuantities(doc), {
+      monthlyTotalCents: null,
+      monthlyTotalCurrency: null,
+    });
   }
 
   private async resolveMonthlyTotal(
@@ -489,7 +435,7 @@ export class SubscriptionsService {
     );
     const addonQuantities = this.readAddonQuantities(doc);
     const monthly = await this.resolveMonthlyTotal(doc, activeAddons, addonQuantities);
-    return this.toResponse(doc, monthly);
+    return toSubscriptionResponse(doc, this.readAddonQuantities(doc), monthly);
   }
 
   async createCheckoutSession(params: {

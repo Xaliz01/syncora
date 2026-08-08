@@ -4,6 +4,7 @@ import { Model } from "mongoose";
 import type { AgenceDocument } from "../persistence/agence.schema";
 import type { CreateAgenceBody, UpdateAgenceBody, AgenceResponse } from "@planwise/shared";
 import { AbstractAgencesService } from "./ports/agences.service.port";
+import { toAgenceResponse } from "./mappers/agence.mapper";
 
 @Injectable()
 export class AgencesService extends AbstractAgencesService {
@@ -25,7 +26,7 @@ export class AgencesService extends AbstractAgencesService {
         phone: body.phone,
         isTestData: body.isTestData === true,
       });
-      return this.toResponse(doc);
+      return toAgenceResponse(doc);
     } catch (err: unknown) {
       if ((err as { code?: number })?.code === 11000) {
         throw new ConflictException("Une agence avec ce nom existe déjà");
@@ -56,7 +57,7 @@ export class AgencesService extends AbstractAgencesService {
       }
       throw err;
     }
-    return this.toResponse(doc);
+    return toAgenceResponse(doc);
   }
 
   async getAgence(organizationId: string, agenceId: string): Promise<AgenceResponse> {
@@ -64,12 +65,12 @@ export class AgencesService extends AbstractAgencesService {
     if (!doc || doc.organizationId !== organizationId) {
       throw new NotFoundException("Agence introuvable");
     }
-    return this.toResponse(doc);
+    return toAgenceResponse(doc);
   }
 
   async listAgences(organizationId: string): Promise<AgenceResponse[]> {
     const docs = await this.agenceModel.find({ organizationId }).sort({ name: 1 }).exec();
-    return docs.map((doc) => this.toResponse(doc));
+    return docs.map((doc) => toAgenceResponse(doc));
   }
 
   async deleteAgence(organizationId: string, agenceId: string): Promise<{ deleted: true }> {
@@ -79,20 +80,5 @@ export class AgencesService extends AbstractAgencesService {
     }
     await doc.deleteOne();
     return { deleted: true };
-  }
-
-  private toResponse(doc: AgenceDocument): AgenceResponse {
-    return {
-      id: doc._id.toString(),
-      organizationId: doc.organizationId,
-      name: doc.name,
-      address: doc.address,
-      city: doc.city,
-      postalCode: doc.postalCode,
-      phone: doc.phone,
-      createdAt: doc.get("createdAt")?.toISOString(),
-      updatedAt: doc.get("updatedAt")?.toISOString(),
-      isTestData: doc.isTestData === true,
-    };
   }
 }

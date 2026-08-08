@@ -5,6 +5,7 @@ import * as webpush from "web-push";
 import type { PushSubscriptionResponse } from "@planwise/shared";
 import type { PushSubscriptionDocument } from "../persistence/push-subscription.schema";
 import { AbstractPushSubscriptionService } from "./ports/push-subscription.service.port";
+import { toPushSubscriptionResponse } from "./mappers/push-subscription.mapper";
 
 @Injectable()
 export class PushSubscriptionService extends AbstractPushSubscriptionService {
@@ -43,7 +44,7 @@ export class PushSubscriptionService extends AbstractPushSubscriptionService {
         { new: true, upsert: true },
       )
       .exec();
-    return this.toResponse(doc!);
+    return toPushSubscriptionResponse(doc!);
   }
 
   async unregister(userId: string, endpoint: string): Promise<{ deleted: boolean }> {
@@ -53,7 +54,7 @@ export class PushSubscriptionService extends AbstractPushSubscriptionService {
 
   async listForUser(userId: string, organizationId: string): Promise<PushSubscriptionResponse[]> {
     const docs = await this.subscriptionModel.find({ userId, organizationId }).exec();
-    return docs.map((d) => this.toResponse(d));
+    return docs.map((d) => toPushSubscriptionResponse(d));
   }
 
   async sendPushToUser(
@@ -105,15 +106,5 @@ export class PushSubscriptionService extends AbstractPushSubscriptionService {
     }
 
     return { sent, failed };
-  }
-
-  private toResponse(doc: PushSubscriptionDocument): PushSubscriptionResponse {
-    return {
-      id: doc._id.toString(),
-      userId: doc.userId,
-      organizationId: doc.organizationId,
-      endpoint: doc.endpoint,
-      createdAt: doc.get("createdAt")?.toISOString(),
-    };
   }
 }

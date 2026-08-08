@@ -8,6 +8,7 @@ import type {
 } from "@planwise/shared";
 import type { NotificationDocument } from "../persistence/notification.schema";
 import { AbstractNotificationsService } from "./ports/notifications.service.port";
+import { toNotificationResponse } from "./mappers/notification.mapper";
 
 @Injectable()
 export class NotificationsService extends AbstractNotificationsService {
@@ -43,7 +44,7 @@ export class NotificationsService extends AbstractNotificationsService {
       })),
     );
 
-    return docs.map((d) => this.toResponse(d as NotificationDocument));
+    return docs.map((d) => toNotificationResponse(d as NotificationDocument));
   }
 
   async listForUser(
@@ -61,7 +62,7 @@ export class NotificationsService extends AbstractNotificationsService {
     ]);
 
     return {
-      notifications: notifications.map((d) => this.toResponse(d)),
+      notifications: notifications.map((d) => toNotificationResponse(d)),
       unreadCount,
     };
   }
@@ -71,7 +72,7 @@ export class NotificationsService extends AbstractNotificationsService {
       .findOneAndUpdate({ _id: notificationId, userId }, { $set: { read: true } }, { new: true })
       .exec();
     if (!doc) throw new NotFoundException("Notification not found");
-    return this.toResponse(doc);
+    return toNotificationResponse(doc);
   }
 
   async markAllAsRead(userId: string, organizationId: string): Promise<{ updated: number }> {
@@ -88,25 +89,5 @@ export class NotificationsService extends AbstractNotificationsService {
       read: false,
     });
     return { count };
-  }
-
-  private toResponse(doc: NotificationDocument): NotificationResponse {
-    return {
-      id: doc._id.toString(),
-      organizationId: doc.organizationId,
-      userId: doc.userId,
-      actorId: doc.actorId,
-      actorName: doc.actorName,
-      entityType: doc.entityType,
-      entityId: doc.entityId,
-      entityLabel: doc.entityLabel,
-      action: doc.action,
-      relatedEntityType: doc.relatedEntityType,
-      relatedEntityId: doc.relatedEntityId,
-      relatedEntityLabel: doc.relatedEntityLabel,
-      detail: doc.detail,
-      read: doc.read,
-      createdAt: doc.get("createdAt")?.toISOString(),
-    };
   }
 }
