@@ -11,6 +11,7 @@ import { postAuthHomePath } from "@/lib/subscription-access";
 import { sanitizeAuthReturnPath } from "@/lib/auth-return-url";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { BetaBadge } from "@/components/ui/BetaBadge";
+import { AccompanimentSupportBlock } from "@/components/landing/AccompanimentSupportBlock";
 import {
   LANDING_HERO_HEADING,
   LANDING_HERO_HOOK,
@@ -137,133 +138,137 @@ export function LoginPage() {
           className="pointer-events-none absolute inset-0 bg-gradient-to-br from-brand-600/10 via-transparent to-violet-600/5 dark:from-brand-600/20 dark:to-violet-950/30"
           aria-hidden
         />
-        <div className="relative w-full max-w-6xl grid gap-6 md:grid-cols-2 md:items-stretch">
-          <section className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 p-6 sm:p-7 shadow-sm dark:shadow-slate-950/20">
-            <div className="mb-4 flex flex-wrap items-center gap-2">
-              <BetaBadge />
-              <span className="inline-flex items-center rounded-full border border-brand-200 dark:border-brand-500/40 bg-brand-50 dark:bg-brand-950/40 px-3 py-1 text-xs font-semibold text-brand-700 dark:text-brand-300">
-                {BASE_SUBSCRIPTION_PLAN.trialDays} jours d&apos;essai · sans carte bancaire
-              </span>
-            </div>
+        <div className="relative w-full max-w-6xl flex flex-col gap-6">
+          <AccompanimentSupportBlock variant="login" />
 
-            <div className="mb-4 flex items-center gap-3">
-              <Image
-                src="/planwise-logo-512.png"
-                alt=""
-                width={44}
-                height={44}
-                className="rounded-xl shadow-md shadow-brand-600/30"
-              />
-              <div>
-                <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
-                  Bienvenue sur Planwise
-                </h1>
-                <p className="text-xs text-slate-500 dark:text-slate-400">{LANDING_TAGLINE}</p>
+          <div className="grid gap-6 md:grid-cols-2 md:items-stretch">
+            <section className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 p-6 sm:p-7 shadow-sm dark:shadow-slate-950/20">
+              <div className="mb-4 flex flex-wrap items-center gap-2">
+                <BetaBadge />
+                <span className="inline-flex items-center rounded-full border border-brand-200 dark:border-brand-500/40 bg-brand-50 dark:bg-brand-950/40 px-3 py-1 text-xs font-semibold text-brand-700 dark:text-brand-300">
+                  {BASE_SUBSCRIPTION_PLAN.trialDays} jours d&apos;essai · sans carte bancaire
+                </span>
               </div>
-            </div>
 
-            <p className="text-sm font-medium text-slate-800 dark:text-slate-200 mb-2">
-              {LANDING_HERO_HEADING}
-            </p>
-            <p className="text-sm text-slate-600 dark:text-slate-300 mb-4 leading-relaxed">
-              {LANDING_HERO_SUPPORT}
-            </p>
-
-            <ul className="space-y-2">
-              {LOGIN_HIGHLIGHTS.map((item) => (
-                <li
-                  key={item.label}
-                  className="flex items-center gap-3 rounded-lg border border-slate-200/80 dark:border-slate-700/80 bg-slate-50/80 dark:bg-slate-950/50 px-3 py-2 text-sm text-slate-700 dark:text-slate-200"
-                >
-                  <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-700 dark:bg-brand-950/60 dark:text-brand-300">
-                    {item.icon}
-                  </span>
-                  {item.label}
-                </li>
-              ))}
-            </ul>
-
-            <p className="mt-4 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-              {LANDING_HERO_HOOK}
-            </p>
-            <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
-              <Link
-                href={getMarketingHomeHref()}
-                className="font-medium text-brand-600 dark:text-brand-400 hover:underline"
-              >
-                Découvrir Planwise
-              </Link>
-              {" · "}
-              sans engagement · résiliable à tout moment
-            </p>
-          </section>
-
-          <section className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 p-8 sm:p-10 shadow-sm dark:shadow-slate-950/20 flex flex-col justify-center">
-            <h2 className="text-3xl font-semibold mb-3">Connexion</h2>
-            <p className="text-slate-600 dark:text-slate-300 text-base leading-relaxed mb-8">
-              Accédez à votre espace Planwise avec votre email et mot de passe.
-            </p>
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {error && (
-                <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm p-3">
-                  {error}
+              <div className="mb-4 flex items-center gap-3">
+                <Image
+                  src="/planwise-logo-512.png"
+                  alt=""
+                  width={44}
+                  height={44}
+                  className="rounded-xl shadow-md shadow-brand-600/30"
+                />
+                <div>
+                  <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
+                    Bienvenue sur Planwise
+                  </h1>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{LANDING_TAGLINE}</p>
                 </div>
-              )}
-              <div>
-                <label
-                  htmlFor="email"
-                  className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2"
-                >
-                  Email
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  autoComplete="email"
-                  className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-3 text-base text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-                  placeholder="vous@exemple.fr"
-                />
               </div>
-              <div>
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2"
-                >
-                  Mot de passe
-                </label>
-                <input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  autoComplete="current-password"
-                  className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-3 text-base text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full rounded-lg bg-brand-600 py-3.5 text-base font-medium text-white hover:bg-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-50"
-              >
-                {loading ? "Connexion…" : "Se connecter"}
-              </button>
-            </form>
 
-            <p className="mt-8 text-center text-sm text-slate-600 dark:text-slate-300">
-              Pas encore de compte ?{" "}
-              <Link
-                href="/register"
-                className="text-brand-600 dark:text-brand-400 hover:text-brand-500 hover:underline font-medium"
-              >
-                Créer un compte
-              </Link>
-            </p>
-          </section>
+              <p className="text-sm font-medium text-slate-800 dark:text-slate-200 mb-2">
+                {LANDING_HERO_HEADING}
+              </p>
+              <p className="text-sm text-slate-600 dark:text-slate-300 mb-4 leading-relaxed">
+                {LANDING_HERO_SUPPORT}
+              </p>
+
+              <ul className="space-y-2">
+                {LOGIN_HIGHLIGHTS.map((item) => (
+                  <li
+                    key={item.label}
+                    className="flex items-center gap-3 rounded-lg border border-slate-200/80 dark:border-slate-700/80 bg-slate-50/80 dark:bg-slate-950/50 px-3 py-2 text-sm text-slate-700 dark:text-slate-200"
+                  >
+                    <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-700 dark:bg-brand-950/60 dark:text-brand-300">
+                      {item.icon}
+                    </span>
+                    {item.label}
+                  </li>
+                ))}
+              </ul>
+
+              <p className="mt-4 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                {LANDING_HERO_HOOK}
+              </p>
+              <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
+                <Link
+                  href={getMarketingHomeHref()}
+                  className="font-medium text-brand-600 dark:text-brand-400 hover:underline"
+                >
+                  Découvrir Planwise
+                </Link>
+                {" · "}
+                sans engagement · résiliable à tout moment
+              </p>
+            </section>
+
+            <section className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 p-8 sm:p-10 shadow-sm dark:shadow-slate-950/20 flex flex-col justify-center">
+              <h2 className="text-3xl font-semibold mb-3">Connexion</h2>
+              <p className="text-slate-600 dark:text-slate-300 text-base leading-relaxed mb-8">
+                Accédez à votre espace Planwise avec votre email et mot de passe.
+              </p>
+
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {error && (
+                  <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm p-3">
+                    {error}
+                  </div>
+                )}
+                <div>
+                  <label
+                    htmlFor="email"
+                    className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2"
+                  >
+                    Email
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    autoComplete="email"
+                    className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-3 text-base text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                    placeholder="vous@exemple.fr"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="password"
+                    className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2"
+                  >
+                    Mot de passe
+                  </label>
+                  <input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    autoComplete="current-password"
+                    className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-3 text-base text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full rounded-lg bg-brand-600 py-3.5 text-base font-medium text-white hover:bg-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-50"
+                >
+                  {loading ? "Connexion…" : "Se connecter"}
+                </button>
+              </form>
+
+              <p className="mt-8 text-center text-sm text-slate-600 dark:text-slate-300">
+                Pas encore de compte ?{" "}
+                <Link
+                  href="/register"
+                  className="text-brand-600 dark:text-brand-400 hover:text-brand-500 hover:underline font-medium"
+                >
+                  Créer un compte
+                </Link>
+              </p>
+            </section>
+          </div>
         </div>
       </main>
     </div>

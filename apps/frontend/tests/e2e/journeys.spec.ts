@@ -39,7 +39,11 @@ test.describe("Parcours navigation auth", () => {
 
     await Promise.all([
       page.waitForURL(/\/register/),
-      page.getByRole("link", { name: /Créer un compte/ }).click(),
+      page
+        .getByRole("paragraph")
+        .filter({ hasText: "Pas encore de compte" })
+        .getByRole("link", { name: /Créer un compte/ })
+        .click(),
     ]);
     await expect(page.getByRole("heading", { name: "Créer votre compte" })).toBeVisible({
       timeout: 15_000,
@@ -531,7 +535,11 @@ test.describe("Parcours inter-pages publiques complet", () => {
 
     await Promise.all([
       page.waitForURL(/\/register/),
-      page.getByRole("link", { name: /Créer un compte/ }).click(),
+      page
+        .getByRole("paragraph")
+        .filter({ hasText: "Pas encore de compte" })
+        .getByRole("link", { name: /Créer un compte/ })
+        .click(),
     ]);
     await expect(page.getByRole("heading", { name: "Créer votre compte" })).toBeVisible({
       timeout: 15_000,

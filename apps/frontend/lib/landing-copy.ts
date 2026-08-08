@@ -11,6 +11,32 @@ export const LANDING_HERO_SUPPORT =
 export const LANDING_HERO_HOOK =
   "Essayez Planwise en moins de deux minutes : créez votre compte, renseignez votre SIRET, injectez en un clic un jeu de données de démo.";
 
+/**
+ * Accompagnement éditeur (landing + login) : évolution produit, aide à l’import, chat.
+ */
+export const LANDING_ACCOMPANIMENT = {
+  title: "On avance avec vous",
+  intro:
+    "Planwise est en constante évolution : de nouvelles fonctionnalités arrivent régulièrement, et l’éditeur reste à l’écoute de vos besoins métier.",
+  points: [
+    {
+      title: "Produit vivant",
+      description:
+        "L’application évolue en continu. Vos retours orientent les fonctionnalités futures — dites-nous ce qui vous manque vraiment sur le terrain.",
+    },
+    {
+      title: "Déjà un CRM ?",
+      description:
+        "On peut vous aider à importer vos données (clients, dossiers…) pour démarrer sans tout ressaisir.",
+    },
+    {
+      title: "Chat à votre disposition",
+      description:
+        "Une question, une idée de fonctionnalité, besoin d’aide pour migrer ou démarrer ? Ouvrez le chat : on vous répond.",
+    },
+  ],
+} as const;
+
 /** Piliers marketing (landing + page de connexion). */
 export const LANDING_PILLARS = [
   {

@@ -8,6 +8,7 @@ import {
   BASE_SUBSCRIPTION_TRIAL_LABEL,
 } from "@planwise/shared";
 import { ScrollReveal } from "@/components/landing/ScrollReveal";
+import { AccompanimentSupportBlock } from "@/components/landing/AccompanimentSupportBlock";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { BetaBadge } from "@/components/ui/BetaBadge";
 import {
@@ -171,55 +172,65 @@ export function LandingPage() {
             className="pointer-events-none absolute inset-0 bg-gradient-to-br from-brand-600/10 via-transparent to-violet-600/5 dark:from-brand-600/20 dark:to-violet-950/30"
             aria-hidden
           />
-          <div className="relative max-w-6xl mx-auto px-4 py-16 sm:py-24">
-            <ScrollReveal when="mount">
-              <span className="inline-flex items-center gap-2 mb-4">
-                <BetaBadge />
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 dark:border-brand-500/40 bg-brand-50 dark:bg-brand-950/40 px-3 py-1 text-xs font-semibold text-brand-700 dark:text-brand-300">
-                  <span aria-hidden>✦</span>
-                  {BASE_SUBSCRIPTION_PLAN.trialDays} jours d&apos;essai gratuit · sans carte
-                  bancaire
-                </span>
-              </span>
-            </ScrollReveal>
-            <ScrollReveal when="mount" delayMs={80}>
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-slate-900 dark:text-white max-w-3xl">
-                {LANDING_HERO_HEADING}
-              </h1>
-            </ScrollReveal>
-            <ScrollReveal when="mount" delayMs={160}>
-              <p className="mt-5 text-lg text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed">
-                {LANDING_HERO_SUPPORT}
-              </p>
-              <p className="mt-3 text-base text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed">
-                {LANDING_HERO_HOOK} Essai {BASE_SUBSCRIPTION_PLAN.trialDays} jours,{" "}
-                <span className="font-semibold text-slate-800 dark:text-slate-200">
-                  sans aucun moyen de paiement
-                </span>
-                .
-              </p>
-            </ScrollReveal>
-            <ScrollReveal when="mount" delayMs={240}>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <Link
-                  href="/register"
-                  className="inline-flex items-center rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-500 transition shadow-sm shadow-brand-600/20"
-                >
-                  Démarrer mon essai gratuit
-                </Link>
-                <Link
-                  href="/login"
-                  className="inline-flex items-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
-                >
-                  Se connecter
-                </Link>
+          <div className="relative max-w-6xl mx-auto px-4 py-14 sm:py-20 lg:py-24">
+            <div className="grid gap-10 lg:grid-cols-2 lg:gap-12 lg:items-center">
+              <div>
+                <ScrollReveal when="mount">
+                  <span className="inline-flex items-center gap-2 mb-4">
+                    <BetaBadge />
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 dark:border-brand-500/40 bg-brand-50 dark:bg-brand-950/40 px-3 py-1 text-xs font-semibold text-brand-700 dark:text-brand-300">
+                      <span aria-hidden>✦</span>
+                      {BASE_SUBSCRIPTION_PLAN.trialDays} jours d&apos;essai gratuit · sans carte
+                      bancaire
+                    </span>
+                  </span>
+                </ScrollReveal>
+                <ScrollReveal when="mount" delayMs={80}>
+                  <h1 className="text-3xl sm:text-4xl lg:text-[2.75rem] lg:leading-tight font-bold tracking-tight text-slate-900 dark:text-white">
+                    {LANDING_HERO_HEADING}
+                  </h1>
+                </ScrollReveal>
+                <ScrollReveal when="mount" delayMs={160}>
+                  <p className="mt-5 text-lg text-slate-600 dark:text-slate-300 leading-relaxed">
+                    {LANDING_HERO_SUPPORT}
+                  </p>
+                  <p className="mt-3 text-base text-slate-600 dark:text-slate-300 leading-relaxed">
+                    {LANDING_HERO_HOOK} Essai {BASE_SUBSCRIPTION_PLAN.trialDays} jours,{" "}
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">
+                      sans aucun moyen de paiement
+                    </span>
+                    .
+                  </p>
+                </ScrollReveal>
+                <ScrollReveal when="mount" delayMs={240}>
+                  <div className="mt-8 flex flex-wrap gap-3">
+                    <Link
+                      href="/register"
+                      className="inline-flex items-center rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-500 transition shadow-sm shadow-brand-600/20"
+                    >
+                      Démarrer mon essai gratuit
+                    </Link>
+                    <Link
+                      href="/login"
+                      className="inline-flex items-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                    >
+                      Se connecter
+                    </Link>
+                  </div>
+                </ScrollReveal>
+                <ScrollReveal when="mount" delayMs={320}>
+                  <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
+                    Aucune carte bancaire requise · sans engagement · résiliable à tout moment
+                  </p>
+                </ScrollReveal>
               </div>
-            </ScrollReveal>
-            <ScrollReveal when="mount" delayMs={320}>
-              <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
-                Aucune carte bancaire requise · sans engagement · résiliable à tout moment
-              </p>
-            </ScrollReveal>
+
+              <ScrollReveal when="mount" delayMs={200}>
+                <div id="accompagnement" className="lg:pl-2">
+                  <AccompanimentSupportBlock variant="landing" />
+                </div>
+              </ScrollReveal>
+            </div>
           </div>
         </section>
 
