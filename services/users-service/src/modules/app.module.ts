@@ -13,7 +13,15 @@ import { SupportImpersonationAuditSchema } from "../persistence/support-imperson
 import { ProspectOutreachSchema } from "../persistence/prospect-outreach.schema";
 import { UserSessionSchema } from "../persistence/user-session.schema";
 import { AbstractUsersService } from "../domain/ports/users.service.port";
+import { AbstractUserSessionsService } from "../domain/ports/user-sessions.service.port";
+import { AbstractUserPreferencesService } from "../domain/ports/user-preferences.service.port";
+import { AbstractProspectOutreachService } from "../domain/ports/prospect-outreach.service.port";
+import { AbstractImpersonationAuditService } from "../domain/ports/impersonation-audit.service.port";
 import { UsersService } from "../domain/users.service";
+import { UserSessionsService } from "../domain/user-sessions.service";
+import { UserPreferencesService } from "../domain/user-preferences.service";
+import { ProspectOutreachService } from "../domain/prospect-outreach.service";
+import { ImpersonationAuditService } from "../domain/impersonation-audit.service";
 
 @Module({
   imports: [
@@ -31,7 +39,11 @@ import { UsersService } from "../domain/users.service";
   providers: [
     provideHealthServiceName("planwise-users-service"),
     provideHttpAccessLogInterceptor(),
+    { provide: AbstractUserSessionsService, useClass: UserSessionsService },
     { provide: AbstractUsersService, useClass: UsersService },
+    { provide: AbstractUserPreferencesService, useClass: UserPreferencesService },
+    { provide: AbstractProspectOutreachService, useClass: ProspectOutreachService },
+    { provide: AbstractImpersonationAuditService, useClass: ImpersonationAuditService },
   ],
 })
 export class AppModule {}

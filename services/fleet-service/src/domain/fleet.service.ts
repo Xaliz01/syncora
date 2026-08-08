@@ -7,9 +7,8 @@ import {
   type CreateVehicleBody,
   type UpdateVehicleBody,
   type VehicleResponse,
-  type VehicleStatus,
-  type VehicleType,
 } from "@planwise/shared";
+import { toVehicleResponse } from "./mappers/vehicle.mapper";
 import { AbstractFleetService } from "./ports/fleet.service.port";
 
 @Injectable()
@@ -45,7 +44,7 @@ export class FleetService extends AbstractFleetService {
       status: body.status ?? "actif",
       isTestData: body.isTestData === true,
     });
-    return this.toVehicleResponse(doc);
+    return toVehicleResponse(doc);
   }
 
   async updateVehicle(
@@ -82,7 +81,7 @@ export class FleetService extends AbstractFleetService {
     if (body.mileage !== undefined) doc.mileage = body.mileage;
     if (body.status !== undefined) doc.status = body.status;
     await doc.save();
-    return this.toVehicleResponse(doc);
+    return toVehicleResponse(doc);
   }
 
   async getVehicle(organizationId: string, vehicleId: string): Promise<VehicleResponse> {
@@ -92,7 +91,7 @@ export class FleetService extends AbstractFleetService {
     if (!doc) {
       throw new NotFoundException("Véhicule introuvable");
     }
-    return this.toVehicleResponse(doc);
+    return toVehicleResponse(doc);
   }
 
   async listVehicles(organizationId: string): Promise<VehicleResponse[]> {
@@ -100,7 +99,7 @@ export class FleetService extends AbstractFleetService {
       .find({ organizationId, ...activeDocumentFilter })
       .sort({ createdAt: -1 })
       .exec();
-    return docs.map((doc) => this.toVehicleResponse(doc));
+    return docs.map((doc) => toVehicleResponse(doc));
   }
 
   async deleteVehicle(organizationId: string, vehicleId: string): Promise<{ deleted: true }> {
@@ -129,7 +128,7 @@ export class FleetService extends AbstractFleetService {
     }
     vehicle.assignedTeamId = teamId;
     await vehicle.save();
-    return this.toVehicleResponse(vehicle);
+    return toVehicleResponse(vehicle);
   }
 
   async unassignTeam(organizationId: string, vehicleId: string): Promise<VehicleResponse> {
@@ -141,7 +140,7 @@ export class FleetService extends AbstractFleetService {
     }
     vehicle.assignedTeamId = undefined;
     await vehicle.save();
-    return this.toVehicleResponse(vehicle);
+    return toVehicleResponse(vehicle);
   }
 
   async unassignTeamFromAllVehicles(organizationId: string, teamId: string): Promise<void> {
@@ -154,25 +153,5 @@ export class FleetService extends AbstractFleetService {
   async purgeTestData(organizationId: string): Promise<{ purged: true }> {
     await this.vehicleModel.deleteMany({ organizationId, isTestData: true }).exec();
     return { purged: true };
-  }
-
-  private toVehicleResponse(doc: VehicleDocument): VehicleResponse {
-    return {
-      id: doc._id.toString(),
-      organizationId: doc.organizationId,
-      type: doc.type as VehicleType,
-      registrationNumber: doc.registrationNumber,
-      brand: doc.brand,
-      model: doc.vehicleModel,
-      year: doc.year,
-      color: doc.color,
-      vin: doc.vin,
-      mileage: doc.mileage,
-      status: doc.status as VehicleStatus,
-      assignedTeamId: doc.assignedTeamId,
-      createdAt: doc.get("createdAt")?.toISOString(),
-      updatedAt: doc.get("updatedAt")?.toISOString(),
-      isTestData: doc.isTestData === true,
-    };
   }
 }

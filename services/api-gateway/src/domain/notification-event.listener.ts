@@ -24,9 +24,7 @@ import type {
 } from "@planwise/shared";
 import { getEnabledChannels, withNotificationOrganizationId } from "@planwise/shared";
 import { AbstractSubscriptionsGatewayService } from "./ports/subscriptions.service.port";
-
-const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
-const NOTIFICATIONS_URL = process.env.NOTIFICATIONS_SERVICE_URL ?? "http://localhost:3010";
+import { SERVICE_URLS } from "../infrastructure/service-urls.config";
 const DEFAULT_SIGNUP_ALERT_EMAIL = "mail@benoistbabin.fr";
 
 @Injectable()
@@ -88,7 +86,7 @@ export class NotificationEventListener {
     try {
       const res = await firstValueFrom(
         this.httpService.post<SendEmailNotificationResponse>(
-          `${NOTIFICATIONS_URL}/email/transactional`,
+          `${SERVICE_URLS.notifications}/email/transactional`,
           {
             to,
             subject: params.subject,
@@ -144,7 +142,9 @@ export class NotificationEventListener {
           userIds: inAppRecipientIds,
         };
 
-        await firstValueFrom(this.httpService.post(`${NOTIFICATIONS_URL}/notifications`, body));
+        await firstValueFrom(
+          this.httpService.post(`${SERVICE_URLS.notifications}/notifications`, body),
+        );
       }
 
       if (eventType) {
@@ -190,7 +190,7 @@ export class NotificationEventListener {
           const title = this.buildPushTitle(event);
           const body = this.buildPushBody(event);
           await firstValueFrom(
-            this.httpService.post(`${NOTIFICATIONS_URL}/push-subscriptions/send`, {
+            this.httpService.post(`${SERVICE_URLS.notifications}/push-subscriptions/send`, {
               userId,
               organizationId: event.organizationId,
               title,
@@ -212,7 +212,7 @@ export class NotificationEventListener {
     try {
       const response = await firstValueFrom(
         this.httpService.get<NotificationPreferencesResponse>(
-          `${NOTIFICATIONS_URL}/notification-preferences`,
+          `${SERVICE_URLS.notifications}/notification-preferences`,
           { params: { userId, organizationId } },
         ),
       );
@@ -290,7 +290,7 @@ export class NotificationEventListener {
           const title = this.buildPushTitle(event);
           const body = this.buildPushBody(event);
           await firstValueFrom(
-            this.httpService.post(`${NOTIFICATIONS_URL}/email/send`, {
+            this.httpService.post(`${SERVICE_URLS.notifications}/email/send`, {
               userId,
               organizationId: event.organizationId,
               subject: title,
@@ -330,7 +330,7 @@ export class NotificationEventListener {
   private async getOrganizationUserIds(organizationId: string): Promise<string[]> {
     try {
       const response = await firstValueFrom(
-        this.httpService.get<UserResponse[]>(`${USERS_URL}/users`, {
+        this.httpService.get<UserResponse[]>(`${SERVICE_URLS.users}/users`, {
           params: { organizationId },
         }),
       );

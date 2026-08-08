@@ -5,14 +5,7 @@ import { firstValueFrom } from "rxjs";
 import axios from "axios";
 import { AbstractOrganizationsService } from "./ports/organizations.service.port";
 import { CronRunRecorder } from "./cron-run.recorder";
-
-const SUBSCRIPTIONS_URL = process.env.SUBSCRIPTIONS_SERVICE_URL ?? "http://localhost:3008";
-const CASES_URL = process.env.CASES_SERVICE_URL ?? "http://localhost:3004";
-const STOCK_URL = process.env.STOCK_SERVICE_URL ?? "http://localhost:3007";
-const FLEET_URL = process.env.FLEET_SERVICE_URL ?? "http://localhost:3005";
-const TECHNICIANS_URL = process.env.TECHNICIANS_SERVICE_URL ?? "http://localhost:3006";
-const CUSTOMERS_URL = process.env.CUSTOMERS_SERVICE_URL ?? "http://localhost:3009";
-const PERMISSIONS_URL = process.env.PERMISSIONS_SERVICE_URL ?? "http://localhost:3003";
+import { SERVICE_URLS } from "../infrastructure/service-urls.config";
 
 /** Purge quotidienne des données de démo (4h) — via `cron`, sans @nestjs/schedule. */
 const CLEANUP_CRON = "0 4 * * *";
@@ -105,7 +98,7 @@ export class TrialTestDataCleanupScheduler implements OnModuleInit, OnModuleDest
     try {
       const res = await firstValueFrom(
         this.httpService.get<{ status: string; trialEndsAt: string | null }>(
-          `${SUBSCRIPTIONS_URL}/subscriptions/current`,
+          `${SERVICE_URLS.subscriptions}/subscriptions/current`,
           { params: { organizationId } },
         ),
       );
@@ -120,7 +113,14 @@ export class TrialTestDataCleanupScheduler implements OnModuleInit, OnModuleDest
 
   private async purgeAllServices(organizationId: string): Promise<void> {
     const query = { organizationId };
-    const urls = [CASES_URL, STOCK_URL, FLEET_URL, TECHNICIANS_URL, CUSTOMERS_URL, PERMISSIONS_URL];
+    const urls = [
+      SERVICE_URLS.cases,
+      SERVICE_URLS.stock,
+      SERVICE_URLS.fleet,
+      SERVICE_URLS.technicians,
+      SERVICE_URLS.customers,
+      SERVICE_URLS.permissions,
+    ];
     for (const url of urls) {
       try {
         await firstValueFrom(this.httpService.delete(`${url}/test-data`, { params: query }));

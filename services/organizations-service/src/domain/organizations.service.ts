@@ -12,6 +12,7 @@ import {
   type UpdateOrganizationTrialTestDataBody,
 } from "@planwise/shared";
 import { AbstractOrganizationsService } from "./ports/organizations.service.port";
+import { toOrganizationResponse } from "./mappers/organization.mapper";
 
 function requireBillingEmail(raw: string | null | undefined): string {
   const email = raw?.trim() ?? "";
@@ -30,31 +31,6 @@ export class OrganizationsService extends AbstractOrganizationsService {
     super();
   }
 
-  private toResponse(doc: OrganizationDocument): OrganizationResponse {
-    return {
-      id: doc._id.toString(),
-      name: doc.name,
-      siret: doc.siret,
-      email: doc.email,
-      phone: doc.phone,
-      addressLine1: doc.addressLine1,
-      addressLine2: doc.addressLine2,
-      postalCode: doc.postalCode,
-      city: doc.city,
-      country: doc.country,
-      logoDocumentId: doc.logoDocumentId || undefined,
-      createdAt: doc.get("createdAt")?.toISOString(),
-      updatedAt: doc.get("updatedAt")?.toISOString(),
-      trialTestData: doc.trialTestData
-        ? {
-            status: doc.trialTestData.status,
-            injectedAt: doc.trialTestData.injectedAt?.toISOString(),
-            errorMessage: doc.trialTestData.errorMessage ?? null,
-          }
-        : undefined,
-    };
-  }
-
   async create(body: CreateOrganizationBody): Promise<OrganizationResponse> {
     const email = requireBillingEmail(body.email);
     const doc = await this.organizationModel.create({
@@ -67,13 +43,13 @@ export class OrganizationsService extends AbstractOrganizationsService {
       city: body.city?.trim() || undefined,
       country: body.country?.trim() || undefined,
     });
-    return this.toResponse(doc);
+    return toOrganizationResponse(doc);
   }
 
   async findById(id: string): Promise<OrganizationResponse | null> {
     const doc = await this.organizationModel.findOne({ _id: id, ...activeDocumentFilter }).exec();
     if (!doc) return null;
-    return this.toResponse(doc);
+    return toOrganizationResponse(doc);
   }
 
   async update(id: string, body: UpdateOrganizationBody): Promise<OrganizationResponse | null> {
@@ -94,7 +70,7 @@ export class OrganizationsService extends AbstractOrganizationsService {
       .findOneAndUpdate({ _id: id, ...activeDocumentFilter }, { $set: update }, { new: true })
       .exec();
     if (!doc) return null;
-    return this.toResponse(doc);
+    return toOrganizationResponse(doc);
   }
 
   async getTrialTestDataStatus(organizationId: string): Promise<TrialTestDataStatusResponse> {
@@ -171,7 +147,7 @@ export class OrganizationsService extends AbstractOrganizationsService {
     ]);
 
     return {
-      organizations: docs.map((doc) => this.toResponse(doc)),
+      organizations: docs.map((doc) => toOrganizationResponse(doc)),
       total,
     };
   }

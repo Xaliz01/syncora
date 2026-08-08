@@ -6,41 +6,22 @@ import type {
   CreateAccountResult,
   CreateInvitedUserBody,
   CreateOrganizationMembershipBody,
-  CreateProspectOutreachBody,
   CreateUserBody,
-  CreateUserSessionResponse,
   InvitationActivationHintsResponse,
   IssueEmailVerificationResult,
   OrganizationMembershipResponse,
   PatchUserBody,
   PlatformUserSummary,
-  ProspectOutreachResponse,
-  ProspectOutreachStatus,
-  ProspectOutreachesBySirensResponse,
-  ProspectOutreachesListResponse,
   UpdateUserNameBody,
-  UpdateUserPreferencesBody,
-  UpsertProspectCommentBody,
-  UserPreferencesResponse,
   UserResponse,
-  UserSessionResponse,
   ValidateCredentialsResponse,
-  ValidateUserSessionResponse,
 } from "@planwise/shared";
+
+export { type CreateImpersonationAuditBody } from "./impersonation-audit.service.port";
 
 export interface PlatformUsersDirectoryResult {
   users: PlatformUserSummary[];
   total: number;
-}
-
-export interface CreateImpersonationAuditBody {
-  impersonatorUserId: string;
-  impersonatorEmail: string;
-  targetUserId: string;
-  targetEmail: string;
-  organizationId: string;
-  reason: string;
-  expiresAt?: string;
 }
 
 export abstract class AbstractUsersService {
@@ -78,25 +59,9 @@ export abstract class AbstractUsersService {
     email: string,
     password: string,
   ): Promise<ValidateCredentialsResponse | null>;
-  abstract createSession(
-    userId: string,
-    options?: { userAgent?: string },
-  ): Promise<CreateUserSessionResponse>;
-  abstract validateSession(userId: string, sessionId: string): Promise<ValidateUserSessionResponse>;
-  abstract revokeSession(userId: string, sessionId?: string): Promise<void>;
-  abstract revokeOtherSessions(userId: string, keepSessionId: string): Promise<void>;
-  abstract listSessions(userId: string, currentSessionId?: string): Promise<UserSessionResponse[]>;
   abstract updateName(id: string, body: UpdateUserNameBody): Promise<UserResponse>;
   abstract changePassword(id: string, body: ChangePasswordBody): Promise<void>;
-  abstract getPreferences(
-    userId: string,
-    organizationId?: string,
-  ): Promise<UserPreferencesResponse>;
-  abstract updatePreferences(
-    userId: string,
-    body: UpdateUserPreferencesBody,
-  ): Promise<UserPreferencesResponse>;
-  /** Id du premier admin de l’organisation (membership admin le plus ancien), ou null. */
+  /** Id du premier admin de l'organisation (membership admin le plus ancien), ou null. */
   abstract findFoundingAdminUserId(organizationId: string): Promise<string | null>;
   abstract listPlatformDirectory(filters?: {
     search?: string;
@@ -107,20 +72,4 @@ export abstract class AbstractUsersService {
   abstract countUsersByOrganizationIds(
     organizationIds: string[],
   ): Promise<Record<string, { userCount: number; lastUserLoginAt?: string }>>;
-  abstract createImpersonationAudit(body: CreateImpersonationAuditBody): Promise<{ id: string }>;
-  abstract createProspectOutreach(
-    body: CreateProspectOutreachBody,
-  ): Promise<ProspectOutreachResponse>;
-  abstract upsertProspectComment(
-    body: UpsertProspectCommentBody,
-  ): Promise<ProspectOutreachResponse>;
-  abstract listProspectOutreachesBySirens(
-    sirens: string[],
-  ): Promise<ProspectOutreachesBySirensResponse>;
-  abstract listProspectOutreaches(options?: {
-    limit?: number;
-    offset?: number;
-    status?: ProspectOutreachStatus;
-    search?: string;
-  }): Promise<ProspectOutreachesListResponse>;
 }

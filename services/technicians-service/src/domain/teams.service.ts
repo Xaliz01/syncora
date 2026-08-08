@@ -8,8 +8,9 @@ import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import type { TeamDocument } from "../persistence/team.schema";
 import type { AgenceDocument } from "../persistence/agence.schema";
-import type { CreateTeamBody, UpdateTeamBody, TeamResponse, TeamStatus } from "@planwise/shared";
+import type { CreateTeamBody, UpdateTeamBody, TeamResponse } from "@planwise/shared";
 import { AbstractTeamsService } from "./ports/teams.service.port";
+import { toTeamResponse } from "./mappers/team.mapper";
 
 @Injectable()
 export class TeamsService extends AbstractTeamsService {
@@ -35,7 +36,7 @@ export class TeamsService extends AbstractTeamsService {
           : undefined,
         isTestData: body.isTestData === true,
       });
-      return this.toResponse(doc);
+      return toTeamResponse(doc);
     } catch (err: unknown) {
       if ((err as { code?: number })?.code === 11000) {
         throw new ConflictException("Une équipe avec ce nom existe déjà");
@@ -72,7 +73,7 @@ export class TeamsService extends AbstractTeamsService {
       }
       throw err;
     }
-    return this.toResponse(doc);
+    return toTeamResponse(doc);
   }
 
   async getTeam(organizationId: string, teamId: string): Promise<TeamResponse> {
@@ -80,7 +81,7 @@ export class TeamsService extends AbstractTeamsService {
     if (!doc || doc.organizationId !== organizationId) {
       throw new NotFoundException("Équipe introuvable");
     }
-    return this.toResponse(doc);
+    return toTeamResponse(doc);
   }
 
   async listTeams(organizationId: string): Promise<TeamResponse[]> {
@@ -95,7 +96,7 @@ export class TeamsService extends AbstractTeamsService {
       : [];
     const agenceMap = new Map(agences.map((a) => [a._id.toString(), a.name]));
 
-    return docs.map((doc) => this.toResponse(doc, agenceMap.get(doc.agenceId ?? "")));
+    return docs.map((doc) => toTeamResponse(doc, agenceMap.get(doc.agenceId ?? "")));
   }
 
   async deleteTeam(organizationId: string, teamId: string): Promise<{ deleted: true }> {
@@ -120,7 +121,7 @@ export class TeamsService extends AbstractTeamsService {
       doc.technicianIds.push(technicianId);
       await doc.save();
     }
-    return this.toResponse(doc);
+    return toTeamResponse(doc);
   }
 
   async removeMember(
@@ -136,23 +137,7 @@ export class TeamsService extends AbstractTeamsService {
       )
       .exec();
     if (!doc) throw new NotFoundException("Équipe introuvable");
-    return this.toResponse(doc);
-  }
-
-  private toResponse(doc: TeamDocument, agenceName?: string): TeamResponse {
-    return {
-      id: doc._id.toString(),
-      organizationId: doc.organizationId,
-      name: doc.name,
-      agenceId: doc.agenceId,
-      agenceName,
-      technicianIds: doc.technicianIds,
-      status: doc.status as TeamStatus,
-      calendarColor: doc.calendarColor,
-      createdAt: doc.get("createdAt")?.toISOString(),
-      updatedAt: doc.get("updatedAt")?.toISOString(),
-      isTestData: doc.isTestData === true,
-    };
+    return toTeamResponse(doc);
   }
 
   /** Accepte #RGB ou #RRGGBB ; normalise en #RRGGBB majuscules */

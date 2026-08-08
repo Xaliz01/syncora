@@ -14,7 +14,13 @@ import {
   migrateQuickActionIdsToBookmarks,
 } from "@planwise/shared";
 import { UsersService } from "../users.service";
+import { UserSessionsService } from "../user-sessions.service";
+import { UserPreferencesService } from "../user-preferences.service";
+import { ProspectOutreachService } from "../prospect-outreach.service";
 import { AbstractUsersService } from "../ports/users.service.port";
+import { AbstractUserSessionsService } from "../ports/user-sessions.service.port";
+import { AbstractUserPreferencesService } from "../ports/user-preferences.service.port";
+import { AbstractProspectOutreachService } from "../ports/prospect-outreach.service.port";
 
 const defaultQuickActions = DEFAULT_QUICK_ACTIONS.map((b) => ({ ...b }));
 const bookmarksFrom = (ids: string[]) => migrateQuickActionIdsToBookmarks(ids)!;
@@ -24,6 +30,34 @@ jest.mock("bcrypt", () => ({
   compare: jest.fn(),
 }));
 
+const mockDoc = (overrides: Record<string, unknown> = {}) => ({
+  _id: { toString: () => "user-123" },
+  organizationId: "org-1",
+  email: "user@example.com",
+  passwordHash: "hashed",
+  name: "Test User",
+  status: "active",
+  get: jest.fn((key: string) => (key === "createdAt" ? new Date("2025-01-01") : undefined)),
+  save: jest.fn().mockResolvedValue(undefined),
+  ...overrides,
+});
+
+const mockMemDoc = (overrides: Record<string, unknown> = {}) => ({
+  _id: { toString: () => "mem-1" },
+  userId: "user-123",
+  organizationId: "org-1",
+  role: "member",
+  membershipStatus: "active",
+  deletedAt: null,
+  save: jest.fn().mockResolvedValue(undefined),
+  get: jest.fn((key: string) => {
+    if (key === "createdAt") return new Date("2025-01-01");
+    if (key === "updatedAt") return new Date("2025-01-01");
+    return undefined;
+  }),
+  ...overrides,
+});
+
 describe("UsersService", () => {
   let service: UsersService;
   let mockUserModel: {
@@ -32,6 +66,7 @@ describe("UsersService", () => {
     findOneAndUpdate: jest.Mock;
     find: jest.Mock;
     updateOne: jest.Mock;
+    countDocuments: jest.Mock;
     collection: { findOne: jest.Mock; updateOne: jest.Mock };
   };
   let mockMembershipModel: {
@@ -41,52 +76,9 @@ describe("UsersService", () => {
     countDocuments: jest.Mock;
     updateMany: jest.Mock;
   };
-  let mockPreferencesModel: {
-    findOne: jest.Mock;
-    findOneAndUpdate: jest.Mock;
+  let mockSessionsService: {
+    revokeSession: jest.Mock;
   };
-  let mockSessionModel: {
-    create: jest.Mock;
-    find: jest.Mock;
-    findOne: jest.Mock;
-    deleteOne: jest.Mock;
-    deleteMany: jest.Mock;
-  };
-  let mockProspectOutreachModel: {
-    findOne: jest.Mock;
-    findOneAndUpdate: jest.Mock;
-    find: jest.Mock;
-    countDocuments: jest.Mock;
-    create: jest.Mock;
-  };
-
-  const mockDoc = (overrides: Record<string, unknown> = {}) => ({
-    _id: { toString: () => "user-123" },
-    organizationId: "org-1",
-    email: "user@example.com",
-    passwordHash: "hashed",
-    name: "Test User",
-    status: "active",
-    get: jest.fn((key: string) => (key === "createdAt" ? new Date("2025-01-01") : undefined)),
-    save: jest.fn().mockResolvedValue(undefined),
-    ...overrides,
-  });
-
-  const mockMemDoc = (overrides: Record<string, unknown> = {}) => ({
-    _id: { toString: () => "mem-1" },
-    userId: "user-123",
-    organizationId: "org-1",
-    role: "member",
-    membershipStatus: "active",
-    deletedAt: null,
-    save: jest.fn().mockResolvedValue(undefined),
-    get: jest.fn((key: string) => {
-      if (key === "createdAt") return new Date("2025-01-01");
-      if (key === "updatedAt") return new Date("2025-01-01");
-      return undefined;
-    }),
-    ...overrides,
-  });
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -101,6 +93,7 @@ describe("UsersService", () => {
       findOneAndUpdate: jest.fn().mockReturnValue({ exec: execMock }),
       find: jest.fn().mockReturnValue({ sort: sortMock }),
       updateOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue({}) }),
+      countDocuments: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(0) }),
       collection: {
         findOne: jest.fn(),
         updateOne: jest.fn().mockResolvedValue(undefined),
@@ -124,82 +117,16 @@ describe("UsersService", () => {
       updateMany: jest.fn().mockResolvedValue({ modifiedCount: 1 }),
     };
 
-    mockPreferencesModel = {
-      findOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
-      findOneAndUpdate: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
-    };
-
-    mockSessionModel = {
-      create: jest.fn().mockResolvedValue({}),
-      find: jest.fn().mockReturnValue({
-        select: jest.fn().mockReturnValue({
-          exec: jest.fn().mockResolvedValue([]),
-        }),
-        sort: jest.fn().mockReturnValue({
-          select: jest.fn().mockReturnValue({
-            exec: jest.fn().mockResolvedValue([]),
-          }),
-          exec: jest.fn().mockResolvedValue([]),
-        }),
-      }),
-      findOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
-      deleteOne: jest
-        .fn()
-        .mockReturnValue({ exec: jest.fn().mockResolvedValue({ deletedCount: 1 }) }),
-      deleteMany: jest
-        .fn()
-        .mockReturnValue({ exec: jest.fn().mockResolvedValue({ deletedCount: 1 }) }),
-    };
-
-    mockProspectOutreachModel = {
-      findOne: jest.fn().mockReturnValue({
-        exec: jest.fn().mockResolvedValue(null),
-      }),
-      findOneAndUpdate: jest.fn().mockReturnValue({
-        exec: jest.fn().mockResolvedValue({
-          _id: { toString: () => "out-1" },
-          siren: "123456789",
-          companyName: "Demo SARL",
-          email: "demo@example.fr",
-          sentByUserId: "staff-1",
-          sentByEmail: "staff@planwise.fr",
-          subject: "Sujet",
-          status: "sent",
-          sentAt: new Date("2026-08-01T10:00:00.000Z"),
-        }),
-      }),
-      find: jest.fn().mockReturnValue({
-        exec: jest.fn().mockResolvedValue([]),
-      }),
-      countDocuments: jest.fn().mockReturnValue({
-        exec: jest.fn().mockResolvedValue(0),
-      }),
-      create: jest.fn().mockResolvedValue({
-        _id: { toString: () => "out-note" },
-        siren: "123456789",
-        companyName: "Demo SARL",
-        email: "",
-        sentByUserId: "staff-1",
-        sentByEmail: "staff@planwise.fr",
-        subject: "Note prospection",
-        status: "noted",
-        sentAt: new Date("2026-08-01T10:00:00.000Z"),
-        comment: "Pas de site",
-      }),
+    mockSessionsService = {
+      revokeSession: jest.fn().mockResolvedValue(undefined),
     };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         { provide: AbstractUsersService, useClass: UsersService },
+        { provide: AbstractUserSessionsService, useValue: mockSessionsService },
         { provide: getModelToken("User"), useValue: mockUserModel },
         { provide: getModelToken("OrganizationMembership"), useValue: mockMembershipModel },
-        { provide: getModelToken("UserPreferences"), useValue: mockPreferencesModel },
-        { provide: getModelToken("UserSession"), useValue: mockSessionModel },
-        { provide: getModelToken("ProspectOutreach"), useValue: mockProspectOutreachModel },
-        {
-          provide: getModelToken("SupportImpersonationAudit"),
-          useValue: { create: jest.fn().mockResolvedValue({ _id: { toString: () => "audit-1" } }) },
-        },
       ],
     }).compile();
 
@@ -590,7 +517,7 @@ describe("UsersService", () => {
 
       expect(membership.membershipStatus).toBe("disabled");
       expect(membership.save).toHaveBeenCalled();
-      expect(mockSessionModel.deleteMany).toHaveBeenCalledWith({ userId: "user-123" });
+      expect(mockSessionsService.revokeSession).toHaveBeenCalledWith("user-123");
       expect(result.organizationMembershipStatus).toBe("disabled");
     });
 
@@ -708,170 +635,6 @@ describe("UsersService", () => {
       await expect(service.cancelOrganizationInvitation("user-123", "org-1")).rejects.toThrow(
         BadRequestException,
       );
-    });
-  });
-
-  describe("createSession / validateSession / revokeSession / listSessions", () => {
-    it("should create a session document with derived label and device class", async () => {
-      mockUserModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(mockDoc()),
-      });
-      mockSessionModel.find.mockReturnValue({
-        select: jest.fn().mockReturnValue({
-          exec: jest.fn().mockResolvedValue([]),
-        }),
-      });
-
-      const result = await service.createSession("user-123", {
-        userAgent:
-          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      });
-
-      expect(result.sessionId).toBeTruthy();
-      expect(mockSessionModel.deleteMany).toHaveBeenCalledWith({
-        userId: "user-123",
-        deviceClass: "desktop",
-      });
-      expect(mockSessionModel.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          userId: "user-123",
-          sessionId: result.sessionId,
-          label: "Chrome · macOS",
-          deviceClass: "desktop",
-        }),
-      );
-      expect(mockUserModel.updateOne).toHaveBeenCalledWith(
-        { _id: "user-123" },
-        expect.objectContaining({
-          $set: expect.objectContaining({ lastLoginAt: expect.any(Date) }),
-          $unset: { activeSessionId: "" },
-        }),
-      );
-    });
-
-    it("should replace the previous session of the same device class", async () => {
-      mockUserModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(mockDoc()),
-      });
-      mockSessionModel.find.mockReturnValue({
-        select: jest.fn().mockReturnValue({
-          exec: jest.fn().mockResolvedValue([]),
-        }),
-      });
-
-      await service.createSession("user-123", {
-        userAgent:
-          "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
-      });
-
-      expect(mockSessionModel.deleteMany).toHaveBeenCalledWith({
-        userId: "user-123",
-        deviceClass: "mobile",
-      });
-      expect(mockSessionModel.create).toHaveBeenCalledWith(
-        expect.objectContaining({ deviceClass: "mobile", label: "Safari · iOS" }),
-      );
-    });
-
-    it("should validate an existing session and touch lastSeenAt when stale", async () => {
-      const createdAt = new Date("2026-01-15T10:00:00.000Z");
-      const session = {
-        createdAt,
-        lastSeenAt: new Date(Date.now() - 10 * 60 * 1000),
-        save: jest.fn().mockResolvedValue(undefined),
-      };
-      mockSessionModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(session),
-      });
-
-      await expect(service.validateSession("user-123", "session-1")).resolves.toEqual({
-        valid: true,
-      });
-      expect(session.save).toHaveBeenCalled();
-      expect(mockUserModel.updateOne).toHaveBeenCalledWith(
-        { _id: "user-123", lastLoginAt: null },
-        { $set: { lastLoginAt: createdAt } },
-      );
-
-      mockSessionModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(null),
-      });
-      await expect(service.validateSession("user-123", "missing")).resolves.toEqual({
-        valid: false,
-      });
-    });
-
-    it("should revoke one session or all sessions", async () => {
-      mockUserModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(mockDoc()),
-      });
-
-      await service.revokeSession("user-123", "session-1");
-      expect(mockSessionModel.deleteOne).toHaveBeenCalledWith({
-        userId: "user-123",
-        sessionId: "session-1",
-      });
-
-      await service.revokeSession("user-123");
-      expect(mockSessionModel.deleteMany).toHaveBeenCalledWith({ userId: "user-123" });
-    });
-
-    it("should revoke other sessions while keeping the current one", async () => {
-      mockUserModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(mockDoc()),
-      });
-
-      await service.revokeOtherSessions("user-123", "keep-me");
-
-      expect(mockSessionModel.deleteMany).toHaveBeenCalledWith({
-        userId: "user-123",
-        sessionId: { $ne: "keep-me" },
-      });
-    });
-
-    it("should list sessions with current flag and device class", async () => {
-      mockUserModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(mockDoc()),
-      });
-      const now = new Date("2026-07-18T12:00:00.000Z");
-      mockSessionModel.find.mockReturnValue({
-        sort: jest.fn().mockReturnValue({
-          exec: jest.fn().mockResolvedValue([
-            {
-              _id: { toString: () => "doc-1" },
-              sessionId: "sid-current",
-              label: "Chrome · macOS",
-              deviceClass: "desktop",
-              userAgent: "Chrome",
-              createdAt: now,
-              lastSeenAt: now,
-            },
-            {
-              _id: { toString: () => "doc-2" },
-              sessionId: "sid-other",
-              label: "Safari · iOS",
-              deviceClass: "mobile",
-              createdAt: now,
-              lastSeenAt: now,
-            },
-          ]),
-        }),
-      });
-
-      const result = await service.listSessions("user-123", "sid-current");
-
-      expect(result).toEqual([
-        expect.objectContaining({
-          sessionId: "sid-current",
-          current: true,
-          deviceClass: "desktop",
-        }),
-        expect.objectContaining({
-          sessionId: "sid-other",
-          current: false,
-          deviceClass: "mobile",
-        }),
-      ]);
     });
   });
 
@@ -1201,6 +964,278 @@ describe("UsersService", () => {
     });
   });
 
+  describe("findFoundingAdminUserId", () => {
+    it("should return the earliest admin membership user id", async () => {
+      mockMembershipModel.findOne.mockReturnValue({
+        sort: jest.fn().mockReturnValue({
+          exec: jest.fn().mockResolvedValue(mockMemDoc({ userId: "admin-1", role: "admin" })),
+        }),
+      });
+
+      const result = await service.findFoundingAdminUserId("org-1");
+
+      expect(mockMembershipModel.findOne).toHaveBeenCalledWith({
+        organizationId: "org-1",
+        role: "admin",
+        deletedAt: null,
+        membershipStatus: { $in: ["active", "invited"] },
+      });
+      expect(result).toBe("admin-1");
+    });
+
+    it("should return null when organizationId is empty", async () => {
+      await expect(service.findFoundingAdminUserId("  ")).resolves.toBeNull();
+      expect(mockMembershipModel.findOne).not.toHaveBeenCalled();
+    });
+  });
+});
+
+describe("UserSessionsService", () => {
+  let service: UserSessionsService;
+  let mockUserModel: {
+    findOne: jest.Mock;
+    updateOne: jest.Mock;
+  };
+  let mockSessionModel: {
+    create: jest.Mock;
+    find: jest.Mock;
+    findOne: jest.Mock;
+    deleteOne: jest.Mock;
+    deleteMany: jest.Mock;
+  };
+
+  beforeEach(async () => {
+    jest.clearAllMocks();
+
+    mockUserModel = {
+      findOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(mockDoc()) }),
+      updateOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue({}) }),
+    };
+
+    mockSessionModel = {
+      create: jest.fn().mockResolvedValue({}),
+      find: jest.fn().mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          exec: jest.fn().mockResolvedValue([]),
+        }),
+        sort: jest.fn().mockReturnValue({
+          select: jest.fn().mockReturnValue({
+            exec: jest.fn().mockResolvedValue([]),
+          }),
+          exec: jest.fn().mockResolvedValue([]),
+        }),
+      }),
+      findOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
+      deleteOne: jest
+        .fn()
+        .mockReturnValue({ exec: jest.fn().mockResolvedValue({ deletedCount: 1 }) }),
+      deleteMany: jest
+        .fn()
+        .mockReturnValue({ exec: jest.fn().mockResolvedValue({ deletedCount: 1 }) }),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        { provide: AbstractUserSessionsService, useClass: UserSessionsService },
+        { provide: getModelToken("User"), useValue: mockUserModel },
+        { provide: getModelToken("UserSession"), useValue: mockSessionModel },
+      ],
+    }).compile();
+
+    service = module.get<UserSessionsService>(AbstractUserSessionsService);
+  });
+
+  it("should create a session document with derived label and device class", async () => {
+    mockUserModel.findOne.mockReturnValue({
+      exec: jest.fn().mockResolvedValue(mockDoc()),
+    });
+    mockSessionModel.find.mockReturnValue({
+      select: jest.fn().mockReturnValue({
+        exec: jest.fn().mockResolvedValue([]),
+      }),
+    });
+
+    const result = await service.createSession("user-123", {
+      userAgent:
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    });
+
+    expect(result.sessionId).toBeTruthy();
+    expect(mockSessionModel.deleteMany).toHaveBeenCalledWith({
+      userId: "user-123",
+      deviceClass: "desktop",
+    });
+    expect(mockSessionModel.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "user-123",
+        sessionId: result.sessionId,
+        label: "Chrome · macOS",
+        deviceClass: "desktop",
+      }),
+    );
+    expect(mockUserModel.updateOne).toHaveBeenCalledWith(
+      { _id: "user-123" },
+      expect.objectContaining({
+        $set: expect.objectContaining({ lastLoginAt: expect.any(Date) }),
+        $unset: { activeSessionId: "" },
+      }),
+    );
+  });
+
+  it("should replace the previous session of the same device class", async () => {
+    mockUserModel.findOne.mockReturnValue({
+      exec: jest.fn().mockResolvedValue(mockDoc()),
+    });
+    mockSessionModel.find.mockReturnValue({
+      select: jest.fn().mockReturnValue({
+        exec: jest.fn().mockResolvedValue([]),
+      }),
+    });
+
+    await service.createSession("user-123", {
+      userAgent:
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+    });
+
+    expect(mockSessionModel.deleteMany).toHaveBeenCalledWith({
+      userId: "user-123",
+      deviceClass: "mobile",
+    });
+    expect(mockSessionModel.create).toHaveBeenCalledWith(
+      expect.objectContaining({ deviceClass: "mobile", label: "Safari · iOS" }),
+    );
+  });
+
+  it("should validate an existing session and touch lastSeenAt when stale", async () => {
+    const createdAt = new Date("2026-01-15T10:00:00.000Z");
+    const session = {
+      createdAt,
+      lastSeenAt: new Date(Date.now() - 10 * 60 * 1000),
+      save: jest.fn().mockResolvedValue(undefined),
+    };
+    mockSessionModel.findOne.mockReturnValue({
+      exec: jest.fn().mockResolvedValue(session),
+    });
+
+    await expect(service.validateSession("user-123", "session-1")).resolves.toEqual({
+      valid: true,
+    });
+    expect(session.save).toHaveBeenCalled();
+    expect(mockUserModel.updateOne).toHaveBeenCalledWith(
+      { _id: "user-123", lastLoginAt: null },
+      { $set: { lastLoginAt: createdAt } },
+    );
+
+    mockSessionModel.findOne.mockReturnValue({
+      exec: jest.fn().mockResolvedValue(null),
+    });
+    await expect(service.validateSession("user-123", "missing")).resolves.toEqual({
+      valid: false,
+    });
+  });
+
+  it("should revoke one session or all sessions", async () => {
+    mockUserModel.findOne.mockReturnValue({
+      exec: jest.fn().mockResolvedValue(mockDoc()),
+    });
+
+    await service.revokeSession("user-123", "session-1");
+    expect(mockSessionModel.deleteOne).toHaveBeenCalledWith({
+      userId: "user-123",
+      sessionId: "session-1",
+    });
+
+    await service.revokeSession("user-123");
+    expect(mockSessionModel.deleteMany).toHaveBeenCalledWith({ userId: "user-123" });
+  });
+
+  it("should revoke other sessions while keeping the current one", async () => {
+    mockUserModel.findOne.mockReturnValue({
+      exec: jest.fn().mockResolvedValue(mockDoc()),
+    });
+
+    await service.revokeOtherSessions("user-123", "keep-me");
+
+    expect(mockSessionModel.deleteMany).toHaveBeenCalledWith({
+      userId: "user-123",
+      sessionId: { $ne: "keep-me" },
+    });
+  });
+
+  it("should list sessions with current flag and device class", async () => {
+    mockUserModel.findOne.mockReturnValue({
+      exec: jest.fn().mockResolvedValue(mockDoc()),
+    });
+    const now = new Date("2026-07-18T12:00:00.000Z");
+    mockSessionModel.find.mockReturnValue({
+      sort: jest.fn().mockReturnValue({
+        exec: jest.fn().mockResolvedValue([
+          {
+            _id: { toString: () => "doc-1" },
+            sessionId: "sid-current",
+            label: "Chrome · macOS",
+            deviceClass: "desktop",
+            userAgent: "Chrome",
+            createdAt: now,
+            lastSeenAt: now,
+          },
+          {
+            _id: { toString: () => "doc-2" },
+            sessionId: "sid-other",
+            label: "Safari · iOS",
+            deviceClass: "mobile",
+            createdAt: now,
+            lastSeenAt: now,
+          },
+        ]),
+      }),
+    });
+
+    const result = await service.listSessions("user-123", "sid-current");
+
+    expect(result).toEqual([
+      expect.objectContaining({
+        sessionId: "sid-current",
+        current: true,
+        deviceClass: "desktop",
+      }),
+      expect.objectContaining({
+        sessionId: "sid-other",
+        current: false,
+        deviceClass: "mobile",
+      }),
+    ]);
+  });
+});
+
+describe("UserPreferencesService", () => {
+  let service: UserPreferencesService;
+  let mockUserModel: { findOne: jest.Mock };
+  let mockPreferencesModel: { findOne: jest.Mock; findOneAndUpdate: jest.Mock };
+
+  beforeEach(async () => {
+    jest.clearAllMocks();
+
+    mockUserModel = {
+      findOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(mockDoc()) }),
+    };
+
+    mockPreferencesModel = {
+      findOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
+      findOneAndUpdate: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        { provide: AbstractUserPreferencesService, useClass: UserPreferencesService },
+        { provide: getModelToken("User"), useValue: mockUserModel },
+        { provide: getModelToken("UserPreferences"), useValue: mockPreferencesModel },
+      ],
+    }).compile();
+
+    service = module.get<UserPreferencesService>(AbstractUserPreferencesService);
+  });
+
   describe("getPreferences", () => {
     it("should return default preferences when none exist", async () => {
       mockPreferencesModel.findOne.mockReturnValue({
@@ -1252,7 +1287,6 @@ describe("UsersService", () => {
       });
       expect(forOrg2.preferences.onboardingProfileCompleted).toBe(false);
       expect(forOrg2.preferences.setupGuideDismissed).toBe(false);
-      // Org sans entrée map : legacy catalogue uniquement (pas les fiches métier).
       expect(forOrg2.preferences.quickActions).toEqual(bookmarksFrom(["my_day", "calendar"]));
     });
 
@@ -1321,9 +1355,8 @@ describe("UsersService", () => {
 
   describe("updatePreferences", () => {
     it("should upsert preferences and return them", async () => {
-      const doc = mockDoc();
       mockUserModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(doc),
+        exec: jest.fn().mockResolvedValue(mockDoc()),
       });
       mockPreferencesModel.findOneAndUpdate.mockReturnValue({
         exec: jest.fn().mockResolvedValue({
@@ -1355,9 +1388,8 @@ describe("UsersService", () => {
     });
 
     it("should mark onboarding complete for a specific organization", async () => {
-      const doc = mockDoc();
       mockUserModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(doc),
+        exec: jest.fn().mockResolvedValue(mockDoc()),
       });
       mockPreferencesModel.findOneAndUpdate.mockReturnValue({
         exec: jest.fn().mockResolvedValue({
@@ -1390,9 +1422,8 @@ describe("UsersService", () => {
     });
 
     it("should dismiss setup guide for a specific organization", async () => {
-      const doc = mockDoc();
       mockUserModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(doc),
+        exec: jest.fn().mockResolvedValue(mockDoc()),
       });
       mockPreferencesModel.findOneAndUpdate.mockReturnValue({
         exec: jest.fn().mockResolvedValue({
@@ -1421,9 +1452,8 @@ describe("UsersService", () => {
     });
 
     it("should require organizationId when updating onboardingProfileCompleted", async () => {
-      const doc = mockDoc();
       mockUserModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(doc),
+        exec: jest.fn().mockResolvedValue(mockDoc()),
       });
 
       await expect(
@@ -1432,10 +1462,9 @@ describe("UsersService", () => {
     });
 
     it("should update quickActions", async () => {
-      const doc = mockDoc();
       const next = bookmarksFrom(["my_day", "customers", "stock"]);
       mockUserModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(doc),
+        exec: jest.fn().mockResolvedValue(mockDoc()),
       });
       mockPreferencesModel.findOneAndUpdate.mockReturnValue({
         exec: jest.fn().mockResolvedValue({
@@ -1468,9 +1497,8 @@ describe("UsersService", () => {
     });
 
     it("should reject quickActions without organizationId", async () => {
-      const doc = mockDoc();
       mockUserModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(doc),
+        exec: jest.fn().mockResolvedValue(mockDoc()),
       });
 
       await expect(
@@ -1481,9 +1509,8 @@ describe("UsersService", () => {
     });
 
     it("should reject invalid quickActions", async () => {
-      const doc = mockDoc();
       mockUserModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(doc),
+        exec: jest.fn().mockResolvedValue(mockDoc()),
       });
 
       await expect(
@@ -1504,77 +1531,100 @@ describe("UsersService", () => {
       );
     });
   });
+});
 
-  describe("findFoundingAdminUserId", () => {
-    it("should return the earliest admin membership user id", async () => {
-      mockMembershipModel.findOne.mockReturnValue({
-        sort: jest.fn().mockReturnValue({
-          exec: jest.fn().mockResolvedValue(mockMemDoc({ userId: "admin-1", role: "admin" })),
-        }),
-      });
+describe("ProspectOutreachService", () => {
+  let service: ProspectOutreachService;
+  let mockProspectOutreachModel: {
+    findOne: jest.Mock;
+    findOneAndUpdate: jest.Mock;
+    find: jest.Mock;
+    countDocuments: jest.Mock;
+    create: jest.Mock;
+  };
 
-      const result = await service.findFoundingAdminUserId("org-1");
+  beforeEach(async () => {
+    jest.clearAllMocks();
 
-      expect(mockMembershipModel.findOne).toHaveBeenCalledWith({
-        organizationId: "org-1",
-        role: "admin",
-        deletedAt: null,
-        membershipStatus: { $in: ["active", "invited"] },
-      });
-      expect(result).toBe("admin-1");
-    });
-
-    it("should return null when organizationId is empty", async () => {
-      await expect(service.findFoundingAdminUserId("  ")).resolves.toBeNull();
-      expect(mockMembershipModel.findOne).not.toHaveBeenCalled();
-    });
-  });
-
-  describe("prospect outreaches", () => {
-    it("should upsert a prospect outreach by siren", async () => {
-      const result = await service.createProspectOutreach({
-        siren: "123 456 789",
-        companyName: "Demo SARL",
-        email: "Demo@Example.fr",
-        sentByUserId: "staff-1",
-        sentByEmail: "staff@planwise.fr",
-        subject: "Sujet",
-      });
-
-      expect(mockProspectOutreachModel.findOneAndUpdate).toHaveBeenCalledWith(
-        { siren: "123456789" },
-        expect.objectContaining({
-          $set: expect.objectContaining({
-            siren: "123456789",
-            email: "demo@example.fr",
-            status: "sent",
-          }),
-        }),
-        { upsert: true, new: true },
-      );
-      expect(result.siren).toBe("123456789");
-      expect(result.email).toBe("demo@example.fr");
-    });
-
-    it("should upsert email_not_found without requiring an email", async () => {
-      mockProspectOutreachModel.findOne.mockReturnValue({
+    mockProspectOutreachModel = {
+      findOne: jest.fn().mockReturnValue({
         exec: jest.fn().mockResolvedValue(null),
-      });
-      mockProspectOutreachModel.findOneAndUpdate.mockReturnValue({
+      }),
+      findOneAndUpdate: jest.fn().mockReturnValue({
         exec: jest.fn().mockResolvedValue({
-          _id: { toString: () => "out-2" },
+          _id: { toString: () => "out-1" },
           siren: "123456789",
           companyName: "Demo SARL",
-          email: "",
+          email: "demo@example.fr",
           sentByUserId: "staff-1",
           sentByEmail: "staff@planwise.fr",
-          subject: "Email non trouvé",
-          status: "email_not_found",
+          subject: "Sujet",
+          status: "sent",
           sentAt: new Date("2026-08-01T10:00:00.000Z"),
         }),
-      });
+      }),
+      find: jest.fn().mockReturnValue({
+        exec: jest.fn().mockResolvedValue([]),
+      }),
+      countDocuments: jest.fn().mockReturnValue({
+        exec: jest.fn().mockResolvedValue(0),
+      }),
+      create: jest.fn().mockResolvedValue({
+        _id: { toString: () => "out-note" },
+        siren: "123456789",
+        companyName: "Demo SARL",
+        email: "",
+        sentByUserId: "staff-1",
+        sentByEmail: "staff@planwise.fr",
+        subject: "Note prospection",
+        status: "noted",
+        sentAt: new Date("2026-08-01T10:00:00.000Z"),
+        comment: "Pas de site",
+      }),
+    };
 
-      const result = await service.createProspectOutreach({
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        { provide: AbstractProspectOutreachService, useClass: ProspectOutreachService },
+        { provide: getModelToken("ProspectOutreach"), useValue: mockProspectOutreachModel },
+      ],
+    }).compile();
+
+    service = module.get<ProspectOutreachService>(AbstractProspectOutreachService);
+  });
+
+  it("should upsert a prospect outreach by siren", async () => {
+    const result = await service.createProspectOutreach({
+      siren: "123 456 789",
+      companyName: "Demo SARL",
+      email: "Demo@Example.fr",
+      sentByUserId: "staff-1",
+      sentByEmail: "staff@planwise.fr",
+      subject: "Sujet",
+    });
+
+    expect(mockProspectOutreachModel.findOneAndUpdate).toHaveBeenCalledWith(
+      { siren: "123456789" },
+      expect.objectContaining({
+        $set: expect.objectContaining({
+          siren: "123456789",
+          email: "demo@example.fr",
+          status: "sent",
+        }),
+      }),
+      { upsert: true, new: true },
+    );
+    expect(result.siren).toBe("123456789");
+    expect(result.email).toBe("demo@example.fr");
+  });
+
+  it("should upsert email_not_found without requiring an email", async () => {
+    mockProspectOutreachModel.findOne.mockReturnValue({
+      exec: jest.fn().mockResolvedValue(null),
+    });
+    mockProspectOutreachModel.findOneAndUpdate.mockReturnValue({
+      exec: jest.fn().mockResolvedValue({
+        _id: { toString: () => "out-2" },
         siren: "123456789",
         companyName: "Demo SARL",
         email: "",
@@ -1582,201 +1632,212 @@ describe("UsersService", () => {
         sentByEmail: "staff@planwise.fr",
         subject: "Email non trouvé",
         status: "email_not_found",
-      });
-
-      expect(result.status).toBe("email_not_found");
-      expect(mockProspectOutreachModel.findOneAndUpdate).toHaveBeenCalledWith(
-        { siren: "123456789" },
-        expect.objectContaining({
-          $set: expect.objectContaining({ status: "email_not_found", email: "" }),
-        }),
-        { upsert: true, new: true },
-      );
+        sentAt: new Date("2026-08-01T10:00:00.000Z"),
+      }),
     });
 
-    it("should reject email_not_found when already sent", async () => {
-      mockProspectOutreachModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue({ status: "sent" }),
-      });
+    const result = await service.createProspectOutreach({
+      siren: "123456789",
+      companyName: "Demo SARL",
+      email: "",
+      sentByUserId: "staff-1",
+      sentByEmail: "staff@planwise.fr",
+      subject: "Email non trouvé",
+      status: "email_not_found",
+    });
 
-      await expect(
-        service.createProspectOutreach({
+    expect(result.status).toBe("email_not_found");
+    expect(mockProspectOutreachModel.findOneAndUpdate).toHaveBeenCalledWith(
+      { siren: "123456789" },
+      expect.objectContaining({
+        $set: expect.objectContaining({ status: "email_not_found", email: "" }),
+      }),
+      { upsert: true, new: true },
+    );
+  });
+
+  it("should reject email_not_found when already sent", async () => {
+    mockProspectOutreachModel.findOne.mockReturnValue({
+      exec: jest.fn().mockResolvedValue({ status: "sent" }),
+    });
+
+    await expect(
+      service.createProspectOutreach({
+        siren: "123456789",
+        companyName: "X",
+        email: "",
+        sentByUserId: "staff-1",
+        sentByEmail: "staff@planwise.fr",
+        subject: "Email non trouvé",
+        status: "email_not_found",
+      }),
+    ).rejects.toThrow(ConflictException);
+  });
+
+  it("should create a noted outreach with comment", async () => {
+    mockProspectOutreachModel.findOne.mockReturnValue({
+      exec: jest.fn().mockResolvedValue(null),
+    });
+
+    const result = await service.upsertProspectComment({
+      siren: "123456789",
+      companyName: "Demo SARL",
+      comment: "  Pas de site  ",
+      sentByUserId: "staff-1",
+      sentByEmail: "staff@planwise.fr",
+    });
+
+    expect(mockProspectOutreachModel.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        siren: "123456789",
+        status: "noted",
+        comment: "Pas de site",
+      }),
+    );
+    expect(result.comment).toBe("Pas de site");
+  });
+
+  it("should update comment on existing outreach without changing status", async () => {
+    const existing = {
+      _id: { toString: () => "out-1" },
+      siren: "123456789",
+      companyName: "Demo SARL",
+      email: "a@b.fr",
+      sentByUserId: "staff-1",
+      sentByEmail: "staff@planwise.fr",
+      subject: "Sujet",
+      status: "sent" as const,
+      sentAt: new Date("2026-08-01T10:00:00.000Z"),
+      comment: "old",
+      save: jest.fn().mockResolvedValue(undefined),
+    };
+    mockProspectOutreachModel.findOne.mockReturnValue({
+      exec: jest.fn().mockResolvedValue(existing),
+    });
+
+    const result = await service.upsertProspectComment({
+      siren: "123456789",
+      companyName: "Demo SARL",
+      comment: "nouveau commentaire",
+      sentByUserId: "staff-2",
+      sentByEmail: "other@planwise.fr",
+    });
+
+    expect(existing.save).toHaveBeenCalled();
+    expect(existing.comment).toBe("nouveau commentaire");
+    expect(existing.status).toBe("sent");
+    expect(result.status).toBe("sent");
+    expect(result.comment).toBe("nouveau commentaire");
+  });
+
+  it("should list outreaches by sirens", async () => {
+    mockProspectOutreachModel.find.mockReturnValue({
+      exec: jest.fn().mockResolvedValue([
+        {
+          _id: { toString: () => "out-1" },
           siren: "123456789",
-          companyName: "X",
-          email: "",
+          companyName: "Demo",
+          email: "a@b.fr",
           sentByUserId: "staff-1",
+          sentByEmail: "staff@planwise.fr",
+          subject: "Sujet",
+          status: "sent",
+          sentAt: new Date("2026-08-01T10:00:00.000Z"),
+        },
+      ]),
+    });
+
+    const result = await service.listProspectOutreachesBySirens(["123456789", "bad"]);
+
+    expect(mockProspectOutreachModel.find).toHaveBeenCalledWith({
+      siren: { $in: ["123456789"] },
+    });
+    expect(result.outreaches).toHaveLength(1);
+    expect(result.outreaches[0]?.siren).toBe("123456789");
+  });
+
+  it("should list all outreaches paginated by sentAt desc", async () => {
+    mockProspectOutreachModel.countDocuments.mockReturnValue({
+      exec: jest.fn().mockResolvedValue(2),
+    });
+    mockProspectOutreachModel.find.mockReturnValue({
+      sort: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      exec: jest.fn().mockResolvedValue([
+        {
+          _id: { toString: () => "o2" },
+          siren: "987654321",
+          companyName: "B",
+          email: "",
+          sentByUserId: "u1",
           sentByEmail: "staff@planwise.fr",
           subject: "Email non trouvé",
           status: "email_not_found",
-        }),
-      ).rejects.toThrow(ConflictException);
-    });
-
-    it("should create a noted outreach with comment", async () => {
-      mockProspectOutreachModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(null),
-      });
-
-      const result = await service.upsertProspectComment({
-        siren: "123456789",
-        companyName: "Demo SARL",
-        comment: "  Pas de site  ",
-        sentByUserId: "staff-1",
-        sentByEmail: "staff@planwise.fr",
-      });
-
-      expect(mockProspectOutreachModel.create).toHaveBeenCalledWith(
-        expect.objectContaining({
+          sentAt: new Date("2026-08-02T10:00:00.000Z"),
+        },
+        {
+          _id: { toString: () => "o1" },
           siren: "123456789",
+          companyName: "A",
+          email: "a@b.fr",
+          sentByUserId: "u1",
+          sentByEmail: "staff@planwise.fr",
+          subject: "Hello",
+          status: "sent",
+          sentAt: new Date("2026-08-01T10:00:00.000Z"),
+        },
+      ]),
+    });
+
+    const result = await service.listProspectOutreaches({ limit: 50, offset: 0 });
+
+    expect(result.total).toBe(2);
+    expect(result.outreaches).toHaveLength(2);
+    expect(result.outreaches[0]?.status).toBe("email_not_found");
+    expect(mockProspectOutreachModel.find).toHaveBeenCalledWith({});
+  });
+
+  it("should filter outreaches by status and search", async () => {
+    mockProspectOutreachModel.countDocuments.mockReturnValue({
+      exec: jest.fn().mockResolvedValue(1),
+    });
+    mockProspectOutreachModel.find.mockReturnValue({
+      sort: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      exec: jest.fn().mockResolvedValue([
+        {
+          _id: { toString: () => "o1" },
+          siren: "123456789",
+          companyName: "Plomberie Dupont",
+          email: "contact@dupont.fr",
+          sentByUserId: "u1",
+          sentByEmail: "staff@planwise.fr",
+          subject: "Ajout manuel",
           status: "noted",
-          comment: "Pas de site",
-        }),
-      );
-      expect(result.comment).toBe("Pas de site");
+          sentAt: new Date("2026-08-01T10:00:00.000Z"),
+        },
+      ]),
     });
 
-    it("should update comment on existing outreach without changing status", async () => {
-      const existing = {
-        _id: { toString: () => "out-1" },
-        siren: "123456789",
-        companyName: "Demo SARL",
-        email: "a@b.fr",
-        sentByUserId: "staff-1",
-        sentByEmail: "staff@planwise.fr",
-        subject: "Sujet",
-        status: "sent" as const,
-        sentAt: new Date("2026-08-01T10:00:00.000Z"),
-        comment: "old",
-        save: jest.fn().mockResolvedValue(undefined),
-      };
-      mockProspectOutreachModel.findOne.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(existing),
-      });
-
-      const result = await service.upsertProspectComment({
-        siren: "123456789",
-        companyName: "Demo SARL",
-        comment: "nouveau commentaire",
-        sentByUserId: "staff-2",
-        sentByEmail: "other@planwise.fr",
-      });
-
-      expect(existing.save).toHaveBeenCalled();
-      expect(existing.comment).toBe("nouveau commentaire");
-      expect(existing.status).toBe("sent");
-      expect(result.status).toBe("sent");
-      expect(result.comment).toBe("nouveau commentaire");
+    await service.listProspectOutreaches({
+      limit: 50,
+      offset: 0,
+      status: "noted",
+      search: "Dupont",
     });
 
-    it("should list outreaches by sirens", async () => {
-      mockProspectOutreachModel.find.mockReturnValue({
-        exec: jest.fn().mockResolvedValue([
-          {
-            _id: { toString: () => "out-1" },
-            siren: "123456789",
-            companyName: "Demo",
-            email: "a@b.fr",
-            sentByUserId: "staff-1",
-            sentByEmail: "staff@planwise.fr",
-            subject: "Sujet",
-            status: "sent",
-            sentAt: new Date("2026-08-01T10:00:00.000Z"),
-          },
-        ]),
-      });
-
-      const result = await service.listProspectOutreachesBySirens(["123456789", "bad"]);
-
-      expect(mockProspectOutreachModel.find).toHaveBeenCalledWith({
-        siren: { $in: ["123456789"] },
-      });
-      expect(result.outreaches).toHaveLength(1);
-      expect(result.outreaches[0]?.siren).toBe("123456789");
+    expect(mockProspectOutreachModel.find).toHaveBeenCalledWith({
+      status: "noted",
+      $or: expect.arrayContaining([
+        { companyName: { $regex: "Dupont", $options: "i" } },
+        { siren: { $regex: "Dupont", $options: "i" } },
+      ]),
     });
-
-    it("should list all outreaches paginated by sentAt desc", async () => {
-      mockProspectOutreachModel.countDocuments.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(2),
-      });
-      mockProspectOutreachModel.find.mockReturnValue({
-        sort: jest.fn().mockReturnThis(),
-        skip: jest.fn().mockReturnThis(),
-        limit: jest.fn().mockReturnThis(),
-        exec: jest.fn().mockResolvedValue([
-          {
-            _id: { toString: () => "o2" },
-            siren: "987654321",
-            companyName: "B",
-            email: "",
-            sentByUserId: "u1",
-            sentByEmail: "staff@planwise.fr",
-            subject: "Email non trouvé",
-            status: "email_not_found",
-            sentAt: new Date("2026-08-02T10:00:00.000Z"),
-          },
-          {
-            _id: { toString: () => "o1" },
-            siren: "123456789",
-            companyName: "A",
-            email: "a@b.fr",
-            sentByUserId: "u1",
-            sentByEmail: "staff@planwise.fr",
-            subject: "Hello",
-            status: "sent",
-            sentAt: new Date("2026-08-01T10:00:00.000Z"),
-          },
-        ]),
-      });
-
-      const result = await service.listProspectOutreaches({ limit: 50, offset: 0 });
-
-      expect(result.total).toBe(2);
-      expect(result.outreaches).toHaveLength(2);
-      expect(result.outreaches[0]?.status).toBe("email_not_found");
-      expect(mockProspectOutreachModel.find).toHaveBeenCalledWith({});
-    });
-
-    it("should filter outreaches by status and search", async () => {
-      mockProspectOutreachModel.countDocuments.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(1),
-      });
-      mockProspectOutreachModel.find.mockReturnValue({
-        sort: jest.fn().mockReturnThis(),
-        skip: jest.fn().mockReturnThis(),
-        limit: jest.fn().mockReturnThis(),
-        exec: jest.fn().mockResolvedValue([
-          {
-            _id: { toString: () => "o1" },
-            siren: "123456789",
-            companyName: "Plomberie Dupont",
-            email: "contact@dupont.fr",
-            sentByUserId: "u1",
-            sentByEmail: "staff@planwise.fr",
-            subject: "Ajout manuel",
-            status: "noted",
-            sentAt: new Date("2026-08-01T10:00:00.000Z"),
-          },
-        ]),
-      });
-
-      await service.listProspectOutreaches({
-        limit: 50,
-        offset: 0,
-        status: "noted",
-        search: "Dupont",
-      });
-
-      expect(mockProspectOutreachModel.find).toHaveBeenCalledWith({
-        status: "noted",
-        $or: expect.arrayContaining([
-          { companyName: { $regex: "Dupont", $options: "i" } },
-          { siren: { $regex: "Dupont", $options: "i" } },
-        ]),
-      });
-      expect(mockProspectOutreachModel.countDocuments).toHaveBeenCalledWith({
-        status: "noted",
-        $or: expect.any(Array),
-      });
+    expect(mockProspectOutreachModel.countDocuments).toHaveBeenCalledWith({
+      status: "noted",
+      $or: expect.any(Array),
     });
   });
 });

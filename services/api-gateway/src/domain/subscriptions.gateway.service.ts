@@ -33,10 +33,7 @@ import {
   isStorageQuotaWarning,
 } from "@planwise/shared";
 import { AbstractSubscriptionsGatewayService } from "./ports/subscriptions.service.port";
-
-const SUBSCRIPTIONS_URL = process.env.SUBSCRIPTIONS_SERVICE_URL ?? "http://localhost:3008";
-const DOCUMENTS_URL = process.env.DOCUMENTS_SERVICE_URL ?? "http://localhost:3011";
-const ORGANIZATIONS_URL = process.env.ORGANIZATIONS_SERVICE_URL ?? "http://localhost:3001";
+import { SERVICE_URLS } from "../infrastructure/service-urls.config";
 
 @Injectable()
 export class SubscriptionsGatewayService extends AbstractSubscriptionsGatewayService {
@@ -56,7 +53,7 @@ export class SubscriptionsGatewayService extends AbstractSubscriptionsGatewaySer
     try {
       const usage = await firstValueFrom(
         this.httpService.get<OrganizationStorageUsageResponse>(
-          `${DOCUMENTS_URL}/documents/storage-usage`,
+          `${SERVICE_URLS.documents}/documents/storage-usage`,
           { params: { organizationId: user.organizationId } },
         ),
       );
@@ -168,7 +165,7 @@ export class SubscriptionsGatewayService extends AbstractSubscriptionsGatewaySer
     try {
       const res = await firstValueFrom(
         this.httpService.get<OrganizationResponse>(
-          `${ORGANIZATIONS_URL}/organizations/${organizationId}`,
+          `${SERVICE_URLS.organizations}/organizations/${organizationId}`,
         ),
       );
       const email = res.data.email?.trim() ?? "";
@@ -194,7 +191,7 @@ export class SubscriptionsGatewayService extends AbstractSubscriptionsGatewaySer
       const response = await firstValueFrom(
         this.httpService.request<T>({
           method: params.method,
-          url: `${SUBSCRIPTIONS_URL}${params.path}`,
+          url: `${SERVICE_URLS.subscriptions}${params.path}`,
           data: params.body,
           params: params.query,
         }),
@@ -218,7 +215,7 @@ export class SubscriptionsGatewayService extends AbstractSubscriptionsGatewaySer
           netCode === "ENOTFOUND")
       ) {
         throw new ServiceUnavailableException(
-          `Service subscriptions injoignable (${SUBSCRIPTIONS_URL}). Lancez « npm run start:dev -w @planwise/subscriptions-service » (port 3008) ou définissez SUBSCRIPTIONS_SERVICE_URL.`,
+          `Service subscriptions injoignable (${SERVICE_URLS.subscriptions}). Lancez « npm run start:dev -w @planwise/subscriptions-service » (port 3008) ou définissez SUBSCRIPTIONS_SERVICE_URL.`,
         );
       }
 

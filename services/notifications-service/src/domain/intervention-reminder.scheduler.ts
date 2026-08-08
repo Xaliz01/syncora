@@ -22,11 +22,7 @@ import type { SentReminderDocument } from "../persistence/sent-reminder.schema";
 import { AbstractPushSubscriptionService } from "./ports/push-subscription.service.port";
 import { AbstractEmailService } from "./ports/email.service.port";
 import { CronRunRecorder } from "./cron-run.recorder";
-
-const CASES_URL = process.env.CASES_SERVICE_URL ?? "http://localhost:3004";
-const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
-const SUBSCRIPTIONS_URL = process.env.SUBSCRIPTIONS_SERVICE_URL ?? "http://localhost:3008";
-const TECHNICIANS_URL = process.env.TECHNICIANS_SERVICE_URL ?? "http://localhost:3006";
+import { SERVICE_URLS } from "../infrastructure/service-urls.config";
 const JOB_KEY = "notifications.intervention-reminders";
 
 @Injectable()
@@ -181,7 +177,7 @@ export class InterventionReminderScheduler {
     try {
       const response = await firstValueFrom(
         this.httpService.get<{ id?: string; firstName?: string; userId?: string }>(
-          `${TECHNICIANS_URL}/technicians/${assigneeId}`,
+          `${SERVICE_URLS.technicians}/technicians/${assigneeId}`,
           { params: { organizationId } },
         ),
       );
@@ -198,7 +194,7 @@ export class InterventionReminderScheduler {
     try {
       const response = await firstValueFrom(
         this.httpService.get<{ id?: string } | null>(
-          `${TECHNICIANS_URL}/technicians/by-user/${assigneeId}`,
+          `${SERVICE_URLS.technicians}/technicians/by-user/${assigneeId}`,
           { params: { organizationId } },
         ),
       );
@@ -240,7 +236,7 @@ export class InterventionReminderScheduler {
     try {
       const response = await firstValueFrom(
         this.httpService.get<OrganizationSubscriptionResponse>(
-          `${SUBSCRIPTIONS_URL}/subscriptions/current`,
+          `${SERVICE_URLS.subscriptions}/subscriptions/current`,
           { params: { organizationId } },
         ),
       );
@@ -260,9 +256,12 @@ export class InterventionReminderScheduler {
   ): Promise<InterventionResponse[]> {
     try {
       const response = await firstValueFrom(
-        this.httpService.get<InterventionResponse[]>(`${CASES_URL}/cases/interventions/upcoming`, {
-          params: { from, to },
-        }),
+        this.httpService.get<InterventionResponse[]>(
+          `${SERVICE_URLS.cases}/cases/interventions/upcoming`,
+          {
+            params: { from, to },
+          },
+        ),
       );
       return response.data;
     } catch {
@@ -295,7 +294,7 @@ export class InterventionReminderScheduler {
   private async resolveUserEmail(userId: string): Promise<string | null> {
     try {
       const response = await firstValueFrom(
-        this.httpService.get<UserResponse>(`${USERS_URL}/users/${userId}`),
+        this.httpService.get<UserResponse>(`${SERVICE_URLS.users}/users/${userId}`),
       );
       return response.data.email ?? null;
     } catch {

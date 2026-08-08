@@ -21,9 +21,7 @@ import type {
   UserSessionsListResponse,
 } from "@planwise/shared";
 import { AbstractAccountService } from "./ports/account.service.port";
-
-const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
-const TECHNICIANS_URL = process.env.TECHNICIANS_SERVICE_URL ?? "http://localhost:3006";
+import { SERVICE_URLS } from "../infrastructure/service-urls.config";
 
 function signCrispEmail(email: string, secret: string): string {
   return createHmac("sha256", secret).update(email).digest("hex");
@@ -154,9 +152,12 @@ export class AccountService extends AbstractAccountService {
     }
     try {
       const res = await firstValueFrom(
-        this.httpService.get<{ userId: string | null }>(`${USERS_URL}/users/founding-admin`, {
-          params: { organizationId: user.organizationId },
-        }),
+        this.httpService.get<{ userId: string | null }>(
+          `${SERVICE_URLS.users}/users/founding-admin`,
+          {
+            params: { organizationId: user.organizationId },
+          },
+        ),
       );
       if (res.data.userId !== user.id) {
         throw new ForbiddenException(
@@ -176,7 +177,7 @@ export class AccountService extends AbstractAccountService {
     try {
       const res = await firstValueFrom(
         this.httpService.get<TechnicianResponse | null>(
-          `${TECHNICIANS_URL}/technicians/by-user/${userId}`,
+          `${SERVICE_URLS.technicians}/technicians/by-user/${userId}`,
           { params: { organizationId } },
         ),
       );
@@ -189,7 +190,7 @@ export class AccountService extends AbstractAccountService {
   private async createAndLinkSelfTechnician(user: AuthUser): Promise<string> {
     const { firstName, lastName } = splitDisplayName(user.name, user.email);
     const created = await firstValueFrom(
-      this.httpService.post<TechnicianResponse>(`${TECHNICIANS_URL}/technicians`, {
+      this.httpService.post<TechnicianResponse>(`${SERVICE_URLS.technicians}/technicians`, {
         organizationId: user.organizationId,
         firstName,
         lastName: lastName || firstName,
@@ -199,7 +200,7 @@ export class AccountService extends AbstractAccountService {
     );
     await firstValueFrom(
       this.httpService.put<TechnicianResponse>(
-        `${TECHNICIANS_URL}/technicians/${created.data.id}/link-user`,
+        `${SERVICE_URLS.technicians}/technicians/${created.data.id}/link-user`,
         { userId: user.id },
         { params: { organizationId: user.organizationId } },
       ),
@@ -216,7 +217,7 @@ export class AccountService extends AbstractAccountService {
       const response = await firstValueFrom(
         this.httpService.request<T>({
           method: params.method,
-          url: `${USERS_URL}${params.path}`,
+          url: `${SERVICE_URLS.users}${params.path}`,
           data: params.body,
         }),
       );
@@ -235,7 +236,7 @@ export class AccountService extends AbstractAccountService {
       await firstValueFrom(
         this.httpService.request({
           method: params.method,
-          url: `${USERS_URL}${params.path}`,
+          url: `${SERVICE_URLS.users}${params.path}`,
           data: params.body,
         }),
       );

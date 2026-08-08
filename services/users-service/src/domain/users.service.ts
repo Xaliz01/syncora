@@ -9,66 +9,43 @@ import {
 import { InjectModel } from "@nestjs/mongoose";
 import type { Model } from "mongoose";
 import { Types } from "mongoose";
-import { randomInt, randomUUID } from "crypto";
+import { randomInt } from "crypto";
 import * as bcrypt from "bcrypt";
 import type { UserDocument } from "../persistence/user.schema";
 import type { OrganizationMembershipDocument } from "../persistence/organization-membership.schema";
-import type { UserPreferencesDocument } from "../persistence/user-preferences.schema";
-import type { SupportImpersonationAuditDocument } from "../persistence/support-impersonation-audit.schema";
-import type { ProspectOutreachDocument } from "../persistence/prospect-outreach.schema";
-import type { UserSessionDocument } from "../persistence/user-session.schema";
 import {
   activeDocumentFilter,
-  clampPagination,
-  DEFAULT_USER_PREFERENCES,
   getPasswordPolicyError,
-  normalizeQuickActions,
-  resolveQuickActionsForOrganization,
   type ActivateInvitedUserBody,
   type ChangePasswordBody,
   type CreateAccountBody,
   type CreateAccountResult,
   type CreateInvitedUserBody,
   type CreateOrganizationMembershipBody,
-  type CreateProspectOutreachBody,
   type CreateUserBody,
-  type CreateUserSessionResponse,
   type InvitationActivationHintsResponse,
   type IssueEmailVerificationResult,
   type OrganizationMembershipResponse,
   type PatchUserBody,
   type AccountUserResponse,
   type PlatformUserSummary,
-  type ProspectOutreachResponse,
-  type ProspectOutreachStatus,
-  type ProspectOutreachesBySirensResponse,
-  type ProspectOutreachesListResponse,
-  type UpsertProspectCommentBody,
-  PROSPECT_OUTREACH_COMMENT_MAX_LENGTH,
   type UpdateUserNameBody,
-  type UpdateUserPreferencesBody,
-  type UserPreferences,
-  type UserPreferencesResponse,
   type UserResponse,
   type UserRole,
-  type UserSessionResponse,
   type ValidateCredentialsResponse,
-  type ValidateUserSessionResponse,
 } from "@planwise/shared";
 import {
   AbstractUsersService,
-  type CreateImpersonationAuditBody,
   type PlatformUsersDirectoryResult,
 } from "./ports/users.service.port";
-import { deriveSessionDeviceClass, deriveSessionLabel } from "./session-label";
+import { AbstractUserSessionsService } from "./ports/user-sessions.service.port";
+import { toUserBaseResponse, toAccountUserResponse, isEmailVerified } from "./mappers/user.mapper";
+import { toOrganizationMembershipResponse } from "./mappers/membership.mapper";
 
-/** bcrypt cost factor (OWASP recommande ≥ 10 ; 12 est un bon compromis). */
 const SALT_ROUNDS = 12;
 const DEFAULT_ROLE: UserRole = "member";
 const EMAIL_OTP_TTL_MS = 15 * 60 * 1000;
 const EMAIL_OTP_RESEND_COOLDOWN_MS = 60 * 1000;
-const SESSION_LAST_SEEN_THROTTLE_MS = 5 * 60 * 1000;
-const MAX_USER_AGENT_LENGTH = 400;
 
 function assertPasswordPolicy(password: string): void {
   const error = getPasswordPolicyError(password);
@@ -81,14 +58,7 @@ export class UsersService extends AbstractUsersService {
     @InjectModel("User") private readonly userModel: Model<UserDocument>,
     @InjectModel("OrganizationMembership")
     private readonly membershipModel: Model<OrganizationMembershipDocument>,
-    @InjectModel("UserPreferences")
-    private readonly preferencesModel: Model<UserPreferencesDocument>,
-    @InjectModel("SupportImpersonationAudit")
-    private readonly impersonationAuditModel: Model<SupportImpersonationAuditDocument>,
-    @InjectModel("ProspectOutreach")
-    private readonly prospectOutreachModel: Model<ProspectOutreachDocument>,
-    @InjectModel("UserSession")
-    private readonly sessionModel: Model<UserSessionDocument>,
+    private readonly sessionsService: AbstractUserSessionsService,
   ) {
     super();
   }
@@ -131,13 +101,13 @@ export class UsersService extends AbstractUsersService {
     const email = body.email.trim().toLowerCase();
     const existing = await this.userModel.findOne({ email, ...activeDocumentFilter }).exec();
     if (existing) {
-      if (!this.isEmailVerified(existing) && !existing.organizationId?.trim()) {
+      if (!isEmailVerified(existing) && !existing.organizationId?.trim()) {
         const passwordHash = await bcrypt.hash(body.password, SALT_ROUNDS);
         existing.passwordHash = passwordHash;
         if (body.name) existing.name = body.name;
         const emailVerificationCode = await this.storeEmailVerificationOtp(existing);
         return {
-          user: this.toAccountResponse(existing),
+          user: toAccountUserResponse(existing),
           emailVerificationCode,
         };
       }
@@ -153,7 +123,7 @@ export class UsersService extends AbstractUsersService {
     });
     const emailVerificationCode = await this.storeEmailVerificationOtp(doc);
     return {
-      user: this.toAccountResponse(doc),
+      user: toAccountUserResponse(doc),
       emailVerificationCode,
     };
   }
@@ -171,8 +141,8 @@ export class UsersService extends AbstractUsersService {
     if (!doc) {
       throw new UnauthorizedException("Code de vérification invalide ou expiré");
     }
-    if (this.isEmailVerified(doc)) {
-      return this.toAccountResponse(doc);
+    if (isEmailVerified(doc)) {
+      return toAccountUserResponse(doc);
     }
     if (!doc.emailVerificationCodeHash || !doc.emailVerificationExpiresAt) {
       throw new UnauthorizedException("Code de vérification invalide ou expiré");
@@ -190,7 +160,7 @@ export class UsersService extends AbstractUsersService {
     doc.emailVerificationExpiresAt = null;
     doc.emailVerificationSentAt = null;
     await doc.save();
-    return this.toAccountResponse(doc);
+    return toAccountUserResponse(doc);
   }
 
   async resendEmailVerification(email: string): Promise<IssueEmailVerificationResult> {
@@ -202,8 +172,7 @@ export class UsersService extends AbstractUsersService {
     const doc = await this.userModel
       .findOne({ email: normalizedEmail, ...activeDocumentFilter })
       .exec();
-    if (!doc || this.isEmailVerified(doc)) {
-      // Réponse neutre côté gateway : ne pas révéler si l'email existe.
+    if (!doc || isEmailVerified(doc)) {
       throw new NotFoundException("Aucun compte en attente de vérification pour cet email");
     }
     if (doc.emailVerificationSentAt) {
@@ -222,7 +191,7 @@ export class UsersService extends AbstractUsersService {
   async findAccountById(id: string): Promise<AccountUserResponse | null> {
     const doc = await this.userModel.findOne({ _id: id, ...activeDocumentFilter }).exec();
     if (!doc) return null;
-    return this.toAccountResponse(doc);
+    return toAccountUserResponse(doc);
   }
 
   async invite(body: CreateInvitedUserBody): Promise<UserResponse> {
@@ -345,7 +314,6 @@ export class UsersService extends AbstractUsersService {
     doc.emailVerificationCodeHash = undefined;
     doc.emailVerificationExpiresAt = null;
     doc.emailVerificationSentAt = null;
-    // Org « courante » après acceptation (le membership org1 reste actif s’il l’était).
     doc.organizationId = organizationId;
     await doc.save();
 
@@ -483,7 +451,7 @@ export class UsersService extends AbstractUsersService {
     membership.membershipStatus = "disabled";
     await membership.save();
 
-    await this.revokeSession(userId);
+    await this.sessionsService.revokeSession(userId);
     if (doc.organizationId === organizationId) {
       const nextActive = await this.membershipModel
         .findOne({
@@ -556,7 +524,6 @@ export class UsersService extends AbstractUsersService {
     try {
       return await this.toResponseForOrganization(doc, scopedOrgId);
     } catch (err) {
-      // Multi-org : l’utilisateur existe mais n’a pas de membership dans l’org demandée.
       if (organizationId?.trim() && err instanceof NotFoundException) return null;
       throw err;
     }
@@ -582,8 +549,7 @@ export class UsersService extends AbstractUsersService {
       const u = byId.get(m.userId);
       if (!u) continue;
       out.push({
-        ...this.toBaseResponse(u),
-        // Toujours l’org du membership listé (pas l’org « primaire » du document user).
+        ...toUserBaseResponse(u),
         organizationId,
         role: m.role as UserResponse["role"],
         organizationMembershipStatus:
@@ -599,7 +565,7 @@ export class UsersService extends AbstractUsersService {
       .find({ userId, deletedAt: null })
       .sort({ createdAt: 1 })
       .exec();
-    return rows.map((r) => this.membershipToResponse(r));
+    return rows.map((r) => toOrganizationMembershipResponse(r));
   }
 
   async addOrganizationMembership(
@@ -627,7 +593,7 @@ export class UsersService extends AbstractUsersService {
     if (!doc) {
       throw new BadRequestException("Impossible de créer le rattachement organisation.");
     }
-    return this.membershipToResponse(doc);
+    return toOrganizationMembershipResponse(doc);
   }
 
   async updateName(id: string, body: UpdateUserNameBody): Promise<UserResponse> {
@@ -661,122 +627,7 @@ export class UsersService extends AbstractUsersService {
     }
     doc.passwordHash = await bcrypt.hash(body.newPassword, SALT_ROUNDS);
     await doc.save();
-    await this.revokeSession(id);
-  }
-
-  async getPreferences(userId: string, organizationId?: string): Promise<UserPreferencesResponse> {
-    const doc = await this.preferencesModel.findOne({ userId }).exec();
-    if (!doc) {
-      return {
-        userId,
-        preferences: this.withOrgScopedPreferences({ ...DEFAULT_USER_PREFERENCES }, organizationId),
-      };
-    }
-    return {
-      userId: doc.userId,
-      preferences: this.withOrgScopedPreferences(
-        this.toPreferences(doc, organizationId),
-        organizationId,
-      ),
-    };
-  }
-
-  async updatePreferences(
-    userId: string,
-    body: UpdateUserPreferencesBody,
-  ): Promise<UserPreferencesResponse> {
-    const user = await this.userModel.findOne({ _id: userId, ...activeDocumentFilter }).exec();
-    if (!user) throw new NotFoundException("User not found");
-
-    const orgId = body.organizationId?.trim();
-    if (body.onboardingProfileCompleted !== undefined && !orgId) {
-      throw new BadRequestException(
-        "organizationId is required when updating onboardingProfileCompleted",
-      );
-    }
-    if (body.setupGuideDismissed !== undefined && !orgId) {
-      throw new BadRequestException("organizationId is required when updating setupGuideDismissed");
-    }
-    if (body.quickActions !== undefined && !orgId) {
-      throw new BadRequestException("organizationId is required when updating quickActions");
-    }
-
-    const $set: Record<string, unknown> = {};
-    if (body.theme !== undefined) $set.theme = body.theme;
-    if (body.sidebarCollapsed !== undefined) $set.sidebarCollapsed = body.sidebarCollapsed;
-    if (body.quickActions !== undefined && orgId) {
-      const normalized = normalizeQuickActions(body.quickActions);
-      if (!normalized) {
-        throw new BadRequestException(
-          `quickActions must be an array of { id?, href, label } bookmarks (max 50)`,
-        );
-      }
-      $set[`quickActionsByOrganizationId.${orgId}`] = normalized;
-    }
-
-    const $setOnInsert: Record<string, unknown> = {
-      userId,
-      ...(body.theme === undefined ? { theme: DEFAULT_USER_PREFERENCES.theme } : {}),
-      ...(body.sidebarCollapsed === undefined
-        ? { sidebarCollapsed: DEFAULT_USER_PREFERENCES.sidebarCollapsed }
-        : {}),
-      ...(body.quickActions === undefined
-        ? { quickActions: DEFAULT_USER_PREFERENCES.quickActions.map((b) => ({ ...b })) }
-        : {}),
-      ...(body.quickActions === undefined ? { quickActionsByOrganizationId: {} } : {}),
-    };
-
-    const update: Record<string, unknown> = {
-      $setOnInsert,
-    };
-    if (Object.keys($set).length > 0) {
-      update.$set = $set;
-    }
-
-    const $addToSet: Record<string, string> = {};
-    const $pull: Record<string, string> = {};
-
-    if (body.onboardingProfileCompleted === true && orgId) {
-      $addToSet.onboardingCompletedOrganizationIds = orgId;
-    } else if (body.onboardingProfileCompleted === false && orgId) {
-      $pull.onboardingCompletedOrganizationIds = orgId;
-    }
-
-    if (body.setupGuideDismissed === true && orgId) {
-      $addToSet.setupGuideDismissedOrganizationIds = orgId;
-    } else if (body.setupGuideDismissed === false && orgId) {
-      $pull.setupGuideDismissedOrganizationIds = orgId;
-    }
-
-    if (Object.keys($addToSet).length > 0) {
-      update.$addToSet = $addToSet;
-    }
-    if (Object.keys($pull).length > 0) {
-      update.$pull = $pull;
-    }
-
-    // Initialiser les listes à l’insert seulement si on ne les touche pas (évite conflit Mongo).
-    if (
-      !$addToSet.onboardingCompletedOrganizationIds &&
-      !$pull.onboardingCompletedOrganizationIds
-    ) {
-      $setOnInsert.onboardingCompletedOrganizationIds = [];
-    }
-    if (
-      !$addToSet.setupGuideDismissedOrganizationIds &&
-      !$pull.setupGuideDismissedOrganizationIds
-    ) {
-      $setOnInsert.setupGuideDismissedOrganizationIds = [];
-    }
-
-    const doc = await this.preferencesModel
-      .findOneAndUpdate({ userId }, update, { upsert: true, new: true })
-      .exec();
-
-    return {
-      userId: doc!.userId,
-      preferences: this.withOrgScopedPreferences(this.toPreferences(doc!, orgId), orgId),
-    };
+    await this.sessionsService.revokeSession(id);
   }
 
   async findFoundingAdminUserId(organizationId: string): Promise<string | null> {
@@ -794,49 +645,6 @@ export class UsersService extends AbstractUsersService {
     return doc?.userId ?? null;
   }
 
-  private toPreferences(doc: UserPreferencesDocument, organizationId?: string): UserPreferences {
-    const quickActions = resolveQuickActionsForOrganization({
-      organizationId,
-      quickActionsByOrganizationId: doc.quickActionsByOrganizationId,
-      quickActions: doc.quickActions,
-      quickActionIds: doc.quickActionIds,
-    });
-    const onboardingOrgIds = Array.isArray(doc.onboardingCompletedOrganizationIds)
-      ? [...new Set(doc.onboardingCompletedOrganizationIds.filter(Boolean))]
-      : [];
-    const setupGuideOrgIds = Array.isArray(doc.setupGuideDismissedOrganizationIds)
-      ? [...new Set(doc.setupGuideDismissedOrganizationIds.filter(Boolean))]
-      : [];
-    return {
-      theme: doc.theme,
-      sidebarCollapsed: doc.sidebarCollapsed,
-      quickActions,
-      onboardingCompletedOrganizationIds: onboardingOrgIds,
-      onboardingProfileCompleted: false,
-      setupGuideDismissedOrganizationIds: setupGuideOrgIds,
-      setupGuideDismissed: false,
-    };
-  }
-
-  private withOrgScopedPreferences(
-    preferences: UserPreferences,
-    organizationId?: string,
-  ): UserPreferences {
-    const orgId = organizationId?.trim();
-    if (!orgId) {
-      return {
-        ...preferences,
-        onboardingProfileCompleted: preferences.onboardingCompletedOrganizationIds.length > 0,
-        setupGuideDismissed: preferences.setupGuideDismissedOrganizationIds.length > 0,
-      };
-    }
-    return {
-      ...preferences,
-      onboardingProfileCompleted: preferences.onboardingCompletedOrganizationIds.includes(orgId),
-      setupGuideDismissed: preferences.setupGuideDismissedOrganizationIds.includes(orgId),
-    };
-  }
-
   async validateCredentials(
     email: string,
     password: string,
@@ -847,7 +655,7 @@ export class UsersService extends AbstractUsersService {
     const ok = await bcrypt.compare(password, doc.passwordHash);
     if (!ok) return null;
 
-    const emailVerified = this.isEmailVerified(doc);
+    const emailVerified = isEmailVerified(doc);
     if (!emailVerified) {
       return {
         id: doc._id.toString(),
@@ -910,121 +718,6 @@ export class UsersService extends AbstractUsersService {
     }
 
     return null;
-  }
-
-  async createSession(
-    userId: string,
-    options?: { userAgent?: string },
-  ): Promise<CreateUserSessionResponse> {
-    const doc = await this.userModel.findOne({ _id: userId, ...activeDocumentFilter }).exec();
-    if (!doc) throw new NotFoundException("User not found");
-
-    const now = new Date();
-    const sessionId = randomUUID();
-    const rawUa = options?.userAgent?.trim() ?? "";
-    const userAgent = rawUa ? rawUa.slice(0, MAX_USER_AGENT_LENGTH) : undefined;
-    const deviceClass = deriveSessionDeviceClass(userAgent);
-
-    // 1 session max par classe (bureau / mobile) : remplace l'éventuelle session du même type.
-    await this.sessionModel.deleteMany({ userId, deviceClass }).exec();
-
-    // Migration soft : sessions legacy sans deviceClass → reclassées via userAgent.
-    const legacy = await this.sessionModel
-      .find({ userId, deviceClass: { $exists: false } })
-      .select("_id userAgent")
-      .exec();
-    const legacyIds = legacy
-      .filter((s) => deriveSessionDeviceClass(s.userAgent) === deviceClass)
-      .map((s) => s._id);
-    if (legacyIds.length > 0) {
-      await this.sessionModel.deleteMany({ _id: { $in: legacyIds } }).exec();
-    }
-
-    await this.sessionModel.create({
-      userId,
-      sessionId,
-      deviceClass,
-      label: deriveSessionLabel(userAgent),
-      userAgent,
-      createdAt: now,
-      lastSeenAt: now,
-    });
-
-    // Stamp de connexion (login, acceptation d'invitation, register, etc.).
-    await this.userModel
-      .updateOne({ _id: userId }, { $set: { lastLoginAt: now }, $unset: { activeSessionId: "" } })
-      .exec()
-      .catch(() => undefined);
-
-    return { sessionId };
-  }
-
-  async validateSession(userId: string, sessionId: string): Promise<ValidateUserSessionResponse> {
-    if (!sessionId?.trim()) {
-      return { valid: false };
-    }
-    const session = await this.sessionModel.findOne({ userId, sessionId: sessionId.trim() }).exec();
-    if (!session) return { valid: false };
-
-    const now = Date.now();
-    if (now - session.lastSeenAt.getTime() >= SESSION_LAST_SEEN_THROTTLE_MS) {
-      session.lastSeenAt = new Date(now);
-      await session.save().catch(() => undefined);
-    }
-
-    // Auto-réparation : sessions créées avant le stamp (ex. acceptation d'invitation).
-    await this.userModel
-      .updateOne(
-        { _id: userId, lastLoginAt: null },
-        { $set: { lastLoginAt: session.createdAt ?? new Date(now) } },
-      )
-      .exec()
-      .catch(() => undefined);
-
-    return { valid: true };
-  }
-
-  async revokeSession(userId: string, sessionId?: string): Promise<void> {
-    const user = await this.userModel.findOne({ _id: userId, ...activeDocumentFilter }).exec();
-    if (!user) throw new NotFoundException("User not found");
-
-    if (sessionId?.trim()) {
-      await this.sessionModel.deleteOne({ userId, sessionId: sessionId.trim() }).exec();
-      return;
-    }
-    await this.sessionModel.deleteMany({ userId }).exec();
-    await this.userModel
-      .updateOne({ _id: userId }, { $unset: { activeSessionId: "" } })
-      .exec()
-      .catch(() => undefined);
-  }
-
-  async revokeOtherSessions(userId: string, keepSessionId: string): Promise<void> {
-    const user = await this.userModel.findOne({ _id: userId, ...activeDocumentFilter }).exec();
-    if (!user) throw new NotFoundException("User not found");
-    const keep = keepSessionId.trim();
-    if (!keep) {
-      throw new BadRequestException("sessionId courant requis");
-    }
-    await this.sessionModel.deleteMany({ userId, sessionId: { $ne: keep } }).exec();
-  }
-
-  async listSessions(userId: string, currentSessionId?: string): Promise<UserSessionResponse[]> {
-    const user = await this.userModel.findOne({ _id: userId, ...activeDocumentFilter }).exec();
-    if (!user) throw new NotFoundException("User not found");
-
-    const docs = await this.sessionModel.find({ userId }).sort({ lastSeenAt: -1 }).exec();
-    const current = currentSessionId?.trim() ?? "";
-    return docs.map((doc) => ({
-      id: doc._id.toString(),
-      sessionId: doc.sessionId,
-      label: doc.label,
-      deviceClass: doc.deviceClass ?? deriveSessionDeviceClass(doc.userAgent),
-      userAgent: doc.userAgent,
-      createdAt: doc.createdAt.toISOString(),
-      lastSeenAt: doc.lastSeenAt.toISOString(),
-      current: current.length > 0 && doc.sessionId === current,
-    }));
   }
 
   async listPlatformDirectory(filters?: {
@@ -1139,193 +832,6 @@ export class UsersService extends AbstractUsersService {
     return out;
   }
 
-  async createImpersonationAudit(body: CreateImpersonationAuditBody): Promise<{ id: string }> {
-    const doc = await this.impersonationAuditModel.create({
-      impersonatorUserId: body.impersonatorUserId,
-      impersonatorEmail: body.impersonatorEmail.trim().toLowerCase(),
-      targetUserId: body.targetUserId,
-      targetEmail: body.targetEmail.trim().toLowerCase(),
-      organizationId: body.organizationId,
-      reason: body.reason.trim(),
-      startedAt: new Date(),
-      expiresAt: body.expiresAt ? new Date(body.expiresAt) : undefined,
-    });
-    return { id: doc._id.toString() };
-  }
-
-  async createProspectOutreach(
-    body: CreateProspectOutreachBody,
-  ): Promise<ProspectOutreachResponse> {
-    const siren = body.siren.trim().replace(/\s/g, "");
-    if (!/^\d{9}$/.test(siren)) {
-      throw new BadRequestException("SIREN invalide");
-    }
-    const status: ProspectOutreachStatus =
-      body.status === "failed"
-        ? "failed"
-        : body.status === "email_not_found"
-          ? "email_not_found"
-          : body.status === "noted"
-            ? "noted"
-            : "sent";
-    const email = body.email.trim().toLowerCase();
-    if (status !== "email_not_found" && status !== "noted" && !email.includes("@")) {
-      throw new BadRequestException("E-mail invalide");
-    }
-
-    const existing = await this.prospectOutreachModel.findOne({ siren }).exec();
-    if (existing?.status === "sent" && status === "email_not_found") {
-      throw new ConflictException("Cette entreprise a déjà été contactée");
-    }
-
-    const sentAt = new Date();
-    const $set: Record<string, unknown> = {
-      siren,
-      companyName: body.companyName.trim(),
-      email: status === "email_not_found" || status === "noted" ? email || "" : email,
-      sentByUserId: body.sentByUserId,
-      sentByEmail: body.sentByEmail.trim().toLowerCase(),
-      subject: body.subject.trim(),
-      status,
-      sentAt,
-    };
-    if (body.comment !== undefined) {
-      $set.comment = this.normalizeProspectComment(body.comment);
-    }
-
-    const doc = await this.prospectOutreachModel
-      .findOneAndUpdate({ siren }, { $set }, { upsert: true, new: true })
-      .exec();
-    if (!doc) throw new BadRequestException("Impossible d’enregistrer le contact");
-    return this.toProspectOutreachResponse(doc);
-  }
-
-  async upsertProspectComment(body: UpsertProspectCommentBody): Promise<ProspectOutreachResponse> {
-    const siren = body.siren.trim().replace(/\s/g, "");
-    if (!/^\d{9}$/.test(siren)) {
-      throw new BadRequestException("SIREN invalide");
-    }
-    const comment = this.normalizeProspectComment(body.comment);
-    const companyName = body.companyName.trim() || `SIREN ${siren}`;
-    const sentByEmail = body.sentByEmail.trim().toLowerCase();
-    const existing = await this.prospectOutreachModel.findOne({ siren }).exec();
-
-    if (existing) {
-      existing.comment = comment;
-      existing.companyName = companyName || existing.companyName;
-      existing.sentByUserId = body.sentByUserId;
-      existing.sentByEmail = sentByEmail;
-      await existing.save();
-      return this.toProspectOutreachResponse(existing);
-    }
-
-    const doc = await this.prospectOutreachModel.create({
-      siren,
-      companyName,
-      email: "",
-      sentByUserId: body.sentByUserId,
-      sentByEmail,
-      subject: "Note prospection",
-      status: "noted",
-      sentAt: new Date(),
-      comment,
-    });
-    return this.toProspectOutreachResponse(doc);
-  }
-
-  async listProspectOutreachesBySirens(
-    sirens: string[],
-  ): Promise<ProspectOutreachesBySirensResponse> {
-    const normalized = [
-      ...new Set(sirens.map((s) => s.trim().replace(/\s/g, "")).filter((s) => /^\d{9}$/.test(s))),
-    ].slice(0, 200);
-    if (normalized.length === 0) return { outreaches: [] };
-    const docs = await this.prospectOutreachModel.find({ siren: { $in: normalized } }).exec();
-    return { outreaches: docs.map((d) => this.toProspectOutreachResponse(d)) };
-  }
-
-  async listProspectOutreaches(options?: {
-    limit?: number;
-    offset?: number;
-    status?: ProspectOutreachStatus;
-    search?: string;
-  }): Promise<ProspectOutreachesListResponse> {
-    const { limit, offset } = clampPagination(options);
-    const query: Record<string, unknown> = {};
-
-    const status = options?.status;
-    if (
-      status === "sent" ||
-      status === "failed" ||
-      status === "email_not_found" ||
-      status === "noted"
-    ) {
-      query.status = status;
-    }
-
-    const search = options?.search?.trim();
-    if (search) {
-      const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      const digits = search.replace(/\D/g, "");
-      const or: Record<string, unknown>[] = [
-        { companyName: { $regex: escaped, $options: "i" } },
-        { email: { $regex: escaped, $options: "i" } },
-        { comment: { $regex: escaped, $options: "i" } },
-        { siren: { $regex: escaped, $options: "i" } },
-      ];
-      if (digits.length > 0 && digits !== search) {
-        or.push({ siren: { $regex: digits } });
-      }
-      query.$or = or;
-    }
-
-    const [total, docs] = await Promise.all([
-      this.prospectOutreachModel.countDocuments(query).exec(),
-      this.prospectOutreachModel.find(query).sort({ sentAt: -1 }).skip(offset).limit(limit).exec(),
-    ]);
-    return {
-      outreaches: docs.map((d) => this.toProspectOutreachResponse(d)),
-      total,
-      limit,
-      offset,
-    };
-  }
-
-  private normalizeProspectComment(raw: string): string {
-    const comment = raw.trim().slice(0, PROSPECT_OUTREACH_COMMENT_MAX_LENGTH);
-    return comment;
-  }
-
-  private toProspectOutreachResponse(doc: ProspectOutreachDocument): ProspectOutreachResponse {
-    return {
-      id: doc._id.toString(),
-      siren: doc.siren,
-      companyName: doc.companyName,
-      email: doc.email,
-      sentByUserId: doc.sentByUserId,
-      sentByEmail: doc.sentByEmail,
-      subject: doc.subject,
-      status: doc.status,
-      sentAt: doc.sentAt.toISOString(),
-      ...(doc.comment?.trim() ? { comment: doc.comment } : {}),
-    };
-  }
-
-  private membershipToResponse(
-    doc: OrganizationMembershipDocument,
-  ): OrganizationMembershipResponse {
-    return {
-      id: doc._id.toString(),
-      userId: doc.userId,
-      organizationId: doc.organizationId,
-      role: doc.role as OrganizationMembershipResponse["role"],
-      membershipStatus: doc.membershipStatus as OrganizationMembershipResponse["membershipStatus"],
-      createdAt: doc.get("createdAt")?.toISOString(),
-      updatedAt: doc.get("updatedAt")?.toISOString(),
-    };
-  }
-
-  /** Migre les anciens champs (users.role, linkedOrganizationIds) vers organization_memberships. */
   private async ensureMembershipsBackfillByUserId(userId: string): Promise<void> {
     const doc = await this.userModel.findOne({ _id: userId, ...activeDocumentFilter }).exec();
     if (doc) await this.ensureMembershipsBackfill(doc);
@@ -1392,11 +898,6 @@ export class UsersService extends AbstractUsersService {
     return code;
   }
 
-  /** Legacy / invitations : champ absent ⇒ considéré vérifié. */
-  private isEmailVerified(doc: UserDocument): boolean {
-    return doc.emailVerified !== false;
-  }
-
   private async toResponseForOrganization(
     doc: UserDocument,
     organizationId: string,
@@ -1410,33 +911,11 @@ export class UsersService extends AbstractUsersService {
       );
     }
     return {
-      ...this.toBaseResponse(doc),
+      ...toUserBaseResponse(doc),
       organizationId,
       role: membership.role as UserResponse["role"],
       organizationMembershipStatus:
         membership.membershipStatus as UserResponse["organizationMembershipStatus"],
-    };
-  }
-
-  private toAccountResponse(doc: UserDocument): AccountUserResponse {
-    return {
-      id: doc._id.toString(),
-      email: doc.email,
-      name: doc.name,
-      status: doc.status,
-      emailVerified: this.isEmailVerified(doc),
-    };
-  }
-
-  private toBaseResponse(doc: UserDocument): Omit<UserResponse, "role"> {
-    return {
-      id: doc._id.toString(),
-      organizationId: doc.organizationId!,
-      email: doc.email,
-      name: doc.name,
-      status: doc.status,
-      createdAt: doc.get("createdAt")?.toISOString(),
-      lastLoginAt: doc.lastLoginAt?.toISOString(),
     };
   }
 }

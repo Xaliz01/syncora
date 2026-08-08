@@ -31,8 +31,7 @@ import {
   type UpdatePrestationForOrgBody,
   type UpdateStockLocationForOrgBody,
 } from "./ports/stock.service.port";
-
-const STOCK_URL = process.env.STOCK_SERVICE_URL ?? "http://localhost:3007";
+import { SERVICE_URLS } from "../infrastructure/service-urls.config";
 
 @Injectable()
 export class StockGatewayService extends AbstractStockGatewayService {
@@ -49,7 +48,7 @@ export class StockGatewayService extends AbstractStockGatewayService {
   ) {
     return this.scopedHttp.request<T>({
       ...params,
-      baseUrl: STOCK_URL,
+      baseUrl: SERVICE_URLS.stock,
       organizationId: user.organizationId,
       errorLabel: "Downstream service error",
     });

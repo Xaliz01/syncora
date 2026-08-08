@@ -6,8 +6,7 @@ import {
   type CreateOrderGiverForOrgBody,
   type UpdateOrderGiverForOrgBody,
 } from "./ports/order-givers.service.port";
-
-const CUSTOMERS_URL = process.env.CUSTOMERS_SERVICE_URL ?? "http://localhost:3009";
+import { SERVICE_URLS } from "../infrastructure/service-urls.config";
 
 @Injectable()
 export class OrderGiversGatewayService extends AbstractOrderGiversGatewayService {
@@ -17,7 +16,7 @@ export class OrderGiversGatewayService extends AbstractOrderGiversGatewayService
 
   async createOrderGiver(user: AuthUser, body: CreateOrderGiverForOrgBody) {
     return this.scopedHttp.request<OrderGiverResponse>({
-      baseUrl: CUSTOMERS_URL,
+      baseUrl: SERVICE_URLS.customers,
       organizationId: user.organizationId,
       method: "post",
       path: "/order-givers",
@@ -31,7 +30,7 @@ export class OrderGiversGatewayService extends AbstractOrderGiversGatewayService
     filters?: { search?: string; ids?: string; limit?: number; offset?: number },
   ) {
     return this.scopedHttp.request<OrderGiversListResponse>({
-      baseUrl: CUSTOMERS_URL,
+      baseUrl: SERVICE_URLS.customers,
       organizationId: user.organizationId,
       method: "get",
       path: "/order-givers",
@@ -49,7 +48,7 @@ export class OrderGiversGatewayService extends AbstractOrderGiversGatewayService
 
   async getOrderGiver(user: AuthUser, orderGiverId: string) {
     return this.scopedHttp.request<OrderGiverResponse>({
-      baseUrl: CUSTOMERS_URL,
+      baseUrl: SERVICE_URLS.customers,
       organizationId: user.organizationId,
       method: "get",
       path: `/order-givers/${orderGiverId}`,
@@ -59,7 +58,7 @@ export class OrderGiversGatewayService extends AbstractOrderGiversGatewayService
 
   async updateOrderGiver(user: AuthUser, orderGiverId: string, body: UpdateOrderGiverForOrgBody) {
     return this.scopedHttp.request<OrderGiverResponse>({
-      baseUrl: CUSTOMERS_URL,
+      baseUrl: SERVICE_URLS.customers,
       organizationId: user.organizationId,
       method: "patch",
       path: `/order-givers/${orderGiverId}`,
@@ -70,7 +69,7 @@ export class OrderGiversGatewayService extends AbstractOrderGiversGatewayService
 
   async deleteOrderGiver(user: AuthUser, orderGiverId: string) {
     return this.scopedHttp.request<{ deleted: true }>({
-      baseUrl: CUSTOMERS_URL,
+      baseUrl: SERVICE_URLS.customers,
       organizationId: user.organizationId,
       method: "delete",
       path: `/order-givers/${orderGiverId}`,

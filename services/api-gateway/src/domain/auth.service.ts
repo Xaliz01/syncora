@@ -60,6 +60,7 @@ import {
   ORGANIZATION_CREATED_EVENT,
   type OrganizationCreatedEvent,
 } from "../infrastructure/organization-created.event";
+import { SERVICE_URLS } from "../infrastructure/service-urls.config";
 
 function buildOrganizationCreatePayload(body: CreateOrganizationBody): CreateOrganizationBody {
   const email = body.email?.trim() ?? "";
@@ -77,12 +78,6 @@ function buildOrganizationCreatePayload(body: CreateOrganizationBody): CreateOrg
     country: body.country?.trim() || undefined,
   };
 }
-
-const ORGANIZATIONS_URL = process.env.ORGANIZATIONS_SERVICE_URL ?? "http://localhost:3001";
-const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
-const PERMISSIONS_URL = process.env.PERMISSIONS_SERVICE_URL ?? "http://localhost:3003";
-const TECHNICIANS_URL = process.env.TECHNICIANS_SERVICE_URL ?? "http://localhost:3006";
-const NOTIFICATIONS_URL = process.env.NOTIFICATIONS_SERVICE_URL ?? "http://localhost:3010";
 
 function isNonProduction(): boolean {
   return process.env.NODE_ENV !== "production";
@@ -141,7 +136,7 @@ export class AuthService extends AbstractAuthService {
     try {
       const res = await firstValueFrom(
         this.httpService.post<OrganizationResponse>(
-          `${ORGANIZATIONS_URL}/organizations`,
+          `${SERVICE_URLS.organizations}/organizations`,
           buildOrganizationCreatePayload({
             name: body.organizationName,
             siret: body.organizationSiret.trim(),
@@ -159,7 +154,7 @@ export class AuthService extends AbstractAuthService {
     let user: UserResponse;
     try {
       const res = await firstValueFrom(
-        this.httpService.post<UserResponse>(`${USERS_URL}/users`, {
+        this.httpService.post<UserResponse>(`${SERVICE_URLS.users}/users`, {
           organizationId: org.id,
           email: body.adminEmail,
           password: body.adminPassword,
@@ -209,7 +204,7 @@ export class AuthService extends AbstractAuthService {
     let created: CreateAccountResult;
     try {
       const res = await firstValueFrom(
-        this.httpService.post<CreateAccountResult>(`${USERS_URL}/users/accounts`, {
+        this.httpService.post<CreateAccountResult>(`${SERVICE_URLS.users}/users/accounts`, {
           email: body.email,
           password: body.password,
           name: body.name,
@@ -249,10 +244,13 @@ export class AuthService extends AbstractAuthService {
     let user: AccountUserResponse;
     try {
       const res = await firstValueFrom(
-        this.httpService.post<AccountUserResponse>(`${USERS_URL}/users/accounts/verify-email`, {
-          email: body.email,
-          code: body.code,
-        }),
+        this.httpService.post<AccountUserResponse>(
+          `${SERVICE_URLS.users}/users/accounts/verify-email`,
+          {
+            email: body.email,
+            code: body.code,
+          },
+        ),
       );
       user = res.data;
     } catch (err: unknown) {
@@ -276,7 +274,7 @@ export class AuthService extends AbstractAuthService {
     try {
       const res = await firstValueFrom(
         this.httpService.post<IssueEmailVerificationResult>(
-          `${USERS_URL}/users/accounts/resend-email-verification`,
+          `${SERVICE_URLS.users}/users/accounts/resend-email-verification`,
           { email: body.email },
         ),
       );
@@ -349,7 +347,7 @@ export class AuthService extends AbstractAuthService {
     try {
       const res = await firstValueFrom(
         this.httpService.post<SendEmailNotificationResponse>(
-          `${NOTIFICATIONS_URL}/email/transactional`,
+          `${SERVICE_URLS.notifications}/email/transactional`,
           {
             to: email,
             subject: "Vérifiez votre adresse e-mail",
@@ -375,7 +373,7 @@ export class AuthService extends AbstractAuthService {
     try {
       const res = await firstValueFrom(
         this.httpService.post<ValidateCredentialsResponse>(
-          `${USERS_URL}/users/validate-credentials`,
+          `${SERVICE_URLS.users}/users/validate-credentials`,
           { email: body.email, password: body.password },
         ),
       );
@@ -461,7 +459,7 @@ export class AuthService extends AbstractAuthService {
     try {
       const res = await firstValueFrom(
         this.httpService.post<OrganizationResponse>(
-          `${ORGANIZATIONS_URL}/organizations`,
+          `${SERVICE_URLS.organizations}/organizations`,
           buildOrganizationCreatePayload(body),
         ),
       );
@@ -474,7 +472,7 @@ export class AuthService extends AbstractAuthService {
 
     await firstValueFrom(
       this.httpService.post<OrganizationMembershipResponse>(
-        `${USERS_URL}/users/${userId}/organization-memberships`,
+        `${SERVICE_URLS.users}/users/${userId}/organization-memberships`,
         {
           organizationId: org.id,
           role: "admin",
@@ -486,7 +484,7 @@ export class AuthService extends AbstractAuthService {
     let user: UserResponse;
     try {
       const res = await firstValueFrom(
-        this.httpService.patch<UserResponse>(`${USERS_URL}/users/${userId}`, {
+        this.httpService.patch<UserResponse>(`${SERVICE_URLS.users}/users/${userId}`, {
           organizationId: org.id,
         }),
       );
@@ -536,7 +534,7 @@ export class AuthService extends AbstractAuthService {
     try {
       const res = await firstValueFrom(
         this.httpService.get<OrganizationMembershipResponse[]>(
-          `${USERS_URL}/users/${jwt.sub}/organization-memberships`,
+          `${SERVICE_URLS.users}/users/${jwt.sub}/organization-memberships`,
         ),
       );
       memberships = res.data;
@@ -556,7 +554,7 @@ export class AuthService extends AbstractAuthService {
     let user: UserResponse;
     try {
       const res = await firstValueFrom(
-        this.httpService.patch<UserResponse>(`${USERS_URL}/users/${jwt.sub}`, {
+        this.httpService.patch<UserResponse>(`${SERVICE_URLS.users}/users/${jwt.sub}`, {
           organizationId: targetId,
         }),
       );
@@ -593,7 +591,7 @@ export class AuthService extends AbstractAuthService {
     }
     try {
       await firstValueFrom(
-        this.httpService.post(`${USERS_URL}/users/${jwt.sub}/sessions/revoke`, {
+        this.httpService.post(`${SERVICE_URLS.users}/users/${jwt.sub}/sessions/revoke`, {
           sessionId: jwt.sid,
         }),
       );
@@ -610,9 +608,12 @@ export class AuthService extends AbstractAuthService {
     let invitation: InvitationResponse;
     try {
       const res = await firstValueFrom(
-        this.httpService.post<InvitationResponse>(`${PERMISSIONS_URL}/invitations/resolve`, {
-          invitationToken: body.invitationToken,
-        }),
+        this.httpService.post<InvitationResponse>(
+          `${SERVICE_URLS.permissions}/invitations/resolve`,
+          {
+            invitationToken: body.invitationToken,
+          },
+        ),
       );
       invitation = res.data;
     } catch (err: unknown) {
@@ -646,7 +647,7 @@ export class AuthService extends AbstractAuthService {
       }
       const res = await firstValueFrom(
         this.httpService.post<UserResponse>(
-          `${USERS_URL}/users/${invitation.invitedUserId}/activate`,
+          `${SERVICE_URLS.users}/users/${invitation.invitedUserId}/activate`,
           activateBody,
         ),
       );
@@ -667,9 +668,12 @@ export class AuthService extends AbstractAuthService {
 
     try {
       await firstValueFrom(
-        this.httpService.post<InvitationResponse>(`${PERMISSIONS_URL}/invitations/accept`, {
-          invitationToken: body.invitationToken,
-        }),
+        this.httpService.post<InvitationResponse>(
+          `${SERVICE_URLS.permissions}/invitations/accept`,
+          {
+            invitationToken: body.invitationToken,
+          },
+        ),
       );
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } })?.response?.status;
@@ -706,9 +710,12 @@ export class AuthService extends AbstractAuthService {
     let invitation: InvitationResponse;
     try {
       const res = await firstValueFrom(
-        this.httpService.post<InvitationResponse>(`${PERMISSIONS_URL}/invitations/resolve`, {
-          invitationToken: token,
-        }),
+        this.httpService.post<InvitationResponse>(
+          `${SERVICE_URLS.permissions}/invitations/resolve`,
+          {
+            invitationToken: token,
+          },
+        ),
       );
       invitation = res.data;
     } catch (err: unknown) {
@@ -722,7 +729,7 @@ export class AuthService extends AbstractAuthService {
     try {
       const res = await firstValueFrom(
         this.httpService.get<InvitationActivationHintsResponse>(
-          `${USERS_URL}/users/${invitation.invitedUserId}/invitation-activation-hints`,
+          `${SERVICE_URLS.users}/users/${invitation.invitedUserId}/invitation-activation-hints`,
         ),
       );
       requiresPasswordSetup = !res.data.hasPassword;
@@ -744,7 +751,7 @@ export class AuthService extends AbstractAuthService {
     try {
       const res = await firstValueFrom(
         this.httpService.get<TechnicianResponse | null>(
-          `${TECHNICIANS_URL}/technicians/by-user/${userId}`,
+          `${SERVICE_URLS.technicians}/technicians/by-user/${userId}`,
           { params: { organizationId } },
         ),
       );
@@ -758,7 +765,7 @@ export class AuthService extends AbstractAuthService {
   private async resolveAccountProfile(userId: string): Promise<AccountUserResponse | null> {
     try {
       const res = await firstValueFrom(
-        this.httpService.get<AccountUserResponse>(`${USERS_URL}/users/accounts/${userId}`),
+        this.httpService.get<AccountUserResponse>(`${SERVICE_URLS.users}/users/accounts/${userId}`),
       );
       return res.data;
     } catch {
@@ -770,7 +777,7 @@ export class AuthService extends AbstractAuthService {
   private async resolveUserProfile(userId: string): Promise<UserResponse | null> {
     try {
       const res = await firstValueFrom(
-        this.httpService.get<UserResponse>(`${USERS_URL}/users/${userId}`),
+        this.httpService.get<UserResponse>(`${SERVICE_URLS.users}/users/${userId}`),
       );
       return res.data;
     } catch {
@@ -787,7 +794,7 @@ export class AuthService extends AbstractAuthService {
     try {
       const res = await firstValueFrom(
         this.httpService.get<OrganizationMembershipResponse[]>(
-          `${USERS_URL}/users/${userId}/organization-memberships`,
+          `${SERVICE_URLS.users}/users/${userId}/organization-memberships`,
         ),
       );
       const membership = res.data.find((m) => m.organizationId === organizationId);
@@ -835,7 +842,7 @@ export class AuthService extends AbstractAuthService {
     try {
       const res = await firstValueFrom(
         this.httpService.post<EffectivePermissionsResponse>(
-          `${PERMISSIONS_URL}/permissions/effective`,
+          `${SERVICE_URLS.permissions}/permissions/effective`,
           {
             organizationId,
             userId,
@@ -851,9 +858,12 @@ export class AuthService extends AbstractAuthService {
 
   private async createUserSession(userId: string, userAgent?: string): Promise<string> {
     const res = await firstValueFrom(
-      this.httpService.post<CreateUserSessionResponse>(`${USERS_URL}/users/${userId}/sessions`, {
-        userAgent,
-      }),
+      this.httpService.post<CreateUserSessionResponse>(
+        `${SERVICE_URLS.users}/users/${userId}/sessions`,
+        {
+          userAgent,
+        },
+      ),
     );
     return res.data.sessionId;
   }
@@ -906,9 +916,12 @@ export class AuthService extends AbstractAuthService {
   private async resolveIsFoundingAdmin(organizationId: string, userId: string): Promise<boolean> {
     try {
       const res = await firstValueFrom(
-        this.httpService.get<{ userId: string | null }>(`${USERS_URL}/users/founding-admin`, {
-          params: { organizationId },
-        }),
+        this.httpService.get<{ userId: string | null }>(
+          `${SERVICE_URLS.users}/users/founding-admin`,
+          {
+            params: { organizationId },
+          },
+        ),
       );
       return Boolean(res.data.userId && res.data.userId === userId);
     } catch {

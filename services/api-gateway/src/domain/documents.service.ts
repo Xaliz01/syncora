@@ -15,13 +15,7 @@ import {
   type DocumentUploadGatewayResponse,
 } from "./ports/documents.service.port";
 import { AbstractSubscriptionsGatewayService } from "./ports/subscriptions.service.port";
-
-const DOCUMENTS_URL = process.env.DOCUMENTS_SERVICE_URL ?? "http://localhost:3011";
-const CASES_URL = process.env.CASES_SERVICE_URL ?? "http://localhost:3004";
-const CUSTOMERS_URL = process.env.CUSTOMERS_SERVICE_URL ?? "http://localhost:3009";
-const FLEET_URL = process.env.FLEET_SERVICE_URL ?? "http://localhost:3005";
-const TECHNICIANS_URL = process.env.TECHNICIANS_SERVICE_URL ?? "http://localhost:3006";
-const ORGANIZATIONS_URL = process.env.ORGANIZATIONS_SERVICE_URL ?? "http://localhost:3001";
+import { SERVICE_URLS } from "../infrastructure/service-urls.config";
 
 @Injectable()
 export class DocumentsGatewayService extends AbstractDocumentsGatewayService {
@@ -56,7 +50,7 @@ export class DocumentsGatewayService extends AbstractDocumentsGatewayService {
 
     const response = await firstValueFrom(
       this.httpService.post<DocumentResponse>(
-        `${DOCUMENTS_URL}/documents/upload?${queryParams.toString()}`,
+        `${SERVICE_URLS.documents}/documents/upload?${queryParams.toString()}`,
         form,
         { headers: form.getHeaders(), maxContentLength: MAX_DOCUMENT_FILE_SIZE_BYTES },
       ),
@@ -79,22 +73,27 @@ export class DocumentsGatewayService extends AbstractDocumentsGatewayService {
       switch (entityType) {
         case "case": {
           const res = await firstValueFrom(
-            this.httpService.get<{ title?: string }>(`${CASES_URL}/cases/${entityId}`, { params }),
+            this.httpService.get<{ title?: string }>(`${SERVICE_URLS.cases}/cases/${entityId}`, {
+              params,
+            }),
           );
           return res.data.title?.trim() || undefined;
         }
         case "intervention": {
           const res = await firstValueFrom(
-            this.httpService.get<{ title?: string }>(`${CASES_URL}/interventions/${entityId}`, {
-              params,
-            }),
+            this.httpService.get<{ title?: string }>(
+              `${SERVICE_URLS.cases}/interventions/${entityId}`,
+              {
+                params,
+              },
+            ),
           );
           return res.data.title?.trim() || undefined;
         }
         case "customer": {
           const res = await firstValueFrom(
             this.httpService.get<{ displayName?: string }>(
-              `${CUSTOMERS_URL}/customers/${entityId}`,
+              `${SERVICE_URLS.customers}/customers/${entityId}`,
               { params },
             ),
           );
@@ -103,7 +102,7 @@ export class DocumentsGatewayService extends AbstractDocumentsGatewayService {
         case "vehicle": {
           const res = await firstValueFrom(
             this.httpService.get<{ registrationNumber?: string }>(
-              `${FLEET_URL}/vehicles/${entityId}`,
+              `${SERVICE_URLS.fleet}/vehicles/${entityId}`,
               { params },
             ),
           );
@@ -112,7 +111,7 @@ export class DocumentsGatewayService extends AbstractDocumentsGatewayService {
         case "technician": {
           const res = await firstValueFrom(
             this.httpService.get<{ firstName?: string; lastName?: string }>(
-              `${TECHNICIANS_URL}/technicians/${entityId}`,
+              `${SERVICE_URLS.technicians}/technicians/${entityId}`,
               { params },
             ),
           );
@@ -122,16 +121,19 @@ export class DocumentsGatewayService extends AbstractDocumentsGatewayService {
         }
         case "team": {
           const res = await firstValueFrom(
-            this.httpService.get<{ name?: string }>(`${TECHNICIANS_URL}/teams/${entityId}`, {
-              params,
-            }),
+            this.httpService.get<{ name?: string }>(
+              `${SERVICE_URLS.technicians}/teams/${entityId}`,
+              {
+                params,
+              },
+            ),
           );
           return res.data.name?.trim() || undefined;
         }
         case "organization": {
           const res = await firstValueFrom(
             this.httpService.get<{ name?: string }>(
-              `${ORGANIZATIONS_URL}/organizations/${entityId}`,
+              `${SERVICE_URLS.organizations}/organizations/${entityId}`,
             ),
           );
           return res.data.name?.trim() || undefined;
@@ -150,7 +152,7 @@ export class DocumentsGatewayService extends AbstractDocumentsGatewayService {
     entityId: string,
   ): Promise<DocumentResponse[]> {
     const response = await firstValueFrom(
-      this.httpService.get<DocumentResponse[]>(`${DOCUMENTS_URL}/documents`, {
+      this.httpService.get<DocumentResponse[]>(`${SERVICE_URLS.documents}/documents`, {
         params: {
           organizationId: currentUser.organizationId,
           entityType,
@@ -165,7 +167,7 @@ export class DocumentsGatewayService extends AbstractDocumentsGatewayService {
     try {
       const response = await firstValueFrom(
         this.httpService.get<{ url: string }>(
-          `${DOCUMENTS_URL}/documents/${documentId}/download-url`,
+          `${SERVICE_URLS.documents}/documents/${documentId}/download-url`,
           { params: { organizationId: currentUser.organizationId } },
         ),
       );
@@ -186,7 +188,7 @@ export class DocumentsGatewayService extends AbstractDocumentsGatewayService {
 
     try {
       const response = await firstValueFrom(
-        this.httpService.get(`${DOCUMENTS_URL}/documents/download/${downstreamKey}`, {
+        this.httpService.get(`${SERVICE_URLS.documents}/documents/download/${downstreamKey}`, {
           responseType: "stream",
         }),
       );
@@ -212,9 +214,12 @@ export class DocumentsGatewayService extends AbstractDocumentsGatewayService {
   async deleteDocument(currentUser: AuthUser, documentId: string): Promise<{ deleted: true }> {
     try {
       const response = await firstValueFrom(
-        this.httpService.delete<{ deleted: true }>(`${DOCUMENTS_URL}/documents/${documentId}`, {
-          params: { organizationId: currentUser.organizationId },
-        }),
+        this.httpService.delete<{ deleted: true }>(
+          `${SERVICE_URLS.documents}/documents/${documentId}`,
+          {
+            params: { organizationId: currentUser.organizationId },
+          },
+        ),
       );
       return response.data;
     } catch (err: unknown) {

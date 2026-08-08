@@ -11,6 +11,7 @@ import {
 } from "@planwise/shared";
 import type { NotificationPreferencesDocument } from "../persistence/notification-preferences.schema";
 import { AbstractNotificationPreferencesService } from "./ports/notification-preferences.service.port";
+import { toNotificationPreferencesResponse } from "./mappers/notification-preferences.mapper";
 
 @Injectable()
 export class NotificationPreferencesService extends AbstractNotificationPreferencesService {
@@ -26,7 +27,7 @@ export class NotificationPreferencesService extends AbstractNotificationPreferen
     organizationId: string,
   ): Promise<NotificationPreferencesResponse> {
     const doc = await this.preferencesModel.findOne({ userId, organizationId }).exec();
-    if (doc) return this.toResponse(doc);
+    if (doc) return toNotificationPreferencesResponse(doc);
 
     return {
       id: "",
@@ -49,17 +50,6 @@ export class NotificationPreferencesService extends AbstractNotificationPreferen
         { new: true, upsert: true },
       )
       .exec();
-    return this.toResponse(doc!);
-  }
-
-  private toResponse(doc: NotificationPreferencesDocument): NotificationPreferencesResponse {
-    return {
-      id: doc._id.toString(),
-      userId: doc.userId,
-      organizationId: doc.organizationId,
-      preferences: mergeNotificationPreferencesWithDefaults(doc.preferences),
-      createdAt: doc.get("createdAt")?.toISOString(),
-      updatedAt: doc.get("updatedAt")?.toISOString(),
-    };
+    return toNotificationPreferencesResponse(doc!);
   }
 }

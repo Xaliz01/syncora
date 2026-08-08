@@ -9,8 +9,7 @@ import type {
 } from "@planwise/shared";
 import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
 import { AbstractFleetGatewayService } from "./ports/fleet.service.port";
-
-const FLEET_URL = process.env.FLEET_SERVICE_URL ?? "http://localhost:3005";
+import { SERVICE_URLS } from "../infrastructure/service-urls.config";
 
 @Injectable()
 export class FleetGatewayService extends AbstractFleetGatewayService {
@@ -27,7 +26,7 @@ export class FleetGatewayService extends AbstractFleetGatewayService {
   ) {
     return this.scopedHttp.request<T>({
       ...params,
-      baseUrl: FLEET_URL,
+      baseUrl: SERVICE_URLS.fleet,
       organizationId: user.organizationId,
       errorLabel: "Downstream service error",
     });

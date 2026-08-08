@@ -41,12 +41,7 @@ import {
 import PDFDocument from "pdfkit";
 import ExcelJS from "exceljs";
 import { AbstractExportsService, type ExportResult } from "./ports/exports.service.port";
-
-const CASES_URL = process.env.CASES_SERVICE_URL ?? "http://localhost:3004";
-const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
-const CUSTOMERS_URL = process.env.CUSTOMERS_SERVICE_URL ?? "http://localhost:3009";
-const TECHNICIANS_URL = process.env.TECHNICIANS_SERVICE_URL ?? "http://localhost:3006";
-const INTEGRATIONS_URL = process.env.INTEGRATIONS_SERVICE_URL ?? "http://localhost:3013";
+import { SERVICE_URLS } from "../infrastructure/service-urls.config";
 
 /** Aligné sur la suggestion d’équipe front (vol d’oiseau → route approx.). */
 const ROAD_FACTOR = 1.18;
@@ -79,7 +74,7 @@ export class ExportsService extends AbstractExportsService {
   // ── Case summary PDF ──
 
   async exportCaseSummaryPdf(organizationId: string, caseId: string): Promise<ExportResult> {
-    const caseData = await this.callService<CaseResponse>(CASES_URL, `/cases/${caseId}`, {
+    const caseData = await this.callService<CaseResponse>(SERVICE_URLS.cases, `/cases/${caseId}`, {
       organizationId,
     });
 
@@ -87,7 +82,7 @@ export class ExportsService extends AbstractExportsService {
     if (caseData.customerId) {
       try {
         customer = await this.callService<CustomerResponse>(
-          CUSTOMERS_URL,
+          SERVICE_URLS.customers,
           `/customers/${caseData.customerId}`,
           { organizationId },
         );
@@ -97,7 +92,7 @@ export class ExportsService extends AbstractExportsService {
     }
 
     const interventions = await this.fetchAllPaginated<InterventionResponse>(
-      CASES_URL,
+      SERVICE_URLS.cases,
       "/interventions",
       "interventions",
       { organizationId, caseId },
@@ -141,7 +136,7 @@ export class ExportsService extends AbstractExportsService {
     if (filters?.orderGiverId) query.orderGiverId = filters.orderGiverId;
 
     let cases = await this.fetchAllPaginated<CaseSummaryResponse>(
-      CASES_URL,
+      SERVICE_URLS.cases,
       "/cases",
       "cases",
       query,
@@ -179,7 +174,9 @@ export class ExportsService extends AbstractExportsService {
   // ── Users list ──
 
   async exportUsersList(organizationId: string, format: ExportFormat): Promise<ExportResult> {
-    const users = await this.callService<UserResponse[]>(USERS_URL, "/users", { organizationId });
+    const users = await this.callService<UserResponse[]>(SERVICE_URLS.users, "/users", {
+      organizationId,
+    });
 
     if (format === "pdf") {
       const buffer = await this.buildUsersListPdf(users);
@@ -211,7 +208,7 @@ export class ExportsService extends AbstractExportsService {
     if (filters?.kind) query.kind = filters.kind;
 
     const customers = await this.fetchAllPaginated<CustomerResponse>(
-      CUSTOMERS_URL,
+      SERVICE_URLS.customers,
       "/customers",
       "customers",
       query,
@@ -257,7 +254,7 @@ export class ExportsService extends AbstractExportsService {
     if (filters?.status) query.status = filters.status;
 
     let interventions = await this.fetchAllPaginated<InterventionResponse>(
-      CASES_URL,
+      SERVICE_URLS.cases,
       "/interventions",
       "interventions",
       query,
@@ -304,10 +301,10 @@ export class ExportsService extends AbstractExportsService {
   ): Promise<ExportResult> {
     const period = this.requireReportingPeriod(filters);
     const [technicians, teams] = await Promise.all([
-      this.callService<TechnicianResponse[]>(TECHNICIANS_URL, "/technicians", {
+      this.callService<TechnicianResponse[]>(SERVICE_URLS.technicians, "/technicians", {
         organizationId,
       }),
-      this.callService<TeamResponse[]>(TECHNICIANS_URL, "/teams", {
+      this.callService<TeamResponse[]>(SERVICE_URLS.technicians, "/teams", {
         organizationId,
       }).catch(() => [] as TeamResponse[]),
     ]);
@@ -318,7 +315,7 @@ export class ExportsService extends AbstractExportsService {
     };
 
     const interventions = await this.fetchAllPaginated<InterventionResponse>(
-      CASES_URL,
+      SERVICE_URLS.cases,
       "/interventions",
       "interventions",
       query,
@@ -455,7 +452,7 @@ export class ExportsService extends AbstractExportsService {
     };
     if (params.userProfileId) query.userProfileId = params.userProfileId;
     const cases = await this.callService<DashboardTodoCaseItem[]>(
-      CASES_URL,
+      SERVICE_URLS.cases,
       "/dashboard/todo-cases",
       query,
     );
@@ -504,7 +501,7 @@ export class ExportsService extends AbstractExportsService {
     }
 
     const invoices = await this.fetchAllPaginated<OrganizationInvoiceSyncItem>(
-      INTEGRATIONS_URL,
+      SERVICE_URLS.integrations,
       "/integrations/invoice-syncs",
       "invoices",
       query,
@@ -552,7 +549,7 @@ export class ExportsService extends AbstractExportsService {
     const orderGiverId = filters?.orderGiverId?.trim();
     if (!customerId && !orderGiverId) return undefined;
 
-    const result = await this.callService<{ ids: string[] }>(CASES_URL, "/cases/ids", {
+    const result = await this.callService<{ ids: string[] }>(SERVICE_URLS.cases, "/cases/ids", {
       organizationId,
       ...(customerId ? { customerId } : {}),
       ...(orderGiverId ? { orderGiverId } : {}),
@@ -570,9 +567,13 @@ export class ExportsService extends AbstractExportsService {
     const caseEntries = await Promise.all(
       caseIds.map(async (caseId) => {
         try {
-          const caseData = await this.callService<CaseResponse>(CASES_URL, `/cases/${caseId}`, {
-            organizationId,
-          });
+          const caseData = await this.callService<CaseResponse>(
+            SERVICE_URLS.cases,
+            `/cases/${caseId}`,
+            {
+              organizationId,
+            },
+          );
           return [caseId, caseData] as const;
         } catch {
           return null;
@@ -599,7 +600,7 @@ export class ExportsService extends AbstractExportsService {
     if (uniqueCustomerIds.length > 0) {
       try {
         const customersPage = await this.callService<CustomersListResponse>(
-          CUSTOMERS_URL,
+          SERVICE_URLS.customers,
           "/customers",
           {
             organizationId,
@@ -620,7 +621,7 @@ export class ExportsService extends AbstractExportsService {
       try {
         const orderGiversPage = await this.callService<{
           orderGivers: Array<{ id: string; displayName: string }>;
-        }>(CUSTOMERS_URL, "/order-givers", {
+        }>(SERVICE_URLS.customers, "/order-givers", {
           organizationId,
           ids: uniqueOrderGiverIds.join(","),
           limit: String(Math.min(uniqueOrderGiverIds.length, 200)),
@@ -675,7 +676,7 @@ export class ExportsService extends AbstractExportsService {
     if (customerIds.length > 0) {
       try {
         const customersPage = await this.callService<CustomersListResponse>(
-          CUSTOMERS_URL,
+          SERVICE_URLS.customers,
           "/customers",
           {
             organizationId,
@@ -700,7 +701,7 @@ export class ExportsService extends AbstractExportsService {
             displayName: string;
             kind: CustomerResponse["kind"];
           }>;
-        }>(CUSTOMERS_URL, "/order-givers", {
+        }>(SERVICE_URLS.customers, "/order-givers", {
           organizationId,
           ids: orderGiverIds.join(","),
           limit: String(Math.min(Math.max(orderGiverIds.length, 1), 200)),
@@ -795,13 +796,13 @@ export class ExportsService extends AbstractExportsService {
     userNameById: Map<string, string>;
   }> {
     const [technicians, teams, users] = await Promise.all([
-      this.callService<TechnicianResponse[]>(TECHNICIANS_URL, "/technicians", {
+      this.callService<TechnicianResponse[]>(SERVICE_URLS.technicians, "/technicians", {
         organizationId,
       }).catch(() => [] as TechnicianResponse[]),
-      this.callService<TeamResponse[]>(TECHNICIANS_URL, "/teams", { organizationId }).catch(
-        () => [] as TeamResponse[],
-      ),
-      this.callService<UserResponse[]>(USERS_URL, "/users", { organizationId }).catch(
+      this.callService<TeamResponse[]>(SERVICE_URLS.technicians, "/teams", {
+        organizationId,
+      }).catch(() => [] as TeamResponse[]),
+      this.callService<UserResponse[]>(SERVICE_URLS.users, "/users", { organizationId }).catch(
         () => [] as UserResponse[],
       ),
     ]);
@@ -882,7 +883,7 @@ export class ExportsService extends AbstractExportsService {
     if (filters?.orderGiverId) query.orderGiverId = filters.orderGiverId;
 
     let cases = await this.fetchAllPaginated<CaseSummaryResponse>(
-      CASES_URL,
+      SERVICE_URLS.cases,
       "/cases",
       "cases",
       query,
@@ -949,7 +950,7 @@ export class ExportsService extends AbstractExportsService {
     if (filters?.status) query.status = filters.status;
 
     let interventions = await this.fetchAllPaginated<InterventionResponse>(
-      CASES_URL,
+      SERVICE_URLS.cases,
       "/interventions",
       "interventions",
       query,
@@ -1012,13 +1013,15 @@ export class ExportsService extends AbstractExportsService {
   ): Promise<ReportPreviewResponse> {
     const period = this.requireReportingPeriod(filters);
     const [technicians, teams] = await Promise.all([
-      this.callService<TechnicianResponse[]>(TECHNICIANS_URL, "/technicians", { organizationId }),
-      this.callService<TeamResponse[]>(TECHNICIANS_URL, "/teams", { organizationId }).catch(
-        () => [] as TeamResponse[],
-      ),
+      this.callService<TechnicianResponse[]>(SERVICE_URLS.technicians, "/technicians", {
+        organizationId,
+      }),
+      this.callService<TeamResponse[]>(SERVICE_URLS.technicians, "/teams", {
+        organizationId,
+      }).catch(() => [] as TeamResponse[]),
     ]);
     const interventions = await this.fetchAllPaginated<InterventionResponse>(
-      CASES_URL,
+      SERVICE_URLS.cases,
       "/interventions",
       "interventions",
       { organizationId, ...this.toServiceDateRange(period) },
@@ -1142,7 +1145,7 @@ export class ExportsService extends AbstractExportsService {
     },
   ): Promise<MileageRow[]> {
     const interventions = await this.fetchAllPaginated<InterventionResponse>(
-      CASES_URL,
+      SERVICE_URLS.cases,
       "/interventions",
       "interventions",
       { organizationId, ...this.toServiceDateRange(period) },
@@ -1152,12 +1155,12 @@ export class ExportsService extends AbstractExportsService {
     const completed = interventions.filter((i) => i.status === "completed");
 
     const [teams, agences] = await Promise.all([
-      this.callService<TeamResponse[]>(TECHNICIANS_URL, "/teams", { organizationId }).catch(
-        () => [] as TeamResponse[],
-      ),
-      this.callService<AgenceResponse[]>(TECHNICIANS_URL, "/agences", { organizationId }).catch(
-        () => [] as AgenceResponse[],
-      ),
+      this.callService<TeamResponse[]>(SERVICE_URLS.technicians, "/teams", {
+        organizationId,
+      }).catch(() => [] as TeamResponse[]),
+      this.callService<AgenceResponse[]>(SERVICE_URLS.technicians, "/agences", {
+        organizationId,
+      }).catch(() => [] as AgenceResponse[]),
     ]);
 
     const teamById = new Map(teams.map((t) => [t.id, t]));
@@ -1182,7 +1185,7 @@ export class ExportsService extends AbstractExportsService {
 
     if (filters.groupBy === "technician") {
       const technicians = await this.callService<TechnicianResponse[]>(
-        TECHNICIANS_URL,
+        SERVICE_URLS.technicians,
         "/technicians",
         { organizationId },
       ).catch(() => [] as TechnicianResponse[]);
@@ -1301,7 +1304,7 @@ export class ExportsService extends AbstractExportsService {
     let caseData = ctx.caseCache.get(caseId);
     if (caseData === undefined) {
       try {
-        caseData = await this.callService<CaseResponse>(CASES_URL, `/cases/${caseId}`, {
+        caseData = await this.callService<CaseResponse>(SERVICE_URLS.cases, `/cases/${caseId}`, {
           organizationId,
         });
       } catch {
@@ -1323,7 +1326,7 @@ export class ExportsService extends AbstractExportsService {
     if (customer === undefined) {
       try {
         customer = await this.callService<CustomerResponse>(
-          CUSTOMERS_URL,
+          SERVICE_URLS.customers,
           `/customers/${customerId}`,
           { organizationId },
         );
@@ -1390,7 +1393,7 @@ export class ExportsService extends AbstractExportsService {
     if (filters?.search) query.search = filters.search;
     if (filters?.kind) query.kind = filters.kind;
     const customers = await this.fetchAllPaginated<CustomerResponse>(
-      CUSTOMERS_URL,
+      SERVICE_URLS.customers,
       "/customers",
       "customers",
       query,
@@ -1425,7 +1428,9 @@ export class ExportsService extends AbstractExportsService {
   }
 
   private async previewUsersList(organizationId: string): Promise<ReportPreviewResponse> {
-    const users = await this.callService<UserResponse[]>(USERS_URL, "/users", { organizationId });
+    const users = await this.callService<UserResponse[]>(SERVICE_URLS.users, "/users", {
+      organizationId,
+    });
     const columns = [
       { key: "name", label: "Nom" },
       { key: "email", label: "Email" },
@@ -1487,7 +1492,7 @@ export class ExportsService extends AbstractExportsService {
     }
 
     const invoices = await this.fetchAllPaginated<OrganizationInvoiceSyncItem>(
-      INTEGRATIONS_URL,
+      SERVICE_URLS.integrations,
       "/integrations/invoice-syncs",
       "invoices",
       query,
@@ -1500,9 +1505,13 @@ export class ExportsService extends AbstractExportsService {
     await Promise.all(
       caseIds.map(async (caseId) => {
         try {
-          const caseData = await this.callService<CaseResponse>(CASES_URL, `/cases/${caseId}`, {
-            organizationId,
-          });
+          const caseData = await this.callService<CaseResponse>(
+            SERVICE_URLS.cases,
+            `/cases/${caseId}`,
+            {
+              organizationId,
+            },
+          );
           caseCustomer.set(caseId, {
             customerId: caseData.customerId,
             title: caseData.title,
@@ -1567,21 +1576,26 @@ export class ExportsService extends AbstractExportsService {
 
     const [casesResult, interventionsResult, techniciansResult, customersResult] =
       await Promise.allSettled([
-        this.fetchAllPaginated<CaseSummaryResponse>(CASES_URL, "/cases", "cases", {
+        this.fetchAllPaginated<CaseSummaryResponse>(SERVICE_URLS.cases, "/cases", "cases", {
           organizationId,
         }),
         this.fetchAllPaginated<InterventionResponse>(
-          CASES_URL,
+          SERVICE_URLS.cases,
           "/interventions",
           "interventions",
           interventionQuery,
         ),
-        this.callService<TechnicianResponse[]>(TECHNICIANS_URL, "/technicians", {
+        this.callService<TechnicianResponse[]>(SERVICE_URLS.technicians, "/technicians", {
           organizationId,
         }),
-        this.fetchAllPaginated<CustomerResponse>(CUSTOMERS_URL, "/customers", "customers", {
-          organizationId,
-        }),
+        this.fetchAllPaginated<CustomerResponse>(
+          SERVICE_URLS.customers,
+          "/customers",
+          "customers",
+          {
+            organizationId,
+          },
+        ),
       ]);
 
     const allCases = casesResult.status === "fulfilled" ? casesResult.value : [];

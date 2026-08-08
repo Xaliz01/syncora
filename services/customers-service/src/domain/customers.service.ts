@@ -20,11 +20,8 @@ import {
   assertOrganizationScopedResourceNest,
   parseOrganizationIdBody,
 } from "@planwise/shared/nest";
-import type {
-  CustomerContactSubDoc,
-  CustomerDocument,
-  CustomerSiteSubDoc,
-} from "../persistence/customer.schema";
+import type { CustomerDocument } from "../persistence/customer.schema";
+import { toContactResponse, toCustomerResponse, toSiteResponse } from "./mappers/customer.mapper";
 import { AbstractCustomersService } from "./ports/customers.service.port";
 import { buildPersonSearchOr } from "./person-search.query";
 
@@ -62,7 +59,7 @@ export class CustomersService extends AbstractCustomersService {
       notes: body.notes?.trim() || undefined,
       isTestData: body.isTestData === true,
     });
-    return this.toCustomerResponse(doc);
+    return toCustomerResponse(doc);
   }
 
   async listCustomers(
@@ -91,7 +88,7 @@ export class CustomersService extends AbstractCustomersService {
         .exec();
       const customers = assertOrganizationScopedListNest(
         organizationId,
-        docs.map((d) => this.toCustomerResponse(d)),
+        docs.map((d) => toCustomerResponse(d)),
       );
       return { customers, total: customers.length };
     }
@@ -108,7 +105,7 @@ export class CustomersService extends AbstractCustomersService {
 
     const customers = assertOrganizationScopedListNest(
       organizationId,
-      docs.map((d) => this.toCustomerResponse(d)),
+      docs.map((d) => toCustomerResponse(d)),
     );
     return { customers, total };
   }
@@ -120,7 +117,7 @@ export class CustomersService extends AbstractCustomersService {
     if (!doc) throw new NotFoundException("Client introuvable");
     return assertOrganizationScopedResourceNest(
       organizationId,
-      this.toCustomerResponse(doc),
+      toCustomerResponse(doc),
       "Client introuvable",
     );
   }
@@ -169,7 +166,7 @@ export class CustomersService extends AbstractCustomersService {
     this.validateCustomerDoc(doc);
     return assertOrganizationScopedResourceNest(
       organizationId,
-      this.toCustomerResponse(doc),
+      toCustomerResponse(doc),
       "Client introuvable",
     );
   }
@@ -233,7 +230,7 @@ export class CustomersService extends AbstractCustomersService {
     if (!doc) throw new NotFoundException("Client introuvable");
 
     const createdSite = doc.sites[doc.sites.length - 1];
-    return this.toSiteResponse(createdSite);
+    return toSiteResponse(createdSite);
   }
 
   async updateSite(
@@ -280,7 +277,7 @@ export class CustomersService extends AbstractCustomersService {
     }
 
     await doc.save();
-    return this.toSiteResponse(site);
+    return toSiteResponse(site);
   }
 
   async deleteSite(
@@ -331,7 +328,7 @@ export class CustomersService extends AbstractCustomersService {
     if (!doc) throw new NotFoundException("Client introuvable");
 
     const created = doc.contacts[doc.contacts.length - 1];
-    return this.toContactResponse(created);
+    return toContactResponse(created);
   }
 
   async updateContact(
@@ -372,7 +369,7 @@ export class CustomersService extends AbstractCustomersService {
     }
 
     await doc.save();
-    return this.toContactResponse(contact);
+    return toContactResponse(contact);
   }
 
   async deleteContact(
@@ -429,74 +426,5 @@ export class CustomersService extends AbstractCustomersService {
         "Le prénom ou le nom est obligatoire pour une personne physique",
       );
     }
-  }
-
-  private customerDisplayName(doc: CustomerDocument): string {
-    if (doc.kind === "company") {
-      return doc.companyName?.trim() || "Société";
-    }
-    const parts = [doc.firstName, doc.lastName].filter((p) => p?.trim()).map((p) => p!.trim());
-    return parts.length > 0 ? parts.join(" ") : "Client";
-  }
-
-  private toSiteResponse(site: CustomerSiteSubDoc): CustomerSiteResponse {
-    return {
-      id: site._id.toString(),
-      label: site.label,
-      address: {
-        line1: site.address.line1,
-        line2: site.address.line2,
-        postalCode: site.address.postalCode,
-        city: site.address.city,
-        country: site.address.country ?? "FR",
-      },
-      isDefault: site.isDefault || undefined,
-      notes: site.notes,
-    };
-  }
-
-  private toContactResponse(contact: CustomerContactSubDoc): CustomerContactResponse {
-    return {
-      id: contact._id.toString(),
-      name: contact.name,
-      role: contact.role,
-      phone: contact.phone,
-      mobile: contact.mobile,
-      email: contact.email,
-      notes: contact.notes,
-    };
-  }
-
-  private toCustomerResponse(doc: CustomerDocument): CustomerResponse {
-    return {
-      id: doc._id.toString(),
-      organizationId: doc.organizationId,
-      kind: doc.kind,
-      displayName: this.customerDisplayName(doc),
-      firstName: doc.firstName,
-      lastName: doc.lastName,
-      companyName: doc.companyName,
-      legalIdentifier: doc.legalIdentifier,
-      email: doc.email,
-      phone: doc.phone,
-      mobile: doc.mobile,
-      address: doc.address
-        ? {
-            line1: doc.address.line1,
-            line2: doc.address.line2,
-            postalCode: doc.address.postalCode,
-            city: doc.address.city,
-            country: doc.address.country ?? "FR",
-          }
-        : undefined,
-      notes: doc.notes,
-      sites: doc.sites?.length ? doc.sites.map((s) => this.toSiteResponse(s)) : undefined,
-      contacts: doc.contacts?.length
-        ? doc.contacts.map((c) => this.toContactResponse(c))
-        : undefined,
-      createdAt: doc.get("createdAt")?.toISOString(),
-      updatedAt: doc.get("updatedAt")?.toISOString(),
-      isTestData: doc.isTestData === true,
-    };
   }
 }

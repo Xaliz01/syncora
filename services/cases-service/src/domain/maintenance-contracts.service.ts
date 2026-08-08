@@ -29,6 +29,10 @@ import {
 } from "@planwise/shared/nest";
 import type { MaintenanceContractDocument } from "../persistence/maintenance-contract.schema";
 import { AbstractCasesService } from "./ports/cases.service.port";
+import {
+  toMaintenanceContractResponse,
+  toDashboardMaintenanceVisitItem,
+} from "./mappers/maintenance-contract.mapper";
 
 const JOB_TAG = "contrat-maintenance";
 const VISITS_TO_SCHEDULE_LIMIT = 20;
@@ -124,7 +128,10 @@ export class MaintenanceContractsService {
       notes: body.notes?.trim() || undefined,
     });
 
-    return assertOrganizationScopedResourceNest(body.organizationId, this.toResponse(doc));
+    return assertOrganizationScopedResourceNest(
+      body.organizationId,
+      toMaintenanceContractResponse(doc),
+    );
   }
 
   async list(
@@ -166,12 +173,12 @@ export class MaintenanceContractsService {
         .exec(),
     ]);
 
-    let contracts = docs.map((d) => this.toResponse(d));
+    let contracts = docs.map((d) => toMaintenanceContractResponse(d));
     if (filters?.toSchedule) {
       const today = todayDateOnly();
       const filtered = docs.filter((d) => this.isInScheduleWindow(d, today));
       const page = filtered.slice(offset, offset + limit);
-      contracts = page.map((d) => this.toResponse(d));
+      contracts = page.map((d) => toMaintenanceContractResponse(d));
       assertOrganizationScopedListNest(organizationId, contracts);
       return { contracts, total: filtered.length };
     }
@@ -182,7 +189,7 @@ export class MaintenanceContractsService {
 
   async get(organizationId: string, contractId: string): Promise<MaintenanceContractResponse> {
     const doc = await this.findInOrg(organizationId, contractId);
-    return assertOrganizationScopedResourceNest(organizationId, this.toResponse(doc));
+    return assertOrganizationScopedResourceNest(organizationId, toMaintenanceContractResponse(doc));
   }
 
   async update(
@@ -263,7 +270,10 @@ export class MaintenanceContractsService {
     }
 
     await doc.save();
-    return assertOrganizationScopedResourceNest(body.organizationId, this.toResponse(doc));
+    return assertOrganizationScopedResourceNest(
+      body.organizationId,
+      toMaintenanceContractResponse(doc),
+    );
   }
 
   async remove(organizationId: string, contractId: string): Promise<{ deleted: true }> {
@@ -356,7 +366,10 @@ export class MaintenanceContractsService {
     await doc.save();
 
     return {
-      contract: assertOrganizationScopedResourceNest(organizationId, this.toResponse(doc)),
+      contract: assertOrganizationScopedResourceNest(
+        organizationId,
+        toMaintenanceContractResponse(doc),
+      ),
       caseId: caseRes.id,
       interventionId: interventionRes.id,
     };
@@ -449,7 +462,7 @@ export class MaintenanceContractsService {
     const items = docs
       .filter((doc) => this.isInScheduleWindow(doc, today))
       .slice(0, VISITS_TO_SCHEDULE_LIMIT)
-      .map((doc) => this.toDashboardVisitItem(doc, today));
+      .map((doc) => toDashboardMaintenanceVisitItem(doc, today));
     assertOrganizationScopedListNest(
       organizationId,
       items.map((i) => ({ organizationId, id: i.contractId })),
@@ -490,7 +503,7 @@ export class MaintenanceContractsService {
         doc.schedulingPending = true;
         await doc.save();
       }
-      results.push(this.toResponse(doc));
+      results.push(toMaintenanceContractResponse(doc));
     }
     return results;
   }
@@ -503,7 +516,7 @@ export class MaintenanceContractsService {
     doc.reminderSentForDueDate = doc.nextDueDate;
     doc.schedulingPending = true;
     await doc.save();
-    return assertOrganizationScopedResourceNest(organizationId, this.toResponse(doc));
+    return assertOrganizationScopedResourceNest(organizationId, toMaintenanceContractResponse(doc));
   }
 
   private toScheduleMongoFilter(today: string): Record<string, unknown> {
@@ -529,20 +542,6 @@ export class MaintenanceContractsService {
     const remindDays = resolveRemindBeforeDays(doc);
     const windowStart = addDaysDateOnly(doc.nextDueDate, -remindDays);
     return today >= windowStart;
-  }
-
-  private toDashboardVisitItem(
-    doc: MaintenanceContractDocument,
-    today: string,
-  ): DashboardMaintenanceVisitItem {
-    return {
-      contractId: doc._id.toString(),
-      title: doc.title,
-      customerId: doc.customerId,
-      nextDueDate: doc.nextDueDate,
-      overdue: doc.nextDueDate < today,
-      remindBeforeDays: resolveRemindBeforeDays(doc),
-    };
   }
 
   private async resolveTemplateId(
@@ -572,62 +571,5 @@ export class MaintenanceContractsService {
       throw new BadRequestException(`Statut invalide: ${raw}`);
     }
     return raw as MaintenanceContractStatus;
-  }
-
-  private toResponse(doc: MaintenanceContractDocument): MaintenanceContractResponse {
-    const visitHistory = this.resolveVisitHistory(doc);
-    return {
-      id: doc._id.toString(),
-      organizationId: doc.organizationId,
-      customerId: doc.customerId,
-      siteId: doc.siteId,
-      templateId: doc.templateId,
-      title: doc.title,
-      description: doc.description,
-      status: doc.status,
-      startDate: doc.startDate,
-      endDate: doc.endDate,
-      recurrenceMonths: doc.recurrenceMonths,
-      nextDueDate: doc.nextDueDate,
-      schedulingMode: resolveSchedulingMode(doc),
-      remindBeforeDays: resolveRemindBeforeDays(doc),
-      schedulingPending: doc.schedulingPending === true,
-      reminderSentForDueDate: doc.reminderSentForDueDate,
-      defaultAssigneeId: doc.defaultAssigneeId,
-      defaultTeamId: doc.defaultTeamId,
-      lastGeneratedAt: doc.lastGeneratedAt,
-      lastGeneratedCaseId: doc.lastGeneratedCaseId,
-      lastGeneratedInterventionId: doc.lastGeneratedInterventionId,
-      visitHistory,
-      notes: doc.notes,
-      createdAt: doc.createdAt.toISOString(),
-      updatedAt: doc.updatedAt.toISOString(),
-    };
-  }
-
-  /** Historique stocké, ou repli sur la dernière génération pour les anciens contrats. */
-  private resolveVisitHistory(
-    doc: MaintenanceContractDocument,
-  ): MaintenanceContractResponse["visitHistory"] {
-    const stored = doc.visitHistory ?? [];
-    if (stored.length > 0) {
-      return stored.map((entry) => ({
-        caseId: entry.caseId,
-        interventionId: entry.interventionId,
-        dueDate: entry.dueDate,
-        generatedAt: entry.generatedAt,
-      }));
-    }
-    if (doc.lastGeneratedCaseId && doc.lastGeneratedInterventionId && doc.lastGeneratedAt) {
-      return [
-        {
-          caseId: doc.lastGeneratedCaseId,
-          interventionId: doc.lastGeneratedInterventionId,
-          dueDate: doc.lastGeneratedAt.slice(0, 10),
-          generatedAt: doc.lastGeneratedAt,
-        },
-      ];
-    }
-    return [];
   }
 }

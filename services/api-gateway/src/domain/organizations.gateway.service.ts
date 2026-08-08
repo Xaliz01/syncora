@@ -16,9 +16,7 @@ import type {
   UserOrganizationsListResponse,
 } from "@planwise/shared";
 import { AbstractOrganizationsGatewayService } from "./ports/organizations.service.port";
-
-const ORGANIZATIONS_URL = process.env.ORGANIZATIONS_SERVICE_URL ?? "http://localhost:3001";
-const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
+import { SERVICE_URLS } from "../infrastructure/service-urls.config";
 
 @Injectable()
 export class OrganizationsGatewayService extends AbstractOrganizationsGatewayService {
@@ -30,7 +28,7 @@ export class OrganizationsGatewayService extends AbstractOrganizationsGatewaySer
     try {
       const res = await firstValueFrom(
         this.httpService.get<OrganizationMembershipResponse[]>(
-          `${USERS_URL}/users/${user.id}/organization-memberships`,
+          `${SERVICE_URLS.users}/users/${user.id}/organization-memberships`,
         ),
       );
       const ids = [...new Set(res.data.map((m) => m.organizationId))];
@@ -59,7 +57,7 @@ export class OrganizationsGatewayService extends AbstractOrganizationsGatewaySer
     try {
       const res = await firstValueFrom(
         this.httpService.patch<OrganizationResponse>(
-          `${ORGANIZATIONS_URL}/organizations/${user.organizationId}`,
+          `${SERVICE_URLS.organizations}/organizations/${user.organizationId}`,
           body,
         ),
       );
@@ -77,7 +75,7 @@ export class OrganizationsGatewayService extends AbstractOrganizationsGatewaySer
             netCode === "ENOTFOUND")
         ) {
           throw new ServiceUnavailableException(
-            `Service organizations injoignable (${ORGANIZATIONS_URL}).`,
+            `Service organizations injoignable (${SERVICE_URLS.organizations}).`,
           );
         }
       }
@@ -123,7 +121,7 @@ export class OrganizationsGatewayService extends AbstractOrganizationsGatewaySer
     try {
       const res = await firstValueFrom(
         this.httpService.get<OrganizationResponse>(
-          `${ORGANIZATIONS_URL}/organizations/${organizationId}`,
+          `${SERVICE_URLS.organizations}/organizations/${organizationId}`,
         ),
       );
       return res.data;
@@ -140,7 +138,7 @@ export class OrganizationsGatewayService extends AbstractOrganizationsGatewaySer
             netCode === "ENOTFOUND")
         ) {
           throw new ServiceUnavailableException(
-            `Service organizations injoignable (${ORGANIZATIONS_URL}).`,
+            `Service organizations injoignable (${SERVICE_URLS.organizations}).`,
           );
         }
       }

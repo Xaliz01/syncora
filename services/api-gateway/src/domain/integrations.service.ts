@@ -47,8 +47,7 @@ import { AbstractCustomersGatewayService } from "./ports/customers.service.port"
 import { AbstractOrderGiversGatewayService } from "./ports/order-givers.service.port";
 import { AbstractSubscriptionsGatewayService } from "./ports/subscriptions.service.port";
 import { assertAssignablePermission } from "../infrastructure/permission-checks";
-
-const INTEGRATIONS_URL = process.env.INTEGRATIONS_SERVICE_URL ?? "http://localhost:3013";
+import { SERVICE_URLS } from "../infrastructure/service-urls.config";
 
 /** Tiers facturé : donneur d'ordre s'il est rattaché au dossier, sinon client. */
 type InvoiceBillingParty = Pick<
@@ -140,7 +139,7 @@ export class IntegrationsGatewayService extends AbstractIntegrationsGatewayServi
     try {
       const res = await firstValueFrom(
         this.httpService.delete<PennylaneConnectionStatus>(
-          `${INTEGRATIONS_URL}/integrations/pennylane`,
+          `${SERVICE_URLS.integrations}/integrations/pennylane`,
           { params: { organizationId: user.organizationId } },
         ),
       );
@@ -195,9 +194,12 @@ export class IntegrationsGatewayService extends AbstractIntegrationsGatewayServi
   async disconnectDemo(user: AuthUser): Promise<DemoConnectionStatus> {
     try {
       const res = await firstValueFrom(
-        this.httpService.delete<DemoConnectionStatus>(`${INTEGRATIONS_URL}/integrations/demo`, {
-          params: { organizationId: user.organizationId },
-        }),
+        this.httpService.delete<DemoConnectionStatus>(
+          `${SERVICE_URLS.integrations}/integrations/demo`,
+          {
+            params: { organizationId: user.organizationId },
+          },
+        ),
       );
       const available = await this.isDemoBillingAvailable(user);
       return { ...res.data, available };
@@ -305,9 +307,12 @@ export class IntegrationsGatewayService extends AbstractIntegrationsGatewayServi
   async disconnectQonto(user: AuthUser): Promise<QontoConnectionStatus> {
     try {
       const res = await firstValueFrom(
-        this.httpService.delete<QontoConnectionStatus>(`${INTEGRATIONS_URL}/integrations/qonto`, {
-          params: { organizationId: user.organizationId },
-        }),
+        this.httpService.delete<QontoConnectionStatus>(
+          `${SERVICE_URLS.integrations}/integrations/qonto`,
+          {
+            params: { organizationId: user.organizationId },
+          },
+        ),
       );
       return res.data;
     } catch (err) {
@@ -586,7 +591,7 @@ export class IntegrationsGatewayService extends AbstractIntegrationsGatewayServi
     try {
       const res = await firstValueFrom(
         this.httpService.delete<CaseInvoiceSyncListResponse>(
-          `${INTEGRATIONS_URL}/integrations/cases/${caseId}/invoice-sync/${syncId}`,
+          `${SERVICE_URLS.integrations}/integrations/cases/${caseId}/invoice-sync/${syncId}`,
           { params: { organizationId: user.organizationId } },
         ),
       );
@@ -802,7 +807,7 @@ export class IntegrationsGatewayService extends AbstractIntegrationsGatewayServi
   private async getJson<T>(path: string, params: Record<string, string>): Promise<T> {
     try {
       const res = await firstValueFrom(
-        this.httpService.get<T>(`${INTEGRATIONS_URL}${path}`, { params }),
+        this.httpService.get<T>(`${SERVICE_URLS.integrations}${path}`, { params }),
       );
       return res.data;
     } catch (err) {
@@ -813,7 +818,7 @@ export class IntegrationsGatewayService extends AbstractIntegrationsGatewayServi
   private async postJson<T>(path: string, body: unknown): Promise<T> {
     try {
       const res = await firstValueFrom(
-        this.httpService.post<T>(`${INTEGRATIONS_URL}${path}`, body),
+        this.httpService.post<T>(`${SERVICE_URLS.integrations}${path}`, body),
       );
       return res.data;
     } catch (err) {

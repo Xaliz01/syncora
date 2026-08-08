@@ -15,6 +15,7 @@ import {
   parseOrganizationIdBody,
 } from "@planwise/shared/nest";
 import type { OrderGiverDocument } from "../persistence/order-giver.schema";
+import { toOrderGiverResponse } from "./mappers/order-giver.mapper";
 import { AbstractOrderGiversService } from "./ports/order-givers.service.port";
 import { buildPersonSearchOr } from "./person-search.query";
 
@@ -52,7 +53,7 @@ export class OrderGiversService extends AbstractOrderGiversService {
       notes: body.notes?.trim() || undefined,
       isTestData: body.isTestData === true,
     });
-    return this.toOrderGiverResponse(doc);
+    return toOrderGiverResponse(doc);
   }
 
   async listOrderGivers(
@@ -81,7 +82,7 @@ export class OrderGiversService extends AbstractOrderGiversService {
         .exec();
       const orderGivers = assertOrganizationScopedListNest(
         organizationId,
-        docs.map((d) => this.toOrderGiverResponse(d)),
+        docs.map((d) => toOrderGiverResponse(d)),
       );
       return { orderGivers, total: orderGivers.length };
     }
@@ -98,7 +99,7 @@ export class OrderGiversService extends AbstractOrderGiversService {
 
     const orderGivers = assertOrganizationScopedListNest(
       organizationId,
-      docs.map((d) => this.toOrderGiverResponse(d)),
+      docs.map((d) => toOrderGiverResponse(d)),
     );
     return { orderGivers, total };
   }
@@ -110,7 +111,7 @@ export class OrderGiversService extends AbstractOrderGiversService {
     if (!doc) throw new NotFoundException("Donneur d'ordre introuvable");
     return assertOrganizationScopedResourceNest(
       organizationId,
-      this.toOrderGiverResponse(doc),
+      toOrderGiverResponse(doc),
       "Donneur d'ordre introuvable",
     );
   }
@@ -159,7 +160,7 @@ export class OrderGiversService extends AbstractOrderGiversService {
     this.validateOrderGiverDoc(doc);
     return assertOrganizationScopedResourceNest(
       organizationId,
-      this.toOrderGiverResponse(doc),
+      toOrderGiverResponse(doc),
       "Donneur d'ordre introuvable",
     );
   }
@@ -213,42 +214,5 @@ export class OrderGiversService extends AbstractOrderGiversService {
         "Le prénom ou le nom est obligatoire pour une personne physique",
       );
     }
-  }
-
-  private orderGiverDisplayName(doc: OrderGiverDocument): string {
-    if (doc.kind === "company") {
-      return doc.companyName?.trim() || "Société";
-    }
-    const parts = [doc.firstName, doc.lastName].filter((p) => p?.trim()).map((p) => p!.trim());
-    return parts.length > 0 ? parts.join(" ") : "Donneur d'ordre";
-  }
-
-  private toOrderGiverResponse(doc: OrderGiverDocument): OrderGiverResponse {
-    return {
-      id: doc._id.toString(),
-      organizationId: doc.organizationId,
-      kind: doc.kind,
-      displayName: this.orderGiverDisplayName(doc),
-      firstName: doc.firstName,
-      lastName: doc.lastName,
-      companyName: doc.companyName,
-      legalIdentifier: doc.legalIdentifier,
-      email: doc.email,
-      phone: doc.phone,
-      mobile: doc.mobile,
-      address: doc.address
-        ? {
-            line1: doc.address.line1,
-            line2: doc.address.line2,
-            postalCode: doc.address.postalCode,
-            city: doc.address.city,
-            country: doc.address.country ?? "FR",
-          }
-        : undefined,
-      notes: doc.notes,
-      createdAt: doc.get("createdAt")?.toISOString(),
-      updatedAt: doc.get("updatedAt")?.toISOString(),
-      isTestData: doc.isTestData === true,
-    };
   }
 }

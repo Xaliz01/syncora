@@ -13,7 +13,19 @@ import {
   MaintenanceContractsController,
 } from "../presentation/http/maintenance-contracts.controller";
 import { AbstractCasesService } from "../domain/ports/cases.service.port";
+import { AbstractInterventionsService } from "../domain/ports/interventions.service.port";
+import { AbstractQuotesService } from "../domain/ports/quotes.service.port";
+import { AbstractCommentsService } from "../domain/ports/comments.service.port";
+import { AbstractCaseHistoryService } from "../domain/ports/case-history.service.port";
+import { AbstractDashboardService } from "../domain/ports/dashboard.service.port";
+import { AbstractCaseTemplatesService } from "../domain/ports/case-templates.service.port";
 import { CasesService } from "../domain/cases.service";
+import { InterventionsService } from "../domain/interventions.service";
+import { QuotesService } from "../domain/quotes.service";
+import { CommentsService } from "../domain/comments.service";
+import { CaseHistoryService } from "../domain/case-history.service";
+import { DashboardService } from "../domain/dashboard.service";
+import { CaseTemplatesService } from "../domain/case-templates.service";
 import { MaintenanceContractsService } from "../domain/maintenance-contracts.service";
 import { MaintenanceContractVisitsScheduler } from "../domain/maintenance-contract-visits.scheduler";
 import { CronRunRecorder } from "../domain/cron-run.recorder";
@@ -52,6 +64,12 @@ import { CronRunSchema } from "../persistence/cron-run.schema";
     provideHealthServiceName("planwise-cases-service"),
     provideHttpAccessLogInterceptor(),
     { provide: AbstractCasesService, useClass: CasesService },
+    { provide: AbstractInterventionsService, useClass: InterventionsService },
+    { provide: AbstractQuotesService, useClass: QuotesService },
+    { provide: AbstractCommentsService, useClass: CommentsService },
+    { provide: AbstractCaseHistoryService, useClass: CaseHistoryService },
+    { provide: AbstractDashboardService, useClass: DashboardService },
+    { provide: AbstractCaseTemplatesService, useClass: CaseTemplatesService },
     MaintenanceContractsService,
     MaintenanceContractVisitsScheduler,
     CronRunRecorder,

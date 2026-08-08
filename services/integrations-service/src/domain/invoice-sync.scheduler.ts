@@ -6,8 +6,7 @@ import type { BillingStatus, CaseInvoiceSyncStatus, CaseResponse } from "@planwi
 import { aggregateCaseBillingStatus, shouldUpgradeBillingStatus } from "@planwise/shared";
 import { AbstractIntegrationsService } from "./ports/integrations.service.port";
 import { CronRunRecorder } from "./cron-run.recorder";
-
-const CASES_URL = process.env.CASES_SERVICE_URL ?? "http://localhost:3004";
+import { SERVICE_URLS } from "../infrastructure/service-urls.config";
 const JOB_KEY = "integrations.invoice-sync";
 
 @Injectable()
@@ -102,7 +101,7 @@ export class InvoiceSyncScheduler {
 
     try {
       const res = await firstValueFrom(
-        this.httpService.get<CaseResponse>(`${CASES_URL}/cases/${caseId}`, {
+        this.httpService.get<CaseResponse>(`${SERVICE_URLS.cases}/cases/${caseId}`, {
           params: { organizationId },
           timeout: 15000,
         }),
@@ -116,7 +115,7 @@ export class InvoiceSyncScheduler {
 
       await firstValueFrom(
         this.httpService.patch(
-          `${CASES_URL}/cases/${caseId}`,
+          `${SERVICE_URLS.cases}/cases/${caseId}`,
           { organizationId, billingStatus: next as BillingStatus },
           { timeout: 15000 },
         ),

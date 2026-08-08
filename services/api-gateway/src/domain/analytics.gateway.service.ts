@@ -14,8 +14,7 @@ import type {
   TrackPageviewResponse,
 } from "@planwise/shared";
 import { AbstractAnalyticsGatewayService } from "./ports/analytics.gateway.service.port";
-
-const ORGANIZATIONS_URL = process.env.ORGANIZATIONS_SERVICE_URL ?? "http://localhost:3001";
+import { SERVICE_URLS } from "../infrastructure/service-urls.config";
 
 @Injectable()
 export class AnalyticsGatewayService extends AbstractAnalyticsGatewayService {
@@ -29,7 +28,7 @@ export class AnalyticsGatewayService extends AbstractAnalyticsGatewayService {
     try {
       const res = await firstValueFrom(
         this.httpService.post<TrackPageviewResponse>(
-          `${ORGANIZATIONS_URL}/analytics/pageviews`,
+          `${SERVICE_URLS.organizations}/analytics/pageviews`,
           body,
           { timeout: 3000 },
         ),
@@ -52,7 +51,7 @@ export class AnalyticsGatewayService extends AbstractAnalyticsGatewayService {
     try {
       const res = await firstValueFrom(
         this.httpService.get<PlatformAnalyticsOverviewResponse>(
-          `${ORGANIZATIONS_URL}/platform/analytics/overview`,
+          `${SERVICE_URLS.organizations}/platform/analytics/overview`,
           { params: { days }, timeout: 10000 },
         ),
       );
@@ -71,7 +70,7 @@ export class AnalyticsGatewayService extends AbstractAnalyticsGatewayService {
     try {
       const res = await firstValueFrom(
         this.httpService.get<PlatformLandingVisitsResponse>(
-          `${ORGANIZATIONS_URL}/platform/analytics/landing-visits`,
+          `${SERVICE_URLS.organizations}/platform/analytics/landing-visits`,
           { params: options, timeout: 10000 },
         ),
       );
@@ -90,7 +89,7 @@ export class AnalyticsGatewayService extends AbstractAnalyticsGatewayService {
     try {
       const res = await firstValueFrom(
         this.httpService.get<PlatformLandingToAppVisitsResponse>(
-          `${ORGANIZATIONS_URL}/platform/analytics/landing-to-app-visits`,
+          `${SERVICE_URLS.organizations}/platform/analytics/landing-to-app-visits`,
           { params: options, timeout: 10000 },
         ),
       );

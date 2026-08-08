@@ -26,13 +26,7 @@ import {
   type SearchResultItem,
 } from "./ports/search.service.port";
 import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
-
-const CASES_URL = process.env.CASES_SERVICE_URL ?? "http://localhost:3004";
-const FLEET_URL = process.env.FLEET_SERVICE_URL ?? "http://localhost:3005";
-const TECHNICIANS_URL = process.env.TECHNICIANS_SERVICE_URL ?? "http://localhost:3006";
-const STOCK_URL = process.env.STOCK_SERVICE_URL ?? "http://localhost:3007";
-const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
-const CUSTOMERS_URL = process.env.CUSTOMERS_SERVICE_URL ?? "http://localhost:3009";
+import { SERVICE_URLS } from "../infrastructure/service-urls.config";
 
 @Injectable()
 export class SearchGatewayService extends AbstractSearchService {
@@ -346,7 +340,7 @@ export class SearchGatewayService extends AbstractSearchService {
   private fetchCases(user: AuthUser, search: string): Promise<CaseSummaryResponse[]> {
     return this.scopedHttp
       .request<CasesListResponse>({
-        baseUrl: CASES_URL,
+        baseUrl: SERVICE_URLS.cases,
         organizationId: user.organizationId,
         method: "get",
         path: "/cases",
@@ -359,7 +353,7 @@ export class SearchGatewayService extends AbstractSearchService {
   private fetchInterventions(user: AuthUser, search: string): Promise<InterventionResponse[]> {
     return this.scopedHttp
       .request<InterventionsListResponse>({
-        baseUrl: CASES_URL,
+        baseUrl: SERVICE_URLS.cases,
         organizationId: user.organizationId,
         method: "get",
         path: "/interventions",
@@ -372,7 +366,7 @@ export class SearchGatewayService extends AbstractSearchService {
   private fetchCustomers(user: AuthUser, search: string): Promise<CustomerResponse[]> {
     return this.scopedHttp
       .request<CustomersListResponse>({
-        baseUrl: CUSTOMERS_URL,
+        baseUrl: SERVICE_URLS.customers,
         organizationId: user.organizationId,
         method: "get",
         path: "/customers",
@@ -385,7 +379,7 @@ export class SearchGatewayService extends AbstractSearchService {
   private fetchOrderGivers(user: AuthUser, search: string): Promise<OrderGiverResponse[]> {
     return this.scopedHttp
       .request<OrderGiversListResponse>({
-        baseUrl: CUSTOMERS_URL,
+        baseUrl: SERVICE_URLS.customers,
         organizationId: user.organizationId,
         method: "get",
         path: "/order-givers",
@@ -397,7 +391,7 @@ export class SearchGatewayService extends AbstractSearchService {
 
   private fetchVehicles(user: AuthUser): Promise<VehicleResponse[]> {
     return this.scopedHttp.request<VehicleResponse[]>({
-      baseUrl: FLEET_URL,
+      baseUrl: SERVICE_URLS.fleet,
       organizationId: user.organizationId,
       method: "get",
       path: "/vehicles",
@@ -407,7 +401,7 @@ export class SearchGatewayService extends AbstractSearchService {
 
   private fetchTechnicians(user: AuthUser): Promise<TechnicianResponse[]> {
     return this.scopedHttp.request<TechnicianResponse[]>({
-      baseUrl: TECHNICIANS_URL,
+      baseUrl: SERVICE_URLS.technicians,
       organizationId: user.organizationId,
       method: "get",
       path: "/technicians",
@@ -417,7 +411,7 @@ export class SearchGatewayService extends AbstractSearchService {
 
   private fetchTeams(user: AuthUser): Promise<TeamResponse[]> {
     return this.scopedHttp.request<TeamResponse[]>({
-      baseUrl: TECHNICIANS_URL,
+      baseUrl: SERVICE_URLS.technicians,
       organizationId: user.organizationId,
       method: "get",
       path: "/teams",
@@ -427,7 +421,7 @@ export class SearchGatewayService extends AbstractSearchService {
 
   private fetchAgences(user: AuthUser): Promise<AgenceResponse[]> {
     return this.scopedHttp.request<AgenceResponse[]>({
-      baseUrl: TECHNICIANS_URL,
+      baseUrl: SERVICE_URLS.technicians,
       organizationId: user.organizationId,
       method: "get",
       path: "/agences",
@@ -438,7 +432,7 @@ export class SearchGatewayService extends AbstractSearchService {
   private fetchArticles(user: AuthUser, search: string): Promise<ArticleResponse[]> {
     return this.scopedHttp
       .request<ArticlesListResponse>({
-        baseUrl: STOCK_URL,
+        baseUrl: SERVICE_URLS.stock,
         organizationId: user.organizationId,
         method: "get",
         path: "/articles",
@@ -451,7 +445,7 @@ export class SearchGatewayService extends AbstractSearchService {
   private fetchPrestations(user: AuthUser, search: string): Promise<PrestationResponse[]> {
     return this.scopedHttp
       .request<PrestationsListResponse>({
-        baseUrl: STOCK_URL,
+        baseUrl: SERVICE_URLS.stock,
         organizationId: user.organizationId,
         method: "get",
         path: "/prestations",
@@ -463,7 +457,7 @@ export class SearchGatewayService extends AbstractSearchService {
 
   private fetchUsers(user: AuthUser): Promise<UserResponse[]> {
     return this.scopedHttp.request<UserResponse[]>({
-      baseUrl: USERS_URL,
+      baseUrl: SERVICE_URLS.users,
       organizationId: user.organizationId,
       method: "get",
       path: "/users",

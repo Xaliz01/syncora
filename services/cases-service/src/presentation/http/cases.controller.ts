@@ -11,6 +11,12 @@ import {
   Query,
 } from "@nestjs/common";
 import { AbstractCasesService } from "../../domain/ports/cases.service.port";
+import { AbstractInterventionsService } from "../../domain/ports/interventions.service.port";
+import { AbstractQuotesService } from "../../domain/ports/quotes.service.port";
+import { AbstractCommentsService } from "../../domain/ports/comments.service.port";
+import { AbstractCaseHistoryService } from "../../domain/ports/case-history.service.port";
+import { AbstractDashboardService } from "../../domain/ports/dashboard.service.port";
+import { AbstractCaseTemplatesService } from "../../domain/ports/case-templates.service.port";
 import {
   isDashboardStatFilter,
   MAX_PAGE_LIMIT_WIDE,
@@ -36,36 +42,44 @@ import { parseOrganizationIdQuery } from "@planwise/shared/nest";
 
 @Controller()
 export class CasesController {
-  constructor(private readonly casesService: AbstractCasesService) {}
+  constructor(
+    private readonly casesService: AbstractCasesService,
+    private readonly interventionsService: AbstractInterventionsService,
+    private readonly quotesService: AbstractQuotesService,
+    private readonly commentsService: AbstractCommentsService,
+    private readonly caseHistoryService: AbstractCaseHistoryService,
+    private readonly dashboardService: AbstractDashboardService,
+    private readonly caseTemplatesService: AbstractCaseTemplatesService,
+  ) {}
 
   // ── Templates ──
 
   @Post("templates")
   async createTemplate(@Body() body: CreateCaseTemplateBody) {
-    return this.casesService.createTemplate(body);
+    return this.caseTemplatesService.createTemplate(body);
   }
 
   @Get("templates")
   async listTemplates(@Query("organizationId") organizationId: string) {
     organizationId = parseOrganizationIdQuery(organizationId);
-    return this.casesService.listTemplates(organizationId);
+    return this.caseTemplatesService.listTemplates(organizationId);
   }
 
   @Get("templates/:id")
   async getTemplate(@Param("id") id: string, @Query("organizationId") organizationId: string) {
     organizationId = parseOrganizationIdQuery(organizationId);
-    return this.casesService.getTemplate(id, organizationId);
+    return this.caseTemplatesService.getTemplate(id, organizationId);
   }
 
   @Patch("templates/:id")
   async updateTemplate(@Param("id") id: string, @Body() body: UpdateCaseTemplateBody) {
-    return this.casesService.updateTemplate(id, body);
+    return this.caseTemplatesService.updateTemplate(id, body);
   }
 
   @Delete("templates/:id")
   async deleteTemplate(@Param("id") id: string, @Query("organizationId") organizationId: string) {
     organizationId = parseOrganizationIdQuery(organizationId);
-    return this.casesService.deleteTemplate(id, organizationId);
+    return this.caseTemplatesService.deleteTemplate(id, organizationId);
   }
 
   // ── Cases ──
@@ -142,20 +156,20 @@ export class CasesController {
 
   @Post("cases/:id/history")
   async addCaseHistory(@Body() body: CreateCaseHistoryBody) {
-    return this.casesService.addCaseHistory(body);
+    return this.caseHistoryService.addCaseHistory(body);
   }
 
   @Get("cases/:id/history")
   async listCaseHistory(@Param("id") id: string, @Query("organizationId") organizationId: string) {
     organizationId = parseOrganizationIdQuery(organizationId);
-    return this.casesService.listCaseHistory(id, organizationId);
+    return this.caseHistoryService.listCaseHistory(id, organizationId);
   }
 
   // ── Comments ──
 
   @Post("comments")
   async createComment(@Body() body: CreateCommentBody) {
-    return this.casesService.createComment(body);
+    return this.commentsService.createComment(body);
   }
 
   @Get("comments")
@@ -168,7 +182,7 @@ export class CasesController {
     if (!entityType || !entityId) {
       throw new BadRequestException("entityType and entityId query params are required");
     }
-    return this.casesService.listComments(
+    return this.commentsService.listComments(
       organizationId,
       entityType as CommentEntityType,
       entityId,
@@ -178,25 +192,25 @@ export class CasesController {
   @Get("comments/:id")
   async getComment(@Param("id") id: string, @Query("organizationId") organizationId: string) {
     organizationId = parseOrganizationIdQuery(organizationId);
-    return this.casesService.getComment(id, organizationId);
+    return this.commentsService.getComment(id, organizationId);
   }
 
   @Patch("comments/:id")
   async updateComment(@Param("id") id: string, @Body() body: UpdateCommentBody) {
-    return this.casesService.updateComment(id, body);
+    return this.commentsService.updateComment(id, body);
   }
 
   @Delete("comments/:id")
   async deleteComment(@Param("id") id: string, @Query("organizationId") organizationId: string) {
     organizationId = parseOrganizationIdQuery(organizationId);
-    return this.casesService.deleteComment(id, organizationId);
+    return this.commentsService.deleteComment(id, organizationId);
   }
 
   // ── Interventions ──
 
   @Post("interventions")
   async createIntervention(@Body() body: CreateInterventionBody) {
-    return this.casesService.createIntervention(body);
+    return this.interventionsService.createIntervention(body);
   }
 
   @Get("interventions")
@@ -218,7 +232,7 @@ export class CasesController {
     const pagination = parsePaginationQueryParams(limit, offset, {
       maxLimit: dateBounded ? MAX_PAGE_LIMIT_WIDE : undefined,
     });
-    return this.casesService.listInterventions(organizationId, {
+    return this.interventionsService.listInterventions(organizationId, {
       caseId,
       assigneeId,
       assignedTeamIds: assignedTeamIds
@@ -239,12 +253,12 @@ export class CasesController {
   @Get("interventions/:id")
   async getIntervention(@Param("id") id: string, @Query("organizationId") organizationId: string) {
     organizationId = parseOrganizationIdQuery(organizationId);
-    return this.casesService.getIntervention(id, organizationId);
+    return this.interventionsService.getIntervention(id, organizationId);
   }
 
   @Patch("interventions/:id")
   async updateIntervention(@Param("id") id: string, @Body() body: UpdateInterventionBody) {
-    return this.casesService.updateIntervention(id, body);
+    return this.interventionsService.updateIntervention(id, body);
   }
 
   @Delete("interventions/:id")
@@ -253,14 +267,14 @@ export class CasesController {
     @Query("organizationId") organizationId: string,
   ) {
     organizationId = parseOrganizationIdQuery(organizationId);
-    return this.casesService.deleteIntervention(id, organizationId);
+    return this.interventionsService.deleteIntervention(id, organizationId);
   }
 
   // ── Quotes ──
 
   @Post("quotes")
   async createQuote(@Body() body: CreateQuoteBody) {
-    return this.casesService.createQuote(body);
+    return this.quotesService.createQuote(body);
   }
 
   @Get("quotes")
@@ -270,24 +284,24 @@ export class CasesController {
     @Query("status") status?: string,
   ) {
     organizationId = parseOrganizationIdQuery(organizationId);
-    return this.casesService.listQuotes(organizationId, { caseId, status });
+    return this.quotesService.listQuotes(organizationId, { caseId, status });
   }
 
   @Get("quotes/:id")
   async getQuote(@Param("id") id: string, @Query("organizationId") organizationId: string) {
     organizationId = parseOrganizationIdQuery(organizationId);
-    return this.casesService.getQuote(id, organizationId);
+    return this.quotesService.getQuote(id, organizationId);
   }
 
   @Patch("quotes/:id")
   async updateQuote(@Param("id") id: string, @Body() body: UpdateQuoteBody) {
-    return this.casesService.updateQuote(id, body);
+    return this.quotesService.updateQuote(id, body);
   }
 
   @Delete("quotes/:id")
   async deleteQuote(@Param("id") id: string, @Query("organizationId") organizationId: string) {
     organizationId = parseOrganizationIdQuery(organizationId);
-    return this.casesService.deleteQuote(id, organizationId);
+    return this.quotesService.deleteQuote(id, organizationId);
   }
 
   // ── Dashboard ──
@@ -300,7 +314,7 @@ export class CasesController {
   ) {
     organizationId = parseOrganizationIdQuery(organizationId);
     if (!userId) throw new BadRequestException("userId query param is required");
-    return this.casesService.getDashboard(organizationId, userId, userProfileId);
+    return this.dashboardService.getDashboard(organizationId, userId, userProfileId);
   }
 
   @Get("dashboard/todo-cases")
@@ -315,7 +329,7 @@ export class CasesController {
     if (!userId) throw new BadRequestException("userId query param is required");
     if (!templateId) throw new BadRequestException("templateId query param is required");
     if (!todoLabel) throw new BadRequestException("todoLabel query param is required");
-    return this.casesService.getDashboardTodoCases(
+    return this.dashboardService.getDashboardTodoCases(
       organizationId,
       userId,
       userProfileId,
@@ -338,7 +352,12 @@ export class CasesController {
         "filter query param is required (assigned, in_progress, completed_week, overdue, to_invoice)",
       );
     }
-    return this.casesService.getDashboardStatCases(organizationId, userId, userProfileId, filter);
+    return this.dashboardService.getDashboardStatCases(
+      organizationId,
+      userId,
+      userProfileId,
+      filter,
+    );
   }
 
   @Get("cases/interventions/upcoming")
@@ -346,22 +365,22 @@ export class CasesController {
     if (!from || !to) {
       throw new BadRequestException("from and to query params are required");
     }
-    return this.casesService.listUpcomingInterventions(from, to);
+    return this.interventionsService.listUpcomingInterventions(from, to);
   }
 
   @Post("interventions/:id/start")
   async startIntervention(@Param("id") id: string, @Body() body: StartInterventionBody) {
-    return this.casesService.startIntervention(id, body);
+    return this.interventionsService.startIntervention(id, body);
   }
 
   @Post("interventions/:id/complete")
   async completeIntervention(@Param("id") id: string, @Body() body: CompleteInterventionBody) {
-    return this.casesService.completeIntervention(id, body);
+    return this.interventionsService.completeIntervention(id, body);
   }
 
   @Post("interventions/:id/sign")
   async signIntervention(@Param("id") id: string, @Body() body: SignInterventionBody) {
-    return this.casesService.signIntervention(id, body);
+    return this.interventionsService.signIntervention(id, body);
   }
 
   @Get("interventions/:id/signature-image")
@@ -370,7 +389,7 @@ export class CasesController {
     @Query("organizationId") organizationId: string,
   ) {
     organizationId = parseOrganizationIdQuery(organizationId);
-    const result = await this.casesService.getInterventionWithSignature(id, organizationId);
+    const result = await this.interventionsService.getInterventionWithSignature(id, organizationId);
     if (!result.signatureData) {
       throw new BadRequestException("No signature on this intervention");
     }

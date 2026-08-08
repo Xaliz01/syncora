@@ -20,10 +20,7 @@ import type { NotificationDocument } from "../persistence/notification.schema";
 import { AbstractPushSubscriptionService } from "./ports/push-subscription.service.port";
 import { AbstractEmailService } from "./ports/email.service.port";
 import { CronRunRecorder } from "./cron-run.recorder";
-
-const CASES_URL = process.env.CASES_SERVICE_URL ?? "http://localhost:3004";
-const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
-const SUBSCRIPTIONS_URL = process.env.SUBSCRIPTIONS_SERVICE_URL ?? "http://localhost:3008";
+import { SERVICE_URLS } from "../infrastructure/service-urls.config";
 const JOB_KEY = "notifications.maintenance-visit-reminders";
 
 @Injectable()
@@ -169,7 +166,7 @@ export class MaintenanceVisitReminderScheduler {
     try {
       const response = await firstValueFrom(
         this.httpService.get<MaintenanceContractResponse[]>(
-          `${CASES_URL}/maintenance-contracts/reminder-candidates`,
+          `${SERVICE_URLS.cases}/maintenance-contracts/reminder-candidates`,
         ),
       );
       return Array.isArray(response.data) ? response.data : [];
@@ -182,7 +179,7 @@ export class MaintenanceVisitReminderScheduler {
   private async markReminded(organizationId: string, contractId: string): Promise<void> {
     await firstValueFrom(
       this.httpService.post(
-        `${CASES_URL}/maintenance-contracts/${contractId}/mark-reminded`,
+        `${SERVICE_URLS.cases}/maintenance-contracts/${contractId}/mark-reminded`,
         {},
         { params: { organizationId } },
       ),
@@ -192,7 +189,7 @@ export class MaintenanceVisitReminderScheduler {
   private async getOrganizationUserIds(organizationId: string): Promise<string[]> {
     try {
       const response = await firstValueFrom(
-        this.httpService.get<UserResponse[]>(`${USERS_URL}/users`, {
+        this.httpService.get<UserResponse[]>(`${SERVICE_URLS.users}/users`, {
           params: { organizationId },
         }),
       );
@@ -206,7 +203,7 @@ export class MaintenanceVisitReminderScheduler {
     try {
       const response = await firstValueFrom(
         this.httpService.get<OrganizationSubscriptionResponse>(
-          `${SUBSCRIPTIONS_URL}/subscriptions/current`,
+          `${SERVICE_URLS.subscriptions}/subscriptions/current`,
           { params: { organizationId } },
         ),
       );
@@ -219,7 +216,7 @@ export class MaintenanceVisitReminderScheduler {
   private async resolveUserEmail(userId: string): Promise<string | null> {
     try {
       const response = await firstValueFrom(
-        this.httpService.get<UserResponse>(`${USERS_URL}/users/${userId}`),
+        this.httpService.get<UserResponse>(`${SERVICE_URLS.users}/users/${userId}`),
       );
       return response.data.email ?? null;
     } catch {
