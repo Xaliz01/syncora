@@ -9,6 +9,7 @@ describe("EmailService", () => {
     delete process.env.SMTP_USER;
     delete process.env.SMTP_PASS;
     delete process.env.SMTP_FROM;
+    delete process.env.SMTP_BCC;
     delete process.env.NODE_ENV;
     service = new EmailService();
   });
@@ -65,6 +66,7 @@ describe("EmailService (configured)", () => {
     delete process.env.SMTP_USER;
     delete process.env.SMTP_PASS;
     delete process.env.SMTP_FROM;
+    delete process.env.SMTP_BCC;
     delete process.env.APP_URL;
   });
 
@@ -88,6 +90,36 @@ describe("EmailService (configured)", () => {
         subject: "[Planwise] Intervention démarrée",
       }),
     );
+    expect(mockSendMail.mock.calls[0][0].bcc).toBeUndefined();
+  });
+
+  it("should BCC the archive address when SMTP_BCC is set", async () => {
+    process.env.SMTP_BCC = "contact@planwise.fr";
+    service = new EmailService();
+    (service as unknown as { transporter: { sendMail: jest.Mock } }).transporter = {
+      sendMail: mockSendMail,
+    } as unknown as typeof service extends { transporter: infer T } ? T : never;
+
+    await service.sendNotificationEmail("tech@company.fr", "Subject", "Body");
+
+    expect(mockSendMail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: "tech@company.fr",
+        bcc: "contact@planwise.fr",
+      }),
+    );
+  });
+
+  it("should not BCC when the recipient is already the archive address", async () => {
+    process.env.SMTP_BCC = "contact@planwise.fr";
+    service = new EmailService();
+    (service as unknown as { transporter: { sendMail: jest.Mock } }).transporter = {
+      sendMail: mockSendMail,
+    } as unknown as typeof service extends { transporter: infer T } ? T : never;
+
+    await service.sendNotificationEmail("contact@planwise.fr", "Subject", "Body");
+
+    expect(mockSendMail.mock.calls[0][0].bcc).toBeUndefined();
   });
 
   it("should include url in plain text and html when provided", async () => {

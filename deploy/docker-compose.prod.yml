@@ -248,6 +248,7 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
       SMTP_FROM: ${SMTP_FROM:-Planwise <contact@planwise.fr>}
+      SMTP_BCC: ${SMTP_BCC:-}
       APP_URL: ${APP_URL:-https://app.planwise.fr}
     healthcheck: *tcp-healthcheck
 

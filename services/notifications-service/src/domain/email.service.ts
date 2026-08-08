@@ -12,6 +12,8 @@ export class EmailService extends AbstractEmailService {
   private readonly logger = new Logger(EmailService.name);
   private readonly transporter: Transporter | null;
   private readonly fromAddress: string;
+  /** Copie invisible optionnelle (ex. archiver les envois dans la boîte contact@). */
+  private readonly bccAddress: string | undefined;
 
   constructor() {
     super();
@@ -21,6 +23,7 @@ export class EmailService extends AbstractEmailService {
     const user = process.env.SMTP_USER;
     const pass = process.env.SMTP_PASS;
     this.fromAddress = process.env.SMTP_FROM ?? "Planwise <contact@planwise.fr>";
+    this.bccAddress = normalizeEmailAddress(process.env.SMTP_BCC);
 
     if (host && user && pass) {
       this.transporter = nodemailer.createTransport({
@@ -29,7 +32,9 @@ export class EmailService extends AbstractEmailService {
         secure: port === 465,
         auth: { user, pass },
       });
-      this.logger.log(`Email service configured (SMTP: ${host}:${port})`);
+      this.logger.log(
+        `Email service configured (SMTP: ${host}:${port}${this.bccAddress ? `, bcc: ${this.bccAddress}` : ""})`,
+      );
     } else {
       this.transporter = null;
       this.logger.warn("SMTP not configured — email notifications disabled");
@@ -83,13 +88,25 @@ export class EmailService extends AbstractEmailService {
 
     try {
       const html = this.buildHtml(subject, body, url, kind, ctaLabel, footer);
-      await this.transporter.sendMail({
+      const mailOptions: {
+        from: string;
+        to: string;
+        subject: string;
+        text: string;
+        html: string;
+        bcc?: string;
+      } = {
         from: this.fromAddress,
         to,
         subject: `[Planwise] ${subject}`,
         text: this.buildPlainText(body, url, ctaLabel),
         html,
-      });
+      };
+      // SMTP n'écrit pas dans « Envoyés » : BCC optionnel pour archiver dans une boîte.
+      if (this.bccAddress && normalizeEmailAddress(to) !== this.bccAddress) {
+        mailOptions.bcc = this.bccAddress;
+      }
+      await this.transporter.sendMail(mailOptions);
       return { sent: true };
     } catch (err) {
       this.logger.warn(`Failed to send email to ${to}`, (err as Error).message);
@@ -166,4 +183,13 @@ export class EmailService extends AbstractEmailService {
 </body>
 </html>`;
   }
+}
+
+/** Extrait une adresse e-mail normalisée depuis « Name <a@b.c> » ou « a@b.c ». */
+function normalizeEmailAddress(raw: string | undefined): string | undefined {
+  const trimmed = raw?.trim();
+  if (!trimmed) return undefined;
+  const angle = trimmed.match(/<([^>]+)>/);
+  const email = (angle?.[1] ?? trimmed).trim().toLowerCase();
+  return email.includes("@") ? email : undefined;
 }
