@@ -12,8 +12,8 @@ import {
   type CreateTechnicianBody,
   type UpdateTechnicianBody,
   type TechnicianResponse,
-  type TechnicianStatus,
 } from "@planwise/shared";
+import { toTechnicianResponse } from "./mappers/technician.mapper";
 import { AbstractTechniciansService } from "./ports/technicians.service.port";
 
 @Injectable()
@@ -39,7 +39,7 @@ export class TechniciansService extends AbstractTechniciansService {
         : undefined,
       isTestData: body.isTestData === true,
     });
-    return this.toTechnicianResponse(doc);
+    return toTechnicianResponse(doc);
   }
 
   async updateTechnician(
@@ -67,7 +67,7 @@ export class TechniciansService extends AbstractTechniciansService {
       }
     }
     await doc.save();
-    return this.toTechnicianResponse(doc);
+    return toTechnicianResponse(doc);
   }
 
   async getTechnician(organizationId: string, technicianId: string): Promise<TechnicianResponse> {
@@ -77,7 +77,7 @@ export class TechniciansService extends AbstractTechniciansService {
     if (!doc) {
       throw new NotFoundException("Technicien introuvable");
     }
-    return this.toTechnicianResponse(doc);
+    return toTechnicianResponse(doc);
   }
 
   async listTechnicians(organizationId: string): Promise<TechnicianResponse[]> {
@@ -85,7 +85,7 @@ export class TechniciansService extends AbstractTechniciansService {
       .find({ organizationId, ...activeDocumentFilter })
       .sort({ createdAt: -1 })
       .exec();
-    return docs.map((doc) => this.toTechnicianResponse(doc));
+    return docs.map((doc) => toTechnicianResponse(doc));
   }
 
   async deleteTechnician(organizationId: string, technicianId: string): Promise<{ deleted: true }> {
@@ -125,32 +125,14 @@ export class TechniciansService extends AbstractTechniciansService {
 
     doc.userId = userId;
     await doc.save();
-    return this.toTechnicianResponse(doc);
+    return toTechnicianResponse(doc);
   }
 
   async findByUserId(organizationId: string, userId: string): Promise<TechnicianResponse | null> {
     const doc = await this.technicianModel
       .findOne({ organizationId, userId, ...activeDocumentFilter })
       .exec();
-    return doc ? this.toTechnicianResponse(doc) : null;
-  }
-
-  private toTechnicianResponse(doc: TechnicianDocument): TechnicianResponse {
-    return {
-      id: doc._id.toString(),
-      organizationId: doc.organizationId,
-      firstName: doc.firstName,
-      lastName: doc.lastName,
-      email: doc.email,
-      phone: doc.phone,
-      speciality: doc.speciality,
-      status: doc.status as TechnicianStatus,
-      userId: doc.userId,
-      calendarColor: doc.calendarColor,
-      createdAt: doc.get("createdAt")?.toISOString(),
-      updatedAt: doc.get("updatedAt")?.toISOString(),
-      isTestData: doc.isTestData === true,
-    };
+    return doc ? toTechnicianResponse(doc) : null;
   }
 
   /** Accepte #RGB ou #RRGGBB ; normalise en #RRGGBB majuscules */
