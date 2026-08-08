@@ -22,11 +22,12 @@ import type { SentReminderDocument } from "../persistence/sent-reminder.schema";
 import { AbstractPushSubscriptionService } from "./ports/push-subscription.service.port";
 import { AbstractEmailService } from "./ports/email.service.port";
 import { CronRunRecorder } from "./cron-run.recorder";
+import { SERVICE_URLS } from "../infrastructure/service-urls.config";
 
-const CASES_URL = process.env.CASES_SERVICE_URL ?? "http://localhost:3004";
-const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
-const SUBSCRIPTIONS_URL = process.env.SUBSCRIPTIONS_SERVICE_URL ?? "http://localhost:3008";
-const TECHNICIANS_URL = process.env.TECHNICIANS_SERVICE_URL ?? "http://localhost:3006";
+const CASES_URL = SERVICE_URLS.cases;
+const USERS_URL = SERVICE_URLS.users;
+const SUBSCRIPTIONS_URL = SERVICE_URLS.subscriptions;
+const TECHNICIANS_URL = SERVICE_URLS.technicians;
 const JOB_KEY = "notifications.intervention-reminders";
 
 @Injectable()

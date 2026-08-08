@@ -20,10 +20,11 @@ import type { NotificationDocument } from "../persistence/notification.schema";
 import { AbstractPushSubscriptionService } from "./ports/push-subscription.service.port";
 import { AbstractEmailService } from "./ports/email.service.port";
 import { CronRunRecorder } from "./cron-run.recorder";
+import { SERVICE_URLS } from "../infrastructure/service-urls.config";
 
-const CASES_URL = process.env.CASES_SERVICE_URL ?? "http://localhost:3004";
-const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
-const SUBSCRIPTIONS_URL = process.env.SUBSCRIPTIONS_SERVICE_URL ?? "http://localhost:3008";
+const CASES_URL = SERVICE_URLS.cases;
+const USERS_URL = SERVICE_URLS.users;
+const SUBSCRIPTIONS_URL = SERVICE_URLS.subscriptions;
 const JOB_KEY = "notifications.maintenance-visit-reminders";
 
 @Injectable()

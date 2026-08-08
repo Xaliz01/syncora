@@ -6,8 +6,9 @@ import type { BillingStatus, CaseInvoiceSyncStatus, CaseResponse } from "@planwi
 import { aggregateCaseBillingStatus, shouldUpgradeBillingStatus } from "@planwise/shared";
 import { AbstractIntegrationsService } from "./ports/integrations.service.port";
 import { CronRunRecorder } from "./cron-run.recorder";
+import { SERVICE_URLS } from "../infrastructure/service-urls.config";
 
-const CASES_URL = process.env.CASES_SERVICE_URL ?? "http://localhost:3004";
+const CASES_URL = SERVICE_URLS.cases;
 const JOB_KEY = "integrations.invoice-sync";
 
 @Injectable()

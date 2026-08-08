@@ -8,8 +8,9 @@ import type {
   UserResponse,
 } from "@planwise/shared";
 import { AbstractEmailService } from "../../domain/ports/email.service.port";
+import { SERVICE_URLS } from "../../infrastructure/service-urls.config";
 
-const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
+const USERS_URL = SERVICE_URLS.users;
 
 @Controller("email")
 export class EmailController {

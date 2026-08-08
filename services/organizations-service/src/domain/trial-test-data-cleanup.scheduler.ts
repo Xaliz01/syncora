@@ -5,14 +5,15 @@ import { firstValueFrom } from "rxjs";
 import axios from "axios";
 import { AbstractOrganizationsService } from "./ports/organizations.service.port";
 import { CronRunRecorder } from "./cron-run.recorder";
+import { SERVICE_URLS } from "../infrastructure/service-urls.config";
 
-const SUBSCRIPTIONS_URL = process.env.SUBSCRIPTIONS_SERVICE_URL ?? "http://localhost:3008";
-const CASES_URL = process.env.CASES_SERVICE_URL ?? "http://localhost:3004";
-const STOCK_URL = process.env.STOCK_SERVICE_URL ?? "http://localhost:3007";
-const FLEET_URL = process.env.FLEET_SERVICE_URL ?? "http://localhost:3005";
-const TECHNICIANS_URL = process.env.TECHNICIANS_SERVICE_URL ?? "http://localhost:3006";
-const CUSTOMERS_URL = process.env.CUSTOMERS_SERVICE_URL ?? "http://localhost:3009";
-const PERMISSIONS_URL = process.env.PERMISSIONS_SERVICE_URL ?? "http://localhost:3003";
+const SUBSCRIPTIONS_URL = SERVICE_URLS.subscriptions;
+const CASES_URL = SERVICE_URLS.cases;
+const STOCK_URL = SERVICE_URLS.stock;
+const FLEET_URL = SERVICE_URLS.fleet;
+const TECHNICIANS_URL = SERVICE_URLS.technicians;
+const CUSTOMERS_URL = SERVICE_URLS.customers;
+const PERMISSIONS_URL = SERVICE_URLS.permissions;
 
 /** Purge quotidienne des données de démo (4h) — via `cron`, sans @nestjs/schedule. */
 const CLEANUP_CRON = "0 4 * * *";

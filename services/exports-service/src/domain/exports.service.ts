@@ -41,12 +41,13 @@ import {
 import PDFDocument from "pdfkit";
 import ExcelJS from "exceljs";
 import { AbstractExportsService, type ExportResult } from "./ports/exports.service.port";
+import { SERVICE_URLS } from "../infrastructure/service-urls.config";
 
-const CASES_URL = process.env.CASES_SERVICE_URL ?? "http://localhost:3004";
-const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
-const CUSTOMERS_URL = process.env.CUSTOMERS_SERVICE_URL ?? "http://localhost:3009";
-const TECHNICIANS_URL = process.env.TECHNICIANS_SERVICE_URL ?? "http://localhost:3006";
-const INTEGRATIONS_URL = process.env.INTEGRATIONS_SERVICE_URL ?? "http://localhost:3013";
+const CASES_URL = SERVICE_URLS.cases;
+const USERS_URL = SERVICE_URLS.users;
+const CUSTOMERS_URL = SERVICE_URLS.customers;
+const TECHNICIANS_URL = SERVICE_URLS.technicians;
+const INTEGRATIONS_URL = SERVICE_URLS.integrations;
 
 /** Aligné sur la suggestion d’équipe front (vol d’oiseau → route approx.). */
 const ROAD_FACTOR = 1.18;
