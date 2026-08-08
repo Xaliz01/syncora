@@ -49,4 +49,39 @@ describe("offline-reply", () => {
     expect(result.reply).toContain("Benoist Babin");
     expect(result.escalateToSupport).toBe(false);
   });
+
+  it("répond sur les contrats de maintenance", () => {
+    const result = buildOfflineAssistantReply({
+      message: "Comment créer un contrat de maintenance ?",
+      hasPermission: allowAll(),
+    });
+    expect(result.reply).toMatch(/auto-planifier|Contrats/i);
+    expect(result.suggestions.some((s) => s.href === "/contracts")).toBe(true);
+  });
+
+  it("répond sur les données de démo", () => {
+    const result = buildOfflineAssistantReply({
+      message: "Comment charger les données de démo ?",
+      hasPermission: allowAll(),
+    });
+    expect(result.reply).toMatch(/démo|essai/i);
+  });
+
+  it("répond sur l'historique de navigation", () => {
+    const result = buildOfflineAssistantReply({
+      message: "Où est l'historique de navigation ?",
+      hasPermission: allowAll(),
+    });
+    expect(result.reply).toMatch(/horloge/i);
+  });
+
+  it("répond sur la limite de documents / quota", () => {
+    const result = buildOfflineAssistantReply({
+      message: "Ai-je un nombre limité de documents que je peux déposer ?",
+      hasPermission: allowAll(),
+    });
+    expect(result.reply).toMatch(/10 Go/i);
+    expect(result.reply).toMatch(/nombre/i);
+    expect(result.suggestions.some((s) => s.href === "/subscription")).toBe(true);
+  });
 });

@@ -25,5 +25,6 @@ Voir les interventions du jour, démarrer / clôturer, photos, signature, rappor
 
 ## Erreurs fréquentes
 
-- Liste vide → pas d’intervention assignée aujourd’hui, ou mauvais technicien lié au compte.
+- Liste vide → pas d’intervention assignée aujourd’hui, mauvais technicien lié au compte, ou **aucun technicien lié** à l’utilisateur.
 - Pas de Ma journée dans le menu → permission `interventions.read` absente.
+- Pour lier un utilisateur à un technicien avant assignation : voir [08-assigner-intervention.md](./08-assigner-intervention.md).

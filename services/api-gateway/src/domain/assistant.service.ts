@@ -13,10 +13,11 @@ import { hasAssignablePermission } from "../infrastructure/permission-checks";
 import { retrieveProductChunks } from "../infrastructure/assistant/product-docs.loader";
 import {
   buildAssistantSystemPrompt,
-  listAccessibleCatalogHrefs,
+  listAccessibleCatalogRoutes,
 } from "../infrastructure/assistant/assistant.prompt";
 import { AssistantLlmClient } from "../infrastructure/assistant/llm.client";
 import { buildOfflineAssistantReply } from "../infrastructure/assistant/offline-reply";
+import { formatAssistantReplySteps } from "../infrastructure/assistant/format-reply";
 
 function isAssistantEnabled(): boolean {
   const flag = process.env.ASSISTANT_ENABLED?.trim().toLowerCase();
@@ -41,8 +42,8 @@ export class AssistantService extends AbstractAssistantService {
 
     const conversationId = request.conversationId?.trim() || randomUUID();
     const hasPermission = (code: PermissionCode) => hasAssignablePermission(user, code);
-    const docs = retrieveProductChunks(request.message);
-    const accessibleHrefs = listAccessibleCatalogHrefs(hasPermission);
+    const docs = retrieveProductChunks(request.message, 6, request.pathname);
+    const accessibleRoutes = listAccessibleCatalogRoutes(hasPermission);
 
     if (!this.llm.isConfigured()) {
       const offline = buildOfflineAssistantReply({
@@ -56,7 +57,7 @@ export class AssistantService extends AbstractAssistantService {
       user,
       pathname: request.pathname,
       docs,
-      accessibleHrefs,
+      accessibleRoutes,
     });
 
     try {
@@ -65,7 +66,7 @@ export class AssistantService extends AbstractAssistantService {
       const suggestions = filterAssistantSuggestions(parsed.suggestions, hasPermission);
       const reply =
         typeof parsed.reply === "string" && parsed.reply.trim()
-          ? parsed.reply.trim().slice(0, 4000)
+          ? formatAssistantReplySteps(parsed.reply.trim().slice(0, 4000))
           : "Voici les écrans susceptibles de vous aider.";
 
       const offlinePreferred = buildOfflineAssistantReply({

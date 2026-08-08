@@ -17,7 +17,7 @@ test.describe("Parcours commentaires (garde auth)", () => {
       .first()
       .click();
     await expect(page).toHaveURL(/\/login/);
-    await page.getByRole("banner").getByRole("button", { name: "Se connecter" }).click();
+    // /login?open=1 ouvre déjà la modal — ne pas recliquer le header (backdrop)
     const dialog = page.getByRole("dialog", { name: "Connexion" });
     await expect(dialog.getByRole("heading", { name: "Connexion" })).toBeVisible();
     await expect(dialog.getByLabel("Email")).toBeVisible();

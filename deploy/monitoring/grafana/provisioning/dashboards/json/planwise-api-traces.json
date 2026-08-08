@@ -214,7 +214,7 @@
     },
     {
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "description": "Agrégation des appels HTTP avec statut 4xx sur la période sélectionnée.",
+      "description": "Agrégation Prometheus (spanmetrics) — comptage par endpoint. Les traces individuelles sont dans « Traces 4xx » juste en dessous.",
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -309,7 +309,7 @@
     },
     {
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "description": "Agrégation des appels HTTP avec statut 5xx sur la période sélectionnée.",
+      "description": "Agrégation Prometheus (spanmetrics) — comptage par endpoint. Les traces individuelles sont dans « Traces 5xx » juste en dessous.",
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -401,6 +401,177 @@
     },
     {
       "datasource": { "type": "tempo", "uid": "tempo" },
+      "description": "Traces Tempo individuelles avec statut HTTP 4xx. Cliquer Trace ID pour ouvrir le détail en bas.",
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "duration" },
+            "properties": [
+              { "id": "unit", "value": "ns" },
+              { "id": "displayName", "value": "Durée" }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "http.method" },
+            "properties": [{ "id": "displayName", "value": "Méthode" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "http.target" },
+            "properties": [{ "id": "displayName", "value": "Endpoint" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "http.status_code" },
+            "properties": [
+              { "id": "displayName", "value": "Statut" },
+              { "id": "color", "value": { "mode": "thresholds" } },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "orange", "value": null },
+                    { "color": "dark-orange", "value": 400 }
+                  ]
+                }
+              },
+              { "id": "custom.cellOptions", "value": { "type": "color-background" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "traceID" },
+            "properties": [
+              { "id": "displayName", "value": "Trace ID" },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Voir le détail",
+                    "url": "/d/planwise-api-traces/planwise-api-traces?var-traceId=${__value.text}&${__url_time_range}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": { "h": 12, "w": 12, "x": 0, "y": 22 },
+      "id": 10,
+      "options": {
+        "cellHeight": "sm",
+        "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false },
+        "showHeader": true,
+        "sortBy": [{ "desc": true, "displayName": "Start time" }]
+      },
+      "targets": [
+        {
+          "datasource": { "type": "tempo", "uid": "tempo" },
+          "limit": 50,
+          "query": "{ resource.service.name=~\"$service\" && span.http.method != \"\" && span.http.method != \"OPTIONS\" && span.http.status_code >= 400 && span.http.status_code < 500 } | select(span.http.method, span.http.target, span.http.status_code, span:duration) with (most_recent=true)",
+          "queryType": "traceql",
+          "refId": "A",
+          "tableType": "spans"
+        }
+      ],
+      "title": "Traces 4xx (récentes)",
+      "transformations": [
+        {
+          "id": "convertFieldType",
+          "options": {
+            "conversions": [{ "destinationType": "number", "targetField": "http.status_code" }]
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "tempo", "uid": "tempo" },
+      "description": "Traces Tempo individuelles avec statut HTTP 5xx. Cliquer Trace ID pour ouvrir le détail en bas.",
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "duration" },
+            "properties": [
+              { "id": "unit", "value": "ns" },
+              { "id": "displayName", "value": "Durée" }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "http.method" },
+            "properties": [{ "id": "displayName", "value": "Méthode" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "http.target" },
+            "properties": [{ "id": "displayName", "value": "Endpoint" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "http.status_code" },
+            "properties": [
+              { "id": "displayName", "value": "Statut" },
+              { "id": "color", "value": { "mode": "thresholds" } },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [{ "color": "red", "value": null }]
+                }
+              },
+              { "id": "custom.cellOptions", "value": { "type": "color-background" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "traceID" },
+            "properties": [
+              { "id": "displayName", "value": "Trace ID" },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Voir le détail",
+                    "url": "/d/planwise-api-traces/planwise-api-traces?var-traceId=${__value.text}&${__url_time_range}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": { "h": 12, "w": 12, "x": 12, "y": 22 },
+      "id": 11,
+      "options": {
+        "cellHeight": "sm",
+        "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false },
+        "showHeader": true,
+        "sortBy": [{ "desc": true, "displayName": "Start time" }]
+      },
+      "targets": [
+        {
+          "datasource": { "type": "tempo", "uid": "tempo" },
+          "limit": 50,
+          "query": "{ resource.service.name=~\"$service\" && span.http.method != \"\" && span.http.method != \"OPTIONS\" && span.http.status_code >= 500 } | select(span.http.method, span.http.target, span.http.status_code, span:duration) with (most_recent=true)",
+          "queryType": "traceql",
+          "refId": "A",
+          "tableType": "spans"
+        }
+      ],
+      "title": "Traces 5xx (récentes)",
+      "transformations": [
+        {
+          "id": "convertFieldType",
+          "options": {
+            "conversions": [{ "destinationType": "number", "targetField": "http.status_code" }]
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "tempo", "uid": "tempo" },
       "fieldConfig": {
         "defaults": {
           "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false }
@@ -460,7 +631,7 @@
           }
         ]
       },
-      "gridPos": { "h": 14, "w": 24, "x": 0, "y": 22 },
+      "gridPos": { "h": 14, "w": 24, "x": 0, "y": 34 },
       "id": 6,
       "options": {
         "cellHeight": "sm",
@@ -491,7 +662,7 @@
     },
     {
       "datasource": { "type": "tempo", "uid": "tempo" },
-      "gridPos": { "h": 4, "w": 24, "x": 0, "y": 36 },
+      "gridPos": { "h": 16, "w": 24, "x": 0, "y": 48 },
       "id": 7,
       "options": {
         "showTime": true,
@@ -506,7 +677,7 @@
           "refId": "A"
         }
       ],
-      "title": "Détail trace (sélectionner une ligne ci-dessus → Trace ID)",
+      "title": "Détail trace (cliquer Trace ID dans un tableau Tempo ci-dessus)",
       "type": "traces"
     }
   ],
@@ -571,5 +742,5 @@
   "timezone": "browser",
   "title": "Planwise — API & traces",
   "uid": "planwise-api-traces",
-  "version": 6
+  "version": 7
 }

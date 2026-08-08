@@ -172,7 +172,7 @@ test.describe("Parcours landing → connexion (domaine marketing)", () => {
     await expect(page.getByRole("heading", { name: LANDING_HEADING })).toBeVisible();
 
     const loginLink = page.getByRole("link", { name: "Se connecter" }).first();
-    await expect(loginLink).toHaveAttribute("href", "/login");
+    await expect(loginLink).toHaveAttribute("href", "/login?open=1");
 
     const loginRedirect = await requestWithHost(request, "/login", MARKETING_HOST);
     expect(loginRedirect.status()).toBe(308);

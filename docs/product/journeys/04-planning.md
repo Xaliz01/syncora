@@ -24,3 +24,4 @@ Voir et réorganiser les interventions (jour / semaine / mois).
 ## Notes
 
 - Le planning est une vue calendrier ; la création d’intervention se fait souvent depuis un **dossier**.
+- L’assignation porte sur un **technicien** (ou une équipe), pas sur un utilisateur. Voir [08-assigner-intervention.md](./08-assigner-intervention.md).

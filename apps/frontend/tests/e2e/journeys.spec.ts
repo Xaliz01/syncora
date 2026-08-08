@@ -50,7 +50,7 @@ test.describe("Parcours navigation auth", () => {
       page.waitForURL(/\/login/),
       page.getByRole("link", { name: "Se connecter" }).click(),
     ]);
-    await page.getByRole("banner").getByRole("button", { name: "Se connecter" }).click();
+    // Lien register → /login?open=1 : modal déjà ouverte
     await expect(page.getByRole("heading", { name: "Connexion" })).toBeVisible();
   });
 
@@ -554,7 +554,7 @@ test.describe("Parcours inter-pages publiques complet", () => {
       page.waitForURL(/\/login/),
       page.getByRole("link", { name: "Se connecter" }).click(),
     ]);
-    await page.getByRole("banner").getByRole("button", { name: "Se connecter" }).click();
+    // Lien register → /login?open=1 : modal déjà ouverte
     await expect(page.getByRole("heading", { name: "Connexion" })).toBeVisible();
   });
 });

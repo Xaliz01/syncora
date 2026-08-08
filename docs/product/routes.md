@@ -48,7 +48,19 @@ Ne pas inventer d’IDs. Guider vers la **liste** puis « ouvrir la fiche depuis
 | Fiche donneur d'ordre | `/order-givers/:id` | `order_givers.read` |
 | Fiche contrat         | `/contracts/:id`    | `contracts.read`    |
 
+## Hors catalogue (UI header / spéciales)
+
+| Élément                        | Accès                                           | Doc                                   |
+| ------------------------------ | ----------------------------------------------- | ------------------------------------- |
+| Favoris                        | Barre sous header (★ / drag)                    | `journeys/09-favoris.md`              |
+| Historique de navigation       | Icône horloge près des favoris                  | `journeys/18-recherche-historique.md` |
+| Cloche notifications           | Header                                          | `journeys/14-notifications.md`        |
+| Onboarding / guide démarrage   | `/onboarding` + modal (fondateur)               | `journeys/11-onboarding-demo.md`      |
+| Hors connexion                 | `/~offline`                                     | `journeys/20-compte-pwa.md`           |
+| Hub reporting → détail rapport | `/reporting` puis carte (pas de lien whitelist) | `journeys/17-reporting.md`            |
+
 ## Notes assistant
 
 - Sans abonnement actif, le menu est réduit (org / abonnement / compte) — ne pas proposer Dossiers, etc.
-- Favoris et historique de navigation sont des raccourcis UI, pas des écrans dédiés.
+- Favoris et historique sont des raccourcis UI, pas des écrans du tableau principal.
+- Abonnement Planwise (`/subscription`) ≠ facturation clients (`/billing` + intégrations).

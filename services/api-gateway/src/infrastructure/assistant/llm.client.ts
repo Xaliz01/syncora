@@ -48,11 +48,14 @@ export class AssistantLlmClient {
           {
             model,
             temperature: 0.2,
-            max_tokens: 800,
+            max_tokens: 1200,
             response_format: { type: "json_object" },
             messages: [
               { role: "system", content: system },
-              { role: "user", content: userMessage },
+              {
+                role: "user",
+                content: `Question de l'utilisateur :\n${userMessage}\n\nRéponds uniquement avec l'objet JSON demandé (reply, suggestions, escalateToSupport).`,
+              },
             ],
           },
           {
@@ -89,10 +92,15 @@ export class AssistantLlmClient {
           "https://api.anthropic.com/v1/messages",
           {
             model,
-            max_tokens: 800,
+            max_tokens: 1200,
             temperature: 0.2,
             system,
-            messages: [{ role: "user", content: userMessage }],
+            messages: [
+              {
+                role: "user",
+                content: `Question de l'utilisateur :\n${userMessage}\n\nRéponds uniquement avec un objet JSON { "reply", "suggestions", "escalateToSupport" }.`,
+              },
+            ],
           },
           {
             headers: {

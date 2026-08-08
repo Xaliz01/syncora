@@ -23,6 +23,42 @@ type ChatMessage =
       escalateToSupport?: boolean;
     };
 
+/** Affiche le texte assistant avec listes numérotées lisibles. */
+function AssistantReplyBody({ text }: { text: string }) {
+  const blocks = text.split(/\n\n+/).filter((b) => b.trim().length > 0);
+
+  return (
+    <div className="space-y-2 text-sm leading-relaxed">
+      {blocks.map((block, i) => {
+        const lines = block.split("\n");
+        const stepLines = lines.filter((l) => /^\s*\d+\.\s+\S/.test(l));
+        if (stepLines.length >= 2 || (stepLines.length === 1 && lines.length === 1)) {
+          const introLines = lines.filter((l) => l.trim() && !/^\s*\d+\.\s+\S/.test(l));
+          return (
+            <div key={`b-${i}`} className="space-y-1.5">
+              {introLines.map((line, j) => (
+                <p key={`i-${j}`}>{line}</p>
+              ))}
+              <ol className="list-decimal space-y-1.5 pl-5 marker:font-medium marker:text-slate-500 dark:marker:text-slate-400">
+                {stepLines.map((line, j) => (
+                  <li key={`s-${j}`} className="pl-1">
+                    {line.replace(/^\s*\d+\.\s+/, "")}
+                  </li>
+                ))}
+              </ol>
+            </div>
+          );
+        }
+        return (
+          <p key={`b-${i}`} className="whitespace-pre-wrap">
+            {block}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
 function AssistantIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -186,13 +222,7 @@ function AssistantDrawer({ onClose }: { onClose: () => void }) {
               }
             >
               {msg.role === "assistant" ? (
-                <div className="space-y-2 text-sm leading-relaxed">
-                  {msg.text.split(/\n\n+/).map((para, i) => (
-                    <p key={`${msg.id}-p-${i}`} className="whitespace-pre-wrap">
-                      {para}
-                    </p>
-                  ))}
-                </div>
+                <AssistantReplyBody text={msg.text} />
               ) : (
                 <p className="whitespace-pre-wrap">{msg.text}</p>
               )}

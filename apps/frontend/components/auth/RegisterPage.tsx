@@ -598,13 +598,13 @@ export function RegisterPage() {
           <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-300">
             Déjà un compte ?{" "}
             <Link
-              href="/login"
+              href="/login?open=1"
               className="text-brand-600 dark:text-brand-400 hover:text-brand-500 hover:underline font-medium"
               onClick={(e) => {
                 // Navigation complète : évite une soft-nav App Router parfois
                 // désynchronisée (URL ≠ UI) constatée en E2E.
                 e.preventDefault();
-                window.location.assign("/login");
+                window.location.assign("/login?open=1");
               }}
             >
               Se connecter

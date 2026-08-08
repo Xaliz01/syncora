@@ -146,7 +146,7 @@ function LandingHeader() {
         <div className="flex items-center gap-2 sm:gap-3">
           <ThemeToggle />
           <Link
-            href="/login"
+            href="/login?open=1"
             className="hidden sm:inline-flex rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
           >
             Se connecter
@@ -219,7 +219,7 @@ export function LandingPage() {
                       Démarrer mon essai gratuit
                     </Link>
                     <Link
-                      href="/login"
+                      href="/login?open=1"
                       className="inline-flex items-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
                     >
                       Se connecter
@@ -477,7 +477,7 @@ export function LandingPage() {
                 Démarrer mon essai gratuit
               </Link>
               <Link
-                href="/login"
+                href="/login?open=1"
                 className="inline-flex rounded-lg border border-white/30 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/10 transition"
               >
                 J&apos;ai déjà un compte
@@ -498,7 +498,7 @@ export function LandingPage() {
           </div>
           <div className="flex flex-wrap justify-center gap-4">
             <Link
-              href="/login"
+              href="/login?open=1"
               className="hover:text-brand-600 dark:hover:text-brand-400 transition"
             >
               Connexion

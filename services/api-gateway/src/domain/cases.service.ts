@@ -483,25 +483,28 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     organizationId: string,
     assigneeId: string,
   ): Promise<TechnicianResponse | null> {
+    // Essayer d’abord by-user : évite un 404 bruyant quand assigneeId est un userId
+    // (filtre « Ma journée », anciennes affectations).
+    try {
+      const byUser = await this.scopedHttp.request<TechnicianResponse | null>({
+        baseUrl: SERVICE_URLS.technicians,
+        organizationId,
+        method: "get",
+        path: `/technicians/by-user/${assigneeId}`,
+        validateResponseScope: false,
+        errorLabel: "Technicians service error",
+      });
+      if (byUser?.id) return byUser;
+    } catch {
+      // ignore — on tente l’id technicien
+    }
+
     try {
       return await this.scopedHttp.request<TechnicianResponse>({
         baseUrl: SERVICE_URLS.technicians,
         organizationId,
         method: "get",
         path: `/technicians/${assigneeId}`,
-        errorLabel: "Technicians service error",
-      });
-    } catch {
-      // fallback: assigneeId may be a linked user id
-    }
-
-    try {
-      return await this.scopedHttp.request<TechnicianResponse | null>({
-        baseUrl: SERVICE_URLS.technicians,
-        organizationId,
-        method: "get",
-        path: `/technicians/by-user/${assigneeId}`,
-        validateResponseScope: false,
         errorLabel: "Technicians service error",
       });
     } catch {

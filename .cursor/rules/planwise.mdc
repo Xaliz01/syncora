@@ -29,6 +29,21 @@ Avant toute feature, lire (ou se réaligner sur) :
 - Chaque **nouvelle entité ou action métier** doit définir ses codes dans `packages/shared/src/permissions.ts` (`ASSIGNABLE_PERMISSION_CODES`), les libellés dans `apps/frontend/lib/permissions-catalog.ts`, et les appliquer côté **API gateway** (`@RequirePermissions` / `@RequireAnyPermissions` + garde `RequirePermissionGuard`) et **frontend** (`hasPermission`, `PermissionGate`, boutons masqués).
 - Vérifier que les routes gateway et les parcours UI ne restent pas accessibles sans le droit associé (y compris pour les membres non admin).
 
+## Assistant IA in-app — enrichir à chaque feature
+
+Pour **tout nouveau développement** qui touche l’UX métier (écran, menu, parcours, permission, glossaire), évaluer et mettre à jour la connaissance de l’assistant **dans la même PR** si un utilisateur pourrait poser une question dessus.
+
+### Checklist (selon le besoin)
+
+1. **`docs/product/`** — source de vérité rédigée : `routes.md` (label, href, permission), `glossary.md`, et/ou un parcours dans `journeys/*.md`.
+2. **`packages/shared/src/assistant.ts`** — `ASSISTANT_ROUTE_CATALOG` si nouvelle route proposable (whitelist + permissions).
+3. **`services/api-gateway/.../product-docs.loader.ts`** — chunks embarqués `PRODUCT_DOC_CHUNKS` (Docker n’a pas `docs/` au runtime) : **aligner le texte** sur les docs product, pas seulement un résumé trop court.
+4. **Offline** — `offline-reply.ts` / FAQ si la question doit marcher sans clé LLM.
+5. **Tests** — retrieval / filtre suggestions si nouveau comportement.
+
+Références : `docs/assistant/MVP.md`, `docs/product/README.md`, prompt `assistant.prompt.ts`.  
+L’assistant **guide** (explique + liens) ; il ne lit pas les données org et n’écrit pas en base. Crisp = support humain.
+
 ## Isolation organisation (multi-tenant)
 
 - Toute ressource métier persistée doit être filtrée par `organizationId` : utiliser `organizationScopeFilter()` / `parseOrganizationIdQuery()` / `parseOrganizationIdBody()` depuis `@planwise/shared`.
