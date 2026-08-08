@@ -12,8 +12,7 @@ import type {
   VapidPublicKeyResponse,
 } from "@planwise/shared";
 import { AbstractNotificationsGatewayService } from "./ports/notifications.gateway.service.port";
-
-const NOTIFICATIONS_URL = process.env.NOTIFICATIONS_SERVICE_URL ?? "http://localhost:3010";
+import { SERVICE_URLS } from "../infrastructure/service-urls.config";
 
 @Injectable()
 export class NotificationsGatewayService extends AbstractNotificationsGatewayService {
@@ -23,13 +22,16 @@ export class NotificationsGatewayService extends AbstractNotificationsGatewaySer
 
   async listForCurrentUser(user: AuthUser, limit?: number): Promise<NotificationListResponse> {
     const response = await firstValueFrom(
-      this.httpService.get<NotificationListResponse>(`${NOTIFICATIONS_URL}/notifications`, {
-        params: {
-          userId: user.id,
-          organizationId: user.organizationId,
-          ...(limit ? { limit: String(limit) } : {}),
+      this.httpService.get<NotificationListResponse>(
+        `${SERVICE_URLS.notifications}/notifications`,
+        {
+          params: {
+            userId: user.id,
+            organizationId: user.organizationId,
+            ...(limit ? { limit: String(limit) } : {}),
+          },
         },
-      }),
+      ),
     );
     return response.data;
   }
@@ -38,7 +40,7 @@ export class NotificationsGatewayService extends AbstractNotificationsGatewaySer
     try {
       const response = await firstValueFrom(
         this.httpService.patch<NotificationResponse>(
-          `${NOTIFICATIONS_URL}/notifications/${notificationId}/read`,
+          `${SERVICE_URLS.notifications}/notifications/${notificationId}/read`,
           {},
           { params: { userId: user.id } },
         ),
@@ -54,7 +56,7 @@ export class NotificationsGatewayService extends AbstractNotificationsGatewaySer
   async markAllAsRead(user: AuthUser): Promise<{ updated: number }> {
     const response = await firstValueFrom(
       this.httpService.patch<{ updated: number }>(
-        `${NOTIFICATIONS_URL}/notifications/read-all`,
+        `${SERVICE_URLS.notifications}/notifications/read-all`,
         {},
         {
           params: {
@@ -69,12 +71,15 @@ export class NotificationsGatewayService extends AbstractNotificationsGatewaySer
 
   async getUnreadCount(user: AuthUser): Promise<{ count: number }> {
     const response = await firstValueFrom(
-      this.httpService.get<{ count: number }>(`${NOTIFICATIONS_URL}/notifications/unread-count`, {
-        params: {
-          userId: user.id,
-          organizationId: user.organizationId,
+      this.httpService.get<{ count: number }>(
+        `${SERVICE_URLS.notifications}/notifications/unread-count`,
+        {
+          params: {
+            userId: user.id,
+            organizationId: user.organizationId,
+          },
         },
-      }),
+      ),
     );
     return response.data;
   }
@@ -82,7 +87,7 @@ export class NotificationsGatewayService extends AbstractNotificationsGatewaySer
   async getPreferences(user: AuthUser): Promise<NotificationPreferencesResponse> {
     const response = await firstValueFrom(
       this.httpService.get<NotificationPreferencesResponse>(
-        `${NOTIFICATIONS_URL}/notification-preferences`,
+        `${SERVICE_URLS.notifications}/notification-preferences`,
         {
           params: {
             userId: user.id,
@@ -100,7 +105,7 @@ export class NotificationsGatewayService extends AbstractNotificationsGatewaySer
   ): Promise<NotificationPreferencesResponse> {
     const response = await firstValueFrom(
       this.httpService.put<NotificationPreferencesResponse>(
-        `${NOTIFICATIONS_URL}/notification-preferences`,
+        `${SERVICE_URLS.notifications}/notification-preferences`,
         { organizationId: user.organizationId, preferences },
         { params: { userId: user.id } },
       ),
@@ -114,7 +119,7 @@ export class NotificationsGatewayService extends AbstractNotificationsGatewaySer
   ): Promise<PushSubscriptionResponse> {
     const response = await firstValueFrom(
       this.httpService.post<PushSubscriptionResponse>(
-        `${NOTIFICATIONS_URL}/push-subscriptions`,
+        `${SERVICE_URLS.notifications}/push-subscriptions`,
         { ...body, organizationId: user.organizationId },
         { params: { userId: user.id } },
       ),
@@ -127,31 +132,39 @@ export class NotificationsGatewayService extends AbstractNotificationsGatewaySer
     endpoint: string,
   ): Promise<{ deleted: boolean }> {
     const response = await firstValueFrom(
-      this.httpService.delete<{ deleted: boolean }>(`${NOTIFICATIONS_URL}/push-subscriptions`, {
-        params: {
-          userId: user.id,
-          endpoint,
+      this.httpService.delete<{ deleted: boolean }>(
+        `${SERVICE_URLS.notifications}/push-subscriptions`,
+        {
+          params: {
+            userId: user.id,
+            endpoint,
+          },
         },
-      }),
+      ),
     );
     return response.data;
   }
 
   async listPushSubscriptions(user: AuthUser): Promise<PushSubscriptionResponse[]> {
     const response = await firstValueFrom(
-      this.httpService.get<PushSubscriptionResponse[]>(`${NOTIFICATIONS_URL}/push-subscriptions`, {
-        params: {
-          userId: user.id,
-          organizationId: user.organizationId,
+      this.httpService.get<PushSubscriptionResponse[]>(
+        `${SERVICE_URLS.notifications}/push-subscriptions`,
+        {
+          params: {
+            userId: user.id,
+            organizationId: user.organizationId,
+          },
         },
-      }),
+      ),
     );
     return response.data;
   }
 
   async getVapidPublicKey(): Promise<VapidPublicKeyResponse> {
     const response = await firstValueFrom(
-      this.httpService.get<VapidPublicKeyResponse>(`${NOTIFICATIONS_URL}/vapid-public-key`),
+      this.httpService.get<VapidPublicKeyResponse>(
+        `${SERVICE_URLS.notifications}/vapid-public-key`,
+      ),
     );
     return response.data;
   }

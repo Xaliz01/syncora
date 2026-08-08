@@ -43,11 +43,7 @@ import {
   type CreatePermissionProfileForOrgBody,
   type UpdatePermissionProfileForOrgBody,
 } from "./ports/admin.service.port";
-
-const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
-const PERMISSIONS_URL = process.env.PERMISSIONS_SERVICE_URL ?? "http://localhost:3003";
-const SUBSCRIPTIONS_URL = process.env.SUBSCRIPTIONS_SERVICE_URL ?? "http://localhost:3008";
-const NOTIFICATIONS_URL = process.env.NOTIFICATIONS_SERVICE_URL ?? "http://localhost:3010";
+import { SERVICE_URLS } from "../infrastructure/service-urls.config";
 
 @Injectable()
 export class AdminService extends AbstractAdminService {
@@ -484,7 +480,7 @@ export class AdminService extends AbstractAdminService {
     try {
       const res = await firstValueFrom(
         this.httpService.post<SendEmailNotificationResponse>(
-          `${NOTIFICATIONS_URL}/email/transactional`,
+          `${SERVICE_URLS.notifications}/email/transactional`,
           {
             to: invitation.invitedEmail,
             subject: "Invitation à rejoindre Planwise",
@@ -550,7 +546,7 @@ export class AdminService extends AbstractAdminService {
       const response = await firstValueFrom(
         this.httpService.request<T>({
           method: params.method,
-          url: `${SUBSCRIPTIONS_URL}${params.path}`,
+          url: `${SERVICE_URLS.subscriptions}${params.path}`,
           data: params.body,
           params: params.query,
         }),
@@ -571,7 +567,7 @@ export class AdminService extends AbstractAdminService {
       const response = await firstValueFrom(
         this.httpService.request<T>({
           method: params.method,
-          url: `${USERS_URL}${params.path}`,
+          url: `${SERVICE_URLS.users}${params.path}`,
           data: params.body,
           params: params.query,
         }),
@@ -592,7 +588,7 @@ export class AdminService extends AbstractAdminService {
       const response = await firstValueFrom(
         this.httpService.request<T>({
           method: params.method,
-          url: `${PERMISSIONS_URL}${params.path}`,
+          url: `${SERVICE_URLS.permissions}${params.path}`,
           data: params.body,
           params: params.query,
         }),

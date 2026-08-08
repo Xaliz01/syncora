@@ -9,8 +9,7 @@ import type {
   ValidateUserSessionResponse,
 } from "@planwise/shared";
 import { isOnboardingJwtPayload, SESSION_REPLACED_MESSAGE } from "@planwise/shared";
-
-const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
+import { SERVICE_URLS } from "./service-urls.config";
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -54,10 +53,13 @@ export class JwtAuthGuard implements CanActivate {
     }
     try {
       const res = await firstValueFrom(
-        this.httpService.post<ValidateUserSessionResponse>(`${USERS_URL}/users/validate-session`, {
-          userId: payload.sub,
-          sessionId: payload.sid,
-        }),
+        this.httpService.post<ValidateUserSessionResponse>(
+          `${SERVICE_URLS.users}/users/validate-session`,
+          {
+            userId: payload.sub,
+            sessionId: payload.sid,
+          },
+        ),
       );
       if (!res.data.valid) {
         throw new UnauthorizedException(SESSION_REPLACED_MESSAGE);

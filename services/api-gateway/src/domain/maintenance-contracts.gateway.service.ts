@@ -13,8 +13,7 @@ import {
   type UpdateMaintenanceContractForOrgBody,
 } from "./ports/maintenance-contracts.service.port";
 import { AbstractCustomersGatewayService } from "./ports/customers.service.port";
-
-const CASES_URL = process.env.CASES_SERVICE_URL ?? "http://localhost:3004";
+import { SERVICE_URLS } from "../infrastructure/service-urls.config";
 
 @Injectable()
 export class MaintenanceContractsGatewayService extends AbstractMaintenanceContractsGatewayService {
@@ -28,7 +27,7 @@ export class MaintenanceContractsGatewayService extends AbstractMaintenanceContr
   async create(user: AuthUser, body: CreateMaintenanceContractForOrgBody) {
     await this.customersGateway.getCustomer(user, body.customerId);
     return this.scopedHttp.request<MaintenanceContractResponse>({
-      baseUrl: CASES_URL,
+      baseUrl: SERVICE_URLS.cases,
       organizationId: user.organizationId,
       method: "post",
       path: "/maintenance-contracts",
@@ -49,7 +48,7 @@ export class MaintenanceContractsGatewayService extends AbstractMaintenanceContr
     },
   ) {
     return this.scopedHttp.request<MaintenanceContractsListResponse>({
-      baseUrl: CASES_URL,
+      baseUrl: SERVICE_URLS.cases,
       organizationId: user.organizationId,
       method: "get",
       path: "/maintenance-contracts",
@@ -63,7 +62,7 @@ export class MaintenanceContractsGatewayService extends AbstractMaintenanceContr
 
   async get(user: AuthUser, contractId: string) {
     return this.scopedHttp.request<MaintenanceContractResponse>({
-      baseUrl: CASES_URL,
+      baseUrl: SERVICE_URLS.cases,
       organizationId: user.organizationId,
       method: "get",
       path: `/maintenance-contracts/${contractId}`,
@@ -76,7 +75,7 @@ export class MaintenanceContractsGatewayService extends AbstractMaintenanceContr
       await this.customersGateway.getCustomer(user, body.customerId);
     }
     return this.scopedHttp.request<MaintenanceContractResponse>({
-      baseUrl: CASES_URL,
+      baseUrl: SERVICE_URLS.cases,
       organizationId: user.organizationId,
       method: "patch",
       path: `/maintenance-contracts/${contractId}`,
@@ -87,7 +86,7 @@ export class MaintenanceContractsGatewayService extends AbstractMaintenanceContr
 
   async remove(user: AuthUser, contractId: string) {
     return this.scopedHttp.request<{ deleted: true }>({
-      baseUrl: CASES_URL,
+      baseUrl: SERVICE_URLS.cases,
       organizationId: user.organizationId,
       method: "delete",
       path: `/maintenance-contracts/${contractId}`,
@@ -97,7 +96,7 @@ export class MaintenanceContractsGatewayService extends AbstractMaintenanceContr
 
   async generate(user: AuthUser, contractId: string, body?: { force?: boolean }) {
     return this.scopedHttp.request<GenerateMaintenanceVisitResponse>({
-      baseUrl: CASES_URL,
+      baseUrl: SERVICE_URLS.cases,
       organizationId: user.organizationId,
       method: "post",
       path: `/maintenance-contracts/${contractId}/generate`,
@@ -112,7 +111,7 @@ export class MaintenanceContractsGatewayService extends AbstractMaintenanceContr
     body: ScheduleMaintenanceVisitForOrgBody,
   ) {
     return this.scopedHttp.request<GenerateMaintenanceVisitResponse>({
-      baseUrl: CASES_URL,
+      baseUrl: SERVICE_URLS.cases,
       organizationId: user.organizationId,
       method: "post",
       path: `/maintenance-contracts/${contractId}/schedule-visit`,

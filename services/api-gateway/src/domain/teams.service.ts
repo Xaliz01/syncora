@@ -8,8 +8,7 @@ import type {
 } from "@planwise/shared";
 import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
 import { AbstractTeamsGatewayService } from "./ports/teams.service.port";
-
-const TECHNICIANS_URL = process.env.TECHNICIANS_SERVICE_URL ?? "http://localhost:3006";
+import { SERVICE_URLS } from "../infrastructure/service-urls.config";
 
 @Injectable()
 export class TeamsGatewayService extends AbstractTeamsGatewayService {
@@ -26,7 +25,7 @@ export class TeamsGatewayService extends AbstractTeamsGatewayService {
   ) {
     return this.scopedHttp.request<T>({
       ...params,
-      baseUrl: TECHNICIANS_URL,
+      baseUrl: SERVICE_URLS.technicians,
       organizationId: user.organizationId,
       errorLabel: "Downstream service error",
     });

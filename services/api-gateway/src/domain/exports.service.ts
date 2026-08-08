@@ -13,9 +13,7 @@ import type {
 } from "@planwise/shared";
 import { isReportPreviewType } from "@planwise/shared";
 import { AbstractExportsGatewayService, type ExportResult } from "./ports/exports.service.port";
-
-const EXPORTS_URL = process.env.EXPORTS_SERVICE_URL ?? "http://localhost:3012";
-const PERMISSIONS_URL = process.env.PERMISSIONS_SERVICE_URL ?? "http://localhost:3003";
+import { SERVICE_URLS } from "../infrastructure/service-urls.config";
 
 @Injectable()
 export class ExportsGatewayService extends AbstractExportsGatewayService {
@@ -24,7 +22,7 @@ export class ExportsGatewayService extends AbstractExportsGatewayService {
   }
 
   async exportCaseSummaryPdf(user: AuthUser, caseId: string): Promise<ExportResult> {
-    return this.proxyExport(`${EXPORTS_URL}/exports/cases/${caseId}/pdf`, {
+    return this.proxyExport(`${SERVICE_URLS.exports}/exports/cases/${caseId}/pdf`, {
       organizationId: user.organizationId,
     });
   }
@@ -42,7 +40,7 @@ export class ExportsGatewayService extends AbstractExportsGatewayService {
       endDate?: string;
     },
   ): Promise<ExportResult> {
-    return this.proxyExport(`${EXPORTS_URL}/exports/cases`, {
+    return this.proxyExport(`${SERVICE_URLS.exports}/exports/cases`, {
       organizationId: user.organizationId,
       format,
       ...this.cleanFilters(filters),
@@ -50,7 +48,7 @@ export class ExportsGatewayService extends AbstractExportsGatewayService {
   }
 
   async exportUsersList(user: AuthUser, format: ExportFormat): Promise<ExportResult> {
-    return this.proxyExport(`${EXPORTS_URL}/exports/users`, {
+    return this.proxyExport(`${SERVICE_URLS.exports}/exports/users`, {
       organizationId: user.organizationId,
       format,
     });
@@ -61,7 +59,7 @@ export class ExportsGatewayService extends AbstractExportsGatewayService {
     format: ExportFormat,
     filters?: { search?: string; kind?: string },
   ): Promise<ExportResult> {
-    return this.proxyExport(`${EXPORTS_URL}/exports/customers`, {
+    return this.proxyExport(`${SERVICE_URLS.exports}/exports/customers`, {
       organizationId: user.organizationId,
       format,
       ...this.cleanFilters(filters),
@@ -79,7 +77,7 @@ export class ExportsGatewayService extends AbstractExportsGatewayService {
       status?: string;
     },
   ): Promise<ExportResult> {
-    return this.proxyExport(`${EXPORTS_URL}/exports/interventions`, {
+    return this.proxyExport(`${SERVICE_URLS.exports}/exports/interventions`, {
       organizationId: user.organizationId,
       format,
       ...this.cleanFilters(filters),
@@ -91,7 +89,7 @@ export class ExportsGatewayService extends AbstractExportsGatewayService {
     format: ExportFormat,
     filters?: { startDate?: string; endDate?: string; technicianId?: string },
   ): Promise<ExportResult> {
-    return this.proxyExport(`${EXPORTS_URL}/exports/technicians-activity`, {
+    return this.proxyExport(`${SERVICE_URLS.exports}/exports/technicians-activity`, {
       organizationId: user.organizationId,
       format,
       ...this.cleanFilters(filters),
@@ -109,7 +107,7 @@ export class ExportsGatewayService extends AbstractExportsGatewayService {
       groupBy?: "team" | "technician";
     },
   ): Promise<ExportResult> {
-    return this.proxyExport(`${EXPORTS_URL}/exports/mileage-report`, {
+    return this.proxyExport(`${SERVICE_URLS.exports}/exports/mileage-report`, {
       organizationId: user.organizationId,
       format,
       ...this.cleanFilters(filters),
@@ -122,7 +120,7 @@ export class ExportsGatewayService extends AbstractExportsGatewayService {
     params: { templateId: string; todoLabel: string },
   ): Promise<ExportResult> {
     const userProfileId = await this.resolveUserProfileId(user);
-    return this.proxyExport(`${EXPORTS_URL}/exports/dashboard-todo-cases`, {
+    return this.proxyExport(`${SERVICE_URLS.exports}/exports/dashboard-todo-cases`, {
       organizationId: user.organizationId,
       format,
       userId: user.id,
@@ -137,7 +135,7 @@ export class ExportsGatewayService extends AbstractExportsGatewayService {
     format: ExportFormat,
     filters?: ExportInvoicesListParams,
   ): Promise<ExportResult> {
-    return this.proxyExport(`${EXPORTS_URL}/exports/invoices`, {
+    return this.proxyExport(`${SERVICE_URLS.exports}/exports/invoices`, {
       organizationId: user.organizationId,
       format,
       ...this.cleanFilters(filters as Record<string, string | undefined>),
@@ -148,7 +146,7 @@ export class ExportsGatewayService extends AbstractExportsGatewayService {
     try {
       const res = await firstValueFrom(
         this.httpService.get<UserPermissionAssignmentResponse>(
-          `${PERMISSIONS_URL}/assignments/${user.id}`,
+          `${SERVICE_URLS.permissions}/assignments/${user.id}`,
           { params: { organizationId: user.organizationId } },
         ),
       );
@@ -168,14 +166,17 @@ export class ExportsGatewayService extends AbstractExportsGatewayService {
     }
     try {
       const response = await firstValueFrom(
-        this.httpService.get<ReportPreviewResponse>(`${EXPORTS_URL}/exports/reporting/preview`, {
-          params: {
-            organizationId: user.organizationId,
-            type: reportType,
-            ...this.cleanFilters(filters as Record<string, string | undefined>),
+        this.httpService.get<ReportPreviewResponse>(
+          `${SERVICE_URLS.exports}/exports/reporting/preview`,
+          {
+            params: {
+              organizationId: user.organizationId,
+              type: reportType,
+              ...this.cleanFilters(filters as Record<string, string | undefined>),
+            },
+            timeout: 60000,
           },
-          timeout: 60000,
-        }),
+        ),
       );
       return response.data;
     } catch (err) {
@@ -189,12 +190,15 @@ export class ExportsGatewayService extends AbstractExportsGatewayService {
   ): Promise<ReportingStatsResponse> {
     try {
       const response = await firstValueFrom(
-        this.httpService.get<ReportingStatsResponse>(`${EXPORTS_URL}/exports/reporting/stats`, {
-          params: {
-            organizationId: user.organizationId,
-            ...this.cleanFilters(filters),
+        this.httpService.get<ReportingStatsResponse>(
+          `${SERVICE_URLS.exports}/exports/reporting/stats`,
+          {
+            params: {
+              organizationId: user.organizationId,
+              ...this.cleanFilters(filters),
+            },
           },
-        }),
+        ),
       );
       return response.data;
     } catch (err) {

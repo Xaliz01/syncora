@@ -20,10 +20,7 @@ import {
 import { AbstractTechniciansGatewayService } from "./ports/technicians.service.port";
 import { AbstractAdminService } from "./ports/admin.service.port";
 import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
-
-const TECHNICIANS_URL = process.env.TECHNICIANS_SERVICE_URL ?? "http://localhost:3006";
-const PERMISSIONS_URL = process.env.PERMISSIONS_SERVICE_URL ?? "http://localhost:3003";
-const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
+import { SERVICE_URLS } from "../infrastructure/service-urls.config";
 
 @Injectable()
 export class TechniciansGatewayService extends AbstractTechniciansGatewayService {
@@ -43,7 +40,7 @@ export class TechniciansGatewayService extends AbstractTechniciansGatewayService
   ) {
     return this.scopedHttp.request<T>({
       ...params,
-      baseUrl: TECHNICIANS_URL,
+      baseUrl: SERVICE_URLS.technicians,
       organizationId: user.organizationId,
       errorLabel: "Downstream service error",
     });
@@ -58,7 +55,7 @@ export class TechniciansGatewayService extends AbstractTechniciansGatewayService
   ) {
     return this.scopedHttp.request<T>({
       ...params,
-      baseUrl: PERMISSIONS_URL,
+      baseUrl: SERVICE_URLS.permissions,
       organizationId,
       errorLabel: "Permissions service error",
     });
@@ -73,7 +70,7 @@ export class TechniciansGatewayService extends AbstractTechniciansGatewayService
   ) {
     return this.scopedHttp.request<T>({
       ...params,
-      baseUrl: USERS_URL,
+      baseUrl: SERVICE_URLS.users,
       organizationId,
       errorLabel: "Users service error",
     });

@@ -72,13 +72,7 @@ import {
   type CreateCommentForOrgBody,
   type UpdateCommentForOrgBody,
 } from "./ports/cases.service.port";
-
-const CASES_URL = process.env.CASES_SERVICE_URL ?? "http://localhost:3004";
-const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
-const PERMISSIONS_URL = process.env.PERMISSIONS_SERVICE_URL ?? "http://localhost:3003";
-const TECHNICIANS_URL = process.env.TECHNICIANS_SERVICE_URL ?? "http://localhost:3006";
-const DOCUMENTS_URL = process.env.DOCUMENTS_SERVICE_URL ?? "http://localhost:3011";
-const ORGANIZATIONS_URL = process.env.ORGANIZATIONS_SERVICE_URL ?? "http://localhost:3001";
+import { SERVICE_URLS } from "../infrastructure/service-urls.config";
 
 @Injectable()
 export class CasesGatewayService extends AbstractCasesGatewayService {
@@ -405,7 +399,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
 
     try {
       const teams = await this.scopedHttp.request<TeamResponse[]>({
-        baseUrl: TECHNICIANS_URL,
+        baseUrl: SERVICE_URLS.technicians,
         organizationId: user.organizationId,
         method: "get",
         path: "/teams",
@@ -425,7 +419,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
   ): Promise<string | undefined> {
     try {
       const technician = await this.scopedHttp.request<TechnicianResponse | null>({
-        baseUrl: TECHNICIANS_URL,
+        baseUrl: SERVICE_URLS.technicians,
         organizationId,
         method: "get",
         path: `/technicians/by-user/${userId}`,
@@ -491,7 +485,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
   ): Promise<TechnicianResponse | null> {
     try {
       return await this.scopedHttp.request<TechnicianResponse>({
-        baseUrl: TECHNICIANS_URL,
+        baseUrl: SERVICE_URLS.technicians,
         organizationId,
         method: "get",
         path: `/technicians/${assigneeId}`,
@@ -503,7 +497,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
 
     try {
       return await this.scopedHttp.request<TechnicianResponse | null>({
-        baseUrl: TECHNICIANS_URL,
+        baseUrl: SERVICE_URLS.technicians,
         organizationId,
         method: "get",
         path: `/technicians/by-user/${assigneeId}`,
@@ -518,7 +512,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
   private async resolveTeamDisplayName(organizationId: string, teamId: string): Promise<string> {
     try {
       const team = await this.scopedHttp.request<TeamResponse>({
-        baseUrl: TECHNICIANS_URL,
+        baseUrl: SERVICE_URLS.technicians,
         organizationId,
         method: "get",
         path: `/teams/${teamId}`,
@@ -1134,7 +1128,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     try {
       const res = await firstValueFrom(
         this.httpService.get<OrganizationResponse>(
-          `${ORGANIZATIONS_URL}/organizations/${organizationId}`,
+          `${SERVICE_URLS.organizations}/organizations/${organizationId}`,
         ),
       );
       return res.data;
@@ -1150,13 +1144,13 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     try {
       const urlRes = await firstValueFrom(
         this.httpService.get<{ url: string }>(
-          `${DOCUMENTS_URL}/documents/${documentId}/download-url`,
+          `${SERVICE_URLS.documents}/documents/${documentId}/download-url`,
           { params: { organizationId } },
         ),
       );
       let downloadUrl = urlRes.data.url;
       if (downloadUrl.startsWith("/documents/download/")) {
-        downloadUrl = `${DOCUMENTS_URL}${downloadUrl}`;
+        downloadUrl = `${SERVICE_URLS.documents}${downloadUrl}`;
       }
       const fileRes = await firstValueFrom(
         this.httpService.get(downloadUrl, { responseType: "arraybuffer", timeout: 15000 }),
@@ -1173,7 +1167,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
   ): Promise<{ data: Buffer; mimeType: string }[]> {
     try {
       const docs = await firstValueFrom(
-        this.httpService.get<DocumentResponse[]>(`${DOCUMENTS_URL}/documents`, {
+        this.httpService.get<DocumentResponse[]>(`${SERVICE_URLS.documents}/documents`, {
           params: {
             organizationId: user.organizationId,
             entityType: "intervention",
@@ -1189,13 +1183,13 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
         try {
           const urlRes = await firstValueFrom(
             this.httpService.get<{ url: string }>(
-              `${DOCUMENTS_URL}/documents/${img.id}/download-url`,
+              `${SERVICE_URLS.documents}/documents/${img.id}/download-url`,
               { params: { organizationId: user.organizationId } },
             ),
           );
           let downloadUrl = urlRes.data.url;
           if (downloadUrl.startsWith("/documents/download/")) {
-            downloadUrl = `${DOCUMENTS_URL}${downloadUrl}`;
+            downloadUrl = `${SERVICE_URLS.documents}${downloadUrl}`;
           }
           const fileRes = await firstValueFrom(
             this.httpService.get(downloadUrl, { responseType: "arraybuffer" }),
@@ -1582,7 +1576,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     try {
       const res = await firstValueFrom(
         this.httpService.get<UserPermissionAssignmentResponse>(
-          `${PERMISSIONS_URL}/assignments/${user.id}`,
+          `${SERVICE_URLS.permissions}/assignments/${user.id}`,
           { params: { organizationId: user.organizationId } },
         ),
       );
@@ -1997,7 +1991,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     },
   ): Promise<T> {
     return this.scopedHttp.request<T>({
-      baseUrl: USERS_URL,
+      baseUrl: SERVICE_URLS.users,
       organizationId,
       errorLabel: "Users service error",
       method: params.method,
@@ -2019,7 +2013,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     },
   ): Promise<T> {
     return this.scopedHttp.request<T>({
-      baseUrl: CASES_URL,
+      baseUrl: SERVICE_URLS.cases,
       organizationId,
       errorLabel: "Cases service error",
       method: params.method,

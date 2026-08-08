@@ -16,8 +16,7 @@ import {
   type UpdateCustomerForOrgBody,
   type UpdateCustomerSiteForOrgBody,
 } from "./ports/customers.service.port";
-
-const CUSTOMERS_URL = process.env.CUSTOMERS_SERVICE_URL ?? "http://localhost:3009";
+import { SERVICE_URLS } from "../infrastructure/service-urls.config";
 
 @Injectable()
 export class CustomersGatewayService extends AbstractCustomersGatewayService {
@@ -27,7 +26,7 @@ export class CustomersGatewayService extends AbstractCustomersGatewayService {
 
   async createCustomer(user: AuthUser, body: CreateCustomerForOrgBody) {
     return this.scopedHttp.request<CustomerResponse>({
-      baseUrl: CUSTOMERS_URL,
+      baseUrl: SERVICE_URLS.customers,
       organizationId: user.organizationId,
       method: "post",
       path: "/customers",
@@ -41,7 +40,7 @@ export class CustomersGatewayService extends AbstractCustomersGatewayService {
     filters?: { search?: string; ids?: string; limit?: number; offset?: number },
   ) {
     return this.scopedHttp.request<CustomersListResponse>({
-      baseUrl: CUSTOMERS_URL,
+      baseUrl: SERVICE_URLS.customers,
       organizationId: user.organizationId,
       method: "get",
       path: "/customers",
@@ -59,7 +58,7 @@ export class CustomersGatewayService extends AbstractCustomersGatewayService {
 
   async getCustomer(user: AuthUser, customerId: string) {
     return this.scopedHttp.request<CustomerResponse>({
-      baseUrl: CUSTOMERS_URL,
+      baseUrl: SERVICE_URLS.customers,
       organizationId: user.organizationId,
       method: "get",
       path: `/customers/${customerId}`,
@@ -69,7 +68,7 @@ export class CustomersGatewayService extends AbstractCustomersGatewayService {
 
   async updateCustomer(user: AuthUser, customerId: string, body: UpdateCustomerForOrgBody) {
     return this.scopedHttp.request<CustomerResponse>({
-      baseUrl: CUSTOMERS_URL,
+      baseUrl: SERVICE_URLS.customers,
       organizationId: user.organizationId,
       method: "patch",
       path: `/customers/${customerId}`,
@@ -80,7 +79,7 @@ export class CustomersGatewayService extends AbstractCustomersGatewayService {
 
   async deleteCustomer(user: AuthUser, customerId: string) {
     return this.scopedHttp.request<{ deleted: true }>({
-      baseUrl: CUSTOMERS_URL,
+      baseUrl: SERVICE_URLS.customers,
       organizationId: user.organizationId,
       method: "delete",
       path: `/customers/${customerId}`,
@@ -93,7 +92,7 @@ export class CustomersGatewayService extends AbstractCustomersGatewayService {
 
   async createSite(user: AuthUser, customerId: string, body: CreateCustomerSiteForOrgBody) {
     return this.scopedHttp.request<CustomerSiteResponse>({
-      baseUrl: CUSTOMERS_URL,
+      baseUrl: SERVICE_URLS.customers,
       organizationId: user.organizationId,
       method: "post",
       path: `/customers/${customerId}/sites`,
@@ -110,7 +109,7 @@ export class CustomersGatewayService extends AbstractCustomersGatewayService {
     body: UpdateCustomerSiteForOrgBody,
   ) {
     return this.scopedHttp.request<CustomerSiteResponse>({
-      baseUrl: CUSTOMERS_URL,
+      baseUrl: SERVICE_URLS.customers,
       organizationId: user.organizationId,
       method: "patch",
       path: `/customers/${customerId}/sites/${siteId}`,
@@ -122,7 +121,7 @@ export class CustomersGatewayService extends AbstractCustomersGatewayService {
 
   async deleteSite(user: AuthUser, customerId: string, siteId: string) {
     return this.scopedHttp.request<{ deleted: true }>({
-      baseUrl: CUSTOMERS_URL,
+      baseUrl: SERVICE_URLS.customers,
       organizationId: user.organizationId,
       method: "delete",
       path: `/customers/${customerId}/sites/${siteId}`,
@@ -135,7 +134,7 @@ export class CustomersGatewayService extends AbstractCustomersGatewayService {
 
   async createContact(user: AuthUser, customerId: string, body: CreateCustomerContactForOrgBody) {
     return this.scopedHttp.request<CustomerContactResponse>({
-      baseUrl: CUSTOMERS_URL,
+      baseUrl: SERVICE_URLS.customers,
       organizationId: user.organizationId,
       method: "post",
       path: `/customers/${customerId}/contacts`,
@@ -152,7 +151,7 @@ export class CustomersGatewayService extends AbstractCustomersGatewayService {
     body: UpdateCustomerContactForOrgBody,
   ) {
     return this.scopedHttp.request<CustomerContactResponse>({
-      baseUrl: CUSTOMERS_URL,
+      baseUrl: SERVICE_URLS.customers,
       organizationId: user.organizationId,
       method: "patch",
       path: `/customers/${customerId}/contacts/${contactId}`,
@@ -164,7 +163,7 @@ export class CustomersGatewayService extends AbstractCustomersGatewayService {
 
   async deleteContact(user: AuthUser, customerId: string, contactId: string) {
     return this.scopedHttp.request<{ deleted: true }>({
-      baseUrl: CUSTOMERS_URL,
+      baseUrl: SERVICE_URLS.customers,
       organizationId: user.organizationId,
       method: "delete",
       path: `/customers/${customerId}/contacts/${contactId}`,

@@ -62,13 +62,7 @@ import { AbstractAnalyticsGatewayService } from "./ports/analytics.gateway.servi
 import { AbstractPlatformService } from "./ports/platform.service.port";
 import { AbstractSubscriptionsGatewayService } from "./ports/subscriptions.service.port";
 import { buildPappersSearchCacheKey, PappersSearchCache } from "./pappers-search-cache";
-
-const ORGANIZATIONS_URL = process.env.ORGANIZATIONS_SERVICE_URL ?? "http://localhost:3001";
-const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
-const PERMISSIONS_URL = process.env.PERMISSIONS_SERVICE_URL ?? "http://localhost:3003";
-const CASES_URL = process.env.CASES_SERVICE_URL ?? "http://localhost:3004";
-const INTEGRATIONS_URL = process.env.INTEGRATIONS_SERVICE_URL ?? "http://localhost:3013";
-const NOTIFICATIONS_URL = process.env.NOTIFICATIONS_SERVICE_URL ?? "http://localhost:3010";
+import { SERVICE_URLS } from "../infrastructure/service-urls.config";
 /** Recherche / suivi-jetons sont sur l’API v2 (la v3 ne couvre que la surveillance). */
 const PAPPERS_API_URL = process.env.PAPPERS_API_URL ?? "https://api.pappers.fr/v2";
 const APP_PUBLIC_URL = process.env.APP_PUBLIC_URL ?? "https://planwise.fr";
@@ -123,7 +117,7 @@ export class PlatformService extends AbstractPlatformService {
     try {
       const res = await firstValueFrom(
         this.httpService.post<ValidateCredentialsResponse>(
-          `${USERS_URL}/users/validate-credentials`,
+          `${SERVICE_URLS.users}/users/validate-credentials`,
           { email, password: body.password },
         ),
       );
@@ -167,14 +161,14 @@ export class PlatformService extends AbstractPlatformService {
 
     const res = await firstValueFrom(
       this.httpService.get<{ organizations: OrganizationResponse[]; total: number }>(
-        `${ORGANIZATIONS_URL}/organizations`,
+        `${SERVICE_URLS.organizations}/organizations`,
         { params },
       ),
     );
     const orgs = res.data.organizations;
     const statsRes = await firstValueFrom(
       this.httpService.post<Record<string, { userCount: number; lastUserLoginAt?: string }>>(
-        `${USERS_URL}/users/platform/organization-stats`,
+        `${SERVICE_URLS.users}/users/platform/organization-stats`,
         { organizationIds: orgs.map((o) => o.id) },
       ),
     );
@@ -202,7 +196,7 @@ export class PlatformService extends AbstractPlatformService {
     try {
       const res = await firstValueFrom(
         this.httpService.get<OrganizationResponse>(
-          `${ORGANIZATIONS_URL}/organizations/${organizationId}`,
+          `${SERVICE_URLS.organizations}/organizations/${organizationId}`,
         ),
       );
       organization = res.data;
@@ -214,7 +208,7 @@ export class PlatformService extends AbstractPlatformService {
 
     const usersRes = await firstValueFrom(
       this.httpService.get<{ users: PlatformUserSummary[]; total: number }>(
-        `${USERS_URL}/users/platform/directory`,
+        `${SERVICE_URLS.users}/users/platform/directory`,
         { params: { organizationId, limit: 200 } },
       ),
     );
@@ -251,7 +245,7 @@ export class PlatformService extends AbstractPlatformService {
     try {
       const intRes = await firstValueFrom(
         this.httpService.get<PlatformIntegrationsListResponse>(
-          `${INTEGRATIONS_URL}/platform/integrations`,
+          `${SERVICE_URLS.integrations}/platform/integrations`,
           { params: { organizationId, limit: 20 } },
         ),
       );
@@ -299,7 +293,7 @@ export class PlatformService extends AbstractPlatformService {
 
     const res = await firstValueFrom(
       this.httpService.get<{ users: PlatformUserSummary[]; total: number }>(
-        `${USERS_URL}/users/platform/directory`,
+        `${SERVICE_URLS.users}/users/platform/directory`,
         { params },
       ),
     );
@@ -331,7 +325,7 @@ export class PlatformService extends AbstractPlatformService {
     let target: UserResponse;
     try {
       const res = await firstValueFrom(
-        this.httpService.get<UserResponse>(`${USERS_URL}/users/${userId}`),
+        this.httpService.get<UserResponse>(`${SERVICE_URLS.users}/users/${userId}`),
       );
       target = res.data;
     } catch (err: unknown) {
@@ -342,7 +336,7 @@ export class PlatformService extends AbstractPlatformService {
 
     const membershipsRes = await firstValueFrom(
       this.httpService.get<OrganizationMembershipResponse[]>(
-        `${USERS_URL}/users/${userId}/organization-memberships`,
+        `${SERVICE_URLS.users}/users/${userId}/organization-memberships`,
       ),
     );
     const membership = membershipsRes.data.find(
@@ -356,7 +350,7 @@ export class PlatformService extends AbstractPlatformService {
     const expiresAt = new Date(Date.now() + IMPERSONATION_TTL_MS).toISOString();
 
     await firstValueFrom(
-      this.httpService.post(`${USERS_URL}/users/platform/impersonation-audits`, {
+      this.httpService.post(`${SERVICE_URLS.users}/users/platform/impersonation-audits`, {
         impersonatorUserId: staff.id,
         impersonatorEmail: staff.email,
         targetUserId: target.id,
@@ -407,7 +401,7 @@ export class PlatformService extends AbstractPlatformService {
 
     const res = await firstValueFrom(
       this.httpService.get<PlatformIntegrationsListResponse>(
-        `${INTEGRATIONS_URL}/platform/integrations`,
+        `${SERVICE_URLS.integrations}/platform/integrations`,
         { params },
       ),
     );
@@ -735,7 +729,7 @@ export class PlatformService extends AbstractPlatformService {
     try {
       const res = await firstValueFrom(
         this.httpService.get<ProspectOutreachesListResponse>(
-          `${USERS_URL}/users/platform/prospect-outreaches`,
+          `${SERVICE_URLS.users}/users/platform/prospect-outreaches`,
           {
             params: {
               ...(options?.limit != null ? { limit: options.limit } : {}),
@@ -799,7 +793,7 @@ L’équipe Planwise${localTouch}`;
     try {
       const res = await firstValueFrom(
         this.httpService.post<SendEmailNotificationResponse>(
-          `${NOTIFICATIONS_URL}/email/transactional`,
+          `${SERVICE_URLS.notifications}/email/transactional`,
           {
             to: toEmail,
             subject: PROSPECT_OUTREACH_SUBJECT,
@@ -823,7 +817,7 @@ L’équipe Planwise${localTouch}`;
 
     try {
       await firstValueFrom(
-        this.httpService.post(`${USERS_URL}/users/platform/prospect-outreaches`, {
+        this.httpService.post(`${SERVICE_URLS.users}/users/platform/prospect-outreaches`, {
           siren,
           companyName,
           email: toEmail,
@@ -858,7 +852,7 @@ L’équipe Planwise${localTouch}`;
 
     try {
       await firstValueFrom(
-        this.httpService.post(`${USERS_URL}/users/platform/prospect-outreaches`, {
+        this.httpService.post(`${SERVICE_URLS.users}/users/platform/prospect-outreaches`, {
           siren,
           companyName,
           email: "",
@@ -893,7 +887,7 @@ L’équipe Planwise${localTouch}`;
     try {
       const res = await firstValueFrom(
         this.httpService.post<{ comment?: string }>(
-          `${USERS_URL}/users/platform/prospect-outreaches/comment`,
+          `${SERVICE_URLS.users}/users/platform/prospect-outreaches/comment`,
           {
             siren,
             companyName,
@@ -936,7 +930,7 @@ L’équipe Planwise${localTouch}`;
 
     try {
       await firstValueFrom(
-        this.httpService.post(`${USERS_URL}/users/platform/prospect-outreaches`, {
+        this.httpService.post(`${SERVICE_URLS.users}/users/platform/prospect-outreaches`, {
           siren,
           companyName,
           email,
@@ -1047,7 +1041,7 @@ L’équipe Planwise${localTouch}`;
     try {
       const res = await firstValueFrom(
         this.httpService.get<ProspectOutreachesBySirensResponse>(
-          `${USERS_URL}/users/platform/prospect-outreaches`,
+          `${SERVICE_URLS.users}/users/platform/prospect-outreaches`,
           { params: { sirens: sirens.join(",") } },
         ),
       );
@@ -1105,15 +1099,15 @@ L’équipe Planwise${localTouch}`;
   private cronServiceBaseUrl(service: (typeof PLATFORM_CRON_JOBS)[number]["service"]): string {
     switch (service) {
       case "integrations-service":
-        return INTEGRATIONS_URL;
+        return SERVICE_URLS.integrations;
       case "notifications-service":
-        return NOTIFICATIONS_URL;
+        return SERVICE_URLS.notifications;
       case "organizations-service":
-        return ORGANIZATIONS_URL;
+        return SERVICE_URLS.organizations;
       case "cases-service":
-        return CASES_URL;
+        return SERVICE_URLS.cases;
       default:
-        return ORGANIZATIONS_URL;
+        return SERVICE_URLS.organizations;
     }
   }
 
@@ -1133,7 +1127,9 @@ L’équipe Planwise${localTouch}`;
       ids.map(async (id) => {
         try {
           const res = await firstValueFrom(
-            this.httpService.get<OrganizationResponse>(`${ORGANIZATIONS_URL}/organizations/${id}`),
+            this.httpService.get<OrganizationResponse>(
+              `${SERVICE_URLS.organizations}/organizations/${id}`,
+            ),
           );
           out[id] = res.data.name;
         } catch {
@@ -1152,7 +1148,7 @@ L’équipe Planwise${localTouch}`;
     try {
       const res = await firstValueFrom(
         this.httpService.post<EffectivePermissionsResponse>(
-          `${PERMISSIONS_URL}/permissions/effective`,
+          `${SERVICE_URLS.permissions}/permissions/effective`,
           { organizationId, userId, role },
         ),
       );

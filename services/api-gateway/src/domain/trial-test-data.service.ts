@@ -35,14 +35,7 @@ import {
   runInBatches,
   TRIAL_DEMO_COUNTS,
 } from "./trial-test-data-seed";
-
-const ORGANIZATIONS_URL = process.env.ORGANIZATIONS_SERVICE_URL ?? "http://localhost:3001";
-const CUSTOMERS_URL = process.env.CUSTOMERS_SERVICE_URL ?? "http://localhost:3009";
-const CASES_URL = process.env.CASES_SERVICE_URL ?? "http://localhost:3004";
-const TECHNICIANS_URL = process.env.TECHNICIANS_SERVICE_URL ?? "http://localhost:3006";
-const FLEET_URL = process.env.FLEET_SERVICE_URL ?? "http://localhost:3005";
-const STOCK_URL = process.env.STOCK_SERVICE_URL ?? "http://localhost:3007";
-const PERMISSIONS_URL = process.env.PERMISSIONS_SERVICE_URL ?? "http://localhost:3003";
+import { SERVICE_URLS } from "../infrastructure/service-urls.config";
 
 const INJECT_BATCH_SIZE = 10;
 
@@ -62,7 +55,7 @@ export class TrialTestDataService extends AbstractTrialTestDataService {
   async getStatus(user: AuthUser): Promise<TrialTestDataStatusResponse> {
     const res = await firstValueFrom(
       this.httpService.get<TrialTestDataStatusResponse>(
-        `${ORGANIZATIONS_URL}/organizations/${user.organizationId}/trial-test-data/status`,
+        `${SERVICE_URLS.organizations}/organizations/${user.organizationId}/trial-test-data/status`,
       ),
     );
     return res.data;
@@ -120,32 +113,35 @@ export class TrialTestDataService extends AbstractTrialTestDataService {
       const agences = await runInBatches(
         buildDemoAgences(organizationId),
         INJECT_BATCH_SIZE,
-        (body) => this.post<{ id: string }>(TECHNICIANS_URL, organizationId, "/agences", body),
+        (body) =>
+          this.post<{ id: string }>(SERVICE_URLS.technicians, organizationId, "/agences", body),
       );
       const agenceIds = agences.map((a) => a.id);
 
       const technicians = await runInBatches(
         buildDemoTechnicians(organizationId),
         INJECT_BATCH_SIZE,
-        (body) => this.post<{ id: string }>(TECHNICIANS_URL, organizationId, "/technicians", body),
+        (body) =>
+          this.post<{ id: string }>(SERVICE_URLS.technicians, organizationId, "/technicians", body),
       );
       const technicianIds = technicians.map((t) => t.id);
 
       const teams = await runInBatches(
         buildDemoTeams(organizationId, agenceIds, technicianIds),
         INJECT_BATCH_SIZE,
-        (body) => this.post<{ id: string }>(TECHNICIANS_URL, organizationId, "/teams", body),
+        (body) =>
+          this.post<{ id: string }>(SERVICE_URLS.technicians, organizationId, "/teams", body),
       );
       const teamIds = teams.map((t) => t.id);
 
       const vehicles = await runInBatches(
         buildDemoVehicles(organizationId, orgSuffix),
         INJECT_BATCH_SIZE,
-        (body) => this.post<{ id: string }>(FLEET_URL, organizationId, "/vehicles", body),
+        (body) => this.post<{ id: string }>(SERVICE_URLS.fleet, organizationId, "/vehicles", body),
       );
       await runInBatches(vehicles, INJECT_BATCH_SIZE, (vehicle, i) =>
         this.scopedHttp.request({
-          baseUrl: FLEET_URL,
+          baseUrl: SERVICE_URLS.fleet,
           organizationId,
           method: "put",
           path: `/vehicles/${vehicle.id}/assign-team`,
@@ -155,25 +151,32 @@ export class TrialTestDataService extends AbstractTrialTestDataService {
       );
 
       await runInBatches(buildDemoPermissionProfiles(organizationId), INJECT_BATCH_SIZE, (body) =>
-        this.post<PermissionProfileResponse>(PERMISSIONS_URL, organizationId, "/profiles", body),
+        this.post<PermissionProfileResponse>(
+          SERVICE_URLS.permissions,
+          organizationId,
+          "/profiles",
+          body,
+        ),
       );
 
       const templates = await runInBatches(
         buildDemoCaseTemplates(organizationId),
         INJECT_BATCH_SIZE,
-        (body) => this.post<CaseTemplateResponse>(CASES_URL, organizationId, "/templates", body),
+        (body) =>
+          this.post<CaseTemplateResponse>(SERVICE_URLS.cases, organizationId, "/templates", body),
       );
       const templateIds = templates.map((t) => t.id);
 
       const customers = await runInBatches(
         buildDemoCustomers(organizationId),
         INJECT_BATCH_SIZE,
-        (body) => this.post<{ id: string }>(CUSTOMERS_URL, organizationId, "/customers", body),
+        (body) =>
+          this.post<{ id: string }>(SERVICE_URLS.customers, organizationId, "/customers", body),
       );
       const customerIds = customers.map((c) => c.id);
 
       await runInBatches(buildDemoArticles(organizationId, orgSuffix), INJECT_BATCH_SIZE, (body) =>
-        this.post(STOCK_URL, organizationId, "/articles", body),
+        this.post(SERVICE_URLS.stock, organizationId, "/articles", body),
       );
 
       const caseAssignee = {
@@ -183,14 +186,14 @@ export class TrialTestDataService extends AbstractTrialTestDataService {
       const caseSeeds = buildDemoCases(organizationId, customerIds, templateIds, caseAssignee);
       const createdCases = await runInBatches(caseSeeds, INJECT_BATCH_SIZE, async (seed) => {
         const created = await this.post<{ id: string }>(
-          CASES_URL,
+          SERVICE_URLS.cases,
           organizationId,
           "/cases",
           seed.create,
         );
         if (seed.status !== "draft") {
           await this.scopedHttp.request({
-            baseUrl: CASES_URL,
+            baseUrl: SERVICE_URLS.cases,
             organizationId,
             method: "patch",
             path: `/cases/${created.id}`,
@@ -214,7 +217,7 @@ export class TrialTestDataService extends AbstractTrialTestDataService {
           ),
         }),
         INJECT_BATCH_SIZE,
-        (body) => this.post(CASES_URL, organizationId, "/interventions", body),
+        (body) => this.post(SERVICE_URLS.cases, organizationId, "/interventions", body),
       );
 
       await this.patchTrialTestData(organizationId, {
@@ -253,7 +256,7 @@ export class TrialTestDataService extends AbstractTrialTestDataService {
   private async ensureUserTechnician(user: AuthUser): Promise<string> {
     const organizationId = user.organizationId;
     const existing = await this.scopedHttp.request<TechnicianResponse | null>({
-      baseUrl: TECHNICIANS_URL,
+      baseUrl: SERVICE_URLS.technicians,
       organizationId,
       method: "get",
       path: `/technicians/by-user/${user.id}`,
@@ -266,7 +269,7 @@ export class TrialTestDataService extends AbstractTrialTestDataService {
     const firstName = nameParts[0] || "Admin";
     const lastName = nameParts.slice(1).join(" ") || firstName;
     const created = await this.post<TechnicianResponse>(
-      TECHNICIANS_URL,
+      SERVICE_URLS.technicians,
       organizationId,
       "/technicians",
       {
@@ -278,7 +281,7 @@ export class TrialTestDataService extends AbstractTrialTestDataService {
       },
     );
     await this.scopedHttp.request({
-      baseUrl: TECHNICIANS_URL,
+      baseUrl: SERVICE_URLS.technicians,
       organizationId,
       method: "put",
       path: `/technicians/${created.id}/link-user`,
@@ -306,7 +309,7 @@ export class TrialTestDataService extends AbstractTrialTestDataService {
   ): Promise<void> {
     await firstValueFrom(
       this.httpService.patch(
-        `${ORGANIZATIONS_URL}/organizations/${organizationId}/trial-test-data`,
+        `${SERVICE_URLS.organizations}/organizations/${organizationId}/trial-test-data`,
         body,
       ),
     );
@@ -315,12 +318,12 @@ export class TrialTestDataService extends AbstractTrialTestDataService {
   private async purgeAllServices(organizationId: string): Promise<void> {
     const query = { organizationId };
     const urls = [
-      { url: CASES_URL, label: "cases" },
-      { url: STOCK_URL, label: "stock" },
-      { url: FLEET_URL, label: "fleet" },
-      { url: TECHNICIANS_URL, label: "technicians" },
-      { url: CUSTOMERS_URL, label: "customers" },
-      { url: PERMISSIONS_URL, label: "permissions" },
+      { url: SERVICE_URLS.cases, label: "cases" },
+      { url: SERVICE_URLS.stock, label: "stock" },
+      { url: SERVICE_URLS.fleet, label: "fleet" },
+      { url: SERVICE_URLS.technicians, label: "technicians" },
+      { url: SERVICE_URLS.customers, label: "customers" },
+      { url: SERVICE_URLS.permissions, label: "permissions" },
     ];
     for (const { url, label } of urls) {
       try {
