@@ -1,43 +1,15 @@
 import type {
-  CreateCaseBody,
-  CreateCaseTemplateBody,
-  CreateInterventionBody,
-  CreateCaseHistoryBody,
-  CaseDashboardResponse,
-  CaseHistoryEntryResponse,
   CaseResponse,
   CasesListResponse,
-  CompleteInterventionBody,
-  CompleteInterventionResponse,
   CaseTemplateResponse,
-  DashboardStatFilter,
-  DashboardTodoCaseItem,
+  CreateCaseBody,
+  CreateInterventionBody,
   InterventionResponse,
-  InterventionsListResponse,
-  SignInterventionBody,
-  SignInterventionResponse,
-  StartInterventionBody,
-  StartInterventionResponse,
   UpdateCaseBody,
-  UpdateCaseTemplateBody,
-  UpdateInterventionBody,
   UpdateTodoBody,
-  CreateQuoteBody,
-  UpdateQuoteBody,
-  QuoteResponse,
-  QuoteSummaryResponse,
-  CreateCommentBody,
-  UpdateCommentBody,
-  CommentResponse,
-  CommentEntityType,
 } from "@planwise/shared";
 
 export abstract class AbstractCasesService {
-  abstract createTemplate(body: CreateCaseTemplateBody): Promise<CaseTemplateResponse>;
-  abstract listTemplates(organizationId: string): Promise<CaseTemplateResponse[]>;
-  abstract getTemplate(id: string, organizationId: string): Promise<CaseTemplateResponse>;
-  abstract updateTemplate(id: string, body: UpdateCaseTemplateBody): Promise<CaseTemplateResponse>;
-  abstract deleteTemplate(id: string, organizationId: string): Promise<{ deleted: true }>;
   abstract createCase(body: CreateCaseBody): Promise<CaseResponse>;
   abstract listCases(
     organizationId: string,
@@ -62,88 +34,10 @@ export abstract class AbstractCasesService {
   abstract updateCase(id: string, body: UpdateCaseBody): Promise<CaseResponse>;
   abstract deleteCase(id: string, organizationId: string): Promise<{ deleted: true }>;
   abstract updateTodo(caseId: string, body: UpdateTodoBody): Promise<CaseResponse>;
-  abstract createIntervention(body: CreateInterventionBody): Promise<InterventionResponse>;
-  abstract listInterventions(
-    organizationId: string,
-    filters?: {
-      caseId?: string;
-      assigneeId?: string;
-      assignedTeamId?: string;
-      assignedTeamIds?: string[];
-      startDate?: string;
-      endDate?: string;
-      status?: string;
-      /** Sans créneau horaire (scheduledStart absent ou null) */
-      unscheduled?: boolean;
-      search?: string;
-      limit?: number;
-      offset?: number;
-    },
-  ): Promise<InterventionsListResponse>;
-  abstract getIntervention(id: string, organizationId: string): Promise<InterventionResponse>;
-  abstract updateIntervention(
-    id: string,
-    body: UpdateInterventionBody,
-  ): Promise<InterventionResponse>;
-  abstract deleteIntervention(id: string, organizationId: string): Promise<{ deleted: true }>;
-  abstract startIntervention(
-    id: string,
-    body: StartInterventionBody,
-  ): Promise<StartInterventionResponse>;
-  abstract completeIntervention(
-    id: string,
-    body: CompleteInterventionBody,
-  ): Promise<CompleteInterventionResponse>;
-  abstract signIntervention(
-    id: string,
-    body: SignInterventionBody,
-  ): Promise<SignInterventionResponse>;
-  abstract getInterventionWithSignature(
-    id: string,
-    organizationId: string,
-  ): Promise<{ signatureData?: string; signatoryName?: string }>;
-  abstract getDashboard(
-    organizationId: string,
-    userId: string,
-    userProfileId?: string,
-  ): Promise<CaseDashboardResponse>;
-  abstract getDashboardTodoCases(
-    organizationId: string,
-    userId: string,
-    userProfileId: string | undefined,
-    templateId: string,
-    todoLabel: string,
-  ): Promise<DashboardTodoCaseItem[]>;
-  abstract getDashboardStatCases(
-    organizationId: string,
-    userId: string,
-    userProfileId: string | undefined,
-    filter: DashboardStatFilter,
-  ): Promise<DashboardTodoCaseItem[]>;
-  abstract listUpcomingInterventions(from: string, to: string): Promise<InterventionResponse[]>;
-  abstract addCaseHistory(body: CreateCaseHistoryBody): Promise<CaseHistoryEntryResponse>;
-  abstract listCaseHistory(
-    caseId: string,
-    organizationId: string,
-  ): Promise<CaseHistoryEntryResponse[]>;
-  abstract createQuote(body: CreateQuoteBody): Promise<QuoteResponse>;
-  abstract listQuotes(
-    organizationId: string,
-    filters?: { caseId?: string; status?: string },
-  ): Promise<QuoteSummaryResponse[]>;
-  abstract getQuote(id: string, organizationId: string): Promise<QuoteResponse>;
-  abstract updateQuote(id: string, body: UpdateQuoteBody): Promise<QuoteResponse>;
-  abstract deleteQuote(id: string, organizationId: string): Promise<{ deleted: true }>;
-
-  abstract createComment(body: CreateCommentBody): Promise<CommentResponse>;
-  abstract listComments(
-    organizationId: string,
-    entityType: CommentEntityType,
-    entityId: string,
-  ): Promise<CommentResponse[]>;
-  abstract getComment(id: string, organizationId: string): Promise<CommentResponse>;
-  abstract updateComment(id: string, body: UpdateCommentBody): Promise<CommentResponse>;
-  abstract deleteComment(id: string, organizationId: string): Promise<{ deleted: true }>;
-
   abstract purgeTestData(organizationId: string): Promise<{ purged: true }>;
+
+  /** Used by MaintenanceContractsService — delegates to InterventionsService logic. */
+  abstract createIntervention(body: CreateInterventionBody): Promise<InterventionResponse>;
+  /** Used by MaintenanceContractsService — delegates to CaseTemplatesService logic. */
+  abstract getTemplate(id: string, organizationId: string): Promise<CaseTemplateResponse>;
 }

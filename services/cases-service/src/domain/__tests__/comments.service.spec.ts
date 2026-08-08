@@ -2,9 +2,8 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { getModelToken } from "@nestjs/mongoose";
 import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { activeDocumentFilter } from "@planwise/shared";
-import { CasesService } from "../cases.service";
-import { AbstractCasesService } from "../ports/cases.service.port";
-import { MaintenanceContractsService } from "../maintenance-contracts.service";
+import { CommentsService } from "../comments.service";
+import { AbstractCommentsService } from "../ports/comments.service.port";
 
 const updateChain = (result: Record<string, unknown> = { matchedCount: 1, modifiedCount: 1 }) => {
   const p = Promise.resolve(result);
@@ -14,8 +13,8 @@ const updateChain = (result: Record<string, unknown> = { matchedCount: 1, modifi
   };
 };
 
-describe("CasesService comments", () => {
-  let service: CasesService;
+describe("CommentsService", () => {
+  let service: CommentsService;
   let mockCaseModel: { findOne: jest.Mock };
   let mockInterventionModel: { findOne: jest.Mock };
   let mockCommentModel: {
@@ -72,45 +71,16 @@ describe("CasesService comments", () => {
       updateOne: jest.fn().mockImplementation(() => updateChain()),
     };
 
-    const noopModel = {
-      create: jest.fn(),
-      find: jest.fn().mockReturnValue({
-        sort: jest.fn().mockReturnValue({
-          select: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue([]) }),
-          limit: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue([]) }),
-          exec: jest.fn().mockResolvedValue([]),
-        }),
-        select: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue([]) }),
-        exec: jest.fn().mockResolvedValue([]),
-      }),
-      findOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
-      findOneAndUpdate: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
-      updateOne: jest.fn().mockImplementation(() => updateChain()),
-      updateMany: jest.fn().mockImplementation(() => updateChain()),
-      countDocuments: jest.fn().mockResolvedValue(0),
-      deleteMany: jest.fn().mockResolvedValue({ deletedCount: 0 }),
-    };
-
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        { provide: AbstractCasesService, useClass: CasesService },
-        { provide: getModelToken("CaseTemplate"), useValue: noopModel },
-        { provide: getModelToken("Case"), useValue: { ...noopModel, ...mockCaseModel } },
-        { provide: getModelToken("CaseHistory"), useValue: noopModel },
-        {
-          provide: getModelToken("Intervention"),
-          useValue: { ...noopModel, ...mockInterventionModel },
-        },
-        { provide: getModelToken("Quote"), useValue: noopModel },
+        { provide: AbstractCommentsService, useClass: CommentsService },
+        { provide: getModelToken("Case"), useValue: mockCaseModel },
+        { provide: getModelToken("Intervention"), useValue: mockInterventionModel },
         { provide: getModelToken("Comment"), useValue: mockCommentModel },
-        {
-          provide: MaintenanceContractsService,
-          useValue: { listVisitsToSchedule: jest.fn().mockResolvedValue([]) },
-        },
       ],
     }).compile();
 
-    service = module.get<AbstractCasesService>(AbstractCasesService) as CasesService;
+    service = module.get<AbstractCommentsService>(AbstractCommentsService) as CommentsService;
   });
 
   it("creates a comment on a case", async () => {

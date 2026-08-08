@@ -2,18 +2,25 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { BadRequestException } from "@nestjs/common";
 import { CasesController } from "../cases.controller";
 import { AbstractCasesService } from "../../../domain/ports/cases.service.port";
+import { AbstractInterventionsService } from "../../../domain/ports/interventions.service.port";
+import { AbstractQuotesService } from "../../../domain/ports/quotes.service.port";
+import { AbstractCommentsService } from "../../../domain/ports/comments.service.port";
+import { AbstractCaseHistoryService } from "../../../domain/ports/case-history.service.port";
+import { AbstractDashboardService } from "../../../domain/ports/dashboard.service.port";
+import { AbstractCaseTemplatesService } from "../../../domain/ports/case-templates.service.port";
 
 describe("CasesController", () => {
   let controller: CasesController;
   let mockCasesService: jest.Mocked<AbstractCasesService>;
+  let mockInterventionsService: jest.Mocked<AbstractInterventionsService>;
+  let mockQuotesService: jest.Mocked<AbstractQuotesService>;
+  let mockCommentsService: jest.Mocked<AbstractCommentsService>;
+  let mockCaseHistoryService: jest.Mocked<AbstractCaseHistoryService>;
+  let mockDashboardService: jest.Mocked<AbstractDashboardService>;
+  let mockCaseTemplatesService: jest.Mocked<AbstractCaseTemplatesService>;
 
   beforeEach(async () => {
     mockCasesService = {
-      createTemplate: jest.fn(),
-      listTemplates: jest.fn(),
-      getTemplate: jest.fn(),
-      updateTemplate: jest.fn(),
-      deleteTemplate: jest.fn(),
       createCase: jest.fn(),
       listCases: jest.fn(),
       listCaseIds: jest.fn(),
@@ -21,6 +28,12 @@ describe("CasesController", () => {
       updateCase: jest.fn(),
       deleteCase: jest.fn(),
       updateTodo: jest.fn(),
+      purgeTestData: jest.fn(),
+      createIntervention: jest.fn(),
+      getTemplate: jest.fn(),
+    } as unknown as jest.Mocked<AbstractCasesService>;
+
+    mockInterventionsService = {
       createIntervention: jest.fn(),
       listInterventions: jest.fn(),
       getIntervention: jest.fn(),
@@ -30,32 +43,54 @@ describe("CasesController", () => {
       completeIntervention: jest.fn(),
       signIntervention: jest.fn(),
       getInterventionWithSignature: jest.fn(),
-      getDashboard: jest.fn(),
-      getDashboardTodoCases: jest.fn(),
-      getDashboardStatCases: jest.fn(),
       listUpcomingInterventions: jest.fn(),
-      addCaseHistory: jest.fn(),
-      listCaseHistory: jest.fn(),
+    } as unknown as jest.Mocked<AbstractInterventionsService>;
+
+    mockQuotesService = {
       createQuote: jest.fn(),
       listQuotes: jest.fn(),
       getQuote: jest.fn(),
       updateQuote: jest.fn(),
       deleteQuote: jest.fn(),
+    } as unknown as jest.Mocked<AbstractQuotesService>;
+
+    mockCommentsService = {
       createComment: jest.fn(),
       listComments: jest.fn(),
       getComment: jest.fn(),
       updateComment: jest.fn(),
       deleteComment: jest.fn(),
-      purgeTestData: jest.fn(),
-    };
+    } as unknown as jest.Mocked<AbstractCommentsService>;
+
+    mockCaseHistoryService = {
+      addCaseHistory: jest.fn(),
+      listCaseHistory: jest.fn(),
+    } as unknown as jest.Mocked<AbstractCaseHistoryService>;
+
+    mockDashboardService = {
+      getDashboard: jest.fn(),
+      getDashboardTodoCases: jest.fn(),
+      getDashboardStatCases: jest.fn(),
+    } as unknown as jest.Mocked<AbstractDashboardService>;
+
+    mockCaseTemplatesService = {
+      createTemplate: jest.fn(),
+      listTemplates: jest.fn(),
+      getTemplate: jest.fn(),
+      updateTemplate: jest.fn(),
+      deleteTemplate: jest.fn(),
+    } as unknown as jest.Mocked<AbstractCaseTemplatesService>;
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [CasesController],
       providers: [
-        {
-          provide: AbstractCasesService,
-          useValue: mockCasesService,
-        },
+        { provide: AbstractCasesService, useValue: mockCasesService },
+        { provide: AbstractInterventionsService, useValue: mockInterventionsService },
+        { provide: AbstractQuotesService, useValue: mockQuotesService },
+        { provide: AbstractCommentsService, useValue: mockCommentsService },
+        { provide: AbstractCaseHistoryService, useValue: mockCaseHistoryService },
+        { provide: AbstractDashboardService, useValue: mockDashboardService },
+        { provide: AbstractCaseTemplatesService, useValue: mockCaseTemplatesService },
       ],
     }).compile();
 
@@ -67,29 +102,29 @@ describe("CasesController", () => {
   });
 
   describe("createTemplate", () => {
-    it("should call casesService.createTemplate with body", async () => {
+    it("should call caseTemplatesService.createTemplate with body", async () => {
       const body = {
         organizationId: "org-1",
         name: "Template 1",
         description: "Desc",
         steps: [],
       };
-      mockCasesService.createTemplate.mockResolvedValue({ id: "tpl-1", ...body } as never);
+      mockCaseTemplatesService.createTemplate.mockResolvedValue({ id: "tpl-1", ...body } as never);
 
       const result = await controller.createTemplate(body);
 
-      expect(mockCasesService.createTemplate).toHaveBeenCalledWith(body);
+      expect(mockCaseTemplatesService.createTemplate).toHaveBeenCalledWith(body);
       expect(result.id).toBe("tpl-1");
     });
   });
 
   describe("listTemplates", () => {
-    it("should call casesService.listTemplates with organizationId", async () => {
-      mockCasesService.listTemplates.mockResolvedValue([{ id: "tpl-1" }] as never);
+    it("should call caseTemplatesService.listTemplates with organizationId", async () => {
+      mockCaseTemplatesService.listTemplates.mockResolvedValue([{ id: "tpl-1" }] as never);
 
       const result = await controller.listTemplates("org-1");
 
-      expect(mockCasesService.listTemplates).toHaveBeenCalledWith("org-1");
+      expect(mockCaseTemplatesService.listTemplates).toHaveBeenCalledWith("org-1");
       expect(result).toHaveLength(1);
     });
 
@@ -97,7 +132,7 @@ describe("CasesController", () => {
       await expect(controller.listTemplates(undefined as never)).rejects.toThrow(
         BadRequestException,
       );
-      expect(mockCasesService.listTemplates).not.toHaveBeenCalled();
+      expect(mockCaseTemplatesService.listTemplates).not.toHaveBeenCalled();
     });
   });
 
@@ -196,24 +231,27 @@ describe("CasesController", () => {
   });
 
   describe("createIntervention", () => {
-    it("should call casesService.createIntervention with body", async () => {
+    it("should call interventionsService.createIntervention with body", async () => {
       const body = {
         organizationId: "org-1",
         caseId: "case-1",
         title: "Intervention 1",
         description: "Desc",
       };
-      mockCasesService.createIntervention.mockResolvedValue({ id: "int-1", ...body } as never);
+      mockInterventionsService.createIntervention.mockResolvedValue({
+        id: "int-1",
+        ...body,
+      } as never);
 
       const result = await controller.createIntervention(body);
 
-      expect(mockCasesService.createIntervention).toHaveBeenCalledWith(body);
+      expect(mockInterventionsService.createIntervention).toHaveBeenCalledWith(body);
       expect(result.id).toBe("int-1");
     });
   });
 
   describe("addCaseHistory", () => {
-    it("should call casesService.addCaseHistory with body", async () => {
+    it("should call caseHistoryService.addCaseHistory with body", async () => {
       const body = {
         organizationId: "org-1",
         caseId: "case-1",
@@ -222,7 +260,7 @@ describe("CasesController", () => {
         action: "case_created" as const,
         details: "Case 1",
       };
-      mockCasesService.addCaseHistory.mockResolvedValue({
+      mockCaseHistoryService.addCaseHistory.mockResolvedValue({
         id: "hist-1",
         ...body,
         changes: [],
@@ -231,13 +269,13 @@ describe("CasesController", () => {
 
       const result = await controller.addCaseHistory(body);
 
-      expect(mockCasesService.addCaseHistory).toHaveBeenCalledWith(body);
+      expect(mockCaseHistoryService.addCaseHistory).toHaveBeenCalledWith(body);
       expect(result.id).toBe("hist-1");
     });
   });
 
   describe("listCaseHistory", () => {
-    it("should call casesService.listCaseHistory with id and organizationId", async () => {
+    it("should call caseHistoryService.listCaseHistory with id and organizationId", async () => {
       const history = [
         {
           id: "hist-1",
@@ -246,11 +284,11 @@ describe("CasesController", () => {
           createdAt: "2025-06-01T00:00:00.000Z",
         },
       ];
-      mockCasesService.listCaseHistory.mockResolvedValue(history as never);
+      mockCaseHistoryService.listCaseHistory.mockResolvedValue(history as never);
 
       const result = await controller.listCaseHistory("case-1", "org-1");
 
-      expect(mockCasesService.listCaseHistory).toHaveBeenCalledWith("case-1", "org-1");
+      expect(mockCaseHistoryService.listCaseHistory).toHaveBeenCalledWith("case-1", "org-1");
       expect(result).toHaveLength(1);
     });
 
@@ -258,12 +296,12 @@ describe("CasesController", () => {
       await expect(controller.listCaseHistory("case-1", undefined as never)).rejects.toThrow(
         BadRequestException,
       );
-      expect(mockCasesService.listCaseHistory).not.toHaveBeenCalled();
+      expect(mockCaseHistoryService.listCaseHistory).not.toHaveBeenCalled();
     });
   });
 
   describe("getDashboard", () => {
-    it("should call casesService.getDashboard with organizationId, userId and userProfileId", async () => {
+    it("should call dashboardService.getDashboard with organizationId, userId and userProfileId", async () => {
       const dashboard = {
         assignedCases: [],
         upcomingInterventions: [],
@@ -271,11 +309,15 @@ describe("CasesController", () => {
         todoWidgets: [],
         stats: { totalAssigned: 0, inProgress: 0, completedThisWeek: 0, overdue: 0 },
       };
-      mockCasesService.getDashboard.mockResolvedValue(dashboard as never);
+      mockDashboardService.getDashboard.mockResolvedValue(dashboard as never);
 
       const result = await controller.getDashboard("org-1", "user-1", "profile-1");
 
-      expect(mockCasesService.getDashboard).toHaveBeenCalledWith("org-1", "user-1", "profile-1");
+      expect(mockDashboardService.getDashboard).toHaveBeenCalledWith(
+        "org-1",
+        "user-1",
+        "profile-1",
+      );
       expect(result).toEqual(dashboard);
     });
 
@@ -283,20 +325,20 @@ describe("CasesController", () => {
       await expect(
         controller.getDashboard(undefined as never, "user-1", undefined),
       ).rejects.toThrow(BadRequestException);
-      expect(mockCasesService.getDashboard).not.toHaveBeenCalled();
+      expect(mockDashboardService.getDashboard).not.toHaveBeenCalled();
     });
 
     it("should throw BadRequestException when userId is missing", async () => {
       await expect(controller.getDashboard("org-1", undefined as never, undefined)).rejects.toThrow(
         BadRequestException,
       );
-      expect(mockCasesService.getDashboard).not.toHaveBeenCalled();
+      expect(mockDashboardService.getDashboard).not.toHaveBeenCalled();
     });
   });
 
   describe("getDashboardTodoCases", () => {
-    it("should call casesService.getDashboardTodoCases with all params", async () => {
-      mockCasesService.getDashboardTodoCases.mockResolvedValue([]);
+    it("should call dashboardService.getDashboardTodoCases with all params", async () => {
+      mockDashboardService.getDashboardTodoCases.mockResolvedValue([]);
 
       const result = await controller.getDashboardTodoCases(
         "org-1",
@@ -306,7 +348,7 @@ describe("CasesController", () => {
         "My Todo",
       );
 
-      expect(mockCasesService.getDashboardTodoCases).toHaveBeenCalledWith(
+      expect(mockDashboardService.getDashboardTodoCases).toHaveBeenCalledWith(
         "org-1",
         "user-1",
         "profile-1",
@@ -342,8 +384,8 @@ describe("CasesController", () => {
   });
 
   describe("getDashboardStatCases", () => {
-    it("should call casesService.getDashboardStatCases with filter", async () => {
-      mockCasesService.getDashboardStatCases.mockResolvedValue([]);
+    it("should call dashboardService.getDashboardStatCases with filter", async () => {
+      mockDashboardService.getDashboardStatCases.mockResolvedValue([]);
 
       const result = await controller.getDashboardStatCases(
         "org-1",
@@ -352,7 +394,7 @@ describe("CasesController", () => {
         "in_progress",
       );
 
-      expect(mockCasesService.getDashboardStatCases).toHaveBeenCalledWith(
+      expect(mockDashboardService.getDashboardStatCases).toHaveBeenCalledWith(
         "org-1",
         "user-1",
         "profile-1",
@@ -365,7 +407,7 @@ describe("CasesController", () => {
       await expect(
         controller.getDashboardStatCases("org-1", "user-1", undefined, "invalid"),
       ).rejects.toThrow(BadRequestException);
-      expect(mockCasesService.getDashboardStatCases).not.toHaveBeenCalled();
+      expect(mockDashboardService.getDashboardStatCases).not.toHaveBeenCalled();
     });
   });
 
@@ -379,20 +421,20 @@ describe("CasesController", () => {
         authorId: "user-1",
         authorName: "Alice",
       };
-      mockCasesService.createComment.mockResolvedValue({ id: "c-1", ...body } as never);
+      mockCommentsService.createComment.mockResolvedValue({ id: "c-1", ...body } as never);
 
       const result = await controller.createComment(body);
 
-      expect(mockCasesService.createComment).toHaveBeenCalledWith(body);
+      expect(mockCommentsService.createComment).toHaveBeenCalledWith(body);
       expect(result).toEqual(expect.objectContaining({ id: "c-1" }));
     });
 
     it("should list comments", async () => {
-      mockCasesService.listComments.mockResolvedValue([{ id: "c-1" }] as never);
+      mockCommentsService.listComments.mockResolvedValue([{ id: "c-1" }] as never);
 
       const result = await controller.listComments("org-1", "case", "case-1");
 
-      expect(mockCasesService.listComments).toHaveBeenCalledWith("org-1", "case", "case-1");
+      expect(mockCommentsService.listComments).toHaveBeenCalledWith("org-1", "case", "case-1");
       expect(result).toHaveLength(1);
     });
 
@@ -401,11 +443,11 @@ describe("CasesController", () => {
     });
 
     it("should delete a comment", async () => {
-      mockCasesService.deleteComment.mockResolvedValue({ deleted: true });
+      mockCommentsService.deleteComment.mockResolvedValue({ deleted: true });
 
       const result = await controller.deleteComment("c-1", "org-1");
 
-      expect(mockCasesService.deleteComment).toHaveBeenCalledWith("c-1", "org-1");
+      expect(mockCommentsService.deleteComment).toHaveBeenCalledWith("c-1", "org-1");
       expect(result).toEqual({ deleted: true });
     });
   });
