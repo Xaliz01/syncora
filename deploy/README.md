@@ -24,14 +24,17 @@ stateless hormis MongoDB et le volume documents).
 
 ## Migrations Mongo (microservices)
 
-`integrations-service` utilise [migrate-mongo](https://github.com/seppevs/migrate-mongo) :
+Les microservices appliquent les migrations [migrate-mongo](https://github.com/seppevs/migrate-mongo)
+au démarrage via `runPendingMigrations` (`@planwise/shared/nest`) :
 
-- Fichiers : `services/integrations-service/migrations/`
+- Config partagée : `createMigrateMongoConfig({ defaultUri })` dans `migrate-mongo-config.js`
+- Fichiers : `services/<service>/migrations/*.js`
 - Changelog Mongo : collection `changelog` dans la DB du service
-- Au démarrage du container, les migrations pending sont appliquées automatiquement (échec → le process refuse de démarrer)
-- En local / ops : `npm run migrate:status|up|down -w @planwise/integrations-service`
+- Échec d’une migration → le process refuse de démarrer
+- En local / ops : `npm run migrate:status|up|down -w @planwise/<service>`
 
-Les autres services pourront adopter le même schéma au besoin (un dossier `migrations/` + config par DB).
+Services déjà équipés : `integrations-service`, `cases-service`.
+Les autres services doivent adopter le même schéma pour toute évolution d’index / schéma Mongo.
 
 ## 1. Pré-requis sur la VM
 

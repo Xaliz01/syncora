@@ -136,8 +136,12 @@ export function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950">
       <header className="border-b border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
-          <Link href={getMarketingHomeHref()} className="flex items-center gap-2 min-w-0">
+        <div className="max-w-6xl mx-auto px-4 py-3 sm:py-4 flex flex-nowrap items-center justify-between gap-2 sm:gap-3">
+          <Link
+            href={getMarketingHomeHref()}
+            className="flex items-center gap-2 shrink-0"
+            aria-label="Planwise"
+          >
             <Image
               src="/planwise-logo-512.png"
               alt=""
@@ -145,27 +149,28 @@ export function LoginPage() {
               height={32}
               className="rounded-lg shrink-0"
             />
-            <div className="min-w-0">
-              <div className="font-semibold text-lg text-slate-900 dark:text-slate-100">
+            <div className="hidden sm:block min-w-0">
+              <div className="font-semibold text-base sm:text-lg text-slate-900 dark:text-slate-100 whitespace-nowrap leading-tight">
                 Planwise
               </div>
-              <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
+              <div className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[14rem]">
                 {LANDING_TAGLINE}
               </div>
             </div>
           </Link>
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             <ThemeToggle />
             <Link
               href="/register"
-              className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+              className="rounded-lg border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 sm:px-3 text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition whitespace-nowrap"
             >
-              Créer un compte
+              <span className="sm:hidden">S&apos;inscrire</span>
+              <span className="hidden sm:inline">Créer un compte</span>
             </Link>
             <button
               type="button"
               onClick={() => setLoginOpen(true)}
-              className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-500 transition"
+              className="rounded-lg bg-brand-600 px-2.5 py-1.5 sm:px-3 text-xs sm:text-sm font-medium text-white hover:bg-brand-500 transition whitespace-nowrap"
             >
               Se connecter
             </button>

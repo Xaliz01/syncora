@@ -35,6 +35,31 @@ Avant toute feature, lire (ou se réaligner sur) :
 - **Gateway** : appels downstream via `OrganizationScopedHttpClient` (injection `organizationId` depuis `AuthUser`, validation des réponses).
 - **Microservices** : requêtes Mongo avec `organizationScopeFilter`, et `assertOrganizationScopedListNest` / `assertOrganizationScopedResourceNest` en sortie de service (défense en profondeur).
 
+## Migrations Mongo (migrate-mongo) — obligatoire
+
+Toute **évolution de schéma / index / données** Mongo d’un microservice passe par [migrate-mongo](https://github.com/seppevs/migrate-mongo). **Interdit** : drop/create d’index ou migration ad hoc dans `main.ts`, `OnModuleInit`, ou un helper one-shot hors changelog.
+
+### Mécanisme partagé (`@planwise/shared/nest`)
+
+- `createMigrateMongoConfig({ defaultUri })` — config commune pour `migrate-mongo-config.js` (URI = `MONGODB_URI` ou défaut du service).
+- `runPendingMigrations({ startDir: __dirname })` — applique les migrations pending via le CLI avant le boot Nest.
+- Échec d’une migration → **refuser de démarrer** (`process.exit(1)`), comme `integrations-service` / `cases-service`.
+
+### Setup par microservice
+
+1. Dépendances : `migrate-mongo`, `dotenv` ; scripts npm `migrate:up` / `migrate:down` / `migrate:status`.
+2. Racine du package : `migrate-mongo-config.js` qui charge dotenv + exporte `createMigrateMongoConfig({ defaultUri: "mongodb://localhost:27017/planwise-<service>" })`.
+3. Dossier `migrations/*.js` (CommonJS, `module.exports = { async up(db) {}, async down(db) {} }`).
+4. `main.ts` : charger dotenv, puis `await runPendingMigrations({ startDir: __dirname })` **avant** `NestFactory.create`.
+5. Changelog : collection Mongo `changelog` dans la DB du service.
+
+### Règles d’écriture
+
+- Nom de fichier horodaté : `YYYYMMDDHHMMSS-description-kebab.js`.
+- Idempotence quand c’est raisonnable (ex. `dropIndex` : ignorer `IndexNotFound` / code 27).
+- Prévoir un `down` cohérent quand c’est possible.
+- Références : `services/integrations-service/migrations/`, `services/cases-service/migrations/`, `packages/shared/src/migrate-mongo.ts`, `deploy/README.md` § Migrations Mongo.
+
 ## Crons — suivi backoffice obligatoire
 
 Tout **nouveau job cron** (Nest `@Cron` / scheduler) doit être instrumenté comme les jobs existants :

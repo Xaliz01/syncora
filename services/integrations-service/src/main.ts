@@ -7,14 +7,13 @@ import "./tracer";
 import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./modules/app.module";
-import { createNestLogger } from "@planwise/shared/nest";
-import { runPendingMigrations } from "./persistence/run-migrations";
+import { createNestLogger, runPendingMigrations } from "@planwise/shared/nest";
 
 async function bootstrap() {
   const logger = createNestLogger("integrations-service");
 
   try {
-    await runPendingMigrations();
+    await runPendingMigrations({ startDir: __dirname });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     const stack = err instanceof Error ? err.stack : undefined;

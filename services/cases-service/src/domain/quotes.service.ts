@@ -12,6 +12,9 @@ import type { CaseDocument } from "../persistence/case.schema";
 import type { QuoteDocument } from "../persistence/quote.schema";
 import { AbstractQuotesService } from "./ports/quotes.service.port";
 import { toQuoteResponse, toQuoteSummary } from "./mappers/quote.mapper";
+import { isDuplicateKeyError } from "./utils";
+
+const QUOTE_NUMBER_MAX_ATTEMPTS = 8;
 
 @Injectable()
 export class QuotesService extends AbstractQuotesService {
@@ -30,29 +33,36 @@ export class QuotesService extends AbstractQuotesService {
       .exec();
     if (!caseDoc) throw new NotFoundException("Case not found");
 
-    const quoteNumber = await this.generateQuoteNumber(body.organizationId);
-
-    const doc = await this.quoteModel.create({
-      organizationId: body.organizationId,
-      caseId: body.caseId,
-      quoteNumber,
-      subject: body.subject,
-      notes: body.notes,
-      validUntil: body.validUntil ? new Date(body.validUntil) : undefined,
-      lines: (body.lines ?? []).map((l) => ({
-        articleId: l.articleId,
-        prestationId: l.prestationId,
-        description: l.description,
-        quantity: l.quantity,
-        unitPrice: l.unitPrice,
-        tvaRate: l.tvaRate,
-        unit: l.unit,
-      })),
-      status: "draft",
-      isTestData: body.isTestData === true,
-    });
-
-    return toQuoteResponse(doc, caseDoc.title);
+    let lastError: unknown;
+    for (let attempt = 0; attempt < QUOTE_NUMBER_MAX_ATTEMPTS; attempt++) {
+      try {
+        const quoteNumber = await this.generateQuoteNumber(body.organizationId);
+        const doc = await this.quoteModel.create({
+          organizationId: body.organizationId,
+          caseId: body.caseId,
+          quoteNumber,
+          subject: body.subject,
+          notes: body.notes,
+          validUntil: body.validUntil ? new Date(body.validUntil) : undefined,
+          lines: (body.lines ?? []).map((l) => ({
+            articleId: l.articleId,
+            prestationId: l.prestationId,
+            description: l.description,
+            quantity: l.quantity,
+            unitPrice: l.unitPrice,
+            tvaRate: l.tvaRate,
+            unit: l.unit,
+          })),
+          status: "draft",
+          isTestData: body.isTestData === true,
+        });
+        return toQuoteResponse(doc, caseDoc.title);
+      } catch (err) {
+        if (!isDuplicateKeyError(err)) throw err;
+        lastError = err;
+      }
+    }
+    throw lastError;
   }
 
   async listQuotes(
@@ -140,13 +150,23 @@ export class QuotesService extends AbstractQuotesService {
     return { deleted: true };
   }
 
+  /** Prochain numéro DEV-YYYY-NNNN pour l’org (basé sur le max existant, y compris soft-deleted). */
   private async generateQuoteNumber(organizationId: string): Promise<string> {
     const year = new Date().getFullYear();
-    const count = await this.quoteModel.countDocuments({
-      organizationId,
-      quoteNumber: { $regex: `^DEV-${year}-` },
-    });
-    const seq = String(count + 1).padStart(4, "0");
-    return `DEV-${year}-${seq}`;
+    const prefix = `DEV-${year}-`;
+    const latest = await this.quoteModel
+      .findOne({ organizationId, quoteNumber: { $regex: `^${prefix}` } })
+      .sort({ quoteNumber: -1 })
+      .select("quoteNumber")
+      .lean()
+      .exec();
+
+    let next = 1;
+    const current = latest?.quoteNumber;
+    if (typeof current === "string" && current.startsWith(prefix)) {
+      const parsed = Number.parseInt(current.slice(prefix.length), 10);
+      if (Number.isFinite(parsed) && parsed >= next) next = parsed + 1;
+    }
+    return `${prefix}${String(next).padStart(4, "0")}`;
   }
 }
