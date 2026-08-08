@@ -11,31 +11,49 @@ export const LANDING_HERO_SUPPORT =
 export const LANDING_HERO_HOOK =
   "Essayez Planwise en moins de deux minutes : créez votre compte, renseignez votre SIRET, injectez en un clic un jeu de données de démo.";
 
+/** Précision beta : gratuit pendant toute la phase beta. */
+export const LANDING_BETA_FREE_NOTE = "Pendant toute la beta, Planwise reste gratuit.";
+
 /**
- * Accompagnement éditeur (landing + login) : évolution produit, aide à l’import, chat.
+ * Accompagnement éditeur (landing + login) : évolution produit, aide à l’import, assistant, chat.
  */
 export const LANDING_ACCOMPANIMENT = {
   title: "On avance avec vous",
   intro:
-    "Planwise est en constante évolution : de nouvelles fonctionnalités arrivent régulièrement, et l’éditeur reste à l’écoute de vos besoins métier.",
+    "Planwise évolue avec vous : import de données, assistant IA dans l’app, et chat pour échanger avec nous.",
   points: [
     {
       title: "Produit vivant",
-      description:
-        "L’application évolue en continu. Vos retours orientent les fonctionnalités futures — dites-nous ce qui vous manque vraiment sur le terrain.",
+      description: "Nouvelles fonctionnalités régulières ; vos retours orientent la suite.",
     },
     {
       title: "Déjà un CRM ?",
-      description:
-        "On peut vous aider à importer vos données (clients, dossiers…) pour démarrer sans tout ressaisir.",
+      description: "On vous aide à importer clients et dossiers pour démarrer sans tout ressaisir.",
     },
     {
-      title: "Chat à votre disposition",
+      title: "Assistant IA",
       description:
-        "Une question, une idée de fonctionnalité, besoin d’aide pour migrer ou démarrer ? Ouvrez le chat : on vous répond.",
+        "Guide in-app : où cliquer, comment créer un devis — avec liens vers les écrans.",
+    },
+    {
+      title: "Chat support",
+      description: "Une question, une idée ou besoin d’aide ? Ouvrez le chat, on vous répond.",
     },
   ],
 } as const;
+
+/** Bloc fonctionnalités landing — assistant in-app. */
+export const LANDING_ASSISTANT_FEATURE = {
+  title: "Assistant IA",
+  items: [
+    "Posez une question : « où est le planning ? », « comment inviter un utilisateur ? »",
+    "Réponses courtes avec liens vers les bons écrans, selon vos droits",
+    "Escalade vers le chat support humain quand il faut une vraie personne",
+  ],
+} as const;
+
+/** Pastille login — assistant in-app. */
+export const LOGIN_ASSISTANT_HIGHLIGHT = "Assistant IA pour vous guider dans Planwise";
 
 /** Piliers marketing (landing + page de connexion). */
 export const LANDING_PILLARS = [
@@ -43,6 +61,11 @@ export const LANDING_PILLARS = [
     title: "Accessible dès le premier jour",
     description:
       "Indépendant ou petite équipe : démarrez vite grâce aux modèles de dossier et profils prêts à importer — sans consultant ni formation lourde.",
+  },
+  {
+    title: "Assistant IA intégré",
+    description:
+      "Un guide in-app répond à vos questions et vous envoie vers le bon menu — pour trouver rapidement planning, clients, devis ou invitations.",
   },
   {
     title: "Planning interactif",

@@ -432,7 +432,7 @@ function InterventionCard({
         entityId={intervention.id}
         caseId={intervention.caseId}
         compact
-        title="Commentaire"
+        title="Commentaires"
       />
     </div>
   );

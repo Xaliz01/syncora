@@ -56,6 +56,10 @@ tech:
         - "QONTO_CLIENT_ID / QONTO_CLIENT_SECRET (OAuth app Qonto ; bouton Connecter avec Qonto)"
         - "QONTO_OAUTH_REDIRECT_URI ou APP_URL (callback /settings/integrations/qonto/callback)"
         - "QONTO_STAGING_TOKEN + URLs sandbox (dev local uniquement ; header X-Qonto-Staging-Token)"
+        - "ASSISTANT_ENABLED (true/false ; assistant in-app ; défaut = actif si clé LLM présente)"
+        - "OPENAI_API_KEY / OPENAI_MODEL / OPENAI_API_BASE (assistant ; prioritaire si présent)"
+        - "ANTHROPIC_API_KEY / ANTHROPIC_MODEL (assistant ; fallback si pas d'OpenAI)"
+        - "NEXT_PUBLIC_ASSISTANT_ENABLED (frontend ; false pour masquer le bouton assistant)"
     ci_cd:
       provider: GitHub Actions
       pipeline:

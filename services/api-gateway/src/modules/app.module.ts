@@ -27,6 +27,7 @@ import { IntegrationsModule } from "./integrations.module";
 import { GatewayHttpModule } from "./gateway-http.module";
 import { TrialTestDataModule } from "./trial-test-data.module";
 import { PlatformModule } from "./platform.module";
+import { AssistantModule } from "./assistant.module";
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { PlatformModule } from "./platform.module";
     OrganizationsModule,
     AdminModule,
     PlatformModule,
+    AssistantModule,
     FleetModule,
     TechniciansModule,
     TeamsModule,

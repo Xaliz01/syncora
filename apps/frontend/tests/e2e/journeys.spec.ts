@@ -23,6 +23,7 @@ test.describe("Accès invité", () => {
 
   test("les pages d'authentification publiques sont accessibles", async ({ page }) => {
     await page.goto("/login");
+    await page.getByRole("banner").getByRole("button", { name: "Se connecter" }).click();
     await expect(page.getByRole("heading", { name: "Connexion" })).toBeVisible();
 
     await page.goto("/register");
@@ -39,11 +40,7 @@ test.describe("Parcours navigation auth", () => {
 
     await Promise.all([
       page.waitForURL(/\/register/),
-      page
-        .getByRole("paragraph")
-        .filter({ hasText: "Pas encore de compte" })
-        .getByRole("link", { name: /Créer un compte/ })
-        .click(),
+      page.getByRole("banner").getByRole("link", { name: "Créer un compte" }).click(),
     ]);
     await expect(page.getByRole("heading", { name: "Créer votre compte" })).toBeVisible({
       timeout: 15_000,
@@ -53,6 +50,7 @@ test.describe("Parcours navigation auth", () => {
       page.waitForURL(/\/login/),
       page.getByRole("link", { name: "Se connecter" }).click(),
     ]);
+    await page.getByRole("banner").getByRole("button", { name: "Se connecter" }).click();
     await expect(page.getByRole("heading", { name: "Connexion" })).toBeVisible();
   });
 
@@ -125,9 +123,11 @@ test.describe("Protection exhaustive des routes", () => {
 test.describe("Formulaires d'authentification", () => {
   test("le formulaire de connexion contient email, mot de passe et bouton", async ({ page }) => {
     await page.goto("/login");
-    await expect(page.getByLabel("Email")).toBeVisible();
-    await expect(page.getByLabel("Mot de passe")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Se connecter" })).toBeVisible();
+    await page.getByRole("banner").getByRole("button", { name: "Se connecter" }).click();
+    const dialog = page.getByRole("dialog", { name: "Connexion" });
+    await expect(dialog.getByLabel("Email")).toBeVisible();
+    await expect(dialog.getByLabel("Mot de passe")).toBeVisible();
+    await expect(dialog.getByRole("button", { name: "Se connecter" })).toBeVisible();
   });
 
   test("le formulaire d'inscription étape 1 contient email, mot de passe et bouton Continuer", async ({
@@ -177,15 +177,20 @@ test.describe("Formulaires d'authentification", () => {
 test.describe("Soumission formulaire de connexion", () => {
   test("soumettre le formulaire vide ne quitte pas la page", async ({ page }) => {
     await page.goto("/login");
-    await page.getByRole("button", { name: "Se connecter" }).click();
+    await page.getByRole("banner").getByRole("button", { name: "Se connecter" }).click();
+    const dialog = page.getByRole("dialog", { name: "Connexion" });
+    await dialog.getByRole("button", { name: "Se connecter" }).click();
     await expect(page).toHaveURL(/\/login/);
+    await expect(dialog).toBeVisible();
   });
 
   test("remplir et soumettre le formulaire reste sur la page sans backend", async ({ page }) => {
     await page.goto("/login");
-    await page.getByLabel("Email").fill("test@example.com");
-    await page.getByLabel("Mot de passe").fill("motdepasse123");
-    await page.getByRole("button", { name: "Se connecter" }).click();
+    await page.getByRole("banner").getByRole("button", { name: "Se connecter" }).click();
+    const dialog = page.getByRole("dialog", { name: "Connexion" });
+    await dialog.getByLabel("Email").fill("test@example.com");
+    await dialog.getByLabel("Mot de passe").fill("motdepasse123");
+    await dialog.getByRole("button", { name: "Se connecter" }).click();
     await expect(page).toHaveURL(/\/login/);
   });
 });
@@ -531,13 +536,13 @@ test.describe("Route /my-day protégée", () => {
 test.describe("Parcours inter-pages publiques complet", () => {
   test("enchaîne login → register → login", async ({ page }) => {
     await page.goto("/login");
+    await page.getByRole("banner").getByRole("button", { name: "Se connecter" }).click();
     await expect(page.getByRole("heading", { name: "Connexion" })).toBeVisible();
 
     await Promise.all([
       page.waitForURL(/\/register/),
       page
-        .getByRole("paragraph")
-        .filter({ hasText: "Pas encore de compte" })
+        .getByRole("dialog", { name: "Connexion" })
         .getByRole("link", { name: /Créer un compte/ })
         .click(),
     ]);
@@ -549,6 +554,7 @@ test.describe("Parcours inter-pages publiques complet", () => {
       page.waitForURL(/\/login/),
       page.getByRole("link", { name: "Se connecter" }).click(),
     ]);
+    await page.getByRole("banner").getByRole("button", { name: "Se connecter" }).click();
     await expect(page.getByRole("heading", { name: "Connexion" })).toBeVisible();
   });
 });

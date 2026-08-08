@@ -64,6 +64,12 @@ x-api-gateway: &api-gateway
     CRISP_IDENTITY_SECRET: ${CRISP_IDENTITY_SECRET:-}
     SWAGGER_PATH: ${SWAGGER_PATH:-api/docs}
     SWAGGER_TITLE: ${SWAGGER_TITLE:-Planwise API Gateway}
+    ASSISTANT_ENABLED: ${ASSISTANT_ENABLED:-}
+    OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+    OPENAI_API_BASE: ${OPENAI_API_BASE:-}
+    ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-}
   depends_on:
     - organizations-service
     - users-service

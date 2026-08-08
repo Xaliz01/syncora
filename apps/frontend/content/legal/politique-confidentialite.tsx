@@ -30,6 +30,7 @@ export function PolitiqueConfidentialiteContent() {
             "Facturation de l'abonnement Planwise : identifiants Stripe, historique d'abonnement (via Stripe).",
             "Intégrations de facturation (optionnelles, activées par le Client) : jetons d'accès OAuth ou clés API (stockés chiffrés), identifiants techniques de connexion (ex. nom / identifiant d'entreprise côté outil), métadonnées de synchronisation des factures créées depuis Planwise (statut distant, numéro, lien, montants associés).",
             "Usage : journaux techniques, préférences compte (thème, sidebar, favoris / raccourcis par organisation), historique de navigation stocké uniquement dans le navigateur (localStorage), notifications.",
+            "Assistant produit in-app (optionnel) : questions posées à l'assistant et contexte de page courant, transmis à un prestataire d'IA générative pour produire une réponse d'aide à la navigation ; pas de données métier (clients, dossiers) dans le prompt MVP.",
             "Mesure d'audience first-party : pages vues (chemin, surface landing/app, referrer hôte, pays/région approximatifs dérivés de l'IP sans conservation de l'IP, identifiants aléatoires navigateur), sans publicité ni revente.",
             "Support : échanges via Crisp (si consentement cookies).",
             "Données saisies par le Client : clients, donneurs d’ordre, interventions, géolocalisation optionnelle, photos, signatures, devis et éléments nécessaires à la facturation.",
@@ -68,6 +69,14 @@ export function PolitiqueConfidentialiteContent() {
               d&apos;audit, personnel autorisé uniquement.
             </>,
             <>
+              <strong>Assistant produit</strong> — exécution du contrat / intérêt légitime pour
+              guider l&apos;utilisateur dans l&apos;interface (art. 6.1.b / 6.1.f). Les messages
+              peuvent être transmis à un prestataire d&apos;IA (ex. OpenAI, Anthropic) ; ils ne sont
+              pas destinés à l&apos;entraînement public lorsque le contrat prestataire le permet.
+              Conservés le temps du traitement de la requête (et journaux techniques éventuels,
+              durée limitée).
+            </>,
+            <>
               <strong>Amélioration du produit</strong> — intérêt légitime, données agrégées ou
               anonymisées lorsque possible, y compris la mesure d&apos;audience first-party (pages
               vues, pays/région approximatifs dérivés de l&apos;IP sans conservation de l&apos;IP)
@@ -91,6 +100,7 @@ export function PolitiqueConfidentialiteContent() {
             "Stripe — paiements et facturation de l'abonnement Planwise (États-Unis, clauses contractuelles types).",
             "OVHcloud — hébergement applicatif et stockage (France, datacenter de Gravelines).",
             "Crisp — support client (consentement requis).",
+            "Prestataire d'IA générative (OpenAI et/ou Anthropic, selon configuration) — assistant produit in-app ; messages utilisateur et contexte de page.",
             "Prestataire email (SMTP) — notifications transactionnelles.",
             "API publiques françaises (recherche-entreprises.api.gouv.fr, data.geopf.fr/geocodage) — préremplissage SIRET/adresse.",
           ]}
@@ -123,6 +133,7 @@ export function PolitiqueConfidentialiteContent() {
             "Métadonnées de synchronisation de factures : durée de la relation contractuelle ou jusqu'à détachement / suppression demandée par l'organisation.",
             "Données de démonstration et factures démo d'essai : jusqu'à purge manuelle, fin d'essai, ou suppression du compte.",
             "Journaux techniques : jusqu'à 12 mois.",
+            "Requêtes assistant produit : durée du traitement de la requête ; pas d'historique conversationnel serveur durable en MVP (historique affiché uniquement dans la session navigateur).",
             "Mesure d'audience first-party (pages vues, pays/région approximatifs — sans IP stockée) : environ 400 jours.",
             "Données saisies par le Client : selon paramétrage ou demande de suppression de l'organisation.",
           ]}
@@ -155,9 +166,9 @@ export function PolitiqueConfidentialiteContent() {
 
       <LegalSection title="7. Transferts hors UE">
         <LegalParagraph>
-          Lorsque des sous-traitants sont situés hors Union européenne (ex. Stripe), des garanties
-          appropriées sont mises en place (clauses contractuelles types de la Commission
-          européenne).
+          Lorsque des sous-traitants sont situés hors Union européenne (ex. Stripe, prestataires
+          d&apos;IA générative selon configuration), des garanties appropriées sont mises en place
+          (clauses contractuelles types de la Commission européenne).
         </LegalParagraph>
       </LegalSection>
 

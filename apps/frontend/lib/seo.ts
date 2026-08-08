@@ -149,7 +149,8 @@ export function buildSoftwareApplicationJsonLd(): Record<string, unknown> {
       priceCurrency: "EUR",
       availability: "https://schema.org/InStock",
       url: `${base}/#tarifs`,
-      description: "Abonnement Essentiel — 9,99 € / mois, sans engagement",
+      description:
+        "Abonnement Essentiel — 9,99 € / mois, sans engagement : CRM terrain, assistant IA et chat support inclus",
     },
     inLanguage: "fr-FR",
     publisher: {

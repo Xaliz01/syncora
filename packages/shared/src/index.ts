@@ -15,6 +15,7 @@ export * from "./permissions";
 export * from "./user";
 export * from "./quick-actions";
 export * from "./navigation-history";
+export * from "./assistant";
 export * from "./fleet";
 export * from "./stock";
 export * from "./subscription";

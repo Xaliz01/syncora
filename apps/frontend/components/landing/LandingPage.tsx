@@ -12,6 +12,8 @@ import { AccompanimentSupportBlock } from "@/components/landing/AccompanimentSup
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { BetaBadge } from "@/components/ui/BetaBadge";
 import {
+  LANDING_ASSISTANT_FEATURE,
+  LANDING_BETA_FREE_NOTE,
   LANDING_HERO_HEADING,
   LANDING_HERO_HOOK,
   LANDING_HERO_SUPPORT,
@@ -28,6 +30,7 @@ const FEATURE_SECTIONS = [
       "Notifications multi-canaux (in-app, push mobile, e-mail) pour rester réactif sur le terrain comme au bureau",
     ],
   },
+  LANDING_ASSISTANT_FEATURE,
   {
     title: "Favoris & historique",
     items: [
@@ -173,17 +176,22 @@ export function LandingPage() {
             aria-hidden
           />
           <div className="relative max-w-6xl mx-auto px-4 py-14 sm:py-20 lg:py-24">
-            <div className="grid gap-10 lg:grid-cols-2 lg:gap-12 lg:items-center">
+            <div className="grid gap-10 lg:grid-cols-2 lg:gap-12 lg:items-start">
               <div>
                 <ScrollReveal when="mount">
-                  <span className="inline-flex items-center gap-2 mb-4">
-                    <BetaBadge />
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 dark:border-brand-500/40 bg-brand-50 dark:bg-brand-950/40 px-3 py-1 text-xs font-semibold text-brand-700 dark:text-brand-300">
-                      <span aria-hidden>✦</span>
-                      {BASE_SUBSCRIPTION_PLAN.trialDays} jours d&apos;essai gratuit · sans carte
-                      bancaire
+                  <div className="mb-4">
+                    <span className="inline-flex items-center gap-2">
+                      <BetaBadge />
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 dark:border-brand-500/40 bg-brand-50 dark:bg-brand-950/40 px-3 py-1 text-xs font-semibold text-brand-700 dark:text-brand-300">
+                        <span aria-hidden>✦</span>
+                        {BASE_SUBSCRIPTION_PLAN.trialDays} jours d&apos;essai gratuit · sans carte
+                        bancaire
+                      </span>
                     </span>
-                  </span>
+                    <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+                      {LANDING_BETA_FREE_NOTE}
+                    </p>
+                  </div>
                 </ScrollReveal>
                 <ScrollReveal when="mount" delayMs={80}>
                   <h1 className="text-3xl sm:text-4xl lg:text-[2.75rem] lg:leading-tight font-bold tracking-tight text-slate-900 dark:text-white">
@@ -356,42 +364,14 @@ export function LandingPage() {
                       </span>
                       {BASE_SUBSCRIPTION_INCLUDED_USERS} utilisateurs inclus
                     </li>
-                    <li className="flex gap-2">
-                      <span className="text-brand-600" aria-hidden>
-                        ✓
-                      </span>
-                      Dossiers, interventions, planning, favoris et historique de navigation
-                    </li>
-                    <li className="flex gap-2">
-                      <span className="text-brand-600" aria-hidden>
-                        ✓
-                      </span>
-                      Contrats de maintenance et planification des visites
-                    </li>
-                    <li className="flex gap-2">
-                      <span className="text-brand-600" aria-hidden>
-                        ✓
-                      </span>
-                      Clients, donneurs d&apos;ordre, flotte et stock
-                    </li>
-                    <li className="flex gap-2">
-                      <span className="text-brand-600" aria-hidden>
-                        ✓
-                      </span>
-                      Profils et modèles métiers prêts à importer
-                    </li>
-                    <li className="flex gap-2">
-                      <span className="text-brand-600" aria-hidden>
-                        ✓
-                      </span>
-                      Permissions granulaires
-                    </li>
-                    <li className="flex gap-2">
-                      <span className="text-brand-600" aria-hidden>
-                        ✓
-                      </span>
-                      10 Go de stockage de documents (≈ 10&nbsp;000 photos ou PDF)
-                    </li>
+                    {BASE_SUBSCRIPTION_PLAN.includedHighlights.map((item) => (
+                      <li key={item} className="flex gap-2">
+                        <span className="text-brand-600" aria-hidden>
+                          ✓
+                        </span>
+                        {item}
+                      </li>
+                    ))}
                   </ul>
                   <Link
                     href="/register"

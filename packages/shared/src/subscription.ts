@@ -219,6 +219,19 @@ export const BASE_SUBSCRIPTION_PLAN = {
   /** Aligné sur STRIPE_TRIAL_DAYS / DEFAULT_TRIAL_DAYS côté subscriptions-service. */
   trialDays: 15,
   includedUsers: BASE_SUBSCRIPTION_INCLUDED_USERS,
+  /**
+   * Points affichés sur la landing / marketing (hors essai et nb d’utilisateurs).
+   * L’assistant IA et le chat support sont inclus dans le socle, pas en addon.
+   */
+  includedHighlights: [
+    "Dossiers, interventions, planning, favoris et historique de navigation",
+    "Contrats de maintenance et planification des visites",
+    "Clients, donneurs d'ordre, flotte et stock",
+    "Profils et modèles métiers prêts à importer",
+    "Permissions granulaires",
+    "Assistant IA et chat support",
+    "10 Go de stockage de documents (≈ 10 000 photos ou PDF)",
+  ],
 } as const;
 
 /**

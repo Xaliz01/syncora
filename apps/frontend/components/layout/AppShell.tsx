@@ -17,6 +17,7 @@ import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { LANDING_TAGLINE } from "@/lib/landing-copy";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { CrispHelpButton } from "@/components/support/CrispHelpButton";
+import { AssistantButton } from "@/components/assistant/AssistantDrawer";
 import { SetupGuideHost } from "@/components/onboarding/SetupGuideHost";
 import { QuickActionsBar } from "@/components/dashboard/QuickActionsSection";
 import { QuickActionLabelProvider } from "@/components/dashboard/QuickActionLabelContext";
@@ -458,6 +459,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </span>
               </div>
               <NotificationBell />
+              <AssistantButton />
               <CrispHelpButton />
               <ThemeToggle />
               <button

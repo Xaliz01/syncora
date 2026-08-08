@@ -17,8 +17,10 @@ test.describe("Parcours commentaires (garde auth)", () => {
       .first()
       .click();
     await expect(page).toHaveURL(/\/login/);
-    await expect(page.getByRole("heading", { name: "Connexion" })).toBeVisible();
-    await expect(page.getByLabel("Email")).toBeVisible();
+    await page.getByRole("banner").getByRole("button", { name: "Se connecter" }).click();
+    const dialog = page.getByRole("dialog", { name: "Connexion" });
+    await expect(dialog.getByRole("heading", { name: "Connexion" })).toBeVisible();
+    await expect(dialog.getByLabel("Email")).toBeVisible();
   });
 
   test("l'inscription reste accessible avant d'utiliser les commentaires", async ({ page }) => {

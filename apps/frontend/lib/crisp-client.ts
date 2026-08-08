@@ -163,5 +163,16 @@ export function openCrispHelpdesk(): boolean {
 }
 
 export function openCrispChat(): void {
+  crispPush(["do", "chat:show"]);
   crispPush(["do", "chat:open"]);
+}
+
+/** Masque le bubble flottant Crisp (ex. drawer assistant ouvert). */
+export function hideCrispChatLauncher(): void {
+  crispPush(["do", "chat:hide"]);
+}
+
+/** Réaffiche le bubble flottant Crisp. */
+export function showCrispChatLauncher(): void {
+  crispPush(["do", "chat:show"]);
 }

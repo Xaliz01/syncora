@@ -210,6 +210,7 @@ Objectif : monter en gamme sans perdre la simplicité TPE.
 | 5.4 | **API / webhooks** documentés                                                      | Intégrateurs, partenaires            | ⬜     |
 | 5.5 | **Rapports** (interventions / semaine, retard, stock)                              | Pilotage patron                      | ⬜     |
 | 5.6 | Offre **Pro** (voir cible ci-dessous)                                              | Alignement valeur / prix             | ⬜     |
+| 5.7 | **Assistant in-app** (guide produit, liens contextualisés)                         | MVP livré — `docs/assistant/MVP.md`  | ✅     |
 
 #### Offre Pro — cible produit (pas encore commercialisée)
 
