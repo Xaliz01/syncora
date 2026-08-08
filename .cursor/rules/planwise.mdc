@@ -19,7 +19,7 @@ Avant toute feature, lire (ou se réaligner sur) :
 
 ## E2E — philosophie
 
-- Tester le **parcours** (navigation, garde auth, soumission, résultat attendu), pas les détails d’UI.
+- Tester le **parcours** (navigation, garde auth, soumission, résultat attendu), pas les détails d'UI.
 - Éviter : attributs HTML (`required`, `type`), branding texte dupliqué, un test par route identique, métadonnées (`lang`, titre).
 - Préférer : `getByRole` / labels, boucles sur routes protégées, un scénario qui enchaîne plusieurs écrans.
 - Fichier de référence : `apps/frontend/tests/e2e/journeys.spec.ts`.
@@ -42,7 +42,7 @@ Tout **nouveau job cron** (Nest `@Cron` / scheduler) doit être instrumenté com
 1. **Catalogue** : ajouter la définition dans `packages/shared/src/cron-run.ts` (`PlatformCronJobKey` + `PLATFORM_CRON_JOBS`) — label, service, schedule, description.
 2. **Persistance** : enregistrer chaque run via le `CronRunRecorder` du service (`start` → `finish` avec `status` ok/error/skipped, `stats` processed/succeeded/failed/skipped, `errorMessage` si échec).
 3. **Schéma** : collection `cron_runs` + TTL (~90j) déjà en place dans le service concerné (réutiliser le pattern existant).
-4. **Gateway / UI** : le backoffice `/platform/crons` lit le catalogue + l’historique — pas de page dédiée supplémentaire si le catalogue est à jour.
+4. **Gateway / UI** : le backoffice `/platform/crons` lit le catalogue + l'historique — pas de page dédiée supplémentaire si le catalogue est à jour.
 5. **Sémantique** : distinguer erreurs métier réelles vs skips attendus (ex. provider non connecté) pour ne pas polluer le statut du run.
 
 Références : `invoice-sync.scheduler.ts`, `intervention-reminders` (notifications), `trial-test-data-cleanup.scheduler.ts`.
@@ -54,12 +54,55 @@ Contrat unique : **`limit` / `offset` + `total`** (`packages/shared/src/paginati
 - Défaut **50**, max **200** (`MAX_PAGE_LIMIT`) ; plages de dates / calendrier : **500** (`MAX_PAGE_LIMIT_WIDE`).
 - Réponse typée : `{ items|cases|customers|…, total }` — pas de tableau nu pour les listes volumétriques.
 - UI : composant `ListPagination` (`list-page.tsx`) ; reset `offset` quand les filtres changent.
-- Exports / stats : parcourir toutes les pages (`fetchAllPaginated`), ne pas charger une liste illimitée d’un coup.
+- Exports / stats : parcourir toutes les pages (`fetchAllPaginated`), ne pas charger une liste illimitée d'un coup.
 - Ne pas inventer de cursor/`page` sans besoin explicite.
+
+## Architecture microservices — structure obligatoire
+
+Chaque microservice (`services/*-service/`) suit une architecture hexagonale stricte. Respecter ces conventions pour tout nouveau code :
+
+### Découpage par responsabilité (1 model = 1 service)
+
+- Chaque **model Mongoose** doit avoir son propre **service dédié** dans `domain/`. Ne pas regrouper plusieurs models dans un seul service.
+- Chaque service doit étendre un **port abstrait** (`domain/ports/*.service.port.ts`) — classe abstraite définissant le contrat public.
+- Le **controller** injecte les ports abstraits (pas les implémentations concrètes).
+- Le **module** (`modules/app.module.ts`) lie chaque port abstrait à son implémentation : `{ provide: AbstractXxxService, useClass: XxxService }`.
+
+Exemples de référence :
+- `cases-service` : `CasesService`, `InterventionsService`, `QuotesService`, `CommentsService`, `CaseHistoryService`, `CaseTemplatesService`, `DashboardService` — chacun dans son fichier avec son port.
+- `stock-service` : `ArticleStockService`, `PrestationService`, `StockLocationService`.
+- `users-service` : `UsersService`, `UserSessionsService`, `UserPreferencesService`, `ProspectOutreachService`, `ImpersonationAuditService`.
+
+### Mappers (fonctions pures)
+
+- Les méthodes de mapping (`to*Response`, `to*Summary`) doivent être des **fonctions exportées** dans `domain/mappers/*.mapper.ts`, pas des méthodes privées de service.
+- Un mapper par entité : `case.mapper.ts`, `intervention.mapper.ts`, `quote.mapper.ts`, etc.
+- Les mappers sont des **fonctions pures** (pas de `this`, pas de dépendance injectable) : `(doc: XxxDocument) => XxxResponse`.
+- Les services importent et appellent ces fonctions au lieu de `this.toXxxResponse()`.
+
+### Helpers partagés
+
+- Les utilitaires réutilisables entre services d'un même microservice vont dans `domain/utils.ts` (ex. `isDuplicateKeyError`).
+- Les utilitaires de validation dans `domain/utils/validation.utils.ts` si nécessaire.
+
+## Architecture API Gateway — URLs et appels downstream
+
+### URLs centralisées (obligatoire)
+
+- Toutes les URLs de microservices sont définies **une seule fois** dans `services/api-gateway/src/infrastructure/service-urls.config.ts` via l'objet `SERVICE_URLS`.
+- **Ne jamais** déclarer `const XXX_URL = process.env.XXX_SERVICE_URL ?? "http://localhost:XXXX"` dans un fichier service.
+- Importer `SERVICE_URLS` et utiliser `SERVICE_URLS.cases`, `SERVICE_URLS.users`, etc.
+- Pour ajouter un nouveau microservice : ajouter l'entrée dans `SERVICE_URLS` et l'utiliser partout.
+
+### Appels downstream
+
+- Pour les ressources tenant-scoped : utiliser `OrganizationScopedHttpClient` (`scopedHttp.request()`).
+- Pour les appels hors scope org (auth, platform, analytics) : `HttpService` + `firstValueFrom` reste acceptable.
+- Chaque service gateway a son **port abstrait** dans `domain/ports/` — les controllers n'importent que le port.
 
 ## Qualité
 
-- Respecter l’architecture existante ; pas de refactor hors scope.
+- Respecter l'architecture existante ; pas de refactor hors scope.
 - Contrats typés via `@planwise/shared` quand le front et le back partagent un modèle.
 
 ## Vérifications avant commit (obligatoires)
