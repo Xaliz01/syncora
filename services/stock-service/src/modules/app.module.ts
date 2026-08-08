@@ -7,8 +7,12 @@ import {
 } from "@planwise/shared/nest";
 import { StockController } from "../presentation/http/stock.controller";
 import { TestDataController } from "../presentation/http/test-data.controller";
-import { AbstractStockService } from "../domain/ports/stock.service.port";
-import { StockService } from "../domain/stock.service";
+import { AbstractArticleStockService } from "../domain/ports/article-stock.service.port";
+import { AbstractPrestationService } from "../domain/ports/prestation.service.port";
+import { AbstractStockLocationService } from "../domain/ports/stock-location.service.port";
+import { ArticleStockService } from "../domain/article-stock.service";
+import { PrestationService } from "../domain/prestation.service";
+import { StockLocationService } from "../domain/stock-location.service";
 import { ArticleSchema } from "../persistence/article.schema";
 import { PrestationSchema } from "../persistence/prestation.schema";
 import { StockMovementSchema } from "../persistence/stock-movement.schema";
@@ -28,7 +32,9 @@ import { StockLocationSchema } from "../persistence/stock-location.schema";
   providers: [
     provideHealthServiceName("planwise-stock-service"),
     provideHttpAccessLogInterceptor(),
-    { provide: AbstractStockService, useClass: StockService },
+    { provide: AbstractArticleStockService, useClass: ArticleStockService },
+    { provide: AbstractPrestationService, useClass: PrestationService },
+    { provide: AbstractStockLocationService, useClass: StockLocationService },
   ],
 })
 export class AppModule {}
