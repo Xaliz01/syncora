@@ -8,8 +8,7 @@ import type {
   UserResponse,
 } from "@planwise/shared";
 import { AbstractEmailService } from "../../domain/ports/email.service.port";
-
-const USERS_URL = process.env.USERS_SERVICE_URL ?? "http://localhost:3002";
+import { SERVICE_URLS } from "../../infrastructure/service-urls.config";
 
 @Controller("email")
 export class EmailController {
@@ -66,7 +65,7 @@ export class EmailController {
   private async resolveUserEmail(userId: string): Promise<string | null> {
     try {
       const response = await firstValueFrom(
-        this.httpService.get<UserResponse>(`${USERS_URL}/users/${userId}`),
+        this.httpService.get<UserResponse>(`${SERVICE_URLS.users}/users/${userId}`),
       );
       return response.data.email ?? null;
     } catch {

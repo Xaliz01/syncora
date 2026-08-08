@@ -40,6 +40,7 @@ import type { OrganizationSubscriptionDocument } from "../persistence/organizati
 import type { ProcessedStripeEventDocument } from "../persistence/processed-stripe-event.schema";
 import { buildStripeCheckoutLegalParams } from "./stripe-legal-params";
 import { toSubscriptionResponse } from "./mappers/subscription.mapper";
+import { SERVICE_URLS } from "../infrastructure/service-urls.config";
 
 const DEFAULT_TRIAL_DAYS = 15;
 const PLAN_LABEL = BASE_SUBSCRIPTION_PLAN_LABEL;
@@ -1316,15 +1317,11 @@ export class SubscriptionsService {
       return;
     }
 
-    const notificationsUrl = (
-      process.env.NOTIFICATIONS_SERVICE_URL ?? "http://localhost:3010"
-    ).replace(/\/$/, "");
+    const notificationsUrl = SERVICE_URLS.notifications.replace(/\/$/, "");
 
     let organizationName: string | undefined;
     try {
-      const organizationsUrl = (
-        process.env.ORGANIZATIONS_SERVICE_URL ?? "http://localhost:3001"
-      ).replace(/\/$/, "");
+      const organizationsUrl = SERVICE_URLS.organizations.replace(/\/$/, "");
       const orgRes = await fetch(`${organizationsUrl}/organizations/${params.organizationId}`);
       if (orgRes.ok) {
         const org = (await orgRes.json()) as { name?: string };

@@ -85,14 +85,16 @@ Exemples de référence :
 - Les utilitaires réutilisables entre services d'un même microservice vont dans `domain/utils.ts` (ex. `isDuplicateKeyError`).
 - Les utilitaires de validation dans `domain/utils/validation.utils.ts` si nécessaire.
 
-## Architecture API Gateway — URLs et appels downstream
+## URLs de microservices — centralisation obligatoire
 
-### URLs centralisées (obligatoire)
+### Principe
 
-- Toutes les URLs de microservices sont définies **une seule fois** dans `services/api-gateway/src/infrastructure/service-urls.config.ts` via l'objet `SERVICE_URLS`.
-- **Ne jamais** déclarer `const XXX_URL = process.env.XXX_SERVICE_URL ?? "http://localhost:XXXX"` dans un fichier service.
+- Quand un service (gateway ou microservice) appelle d'autres microservices en HTTP, les URLs sont définies **une seule fois** dans `infrastructure/service-urls.config.ts` via l'objet `SERVICE_URLS`.
+- **Ne jamais** déclarer `const XXX_URL = process.env.XXX_SERVICE_URL ?? "http://localhost:XXXX"` dans un fichier service, scheduler, ou controller.
 - Importer `SERVICE_URLS` et utiliser `SERVICE_URLS.cases`, `SERVICE_URLS.users`, etc.
-- Pour ajouter un nouveau microservice : ajouter l'entrée dans `SERVICE_URLS` et l'utiliser partout.
+- Chaque microservice a son propre `service-urls.config.ts` avec uniquement les URLs dont il a besoin (ex. `exports-service`, `notifications-service`, `organizations-service`, `integrations-service`, `subscriptions-service`).
+
+## Architecture API Gateway — appels downstream
 
 ### Appels downstream
 
