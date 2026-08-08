@@ -25,6 +25,11 @@ import {
 import type { PermissionProfileDocument } from "../persistence/permission-profile.schema";
 import type { UserPermissionAssignmentDocument } from "../persistence/user-permission-assignment.schema";
 import type { InvitationDocument } from "../persistence/invitation.schema";
+import {
+  toAssignmentResponse,
+  toInvitationResponse,
+  toProfileResponse,
+} from "./mappers/permission.mapper";
 import { AbstractPermissionsService } from "./ports/permissions.service.port";
 
 const ROLE_DEFAULT_PERMISSIONS: Record<UserRole, PermissionCode[]> = {
@@ -55,7 +60,7 @@ export class PermissionsService extends AbstractPermissionsService {
         permissions,
         isTestData: body.isTestData === true,
       });
-      return this.toProfileResponse(doc);
+      return toProfileResponse(doc, this.normalizePermissions);
     } catch (err: unknown) {
       if (this.isDuplicateKeyError(err)) {
         throw new ConflictException("Profile name already exists in organization");
@@ -69,7 +74,7 @@ export class PermissionsService extends AbstractPermissionsService {
       .find({ organizationId, ...activeDocumentFilter })
       .sort({ createdAt: 1 })
       .exec();
-    return docs.map((doc) => this.toProfileResponse(doc));
+    return docs.map((doc) => toProfileResponse(doc, this.normalizePermissions));
   }
 
   async findProfileById(id: string, organizationId: string): Promise<PermissionProfileResponse> {
@@ -77,7 +82,7 @@ export class PermissionsService extends AbstractPermissionsService {
       .findOne({ _id: id, organizationId, ...activeDocumentFilter })
       .exec();
     if (!doc) throw new NotFoundException("Profile not found");
-    return this.toProfileResponse(doc);
+    return toProfileResponse(doc, this.normalizePermissions);
   }
 
   async updateProfile(
@@ -103,7 +108,7 @@ export class PermissionsService extends AbstractPermissionsService {
         )
         .exec();
       if (!doc) throw new NotFoundException("Profile not found");
-      return this.toProfileResponse(doc);
+      return toProfileResponse(doc, this.normalizePermissions);
     } catch (err: unknown) {
       if (this.isDuplicateKeyError(err)) {
         throw new ConflictException("Profile name already exists in organization");
@@ -169,7 +174,12 @@ export class PermissionsService extends AbstractPermissionsService {
         { upsert: true, new: true, setDefaultsOnInsert: true },
       )
       .exec();
-    return this.toAssignmentResponse(doc, profilePermissions);
+    return toAssignmentResponse(
+      doc,
+      profilePermissions,
+      this.normalizePermissions,
+      this.mergePermissions,
+    );
   }
 
   async getUserAssignment(
@@ -190,7 +200,12 @@ export class PermissionsService extends AbstractPermissionsService {
       organizationId,
       assignment.profileId,
     );
-    return this.toAssignmentResponse(assignment, profilePermissions);
+    return toAssignmentResponse(
+      assignment,
+      profilePermissions,
+      this.normalizePermissions,
+      this.mergePermissions,
+    );
   }
 
   async resolveEffectivePermissions(
@@ -250,7 +265,7 @@ export class PermissionsService extends AbstractPermissionsService {
         invitationToken: randomUUID(),
         status: "pending",
       });
-      return this.toInvitationResponse(doc);
+      return toInvitationResponse(doc, this.normalizePermissions);
     } catch (err: unknown) {
       if (this.isDuplicateKeyError(err)) {
         throw new ConflictException("A pending invitation already exists for this email");
@@ -268,7 +283,7 @@ export class PermissionsService extends AbstractPermissionsService {
     };
     if (status) query.status = status;
     const docs = await this.invitationModel.find(query).sort({ createdAt: -1 }).exec();
-    return docs.map((doc) => this.toInvitationResponse(doc));
+    return docs.map((doc) => toInvitationResponse(doc, this.normalizePermissions));
   }
 
   async findInvitationById(
@@ -277,7 +292,7 @@ export class PermissionsService extends AbstractPermissionsService {
   ): Promise<InvitationResponse> {
     const doc = await this.invitationModel.findOne({ _id: invitationId, organizationId }).exec();
     if (!doc) throw new NotFoundException("Invitation not found");
-    return this.toInvitationResponse(doc);
+    return toInvitationResponse(doc, this.normalizePermissions);
   }
 
   async updatePendingInvitationEmail(
@@ -296,14 +311,14 @@ export class PermissionsService extends AbstractPermissionsService {
     if (!doc) throw new NotFoundException("Pending invitation not found");
 
     if (doc.invitedEmail === normalizedEmail) {
-      return this.toInvitationResponse(doc);
+      return toInvitationResponse(doc, this.normalizePermissions);
     }
 
     try {
       doc.invitedEmail = normalizedEmail;
       doc.invitationToken = randomUUID();
       await doc.save();
-      return this.toInvitationResponse(doc);
+      return toInvitationResponse(doc, this.normalizePermissions);
     } catch (err: unknown) {
       if (this.isDuplicateKeyError(err)) {
         throw new ConflictException("A pending invitation already exists for this email");
@@ -322,7 +337,7 @@ export class PermissionsService extends AbstractPermissionsService {
     if (!doc) throw new NotFoundException("Pending invitation not found");
     doc.status = "cancelled";
     await doc.save();
-    return this.toInvitationResponse(doc);
+    return toInvitationResponse(doc, this.normalizePermissions);
   }
 
   async deleteUserAssignment(organizationId: string, userId: string): Promise<void> {
@@ -335,7 +350,7 @@ export class PermissionsService extends AbstractPermissionsService {
     if (doc.status !== "pending") {
       throw new ConflictException("Invitation has already been processed");
     }
-    return this.toInvitationResponse(doc);
+    return toInvitationResponse(doc, this.normalizePermissions);
   }
 
   async acceptInvitation(invitationToken: string): Promise<InvitationResponse> {
@@ -344,7 +359,7 @@ export class PermissionsService extends AbstractPermissionsService {
     doc.status = "accepted";
     doc.acceptedAt = new Date();
     await doc.save();
-    return this.toInvitationResponse(doc);
+    return toInvitationResponse(doc, this.normalizePermissions);
   }
 
   private async getProfilePermissions(
@@ -372,62 +387,9 @@ export class PermissionsService extends AbstractPermissionsService {
     return [...new Set([...first, ...second])];
   }
 
-  private toProfileResponse(doc: PermissionProfileDocument): PermissionProfileResponse {
-    return {
-      id: doc._id.toString(),
-      organizationId: doc.organizationId,
-      name: doc.name,
-      description: doc.description,
-      permissions: this.normalizePermissions(doc.permissions as PermissionCode[]),
-      createdAt: doc.get("createdAt")?.toISOString(),
-      updatedAt: doc.get("updatedAt")?.toISOString(),
-      isTestData: doc.isTestData === true,
-    };
-  }
-
   async purgeTestData(organizationId: string): Promise<{ purged: true }> {
     await this.permissionProfileModel.deleteMany({ organizationId, isTestData: true }).exec();
     return { purged: true };
-  }
-
-  private toAssignmentResponse(
-    doc: UserPermissionAssignmentDocument,
-    profilePermissions: PermissionCode[],
-  ): UserPermissionAssignmentResponse {
-    const extraPermissions = this.normalizePermissions(doc.extraPermissions as PermissionCode[]);
-    const revokedPermissions = this.normalizePermissions(
-      doc.revokedPermissions as PermissionCode[],
-    );
-    const effectivePermissions = this.mergePermissions(profilePermissions, extraPermissions).filter(
-      (permission) => !revokedPermissions.includes(permission),
-    );
-    return {
-      organizationId: doc.organizationId,
-      userId: doc.userId,
-      profileId: doc.profileId,
-      extraPermissions,
-      revokedPermissions,
-      effectivePermissions: this.normalizePermissions(effectivePermissions),
-      updatedAt: doc.get("updatedAt")?.toISOString(),
-    };
-  }
-
-  private toInvitationResponse(doc: InvitationDocument): InvitationResponse {
-    return {
-      id: doc._id.toString(),
-      organizationId: doc.organizationId,
-      invitedUserId: doc.invitedUserId,
-      invitedEmail: doc.invitedEmail,
-      invitedName: doc.invitedName,
-      invitedByUserId: doc.invitedByUserId,
-      status: doc.status,
-      invitationToken: doc.invitationToken,
-      profileId: doc.profileId,
-      extraPermissions: this.normalizePermissions(doc.extraPermissions as PermissionCode[]),
-      revokedPermissions: this.normalizePermissions(doc.revokedPermissions as PermissionCode[]),
-      createdAt: doc.get("createdAt")?.toISOString(),
-      acceptedAt: doc.acceptedAt?.toISOString(),
-    };
   }
 
   private isDuplicateKeyError(err: unknown): boolean {
