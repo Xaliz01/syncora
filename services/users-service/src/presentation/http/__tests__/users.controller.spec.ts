@@ -4,12 +4,20 @@ import type { UserPreferencesResponse } from "@planwise/shared";
 import { DEFAULT_QUICK_ACTIONS } from "@planwise/shared";
 import { UsersController } from "../users.controller";
 import { AbstractUsersService } from "../../../domain/ports/users.service.port";
+import { AbstractUserSessionsService } from "../../../domain/ports/user-sessions.service.port";
+import { AbstractUserPreferencesService } from "../../../domain/ports/user-preferences.service.port";
+import { AbstractProspectOutreachService } from "../../../domain/ports/prospect-outreach.service.port";
+import { AbstractImpersonationAuditService } from "../../../domain/ports/impersonation-audit.service.port";
 
 const defaultQuickActions = DEFAULT_QUICK_ACTIONS.map((b) => ({ ...b }));
 
 describe("UsersController", () => {
   let controller: UsersController;
   let mockUsersService: jest.Mocked<AbstractUsersService>;
+  let mockSessionsService: jest.Mocked<AbstractUserSessionsService>;
+  let mockPreferencesService: jest.Mocked<AbstractUserPreferencesService>;
+  let mockProspectOutreachService: jest.Mocked<AbstractProspectOutreachService>;
+  let mockImpersonationAuditService: jest.Mocked<AbstractImpersonationAuditService>;
 
   beforeEach(async () => {
     mockUsersService = {
@@ -25,11 +33,6 @@ describe("UsersController", () => {
       cancelOrganizationInvitation: jest.fn(),
       deactivateOrganizationMembership: jest.fn(),
       reactivateOrganizationMembership: jest.fn(),
-      createSession: jest.fn(),
-      validateSession: jest.fn(),
-      revokeSession: jest.fn(),
-      revokeOtherSessions: jest.fn(),
-      listSessions: jest.fn(),
       patch: jest.fn(),
       findById: jest.fn(),
       listByOrganization: jest.fn(),
@@ -38,25 +41,43 @@ describe("UsersController", () => {
       validateCredentials: jest.fn(),
       updateName: jest.fn(),
       changePassword: jest.fn(),
-      getPreferences: jest.fn(),
-      updatePreferences: jest.fn(),
       findFoundingAdminUserId: jest.fn(),
       listPlatformDirectory: jest.fn(),
       countUsersByOrganizationIds: jest.fn(),
-      createImpersonationAudit: jest.fn(),
+    };
+
+    mockSessionsService = {
+      createSession: jest.fn(),
+      validateSession: jest.fn(),
+      revokeSession: jest.fn(),
+      revokeOtherSessions: jest.fn(),
+      listSessions: jest.fn(),
+    };
+
+    mockPreferencesService = {
+      getPreferences: jest.fn(),
+      updatePreferences: jest.fn(),
+    };
+
+    mockProspectOutreachService = {
       createProspectOutreach: jest.fn(),
       upsertProspectComment: jest.fn(),
       listProspectOutreachesBySirens: jest.fn(),
       listProspectOutreaches: jest.fn(),
     };
 
+    mockImpersonationAuditService = {
+      createImpersonationAudit: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [UsersController],
       providers: [
-        {
-          provide: AbstractUsersService,
-          useValue: mockUsersService,
-        },
+        { provide: AbstractUsersService, useValue: mockUsersService },
+        { provide: AbstractUserSessionsService, useValue: mockSessionsService },
+        { provide: AbstractUserPreferencesService, useValue: mockPreferencesService },
+        { provide: AbstractProspectOutreachService, useValue: mockProspectOutreachService },
+        { provide: AbstractImpersonationAuditService, useValue: mockImpersonationAuditService },
       ],
     }).compile();
 
@@ -260,7 +281,7 @@ describe("UsersController", () => {
   });
 
   describe("getPreferences", () => {
-    it("should call service.getPreferences and return the result", async () => {
+    it("should call preferencesService.getPreferences and return the result", async () => {
       const expected: UserPreferencesResponse = {
         userId: "user-123",
         preferences: {
@@ -273,17 +294,17 @@ describe("UsersController", () => {
           setupGuideDismissed: false,
         },
       };
-      mockUsersService.getPreferences.mockResolvedValue(expected);
+      mockPreferencesService.getPreferences.mockResolvedValue(expected);
 
       const result = await controller.getPreferences("user-123", "org-1");
 
-      expect(mockUsersService.getPreferences).toHaveBeenCalledWith("user-123", "org-1");
+      expect(mockPreferencesService.getPreferences).toHaveBeenCalledWith("user-123", "org-1");
       expect(result).toEqual(expected);
     });
   });
 
   describe("updatePreferences", () => {
-    it("should call service.updatePreferences and return the result", async () => {
+    it("should call preferencesService.updatePreferences and return the result", async () => {
       const body = { theme: "dark" as const };
       const expected: UserPreferencesResponse = {
         userId: "user-123",
@@ -297,11 +318,11 @@ describe("UsersController", () => {
           setupGuideDismissed: false,
         },
       };
-      mockUsersService.updatePreferences.mockResolvedValue(expected);
+      mockPreferencesService.updatePreferences.mockResolvedValue(expected);
 
       const result = await controller.updatePreferences("user-123", body);
 
-      expect(mockUsersService.updatePreferences).toHaveBeenCalledWith("user-123", body);
+      expect(mockPreferencesService.updatePreferences).toHaveBeenCalledWith("user-123", body);
       expect(result).toEqual(expected);
     });
   });
