@@ -17,6 +17,13 @@ import type {
   PlatformProspectOutreachBody,
   PlatformProspectOutreachResponse,
   PlatformProspectsSearchResponse,
+  PlatformEmailTemplate,
+  PlatformEmailTemplatePreviewBody,
+  PlatformEmailTemplatePreviewResponse,
+  PlatformEmailTemplatesListResponse,
+  CreatePlatformEmailTemplateBody,
+  UpdatePlatformEmailTemplateBody,
+  PlatformEmailTemplatePurpose,
   ProspectOutreachStatus,
   ProspectOutreachesListResponse,
   PlatformUsersListResponse,
@@ -304,6 +311,89 @@ export async function sendPlatformProspectOutreach(body: PlatformProspectOutreac
     platformBearer: true,
     fallbackError: "Envoi de l’invitation impossible",
   });
+}
+
+export async function listPlatformEmailTemplates(purpose?: PlatformEmailTemplatePurpose) {
+  const params = new URLSearchParams();
+  if (purpose) params.set("purpose", purpose);
+  const qs = params.toString();
+  return apiRequestJson<PlatformEmailTemplatesListResponse>(
+    "GET",
+    `/platform/email-templates${qs ? `?${qs}` : ""}`,
+    {
+      platformBearer: true,
+      fallbackError: "Impossible de charger les contenus e-mail",
+    },
+  );
+}
+
+export async function getPlatformEmailTemplate(id: string) {
+  return apiRequestJson<PlatformEmailTemplate>(
+    "GET",
+    `/platform/email-templates/${encodeURIComponent(id)}`,
+    {
+      platformBearer: true,
+      fallbackError: "Impossible de charger le contenu e-mail",
+    },
+  );
+}
+
+export async function createPlatformEmailTemplate(body: CreatePlatformEmailTemplateBody) {
+  return apiRequestJson<PlatformEmailTemplate>("POST", "/platform/email-templates", {
+    body,
+    platformBearer: true,
+    fallbackError: "Impossible de créer le contenu e-mail",
+  });
+}
+
+export async function updatePlatformEmailTemplate(
+  id: string,
+  body: UpdatePlatformEmailTemplateBody,
+) {
+  return apiRequestJson<PlatformEmailTemplate>(
+    "PATCH",
+    `/platform/email-templates/${encodeURIComponent(id)}`,
+    {
+      body,
+      platformBearer: true,
+      fallbackError: "Impossible de mettre à jour le contenu e-mail",
+    },
+  );
+}
+
+export async function deletePlatformEmailTemplate(id: string) {
+  return apiRequestJson<{ ok: true }>(
+    "DELETE",
+    `/platform/email-templates/${encodeURIComponent(id)}`,
+    {
+      platformBearer: true,
+      fallbackError: "Impossible de supprimer le contenu e-mail",
+    },
+  );
+}
+
+export async function setDefaultPlatformEmailTemplate(id: string) {
+  return apiRequestJson<PlatformEmailTemplate>(
+    "POST",
+    `/platform/email-templates/${encodeURIComponent(id)}/set-default`,
+    {
+      body: {},
+      platformBearer: true,
+      fallbackError: "Impossible de définir le contenu par défaut",
+    },
+  );
+}
+
+export async function previewPlatformEmailTemplate(body: PlatformEmailTemplatePreviewBody) {
+  return apiRequestJson<PlatformEmailTemplatePreviewResponse>(
+    "POST",
+    "/platform/email-templates/preview",
+    {
+      body,
+      platformBearer: true,
+      fallbackError: "Impossible de générer l’aperçu",
+    },
+  );
 }
 
 export async function markPlatformProspectEmailNotFound(body: PlatformProspectEmailNotFoundBody) {

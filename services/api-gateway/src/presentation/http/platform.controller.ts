@@ -1,18 +1,32 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from "@nestjs/common";
 import { AbstractPlatformService } from "../../domain/ports/platform.service.port";
 import {
   CurrentPlatformUser,
   PlatformJwtAuthGuard,
 } from "../../infrastructure/platform-jwt-auth.guard";
 import type {
+  CreatePlatformEmailTemplateBody,
   LoginBody,
   PlatformAuthUser,
+  PlatformEmailTemplatePreviewBody,
   PlatformProspectEmailNotFoundBody,
   PlatformProspectManualCreateBody,
   PlatformProspectNoteBody,
   PlatformProspectOutreachBody,
   StartImpersonationBody,
+  UpdatePlatformEmailTemplateBody,
 } from "@planwise/shared";
+import { isPlatformEmailTemplatePurpose } from "@planwise/shared";
 
 @Controller("platform")
 export class PlatformController {
@@ -210,6 +224,49 @@ export class PlatformController {
     @Body() body: PlatformProspectOutreachBody,
   ) {
     return this.platformService.sendProspectOutreach(user, body);
+  }
+
+  @Get("email-templates")
+  @UseGuards(PlatformJwtAuthGuard)
+  listEmailTemplates(@Query("purpose") purpose?: string) {
+    const normalized = purpose && isPlatformEmailTemplatePurpose(purpose) ? purpose : undefined;
+    return this.platformService.listEmailTemplates(normalized);
+  }
+
+  @Post("email-templates")
+  @UseGuards(PlatformJwtAuthGuard)
+  createEmailTemplate(@Body() body: CreatePlatformEmailTemplateBody) {
+    return this.platformService.createEmailTemplate(body);
+  }
+
+  @Post("email-templates/preview")
+  @UseGuards(PlatformJwtAuthGuard)
+  previewEmailTemplate(@Body() body: PlatformEmailTemplatePreviewBody) {
+    return this.platformService.previewEmailTemplate(body);
+  }
+
+  @Get("email-templates/:id")
+  @UseGuards(PlatformJwtAuthGuard)
+  getEmailTemplate(@Param("id") id: string) {
+    return this.platformService.getEmailTemplate(id);
+  }
+
+  @Patch("email-templates/:id")
+  @UseGuards(PlatformJwtAuthGuard)
+  updateEmailTemplate(@Param("id") id: string, @Body() body: UpdatePlatformEmailTemplateBody) {
+    return this.platformService.updateEmailTemplate(id, body);
+  }
+
+  @Delete("email-templates/:id")
+  @UseGuards(PlatformJwtAuthGuard)
+  deleteEmailTemplate(@Param("id") id: string) {
+    return this.platformService.deleteEmailTemplate(id);
+  }
+
+  @Post("email-templates/:id/set-default")
+  @UseGuards(PlatformJwtAuthGuard)
+  setDefaultEmailTemplate(@Param("id") id: string) {
+    return this.platformService.setDefaultEmailTemplate(id);
   }
 
   @Post("prospects/email-not-found")

@@ -2,6 +2,8 @@ import { BadRequestException, Body, Controller, Get, Post } from "@nestjs/common
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
 import type {
+  PreviewTransactionalEmailBody,
+  PreviewTransactionalEmailResponse,
   SendEmailNotificationBody,
   SendEmailNotificationResponse,
   SendTransactionalEmailBody,
@@ -49,6 +51,22 @@ export class EmailController {
 
     return this.emailService.sendTransactionalEmail(
       body.to.trim(),
+      body.subject,
+      body.body ?? "",
+      body.url,
+      body.ctaLabel,
+      body.footer,
+    );
+  }
+
+  @Post("preview")
+  previewTransactional(
+    @Body() body: PreviewTransactionalEmailBody,
+  ): PreviewTransactionalEmailResponse {
+    if (!body.subject?.trim()) {
+      throw new BadRequestException("subject is required");
+    }
+    return this.emailService.previewTransactionalEmail(
       body.subject,
       body.body ?? "",
       body.url,

@@ -285,6 +285,20 @@ export interface SendTransactionalEmailBody {
   footer?: string;
 }
 
+export interface PreviewTransactionalEmailBody {
+  subject: string;
+  body: string;
+  url?: string;
+  ctaLabel?: string;
+  footer?: string;
+}
+
+export interface PreviewTransactionalEmailResponse {
+  html: string;
+  text: string;
+  subject: string;
+}
+
 export interface SendEmailNotificationResponse {
   sent: boolean;
   reason?: string;

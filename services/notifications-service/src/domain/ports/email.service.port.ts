@@ -1,4 +1,7 @@
-import type { SendEmailNotificationResponse } from "@planwise/shared";
+import type {
+  PreviewTransactionalEmailResponse,
+  SendEmailNotificationResponse,
+} from "@planwise/shared";
 
 export abstract class AbstractEmailService {
   abstract sendNotificationEmail(
@@ -17,6 +20,14 @@ export abstract class AbstractEmailService {
     ctaLabel?: string,
     footer?: string,
   ): Promise<SendEmailNotificationResponse>;
+
+  abstract previewTransactionalEmail(
+    subject: string,
+    body: string,
+    url?: string,
+    ctaLabel?: string,
+    footer?: string,
+  ): PreviewTransactionalEmailResponse;
 
   abstract isConfigured(): boolean;
 }

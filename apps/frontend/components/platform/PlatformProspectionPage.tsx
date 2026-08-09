@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import {
   PLATFORM_PROSPECT_NAF_PRESETS,
   PROSPECT_OUTREACH_COMMENT_MAX_LENGTH,
+  type PlatformEmailTemplate,
   type PlatformProspectSearchSort,
   type PlatformProspectSummary,
   type ProspectOutreachResponse,
@@ -101,6 +102,8 @@ export function PlatformProspectionPage() {
   const [manualEmail, setManualEmail] = useState("");
   const [manualComment, setManualComment] = useState("");
   const [addingManual, setAddingManual] = useState(false);
+  const [emailTemplates, setEmailTemplates] = useState<PlatformEmailTemplate[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState("");
 
   const loadCredits = useCallback(() => {
     platformApi
@@ -108,6 +111,20 @@ export function PlatformProspectionPage() {
       .then((res) => {
         setPappersConfigured(res.configured);
         setCreditsRemaining(res.creditsRemaining);
+      })
+      .catch(() => undefined);
+  }, []);
+
+  const loadEmailTemplates = useCallback(() => {
+    platformApi
+      .listPlatformEmailTemplates("prospect_outreach")
+      .then((res) => {
+        setEmailTemplates(res.templates);
+        setSelectedTemplateId((current) => {
+          if (current && res.templates.some((t) => t.id === current)) return current;
+          const def = res.templates.find((t) => t.isDefault) ?? res.templates[0];
+          return def?.id ?? "";
+        });
       })
       .catch(() => undefined);
   }, []);
@@ -202,6 +219,10 @@ export function PlatformProspectionPage() {
   }, [loadCredits]);
 
   useEffect(() => {
+    loadEmailTemplates();
+  }, [loadEmailTemplates]);
+
+  useEffect(() => {
     loadTracked();
   }, [loadTracked]);
 
@@ -280,9 +301,14 @@ export function PlatformProspectionPage() {
       showToast("Saisissez un e-mail valide avant d’envoyer.", "error");
       return;
     }
+    if (!selectedTemplateId) {
+      showToast("Choisissez un contenu e-mail avant d’envoyer.", "error");
+      return;
+    }
+    const selectedTemplate = emailTemplates.find((t) => t.id === selectedTemplateId);
     const ok = await confirm({
       title: "Envoyer l’invitation ?",
-      description: `Un e-mail Planwise beta sera envoyé à ${toEmail} pour « ${prospect.name} » (${prospect.siren}).`,
+      description: `Un e-mail « ${selectedTemplate?.name ?? "contenu"} » sera envoyé à ${toEmail} pour « ${prospect.name} » (${prospect.siren}).`,
       confirmLabel: "Envoyer",
     });
     if (!ok) return;
@@ -295,6 +321,7 @@ export function PlatformProspectionPage() {
         toEmail,
         contactName: prospect.contactName,
         postalCode: prospect.postalCode,
+        templateId: selectedTemplateId,
         force: true,
       });
       if (res.sent) {
@@ -448,6 +475,31 @@ export function PlatformProspectionPage() {
             </span>
           </span>
         )}
+      </div>
+
+      <div className="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3">
+        <div className="min-w-[16rem] flex-1">
+          <label className="mb-1 block text-xs text-slate-500 dark:text-slate-400">
+            Contenu e-mail à l’envoi
+          </label>
+          <select
+            value={selectedTemplateId}
+            onChange={(e) => setSelectedTemplateId(e.target.value)}
+            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950"
+            disabled={emailTemplates.length === 0}
+          >
+            {emailTemplates.length === 0 ? (
+              <option value="">Aucun contenu — créez-en un dans E-mails</option>
+            ) : (
+              emailTemplates.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                  {t.isDefault ? " (défaut)" : ""}
+                </option>
+              ))
+            )}
+          </select>
+        </div>
       </div>
 
       <section className="space-y-3">

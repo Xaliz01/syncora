@@ -36,6 +36,13 @@ import type {
   PlatformProspectManualCreateBody,
   PlatformProspectOutreachBody,
   PlatformProspectOutreachResponse,
+  PlatformEmailTemplate,
+  PlatformEmailTemplatePreviewBody,
+  PlatformEmailTemplatePreviewResponse,
+  PlatformEmailTemplatesListResponse,
+  CreatePlatformEmailTemplateBody,
+  UpdatePlatformEmailTemplateBody,
+  PlatformEmailTemplatePurpose,
   PlatformProspectSummary,
   PlatformProspectsSearchResponse,
   PlatformProspectSearchSort,
@@ -55,6 +62,7 @@ import type {
 import {
   ASSIGNABLE_PERMISSION_CODES,
   getPlatformProspectNafCodes,
+  interpolateEmailTemplatePlaceholders,
   isPlatformStaffEmail,
   PLATFORM_CRON_JOBS,
 } from "@planwise/shared";
@@ -70,10 +78,6 @@ const APP_PUBLIC_URL = process.env.APP_PUBLIC_URL ?? "https://planwise.fr";
 const IMPERSONATION_TTL = "45m";
 const IMPERSONATION_TTL_MS = 45 * 60 * 1000;
 const MIN_REASON_LENGTH = 10;
-const PROSPECT_OUTREACH_SUBJECT =
-  "Planwise — un CRM simple et abordable pour démarrer votre activité";
-const PROSPECT_OUTREACH_FOOTER =
-  "Cet e-mail est une présentation de Planwise destinée aux entreprises récemment créées. Répondez STOP pour ne plus être contacté.";
 
 /** Compare dates Pappers (YYYY-MM-DD ou ISO) — plus récent d’abord. */
 function compareProspectCreatedAtDesc(a?: string, b?: string): number {
@@ -752,6 +756,10 @@ export class PlatformService extends AbstractPlatformService {
     if (!toEmail.includes("@")) {
       throw new BadRequestException("E-mail destinataire requis");
     }
+    const templateId = body.templateId?.trim() ?? "";
+    if (!templateId) {
+      throw new BadRequestException("Contenu e-mail requis");
+    }
     const companyName = body.companyName?.trim() || `SIREN ${siren}`;
 
     if (!body.force) {
@@ -762,21 +770,24 @@ export class PlatformService extends AbstractPlatformService {
       }
     }
 
-    const contact = body.contactName?.trim();
-    const greeting = contact ? `Bonjour ${contact},` : "Bonjour,";
+    let template: PlatformEmailTemplate;
+    try {
+      template = await this.getEmailTemplate(templateId);
+    } catch (err: unknown) {
+      if (err instanceof NotFoundException || err instanceof BadRequestException) throw err;
+      this.logger.warn(`Failed to load email template ${templateId}: ${(err as Error).message}`);
+      throw new ServiceUnavailableException("Impossible de charger le contenu e-mail");
+    }
+
     const landingUrl = APP_PUBLIC_URL.replace(/\/$/, "") || "https://planwise.fr";
-    const emailBody = `${greeting}
-
-Vous avez créé récemment votre entreprise : c’est le bon moment pour structurer votre activité sans vous ruiner en outils.
-
-Planwise est un CRM pensé pour les indépendants, artisans et TPE. Il est actuellement en beta : simple, abordable, et adapté à une structure qui démarre. Pendant toute la beta, Planwise reste **gratuit**. Ensuite, l’abonnement Essentiel sera à **9,99 €** par mois. En rejoignant la beta, vous bénéficierez d’avantages réservés aux premiers utilisateurs.
-
-Découvrez Planwise : ${landingUrl}
-
-Si vous n’êtes pas intéressé, répondez STOP à cet e-mail pour ne plus être contacté.
-
-L’équipe Planwise
-Éditeur basé à Landerneau (29)`;
+    const placeholders = {
+      contactName: body.contactName?.trim(),
+      companyName,
+      landingUrl,
+    };
+    const subject = interpolateEmailTemplatePlaceholders(template.subject, placeholders);
+    const emailBody = interpolateEmailTemplatePlaceholders(template.body, placeholders);
+    const footer = interpolateEmailTemplatePlaceholders(template.footer, placeholders);
 
     let sent = false;
     let reason: string | undefined;
@@ -786,11 +797,11 @@ L’équipe Planwise
           `${SERVICE_URLS.notifications}/email/transactional`,
           {
             to: toEmail,
-            subject: PROSPECT_OUTREACH_SUBJECT,
+            subject,
             body: emailBody,
-            url: "/",
-            ctaLabel: "Découvrir Planwise",
-            footer: PROSPECT_OUTREACH_FOOTER,
+            url: template.ctaUrl || "/",
+            ctaLabel: template.ctaLabel || "Découvrir Planwise",
+            footer,
           },
         ),
       );
@@ -813,7 +824,7 @@ L’équipe Planwise
           email: toEmail,
           sentByUserId: staff.id,
           sentByEmail: staff.email,
-          subject: PROSPECT_OUTREACH_SUBJECT,
+          subject,
           status: sent ? "sent" : "failed",
         }),
       );
@@ -822,6 +833,171 @@ L’équipe Planwise
     }
 
     return { sent, ...(reason ? { reason } : {}) };
+  }
+
+  async listEmailTemplates(purpose?: PlatformEmailTemplatePurpose) {
+    try {
+      const res = await firstValueFrom(
+        this.httpService.get<PlatformEmailTemplatesListResponse>(
+          `${SERVICE_URLS.users}/users/platform/email-templates`,
+          { params: purpose ? { purpose } : undefined, timeout: 10_000 },
+        ),
+      );
+      return res.data;
+    } catch (err: unknown) {
+      this.logger.warn(`Failed to list email templates: ${(err as Error).message}`);
+      throw new ServiceUnavailableException("Impossible de charger les contenus e-mail");
+    }
+  }
+
+  async getEmailTemplate(id: string): Promise<PlatformEmailTemplate> {
+    try {
+      const res = await firstValueFrom(
+        this.httpService.get<PlatformEmailTemplate>(
+          `${SERVICE_URLS.users}/users/platform/email-templates/${encodeURIComponent(id)}`,
+          { timeout: 10_000 },
+        ),
+      );
+      return res.data;
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 404) throw new NotFoundException("Contenu e-mail introuvable");
+      this.logger.warn(`Failed to get email template: ${(err as Error).message}`);
+      throw new ServiceUnavailableException("Impossible de charger le contenu e-mail");
+    }
+  }
+
+  async createEmailTemplate(body: CreatePlatformEmailTemplateBody): Promise<PlatformEmailTemplate> {
+    try {
+      const res = await firstValueFrom(
+        this.httpService.post<PlatformEmailTemplate>(
+          `${SERVICE_URLS.users}/users/platform/email-templates`,
+          body,
+          { timeout: 10_000 },
+        ),
+      );
+      return res.data;
+    } catch (err: unknown) {
+      this.rethrowUsersClientError(err, "Impossible de créer le contenu e-mail");
+    }
+  }
+
+  async updateEmailTemplate(
+    id: string,
+    body: UpdatePlatformEmailTemplateBody,
+  ): Promise<PlatformEmailTemplate> {
+    try {
+      const res = await firstValueFrom(
+        this.httpService.patch<PlatformEmailTemplate>(
+          `${SERVICE_URLS.users}/users/platform/email-templates/${encodeURIComponent(id)}`,
+          body,
+          { timeout: 10_000 },
+        ),
+      );
+      return res.data;
+    } catch (err: unknown) {
+      this.rethrowUsersClientError(err, "Impossible de mettre à jour le contenu e-mail");
+    }
+  }
+
+  async deleteEmailTemplate(id: string): Promise<{ ok: true }> {
+    try {
+      const res = await firstValueFrom(
+        this.httpService.delete<{ ok: true }>(
+          `${SERVICE_URLS.users}/users/platform/email-templates/${encodeURIComponent(id)}`,
+          { timeout: 10_000 },
+        ),
+      );
+      return res.data;
+    } catch (err: unknown) {
+      this.rethrowUsersClientError(err, "Impossible de supprimer le contenu e-mail");
+    }
+  }
+
+  async setDefaultEmailTemplate(id: string): Promise<PlatformEmailTemplate> {
+    try {
+      const res = await firstValueFrom(
+        this.httpService.post<PlatformEmailTemplate>(
+          `${SERVICE_URLS.users}/users/platform/email-templates/${encodeURIComponent(id)}/set-default`,
+          {},
+          { timeout: 10_000 },
+        ),
+      );
+      return res.data;
+    } catch (err: unknown) {
+      this.rethrowUsersClientError(err, "Impossible de définir le contenu par défaut");
+    }
+  }
+
+  async previewEmailTemplate(
+    body: PlatformEmailTemplatePreviewBody,
+  ): Promise<PlatformEmailTemplatePreviewResponse> {
+    let subject = body.subject?.trim() ?? "";
+    let emailBody = body.body ?? "";
+    let footer = body.footer ?? "";
+    let ctaLabel = body.ctaLabel?.trim() || "Découvrir Planwise";
+    let ctaUrl = body.ctaUrl?.trim() || "/";
+
+    if (body.templateId?.trim()) {
+      const template = await this.getEmailTemplate(body.templateId.trim());
+      subject = template.subject;
+      emailBody = template.body;
+      footer = template.footer;
+      ctaLabel = template.ctaLabel;
+      ctaUrl = template.ctaUrl;
+    }
+    if (!subject) {
+      throw new BadRequestException("Sujet requis pour l’aperçu");
+    }
+
+    const landingUrl = APP_PUBLIC_URL.replace(/\/$/, "") || "https://planwise.fr";
+    const placeholders = {
+      contactName: body.contactName?.trim() || "Jean Dupont",
+      companyName: body.companyName?.trim() || "Entreprise exemple",
+      landingUrl,
+    };
+    const interpolatedSubject = interpolateEmailTemplatePlaceholders(subject, placeholders);
+    const interpolatedBody = interpolateEmailTemplatePlaceholders(emailBody, placeholders);
+    const interpolatedFooter = interpolateEmailTemplatePlaceholders(footer, placeholders);
+
+    try {
+      const res = await firstValueFrom(
+        this.httpService.post<{ html: string; text: string; subject: string }>(
+          `${SERVICE_URLS.notifications}/email/preview`,
+          {
+            subject: interpolatedSubject,
+            body: interpolatedBody,
+            url: ctaUrl,
+            ctaLabel,
+            footer: interpolatedFooter,
+          },
+          { timeout: 10_000 },
+        ),
+      );
+      return {
+        html: res.data.html,
+        text: res.data.text,
+        subject: res.data.subject,
+      };
+    } catch (err: unknown) {
+      this.logger.warn(`Email preview failed: ${(err as Error).message}`);
+      throw new ServiceUnavailableException("Impossible de générer l’aperçu");
+    }
+  }
+
+  private rethrowUsersClientError(err: unknown, fallback: string): never {
+    const axiosErr = err as {
+      response?: { status?: number; data?: { message?: string | string[] } };
+      message?: string;
+    };
+    const status = axiosErr.response?.status;
+    const raw = axiosErr.response?.data?.message;
+    const message = Array.isArray(raw) ? raw.join(", ") : raw || axiosErr.message || fallback;
+    if (status === 400) throw new BadRequestException(message);
+    if (status === 404) throw new NotFoundException(message);
+    if (status === 409) throw new ConflictException(message);
+    this.logger.warn(`${fallback}: ${message}`);
+    throw new ServiceUnavailableException(fallback);
   }
 
   async markProspectEmailNotFound(

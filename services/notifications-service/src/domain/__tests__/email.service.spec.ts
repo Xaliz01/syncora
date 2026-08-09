@@ -194,6 +194,21 @@ describe("EmailService (configured)", () => {
     expect(call.text).not.toContain("**");
   });
 
+  it("should preview transactional email without sending", () => {
+    const preview = service.previewTransactionalEmail(
+      "Aperçu",
+      "Corps **gras**",
+      "/",
+      "Découvrir",
+      "Pied de page",
+    );
+    expect(preview.subject).toBe("Aperçu");
+    expect(preview.html).toContain("<strong>gras</strong>");
+    expect(preview.html).toContain("Pied de page");
+    expect(preview.text).toContain("Corps gras");
+    expect(mockSendMail).not.toHaveBeenCalled();
+  });
+
   it("should handle send errors gracefully", async () => {
     mockSendMail.mockRejectedValueOnce(new Error("SMTP connection refused"));
 

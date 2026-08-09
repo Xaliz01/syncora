@@ -1,5 +1,6 @@
 import {
   isPlatformStaffEmail,
+  interpolateEmailTemplatePlaceholders,
   parsePlatformStaffEmailDomains,
   parsePlatformStaffEmails,
 } from "../platform";
@@ -38,5 +39,21 @@ describe("platform staff allowlist", () => {
       "planwise.fr",
       "other.io",
     ]);
+  });
+});
+
+describe("interpolateEmailTemplatePlaceholders", () => {
+  it("builds greeting with and without contact name", () => {
+    expect(
+      interpolateEmailTemplatePlaceholders("{{greeting}}\n{{landingUrl}}", {
+        contactName: "Jean",
+        landingUrl: "https://planwise.fr/",
+      }),
+    ).toBe("Bonjour Jean,\nhttps://planwise.fr");
+    expect(
+      interpolateEmailTemplatePlaceholders("{{greeting}} — {{companyName}}", {
+        companyName: "Dupont SARL",
+      }),
+    ).toBe("Bonjour, — Dupont SARL");
   });
 });

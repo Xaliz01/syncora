@@ -1,7 +1,10 @@
 import { Injectable, Logger } from "@nestjs/common";
 import * as nodemailer from "nodemailer";
 import type { Transporter } from "nodemailer";
-import type { SendEmailNotificationResponse } from "@planwise/shared";
+import type {
+  PreviewTransactionalEmailResponse,
+  SendEmailNotificationResponse,
+} from "@planwise/shared";
 import { AbstractEmailService } from "./ports/email.service.port";
 
 /** En local, seul ce destinataire peut recevoir des e-mails (évite les envois accidentels). */
@@ -64,6 +67,20 @@ export class EmailService extends AbstractEmailService {
     footer?: string,
   ): Promise<SendEmailNotificationResponse> {
     return this.sendMail(to, subject, body, url, "transactional", ctaLabel, footer);
+  }
+
+  previewTransactionalEmail(
+    subject: string,
+    body: string,
+    url?: string,
+    ctaLabel?: string,
+    footer?: string,
+  ): PreviewTransactionalEmailResponse {
+    return {
+      subject: subject.trim(),
+      html: this.buildHtml(subject, body, url, "transactional", ctaLabel, footer),
+      text: this.buildPlainText(body, url, ctaLabel),
+    };
   }
 
   private async sendMail(

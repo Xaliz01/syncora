@@ -11,6 +11,7 @@ const PLATFORM_PROTECTED = [
   "/platform/organizations/org-demo",
   "/platform/integrations",
   "/platform/prospection",
+  "/platform/email-templates",
   "/platform/audience",
   "/platform/crons",
 ];

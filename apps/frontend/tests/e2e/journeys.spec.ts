@@ -114,8 +114,9 @@ const ALL_PROTECTED_PATHS = [
 test.describe("Protection exhaustive des routes", () => {
   for (const path of ALL_PROTECTED_PATHS) {
     test(`${path} redirige vers /login`, async ({ page }) => {
-      await page.goto(path);
-      await expect(page).toHaveURL(/\/login/);
+      // Compile Next à la demande + soft navigate RequireAuth : 5s trop juste en parallèle.
+      await page.goto(path, { waitUntil: "domcontentloaded" });
+      await expect(page).toHaveURL(/\/login/, { timeout: 15_000 });
     });
   }
 });

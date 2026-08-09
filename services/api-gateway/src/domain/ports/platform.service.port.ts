@@ -16,6 +16,13 @@ import type {
   PlatformProspectOutreachResponse,
   PlatformProspectsSearchResponse,
   PlatformProspectSearchSort,
+  PlatformEmailTemplate,
+  PlatformEmailTemplatePurpose,
+  PlatformEmailTemplatesListResponse,
+  PlatformEmailTemplatePreviewBody,
+  PlatformEmailTemplatePreviewResponse,
+  CreatePlatformEmailTemplateBody,
+  UpdatePlatformEmailTemplateBody,
   ProspectOutreachStatus,
   ProspectOutreachesListResponse,
   PlatformUsersListResponse,
@@ -94,6 +101,22 @@ export abstract class AbstractPlatformService {
     staff: PlatformAuthUser,
     body: PlatformProspectOutreachBody,
   ): Promise<PlatformProspectOutreachResponse>;
+  abstract listEmailTemplates(
+    purpose?: PlatformEmailTemplatePurpose,
+  ): Promise<PlatformEmailTemplatesListResponse>;
+  abstract getEmailTemplate(id: string): Promise<PlatformEmailTemplate>;
+  abstract createEmailTemplate(
+    body: CreatePlatformEmailTemplateBody,
+  ): Promise<PlatformEmailTemplate>;
+  abstract updateEmailTemplate(
+    id: string,
+    body: UpdatePlatformEmailTemplateBody,
+  ): Promise<PlatformEmailTemplate>;
+  abstract deleteEmailTemplate(id: string): Promise<{ ok: true }>;
+  abstract setDefaultEmailTemplate(id: string): Promise<PlatformEmailTemplate>;
+  abstract previewEmailTemplate(
+    body: PlatformEmailTemplatePreviewBody,
+  ): Promise<PlatformEmailTemplatePreviewResponse>;
   abstract markProspectEmailNotFound(
     staff: PlatformAuthUser,
     body: PlatformProspectEmailNotFoundBody,

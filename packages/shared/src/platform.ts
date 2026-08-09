@@ -239,8 +239,10 @@ export interface PlatformProspectOutreachBody {
   companyName: string;
   toEmail: string;
   contactName?: string;
-  /** Code postal du siège — sert à personnaliser le mail (ex. proximité Bretagne). */
+  /** Code postal du siège (informatif ; le contenu mail vient du template). */
   postalCode?: string;
+  /** Contenu e-mail backoffice à utiliser pour l’envoi. */
+  templateId: string;
   /** Renvoi même si déjà contacté (défaut false). */
   force?: boolean;
 }
@@ -248,6 +250,102 @@ export interface PlatformProspectOutreachBody {
 export interface PlatformProspectOutreachResponse {
   sent: boolean;
   reason?: string;
+}
+
+/* ── Contenus e-mail backoffice ─────────────────────────────── */
+
+export const PLATFORM_EMAIL_TEMPLATE_PURPOSES = ["prospect_outreach"] as const;
+export type PlatformEmailTemplatePurpose = (typeof PLATFORM_EMAIL_TEMPLATE_PURPOSES)[number];
+
+export function isPlatformEmailTemplatePurpose(
+  value: string,
+): value is PlatformEmailTemplatePurpose {
+  return (PLATFORM_EMAIL_TEMPLATE_PURPOSES as readonly string[]).includes(value);
+}
+
+/**
+ * Placeholders supportés dans subject/body/footer :
+ * {{greeting}}, {{contactName}}, {{companyName}}, {{landingUrl}}
+ */
+export interface PlatformEmailTemplate {
+  id: string;
+  name: string;
+  purpose: PlatformEmailTemplatePurpose;
+  subject: string;
+  body: string;
+  footer: string;
+  ctaLabel: string;
+  ctaUrl: string;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreatePlatformEmailTemplateBody {
+  name: string;
+  purpose: PlatformEmailTemplatePurpose;
+  subject: string;
+  body: string;
+  footer: string;
+  ctaLabel?: string;
+  ctaUrl?: string;
+  isDefault?: boolean;
+}
+
+export interface UpdatePlatformEmailTemplateBody {
+  name?: string;
+  subject?: string;
+  body?: string;
+  footer?: string;
+  ctaLabel?: string;
+  ctaUrl?: string;
+  isDefault?: boolean;
+}
+
+export interface PlatformEmailTemplatesListResponse {
+  templates: PlatformEmailTemplate[];
+  total: number;
+}
+
+export interface PlatformEmailTemplatePreviewBody {
+  /** Aperçu depuis un contenu déjà enregistré. */
+  templateId?: string;
+  /** Aperçu depuis le formulaire (brouillon non enregistré). */
+  subject?: string;
+  body?: string;
+  footer?: string;
+  ctaLabel?: string;
+  ctaUrl?: string;
+  contactName?: string;
+  companyName?: string;
+}
+
+export interface PlatformEmailTemplatePreviewResponse {
+  html: string;
+  text: string;
+  subject: string;
+}
+
+export interface EmailTemplatePlaceholderContext {
+  contactName?: string;
+  companyName?: string;
+  landingUrl?: string;
+}
+
+/** Remplace {{greeting}}, {{contactName}}, {{companyName}}, {{landingUrl}}. */
+export function interpolateEmailTemplatePlaceholders(
+  template: string,
+  ctx: EmailTemplatePlaceholderContext,
+): string {
+  const contact = ctx.contactName?.trim() || "";
+  const greeting = contact ? `Bonjour ${contact},` : "Bonjour,";
+  const companyName = ctx.companyName?.trim() || "";
+  const landingUrl = (ctx.landingUrl?.trim() || "https://planwise.fr").replace(/\/$/, "");
+  return template
+    .replaceAll("{{greeting}}", greeting)
+    .replaceAll("{{contactName}}", contact)
+    .replaceAll("{{companyName}}", companyName)
+    .replaceAll("{{landingUrl}}", landingUrl);
 }
 
 export interface PlatformProspectEmailNotFoundBody {

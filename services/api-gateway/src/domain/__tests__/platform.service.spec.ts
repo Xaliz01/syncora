@@ -601,9 +601,39 @@ describe("PlatformService", () => {
       await expect(
         service.sendProspectOutreach(
           { id: "staff-1", email: "staff@planwise.fr" },
-          { siren: "123456789", companyName: "X", toEmail: "" },
+          { siren: "123456789", companyName: "X", toEmail: "", templateId: "tpl-1" },
         ),
       ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it("rejects outreach without templateId", async () => {
+      await expect(
+        service.sendProspectOutreach(
+          { id: "staff-1", email: "staff@planwise.fr" },
+          { siren: "123456789", companyName: "X", toEmail: "a@b.fr", templateId: "" },
+        ),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it("rejects outreach when template is missing", async () => {
+      httpService.get.mockImplementation((url: string) => {
+        if (String(url).includes("email-templates/")) {
+          return throwError(() => ({ response: { status: 404 }, message: "Not Found" }));
+        }
+        return of({ data: { outreaches: [] } });
+      });
+
+      await expect(
+        service.sendProspectOutreach(
+          { id: "staff-1", email: "staff@planwise.fr" },
+          {
+            siren: "123456789",
+            companyName: "X",
+            toEmail: "a@b.fr",
+            templateId: "missing-tpl",
+          },
+        ),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it("rejects outreach when already contacted", async () => {
@@ -629,13 +659,33 @@ describe("PlatformService", () => {
             siren: "123456789",
             companyName: "X",
             toEmail: "a@b.fr",
+            templateId: "tpl-1",
           },
         ),
       ).rejects.toBeInstanceOf(ConflictException);
     });
 
     it("sends transactional email and logs outreach", async () => {
-      httpService.get.mockReturnValue(of({ data: { outreaches: [] } }));
+      httpService.get.mockImplementation((url: string) => {
+        if (String(url).includes("email-templates/")) {
+          return of({
+            data: {
+              id: "tpl-1",
+              name: "Prospection beta",
+              purpose: "prospect_outreach",
+              subject: "Planwise — démarrer",
+              body: "{{greeting}}\n\nPendant toute la beta, Planwise reste **gratuit**. Ensuite, l’abonnement Essentiel sera à **9,99 €** par mois, sans engagement, résiliable à tout moment.\n\n{{landingUrl}}\n\nÉditeur basé à Landerneau (29)",
+              footer: "Cet e-mail est une présentation de Planwise.",
+              ctaLabel: "Découvrir Planwise",
+              ctaUrl: "/",
+              isDefault: true,
+              createdAt: "2026-08-01T00:00:00.000Z",
+              updatedAt: "2026-08-01T00:00:00.000Z",
+            },
+          });
+        }
+        return of({ data: { outreaches: [] } });
+      });
       httpService.post.mockReturnValue(of({ data: { sent: true } }));
 
       const result = await service.sendProspectOutreach(
@@ -646,6 +696,7 @@ describe("PlatformService", () => {
           toEmail: "jean@example.fr",
           contactName: "Jean Dupont",
           postalCode: "75011",
+          templateId: "tpl-1",
         },
       );
 
@@ -654,9 +705,9 @@ describe("PlatformService", () => {
         expect.stringContaining("/email/transactional"),
         expect.objectContaining({
           to: "jean@example.fr",
-          subject: expect.stringContaining("Planwise"),
+          subject: "Planwise — démarrer",
           body: expect.stringMatching(
-            /Pendant toute la beta, Planwise reste \*\*gratuit\*\*[\s\S]*\*\*9,99 €\*\*[\s\S]*Éditeur basé à Landerneau \(29\)/,
+            /Bonjour Jean Dupont,[\s\S]*\*\*gratuit\*\*[\s\S]*\*\*9,99 €\*\* par mois, sans engagement, résiliable à tout moment[\s\S]*Éditeur basé à Landerneau \(29\)/,
           ),
           footer: expect.stringContaining("présentation de Planwise"),
         }),
@@ -667,6 +718,7 @@ describe("PlatformService", () => {
           siren: "123456789",
           status: "sent",
           sentByUserId: "staff-1",
+          subject: "Planwise — démarrer",
         }),
       );
     });
