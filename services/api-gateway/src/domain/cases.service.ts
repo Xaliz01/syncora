@@ -15,6 +15,7 @@ import type {
   CreateCaseHistoryBody,
   CreateCaseTemplateBody,
   CreateInterventionBody,
+  CreateInterventionTypeBody,
   CaseDashboardResponse,
   CaseResponse,
   CasesListResponse,
@@ -27,6 +28,8 @@ import type {
   DocumentResponse,
   InterventionResponse,
   InterventionsListResponse,
+  InterventionTypeResponse,
+  InterventionTypesListResponse,
   SignInterventionBody,
   SignInterventionResponse,
   StartInterventionBody,
@@ -36,6 +39,7 @@ import type {
   UpdateCaseBody,
   UpdateCaseTemplateBody,
   UpdateInterventionBody,
+  UpdateInterventionTypeBody,
   UpdateTodoBody,
   UserPermissionAssignmentResponse,
   UserResponse,
@@ -129,6 +133,61 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     return this.callCasesService<{ deleted: true }>(user.organizationId, {
       method: "delete",
       path: `/templates/${templateId}`,
+      query: { organizationId: user.organizationId },
+    });
+  }
+
+  // ── Intervention types ──
+
+  async createInterventionType(
+    user: AuthUser,
+    body: { name: string; description?: string; color?: string },
+  ) {
+    return this.callCasesService<InterventionTypeResponse>(user.organizationId, {
+      method: "post",
+      path: "/intervention-types",
+      body: {
+        organizationId: user.organizationId,
+        ...body,
+      } satisfies CreateInterventionTypeBody,
+    });
+  }
+
+  async listInterventionTypes(user: AuthUser) {
+    return this.callCasesService<InterventionTypesListResponse>(user.organizationId, {
+      method: "get",
+      path: "/intervention-types",
+      query: { organizationId: user.organizationId },
+    });
+  }
+
+  async getInterventionType(user: AuthUser, typeId: string) {
+    return this.callCasesService<InterventionTypeResponse>(user.organizationId, {
+      method: "get",
+      path: `/intervention-types/${typeId}`,
+      query: { organizationId: user.organizationId },
+    });
+  }
+
+  async updateInterventionType(
+    user: AuthUser,
+    typeId: string,
+    body: { name?: string; description?: string | null; color?: string | null },
+  ) {
+    return this.callCasesService<InterventionTypeResponse>(user.organizationId, {
+      method: "patch",
+      path: `/intervention-types/${typeId}`,
+      body: {
+        organizationId: user.organizationId,
+        ...body,
+      } satisfies UpdateInterventionTypeBody,
+    });
+  }
+
+  async deleteInterventionType(user: AuthUser, typeId: string) {
+    return this.callCasesService<{ deleted: true }>(user.organizationId, {
+      method: "delete",
+      path: `/intervention-types/${typeId}`,
       query: { organizationId: user.organizationId },
     });
   }
@@ -345,6 +404,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       startDate?: string;
       endDate?: string;
       status?: string;
+      typeId?: string;
       unscheduled?: string;
       includeTeamAssignments?: string;
       search?: string;
@@ -381,6 +441,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
         startDate: filters?.startDate,
         endDate: filters?.endDate,
         status: filters?.status,
+        typeId: filters?.typeId,
         unscheduled: filters?.unscheduled,
         search: filters?.search,
         limit: filters?.limit,

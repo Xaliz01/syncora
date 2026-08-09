@@ -103,4 +103,6 @@ export interface ReportPreviewQuery {
   orderGiverId?: string;
   /** Rapport kilométrique : équipes (défaut) ou techniciens. */
   groupBy?: "team" | "technician";
+  /** Liste des interventions : filtre type (vide = tous). */
+  typeId?: string;
 }

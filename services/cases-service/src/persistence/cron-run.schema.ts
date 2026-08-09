@@ -12,7 +12,7 @@ export class CronRunDocument extends Document {
   @Prop({ required: true, enum: ["running", "ok", "error", "skipped"] })
   status!: "running" | "ok" | "error" | "skipped";
 
-  @Prop({ required: true, index: true })
+  @Prop({ required: true })
   startedAt!: Date;
 
   @Prop()

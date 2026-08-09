@@ -437,6 +437,14 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   });
   const interventions = interventionsData?.interventions;
 
+  const canReadInterventionTypes = can("intervention_types.read");
+  const { data: interventionTypesData } = useQuery({
+    queryKey: ["intervention-types"],
+    queryFn: () => api.listInterventionTypes(),
+    enabled: can("interventions.create") && canReadInterventionTypes && showNewIntervention,
+  });
+  const interventionTypes = interventionTypesData?.types ?? [];
+
   const { data: usersData } = useQuery({
     queryKey: ["organization-users"],
     queryFn: () => listOrganizationUsers(),
@@ -515,6 +523,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
 
   const [newIntTitle, setNewIntTitle] = useState("");
   const [newIntDesc, setNewIntDesc] = useState("");
+  const [newIntTypeId, setNewIntTypeId] = useState("");
   const [newIntAssignee, setNewIntAssignee] = useState("");
   const [newIntTeamId, setNewIntTeamId] = useState("");
   const [newIntStart, setNewIntStart] = useState("");
@@ -720,6 +729,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
       setShowNewIntervention(false);
       setNewIntTitle("");
       setNewIntDesc("");
+      setNewIntTypeId("");
       setNewIntAssignee("");
       setNewIntTeamId("");
       setNewIntStart("");
@@ -1539,6 +1549,26 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                     rows={2}
                     className="sm:col-span-2 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
                   />
+                  {canReadInterventionTypes ? (
+                    <div className="sm:col-span-2">
+                      <label className="text-xs text-slate-500 dark:text-slate-400">
+                        Type d&apos;intervention
+                      </label>
+                      <select
+                        value={newIntTypeId}
+                        onChange={(e) => setNewIntTypeId(e.target.value)}
+                        className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
+                        aria-label="Type d'intervention"
+                      >
+                        <option value="">Aucun</option>
+                        {interventionTypes.map((type) => (
+                          <option key={type.id} value={type.id}>
+                            {type.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : null}
                   <p className="sm:col-span-2 text-xs text-slate-500 dark:text-slate-400 inline-flex items-start gap-1.5">
                     <InterventionAssigneeHint />
                     <span>
@@ -1629,6 +1659,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                       caseId,
                       title: newIntTitle.trim(),
                       description: newIntDesc.trim() || undefined,
+                      ...(newIntTypeId ? { typeId: newIntTypeId } : {}),
                       ...(newIntTeamId
                         ? { assignedTeamId: newIntTeamId }
                         : newIntAssignee
@@ -1860,6 +1891,18 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                                 {INTERVENTION_STATUS_LABELS[intervention.status] ??
                                   intervention.status}
                               </span>
+                              {intervention.typeName ? (
+                                <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 px-2 py-0.5 text-[10px] font-medium text-slate-700 dark:text-slate-200">
+                                  {intervention.typeColor ? (
+                                    <span
+                                      className="h-2 w-2 rounded-full border border-slate-200 dark:border-slate-600"
+                                      style={{ backgroundColor: intervention.typeColor }}
+                                      aria-hidden
+                                    />
+                                  ) : null}
+                                  {intervention.typeName}
+                                </span>
+                              ) : null}
                               {intervention.billingStatus &&
                                 intervention.billingStatus !== "none" && (
                                   <span

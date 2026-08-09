@@ -1,4 +1,8 @@
-import { DEFAULT_CASE_TEMPLATE_PRESETS, DEFAULT_PERMISSION_PROFILE_PRESETS } from "../index";
+import {
+  DEFAULT_CASE_TEMPLATE_PRESETS,
+  DEFAULT_INTERVENTION_TYPE_PRESETS,
+  DEFAULT_PERMISSION_PROFILE_PRESETS,
+} from "../index";
 
 describe("catalogues d’import par défaut", () => {
   it("propose plusieurs profils couvrant terrain, bureau, stock et revenus", () => {
@@ -25,6 +29,16 @@ describe("catalogues d’import par défaut", () => {
       const todos = preset.steps.reduce((n, s) => n + s.todos.length, 0);
       expect(todos).toBeGreaterThanOrEqual(3);
       preset.steps.forEach((s, i) => expect(s.order).toBe(i));
+    }
+  });
+
+  it("propose Pose et SAV comme types d’intervention importables", () => {
+    expect(DEFAULT_INTERVENTION_TYPE_PRESETS).toHaveLength(2);
+    const ids = DEFAULT_INTERVENTION_TYPE_PRESETS.map((t) => t.id);
+    expect(ids).toEqual(expect.arrayContaining(["pose", "sav"]));
+    for (const preset of DEFAULT_INTERVENTION_TYPE_PRESETS) {
+      expect(preset.color).toMatch(/^#[0-9a-fA-F]{6}$/);
+      expect(preset.category).toBe("Terrain");
     }
   });
 });

@@ -97,6 +97,7 @@ export class ExportsController {
     @Query("assigneeId") assigneeId?: string,
     @Query("teamId") teamId?: string,
     @Query("status") status?: string,
+    @Query("typeId") typeId?: string,
     @Res() res?: Response,
   ) {
     const exportFormat = this.parseFormat(format);
@@ -106,6 +107,7 @@ export class ExportsController {
       assigneeId,
       teamId,
       status,
+      typeId,
     });
     this.sendExport(res!, result);
   }
@@ -227,6 +229,7 @@ export class ExportsController {
     @Query("customerId") customerId?: string,
     @Query("orderGiverId") orderGiverId?: string,
     @Query("groupBy") groupBy?: string,
+    @Query("typeId") typeId?: string,
   ) {
     if (!type?.trim()) {
       throw new BadRequestException("type est requis");
@@ -248,6 +251,7 @@ export class ExportsController {
       customerId,
       orderGiverId,
       groupBy: groupBy === "technician" ? "technician" : groupBy === "team" ? "team" : undefined,
+      typeId,
     });
   }
 

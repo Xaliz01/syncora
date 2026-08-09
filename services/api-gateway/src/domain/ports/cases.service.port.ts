@@ -11,6 +11,8 @@ import type {
   DashboardTodoCaseItem,
   InterventionResponse,
   InterventionsListResponse,
+  InterventionTypeResponse,
+  InterventionTypesListResponse,
   QuoteResponse,
   QuoteSummaryResponse,
   SignInterventionResponse,
@@ -91,6 +93,7 @@ export interface CreateInterventionForOrgBody {
   caseId: string;
   title: string;
   description?: string;
+  typeId?: string;
   assigneeId?: string;
   assignedTeamId?: string;
   scheduledStart?: string;
@@ -182,6 +185,18 @@ export abstract class AbstractCasesGatewayService {
     body: UpdateTemplateForOrgBody,
   ): Promise<CaseTemplateResponse>;
   abstract deleteTemplate(user: AuthUser, templateId: string): Promise<{ deleted: true }>;
+  abstract createInterventionType(
+    user: AuthUser,
+    body: { name: string; description?: string; color?: string },
+  ): Promise<InterventionTypeResponse>;
+  abstract listInterventionTypes(user: AuthUser): Promise<InterventionTypesListResponse>;
+  abstract getInterventionType(user: AuthUser, typeId: string): Promise<InterventionTypeResponse>;
+  abstract updateInterventionType(
+    user: AuthUser,
+    typeId: string,
+    body: { name?: string; description?: string | null; color?: string | null },
+  ): Promise<InterventionTypeResponse>;
+  abstract deleteInterventionType(user: AuthUser, typeId: string): Promise<{ deleted: true }>;
   abstract createCase(user: AuthUser, body: CreateCaseForOrgBody): Promise<CaseResponse>;
   abstract listCases(
     user: AuthUser,
@@ -226,6 +241,7 @@ export abstract class AbstractCasesGatewayService {
       startDate?: string;
       endDate?: string;
       status?: string;
+      typeId?: string;
       unscheduled?: string;
       includeTeamAssignments?: string;
       search?: string;

@@ -4,6 +4,8 @@ import type {
   CaseResponse,
   CaseTemplateResponse,
   CasesListResponse,
+  CreateInterventionBody,
+  CreateInterventionTypeBody,
   DashboardStatFilter,
   DashboardTodoCaseItem,
   CompleteInterventionResponse,
@@ -11,9 +13,12 @@ import type {
   CommentResponse,
   GeoLocation,
   InterventionResponse,
+  InterventionTypeResponse,
+  InterventionTypesListResponse,
   InterventionsListResponse,
   SignInterventionResponse,
   StartInterventionResponse,
+  UpdateInterventionTypeBody,
 } from "@planwise/shared";
 import { apiRequestJson, fetchWithUserFacingErrors, type ApiMethod } from "./api-client";
 import { API_BASE, getAccessToken } from "./api-client";
@@ -24,6 +29,39 @@ async function casesRequest<TResponse>(
   body?: unknown,
 ): Promise<TResponse> {
   return apiRequestJson<TResponse>(method, path, typeof body === "undefined" ? {} : { body });
+}
+
+// ── Intervention types ──
+
+export type CreateInterventionTypePayload = Omit<
+  CreateInterventionTypeBody,
+  "organizationId" | "isTestData"
+>;
+
+export type UpdateInterventionTypePayload = Omit<UpdateInterventionTypeBody, "organizationId">;
+
+export function listInterventionTypes() {
+  return casesRequest<InterventionTypesListResponse>("GET", "/cases/intervention-types");
+}
+
+export function getInterventionType(typeId: string) {
+  return casesRequest<InterventionTypeResponse>("GET", `/cases/intervention-types/${typeId}`);
+}
+
+export function createInterventionType(payload: CreateInterventionTypePayload) {
+  return casesRequest<InterventionTypeResponse>("POST", "/cases/intervention-types", payload);
+}
+
+export function updateInterventionType(typeId: string, payload: UpdateInterventionTypePayload) {
+  return casesRequest<InterventionTypeResponse>(
+    "PATCH",
+    `/cases/intervention-types/${typeId}`,
+    payload,
+  );
+}
+
+export function deleteInterventionType(typeId: string) {
+  return casesRequest<{ deleted: true }>("DELETE", `/cases/intervention-types/${typeId}`);
 }
 
 // ── Templates ──
@@ -147,15 +185,10 @@ export function updateTodo(
 
 // ── Interventions ──
 
-export interface CreateInterventionPayload {
-  caseId: string;
-  title: string;
-  description?: string;
-  assigneeId?: string;
-  assignedTeamId?: string;
-  scheduledStart?: string;
-  scheduledEnd?: string;
-}
+export type CreateInterventionPayload = Omit<
+  CreateInterventionBody,
+  "organizationId" | "isTestData" | "assigneeName" | "assignedTeamName"
+>;
 
 export interface UpdateInterventionPayload {
   title?: string;

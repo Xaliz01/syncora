@@ -19,6 +19,13 @@ Donner les bons droits aux membres, et accélérer la création de dossiers avec
 3. Import de **modèles métiers** (ex. plomberie, électricité) via la librairie d’import.
 4. À la création d’un dossier (`/cases/new`), choisir le modèle pour préremplir la structure.
 
+## Types d’intervention (`/settings/intervention-types`)
+
+1. Menu **Paramètres → Types d’intervention** (`intervention_types.read`).
+2. Catalogue org (nom, description, couleur) ; import **Pose** / **SAV** depuis la librairie.
+3. À la création d’une intervention sur un dossier : type **optionnel** ; une fois créé, le type n’est **plus modifiable** (snapshot nom/couleur).
+4. Reporting **Liste des interventions** : filtre type (défaut « Tous »).
+
 ## Notes
 
 - Route `/settings/permissions` : catalogue lié aux profils ; **pas** d’entrée menu principale — préférer **Profils**.
@@ -28,5 +35,6 @@ Donner les bons droits aux membres, et accélérer la création de dossiers avec
 
 - Profils : `/settings/profiles`
 - Modèles de dossier : `/settings/case-templates`
+- Types d’intervention : `/settings/intervention-types`
 - Inviter un utilisateur : `/users/new`
 - Nouveau dossier : `/cases/new`

@@ -243,6 +243,7 @@ export class ExportsService extends AbstractExportsService {
       assigneeId?: string;
       teamId?: string;
       status?: string;
+      typeId?: string;
     },
   ): Promise<ExportResult> {
     const period = this.resolveOptionalReportingPeriod(filters);
@@ -252,6 +253,7 @@ export class ExportsService extends AbstractExportsService {
     };
     if (filters?.assigneeId) query.assigneeId = filters.assigneeId;
     if (filters?.status) query.status = filters.status;
+    if (filters?.typeId) query.typeId = filters.typeId;
 
     let interventions = await this.fetchAllPaginated<InterventionResponse>(
       SERVICE_URLS.cases,
@@ -948,6 +950,7 @@ export class ExportsService extends AbstractExportsService {
     };
     if (filters?.assigneeId) query.assigneeId = filters.assigneeId;
     if (filters?.status) query.status = filters.status;
+    if (filters?.typeId) query.typeId = filters.typeId;
 
     let interventions = await this.fetchAllPaginated<InterventionResponse>(
       SERVICE_URLS.cases,
@@ -963,6 +966,7 @@ export class ExportsService extends AbstractExportsService {
 
     const columns = [
       { key: "title", label: "Titre" },
+      { key: "type", label: "Type" },
       { key: "case", label: "Dossier" },
       { key: "status", label: "Statut" },
       { key: "technician", label: "Technicien" },
@@ -986,6 +990,7 @@ export class ExportsService extends AbstractExportsService {
       return {
         cells: {
           title: i.title,
+          type: i.typeName ?? "—",
           case: this.ref("case", i.caseId, i.caseTitle ?? i.caseId),
           status: this.translateInterventionStatus(i.status),
           technician: this.ref("technician", technician.id, technician.label),
@@ -1978,12 +1983,13 @@ export class ExportsService extends AbstractExportsService {
     const periodLabel = period ? this.formatPeriodLabel(period.startDate, period.endDate) : "";
     return this.buildTablePdf(
       `Liste des interventions${periodLabel ? ` — ${periodLabel}` : ""}`,
-      ["Titre", "Dossier", "Statut", "Technicien", "Équipe", "Date"],
+      ["Titre", "Type", "Dossier", "Statut", "Technicien", "Équipe", "Date"],
       interventions.map((i) => {
         const technician = this.resolveInterventionTechnician(i, lookups);
         const team = this.resolveInterventionTeam(i, lookups);
         return [
           i.title,
+          i.typeName ?? "—",
           i.caseTitle ?? "—",
           this.translateInterventionStatus(i.status),
           technician.label || "—",
@@ -2008,6 +2014,7 @@ export class ExportsService extends AbstractExportsService {
     const ws = wb.addWorksheet("Interventions");
     ws.columns = [
       { key: "title", width: 30 },
+      { key: "type", width: 14 },
       { key: "caseTitle", width: 25 },
       { key: "status", width: 14 },
       { key: "assignee", width: 20 },
@@ -2026,6 +2033,7 @@ export class ExportsService extends AbstractExportsService {
 
     this.addStyledHeaderRow(ws, [
       "Titre",
+      "Type",
       "Dossier",
       "Statut",
       "Technicien",
@@ -2046,6 +2054,7 @@ export class ExportsService extends AbstractExportsService {
       const team = this.resolveInterventionTeam(i, lookups);
       ws.addRow({
         title: i.title,
+        type: i.typeName ?? "",
         caseTitle: i.caseTitle ?? "",
         status: this.translateInterventionStatus(i.status),
         assignee: technician.label,
@@ -2488,6 +2497,7 @@ export class ExportsService extends AbstractExportsService {
   ): Buffer {
     const headers = [
       "Titre",
+      "Type",
       "Dossier",
       "Statut",
       "Technicien",
@@ -2507,6 +2517,7 @@ export class ExportsService extends AbstractExportsService {
       const team = this.resolveInterventionTeam(i, lookups);
       return [
         i.title,
+        i.typeName ?? "",
         i.caseTitle ?? "",
         this.translateInterventionStatus(i.status),
         technician.label,

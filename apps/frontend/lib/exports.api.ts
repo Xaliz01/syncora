@@ -101,6 +101,7 @@ export function exportInterventionsList(
     assigneeId?: string;
     teamId?: string;
     status?: string;
+    typeId?: string;
   },
 ): Promise<void> {
   const params = new URLSearchParams();
@@ -110,6 +111,7 @@ export function exportInterventionsList(
   if (filters?.assigneeId) params.set("assigneeId", filters.assigneeId);
   if (filters?.teamId) params.set("teamId", filters.teamId);
   if (filters?.status) params.set("status", filters.status);
+  if (filters?.typeId) params.set("typeId", filters.typeId);
   return downloadExport(
     `/exports/interventions?${params.toString()}`,
     `liste-interventions.${format}`,

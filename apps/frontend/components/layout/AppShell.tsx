@@ -348,6 +348,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (hasPermission(user, "case_templates.read")) {
       settingsLinks.push({ label: "Modèles de dossier", href: "/settings/case-templates" });
     }
+    if (hasPermission(user, "intervention_types.read")) {
+      settingsLinks.push({ label: "Types d’intervention", href: "/settings/intervention-types" });
+    }
     if (hasPermission(user, "profiles.read")) {
       settingsLinks.push({ label: "Profils", href: "/settings/profiles" });
     }

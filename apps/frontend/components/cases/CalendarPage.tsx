@@ -15,6 +15,7 @@ import {
   getTeamCalendarCardClasses,
   normalizeCalendarColorHex,
   teamLegendSwatchStyle,
+  withInterventionTypeAccent,
 } from "@/lib/team-calendar-colors";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { ExportButton } from "@/components/ui/ExportButton";
@@ -59,15 +60,15 @@ function resolveInterventionCardAppearance(
   isDark: boolean,
 ) {
   const teamId = intervention.assignedTeamId;
-  if (teamId) {
-    return getTeamCalendarCardAppearance(teamId, teamsById.get(teamId)?.calendarColor, isDark);
-  }
-  const assigneeId = intervention.assigneeId;
-  const technician = assigneeId ? techniciansByAssigneeId.get(assigneeId) : undefined;
-  return getTeamCalendarCardAppearance(undefined, undefined, isDark, {
-    assigneeId,
-    assigneeCalendarColor: technician?.calendarColor,
-  });
+  const base = teamId
+    ? getTeamCalendarCardAppearance(teamId, teamsById.get(teamId)?.calendarColor, isDark)
+    : getTeamCalendarCardAppearance(undefined, undefined, isDark, {
+        assigneeId: intervention.assigneeId,
+        assigneeCalendarColor: intervention.assigneeId
+          ? techniciansByAssigneeId.get(intervention.assigneeId)?.calendarColor
+          : undefined,
+      });
+  return withInterventionTypeAccent(base, intervention.typeColor);
 }
 
 const HOURS = Array.from({ length: 14 }, (_, i) => i + 7); // 7h → 20h
@@ -928,6 +929,21 @@ function UnscheduledPanel({
                         />
                         {unscheduledPanelStatusLabel(intervention.status)}
                       </span>
+                      {intervention.typeName ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-white/50 dark:bg-black/20 border border-current/20">
+                          {normalizeCalendarColorHex(intervention.typeColor) ? (
+                            <span
+                              className="h-1.5 w-1.5 rounded-full shrink-0"
+                              style={{
+                                backgroundColor:
+                                  normalizeCalendarColorHex(intervention.typeColor) ?? undefined,
+                              }}
+                              aria-hidden
+                            />
+                          ) : null}
+                          {intervention.typeName}
+                        </span>
+                      ) : null}
                       {unassigned ? (
                         <span className="inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-900 dark:text-amber-100 border border-amber-500/40">
                           Sans assignation
@@ -1684,7 +1700,7 @@ export function CalendarPage() {
                                 title={
                                   scheduleLocked
                                     ? `Intervention terminée — dates non modifiables — ${intervention.title} (${timeLabel})`
-                                    : `Ouvrir le dossier — ${intervention.title}${intervention.caseTitle ? ` (${intervention.caseTitle})` : ""}${intervention.assignedTeamName ? ` · ${intervention.assignedTeamName}` : ""}${unassigned ? " · Sans assignation" : ""} · ${timeLabel}`
+                                    : `Ouvrir le dossier — ${intervention.title}${intervention.caseTitle ? ` (${intervention.caseTitle})` : ""}${intervention.typeName ? ` · ${intervention.typeName}` : ""}${intervention.assignedTeamName ? ` · ${intervention.assignedTeamName}` : ""}${unassigned ? " · Sans assignation" : ""} · ${timeLabel}`
                                 }
                               >
                                 <span className="flex items-start gap-1 min-w-0 pointer-events-none pr-1">
@@ -1701,6 +1717,7 @@ export function CalendarPage() {
                                     {displayHeight >= 36 && (
                                       <span className="block truncate opacity-80 text-inherit">
                                         {timeLabel}
+                                        {intervention.typeName ? ` · ${intervention.typeName}` : ""}
                                         {view === "day" &&
                                           (intervention.assignedTeamName ||
                                             intervention.assigneeName) && (
@@ -1838,7 +1855,7 @@ export function CalendarPage() {
                                     title={
                                       scheduleLocked
                                         ? `Intervention terminée — dates non modifiables — ${intervention.title}`
-                                        : `Ouvrir le dossier — ${intervention.title}${intervention.caseTitle ? ` (${intervention.caseTitle})` : ""}${intervention.assignedTeamName ? ` · ${intervention.assignedTeamName}` : ""}`
+                                        : `Ouvrir le dossier — ${intervention.title}${intervention.caseTitle ? ` (${intervention.caseTitle})` : ""}${intervention.typeName ? ` · ${intervention.typeName}` : ""}${intervention.assignedTeamName ? ` · ${intervention.assignedTeamName}` : ""}`
                                     }
                                   >
                                     <span
@@ -1846,7 +1863,9 @@ export function CalendarPage() {
                                       aria-hidden
                                     />
                                     <span className="text-[10px] truncate text-inherit">
-                                      {intervention.title}
+                                      {intervention.typeName
+                                        ? `${intervention.typeName} · ${intervention.title}`
+                                        : intervention.title}
                                     </span>
                                   </Link>
                                 );
@@ -1888,11 +1907,13 @@ export function CalendarPage() {
       <div className="flex flex-col gap-3 text-xs text-slate-500 dark:text-slate-400">
         <p>
           <span className="font-medium text-slate-600 dark:text-slate-300">Couleur des cartes</span>{" "}
-          — selon l&apos;équipe ou la personne assignée.{" "}
+          — fond selon l&apos;équipe ou la personne assignée ; pastille = statut ;{" "}
+          <span className="font-medium text-slate-600 dark:text-slate-300">barre gauche</span> =
+          type d&apos;intervention (si renseigné).{" "}
           <span className="font-medium text-amber-800 dark:text-amber-200">
             Sans assignation : ambre, bordure en pointillés
           </span>
-          . Couleurs personnalisables sur les fiches équipe / technicien (Flotte).
+          . Couleurs assignés personnalisables sur les fiches équipe / technicien (Flotte).
         </p>
         <p className="flex flex-wrap items-center gap-2">
           <span

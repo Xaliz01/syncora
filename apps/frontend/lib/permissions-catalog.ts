@@ -269,6 +269,26 @@ export const PERMISSION_METADATA: Record<PermissionCode, PermissionMetadata> = {
     label: "Supprimer des modèles de dossier",
     description: "Supprimer des modèles de dossier.",
   },
+  "intervention_types.read": {
+    code: "intervention_types.read",
+    label: "Voir les types d’intervention",
+    description: "Consulter le catalogue de types d’intervention de l’organisation.",
+  },
+  "intervention_types.create": {
+    code: "intervention_types.create",
+    label: "Créer des types d’intervention",
+    description: "Ajouter des types d’intervention (Pose, SAV, etc.).",
+  },
+  "intervention_types.update": {
+    code: "intervention_types.update",
+    label: "Modifier les types d’intervention",
+    description: "Renommer ou colorer les types d’intervention.",
+  },
+  "intervention_types.delete": {
+    code: "intervention_types.delete",
+    label: "Supprimer des types d’intervention",
+    description: "Supprimer des types d’intervention du catalogue.",
+  },
   "interventions.read": {
     code: "interventions.read",
     label: "Voir les interventions",

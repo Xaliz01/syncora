@@ -17,6 +17,7 @@ import { AbstractCommentsService } from "../../domain/ports/comments.service.por
 import { AbstractCaseHistoryService } from "../../domain/ports/case-history.service.port";
 import { AbstractDashboardService } from "../../domain/ports/dashboard.service.port";
 import { AbstractCaseTemplatesService } from "../../domain/ports/case-templates.service.port";
+import { AbstractInterventionTypesService } from "../../domain/ports/intervention-types.service.port";
 import {
   isDashboardStatFilter,
   MAX_PAGE_LIMIT_WIDE,
@@ -24,6 +25,7 @@ import {
   type CreateCaseBody,
   type CreateCaseHistoryBody,
   type CreateCaseTemplateBody,
+  type CreateInterventionTypeBody,
   type CompleteInterventionBody,
   type CreateInterventionBody,
   type CreateQuoteBody,
@@ -31,6 +33,7 @@ import {
   type StartInterventionBody,
   type UpdateCaseBody,
   type UpdateCaseTemplateBody,
+  type UpdateInterventionTypeBody,
   type UpdateInterventionBody,
   type UpdateQuoteBody,
   type UpdateTodoBody,
@@ -50,6 +53,7 @@ export class CasesController {
     private readonly caseHistoryService: AbstractCaseHistoryService,
     private readonly dashboardService: AbstractDashboardService,
     private readonly caseTemplatesService: AbstractCaseTemplatesService,
+    private readonly interventionTypesService: AbstractInterventionTypesService,
   ) {}
 
   // ── Templates ──
@@ -80,6 +84,42 @@ export class CasesController {
   async deleteTemplate(@Param("id") id: string, @Query("organizationId") organizationId: string) {
     organizationId = parseOrganizationIdQuery(organizationId);
     return this.caseTemplatesService.deleteTemplate(id, organizationId);
+  }
+
+  // ── Intervention types ──
+
+  @Post("intervention-types")
+  async createInterventionType(@Body() body: CreateInterventionTypeBody) {
+    return this.interventionTypesService.create(body);
+  }
+
+  @Get("intervention-types")
+  async listInterventionTypes(@Query("organizationId") organizationId: string) {
+    organizationId = parseOrganizationIdQuery(organizationId);
+    return this.interventionTypesService.list(organizationId);
+  }
+
+  @Get("intervention-types/:id")
+  async getInterventionType(
+    @Param("id") id: string,
+    @Query("organizationId") organizationId: string,
+  ) {
+    organizationId = parseOrganizationIdQuery(organizationId);
+    return this.interventionTypesService.getById(id, organizationId);
+  }
+
+  @Patch("intervention-types/:id")
+  async updateInterventionType(@Param("id") id: string, @Body() body: UpdateInterventionTypeBody) {
+    return this.interventionTypesService.update(id, body);
+  }
+
+  @Delete("intervention-types/:id")
+  async deleteInterventionType(
+    @Param("id") id: string,
+    @Query("organizationId") organizationId: string,
+  ) {
+    organizationId = parseOrganizationIdQuery(organizationId);
+    return this.interventionTypesService.remove(id, organizationId);
   }
 
   // ── Cases ──
@@ -222,6 +262,7 @@ export class CasesController {
     @Query("startDate") startDate?: string,
     @Query("endDate") endDate?: string,
     @Query("status") status?: string,
+    @Query("typeId") typeId?: string,
     @Query("unscheduled") unscheduled?: string,
     @Query("search") search?: string,
     @Query("limit") limit?: string,
@@ -244,6 +285,7 @@ export class CasesController {
       startDate,
       endDate,
       status,
+      typeId,
       unscheduled: unscheduled === "true",
       search,
       ...pagination,

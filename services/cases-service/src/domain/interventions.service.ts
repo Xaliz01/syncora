@@ -25,6 +25,7 @@ import type { CaseDocument } from "../persistence/case.schema";
 import type { InterventionDocument } from "../persistence/intervention.schema";
 import type { CommentDocument } from "../persistence/comment.schema";
 import { AbstractInterventionsService } from "./ports/interventions.service.port";
+import { AbstractInterventionTypesService } from "./ports/intervention-types.service.port";
 import { toInterventionResponse } from "./mappers/intervention.mapper";
 
 @Injectable()
@@ -36,6 +37,7 @@ export class InterventionsService extends AbstractInterventionsService {
     private readonly caseModel: Model<CaseDocument>,
     @InjectModel("Comment")
     private readonly commentModel: Model<CommentDocument>,
+    private readonly interventionTypesService: AbstractInterventionTypesService,
   ) {
     super();
   }
@@ -72,11 +74,23 @@ export class InterventionsService extends AbstractInterventionsService {
     const assignedTeamId = this.normalizeOptionalId(body.assignedTeamId);
     this.assertExclusiveInterventionAssignment(assigneeId, assignedTeamId);
 
+    const typeId = this.normalizeOptionalId(body.typeId);
+    let typeSnapshot: { typeId: string; typeName: string; typeColor?: string } | undefined;
+    if (typeId) {
+      const type = await this.interventionTypesService.getById(typeId, body.organizationId);
+      typeSnapshot = {
+        typeId: type.id,
+        typeName: type.name,
+        ...(type.color ? { typeColor: type.color } : {}),
+      };
+    }
+
     const doc = await this.interventionModel.create({
       organizationId: body.organizationId,
       caseId: body.caseId,
       title: body.title,
       description: body.description,
+      ...(typeSnapshot ?? {}),
       ...(assigneeId ? { assigneeId } : {}),
       ...(body.assigneeName?.trim() ? { assigneeName: body.assigneeName.trim() } : {}),
       ...(assignedTeamId ? { assignedTeamId } : {}),
@@ -105,6 +119,7 @@ export class InterventionsService extends AbstractInterventionsService {
       startDate?: string;
       endDate?: string;
       status?: string;
+      typeId?: string;
       unscheduled?: boolean;
       search?: string;
       limit?: number;
@@ -113,6 +128,7 @@ export class InterventionsService extends AbstractInterventionsService {
   ): Promise<InterventionsListResponse> {
     const query: Record<string, unknown> = { organizationId, ...activeDocumentFilter };
     if (filters?.caseId) query.caseId = filters.caseId;
+    if (filters?.typeId?.trim()) query.typeId = filters.typeId.trim();
 
     const teamIds = [
       ...(filters?.assignedTeamId ? [filters.assignedTeamId] : []),

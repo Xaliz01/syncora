@@ -18,7 +18,7 @@ export const PRODUCT_DOC_CHUNKS: readonly ProductDocChunk[] = [
     id: "routes",
     title: "Catalogue des menus",
     text: `Menus principaux Planwise (ne jamais inventer d'écran) :
-Tableau de bord (/) ; Ma journée (/my-day) ; Dossiers (/cases) ; Nouveau dossier (/cases/new) ; Planning (/cases/calendar) ; Contrats (/contracts) ; Nouveau contrat (/contracts/new) ; Mouvements de stock (/stock) ; Reporting (/reporting) ; Facturation (/billing) ; Clients (/customers) ; Nouveau client (/customers/new) ; Donneurs d'ordre (/order-givers) ; Utilisateurs (/users) ; Inviter (/users/new) ; Équipes (/fleet/teams) ; Techniciens (/fleet/technicians) ; Véhicules (/fleet/vehicles) ; Agences (/fleet/agences) ; Catalogue articles (/settings/stock/articles) ; Prestations (/settings/prestations) ; Emplacements stock (/settings/stock/locations) ; Modèles de dossier (/settings/case-templates) ; Profils (/settings/profiles) ; Notifications (/settings/notifications) ; Intégrations (/settings/integrations) ; Recherche (/search) ; Mon organisation (/organization) ; Mon abonnement (/subscription) ; Mon compte (/account).
+Tableau de bord (/) ; Ma journée (/my-day) ; Dossiers (/cases) ; Nouveau dossier (/cases/new) ; Planning (/cases/calendar) ; Contrats (/contracts) ; Nouveau contrat (/contracts/new) ; Mouvements de stock (/stock) ; Reporting (/reporting) ; Facturation (/billing) ; Clients (/customers) ; Nouveau client (/customers/new) ; Donneurs d'ordre (/order-givers) ; Utilisateurs (/users) ; Inviter (/users/new) ; Équipes (/fleet/teams) ; Techniciens (/fleet/technicians) ; Véhicules (/fleet/vehicles) ; Agences (/fleet/agences) ; Catalogue articles (/settings/stock/articles) ; Prestations (/settings/prestations) ; Emplacements stock (/settings/stock/locations) ; Modèles de dossier (/settings/case-templates) ; Types d'intervention (/settings/intervention-types) ; Profils (/settings/profiles) ; Notifications (/settings/notifications) ; Intégrations (/settings/integrations) ; Recherche (/search) ; Mon organisation (/organization) ; Mon abonnement (/subscription) ; Mon compte (/account).
 Fiches détail dynamiques (/cases/:id, /customers/:id…) : ne pas inventer d'ID — guider vers la liste puis ouvrir depuis la liste.
 Sans abonnement actif, le menu est réduit (org / abonnement / compte). Favoris = barre sous le header (étoile ★ ou glisser un lien du menu). Historique de navigation = icône horloge près des favoris (pages récentes). Cloche = inbox notifications. Reporting détail : passer par le hub /reporting.`,
   },
@@ -142,10 +142,15 @@ Essai ~15 jours sans CB. Injection démo aussi depuis le tableau de bord (carte 
   },
   {
     id: "journey-profiles-templates",
-    title: "Profils et modèles de dossier",
-    pathPrefixes: ["/settings/profiles", "/settings/case-templates"],
+    title: "Profils, modèles de dossier et types d'intervention",
+    pathPrefixes: [
+      "/settings/profiles",
+      "/settings/case-templates",
+      "/settings/intervention-types",
+    ],
     text: `Profils (/settings/profiles) : ensembles de permissions pour membres non admin ; choisis à l'invitation (/users/new) ; import librairie possible. Admin org = tous les droits. « Je ne vois pas un menu » = permission manquante ou abonnement inactif.
-Modèles de dossier (/settings/case-templates) : étapes/tâches/widgets ; import modèles métiers (plomberie, électricité…) ; choisis à /cases/new. Préférer Profils à /settings/permissions (hors menu principal).`,
+Modèles de dossier (/settings/case-templates) : étapes/tâches/widgets ; import modèles métiers (plomberie, électricité…) ; choisis à /cases/new. Préférer Profils à /settings/permissions (hors menu principal).
+Types d'intervention (/settings/intervention-types) : catalogue org (Pose / SAV importables, couleur) ; sélection optionnelle à la création d'une intervention (non modifiable ensuite) ; filtre « Tous » sur le reporting Liste des interventions.`,
   },
   {
     id: "journey-notifications",

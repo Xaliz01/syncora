@@ -94,6 +94,7 @@ const ALL_PROTECTED_PATHS = [
   "/users/new",
   "/settings/case-templates",
   "/settings/case-templates/new",
+  "/settings/intervention-types",
   "/settings/permissions",
   "/settings/profiles",
   "/settings/profiles/new",

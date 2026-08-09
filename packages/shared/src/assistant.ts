@@ -97,6 +97,11 @@ export const ASSISTANT_ROUTE_CATALOG: readonly AssistantRouteEntry[] = [
     href: "/settings/case-templates",
     permissions: ["case_templates.read"],
   },
+  {
+    label: "Types d’intervention",
+    href: "/settings/intervention-types",
+    permissions: ["intervention_types.read"],
+  },
   { label: "Profils", href: "/settings/profiles", permissions: ["profiles.read"] },
   {
     label: "Notifications",

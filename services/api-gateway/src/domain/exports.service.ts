@@ -75,6 +75,7 @@ export class ExportsGatewayService extends AbstractExportsGatewayService {
       assigneeId?: string;
       teamId?: string;
       status?: string;
+      typeId?: string;
     },
   ): Promise<ExportResult> {
     return this.proxyExport(`${SERVICE_URLS.exports}/exports/interventions`, {

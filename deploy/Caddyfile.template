@@ -5,7 +5,6 @@
 # `Caddyfile` en remplaçant __FRONTEND_UPSTREAM__ et __API_GATEWAY_UPSTREAM__
 # par le slot actif (ex. frontend-green:5173). Un seul upstream évite les 502
 # quand l'autre slot n'a pas de conteneur (DNS « bad address »).
-
 {
 	email {$ACME_EMAIL}
 }

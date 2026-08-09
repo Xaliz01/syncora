@@ -49,6 +49,7 @@ export abstract class AbstractExportsGatewayService {
       assigneeId?: string;
       teamId?: string;
       status?: string;
+      typeId?: string;
     },
   ): Promise<ExportResult>;
 

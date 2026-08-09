@@ -178,10 +178,15 @@ export interface CalendarCardAppearanceOptions {
 function appearanceFromHex(hex: string, isDark: boolean): TeamCalendarCardAppearance {
   const bg = getTeamCalendarBackgroundRgb(hex, isDark);
   const fg = getTeamCalendarForeground(hex, isDark);
+  const border = getTeamCalendarBorderColor(hex, isDark);
   return {
     className: "border border-solid",
+    // Longhand only — avoids React conflict with borderLeftColor (barre type).
     style: {
-      borderColor: getTeamCalendarBorderColor(hex, isDark),
+      borderTopColor: border,
+      borderRightColor: border,
+      borderBottomColor: border,
+      borderLeftColor: border,
       backgroundColor: rgbCss(bg),
       color: fg,
     },
@@ -233,5 +238,42 @@ export function teamLegendSwatchStyle(hex: string, isDark = false): CSSPropertie
   return {
     borderColor: getTeamCalendarBorderColor(normalized, isDark),
     backgroundColor: rgbCss(bg),
+  };
+}
+
+/**
+ * Accent type d’intervention : barre gauche (ne remplace pas le fond assigné / statut).
+ */
+export function getInterventionTypeAccentStyle(
+  typeColor?: string | null,
+): CSSProperties | undefined {
+  const hex = normalizeCalendarColorHex(typeColor);
+  if (!hex) return undefined;
+  return {
+    borderLeftWidth: 4,
+    borderLeftStyle: "solid",
+    borderLeftColor: hex,
+  };
+}
+
+/** Fusionne l’apparence calendrier (équipe / tech) avec la barre de type. */
+export function withInterventionTypeAccent(
+  appearance: TeamCalendarCardAppearance,
+  typeColor?: string | null,
+): TeamCalendarCardAppearance {
+  const accent = getInterventionTypeAccentStyle(typeColor);
+  if (!accent) return appearance;
+  const { borderColor, ...restStyle } = appearance.style ?? {};
+  const style: CSSProperties = { ...restStyle, ...accent };
+  // Si un shorthand borderColor était présent (ex. Tailwind/inline), l’étendre
+  // en longhand hors côté gauche pour ne pas conflictuer avec borderLeftColor.
+  if (borderColor !== undefined) {
+    style.borderTopColor = borderColor;
+    style.borderRightColor = borderColor;
+    style.borderBottomColor = borderColor;
+  }
+  return {
+    className: appearance.className,
+    style,
   };
 }

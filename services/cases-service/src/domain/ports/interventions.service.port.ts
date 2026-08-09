@@ -23,6 +23,7 @@ export abstract class AbstractInterventionsService {
       startDate?: string;
       endDate?: string;
       status?: string;
+      typeId?: string;
       unscheduled?: boolean;
       search?: string;
       limit?: number;

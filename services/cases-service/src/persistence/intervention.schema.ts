@@ -48,6 +48,16 @@ export class InterventionDocument extends Document {
   @Prop()
   assignedTeamName?: string;
 
+  /** Snapshot du type au moment de la création (immuable). */
+  @Prop()
+  typeId?: string;
+
+  @Prop()
+  typeName?: string;
+
+  @Prop()
+  typeColor?: string;
+
   @Prop()
   scheduledStart?: Date;
 

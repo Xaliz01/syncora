@@ -87,6 +87,43 @@ export class CasesController {
     return this.casesService.deleteTemplate(user, templateId);
   }
 
+  @Post("intervention-types")
+  @RequirePermissions("intervention_types.create")
+  async createInterventionType(
+    @CurrentUser() user: AuthUser,
+    @Body() body: { name: string; description?: string; color?: string },
+  ) {
+    return this.casesService.createInterventionType(user, body);
+  }
+
+  @Get("intervention-types")
+  @RequirePermissions("intervention_types.read")
+  async listInterventionTypes(@CurrentUser() user: AuthUser) {
+    return this.casesService.listInterventionTypes(user);
+  }
+
+  @Get("intervention-types/:typeId")
+  @RequirePermissions("intervention_types.read")
+  async getInterventionType(@CurrentUser() user: AuthUser, @Param("typeId") typeId: string) {
+    return this.casesService.getInterventionType(user, typeId);
+  }
+
+  @Patch("intervention-types/:typeId")
+  @RequirePermissions("intervention_types.update")
+  async updateInterventionType(
+    @CurrentUser() user: AuthUser,
+    @Param("typeId") typeId: string,
+    @Body() body: { name?: string; description?: string | null; color?: string | null },
+  ) {
+    return this.casesService.updateInterventionType(user, typeId, body);
+  }
+
+  @Delete("intervention-types/:typeId")
+  @RequirePermissions("intervention_types.delete")
+  async deleteInterventionType(@CurrentUser() user: AuthUser, @Param("typeId") typeId: string) {
+    return this.casesService.deleteInterventionType(user, typeId);
+  }
+
   @Post("items")
   @RequirePermissions("cases.create")
   @NotifyEntity({ type: "case", labelField: "title" })
@@ -233,6 +270,7 @@ export class CasesController {
     @Query("startDate") startDate?: string,
     @Query("endDate") endDate?: string,
     @Query("status") status?: string,
+    @Query("typeId") typeId?: string,
     @Query("unscheduled") unscheduled?: string,
     @Query("includeTeamAssignments") includeTeamAssignments?: string,
     @Query("search") search?: string,
@@ -249,6 +287,7 @@ export class CasesController {
       startDate,
       endDate,
       status,
+      typeId,
       unscheduled,
       includeTeamAssignments,
       search,

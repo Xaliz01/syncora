@@ -5,7 +5,6 @@
 # trafic au premier upstream joignable ; l'autre peut être arrêté (DNS vide / dial
 # fail → Caddy passe au suivant). Pas de health_uri actif : les sondes actives
 # cassent Next (Host interne ≠ app/marketing) et provoquent des ERR_INVALID_RESPONSE.
-
 {
 	email {$ACME_EMAIL}
 }

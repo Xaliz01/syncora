@@ -48,6 +48,7 @@ export abstract class AbstractExportsService {
       assigneeId?: string;
       teamId?: string;
       status?: string;
+      typeId?: string;
     },
   ): Promise<ExportResult>;
 

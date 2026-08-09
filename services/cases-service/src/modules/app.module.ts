@@ -19,6 +19,7 @@ import { AbstractCommentsService } from "../domain/ports/comments.service.port";
 import { AbstractCaseHistoryService } from "../domain/ports/case-history.service.port";
 import { AbstractDashboardService } from "../domain/ports/dashboard.service.port";
 import { AbstractCaseTemplatesService } from "../domain/ports/case-templates.service.port";
+import { AbstractInterventionTypesService } from "../domain/ports/intervention-types.service.port";
 import { CasesService } from "../domain/cases.service";
 import { InterventionsService } from "../domain/interventions.service";
 import { QuotesService } from "../domain/quotes.service";
@@ -26,6 +27,7 @@ import { CommentsService } from "../domain/comments.service";
 import { CaseHistoryService } from "../domain/case-history.service";
 import { DashboardService } from "../domain/dashboard.service";
 import { CaseTemplatesService } from "../domain/case-templates.service";
+import { InterventionTypesService } from "../domain/intervention-types.service";
 import { MaintenanceContractsService } from "../domain/maintenance-contracts.service";
 import { MaintenanceContractVisitsScheduler } from "../domain/maintenance-contract-visits.scheduler";
 import { CronRunRecorder } from "../domain/cron-run.recorder";
@@ -33,6 +35,7 @@ import { CaseTemplateSchema } from "../persistence/case-template.schema";
 import { CaseSchema } from "../persistence/case.schema";
 import { CaseHistorySchema } from "../persistence/case-history.schema";
 import { InterventionSchema } from "../persistence/intervention.schema";
+import { InterventionTypeSchema } from "../persistence/intervention-type.schema";
 import { QuoteSchema } from "../persistence/quote.schema";
 import { CommentSchema } from "../persistence/comment.schema";
 import { MaintenanceContractSchema } from "../persistence/maintenance-contract.schema";
@@ -47,6 +50,7 @@ import { CronRunSchema } from "../persistence/cron-run.schema";
       { name: "Case", schema: CaseSchema },
       { name: "CaseHistory", schema: CaseHistorySchema },
       { name: "Intervention", schema: InterventionSchema },
+      { name: "InterventionType", schema: InterventionTypeSchema },
       { name: "Quote", schema: QuoteSchema },
       { name: "Comment", schema: CommentSchema },
       { name: "MaintenanceContract", schema: MaintenanceContractSchema },
@@ -70,6 +74,7 @@ import { CronRunSchema } from "../persistence/cron-run.schema";
     { provide: AbstractCaseHistoryService, useClass: CaseHistoryService },
     { provide: AbstractDashboardService, useClass: DashboardService },
     { provide: AbstractCaseTemplatesService, useClass: CaseTemplatesService },
+    { provide: AbstractInterventionTypesService, useClass: InterventionTypesService },
     MaintenanceContractsService,
     MaintenanceContractVisitsScheduler,
     CronRunRecorder,

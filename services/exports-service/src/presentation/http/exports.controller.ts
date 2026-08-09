@@ -89,6 +89,7 @@ export class ExportsController {
     @Query("assigneeId") assigneeId?: string,
     @Query("teamId") teamId?: string,
     @Query("status") status?: string,
+    @Query("typeId") typeId?: string,
     @Res() res?: Response,
   ) {
     const orgId = parseOrganizationIdQuery(organizationId);
@@ -99,6 +100,7 @@ export class ExportsController {
       assigneeId,
       teamId,
       status,
+      typeId,
     });
     this.sendExport(res!, result);
   }
@@ -219,6 +221,7 @@ export class ExportsController {
     @Query("customerId") customerId?: string,
     @Query("orderGiverId") orderGiverId?: string,
     @Query("groupBy") groupBy?: string,
+    @Query("typeId") typeId?: string,
   ) {
     const orgId = parseOrganizationIdQuery(organizationId);
     if (!type?.trim()) {
@@ -241,6 +244,7 @@ export class ExportsController {
       customerId,
       orderGiverId,
       groupBy: groupBy === "technician" ? "technician" : groupBy === "team" ? "team" : undefined,
+      typeId,
     });
   }
 

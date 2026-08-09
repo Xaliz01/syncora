@@ -16,6 +16,10 @@ import { CommentsSection } from "@/components/comments/CommentsSection";
 import * as api from "@/lib/cases.api";
 import type { GeoLocation, InterventionResponse, InterventionStatus } from "@planwise/shared";
 import { MAX_PAGE_LIMIT_WIDE } from "@planwise/shared";
+import {
+  getInterventionTypeAccentStyle,
+  normalizeCalendarColorHex,
+} from "@/lib/team-calendar-colors";
 
 const STATUS_LABELS: Record<InterventionStatus, string> = {
   planned: "Planifiée",
@@ -125,6 +129,8 @@ function InterventionCard({
   const [showSignDialog, setShowSignDialog] = useState(false);
   const [downloadingReport, setDownloadingReport] = useState(false);
   const status = intervention.status;
+  const typeAccent = getInterventionTypeAccentStyle(intervention.typeColor);
+  const typeSwatch = normalizeCalendarColorHex(intervention.typeColor);
   const canUpdateIntervention = can("interventions.update");
   const canSign = can("interventions.sign");
   const isSigned = !!intervention.signedAt;
@@ -145,7 +151,10 @@ function InterventionCard({
   };
 
   return (
-    <div className={`rounded-xl border-2 p-4 transition-all ${STATUS_CARD_STYLES[status]}`}>
+    <div
+      className={`rounded-xl border-2 p-4 transition-all ${STATUS_CARD_STYLES[status]}`}
+      style={typeAccent}
+    >
       {/* Header row */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
@@ -160,6 +169,18 @@ function InterventionCard({
               Dossier : {intervention.caseTitle}
             </p>
           )}
+          {intervention.typeName ? (
+            <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300">
+              {typeSwatch ? (
+                <span
+                  className="h-2 w-2 rounded-full shrink-0 ring-1 ring-black/10 dark:ring-white/20"
+                  style={{ backgroundColor: typeSwatch }}
+                  aria-hidden
+                />
+              ) : null}
+              <span className="font-medium">{intervention.typeName}</span>
+            </p>
+          ) : null}
         </div>
         <span
           className={`inline-flex items-center gap-1 shrink-0 text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_BADGE[status]}`}

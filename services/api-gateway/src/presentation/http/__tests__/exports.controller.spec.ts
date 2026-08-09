@@ -222,6 +222,7 @@ describe("ExportsController", () => {
         "user-1",
         "team-1",
         "completed",
+        undefined,
         res,
       );
 
@@ -231,6 +232,7 @@ describe("ExportsController", () => {
         assigneeId: "user-1",
         teamId: "team-1",
         status: "completed",
+        typeId: undefined,
       });
     });
   });

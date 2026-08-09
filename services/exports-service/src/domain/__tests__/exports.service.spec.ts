@@ -433,8 +433,8 @@ describe("ExportsService", () => {
 
       const content = result.buffer.toString("utf-8");
       expect(content).toContain("Période");
-      expect(content).toContain("Titre;Dossier;Statut;Technicien");
-      expect(content).toContain("Intervention 1;Dossier A;Terminée;Jean Dupont");
+      expect(content).toContain("Titre;Type;Dossier;Statut;Technicien");
+      expect(content).toContain("Intervention 1;;Dossier A;Terminée;Jean Dupont");
       expect(content).toContain("2");
     });
 

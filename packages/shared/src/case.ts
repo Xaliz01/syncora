@@ -303,6 +303,8 @@ export interface CreateInterventionBody {
   caseId: string;
   title: string;
   description?: string;
+  /** Type d’intervention (catalogue org) — figé après création. */
+  typeId?: string;
   assigneeId?: string;
   assigneeName?: string;
   assignedTeamId?: string;
@@ -334,6 +336,10 @@ export interface InterventionResponse {
   caseTitle?: string;
   title: string;
   description?: string;
+  /** Snapshot du type au moment de la création (immuable). */
+  typeId?: string;
+  typeName?: string;
+  typeColor?: string;
   status: InterventionStatus;
   billingStatus: BillingStatus;
   assigneeId?: string;
@@ -352,6 +358,40 @@ export interface InterventionResponse {
   createdAt?: string;
   updatedAt?: string;
   isTestData?: boolean;
+}
+
+// ── Intervention types (catalogue org) ──
+
+export interface InterventionTypeResponse {
+  id: string;
+  organizationId: string;
+  name: string;
+  description?: string;
+  /** Couleur hex `#RRGGBB`. */
+  color?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  isTestData?: boolean;
+}
+
+export interface CreateInterventionTypeBody {
+  organizationId: string;
+  name: string;
+  description?: string;
+  color?: string;
+  isTestData?: boolean;
+}
+
+export interface UpdateInterventionTypeBody {
+  organizationId: string;
+  name?: string;
+  description?: string | null;
+  color?: string | null;
+}
+
+export interface InterventionTypesListResponse {
+  types: InterventionTypeResponse[];
+  total: number;
 }
 
 export interface InterventionsListResponse {

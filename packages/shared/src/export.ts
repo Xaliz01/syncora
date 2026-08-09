@@ -43,6 +43,8 @@ export interface ExportInterventionsListParams {
   assigneeId?: string;
   teamId?: string;
   status?: string;
+  /** Filtre sur le type d’intervention (snapshot typeId). */
+  typeId?: string;
 }
 
 export interface ExportTechniciansActivityParams {

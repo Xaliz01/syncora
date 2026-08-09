@@ -28,6 +28,7 @@ import {
 } from "@planwise/shared";
 import * as exportsApi from "@/lib/exports.api";
 import * as fleetApi from "@/lib/fleet.api";
+import * as casesApi from "@/lib/cases.api";
 import * as customersApi from "@/lib/customers.api";
 import * as orderGiversApi from "@/lib/order-givers.api";
 import { EntityRef } from "@/components/ui/EntityRef";
@@ -109,6 +110,7 @@ const URL_FILTER_KEYS = [
   "customerId",
   "orderGiverId",
   "groupBy",
+  "typeId",
 ] as const;
 
 function ExportFormatButtons({
@@ -244,6 +246,7 @@ type FilterState = {
   customerId: string;
   orderGiverId: string;
   groupBy: "team" | "technician";
+  typeId: string;
 };
 
 function readInitialFilters(
@@ -267,6 +270,7 @@ function readInitialFilters(
     customerId: searchParams.get("customerId") ?? "",
     orderGiverId: searchParams.get("orderGiverId") ?? "",
     groupBy: groupByRaw === "technician" ? "technician" : "team",
+    typeId: searchParams.get("typeId") ?? "",
   };
 }
 
@@ -293,6 +297,7 @@ function buildPreviewFilters(
       if (state.status) q.status = state.status;
       if (state.teamId) q.teamId = state.teamId;
       if (state.assigneeId) q.assigneeId = state.assigneeId;
+      if (state.typeId) q.typeId = state.typeId;
       break;
     case "technicians_activity":
       if (state.technicianId) q.technicianId = state.technicianId;
@@ -388,6 +393,17 @@ export function ReportResultPage() {
     enabled: Boolean(validType && canAccess && needsTechnicians),
   });
 
+  const { data: interventionTypesData } = useQuery({
+    queryKey: ["intervention-types", "report-filter"],
+    queryFn: () => casesApi.listInterventionTypes(),
+    enabled: Boolean(
+      validType === "interventions_list" &&
+      canAccess &&
+      hasPermission(user, "intervention_types.read"),
+    ),
+  });
+  const interventionTypes = interventionTypesData?.types ?? [];
+
   const { data: orderGiversData } = useQuery({
     queryKey: ["order-givers", "report-filter"],
     queryFn: () => orderGiversApi.listOrderGivers({ limit: MAX_PAGE_LIMIT }),
@@ -465,6 +481,7 @@ export function ReportResultPage() {
             status: previewFilters.status,
             teamId: previewFilters.teamId,
             assigneeId: previewFilters.assigneeId,
+            typeId: previewFilters.typeId,
           });
           break;
         case "technicians_activity":
@@ -661,6 +678,19 @@ export function ReportResultPage() {
 
           {validType === "interventions_list" && (
             <>
+              <select
+                value={filtersState.typeId}
+                onChange={(e) => patchFilters({ typeId: e.target.value })}
+                className={FILTER_INPUT_CLASS}
+                aria-label="Type d’intervention"
+              >
+                <option value="">Tous les types</option>
+                {interventionTypes.map((type) => (
+                  <option key={type.id} value={type.id}>
+                    {type.name}
+                  </option>
+                ))}
+              </select>
               <select
                 value={filtersState.status}
                 onChange={(e) => patchFilters({ status: e.target.value })}
