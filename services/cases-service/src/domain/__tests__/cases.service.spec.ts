@@ -11,6 +11,7 @@ import { CaseTemplatesService } from "../case-templates.service";
 import { DashboardService } from "../dashboard.service";
 import { AbstractDashboardService } from "../ports/dashboard.service.port";
 import { MaintenanceContractsService } from "../maintenance-contracts.service";
+import { AbstractInterventionTypesService } from "../ports/intervention-types.service.port";
 
 const updateChain = (result: Record<string, unknown> = { matchedCount: 1, modifiedCount: 1 }) => {
   const p = Promise.resolve(result);
@@ -224,6 +225,16 @@ describe("CasesService", () => {
         {
           provide: MaintenanceContractsService,
           useValue: { listVisitsToSchedule: jest.fn().mockResolvedValue([]) },
+        },
+        {
+          provide: AbstractInterventionTypesService,
+          useValue: {
+            create: jest.fn(),
+            list: jest.fn(),
+            getById: jest.fn(),
+            update: jest.fn(),
+            remove: jest.fn(),
+          },
         },
       ],
     }).compile();

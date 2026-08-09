@@ -8,6 +8,7 @@ import { AbstractCommentsService } from "../../../domain/ports/comments.service.
 import { AbstractCaseHistoryService } from "../../../domain/ports/case-history.service.port";
 import { AbstractDashboardService } from "../../../domain/ports/dashboard.service.port";
 import { AbstractCaseTemplatesService } from "../../../domain/ports/case-templates.service.port";
+import { AbstractInterventionTypesService } from "../../../domain/ports/intervention-types.service.port";
 
 describe("CasesController", () => {
   let controller: CasesController;
@@ -18,6 +19,7 @@ describe("CasesController", () => {
   let mockCaseHistoryService: jest.Mocked<AbstractCaseHistoryService>;
   let mockDashboardService: jest.Mocked<AbstractDashboardService>;
   let mockCaseTemplatesService: jest.Mocked<AbstractCaseTemplatesService>;
+  let mockInterventionTypesService: jest.Mocked<AbstractInterventionTypesService>;
 
   beforeEach(async () => {
     mockCasesService = {
@@ -81,6 +83,14 @@ describe("CasesController", () => {
       deleteTemplate: jest.fn(),
     } as unknown as jest.Mocked<AbstractCaseTemplatesService>;
 
+    mockInterventionTypesService = {
+      create: jest.fn(),
+      list: jest.fn(),
+      getById: jest.fn(),
+      update: jest.fn(),
+      remove: jest.fn(),
+    } as unknown as jest.Mocked<AbstractInterventionTypesService>;
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [CasesController],
       providers: [
@@ -91,6 +101,7 @@ describe("CasesController", () => {
         { provide: AbstractCaseHistoryService, useValue: mockCaseHistoryService },
         { provide: AbstractDashboardService, useValue: mockDashboardService },
         { provide: AbstractCaseTemplatesService, useValue: mockCaseTemplatesService },
+        { provide: AbstractInterventionTypesService, useValue: mockInterventionTypesService },
       ],
     }).compile();
 
