@@ -160,7 +160,7 @@ jobs:
           username: ${{ secrets.DEPLOY_SSH_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_SSH_PORT || 22 }}
-          source: "deploy/docker-compose.prod.yml,deploy/docker-compose.monitoring.yml,deploy/docker-compose.backup.yml,deploy/Caddyfile.template,deploy/rolling-edge.sh,deploy/recover-edge.sh,deploy/backup,deploy/monitoring,deploy/static"
+          source: "deploy/docker-compose.prod.yml,deploy/docker-compose.monitoring.yml,deploy/docker-compose.backup.yml,deploy/Caddyfile.template,deploy/rolling-edge.sh,deploy/recover-edge.sh,deploy/prune-planwise-images.sh,deploy/backup,deploy/monitoring,deploy/static"
           target: ${{ secrets.DEPLOY_PATH }}
           overwrite: true
       - name: Pull & up sur la VM
@@ -183,7 +183,7 @@ jobs:
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
             # IMAGE_TAG/REGISTRY surchargent les valeurs du .env.production (secrets locaux conservés sur la VM).
             export REGISTRY IMAGE_TAG
-            chmod +x ./rolling-edge.sh ./recover-edge.sh ./backup/*.sh
+            chmod +x ./rolling-edge.sh ./recover-edge.sh ./prune-planwise-images.sh ./backup/*.sh
             # Assure le template présent (SCP) avant rolling.
             test -f Caddyfile.template
 
@@ -255,17 +255,25 @@ jobs:
 
             # Persister le tag déployé : un `compose up` manuel sans export IMAGE_TAG
             # ne doit pas recréer l'app avec un ancien tag du .env.production.
+            # Avant écrasement : mémoriser le tag précédent pour le prune (rollback).
+            PREVIOUS_IMAGE_TAG=""
             if grep -q '^IMAGE_TAG=' .env.production; then
+              PREVIOUS_IMAGE_TAG="$(grep '^IMAGE_TAG=' .env.production | head -1 | cut -d= -f2- | tr -d '[:space:]')"
               sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=${IMAGE_TAG}/" .env.production
             else
               printf '\nIMAGE_TAG=%s\n' "$IMAGE_TAG" >> .env.production
+            fi
+            if [[ -n "$PREVIOUS_IMAGE_TAG" && "$PREVIOUS_IMAGE_TAG" != "$IMAGE_TAG" ]]; then
+              printf '%s\n' "$PREVIOUS_IMAGE_TAG" >.previous-image-tag
             fi
             if grep -q '^REGISTRY=' .env.production; then
               sed -i "s|^REGISTRY=.*|REGISTRY=${REGISTRY}|" .env.production
             else
               printf 'REGISTRY=%s\n' "$REGISTRY" >> .env.production
             fi
-            docker image prune -f
+            # Ne conserve que les images Planwise de la MEP courante + précédente.
+            export PREVIOUS_IMAGE_TAG
+            ./prune-planwise-images.sh
             docker logout ghcr.io
 
   tag:

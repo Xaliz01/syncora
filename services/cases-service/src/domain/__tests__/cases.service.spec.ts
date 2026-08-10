@@ -220,6 +220,10 @@ describe("CasesService", () => {
         { provide: getModelToken("Case"), useValue: mockCaseModel },
         { provide: getModelToken("CaseHistory"), useValue: mockCaseHistoryModel },
         { provide: getModelToken("Intervention"), useValue: mockInterventionModel },
+        {
+          provide: getModelToken("InterventionType"),
+          useValue: { deleteMany: jest.fn().mockResolvedValue({ deletedCount: 0 }) },
+        },
         { provide: getModelToken("Quote"), useValue: mockQuoteModel },
         { provide: getModelToken("Comment"), useValue: mockCommentModel },
         {

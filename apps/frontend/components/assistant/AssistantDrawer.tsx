@@ -80,6 +80,8 @@ function AssistantIcon({ className }: { className?: string }) {
 
 export { AssistantIcon };
 
+const DRAWER_TRANSITION_MS = 300;
+
 export function AssistantButton() {
   const [open, setOpen] = useState(false);
 
@@ -97,13 +99,15 @@ export function AssistantButton() {
       >
         <AssistantIcon className="h-4 w-4" />
       </button>
-      {open ? <AssistantDrawer onClose={() => setOpen(false)} /> : null}
+      <AssistantDrawer open={open} onClose={() => setOpen(false)} />
     </>
   );
 }
 
-function AssistantDrawer({ onClose }: { onClose: () => void }) {
+function AssistantDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
+  const [entered, setEntered] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "welcome",
@@ -118,6 +122,28 @@ function AssistantDrawer({ onClose }: { onClose: () => void }) {
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (open) {
+      setMounted(true);
+      const reduceMotion =
+        typeof window !== "undefined" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (reduceMotion) {
+        setEntered(true);
+        return;
+      }
+      const id = window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => setEntered(true));
+      });
+      return () => window.cancelAnimationFrame(id);
+    }
+
+    setEntered(false);
+    const t = window.setTimeout(() => setMounted(false), DRAWER_TRANSITION_MS);
+    return () => window.clearTimeout(t);
+  }, [open]);
+
+  useEffect(() => {
+    if (!mounted) return;
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
     }
@@ -131,7 +157,7 @@ function AssistantDrawer({ onClose }: { onClose: () => void }) {
       document.body.style.overflow = previousOverflow;
       showCrispChatLauncher();
     };
-  }, [onClose]);
+  }, [mounted, onClose]);
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
@@ -183,13 +209,15 @@ function AssistantDrawer({ onClose }: { onClose: () => void }) {
     }
   }
 
-  if (typeof document === "undefined") return null;
+  if (typeof document === "undefined" || !mounted) return null;
 
   return createPortal(
     <div className="fixed inset-0 z-[11000]" role="presentation">
       <button
         type="button"
-        className="absolute inset-0 bg-slate-950/40"
+        className={`absolute inset-0 bg-slate-950/40 transition-opacity duration-300 ease-out motion-reduce:transition-none ${
+          entered ? "opacity-100" : "opacity-0"
+        }`}
         aria-label="Fermer l’assistant"
         onClick={onClose}
       />
@@ -197,7 +225,9 @@ function AssistantDrawer({ onClose }: { onClose: () => void }) {
         role="dialog"
         aria-modal="true"
         aria-label="Assistant Planwise"
-        className="absolute inset-y-0 right-0 flex w-full max-w-md flex-col border-l border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900"
+        className={`absolute inset-y-0 right-0 flex w-full max-w-md flex-col border-l border-slate-200 bg-white shadow-xl transition-transform duration-300 ease-out motion-reduce:transition-none dark:border-slate-700 dark:bg-slate-900 ${
+          entered ? "translate-x-0" : "translate-x-full"
+        }`}
       >
         <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-slate-800">
           <div>

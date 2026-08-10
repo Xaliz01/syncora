@@ -20,6 +20,7 @@ stateless hormis MongoDB et le volume documents).
 | `Caddyfile`                     | Reverse proxy + HTTPS (Let's Encrypt)                            |
 | `static/maintenance.html`       | Page de secours si le frontend upstream est KO (Caddy 5xx)       |
 | `rolling-edge.sh`               | Bascule blue/green api-gateway + frontend (quasi zero-downtime)  |
+| `prune-planwise-images.sh`      | Après MEP : garde images courante + précédente uniquement        |
 | `.env.production.example`       | Modèle de configuration (à copier en `.env.production`)          |
 
 ## Migrations Mongo (microservices)
@@ -120,7 +121,12 @@ de tag d'image et de version applicative).
 5. Sur la VM : `pull` → `up` des microservices / Caddy / monitoring →
    **`rolling-edge.sh`** bascule api-gateway + frontend (blue/green, sans coupure
    visible sur les domaines publics).
-6. **Tag Git automatique** : si une `version` a été fournie et que le déploiement
+6. **Prune images** : `prune-planwise-images.sh` ne conserve que les images
+   applicatives (`$REGISTRY/planwise-*`) de la MEP courante et de la précédente
+   (fichier `.previous-image-tag` sur la VM, pour un rollback rapide). Les images
+   monitoring / Mongo ne sont pas touchées. Remplace le `docker image prune -a`
+   manuel périodique.
+7. **Tag Git automatique** : si une `version` a été fournie et que le déploiement
    a réussi, le workflow crée et pousse le tag Git correspondant (ex. `v0.1.0`)
    sur le commit déployé. Étape ignorée pour un déploiement sans version (SHA).
 

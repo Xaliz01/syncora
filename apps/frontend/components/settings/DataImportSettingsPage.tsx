@@ -96,7 +96,7 @@ function downloadErrorsCsv(entity: DataImportEntity, errors: DataImportRowError[
 const MAPPING_STATUS_LINES = [
   "Lecture des colonnes de votre export…",
   "L’IA compare vos en-têtes aux champs Planwise…",
-  "Proposition du mapping intelligent…",
+  "Proposition des correspondances…",
 ];
 
 const VALIDATE_STATUS_LINES = [
@@ -195,7 +195,7 @@ function MappingAnalysisLoader({
   return (
     <SoftProgressLoader
       badge="IA"
-      title="Mapping intelligent en cours"
+      title="Correspondances en cours"
       statusLines={MAPPING_STATUS_LINES}
       fileName={fileName}
       detail={detailParts.length > 0 ? detailParts.join(" · ") : null}
@@ -291,7 +291,9 @@ function ConvertExportOverlay({ open, onClose }: { open: boolean; onClose: () =>
       setSourceHeaders(parsed.headers);
       setSourceRows(parsed.rows);
       showToast(
-        suggestion.usedLlm ? "Mapping proposé (IA)" : "Mapping proposé (automatique)",
+        suggestion.usedLlm
+          ? "Correspondances proposées (IA)"
+          : "Correspondances proposées (automatique)",
         "success",
       );
     } catch (err) {
@@ -317,7 +319,7 @@ function ConvertExportOverlay({ open, onClose }: { open: boolean; onClose: () =>
     try {
       await requestMapping(next, sourceHeaders, sourceRows);
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "Mapping impossible", "error");
+      showToast(err instanceof Error ? err.message : "Correspondance impossible", "error");
     } finally {
       setBusy(false);
       setPendingMeta(null);
@@ -377,9 +379,9 @@ function ConvertExportOverlay({ open, onClose }: { open: boolean; onClose: () =>
         <div className="mx-auto max-w-3xl space-y-4">
           <p className="text-sm text-slate-600 dark:text-slate-300">
             Déposez un export de votre ancien outil (CSV, séparateur <code>;</code> ou{" "}
-            <code>,</code>). L’intelligence artificielle propose le mapping des colonnes vers le
-            format Planwise — vérifiez-le, téléchargez le fichier, puis importez-le depuis l’écran
-            principal.
+            <code>,</code>). L’intelligence artificielle propose la correspondance des colonnes vers
+            le format Planwise — vérifiez-la, téléchargez le fichier, puis importez-le depuis
+            l’écran principal.
           </p>
 
           <PermissionGate permission="data_import.run">
@@ -398,7 +400,7 @@ function ConvertExportOverlay({ open, onClose }: { open: boolean; onClose: () =>
                     )
                     .map((e) => (
                       <option key={e} value={e}>
-                        {DATA_IMPORT_ENTITY_META[e].order}. {DATA_IMPORT_ENTITY_META[e].label}
+                        {DATA_IMPORT_ENTITY_META[e].label}
                       </option>
                     ))}
                 </select>
@@ -749,7 +751,7 @@ function EntityImportPanel({
                   : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
               }`}
             >
-              <span className="tabular-nums opacity-80">{m.order}.</span> {m.label}
+              {m.label}
             </button>
           );
         })}
@@ -758,7 +760,9 @@ function EntityImportPanel({
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{meta.label}</p>
-          <p className="text-xs text-slate-500 dark:text-slate-400">{meta.hint}</p>
+          {meta.hint ? (
+            <p className="text-xs text-slate-500 dark:text-slate-400">{meta.hint}</p>
+          ) : null}
         </div>
         <a
           href={`/import-templates/${meta.templateFile}`}
@@ -784,6 +788,7 @@ function EntityImportPanel({
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <input
+          key={entity}
           type="file"
           accept=".csv,text/csv"
           aria-label={`Fichier ${meta.label}`}
@@ -900,19 +905,21 @@ export function DataImportSettingsPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-            Import de données
-          </h1>
-          <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-            CSV UTF-8, séparateur <code>;</code> · max{" "}
-            {Math.round(DATA_IMPORT_MAX_FILE_BYTES / (1024 * 1024))} Mo /{" "}
-            {DATA_IMPORT_MAX_ROWS.toLocaleString("fr-FR")} lignes · importer dans l’ordre des
-            onglets.
-          </p>
-        </div>
-        <PermissionGate permission="data_import.run">
+      <div className="min-w-0">
+        <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+          Import de données
+        </h1>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+          CSV UTF-8, séparateur <code>;</code> · max{" "}
+          {Math.round(DATA_IMPORT_MAX_FILE_BYTES / (1024 * 1024))} Mo /{" "}
+          {DATA_IMPORT_MAX_ROWS.toLocaleString("fr-FR")} lignes. Importez chaque type quand vous
+          voulez. Si un fichier a besoin d’un autre (par ex. des sites liés à des clients), importez
+          d’abord celui dont il a besoin.
+        </p>
+      </div>
+
+      <PermissionGate permission="data_import.run">
+        <div className="flex justify-center">
           <button
             type="button"
             onClick={() => setConvertOpen(true)}
@@ -921,8 +928,8 @@ export function DataImportSettingsPage() {
             <AssistantIcon className="h-4 w-4" />
             Convertir mon export
           </button>
-        </PermissionGate>
-      </div>
+        </div>
+      </PermissionGate>
 
       <details
         open

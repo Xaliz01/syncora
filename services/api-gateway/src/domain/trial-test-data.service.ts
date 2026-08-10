@@ -12,6 +12,8 @@ import type {
   AuthUser,
   CaseTemplateResponse,
   InjectTrialTestDataResponse,
+  InterventionTypeResponse,
+  InterventionTypesListResponse,
   PermissionProfileResponse,
   PurgeTrialTestDataResponse,
   TechnicianResponse,
@@ -28,6 +30,7 @@ import {
   buildDemoCases,
   buildDemoCustomers,
   buildDemoInterventions,
+  buildDemoInterventionTypes,
   buildDemoPermissionProfiles,
   buildDemoTeams,
   buildDemoTechnicians,
@@ -167,6 +170,8 @@ export class TrialTestDataService extends AbstractTrialTestDataService {
       );
       const templateIds = templates.map((t) => t.id);
 
+      const interventionTypeIds = await this.ensureDemoInterventionTypeIds(organizationId);
+
       const customers = await runInBatches(
         buildDemoCustomers(organizationId),
         INJECT_BATCH_SIZE,
@@ -215,6 +220,7 @@ export class TrialTestDataService extends AbstractTrialTestDataService {
             caseIds.length,
             TRIAL_DEMO_COUNTS.interventions,
           ),
+          interventionTypeIds,
         }),
         INJECT_BATCH_SIZE,
         (body) => this.post(SERVICE_URLS.cases, organizationId, "/interventions", body),
@@ -247,6 +253,41 @@ export class TrialTestDataService extends AbstractTrialTestDataService {
       body,
       errorLabel: `${baseUrl} error`,
     });
+  }
+
+  /**
+   * Réutilise Pose / SAV s’ils existent déjà (ex. import catalogue), sinon les crée en démo.
+   */
+  private async ensureDemoInterventionTypeIds(organizationId: string): Promise<string[]> {
+    const existing = await this.scopedHttp.request<InterventionTypesListResponse>({
+      baseUrl: SERVICE_URLS.cases,
+      organizationId,
+      method: "get",
+      path: "/intervention-types",
+      query: { organizationId },
+      errorLabel: "Cases service error",
+    });
+    const byName = new Map(
+      (existing.types ?? []).map((t) => [t.name.trim().toLocaleLowerCase("fr"), t] as const),
+    );
+    const ids: string[] = [];
+    for (const body of buildDemoInterventionTypes(organizationId)) {
+      const key = body.name.trim().toLocaleLowerCase("fr");
+      const found = byName.get(key);
+      if (found) {
+        ids.push(found.id);
+        continue;
+      }
+      const created = await this.post<InterventionTypeResponse>(
+        SERVICE_URLS.cases,
+        organizationId,
+        "/intervention-types",
+        body,
+      );
+      byName.set(key, created);
+      ids.push(created.id);
+    }
+    return ids;
   }
 
   /**

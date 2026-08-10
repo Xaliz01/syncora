@@ -16,6 +16,10 @@ import type {
 import { TrialTestDataCard } from "@/components/test-data/TrialTestDataCard";
 import { ExportButton } from "@/components/ui/ExportButton";
 import * as exportsApi from "@/lib/exports.api";
+import {
+  getInterventionTypeAccentStyle,
+  normalizeCalendarColorHex,
+} from "@/lib/team-calendar-colors";
 
 const STATUS_LABELS: Record<CaseStatus, string> = {
   draft: "Brouillon",
@@ -576,35 +580,55 @@ export function DashboardPage() {
                   getKey={(i) => i.id}
                   ariaLabel="Pagination des prochaines interventions"
                 >
-                  {(i) => (
-                    <Link href={`/cases/${i.caseId}`} className={DASHBOARD_LIST_ROW_CLASS}>
-                      <div className="min-w-0 flex-1">
-                        <div className="text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-100 truncate">
-                          {i.title}
+                  {(i) => {
+                    const typeSwatch = normalizeCalendarColorHex(i.typeColor);
+                    const typeAccent = getInterventionTypeAccentStyle(i.typeColor);
+                    return (
+                      <Link
+                        href={`/cases/${i.caseId}`}
+                        className={DASHBOARD_LIST_ROW_CLASS}
+                        style={typeAccent}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-100 truncate">
+                            {i.title}
+                          </div>
+                          {i.caseTitle && (
+                            <div className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                              {i.caseTitle}
+                            </div>
+                          )}
+                          {i.typeName ? (
+                            <div className="mt-0.5 inline-flex items-center gap-1.5 text-[11px] sm:text-xs text-slate-600 dark:text-slate-300">
+                              {typeSwatch ? (
+                                <span
+                                  className="h-2 w-2 rounded-full shrink-0 ring-1 ring-black/10 dark:ring-white/20"
+                                  style={{ backgroundColor: typeSwatch }}
+                                  aria-hidden
+                                />
+                              ) : null}
+                              <span className="font-medium truncate">{i.typeName}</span>
+                            </div>
+                          ) : null}
                         </div>
-                        {i.caseTitle && (
-                          <div className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                            {i.caseTitle}
-                          </div>
-                        )}
-                      </div>
-                      <div className="ml-2 sm:ml-3 text-right flex-shrink-0">
-                        {i.scheduledStart && (
-                          <div className="text-[11px] sm:text-xs text-slate-600 dark:text-slate-300">
-                            {new Date(i.scheduledStart).toLocaleDateString("fr-FR")}
-                          </div>
-                        )}
-                        {i.scheduledStart && (
-                          <div className="text-[10px] text-slate-400 dark:text-slate-500">
-                            {new Date(i.scheduledStart).toLocaleTimeString("fr-FR", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    </Link>
-                  )}
+                        <div className="ml-2 sm:ml-3 text-right flex-shrink-0">
+                          {i.scheduledStart && (
+                            <div className="text-[11px] sm:text-xs text-slate-600 dark:text-slate-300">
+                              {new Date(i.scheduledStart).toLocaleDateString("fr-FR")}
+                            </div>
+                          )}
+                          {i.scheduledStart && (
+                            <div className="text-[10px] text-slate-400 dark:text-slate-500">
+                              {new Date(i.scheduledStart).toLocaleTimeString("fr-FR", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      </Link>
+                    );
+                  }}
                 </DashboardPaginatedList>
               </div>
             )}

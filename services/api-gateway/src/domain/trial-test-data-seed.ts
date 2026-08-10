@@ -8,6 +8,7 @@ import type {
   CreateCaseTemplateBody,
   CreateCustomerBody,
   CreateInterventionBody,
+  CreateInterventionTypeBody,
   CreatePermissionProfileBody,
   CreateTeamBody,
   CreateTechnicianBody,
@@ -16,6 +17,7 @@ import type {
 } from "@planwise/shared";
 import {
   DEFAULT_CASE_TEMPLATE_PRESETS,
+  DEFAULT_INTERVENTION_TYPE_PRESETS,
   DEFAULT_PERMISSION_PROFILE_PRESETS,
 } from "@planwise/shared";
 
@@ -27,6 +29,7 @@ export const TRIAL_DEMO_COUNTS = {
   vehicles: 2,
   permissionProfiles: 4,
   caseTemplates: 4,
+  interventionTypes: 2,
   customers: 100,
   cases: 100,
   articles: 30,
@@ -194,6 +197,13 @@ const DEMO_CASE_TEMPLATES = DEMO_CASE_TEMPLATE_IDS.map((id) => {
   };
 });
 
+/** Types démo = catalogue par défaut (Pose / SAV), noms et couleurs identiques. */
+const DEMO_INTERVENTION_TYPES = DEFAULT_INTERVENTION_TYPE_PRESETS.map((p) => ({
+  name: p.name,
+  description: p.description,
+  color: p.color,
+}));
+
 function padIndex(index: number, width = 3): string {
   return String(index).padStart(width, "0");
 }
@@ -274,6 +284,14 @@ export function buildDemoPermissionProfiles(organizationId: string): CreatePermi
 
 export function buildDemoCaseTemplates(organizationId: string): CreateCaseTemplateBody[] {
   return DEMO_CASE_TEMPLATES.map((t) => ({
+    organizationId,
+    ...t,
+    isTestData: true,
+  }));
+}
+
+export function buildDemoInterventionTypes(organizationId: string): CreateInterventionTypeBody[] {
+  return DEMO_INTERVENTION_TYPES.map((t) => ({
     organizationId,
     ...t,
     isTestData: true,
@@ -458,10 +476,15 @@ export function buildDemoInterventions(
   organizationId: string,
   caseIds: string[],
   teamIds: string[],
-  options?: { assigneeTechnicianId?: string; userCaseCount?: number },
+  options?: {
+    assigneeTechnicianId?: string;
+    userCaseCount?: number;
+    interventionTypeIds?: string[];
+  },
 ): CreateInterventionBody[] {
   const base = new Date();
   const userCaseCount = options?.userCaseCount ?? 0;
+  const typeIds = options?.interventionTypeIds ?? [];
   const total = Math.min(TRIAL_DEMO_COUNTS.interventions, caseIds.length);
   const unscheduledIndices = buildUnscheduledInterventionIndices(
     total,
@@ -482,6 +505,7 @@ export function buildDemoInterventions(
       title: unscheduled
         ? `Intervention démo (à planifier) #${i + 1}`
         : `Intervention démo #${i + 1}`,
+      ...(typeIds.length > 0 ? { typeId: pick(typeIds, i) } : {}),
       // Assigner un technicien (pas un userId brut) pour que la selectbox flotte le retrouve.
       ...(onUserCase && options?.assigneeTechnicianId
         ? { assigneeId: options.assigneeTechnicianId }

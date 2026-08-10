@@ -16,6 +16,7 @@ import {
 import type { CaseTemplateDocument } from "../persistence/case-template.schema";
 import type { CaseDocument } from "../persistence/case.schema";
 import type { InterventionDocument } from "../persistence/intervention.schema";
+import type { InterventionTypeDocument } from "../persistence/intervention-type.schema";
 import type { CaseHistoryDocument } from "../persistence/case-history.schema";
 import type { CommentDocument } from "../persistence/comment.schema";
 import { AbstractCasesService } from "./ports/cases.service.port";
@@ -32,6 +33,8 @@ export class CasesService extends AbstractCasesService {
     private readonly caseModel: Model<CaseDocument>,
     @InjectModel("Intervention")
     private readonly interventionModel: Model<InterventionDocument>,
+    @InjectModel("InterventionType")
+    private readonly interventionTypeModel: Model<InterventionTypeDocument>,
     @InjectModel("CaseHistory")
     private readonly caseHistoryModel: Model<CaseHistoryDocument>,
     @InjectModel("Comment")
@@ -265,6 +268,7 @@ export class CasesService extends AbstractCasesService {
     await this.commentModel.deleteMany({ organizationId, isTestData: true }).exec();
     await this.caseModel.deleteMany({ organizationId, isTestData: true }).exec();
     await this.templateModel.deleteMany({ organizationId, isTestData: true }).exec();
+    await this.interventionTypeModel.deleteMany({ organizationId, isTestData: true }).exec();
     return { purged: true };
   }
 

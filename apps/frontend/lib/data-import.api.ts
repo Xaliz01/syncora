@@ -65,7 +65,8 @@ export async function suggestDataImportMapping(
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const message =
-      (data as { message?: string | string[] }).message ?? `Erreur mapping (${res.status})`;
+      (data as { message?: string | string[] }).message ??
+      `Erreur de correspondance (${res.status})`;
     throw new Error(Array.isArray(message) ? message.join(", ") : String(message));
   }
   return data as DataImportSuggestMappingResponse;
@@ -120,7 +121,7 @@ export const DATA_IMPORT_ENTITY_META: Record<
     label: "Clients",
     templateFile: "clients.csv",
     order: 1,
-    hint: "Importer en premier.",
+    hint: "",
     details: [
       "externalId : identifiant unique de ce client dans votre ancien CRM (ex. CLI-001). Conservez la même valeur pour le retrouver au ré-import et pour y faire référence depuis les sites ou dossiers.",
     ],
@@ -129,7 +130,7 @@ export const DATA_IMPORT_ENTITY_META: Record<
     label: "Sites clients",
     templateFile: "sites_clients.csv",
     order: 2,
-    hint: "Après les clients.",
+    hint: "Chaque site doit pointer vers un client déjà importé.",
     details: [
       "externalId : identifiant unique de ce site dans votre ancien CRM (ex. SITE-001).",
       "customerExternalId : doit reprendre exactement l’externalId du client déjà importé (ex. CLI-001).",
@@ -139,7 +140,7 @@ export const DATA_IMPORT_ENTITY_META: Record<
     label: "Donneurs d’ordre",
     templateFile: "donneurs_ordre.csv",
     order: 3,
-    hint: "Indépendant des clients.",
+    hint: "",
     details: [
       "externalId : identifiant unique de ce donneur d’ordre dans votre ancien CRM (ex. DO-001). Réutilisez-le dans les dossiers via orderGiverExternalId.",
     ],
@@ -148,14 +149,14 @@ export const DATA_IMPORT_ENTITY_META: Record<
     label: "Articles",
     templateFile: "articles.csv",
     order: 4,
-    hint: "Catalogue stock.",
+    hint: "",
     details: ["externalId : identifiant unique de l’article dans votre ancien CRM (ex. ART-001)."],
   },
   prestations: {
     label: "Prestations",
     templateFile: "prestations.csv",
     order: 5,
-    hint: "Catalogue prestations",
+    hint: "",
     details: [
       "externalId : identifiant unique de la prestation dans votre ancien CRM (ex. PREST-001).",
     ],
@@ -164,7 +165,7 @@ export const DATA_IMPORT_ENTITY_META: Record<
     label: "Dossiers",
     templateFile: "dossiers.csv",
     order: 6,
-    hint: "Après clients / sites / donneurs d’ordre.",
+    hint: "Si le dossier est lié à un client, un site ou un donneur d’ordre, importez-les d’abord.",
     details: [
       "externalId : identifiant unique du dossier dans votre ancien CRM (ex. DOS-001).",
       "customerExternalId : externalId du client déjà importé (colonne externalId du fichier clients.csv).",
@@ -176,7 +177,7 @@ export const DATA_IMPORT_ENTITY_META: Record<
     label: "Interventions",
     templateFile: "interventions.csv",
     order: 7,
-    hint: "Après les dossiers ; historique autorisé.",
+    hint: "Chaque intervention doit pointer vers un dossier déjà importé. Les interventions passées sont acceptées.",
     details: [
       "externalId : identifiant unique de l’intervention dans votre ancien CRM (ex. INT-001).",
       "caseExternalId : externalId du dossier déjà importé (colonne externalId du fichier dossiers.csv).",
