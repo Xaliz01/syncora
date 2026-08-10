@@ -1258,7 +1258,14 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2 border-t border-slate-100 dark:border-slate-800 pt-4">
+                <div className="flex flex-wrap justify-end gap-2 border-t border-slate-100 dark:border-slate-800 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditing(false)}
+                    className="rounded-lg border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                  >
+                    Annuler
+                  </button>
                   <button
                     type="button"
                     onClick={handleEditSubmit}
@@ -1266,13 +1273,6 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                     className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
                   >
                     {updateMutation.isPending ? "Enregistrement…" : "Enregistrer les modifications"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsEditing(false)}
-                    className="rounded-lg border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
-                  >
-                    Annuler
                   </button>
                 </div>
               </div>
@@ -1652,28 +1652,32 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                     />
                   </div>
                 </div>
-                <button
-                  onClick={() => {
-                    if (!newIntTitle.trim()) return;
-                    createInterventionMutation.mutate({
-                      caseId,
-                      title: newIntTitle.trim(),
-                      description: newIntDesc.trim() || undefined,
-                      ...(newIntTypeId ? { typeId: newIntTypeId } : {}),
-                      ...(newIntTeamId
-                        ? { assignedTeamId: newIntTeamId }
-                        : newIntAssignee
-                          ? { assigneeId: newIntAssignee }
-                          : {}),
-                      scheduledStart: newIntStart ? new Date(newIntStart).toISOString() : undefined,
-                      scheduledEnd: newIntEnd ? new Date(newIntEnd).toISOString() : undefined,
-                    });
-                  }}
-                  disabled={createInterventionMutation.isPending}
-                  className="rounded-lg bg-brand-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
-                >
-                  Créer l&apos;intervention
-                </button>
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => {
+                      if (!newIntTitle.trim()) return;
+                      createInterventionMutation.mutate({
+                        caseId,
+                        title: newIntTitle.trim(),
+                        description: newIntDesc.trim() || undefined,
+                        ...(newIntTypeId ? { typeId: newIntTypeId } : {}),
+                        ...(newIntTeamId
+                          ? { assignedTeamId: newIntTeamId }
+                          : newIntAssignee
+                            ? { assigneeId: newIntAssignee }
+                            : {}),
+                        scheduledStart: newIntStart
+                          ? new Date(newIntStart).toISOString()
+                          : undefined,
+                        scheduledEnd: newIntEnd ? new Date(newIntEnd).toISOString() : undefined,
+                      });
+                    }}
+                    disabled={createInterventionMutation.isPending}
+                    className="rounded-lg bg-brand-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
+                  >
+                    Créer l&apos;intervention
+                  </button>
+                </div>
               </div>
             )}
 
@@ -1860,19 +1864,19 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                               </p>
                             ) : null}
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex justify-end gap-2">
+                            <button
+                              onClick={cancelEditingIntervention}
+                              className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                            >
+                              Annuler
+                            </button>
                             <button
                               onClick={submitEditIntervention}
                               disabled={updateInterventionMutation.isPending}
                               className="rounded-lg bg-brand-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
                             >
                               {updateInterventionMutation.isPending ? "…" : "Enregistrer"}
-                            </button>
-                            <button
-                              onClick={cancelEditingIntervention}
-                              className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
-                            >
-                              Annuler
                             </button>
                           </div>
                         </div>

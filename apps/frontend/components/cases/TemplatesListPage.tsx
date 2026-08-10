@@ -220,7 +220,7 @@ export function TemplatesListPage() {
                   {todoCount} tâche
                   {todoCount !== 1 ? "s" : ""}
                 </ListCellDefault>
-                <div className="flex flex-wrap gap-2 justify-end md:justify-start">
+                <div className="flex flex-wrap gap-2 justify-end">
                   <PermissionGate permission="case_templates.update">
                     <Link
                       href={`/settings/case-templates/${template.id}`}

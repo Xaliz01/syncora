@@ -298,14 +298,7 @@ export function OrderGiverCreateForm({
           {createMutation.isPending ? "Création…" : submitLabel}
         </button>
       ) : (
-        <div className="flex flex-wrap gap-3 pt-1">
-          <button
-            type="submit"
-            disabled={createMutation.isPending}
-            className="rounded-lg bg-brand-600 px-5 py-2 text-sm font-medium text-white transition hover:bg-brand-500 disabled:opacity-50"
-          >
-            {createMutation.isPending ? "Création…" : submitLabel}
-          </button>
+        <div className="flex flex-wrap justify-end gap-3 pt-1">
           {onCancel && (
             <button
               type="button"
@@ -318,6 +311,13 @@ export function OrderGiverCreateForm({
               Annuler
             </button>
           )}
+          <button
+            type="submit"
+            disabled={createMutation.isPending}
+            className="rounded-lg bg-brand-600 px-5 py-2 text-sm font-medium text-white transition hover:bg-brand-500 disabled:opacity-50"
+          >
+            {createMutation.isPending ? "Création…" : submitLabel}
+          </button>
         </div>
       )}
     </>

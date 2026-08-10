@@ -222,7 +222,7 @@ export function StockLocationsPage() {
               />
             </div>
           </div>
-          <div className="mt-3">
+          <div className="mt-3 flex justify-end">
             <button
               onClick={handleCreate}
               disabled={createMutation.isPending}

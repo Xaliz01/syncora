@@ -254,20 +254,20 @@ export function CaseCreatePage() {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-3">
-          <button
-            type="submit"
-            disabled={createMutation.isPending}
-            className="rounded-lg bg-brand-600 px-5 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
-          >
-            {createMutation.isPending ? "Création…" : "Créer le dossier"}
-          </button>
+        <div className="flex flex-wrap justify-end gap-3">
           <button
             type="button"
             onClick={() => router.push("/cases")}
             className="rounded-lg border border-slate-200 dark:border-slate-700 px-5 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
           >
             Annuler
+          </button>
+          <button
+            type="submit"
+            disabled={createMutation.isPending}
+            className="rounded-lg bg-brand-600 px-5 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
+          >
+            {createMutation.isPending ? "Création…" : "Créer le dossier"}
           </button>
         </div>
       </form>

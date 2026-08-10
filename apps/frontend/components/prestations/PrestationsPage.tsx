@@ -283,20 +283,20 @@ export function PrestationsPage() {
               />
             </label>
           </div>
-          <div className="flex gap-2">
-            <button
-              type="submit"
-              disabled={createMutation.isPending || updateMutation.isPending}
-              className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50"
-            >
-              {editingId ? "Enregistrer" : "Créer"}
-            </button>
+          <div className="flex justify-end gap-2">
             <button
               type="button"
               onClick={resetForm}
               className="rounded-lg border border-slate-200 dark:border-slate-600 px-3 py-2 text-sm"
             >
               Annuler
+            </button>
+            <button
+              type="submit"
+              disabled={createMutation.isPending || updateMutation.isPending}
+              className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50"
+            >
+              {editingId ? "Enregistrer" : "Créer"}
             </button>
           </div>
         </form>

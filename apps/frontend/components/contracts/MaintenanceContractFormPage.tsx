@@ -410,7 +410,13 @@ export function MaintenanceContractFormPage({
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap justify-end gap-3">
+          <Link
+            href={mode === "edit" && contractId ? `/contracts/${contractId}` : "/contracts"}
+            className="rounded-lg border border-slate-200 dark:border-slate-700 px-5 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+          >
+            Annuler
+          </Link>
           <PermissionGate permission={mode === "create" ? "contracts.create" : "contracts.update"}>
             <button
               type="submit"
@@ -420,12 +426,6 @@ export function MaintenanceContractFormPage({
               {saveMutation.isPending ? "Enregistrement…" : "Enregistrer"}
             </button>
           </PermissionGate>
-          <Link
-            href={mode === "edit" && contractId ? `/contracts/${contractId}` : "/contracts"}
-            className="rounded-lg border border-slate-200 dark:border-slate-700 px-5 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
-          >
-            Annuler
-          </Link>
         </div>
       </form>
     </div>

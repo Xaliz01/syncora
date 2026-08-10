@@ -504,13 +504,15 @@ export function AccountPage() {
                 placeholder="Votre nom"
               />
             </div>
-            <button
-              type="submit"
-              disabled={nameSaving || !name.trim() || name.trim() === (user?.name ?? "")}
-              className={saveButtonClassName}
-            >
-              {nameSaving ? "Enregistrement…" : "Enregistrer"}
-            </button>
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={nameSaving || !name.trim() || name.trim() === (user?.name ?? "")}
+                className={saveButtonClassName}
+              >
+                {nameSaving ? "Enregistrement…" : "Enregistrer"}
+              </button>
+            </div>
           </form>
         )}
       </section>
@@ -536,9 +538,11 @@ export function AccountPage() {
           <form onSubmit={handlePrefsSubmit} className="space-y-6">
             <ThemeRadioGroup value={themePreference} onChange={setThemePreference} />
             <SidebarRadioGroup value={sidebarPreference} onChange={setSidebarPreference} />
-            <button type="submit" disabled={prefsSaving} className={saveButtonClassName}>
-              {prefsSaving ? "Enregistrement…" : "Enregistrer"}
-            </button>
+            <div className="flex justify-end">
+              <button type="submit" disabled={prefsSaving} className={saveButtonClassName}>
+                {prefsSaving ? "Enregistrement…" : "Enregistrer"}
+              </button>
+            </div>
           </form>
         )}
       </section>

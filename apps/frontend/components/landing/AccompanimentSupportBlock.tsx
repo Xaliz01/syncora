@@ -130,28 +130,30 @@ export function AccompanimentSupportBlock({
         ) : null}
 
         {banner ? (
-          <div className="flex flex-col items-start gap-2">
+          <div className="flex flex-col gap-2">
             <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
               {LANDING_HERO_HOOK}
             </p>
-            <Link
-              href="/register"
-              className="mt-5 inline-flex rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-brand-600/25 transition hover:bg-brand-500"
-            >
-              Créer un compte
-            </Link>
-            {onLoginClick ? (
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Déjà un compte ?{" "}
-                <button
-                  type="button"
-                  onClick={onLoginClick}
-                  className="font-medium text-brand-600 dark:text-brand-400 hover:underline"
-                >
-                  Se connecter
-                </button>
-              </p>
-            ) : null}
+            <div className="mt-5 flex flex-col items-end gap-2">
+              <Link
+                href="/register"
+                className="inline-flex rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-brand-600/25 transition hover:bg-brand-500"
+              >
+                Créer un compte
+              </Link>
+              {onLoginClick ? (
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Déjà un compte ?{" "}
+                  <button
+                    type="button"
+                    onClick={onLoginClick}
+                    className="font-medium text-brand-600 dark:text-brand-400 hover:underline"
+                  >
+                    Se connecter
+                  </button>
+                </p>
+              ) : null}
+            </div>
           </div>
         ) : null}
       </div>

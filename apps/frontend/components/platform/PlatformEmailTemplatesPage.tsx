@@ -307,14 +307,7 @@ export function PlatformEmailTemplatesPage() {
               />
               Contenu par défaut (présélectionné à l’envoi)
             </label>
-            <div className="flex flex-wrap gap-2 pt-1">
-              <button
-                type="submit"
-                disabled={saving}
-                className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-60"
-              >
-                {saving ? "Enregistrement…" : "Enregistrer"}
-              </button>
+            <div className="flex flex-wrap justify-end gap-2 pt-1">
               <button
                 type="button"
                 onClick={() => void onPreview()}
@@ -322,6 +315,13 @@ export function PlatformEmailTemplatesPage() {
                 className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
               >
                 {previewing ? "Aperçu…" : "Aperçu"}
+              </button>
+              <button
+                type="submit"
+                disabled={saving}
+                className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-60"
+              >
+                {saving ? "Enregistrement…" : "Enregistrer"}
               </button>
             </div>
           </form>

@@ -292,7 +292,14 @@ function QuoteForm({
           />
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+          >
+            Annuler
+          </button>
           <button
             type="button"
             onClick={() =>
@@ -308,13 +315,6 @@ function QuoteForm({
             className="rounded-lg bg-brand-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
           >
             {isPending ? "…" : submitLabel}
-          </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
-          >
-            Annuler
           </button>
         </div>
       </div>

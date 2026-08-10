@@ -229,13 +229,15 @@ export function QontoIntegrationSection() {
                   Qonto → Paramètres → Intégrations API. Conservé chiffré pour votre organisation.
                 </p>
               </div>
-              <button
-                type="submit"
-                disabled={connectMutation.isPending}
-                className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50"
-              >
-                {connectMutation.isPending ? "Connexion…" : "Connecter Qonto"}
-              </button>
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  disabled={connectMutation.isPending}
+                  className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50"
+                >
+                  {connectMutation.isPending ? "Connexion…" : "Connecter Qonto"}
+                </button>
+              </div>
             </form>
           )}
         </div>

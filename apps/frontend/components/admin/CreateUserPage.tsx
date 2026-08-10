@@ -329,13 +329,15 @@ export function CreateUserPage() {
                 </div>
               </div>
             </div>
-            <button
-              type="submit"
-              disabled={saving || atSeatLimit}
-              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
-            >
-              {saving ? "Invitation..." : "Inviter l'utilisateur"}
-            </button>
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={saving || atSeatLimit}
+                className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
+              >
+                {saving ? "Invitation..." : "Inviter l'utilisateur"}
+              </button>
+            </div>
           </form>
         )}
       </section>

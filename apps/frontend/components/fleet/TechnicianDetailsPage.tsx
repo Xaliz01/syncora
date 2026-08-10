@@ -610,7 +610,14 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
                     className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-slate-500 dark:text-slate-400"
                   />
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setAccountAction("idle")}
+                    className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  >
+                    Annuler
+                  </button>
                   <button
                     type="button"
                     onClick={() => void handleCreateAccount()}
@@ -618,13 +625,6 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
                     className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50"
                   >
                     {creatingAccount ? "Envoi..." : "Envoyer l'invitation"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setAccountAction("idle")}
-                    className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
-                  >
-                    Annuler
                   </button>
                 </div>
               </div>
@@ -673,7 +673,17 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
                     </select>
                   </div>
                 )}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAccountAction("idle");
+                      setSelectedUserId("");
+                    }}
+                    className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  >
+                    Annuler
+                  </button>
                   <button
                     type="button"
                     onClick={() => void handleLinkAccount()}
@@ -686,16 +696,6 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
                     className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50"
                   >
                     {linkingAccount ? "Liaison..." : "Lier le compte"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAccountAction("idle");
-                      setSelectedUserId("");
-                    }}
-                    className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
-                  >
-                    Annuler
                   </button>
                 </div>
               </div>

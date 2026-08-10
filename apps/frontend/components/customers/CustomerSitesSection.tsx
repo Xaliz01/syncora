@@ -112,20 +112,20 @@ function SiteForm({
         />
       </div>
 
-      <div className="flex gap-2">
-        <button
-          type="submit"
-          disabled={!canSubmit || isPending}
-          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-700 disabled:opacity-50"
-        >
-          {isPending ? "…" : submitLabel}
-        </button>
+      <div className="flex justify-end gap-2">
         <button
           type="button"
           onClick={onCancel}
           className="rounded-lg border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 transition hover:bg-slate-50 dark:hover:bg-slate-800"
         >
           Annuler
+        </button>
+        <button
+          type="submit"
+          disabled={!canSubmit || isPending}
+          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-700 disabled:opacity-50"
+        >
+          {isPending ? "…" : submitLabel}
         </button>
       </div>
     </form>

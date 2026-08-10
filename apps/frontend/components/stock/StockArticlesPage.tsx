@@ -423,7 +423,7 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
               </p>
             </div>
           </div>
-          <div className="mt-3">
+          <div className="mt-3 flex justify-end">
             <button
               onClick={() => {
                 if (!createName.trim() || !createReference.trim()) {
@@ -490,7 +490,12 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
               className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
             />
           </div>
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            {selectedMovementArticle && (
+              <span className="mr-auto text-xs text-slate-500 dark:text-slate-400">
+                Stock actuel: {selectedMovementArticle.stockQuantity} {selectedMovementArticle.unit}
+              </span>
+            )}
             <button
               onClick={() => {
                 if (!movementArticleId) {
@@ -514,11 +519,6 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
             >
               Enregistrer le mouvement
             </button>
-            {selectedMovementArticle && (
-              <span className="text-xs text-slate-500 dark:text-slate-400">
-                Stock actuel: {selectedMovementArticle.stockQuantity} {selectedMovementArticle.unit}
-              </span>
-            )}
           </div>
         </div>
       )}

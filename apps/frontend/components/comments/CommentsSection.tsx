@@ -196,15 +196,7 @@ export function CommentsSection({
                     className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-800 dark:text-slate-100 focus:border-brand-500 focus:outline-none"
                     aria-label="Modifier le commentaire"
                   />
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={submitEdit}
-                      disabled={updateMutation.isPending || !editDraft.trim()}
-                      className="rounded-lg bg-brand-600 px-3 py-1 text-xs font-medium text-white hover:bg-brand-500 disabled:opacity-50"
-                    >
-                      Enregistrer
-                    </button>
+                  <div className="flex justify-end gap-2">
                     <button
                       type="button"
                       onClick={() => {
@@ -214,6 +206,14 @@ export function CommentsSection({
                       className="rounded-lg border border-slate-200 dark:border-slate-600 px-3 py-1 text-xs text-slate-600 dark:text-slate-300"
                     >
                       Annuler
+                    </button>
+                    <button
+                      type="button"
+                      onClick={submitEdit}
+                      disabled={updateMutation.isPending || !editDraft.trim()}
+                      className="rounded-lg bg-brand-600 px-3 py-1 text-xs font-medium text-white hover:bg-brand-500 disabled:opacity-50"
+                    >
+                      Enregistrer
                     </button>
                   </div>
                 </div>

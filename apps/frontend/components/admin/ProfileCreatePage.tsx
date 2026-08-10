@@ -144,13 +144,15 @@ export function ProfileCreatePage() {
               ))}
             </div>
 
-            <button
-              type="submit"
-              disabled={saving}
-              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
-            >
-              {saving ? "Création..." : "Créer le profil"}
-            </button>
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={saving}
+                className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
+              >
+                {saving ? "Création..." : "Créer le profil"}
+              </button>
+            </div>
           </form>
         )}
       </section>

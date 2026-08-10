@@ -222,20 +222,20 @@ export function VehicleCreatePage() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 pt-2">
-            <button
-              type="submit"
-              disabled={saving}
-              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
-            >
-              {saving ? "Enregistrement..." : "Ajouter le véhicule"}
-            </button>
+          <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
             <button
               type="button"
               onClick={() => router.push("/fleet/vehicles")}
               className="rounded-lg border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
             >
               Annuler
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
+            >
+              {saving ? "Enregistrement..." : "Ajouter le véhicule"}
             </button>
           </div>
         </form>

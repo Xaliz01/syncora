@@ -137,7 +137,18 @@ export function PrestationQuickCreateForm({
           />
         </label>
       </div>
-      <div className="flex flex-wrap gap-1.5 pt-0.5">
+      <div className="flex flex-wrap justify-end gap-1.5 pt-0.5">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onCancel();
+          }}
+          className="rounded-md border border-slate-200 dark:border-slate-700 px-2.5 py-1 text-[11px] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+        >
+          Annuler
+        </button>
         <button
           type="button"
           disabled={!canSubmit || createMutation.isPending}
@@ -149,17 +160,6 @@ export function PrestationQuickCreateForm({
           className="rounded-md bg-brand-600 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-brand-500 disabled:opacity-50"
         >
           {createMutation.isPending ? "Création…" : "Créer et sélectionner"}
-        </button>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onCancel();
-          }}
-          className="rounded-md border border-slate-200 dark:border-slate-700 px-2.5 py-1 text-[11px] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
-        >
-          Annuler
         </button>
       </div>
     </div>

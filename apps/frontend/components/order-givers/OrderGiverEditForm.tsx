@@ -244,14 +244,7 @@ export function OrderGiverEditForm({ orderGiver, onSubmit, onCancel, isPending, 
         </div>
       </details>
 
-      <div className="flex flex-wrap gap-3 pt-1">
-        <button
-          type="submit"
-          disabled={isPending}
-          className="rounded-lg bg-brand-600 px-5 py-2 text-sm font-medium text-white transition hover:bg-brand-500 disabled:opacity-50"
-        >
-          {isPending ? "Enregistrement…" : "Enregistrer"}
-        </button>
+      <div className="flex flex-wrap justify-end gap-3 pt-1">
         <button
           type="button"
           onClick={onCancel}
@@ -259,6 +252,13 @@ export function OrderGiverEditForm({ orderGiver, onSubmit, onCancel, isPending, 
           className="rounded-lg border border-slate-200 dark:border-slate-700 px-5 py-2 text-sm text-slate-600 dark:text-slate-300 transition hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50"
         >
           Annuler
+        </button>
+        <button
+          type="submit"
+          disabled={isPending}
+          className="rounded-lg bg-brand-600 px-5 py-2 text-sm font-medium text-white transition hover:bg-brand-500 disabled:opacity-50"
+        >
+          {isPending ? "Enregistrement…" : "Enregistrer"}
         </button>
       </div>
     </form>

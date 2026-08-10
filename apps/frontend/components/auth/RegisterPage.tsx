@@ -539,7 +539,7 @@ export function RegisterPage() {
                     </p>
                   </div>
 
-                  <div className="mt-auto pt-2">
+                  <div className="mt-auto flex flex-col items-end gap-2 pt-2">
                     <button
                       type="submit"
                       disabled={loading || !canSubmitOrganization || !isOnboarding}
@@ -548,7 +548,7 @@ export function RegisterPage() {
                       {loading ? "Création…" : "Créer l'organisation"}
                     </button>
                     {!isOnboarding && (
-                      <p className="mt-3 text-xs text-amber-600 dark:text-amber-400">
+                      <p className="text-xs text-amber-600 dark:text-amber-400">
                         Session expirée.{" "}
                         <button
                           type="button"

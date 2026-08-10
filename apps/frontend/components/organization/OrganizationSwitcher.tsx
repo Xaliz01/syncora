@@ -341,7 +341,7 @@ export function OrganizationSwitcher({
                       aucun coût durant la beta.
                     </p>
                   </div>
-                  <div className="mt-auto flex flex-wrap gap-2 pt-2">
+                  <div className="mt-auto flex flex-wrap justify-end gap-2 pt-2">
                     <button
                       type="button"
                       onClick={() => {

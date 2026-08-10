@@ -311,14 +311,16 @@ export function InterventionTypesSettingsPage() {
             onDescriptionChange={setCreateDescription}
             onColorChange={setCreateColor}
           />
-          <button
-            type="button"
-            onClick={handleCreate}
-            disabled={createMutation.isPending}
-            className="rounded-lg bg-brand-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
-          >
-            Créer le type
-          </button>
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={handleCreate}
+              disabled={createMutation.isPending}
+              className="rounded-lg bg-brand-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
+            >
+              Créer le type
+            </button>
+          </div>
         </div>
       ) : null}
 
@@ -391,15 +393,7 @@ export function InterventionTypesSettingsPage() {
                     onDescriptionChange={setEditDescription}
                     onColorChange={setEditColor}
                   />
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={handleUpdate}
-                      disabled={updateMutation.isPending}
-                      className="rounded-lg bg-brand-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
-                    >
-                      Enregistrer
-                    </button>
+                  <div className="flex flex-wrap justify-end gap-2">
                     <button
                       type="button"
                       onClick={() => {
@@ -409,6 +403,14 @@ export function InterventionTypesSettingsPage() {
                       className="rounded-lg border border-slate-200 dark:border-slate-700 px-4 py-1.5 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
                     >
                       Annuler
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleUpdate}
+                      disabled={updateMutation.isPending}
+                      className="rounded-lg bg-brand-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
+                    >
+                      Enregistrer
                     </button>
                   </div>
                 </div>
@@ -437,7 +439,7 @@ export function InterventionTypesSettingsPage() {
                     "—"
                   )}
                 </ListCellDefault>
-                <div className="flex flex-wrap gap-2 justify-end md:justify-start">
+                <div className="flex flex-wrap gap-2 justify-end">
                   <PermissionGate permission="intervention_types.update">
                     <button
                       type="button"

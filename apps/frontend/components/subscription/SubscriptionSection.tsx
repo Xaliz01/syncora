@@ -349,7 +349,7 @@ function SubscriptionSectionInner({ mode = "full" }: { mode?: "full" | "pitchChe
       )}
       {!isLoading && !error && subscription && canManageBilling && showStartTrial && (
         <div className="space-y-3">
-          <div className="flex flex-wrap gap-3 justify-center sm:justify-start">
+          <div className="flex flex-wrap gap-3 justify-end">
             <button
               type="button"
               onClick={() => startTrialMutation.mutate()}
@@ -373,7 +373,7 @@ function SubscriptionSectionInner({ mode = "full" }: { mode?: "full" | "pitchChe
               abonner.
             </p>
           )}
-          <div className="flex flex-wrap gap-3 justify-center sm:justify-start">
+          <div className="flex flex-wrap gap-3 justify-end">
             <button
               type="button"
               onClick={() => checkoutMutation.mutate()}
@@ -472,12 +472,16 @@ function SubscriptionSectionInner({ mode = "full" }: { mode?: "full" | "pitchChe
                         {BASE_SUBSCRIPTION_PLAN.commitmentDisplay}
                       </span>
                       <span className="block text-slate-600 dark:text-slate-300 mt-1">
-                        {BASE_SUBSCRIPTION_INCLUDED_USERS} utilisateurs inclus · jusqu’à{" "}
-                        {subscription.maxUsers} avec les options
+                        {BASE_SUBSCRIPTION_INCLUDED_USERS} utilisateurs inclus
+                        {subscription.maxUsers > BASE_SUBSCRIPTION_INCLUDED_USERS
+                          ? ` · jusqu’à ${subscription.maxUsers} avec les options`
+                          : null}
                       </span>
                       <span className="block text-slate-600 dark:text-slate-300 mt-1">
                         {formatStorageBytes(subscription.includedStorageBytes)} de documents inclus
-                        · quota actuel {formatStorageBytes(subscription.storageQuotaBytes)}
+                        {subscription.storageQuotaBytes > subscription.includedStorageBytes
+                          ? ` · quota actuel ${formatStorageBytes(subscription.storageQuotaBytes)}`
+                          : null}
                       </span>
                     </p>
                   </div>
@@ -570,7 +574,7 @@ function SubscriptionSectionInner({ mode = "full" }: { mode?: "full" | "pitchChe
                       </span>
                     </p>
                     {subscription.status === "trialing" && !subscription.hasStripeSubscription && (
-                      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                      <p className="mt-1 text-sm font-bold text-slate-500 dark:text-slate-400">
                         Essai gratuit en cours — abonnez-vous avant la fin pour continuer sans
                         interruption.
                       </p>
@@ -615,7 +619,7 @@ function SubscriptionSectionInner({ mode = "full" }: { mode?: "full" | "pitchChe
               </div>
 
               {canManageBilling && (
-                <div className="flex flex-wrap gap-3 mt-6">
+                <div className="flex flex-wrap justify-end gap-3 mt-6">
                   {showStartTrial && (
                     <button
                       type="button"
