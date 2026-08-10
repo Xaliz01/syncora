@@ -214,6 +214,7 @@ export function getReportPreview(
   if (filters?.customerId) params.set("customerId", filters.customerId);
   if (filters?.orderGiverId) params.set("orderGiverId", filters.orderGiverId);
   if (filters?.groupBy) params.set("groupBy", filters.groupBy);
+  if (filters?.typeId) params.set("typeId", filters.typeId);
   return apiRequestJson<ReportPreviewResponse>(
     "GET",
     `/exports/reporting/preview?${params.toString()}`,
