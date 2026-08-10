@@ -116,6 +116,10 @@ export class CaseDocument extends Document {
 
   @Prop({ default: false })
   isTestData!: boolean;
+
+  /** Identifiant dans le CRM source (import). */
+  @Prop()
+  importExternalId?: string;
 }
 
 export const CaseSchema = SchemaFactory.createForClass(CaseDocument);
@@ -124,3 +128,13 @@ CaseSchema.index({ organizationId: 1, assigneeId: 1 });
 CaseSchema.index({ organizationId: 1, "assignees.userId": 1 });
 CaseSchema.index({ organizationId: 1, dueDate: 1 });
 CaseSchema.index({ organizationId: 1, billingStatus: 1 });
+CaseSchema.index(
+  { organizationId: 1, importExternalId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      deletedAt: null,
+      importExternalId: { $type: "string" },
+    },
+  },
+);

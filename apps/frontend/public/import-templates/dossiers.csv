@@ -1,0 +1,3 @@
+externalId;title;description;status;priority;dueDate;customerExternalId;orderGiverExternalId;siteExternalId;tags
+DOS-001;Réparation chaudière;Fuite circuit;completed;high;2025-06-01;CLI-001;DO-001;SITE-001;chaudière|urgent
+DOS-002;Pose radiateur;;open;medium;;CLI-002;;;pose

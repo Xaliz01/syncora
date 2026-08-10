@@ -1,0 +1,2 @@
+externalId;kind;firstName;lastName;companyName;legalIdentifier;email;phone;mobile;addressLine1;addressLine2;postalCode;city;country;notes
+DO-001;company;;;Assureur XYZ;99887766554433;ops@assureur.fr;0102030405;;1 place de la Bourse;;75002;Paris;FR;

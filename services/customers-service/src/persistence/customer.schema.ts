@@ -37,6 +37,10 @@ export class CustomerSiteSubDoc {
 
   @Prop()
   notes?: string;
+
+  /** Identifiant dans le CRM source (import). */
+  @Prop()
+  importExternalId?: string;
 }
 
 export const CustomerSiteSubDocSchema = SchemaFactory.createForClass(CustomerSiteSubDoc);
@@ -114,6 +118,10 @@ export class CustomerDocument extends Document {
 
   @Prop({ default: false })
   isTestData!: boolean;
+
+  /** Identifiant dans le CRM source (import). */
+  @Prop()
+  importExternalId?: string;
 }
 
 export const CustomerSchema = SchemaFactory.createForClass(CustomerDocument);
@@ -125,3 +133,23 @@ CustomerSchema.index({
   lastName: 1,
   email: 1,
 });
+CustomerSchema.index(
+  { organizationId: 1, importExternalId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      deletedAt: null,
+      importExternalId: { $type: "string" },
+    },
+  },
+);
+CustomerSchema.index(
+  { organizationId: 1, "sites.importExternalId": 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      deletedAt: null,
+      "sites.importExternalId": { $type: "string" },
+    },
+  },
+);

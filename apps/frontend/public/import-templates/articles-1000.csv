@@ -1,0 +1,1001 @@
+externalId;name;reference;description;unit;defaultPrice;initialStock;reorderPoint;targetStock
+ART-0001;Tuyau PVC 1;REF-0001;;mètre;2.37;1;0;5
+ART-0002;Vis inox 2;REF-0002;;kg;2.74;2;0;5
+ART-0003;Cable électrique 3;REF-0003;;litre;3.11;3;0;5
+ART-0004;Joint torique 4;REF-0004;;boîte;3.48;4;0;5
+ART-0005;Robinet thermostatique 5;REF-0005;Description article 5;unité;3.85;5;1;6
+ART-0006;Collier de serrage 6;REF-0006;;mètre;4.22;6;1;6
+ART-0007;Isolant laine 7;REF-0007;;kg;4.59;7;1;7
+ART-0008;Peinture acrylique 8;REF-0008;;litre;4.96;8;1;8
+ART-0009;Mastic 9;REF-0009;;boîte;5.33;9;1;9
+ART-0010;Joint silicone 10;REF-0010;Description article 10;unité;5.70;10;2;10
+ART-0011;Tuyau PVC 11;REF-0011;;mètre;6.07;11;2;11
+ART-0012;Vis inox 12;REF-0012;;kg;6.44;12;2;12
+ART-0013;Cable électrique 13;REF-0013;;litre;6.81;13;2;13
+ART-0014;Joint torique 14;REF-0014;;boîte;7.18;14;2;14
+ART-0015;Robinet thermostatique 15;REF-0015;Description article 15;unité;7.55;15;3;15
+ART-0016;Collier de serrage 16;REF-0016;;mètre;7.92;16;3;16
+ART-0017;Isolant laine 17;REF-0017;;kg;8.29;17;3;17
+ART-0018;Peinture acrylique 18;REF-0018;;litre;8.66;18;3;18
+ART-0019;Mastic 19;REF-0019;;boîte;9.03;19;3;19
+ART-0020;Joint silicone 20;REF-0020;Description article 20;unité;9.40;20;4;20
+ART-0021;Tuyau PVC 21;REF-0021;;mètre;9.77;21;4;21
+ART-0022;Vis inox 22;REF-0022;;kg;10.14;22;4;22
+ART-0023;Cable électrique 23;REF-0023;;litre;10.51;23;4;23
+ART-0024;Joint torique 24;REF-0024;;boîte;10.88;24;4;24
+ART-0025;Robinet thermostatique 25;REF-0025;Description article 25;unité;11.25;25;5;25
+ART-0026;Collier de serrage 26;REF-0026;;mètre;11.62;26;5;26
+ART-0027;Isolant laine 27;REF-0027;;kg;11.99;27;5;27
+ART-0028;Peinture acrylique 28;REF-0028;;litre;12.36;28;5;28
+ART-0029;Mastic 29;REF-0029;;boîte;12.73;29;5;29
+ART-0030;Joint silicone 30;REF-0030;Description article 30;unité;13.10;30;6;30
+ART-0031;Tuyau PVC 31;REF-0031;;mètre;13.47;31;6;31
+ART-0032;Vis inox 32;REF-0032;;kg;13.84;32;6;32
+ART-0033;Cable électrique 33;REF-0033;;litre;14.21;33;6;33
+ART-0034;Joint torique 34;REF-0034;;boîte;14.58;34;6;34
+ART-0035;Robinet thermostatique 35;REF-0035;Description article 35;unité;14.95;35;7;35
+ART-0036;Collier de serrage 36;REF-0036;;mètre;15.32;36;7;36
+ART-0037;Isolant laine 37;REF-0037;;kg;15.69;37;7;37
+ART-0038;Peinture acrylique 38;REF-0038;;litre;16.06;38;7;38
+ART-0039;Mastic 39;REF-0039;;boîte;16.43;39;7;39
+ART-0040;Joint silicone 40;REF-0040;Description article 40;unité;16.80;40;8;40
+ART-0041;Tuyau PVC 41;REF-0041;;mètre;17.17;41;8;41
+ART-0042;Vis inox 42;REF-0042;;kg;17.54;42;8;42
+ART-0043;Cable électrique 43;REF-0043;;litre;17.91;43;8;43
+ART-0044;Joint torique 44;REF-0044;;boîte;18.28;44;8;44
+ART-0045;Robinet thermostatique 45;REF-0045;Description article 45;unité;18.65;45;9;45
+ART-0046;Collier de serrage 46;REF-0046;;mètre;19.02;46;9;46
+ART-0047;Isolant laine 47;REF-0047;;kg;19.39;47;9;47
+ART-0048;Peinture acrylique 48;REF-0048;;litre;19.76;48;9;48
+ART-0049;Mastic 49;REF-0049;;boîte;20.13;49;9;49
+ART-0050;Joint silicone 50;REF-0050;Description article 50;unité;2.00;50;10;50
+ART-0051;Tuyau PVC 51;REF-0051;;mètre;2.37;51;10;51
+ART-0052;Vis inox 52;REF-0052;;kg;2.74;52;10;52
+ART-0053;Cable électrique 53;REF-0053;;litre;3.11;53;10;53
+ART-0054;Joint torique 54;REF-0054;;boîte;3.48;54;10;54
+ART-0055;Robinet thermostatique 55;REF-0055;Description article 55;unité;3.85;55;11;55
+ART-0056;Collier de serrage 56;REF-0056;;mètre;4.22;56;11;56
+ART-0057;Isolant laine 57;REF-0057;;kg;4.59;57;11;57
+ART-0058;Peinture acrylique 58;REF-0058;;litre;4.96;58;11;58
+ART-0059;Mastic 59;REF-0059;;boîte;5.33;59;11;59
+ART-0060;Joint silicone 60;REF-0060;Description article 60;unité;5.70;60;12;60
+ART-0061;Tuyau PVC 61;REF-0061;;mètre;6.07;61;12;61
+ART-0062;Vis inox 62;REF-0062;;kg;6.44;62;12;62
+ART-0063;Cable électrique 63;REF-0063;;litre;6.81;63;12;63
+ART-0064;Joint torique 64;REF-0064;;boîte;7.18;64;12;64
+ART-0065;Robinet thermostatique 65;REF-0065;Description article 65;unité;7.55;65;13;65
+ART-0066;Collier de serrage 66;REF-0066;;mètre;7.92;66;13;66
+ART-0067;Isolant laine 67;REF-0067;;kg;8.29;67;13;67
+ART-0068;Peinture acrylique 68;REF-0068;;litre;8.66;68;13;68
+ART-0069;Mastic 69;REF-0069;;boîte;9.03;69;13;69
+ART-0070;Joint silicone 70;REF-0070;Description article 70;unité;9.40;70;14;70
+ART-0071;Tuyau PVC 71;REF-0071;;mètre;9.77;71;14;71
+ART-0072;Vis inox 72;REF-0072;;kg;10.14;72;14;72
+ART-0073;Cable électrique 73;REF-0073;;litre;10.51;73;14;73
+ART-0074;Joint torique 74;REF-0074;;boîte;10.88;74;14;74
+ART-0075;Robinet thermostatique 75;REF-0075;Description article 75;unité;11.25;75;15;75
+ART-0076;Collier de serrage 76;REF-0076;;mètre;11.62;76;15;76
+ART-0077;Isolant laine 77;REF-0077;;kg;11.99;77;15;77
+ART-0078;Peinture acrylique 78;REF-0078;;litre;12.36;78;15;78
+ART-0079;Mastic 79;REF-0079;;boîte;12.73;79;15;79
+ART-0080;Joint silicone 80;REF-0080;Description article 80;unité;13.10;80;16;80
+ART-0081;Tuyau PVC 81;REF-0081;;mètre;13.47;81;16;81
+ART-0082;Vis inox 82;REF-0082;;kg;13.84;82;16;82
+ART-0083;Cable électrique 83;REF-0083;;litre;14.21;83;16;83
+ART-0084;Joint torique 84;REF-0084;;boîte;14.58;84;16;84
+ART-0085;Robinet thermostatique 85;REF-0085;Description article 85;unité;14.95;85;17;85
+ART-0086;Collier de serrage 86;REF-0086;;mètre;15.32;86;17;86
+ART-0087;Isolant laine 87;REF-0087;;kg;15.69;87;17;87
+ART-0088;Peinture acrylique 88;REF-0088;;litre;16.06;88;17;88
+ART-0089;Mastic 89;REF-0089;;boîte;16.43;89;17;89
+ART-0090;Joint silicone 90;REF-0090;Description article 90;unité;16.80;90;18;90
+ART-0091;Tuyau PVC 91;REF-0091;;mètre;17.17;91;18;91
+ART-0092;Vis inox 92;REF-0092;;kg;17.54;92;18;92
+ART-0093;Cable électrique 93;REF-0093;;litre;17.91;93;18;93
+ART-0094;Joint torique 94;REF-0094;;boîte;18.28;94;18;94
+ART-0095;Robinet thermostatique 95;REF-0095;Description article 95;unité;18.65;95;19;95
+ART-0096;Collier de serrage 96;REF-0096;;mètre;19.02;96;19;96
+ART-0097;Isolant laine 97;REF-0097;;kg;19.39;97;19;97
+ART-0098;Peinture acrylique 98;REF-0098;;litre;19.76;98;19;98
+ART-0099;Mastic 99;REF-0099;;boîte;20.13;99;19;99
+ART-0100;Joint silicone 100;REF-0100;Description article 100;unité;2.00;100;20;100
+ART-0101;Tuyau PVC 101;REF-0101;;mètre;2.37;101;20;101
+ART-0102;Vis inox 102;REF-0102;;kg;2.74;102;20;102
+ART-0103;Cable électrique 103;REF-0103;;litre;3.11;103;20;103
+ART-0104;Joint torique 104;REF-0104;;boîte;3.48;104;20;104
+ART-0105;Robinet thermostatique 105;REF-0105;Description article 105;unité;3.85;105;20;105
+ART-0106;Collier de serrage 106;REF-0106;;mètre;4.22;106;20;106
+ART-0107;Isolant laine 107;REF-0107;;kg;4.59;107;20;107
+ART-0108;Peinture acrylique 108;REF-0108;;litre;4.96;108;20;108
+ART-0109;Mastic 109;REF-0109;;boîte;5.33;109;20;109
+ART-0110;Joint silicone 110;REF-0110;Description article 110;unité;5.70;110;20;110
+ART-0111;Tuyau PVC 111;REF-0111;;mètre;6.07;111;20;111
+ART-0112;Vis inox 112;REF-0112;;kg;6.44;112;20;112
+ART-0113;Cable électrique 113;REF-0113;;litre;6.81;113;20;113
+ART-0114;Joint torique 114;REF-0114;;boîte;7.18;114;20;114
+ART-0115;Robinet thermostatique 115;REF-0115;Description article 115;unité;7.55;115;20;115
+ART-0116;Collier de serrage 116;REF-0116;;mètre;7.92;116;20;116
+ART-0117;Isolant laine 117;REF-0117;;kg;8.29;117;20;117
+ART-0118;Peinture acrylique 118;REF-0118;;litre;8.66;118;20;118
+ART-0119;Mastic 119;REF-0119;;boîte;9.03;119;20;119
+ART-0120;Joint silicone 120;REF-0120;Description article 120;unité;9.40;120;20;120
+ART-0121;Tuyau PVC 121;REF-0121;;mètre;9.77;121;20;121
+ART-0122;Vis inox 122;REF-0122;;kg;10.14;122;20;122
+ART-0123;Cable électrique 123;REF-0123;;litre;10.51;123;20;123
+ART-0124;Joint torique 124;REF-0124;;boîte;10.88;124;20;124
+ART-0125;Robinet thermostatique 125;REF-0125;Description article 125;unité;11.25;125;20;125
+ART-0126;Collier de serrage 126;REF-0126;;mètre;11.62;126;20;126
+ART-0127;Isolant laine 127;REF-0127;;kg;11.99;127;20;127
+ART-0128;Peinture acrylique 128;REF-0128;;litre;12.36;128;20;128
+ART-0129;Mastic 129;REF-0129;;boîte;12.73;129;20;129
+ART-0130;Joint silicone 130;REF-0130;Description article 130;unité;13.10;130;20;130
+ART-0131;Tuyau PVC 131;REF-0131;;mètre;13.47;131;20;131
+ART-0132;Vis inox 132;REF-0132;;kg;13.84;132;20;132
+ART-0133;Cable électrique 133;REF-0133;;litre;14.21;133;20;133
+ART-0134;Joint torique 134;REF-0134;;boîte;14.58;134;20;134
+ART-0135;Robinet thermostatique 135;REF-0135;Description article 135;unité;14.95;135;20;135
+ART-0136;Collier de serrage 136;REF-0136;;mètre;15.32;136;20;136
+ART-0137;Isolant laine 137;REF-0137;;kg;15.69;137;20;137
+ART-0138;Peinture acrylique 138;REF-0138;;litre;16.06;138;20;138
+ART-0139;Mastic 139;REF-0139;;boîte;16.43;139;20;139
+ART-0140;Joint silicone 140;REF-0140;Description article 140;unité;16.80;140;20;140
+ART-0141;Tuyau PVC 141;REF-0141;;mètre;17.17;141;20;141
+ART-0142;Vis inox 142;REF-0142;;kg;17.54;142;20;142
+ART-0143;Cable électrique 143;REF-0143;;litre;17.91;143;20;143
+ART-0144;Joint torique 144;REF-0144;;boîte;18.28;144;20;144
+ART-0145;Robinet thermostatique 145;REF-0145;Description article 145;unité;18.65;145;20;145
+ART-0146;Collier de serrage 146;REF-0146;;mètre;19.02;146;20;146
+ART-0147;Isolant laine 147;REF-0147;;kg;19.39;147;20;147
+ART-0148;Peinture acrylique 148;REF-0148;;litre;19.76;148;20;148
+ART-0149;Mastic 149;REF-0149;;boîte;20.13;149;20;149
+ART-0150;Joint silicone 150;REF-0150;Description article 150;unité;2.00;150;20;150
+ART-0151;Tuyau PVC 151;REF-0151;;mètre;2.37;151;20;151
+ART-0152;Vis inox 152;REF-0152;;kg;2.74;152;20;152
+ART-0153;Cable électrique 153;REF-0153;;litre;3.11;153;20;153
+ART-0154;Joint torique 154;REF-0154;;boîte;3.48;154;20;154
+ART-0155;Robinet thermostatique 155;REF-0155;Description article 155;unité;3.85;155;20;155
+ART-0156;Collier de serrage 156;REF-0156;;mètre;4.22;156;20;156
+ART-0157;Isolant laine 157;REF-0157;;kg;4.59;157;20;157
+ART-0158;Peinture acrylique 158;REF-0158;;litre;4.96;158;20;158
+ART-0159;Mastic 159;REF-0159;;boîte;5.33;159;20;159
+ART-0160;Joint silicone 160;REF-0160;Description article 160;unité;5.70;160;20;160
+ART-0161;Tuyau PVC 161;REF-0161;;mètre;6.07;161;20;161
+ART-0162;Vis inox 162;REF-0162;;kg;6.44;162;20;162
+ART-0163;Cable électrique 163;REF-0163;;litre;6.81;163;20;163
+ART-0164;Joint torique 164;REF-0164;;boîte;7.18;164;20;164
+ART-0165;Robinet thermostatique 165;REF-0165;Description article 165;unité;7.55;165;20;165
+ART-0166;Collier de serrage 166;REF-0166;;mètre;7.92;166;20;166
+ART-0167;Isolant laine 167;REF-0167;;kg;8.29;167;20;167
+ART-0168;Peinture acrylique 168;REF-0168;;litre;8.66;168;20;168
+ART-0169;Mastic 169;REF-0169;;boîte;9.03;169;20;169
+ART-0170;Joint silicone 170;REF-0170;Description article 170;unité;9.40;170;20;170
+ART-0171;Tuyau PVC 171;REF-0171;;mètre;9.77;171;20;171
+ART-0172;Vis inox 172;REF-0172;;kg;10.14;172;20;172
+ART-0173;Cable électrique 173;REF-0173;;litre;10.51;173;20;173
+ART-0174;Joint torique 174;REF-0174;;boîte;10.88;174;20;174
+ART-0175;Robinet thermostatique 175;REF-0175;Description article 175;unité;11.25;175;20;175
+ART-0176;Collier de serrage 176;REF-0176;;mètre;11.62;176;20;176
+ART-0177;Isolant laine 177;REF-0177;;kg;11.99;177;20;177
+ART-0178;Peinture acrylique 178;REF-0178;;litre;12.36;178;20;178
+ART-0179;Mastic 179;REF-0179;;boîte;12.73;179;20;179
+ART-0180;Joint silicone 180;REF-0180;Description article 180;unité;13.10;180;20;180
+ART-0181;Tuyau PVC 181;REF-0181;;mètre;13.47;181;20;181
+ART-0182;Vis inox 182;REF-0182;;kg;13.84;182;20;182
+ART-0183;Cable électrique 183;REF-0183;;litre;14.21;183;20;183
+ART-0184;Joint torique 184;REF-0184;;boîte;14.58;184;20;184
+ART-0185;Robinet thermostatique 185;REF-0185;Description article 185;unité;14.95;185;20;185
+ART-0186;Collier de serrage 186;REF-0186;;mètre;15.32;186;20;186
+ART-0187;Isolant laine 187;REF-0187;;kg;15.69;187;20;187
+ART-0188;Peinture acrylique 188;REF-0188;;litre;16.06;188;20;188
+ART-0189;Mastic 189;REF-0189;;boîte;16.43;189;20;189
+ART-0190;Joint silicone 190;REF-0190;Description article 190;unité;16.80;190;20;190
+ART-0191;Tuyau PVC 191;REF-0191;;mètre;17.17;191;20;191
+ART-0192;Vis inox 192;REF-0192;;kg;17.54;192;20;192
+ART-0193;Cable électrique 193;REF-0193;;litre;17.91;193;20;193
+ART-0194;Joint torique 194;REF-0194;;boîte;18.28;194;20;194
+ART-0195;Robinet thermostatique 195;REF-0195;Description article 195;unité;18.65;195;20;195
+ART-0196;Collier de serrage 196;REF-0196;;mètre;19.02;196;20;196
+ART-0197;Isolant laine 197;REF-0197;;kg;19.39;197;20;197
+ART-0198;Peinture acrylique 198;REF-0198;;litre;19.76;198;20;198
+ART-0199;Mastic 199;REF-0199;;boîte;20.13;199;20;199
+ART-0200;Joint silicone 200;REF-0200;Description article 200;unité;2.00;0;0;5
+ART-0201;Tuyau PVC 201;REF-0201;;mètre;2.37;1;0;5
+ART-0202;Vis inox 202;REF-0202;;kg;2.74;2;0;5
+ART-0203;Cable électrique 203;REF-0203;;litre;3.11;3;0;5
+ART-0204;Joint torique 204;REF-0204;;boîte;3.48;4;0;5
+ART-0205;Robinet thermostatique 205;REF-0205;Description article 205;unité;3.85;5;1;6
+ART-0206;Collier de serrage 206;REF-0206;;mètre;4.22;6;1;6
+ART-0207;Isolant laine 207;REF-0207;;kg;4.59;7;1;7
+ART-0208;Peinture acrylique 208;REF-0208;;litre;4.96;8;1;8
+ART-0209;Mastic 209;REF-0209;;boîte;5.33;9;1;9
+ART-0210;Joint silicone 210;REF-0210;Description article 210;unité;5.70;10;2;10
+ART-0211;Tuyau PVC 211;REF-0211;;mètre;6.07;11;2;11
+ART-0212;Vis inox 212;REF-0212;;kg;6.44;12;2;12
+ART-0213;Cable électrique 213;REF-0213;;litre;6.81;13;2;13
+ART-0214;Joint torique 214;REF-0214;;boîte;7.18;14;2;14
+ART-0215;Robinet thermostatique 215;REF-0215;Description article 215;unité;7.55;15;3;15
+ART-0216;Collier de serrage 216;REF-0216;;mètre;7.92;16;3;16
+ART-0217;Isolant laine 217;REF-0217;;kg;8.29;17;3;17
+ART-0218;Peinture acrylique 218;REF-0218;;litre;8.66;18;3;18
+ART-0219;Mastic 219;REF-0219;;boîte;9.03;19;3;19
+ART-0220;Joint silicone 220;REF-0220;Description article 220;unité;9.40;20;4;20
+ART-0221;Tuyau PVC 221;REF-0221;;mètre;9.77;21;4;21
+ART-0222;Vis inox 222;REF-0222;;kg;10.14;22;4;22
+ART-0223;Cable électrique 223;REF-0223;;litre;10.51;23;4;23
+ART-0224;Joint torique 224;REF-0224;;boîte;10.88;24;4;24
+ART-0225;Robinet thermostatique 225;REF-0225;Description article 225;unité;11.25;25;5;25
+ART-0226;Collier de serrage 226;REF-0226;;mètre;11.62;26;5;26
+ART-0227;Isolant laine 227;REF-0227;;kg;11.99;27;5;27
+ART-0228;Peinture acrylique 228;REF-0228;;litre;12.36;28;5;28
+ART-0229;Mastic 229;REF-0229;;boîte;12.73;29;5;29
+ART-0230;Joint silicone 230;REF-0230;Description article 230;unité;13.10;30;6;30
+ART-0231;Tuyau PVC 231;REF-0231;;mètre;13.47;31;6;31
+ART-0232;Vis inox 232;REF-0232;;kg;13.84;32;6;32
+ART-0233;Cable électrique 233;REF-0233;;litre;14.21;33;6;33
+ART-0234;Joint torique 234;REF-0234;;boîte;14.58;34;6;34
+ART-0235;Robinet thermostatique 235;REF-0235;Description article 235;unité;14.95;35;7;35
+ART-0236;Collier de serrage 236;REF-0236;;mètre;15.32;36;7;36
+ART-0237;Isolant laine 237;REF-0237;;kg;15.69;37;7;37
+ART-0238;Peinture acrylique 238;REF-0238;;litre;16.06;38;7;38
+ART-0239;Mastic 239;REF-0239;;boîte;16.43;39;7;39
+ART-0240;Joint silicone 240;REF-0240;Description article 240;unité;16.80;40;8;40
+ART-0241;Tuyau PVC 241;REF-0241;;mètre;17.17;41;8;41
+ART-0242;Vis inox 242;REF-0242;;kg;17.54;42;8;42
+ART-0243;Cable électrique 243;REF-0243;;litre;17.91;43;8;43
+ART-0244;Joint torique 244;REF-0244;;boîte;18.28;44;8;44
+ART-0245;Robinet thermostatique 245;REF-0245;Description article 245;unité;18.65;45;9;45
+ART-0246;Collier de serrage 246;REF-0246;;mètre;19.02;46;9;46
+ART-0247;Isolant laine 247;REF-0247;;kg;19.39;47;9;47
+ART-0248;Peinture acrylique 248;REF-0248;;litre;19.76;48;9;48
+ART-0249;Mastic 249;REF-0249;;boîte;20.13;49;9;49
+ART-0250;Joint silicone 250;REF-0250;Description article 250;unité;2.00;50;10;50
+ART-0251;Tuyau PVC 251;REF-0251;;mètre;2.37;51;10;51
+ART-0252;Vis inox 252;REF-0252;;kg;2.74;52;10;52
+ART-0253;Cable électrique 253;REF-0253;;litre;3.11;53;10;53
+ART-0254;Joint torique 254;REF-0254;;boîte;3.48;54;10;54
+ART-0255;Robinet thermostatique 255;REF-0255;Description article 255;unité;3.85;55;11;55
+ART-0256;Collier de serrage 256;REF-0256;;mètre;4.22;56;11;56
+ART-0257;Isolant laine 257;REF-0257;;kg;4.59;57;11;57
+ART-0258;Peinture acrylique 258;REF-0258;;litre;4.96;58;11;58
+ART-0259;Mastic 259;REF-0259;;boîte;5.33;59;11;59
+ART-0260;Joint silicone 260;REF-0260;Description article 260;unité;5.70;60;12;60
+ART-0261;Tuyau PVC 261;REF-0261;;mètre;6.07;61;12;61
+ART-0262;Vis inox 262;REF-0262;;kg;6.44;62;12;62
+ART-0263;Cable électrique 263;REF-0263;;litre;6.81;63;12;63
+ART-0264;Joint torique 264;REF-0264;;boîte;7.18;64;12;64
+ART-0265;Robinet thermostatique 265;REF-0265;Description article 265;unité;7.55;65;13;65
+ART-0266;Collier de serrage 266;REF-0266;;mètre;7.92;66;13;66
+ART-0267;Isolant laine 267;REF-0267;;kg;8.29;67;13;67
+ART-0268;Peinture acrylique 268;REF-0268;;litre;8.66;68;13;68
+ART-0269;Mastic 269;REF-0269;;boîte;9.03;69;13;69
+ART-0270;Joint silicone 270;REF-0270;Description article 270;unité;9.40;70;14;70
+ART-0271;Tuyau PVC 271;REF-0271;;mètre;9.77;71;14;71
+ART-0272;Vis inox 272;REF-0272;;kg;10.14;72;14;72
+ART-0273;Cable électrique 273;REF-0273;;litre;10.51;73;14;73
+ART-0274;Joint torique 274;REF-0274;;boîte;10.88;74;14;74
+ART-0275;Robinet thermostatique 275;REF-0275;Description article 275;unité;11.25;75;15;75
+ART-0276;Collier de serrage 276;REF-0276;;mètre;11.62;76;15;76
+ART-0277;Isolant laine 277;REF-0277;;kg;11.99;77;15;77
+ART-0278;Peinture acrylique 278;REF-0278;;litre;12.36;78;15;78
+ART-0279;Mastic 279;REF-0279;;boîte;12.73;79;15;79
+ART-0280;Joint silicone 280;REF-0280;Description article 280;unité;13.10;80;16;80
+ART-0281;Tuyau PVC 281;REF-0281;;mètre;13.47;81;16;81
+ART-0282;Vis inox 282;REF-0282;;kg;13.84;82;16;82
+ART-0283;Cable électrique 283;REF-0283;;litre;14.21;83;16;83
+ART-0284;Joint torique 284;REF-0284;;boîte;14.58;84;16;84
+ART-0285;Robinet thermostatique 285;REF-0285;Description article 285;unité;14.95;85;17;85
+ART-0286;Collier de serrage 286;REF-0286;;mètre;15.32;86;17;86
+ART-0287;Isolant laine 287;REF-0287;;kg;15.69;87;17;87
+ART-0288;Peinture acrylique 288;REF-0288;;litre;16.06;88;17;88
+ART-0289;Mastic 289;REF-0289;;boîte;16.43;89;17;89
+ART-0290;Joint silicone 290;REF-0290;Description article 290;unité;16.80;90;18;90
+ART-0291;Tuyau PVC 291;REF-0291;;mètre;17.17;91;18;91
+ART-0292;Vis inox 292;REF-0292;;kg;17.54;92;18;92
+ART-0293;Cable électrique 293;REF-0293;;litre;17.91;93;18;93
+ART-0294;Joint torique 294;REF-0294;;boîte;18.28;94;18;94
+ART-0295;Robinet thermostatique 295;REF-0295;Description article 295;unité;18.65;95;19;95
+ART-0296;Collier de serrage 296;REF-0296;;mètre;19.02;96;19;96
+ART-0297;Isolant laine 297;REF-0297;;kg;19.39;97;19;97
+ART-0298;Peinture acrylique 298;REF-0298;;litre;19.76;98;19;98
+ART-0299;Mastic 299;REF-0299;;boîte;20.13;99;19;99
+ART-0300;Joint silicone 300;REF-0300;Description article 300;unité;2.00;100;20;100
+ART-0301;Tuyau PVC 301;REF-0301;;mètre;2.37;101;20;101
+ART-0302;Vis inox 302;REF-0302;;kg;2.74;102;20;102
+ART-0303;Cable électrique 303;REF-0303;;litre;3.11;103;20;103
+ART-0304;Joint torique 304;REF-0304;;boîte;3.48;104;20;104
+ART-0305;Robinet thermostatique 305;REF-0305;Description article 305;unité;3.85;105;20;105
+ART-0306;Collier de serrage 306;REF-0306;;mètre;4.22;106;20;106
+ART-0307;Isolant laine 307;REF-0307;;kg;4.59;107;20;107
+ART-0308;Peinture acrylique 308;REF-0308;;litre;4.96;108;20;108
+ART-0309;Mastic 309;REF-0309;;boîte;5.33;109;20;109
+ART-0310;Joint silicone 310;REF-0310;Description article 310;unité;5.70;110;20;110
+ART-0311;Tuyau PVC 311;REF-0311;;mètre;6.07;111;20;111
+ART-0312;Vis inox 312;REF-0312;;kg;6.44;112;20;112
+ART-0313;Cable électrique 313;REF-0313;;litre;6.81;113;20;113
+ART-0314;Joint torique 314;REF-0314;;boîte;7.18;114;20;114
+ART-0315;Robinet thermostatique 315;REF-0315;Description article 315;unité;7.55;115;20;115
+ART-0316;Collier de serrage 316;REF-0316;;mètre;7.92;116;20;116
+ART-0317;Isolant laine 317;REF-0317;;kg;8.29;117;20;117
+ART-0318;Peinture acrylique 318;REF-0318;;litre;8.66;118;20;118
+ART-0319;Mastic 319;REF-0319;;boîte;9.03;119;20;119
+ART-0320;Joint silicone 320;REF-0320;Description article 320;unité;9.40;120;20;120
+ART-0321;Tuyau PVC 321;REF-0321;;mètre;9.77;121;20;121
+ART-0322;Vis inox 322;REF-0322;;kg;10.14;122;20;122
+ART-0323;Cable électrique 323;REF-0323;;litre;10.51;123;20;123
+ART-0324;Joint torique 324;REF-0324;;boîte;10.88;124;20;124
+ART-0325;Robinet thermostatique 325;REF-0325;Description article 325;unité;11.25;125;20;125
+ART-0326;Collier de serrage 326;REF-0326;;mètre;11.62;126;20;126
+ART-0327;Isolant laine 327;REF-0327;;kg;11.99;127;20;127
+ART-0328;Peinture acrylique 328;REF-0328;;litre;12.36;128;20;128
+ART-0329;Mastic 329;REF-0329;;boîte;12.73;129;20;129
+ART-0330;Joint silicone 330;REF-0330;Description article 330;unité;13.10;130;20;130
+ART-0331;Tuyau PVC 331;REF-0331;;mètre;13.47;131;20;131
+ART-0332;Vis inox 332;REF-0332;;kg;13.84;132;20;132
+ART-0333;Cable électrique 333;REF-0333;;litre;14.21;133;20;133
+ART-0334;Joint torique 334;REF-0334;;boîte;14.58;134;20;134
+ART-0335;Robinet thermostatique 335;REF-0335;Description article 335;unité;14.95;135;20;135
+ART-0336;Collier de serrage 336;REF-0336;;mètre;15.32;136;20;136
+ART-0337;Isolant laine 337;REF-0337;;kg;15.69;137;20;137
+ART-0338;Peinture acrylique 338;REF-0338;;litre;16.06;138;20;138
+ART-0339;Mastic 339;REF-0339;;boîte;16.43;139;20;139
+ART-0340;Joint silicone 340;REF-0340;Description article 340;unité;16.80;140;20;140
+ART-0341;Tuyau PVC 341;REF-0341;;mètre;17.17;141;20;141
+ART-0342;Vis inox 342;REF-0342;;kg;17.54;142;20;142
+ART-0343;Cable électrique 343;REF-0343;;litre;17.91;143;20;143
+ART-0344;Joint torique 344;REF-0344;;boîte;18.28;144;20;144
+ART-0345;Robinet thermostatique 345;REF-0345;Description article 345;unité;18.65;145;20;145
+ART-0346;Collier de serrage 346;REF-0346;;mètre;19.02;146;20;146
+ART-0347;Isolant laine 347;REF-0347;;kg;19.39;147;20;147
+ART-0348;Peinture acrylique 348;REF-0348;;litre;19.76;148;20;148
+ART-0349;Mastic 349;REF-0349;;boîte;20.13;149;20;149
+ART-0350;Joint silicone 350;REF-0350;Description article 350;unité;2.00;150;20;150
+ART-0351;Tuyau PVC 351;REF-0351;;mètre;2.37;151;20;151
+ART-0352;Vis inox 352;REF-0352;;kg;2.74;152;20;152
+ART-0353;Cable électrique 353;REF-0353;;litre;3.11;153;20;153
+ART-0354;Joint torique 354;REF-0354;;boîte;3.48;154;20;154
+ART-0355;Robinet thermostatique 355;REF-0355;Description article 355;unité;3.85;155;20;155
+ART-0356;Collier de serrage 356;REF-0356;;mètre;4.22;156;20;156
+ART-0357;Isolant laine 357;REF-0357;;kg;4.59;157;20;157
+ART-0358;Peinture acrylique 358;REF-0358;;litre;4.96;158;20;158
+ART-0359;Mastic 359;REF-0359;;boîte;5.33;159;20;159
+ART-0360;Joint silicone 360;REF-0360;Description article 360;unité;5.70;160;20;160
+ART-0361;Tuyau PVC 361;REF-0361;;mètre;6.07;161;20;161
+ART-0362;Vis inox 362;REF-0362;;kg;6.44;162;20;162
+ART-0363;Cable électrique 363;REF-0363;;litre;6.81;163;20;163
+ART-0364;Joint torique 364;REF-0364;;boîte;7.18;164;20;164
+ART-0365;Robinet thermostatique 365;REF-0365;Description article 365;unité;7.55;165;20;165
+ART-0366;Collier de serrage 366;REF-0366;;mètre;7.92;166;20;166
+ART-0367;Isolant laine 367;REF-0367;;kg;8.29;167;20;167
+ART-0368;Peinture acrylique 368;REF-0368;;litre;8.66;168;20;168
+ART-0369;Mastic 369;REF-0369;;boîte;9.03;169;20;169
+ART-0370;Joint silicone 370;REF-0370;Description article 370;unité;9.40;170;20;170
+ART-0371;Tuyau PVC 371;REF-0371;;mètre;9.77;171;20;171
+ART-0372;Vis inox 372;REF-0372;;kg;10.14;172;20;172
+ART-0373;Cable électrique 373;REF-0373;;litre;10.51;173;20;173
+ART-0374;Joint torique 374;REF-0374;;boîte;10.88;174;20;174
+ART-0375;Robinet thermostatique 375;REF-0375;Description article 375;unité;11.25;175;20;175
+ART-0376;Collier de serrage 376;REF-0376;;mètre;11.62;176;20;176
+ART-0377;Isolant laine 377;REF-0377;;kg;11.99;177;20;177
+ART-0378;Peinture acrylique 378;REF-0378;;litre;12.36;178;20;178
+ART-0379;Mastic 379;REF-0379;;boîte;12.73;179;20;179
+ART-0380;Joint silicone 380;REF-0380;Description article 380;unité;13.10;180;20;180
+ART-0381;Tuyau PVC 381;REF-0381;;mètre;13.47;181;20;181
+ART-0382;Vis inox 382;REF-0382;;kg;13.84;182;20;182
+ART-0383;Cable électrique 383;REF-0383;;litre;14.21;183;20;183
+ART-0384;Joint torique 384;REF-0384;;boîte;14.58;184;20;184
+ART-0385;Robinet thermostatique 385;REF-0385;Description article 385;unité;14.95;185;20;185
+ART-0386;Collier de serrage 386;REF-0386;;mètre;15.32;186;20;186
+ART-0387;Isolant laine 387;REF-0387;;kg;15.69;187;20;187
+ART-0388;Peinture acrylique 388;REF-0388;;litre;16.06;188;20;188
+ART-0389;Mastic 389;REF-0389;;boîte;16.43;189;20;189
+ART-0390;Joint silicone 390;REF-0390;Description article 390;unité;16.80;190;20;190
+ART-0391;Tuyau PVC 391;REF-0391;;mètre;17.17;191;20;191
+ART-0392;Vis inox 392;REF-0392;;kg;17.54;192;20;192
+ART-0393;Cable électrique 393;REF-0393;;litre;17.91;193;20;193
+ART-0394;Joint torique 394;REF-0394;;boîte;18.28;194;20;194
+ART-0395;Robinet thermostatique 395;REF-0395;Description article 395;unité;18.65;195;20;195
+ART-0396;Collier de serrage 396;REF-0396;;mètre;19.02;196;20;196
+ART-0397;Isolant laine 397;REF-0397;;kg;19.39;197;20;197
+ART-0398;Peinture acrylique 398;REF-0398;;litre;19.76;198;20;198
+ART-0399;Mastic 399;REF-0399;;boîte;20.13;199;20;199
+ART-0400;Joint silicone 400;REF-0400;Description article 400;unité;2.00;0;0;5
+ART-0401;Tuyau PVC 401;REF-0401;;mètre;2.37;1;0;5
+ART-0402;Vis inox 402;REF-0402;;kg;2.74;2;0;5
+ART-0403;Cable électrique 403;REF-0403;;litre;3.11;3;0;5
+ART-0404;Joint torique 404;REF-0404;;boîte;3.48;4;0;5
+ART-0405;Robinet thermostatique 405;REF-0405;Description article 405;unité;3.85;5;1;6
+ART-0406;Collier de serrage 406;REF-0406;;mètre;4.22;6;1;6
+ART-0407;Isolant laine 407;REF-0407;;kg;4.59;7;1;7
+ART-0408;Peinture acrylique 408;REF-0408;;litre;4.96;8;1;8
+ART-0409;Mastic 409;REF-0409;;boîte;5.33;9;1;9
+ART-0410;Joint silicone 410;REF-0410;Description article 410;unité;5.70;10;2;10
+ART-0411;Tuyau PVC 411;REF-0411;;mètre;6.07;11;2;11
+ART-0412;Vis inox 412;REF-0412;;kg;6.44;12;2;12
+ART-0413;Cable électrique 413;REF-0413;;litre;6.81;13;2;13
+ART-0414;Joint torique 414;REF-0414;;boîte;7.18;14;2;14
+ART-0415;Robinet thermostatique 415;REF-0415;Description article 415;unité;7.55;15;3;15
+ART-0416;Collier de serrage 416;REF-0416;;mètre;7.92;16;3;16
+ART-0417;Isolant laine 417;REF-0417;;kg;8.29;17;3;17
+ART-0418;Peinture acrylique 418;REF-0418;;litre;8.66;18;3;18
+ART-0419;Mastic 419;REF-0419;;boîte;9.03;19;3;19
+ART-0420;Joint silicone 420;REF-0420;Description article 420;unité;9.40;20;4;20
+ART-0421;Tuyau PVC 421;REF-0421;;mètre;9.77;21;4;21
+ART-0422;Vis inox 422;REF-0422;;kg;10.14;22;4;22
+ART-0423;Cable électrique 423;REF-0423;;litre;10.51;23;4;23
+ART-0424;Joint torique 424;REF-0424;;boîte;10.88;24;4;24
+ART-0425;Robinet thermostatique 425;REF-0425;Description article 425;unité;11.25;25;5;25
+ART-0426;Collier de serrage 426;REF-0426;;mètre;11.62;26;5;26
+ART-0427;Isolant laine 427;REF-0427;;kg;11.99;27;5;27
+ART-0428;Peinture acrylique 428;REF-0428;;litre;12.36;28;5;28
+ART-0429;Mastic 429;REF-0429;;boîte;12.73;29;5;29
+ART-0430;Joint silicone 430;REF-0430;Description article 430;unité;13.10;30;6;30
+ART-0431;Tuyau PVC 431;REF-0431;;mètre;13.47;31;6;31
+ART-0432;Vis inox 432;REF-0432;;kg;13.84;32;6;32
+ART-0433;Cable électrique 433;REF-0433;;litre;14.21;33;6;33
+ART-0434;Joint torique 434;REF-0434;;boîte;14.58;34;6;34
+ART-0435;Robinet thermostatique 435;REF-0435;Description article 435;unité;14.95;35;7;35
+ART-0436;Collier de serrage 436;REF-0436;;mètre;15.32;36;7;36
+ART-0437;Isolant laine 437;REF-0437;;kg;15.69;37;7;37
+ART-0438;Peinture acrylique 438;REF-0438;;litre;16.06;38;7;38
+ART-0439;Mastic 439;REF-0439;;boîte;16.43;39;7;39
+ART-0440;Joint silicone 440;REF-0440;Description article 440;unité;16.80;40;8;40
+ART-0441;Tuyau PVC 441;REF-0441;;mètre;17.17;41;8;41
+ART-0442;Vis inox 442;REF-0442;;kg;17.54;42;8;42
+ART-0443;Cable électrique 443;REF-0443;;litre;17.91;43;8;43
+ART-0444;Joint torique 444;REF-0444;;boîte;18.28;44;8;44
+ART-0445;Robinet thermostatique 445;REF-0445;Description article 445;unité;18.65;45;9;45
+ART-0446;Collier de serrage 446;REF-0446;;mètre;19.02;46;9;46
+ART-0447;Isolant laine 447;REF-0447;;kg;19.39;47;9;47
+ART-0448;Peinture acrylique 448;REF-0448;;litre;19.76;48;9;48
+ART-0449;Mastic 449;REF-0449;;boîte;20.13;49;9;49
+ART-0450;Joint silicone 450;REF-0450;Description article 450;unité;2.00;50;10;50
+ART-0451;Tuyau PVC 451;REF-0451;;mètre;2.37;51;10;51
+ART-0452;Vis inox 452;REF-0452;;kg;2.74;52;10;52
+ART-0453;Cable électrique 453;REF-0453;;litre;3.11;53;10;53
+ART-0454;Joint torique 454;REF-0454;;boîte;3.48;54;10;54
+ART-0455;Robinet thermostatique 455;REF-0455;Description article 455;unité;3.85;55;11;55
+ART-0456;Collier de serrage 456;REF-0456;;mètre;4.22;56;11;56
+ART-0457;Isolant laine 457;REF-0457;;kg;4.59;57;11;57
+ART-0458;Peinture acrylique 458;REF-0458;;litre;4.96;58;11;58
+ART-0459;Mastic 459;REF-0459;;boîte;5.33;59;11;59
+ART-0460;Joint silicone 460;REF-0460;Description article 460;unité;5.70;60;12;60
+ART-0461;Tuyau PVC 461;REF-0461;;mètre;6.07;61;12;61
+ART-0462;Vis inox 462;REF-0462;;kg;6.44;62;12;62
+ART-0463;Cable électrique 463;REF-0463;;litre;6.81;63;12;63
+ART-0464;Joint torique 464;REF-0464;;boîte;7.18;64;12;64
+ART-0465;Robinet thermostatique 465;REF-0465;Description article 465;unité;7.55;65;13;65
+ART-0466;Collier de serrage 466;REF-0466;;mètre;7.92;66;13;66
+ART-0467;Isolant laine 467;REF-0467;;kg;8.29;67;13;67
+ART-0468;Peinture acrylique 468;REF-0468;;litre;8.66;68;13;68
+ART-0469;Mastic 469;REF-0469;;boîte;9.03;69;13;69
+ART-0470;Joint silicone 470;REF-0470;Description article 470;unité;9.40;70;14;70
+ART-0471;Tuyau PVC 471;REF-0471;;mètre;9.77;71;14;71
+ART-0472;Vis inox 472;REF-0472;;kg;10.14;72;14;72
+ART-0473;Cable électrique 473;REF-0473;;litre;10.51;73;14;73
+ART-0474;Joint torique 474;REF-0474;;boîte;10.88;74;14;74
+ART-0475;Robinet thermostatique 475;REF-0475;Description article 475;unité;11.25;75;15;75
+ART-0476;Collier de serrage 476;REF-0476;;mètre;11.62;76;15;76
+ART-0477;Isolant laine 477;REF-0477;;kg;11.99;77;15;77
+ART-0478;Peinture acrylique 478;REF-0478;;litre;12.36;78;15;78
+ART-0479;Mastic 479;REF-0479;;boîte;12.73;79;15;79
+ART-0480;Joint silicone 480;REF-0480;Description article 480;unité;13.10;80;16;80
+ART-0481;Tuyau PVC 481;REF-0481;;mètre;13.47;81;16;81
+ART-0482;Vis inox 482;REF-0482;;kg;13.84;82;16;82
+ART-0483;Cable électrique 483;REF-0483;;litre;14.21;83;16;83
+ART-0484;Joint torique 484;REF-0484;;boîte;14.58;84;16;84
+ART-0485;Robinet thermostatique 485;REF-0485;Description article 485;unité;14.95;85;17;85
+ART-0486;Collier de serrage 486;REF-0486;;mètre;15.32;86;17;86
+ART-0487;Isolant laine 487;REF-0487;;kg;15.69;87;17;87
+ART-0488;Peinture acrylique 488;REF-0488;;litre;16.06;88;17;88
+ART-0489;Mastic 489;REF-0489;;boîte;16.43;89;17;89
+ART-0490;Joint silicone 490;REF-0490;Description article 490;unité;16.80;90;18;90
+ART-0491;Tuyau PVC 491;REF-0491;;mètre;17.17;91;18;91
+ART-0492;Vis inox 492;REF-0492;;kg;17.54;92;18;92
+ART-0493;Cable électrique 493;REF-0493;;litre;17.91;93;18;93
+ART-0494;Joint torique 494;REF-0494;;boîte;18.28;94;18;94
+ART-0495;Robinet thermostatique 495;REF-0495;Description article 495;unité;18.65;95;19;95
+ART-0496;Collier de serrage 496;REF-0496;;mètre;19.02;96;19;96
+ART-0497;Isolant laine 497;REF-0497;;kg;19.39;97;19;97
+ART-0498;Peinture acrylique 498;REF-0498;;litre;19.76;98;19;98
+ART-0499;Mastic 499;REF-0499;;boîte;20.13;99;19;99
+ART-0500;Joint silicone 500;REF-0500;Description article 500;unité;2.00;100;20;100
+ART-0501;Tuyau PVC 501;REF-0501;;mètre;2.37;101;20;101
+ART-0502;Vis inox 502;REF-0502;;kg;2.74;102;20;102
+ART-0503;Cable électrique 503;REF-0503;;litre;3.11;103;20;103
+ART-0504;Joint torique 504;REF-0504;;boîte;3.48;104;20;104
+ART-0505;Robinet thermostatique 505;REF-0505;Description article 505;unité;3.85;105;20;105
+ART-0506;Collier de serrage 506;REF-0506;;mètre;4.22;106;20;106
+ART-0507;Isolant laine 507;REF-0507;;kg;4.59;107;20;107
+ART-0508;Peinture acrylique 508;REF-0508;;litre;4.96;108;20;108
+ART-0509;Mastic 509;REF-0509;;boîte;5.33;109;20;109
+ART-0510;Joint silicone 510;REF-0510;Description article 510;unité;5.70;110;20;110
+ART-0511;Tuyau PVC 511;REF-0511;;mètre;6.07;111;20;111
+ART-0512;Vis inox 512;REF-0512;;kg;6.44;112;20;112
+ART-0513;Cable électrique 513;REF-0513;;litre;6.81;113;20;113
+ART-0514;Joint torique 514;REF-0514;;boîte;7.18;114;20;114
+ART-0515;Robinet thermostatique 515;REF-0515;Description article 515;unité;7.55;115;20;115
+ART-0516;Collier de serrage 516;REF-0516;;mètre;7.92;116;20;116
+ART-0517;Isolant laine 517;REF-0517;;kg;8.29;117;20;117
+ART-0518;Peinture acrylique 518;REF-0518;;litre;8.66;118;20;118
+ART-0519;Mastic 519;REF-0519;;boîte;9.03;119;20;119
+ART-0520;Joint silicone 520;REF-0520;Description article 520;unité;9.40;120;20;120
+ART-0521;Tuyau PVC 521;REF-0521;;mètre;9.77;121;20;121
+ART-0522;Vis inox 522;REF-0522;;kg;10.14;122;20;122
+ART-0523;Cable électrique 523;REF-0523;;litre;10.51;123;20;123
+ART-0524;Joint torique 524;REF-0524;;boîte;10.88;124;20;124
+ART-0525;Robinet thermostatique 525;REF-0525;Description article 525;unité;11.25;125;20;125
+ART-0526;Collier de serrage 526;REF-0526;;mètre;11.62;126;20;126
+ART-0527;Isolant laine 527;REF-0527;;kg;11.99;127;20;127
+ART-0528;Peinture acrylique 528;REF-0528;;litre;12.36;128;20;128
+ART-0529;Mastic 529;REF-0529;;boîte;12.73;129;20;129
+ART-0530;Joint silicone 530;REF-0530;Description article 530;unité;13.10;130;20;130
+ART-0531;Tuyau PVC 531;REF-0531;;mètre;13.47;131;20;131
+ART-0532;Vis inox 532;REF-0532;;kg;13.84;132;20;132
+ART-0533;Cable électrique 533;REF-0533;;litre;14.21;133;20;133
+ART-0534;Joint torique 534;REF-0534;;boîte;14.58;134;20;134
+ART-0535;Robinet thermostatique 535;REF-0535;Description article 535;unité;14.95;135;20;135
+ART-0536;Collier de serrage 536;REF-0536;;mètre;15.32;136;20;136
+ART-0537;Isolant laine 537;REF-0537;;kg;15.69;137;20;137
+ART-0538;Peinture acrylique 538;REF-0538;;litre;16.06;138;20;138
+ART-0539;Mastic 539;REF-0539;;boîte;16.43;139;20;139
+ART-0540;Joint silicone 540;REF-0540;Description article 540;unité;16.80;140;20;140
+ART-0541;Tuyau PVC 541;REF-0541;;mètre;17.17;141;20;141
+ART-0542;Vis inox 542;REF-0542;;kg;17.54;142;20;142
+ART-0543;Cable électrique 543;REF-0543;;litre;17.91;143;20;143
+ART-0544;Joint torique 544;REF-0544;;boîte;18.28;144;20;144
+ART-0545;Robinet thermostatique 545;REF-0545;Description article 545;unité;18.65;145;20;145
+ART-0546;Collier de serrage 546;REF-0546;;mètre;19.02;146;20;146
+ART-0547;Isolant laine 547;REF-0547;;kg;19.39;147;20;147
+ART-0548;Peinture acrylique 548;REF-0548;;litre;19.76;148;20;148
+ART-0549;Mastic 549;REF-0549;;boîte;20.13;149;20;149
+ART-0550;Joint silicone 550;REF-0550;Description article 550;unité;2.00;150;20;150
+ART-0551;Tuyau PVC 551;REF-0551;;mètre;2.37;151;20;151
+ART-0552;Vis inox 552;REF-0552;;kg;2.74;152;20;152
+ART-0553;Cable électrique 553;REF-0553;;litre;3.11;153;20;153
+ART-0554;Joint torique 554;REF-0554;;boîte;3.48;154;20;154
+ART-0555;Robinet thermostatique 555;REF-0555;Description article 555;unité;3.85;155;20;155
+ART-0556;Collier de serrage 556;REF-0556;;mètre;4.22;156;20;156
+ART-0557;Isolant laine 557;REF-0557;;kg;4.59;157;20;157
+ART-0558;Peinture acrylique 558;REF-0558;;litre;4.96;158;20;158
+ART-0559;Mastic 559;REF-0559;;boîte;5.33;159;20;159
+ART-0560;Joint silicone 560;REF-0560;Description article 560;unité;5.70;160;20;160
+ART-0561;Tuyau PVC 561;REF-0561;;mètre;6.07;161;20;161
+ART-0562;Vis inox 562;REF-0562;;kg;6.44;162;20;162
+ART-0563;Cable électrique 563;REF-0563;;litre;6.81;163;20;163
+ART-0564;Joint torique 564;REF-0564;;boîte;7.18;164;20;164
+ART-0565;Robinet thermostatique 565;REF-0565;Description article 565;unité;7.55;165;20;165
+ART-0566;Collier de serrage 566;REF-0566;;mètre;7.92;166;20;166
+ART-0567;Isolant laine 567;REF-0567;;kg;8.29;167;20;167
+ART-0568;Peinture acrylique 568;REF-0568;;litre;8.66;168;20;168
+ART-0569;Mastic 569;REF-0569;;boîte;9.03;169;20;169
+ART-0570;Joint silicone 570;REF-0570;Description article 570;unité;9.40;170;20;170
+ART-0571;Tuyau PVC 571;REF-0571;;mètre;9.77;171;20;171
+ART-0572;Vis inox 572;REF-0572;;kg;10.14;172;20;172
+ART-0573;Cable électrique 573;REF-0573;;litre;10.51;173;20;173
+ART-0574;Joint torique 574;REF-0574;;boîte;10.88;174;20;174
+ART-0575;Robinet thermostatique 575;REF-0575;Description article 575;unité;11.25;175;20;175
+ART-0576;Collier de serrage 576;REF-0576;;mètre;11.62;176;20;176
+ART-0577;Isolant laine 577;REF-0577;;kg;11.99;177;20;177
+ART-0578;Peinture acrylique 578;REF-0578;;litre;12.36;178;20;178
+ART-0579;Mastic 579;REF-0579;;boîte;12.73;179;20;179
+ART-0580;Joint silicone 580;REF-0580;Description article 580;unité;13.10;180;20;180
+ART-0581;Tuyau PVC 581;REF-0581;;mètre;13.47;181;20;181
+ART-0582;Vis inox 582;REF-0582;;kg;13.84;182;20;182
+ART-0583;Cable électrique 583;REF-0583;;litre;14.21;183;20;183
+ART-0584;Joint torique 584;REF-0584;;boîte;14.58;184;20;184
+ART-0585;Robinet thermostatique 585;REF-0585;Description article 585;unité;14.95;185;20;185
+ART-0586;Collier de serrage 586;REF-0586;;mètre;15.32;186;20;186
+ART-0587;Isolant laine 587;REF-0587;;kg;15.69;187;20;187
+ART-0588;Peinture acrylique 588;REF-0588;;litre;16.06;188;20;188
+ART-0589;Mastic 589;REF-0589;;boîte;16.43;189;20;189
+ART-0590;Joint silicone 590;REF-0590;Description article 590;unité;16.80;190;20;190
+ART-0591;Tuyau PVC 591;REF-0591;;mètre;17.17;191;20;191
+ART-0592;Vis inox 592;REF-0592;;kg;17.54;192;20;192
+ART-0593;Cable électrique 593;REF-0593;;litre;17.91;193;20;193
+ART-0594;Joint torique 594;REF-0594;;boîte;18.28;194;20;194
+ART-0595;Robinet thermostatique 595;REF-0595;Description article 595;unité;18.65;195;20;195
+ART-0596;Collier de serrage 596;REF-0596;;mètre;19.02;196;20;196
+ART-0597;Isolant laine 597;REF-0597;;kg;19.39;197;20;197
+ART-0598;Peinture acrylique 598;REF-0598;;litre;19.76;198;20;198
+ART-0599;Mastic 599;REF-0599;;boîte;20.13;199;20;199
+ART-0600;Joint silicone 600;REF-0600;Description article 600;unité;2.00;0;0;5
+ART-0601;Tuyau PVC 601;REF-0601;;mètre;2.37;1;0;5
+ART-0602;Vis inox 602;REF-0602;;kg;2.74;2;0;5
+ART-0603;Cable électrique 603;REF-0603;;litre;3.11;3;0;5
+ART-0604;Joint torique 604;REF-0604;;boîte;3.48;4;0;5
+ART-0605;Robinet thermostatique 605;REF-0605;Description article 605;unité;3.85;5;1;6
+ART-0606;Collier de serrage 606;REF-0606;;mètre;4.22;6;1;6
+ART-0607;Isolant laine 607;REF-0607;;kg;4.59;7;1;7
+ART-0608;Peinture acrylique 608;REF-0608;;litre;4.96;8;1;8
+ART-0609;Mastic 609;REF-0609;;boîte;5.33;9;1;9
+ART-0610;Joint silicone 610;REF-0610;Description article 610;unité;5.70;10;2;10
+ART-0611;Tuyau PVC 611;REF-0611;;mètre;6.07;11;2;11
+ART-0612;Vis inox 612;REF-0612;;kg;6.44;12;2;12
+ART-0613;Cable électrique 613;REF-0613;;litre;6.81;13;2;13
+ART-0614;Joint torique 614;REF-0614;;boîte;7.18;14;2;14
+ART-0615;Robinet thermostatique 615;REF-0615;Description article 615;unité;7.55;15;3;15
+ART-0616;Collier de serrage 616;REF-0616;;mètre;7.92;16;3;16
+ART-0617;Isolant laine 617;REF-0617;;kg;8.29;17;3;17
+ART-0618;Peinture acrylique 618;REF-0618;;litre;8.66;18;3;18
+ART-0619;Mastic 619;REF-0619;;boîte;9.03;19;3;19
+ART-0620;Joint silicone 620;REF-0620;Description article 620;unité;9.40;20;4;20
+ART-0621;Tuyau PVC 621;REF-0621;;mètre;9.77;21;4;21
+ART-0622;Vis inox 622;REF-0622;;kg;10.14;22;4;22
+ART-0623;Cable électrique 623;REF-0623;;litre;10.51;23;4;23
+ART-0624;Joint torique 624;REF-0624;;boîte;10.88;24;4;24
+ART-0625;Robinet thermostatique 625;REF-0625;Description article 625;unité;11.25;25;5;25
+ART-0626;Collier de serrage 626;REF-0626;;mètre;11.62;26;5;26
+ART-0627;Isolant laine 627;REF-0627;;kg;11.99;27;5;27
+ART-0628;Peinture acrylique 628;REF-0628;;litre;12.36;28;5;28
+ART-0629;Mastic 629;REF-0629;;boîte;12.73;29;5;29
+ART-0630;Joint silicone 630;REF-0630;Description article 630;unité;13.10;30;6;30
+ART-0631;Tuyau PVC 631;REF-0631;;mètre;13.47;31;6;31
+ART-0632;Vis inox 632;REF-0632;;kg;13.84;32;6;32
+ART-0633;Cable électrique 633;REF-0633;;litre;14.21;33;6;33
+ART-0634;Joint torique 634;REF-0634;;boîte;14.58;34;6;34
+ART-0635;Robinet thermostatique 635;REF-0635;Description article 635;unité;14.95;35;7;35
+ART-0636;Collier de serrage 636;REF-0636;;mètre;15.32;36;7;36
+ART-0637;Isolant laine 637;REF-0637;;kg;15.69;37;7;37
+ART-0638;Peinture acrylique 638;REF-0638;;litre;16.06;38;7;38
+ART-0639;Mastic 639;REF-0639;;boîte;16.43;39;7;39
+ART-0640;Joint silicone 640;REF-0640;Description article 640;unité;16.80;40;8;40
+ART-0641;Tuyau PVC 641;REF-0641;;mètre;17.17;41;8;41
+ART-0642;Vis inox 642;REF-0642;;kg;17.54;42;8;42
+ART-0643;Cable électrique 643;REF-0643;;litre;17.91;43;8;43
+ART-0644;Joint torique 644;REF-0644;;boîte;18.28;44;8;44
+ART-0645;Robinet thermostatique 645;REF-0645;Description article 645;unité;18.65;45;9;45
+ART-0646;Collier de serrage 646;REF-0646;;mètre;19.02;46;9;46
+ART-0647;Isolant laine 647;REF-0647;;kg;19.39;47;9;47
+ART-0648;Peinture acrylique 648;REF-0648;;litre;19.76;48;9;48
+ART-0649;Mastic 649;REF-0649;;boîte;20.13;49;9;49
+ART-0650;Joint silicone 650;REF-0650;Description article 650;unité;2.00;50;10;50
+ART-0651;Tuyau PVC 651;REF-0651;;mètre;2.37;51;10;51
+ART-0652;Vis inox 652;REF-0652;;kg;2.74;52;10;52
+ART-0653;Cable électrique 653;REF-0653;;litre;3.11;53;10;53
+ART-0654;Joint torique 654;REF-0654;;boîte;3.48;54;10;54
+ART-0655;Robinet thermostatique 655;REF-0655;Description article 655;unité;3.85;55;11;55
+ART-0656;Collier de serrage 656;REF-0656;;mètre;4.22;56;11;56
+ART-0657;Isolant laine 657;REF-0657;;kg;4.59;57;11;57
+ART-0658;Peinture acrylique 658;REF-0658;;litre;4.96;58;11;58
+ART-0659;Mastic 659;REF-0659;;boîte;5.33;59;11;59
+ART-0660;Joint silicone 660;REF-0660;Description article 660;unité;5.70;60;12;60
+ART-0661;Tuyau PVC 661;REF-0661;;mètre;6.07;61;12;61
+ART-0662;Vis inox 662;REF-0662;;kg;6.44;62;12;62
+ART-0663;Cable électrique 663;REF-0663;;litre;6.81;63;12;63
+ART-0664;Joint torique 664;REF-0664;;boîte;7.18;64;12;64
+ART-0665;Robinet thermostatique 665;REF-0665;Description article 665;unité;7.55;65;13;65
+ART-0666;Collier de serrage 666;REF-0666;;mètre;7.92;66;13;66
+ART-0667;Isolant laine 667;REF-0667;;kg;8.29;67;13;67
+ART-0668;Peinture acrylique 668;REF-0668;;litre;8.66;68;13;68
+ART-0669;Mastic 669;REF-0669;;boîte;9.03;69;13;69
+ART-0670;Joint silicone 670;REF-0670;Description article 670;unité;9.40;70;14;70
+ART-0671;Tuyau PVC 671;REF-0671;;mètre;9.77;71;14;71
+ART-0672;Vis inox 672;REF-0672;;kg;10.14;72;14;72
+ART-0673;Cable électrique 673;REF-0673;;litre;10.51;73;14;73
+ART-0674;Joint torique 674;REF-0674;;boîte;10.88;74;14;74
+ART-0675;Robinet thermostatique 675;REF-0675;Description article 675;unité;11.25;75;15;75
+ART-0676;Collier de serrage 676;REF-0676;;mètre;11.62;76;15;76
+ART-0677;Isolant laine 677;REF-0677;;kg;11.99;77;15;77
+ART-0678;Peinture acrylique 678;REF-0678;;litre;12.36;78;15;78
+ART-0679;Mastic 679;REF-0679;;boîte;12.73;79;15;79
+ART-0680;Joint silicone 680;REF-0680;Description article 680;unité;13.10;80;16;80
+ART-0681;Tuyau PVC 681;REF-0681;;mètre;13.47;81;16;81
+ART-0682;Vis inox 682;REF-0682;;kg;13.84;82;16;82
+ART-0683;Cable électrique 683;REF-0683;;litre;14.21;83;16;83
+ART-0684;Joint torique 684;REF-0684;;boîte;14.58;84;16;84
+ART-0685;Robinet thermostatique 685;REF-0685;Description article 685;unité;14.95;85;17;85
+ART-0686;Collier de serrage 686;REF-0686;;mètre;15.32;86;17;86
+ART-0687;Isolant laine 687;REF-0687;;kg;15.69;87;17;87
+ART-0688;Peinture acrylique 688;REF-0688;;litre;16.06;88;17;88
+ART-0689;Mastic 689;REF-0689;;boîte;16.43;89;17;89
+ART-0690;Joint silicone 690;REF-0690;Description article 690;unité;16.80;90;18;90
+ART-0691;Tuyau PVC 691;REF-0691;;mètre;17.17;91;18;91
+ART-0692;Vis inox 692;REF-0692;;kg;17.54;92;18;92
+ART-0693;Cable électrique 693;REF-0693;;litre;17.91;93;18;93
+ART-0694;Joint torique 694;REF-0694;;boîte;18.28;94;18;94
+ART-0695;Robinet thermostatique 695;REF-0695;Description article 695;unité;18.65;95;19;95
+ART-0696;Collier de serrage 696;REF-0696;;mètre;19.02;96;19;96
+ART-0697;Isolant laine 697;REF-0697;;kg;19.39;97;19;97
+ART-0698;Peinture acrylique 698;REF-0698;;litre;19.76;98;19;98
+ART-0699;Mastic 699;REF-0699;;boîte;20.13;99;19;99
+ART-0700;Joint silicone 700;REF-0700;Description article 700;unité;2.00;100;20;100
+ART-0701;Tuyau PVC 701;REF-0701;;mètre;2.37;101;20;101
+ART-0702;Vis inox 702;REF-0702;;kg;2.74;102;20;102
+ART-0703;Cable électrique 703;REF-0703;;litre;3.11;103;20;103
+ART-0704;Joint torique 704;REF-0704;;boîte;3.48;104;20;104
+ART-0705;Robinet thermostatique 705;REF-0705;Description article 705;unité;3.85;105;20;105
+ART-0706;Collier de serrage 706;REF-0706;;mètre;4.22;106;20;106
+ART-0707;Isolant laine 707;REF-0707;;kg;4.59;107;20;107
+ART-0708;Peinture acrylique 708;REF-0708;;litre;4.96;108;20;108
+ART-0709;Mastic 709;REF-0709;;boîte;5.33;109;20;109
+ART-0710;Joint silicone 710;REF-0710;Description article 710;unité;5.70;110;20;110
+ART-0711;Tuyau PVC 711;REF-0711;;mètre;6.07;111;20;111
+ART-0712;Vis inox 712;REF-0712;;kg;6.44;112;20;112
+ART-0713;Cable électrique 713;REF-0713;;litre;6.81;113;20;113
+ART-0714;Joint torique 714;REF-0714;;boîte;7.18;114;20;114
+ART-0715;Robinet thermostatique 715;REF-0715;Description article 715;unité;7.55;115;20;115
+ART-0716;Collier de serrage 716;REF-0716;;mètre;7.92;116;20;116
+ART-0717;Isolant laine 717;REF-0717;;kg;8.29;117;20;117
+ART-0718;Peinture acrylique 718;REF-0718;;litre;8.66;118;20;118
+ART-0719;Mastic 719;REF-0719;;boîte;9.03;119;20;119
+ART-0720;Joint silicone 720;REF-0720;Description article 720;unité;9.40;120;20;120
+ART-0721;Tuyau PVC 721;REF-0721;;mètre;9.77;121;20;121
+ART-0722;Vis inox 722;REF-0722;;kg;10.14;122;20;122
+ART-0723;Cable électrique 723;REF-0723;;litre;10.51;123;20;123
+ART-0724;Joint torique 724;REF-0724;;boîte;10.88;124;20;124
+ART-0725;Robinet thermostatique 725;REF-0725;Description article 725;unité;11.25;125;20;125
+ART-0726;Collier de serrage 726;REF-0726;;mètre;11.62;126;20;126
+ART-0727;Isolant laine 727;REF-0727;;kg;11.99;127;20;127
+ART-0728;Peinture acrylique 728;REF-0728;;litre;12.36;128;20;128
+ART-0729;Mastic 729;REF-0729;;boîte;12.73;129;20;129
+ART-0730;Joint silicone 730;REF-0730;Description article 730;unité;13.10;130;20;130
+ART-0731;Tuyau PVC 731;REF-0731;;mètre;13.47;131;20;131
+ART-0732;Vis inox 732;REF-0732;;kg;13.84;132;20;132
+ART-0733;Cable électrique 733;REF-0733;;litre;14.21;133;20;133
+ART-0734;Joint torique 734;REF-0734;;boîte;14.58;134;20;134
+ART-0735;Robinet thermostatique 735;REF-0735;Description article 735;unité;14.95;135;20;135
+ART-0736;Collier de serrage 736;REF-0736;;mètre;15.32;136;20;136
+ART-0737;Isolant laine 737;REF-0737;;kg;15.69;137;20;137
+ART-0738;Peinture acrylique 738;REF-0738;;litre;16.06;138;20;138
+ART-0739;Mastic 739;REF-0739;;boîte;16.43;139;20;139
+ART-0740;Joint silicone 740;REF-0740;Description article 740;unité;16.80;140;20;140
+ART-0741;Tuyau PVC 741;REF-0741;;mètre;17.17;141;20;141
+ART-0742;Vis inox 742;REF-0742;;kg;17.54;142;20;142
+ART-0743;Cable électrique 743;REF-0743;;litre;17.91;143;20;143
+ART-0744;Joint torique 744;REF-0744;;boîte;18.28;144;20;144
+ART-0745;Robinet thermostatique 745;REF-0745;Description article 745;unité;18.65;145;20;145
+ART-0746;Collier de serrage 746;REF-0746;;mètre;19.02;146;20;146
+ART-0747;Isolant laine 747;REF-0747;;kg;19.39;147;20;147
+ART-0748;Peinture acrylique 748;REF-0748;;litre;19.76;148;20;148
+ART-0749;Mastic 749;REF-0749;;boîte;20.13;149;20;149
+ART-0750;Joint silicone 750;REF-0750;Description article 750;unité;2.00;150;20;150
+ART-0751;Tuyau PVC 751;REF-0751;;mètre;2.37;151;20;151
+ART-0752;Vis inox 752;REF-0752;;kg;2.74;152;20;152
+ART-0753;Cable électrique 753;REF-0753;;litre;3.11;153;20;153
+ART-0754;Joint torique 754;REF-0754;;boîte;3.48;154;20;154
+ART-0755;Robinet thermostatique 755;REF-0755;Description article 755;unité;3.85;155;20;155
+ART-0756;Collier de serrage 756;REF-0756;;mètre;4.22;156;20;156
+ART-0757;Isolant laine 757;REF-0757;;kg;4.59;157;20;157
+ART-0758;Peinture acrylique 758;REF-0758;;litre;4.96;158;20;158
+ART-0759;Mastic 759;REF-0759;;boîte;5.33;159;20;159
+ART-0760;Joint silicone 760;REF-0760;Description article 760;unité;5.70;160;20;160
+ART-0761;Tuyau PVC 761;REF-0761;;mètre;6.07;161;20;161
+ART-0762;Vis inox 762;REF-0762;;kg;6.44;162;20;162
+ART-0763;Cable électrique 763;REF-0763;;litre;6.81;163;20;163
+ART-0764;Joint torique 764;REF-0764;;boîte;7.18;164;20;164
+ART-0765;Robinet thermostatique 765;REF-0765;Description article 765;unité;7.55;165;20;165
+ART-0766;Collier de serrage 766;REF-0766;;mètre;7.92;166;20;166
+ART-0767;Isolant laine 767;REF-0767;;kg;8.29;167;20;167
+ART-0768;Peinture acrylique 768;REF-0768;;litre;8.66;168;20;168
+ART-0769;Mastic 769;REF-0769;;boîte;9.03;169;20;169
+ART-0770;Joint silicone 770;REF-0770;Description article 770;unité;9.40;170;20;170
+ART-0771;Tuyau PVC 771;REF-0771;;mètre;9.77;171;20;171
+ART-0772;Vis inox 772;REF-0772;;kg;10.14;172;20;172
+ART-0773;Cable électrique 773;REF-0773;;litre;10.51;173;20;173
+ART-0774;Joint torique 774;REF-0774;;boîte;10.88;174;20;174
+ART-0775;Robinet thermostatique 775;REF-0775;Description article 775;unité;11.25;175;20;175
+ART-0776;Collier de serrage 776;REF-0776;;mètre;11.62;176;20;176
+ART-0777;Isolant laine 777;REF-0777;;kg;11.99;177;20;177
+ART-0778;Peinture acrylique 778;REF-0778;;litre;12.36;178;20;178
+ART-0779;Mastic 779;REF-0779;;boîte;12.73;179;20;179
+ART-0780;Joint silicone 780;REF-0780;Description article 780;unité;13.10;180;20;180
+ART-0781;Tuyau PVC 781;REF-0781;;mètre;13.47;181;20;181
+ART-0782;Vis inox 782;REF-0782;;kg;13.84;182;20;182
+ART-0783;Cable électrique 783;REF-0783;;litre;14.21;183;20;183
+ART-0784;Joint torique 784;REF-0784;;boîte;14.58;184;20;184
+ART-0785;Robinet thermostatique 785;REF-0785;Description article 785;unité;14.95;185;20;185
+ART-0786;Collier de serrage 786;REF-0786;;mètre;15.32;186;20;186
+ART-0787;Isolant laine 787;REF-0787;;kg;15.69;187;20;187
+ART-0788;Peinture acrylique 788;REF-0788;;litre;16.06;188;20;188
+ART-0789;Mastic 789;REF-0789;;boîte;16.43;189;20;189
+ART-0790;Joint silicone 790;REF-0790;Description article 790;unité;16.80;190;20;190
+ART-0791;Tuyau PVC 791;REF-0791;;mètre;17.17;191;20;191
+ART-0792;Vis inox 792;REF-0792;;kg;17.54;192;20;192
+ART-0793;Cable électrique 793;REF-0793;;litre;17.91;193;20;193
+ART-0794;Joint torique 794;REF-0794;;boîte;18.28;194;20;194
+ART-0795;Robinet thermostatique 795;REF-0795;Description article 795;unité;18.65;195;20;195
+ART-0796;Collier de serrage 796;REF-0796;;mètre;19.02;196;20;196
+ART-0797;Isolant laine 797;REF-0797;;kg;19.39;197;20;197
+ART-0798;Peinture acrylique 798;REF-0798;;litre;19.76;198;20;198
+ART-0799;Mastic 799;REF-0799;;boîte;20.13;199;20;199
+ART-0800;Joint silicone 800;REF-0800;Description article 800;unité;2.00;0;0;5
+ART-0801;Tuyau PVC 801;REF-0801;;mètre;2.37;1;0;5
+ART-0802;Vis inox 802;REF-0802;;kg;2.74;2;0;5
+ART-0803;Cable électrique 803;REF-0803;;litre;3.11;3;0;5
+ART-0804;Joint torique 804;REF-0804;;boîte;3.48;4;0;5
+ART-0805;Robinet thermostatique 805;REF-0805;Description article 805;unité;3.85;5;1;6
+ART-0806;Collier de serrage 806;REF-0806;;mètre;4.22;6;1;6
+ART-0807;Isolant laine 807;REF-0807;;kg;4.59;7;1;7
+ART-0808;Peinture acrylique 808;REF-0808;;litre;4.96;8;1;8
+ART-0809;Mastic 809;REF-0809;;boîte;5.33;9;1;9
+ART-0810;Joint silicone 810;REF-0810;Description article 810;unité;5.70;10;2;10
+ART-0811;Tuyau PVC 811;REF-0811;;mètre;6.07;11;2;11
+ART-0812;Vis inox 812;REF-0812;;kg;6.44;12;2;12
+ART-0813;Cable électrique 813;REF-0813;;litre;6.81;13;2;13
+ART-0814;Joint torique 814;REF-0814;;boîte;7.18;14;2;14
+ART-0815;Robinet thermostatique 815;REF-0815;Description article 815;unité;7.55;15;3;15
+ART-0816;Collier de serrage 816;REF-0816;;mètre;7.92;16;3;16
+ART-0817;Isolant laine 817;REF-0817;;kg;8.29;17;3;17
+ART-0818;Peinture acrylique 818;REF-0818;;litre;8.66;18;3;18
+ART-0819;Mastic 819;REF-0819;;boîte;9.03;19;3;19
+ART-0820;Joint silicone 820;REF-0820;Description article 820;unité;9.40;20;4;20
+ART-0821;Tuyau PVC 821;REF-0821;;mètre;9.77;21;4;21
+ART-0822;Vis inox 822;REF-0822;;kg;10.14;22;4;22
+ART-0823;Cable électrique 823;REF-0823;;litre;10.51;23;4;23
+ART-0824;Joint torique 824;REF-0824;;boîte;10.88;24;4;24
+ART-0825;Robinet thermostatique 825;REF-0825;Description article 825;unité;11.25;25;5;25
+ART-0826;Collier de serrage 826;REF-0826;;mètre;11.62;26;5;26
+ART-0827;Isolant laine 827;REF-0827;;kg;11.99;27;5;27
+ART-0828;Peinture acrylique 828;REF-0828;;litre;12.36;28;5;28
+ART-0829;Mastic 829;REF-0829;;boîte;12.73;29;5;29
+ART-0830;Joint silicone 830;REF-0830;Description article 830;unité;13.10;30;6;30
+ART-0831;Tuyau PVC 831;REF-0831;;mètre;13.47;31;6;31
+ART-0832;Vis inox 832;REF-0832;;kg;13.84;32;6;32
+ART-0833;Cable électrique 833;REF-0833;;litre;14.21;33;6;33
+ART-0834;Joint torique 834;REF-0834;;boîte;14.58;34;6;34
+ART-0835;Robinet thermostatique 835;REF-0835;Description article 835;unité;14.95;35;7;35
+ART-0836;Collier de serrage 836;REF-0836;;mètre;15.32;36;7;36
+ART-0837;Isolant laine 837;REF-0837;;kg;15.69;37;7;37
+ART-0838;Peinture acrylique 838;REF-0838;;litre;16.06;38;7;38
+ART-0839;Mastic 839;REF-0839;;boîte;16.43;39;7;39
+ART-0840;Joint silicone 840;REF-0840;Description article 840;unité;16.80;40;8;40
+ART-0841;Tuyau PVC 841;REF-0841;;mètre;17.17;41;8;41
+ART-0842;Vis inox 842;REF-0842;;kg;17.54;42;8;42
+ART-0843;Cable électrique 843;REF-0843;;litre;17.91;43;8;43
+ART-0844;Joint torique 844;REF-0844;;boîte;18.28;44;8;44
+ART-0845;Robinet thermostatique 845;REF-0845;Description article 845;unité;18.65;45;9;45
+ART-0846;Collier de serrage 846;REF-0846;;mètre;19.02;46;9;46
+ART-0847;Isolant laine 847;REF-0847;;kg;19.39;47;9;47
+ART-0848;Peinture acrylique 848;REF-0848;;litre;19.76;48;9;48
+ART-0849;Mastic 849;REF-0849;;boîte;20.13;49;9;49
+ART-0850;Joint silicone 850;REF-0850;Description article 850;unité;2.00;50;10;50
+ART-0851;Tuyau PVC 851;REF-0851;;mètre;2.37;51;10;51
+ART-0852;Vis inox 852;REF-0852;;kg;2.74;52;10;52
+ART-0853;Cable électrique 853;REF-0853;;litre;3.11;53;10;53
+ART-0854;Joint torique 854;REF-0854;;boîte;3.48;54;10;54
+ART-0855;Robinet thermostatique 855;REF-0855;Description article 855;unité;3.85;55;11;55
+ART-0856;Collier de serrage 856;REF-0856;;mètre;4.22;56;11;56
+ART-0857;Isolant laine 857;REF-0857;;kg;4.59;57;11;57
+ART-0858;Peinture acrylique 858;REF-0858;;litre;4.96;58;11;58
+ART-0859;Mastic 859;REF-0859;;boîte;5.33;59;11;59
+ART-0860;Joint silicone 860;REF-0860;Description article 860;unité;5.70;60;12;60
+ART-0861;Tuyau PVC 861;REF-0861;;mètre;6.07;61;12;61
+ART-0862;Vis inox 862;REF-0862;;kg;6.44;62;12;62
+ART-0863;Cable électrique 863;REF-0863;;litre;6.81;63;12;63
+ART-0864;Joint torique 864;REF-0864;;boîte;7.18;64;12;64
+ART-0865;Robinet thermostatique 865;REF-0865;Description article 865;unité;7.55;65;13;65
+ART-0866;Collier de serrage 866;REF-0866;;mètre;7.92;66;13;66
+ART-0867;Isolant laine 867;REF-0867;;kg;8.29;67;13;67
+ART-0868;Peinture acrylique 868;REF-0868;;litre;8.66;68;13;68
+ART-0869;Mastic 869;REF-0869;;boîte;9.03;69;13;69
+ART-0870;Joint silicone 870;REF-0870;Description article 870;unité;9.40;70;14;70
+ART-0871;Tuyau PVC 871;REF-0871;;mètre;9.77;71;14;71
+ART-0872;Vis inox 872;REF-0872;;kg;10.14;72;14;72
+ART-0873;Cable électrique 873;REF-0873;;litre;10.51;73;14;73
+ART-0874;Joint torique 874;REF-0874;;boîte;10.88;74;14;74
+ART-0875;Robinet thermostatique 875;REF-0875;Description article 875;unité;11.25;75;15;75
+ART-0876;Collier de serrage 876;REF-0876;;mètre;11.62;76;15;76
+ART-0877;Isolant laine 877;REF-0877;;kg;11.99;77;15;77
+ART-0878;Peinture acrylique 878;REF-0878;;litre;12.36;78;15;78
+ART-0879;Mastic 879;REF-0879;;boîte;12.73;79;15;79
+ART-0880;Joint silicone 880;REF-0880;Description article 880;unité;13.10;80;16;80
+ART-0881;Tuyau PVC 881;REF-0881;;mètre;13.47;81;16;81
+ART-0882;Vis inox 882;REF-0882;;kg;13.84;82;16;82
+ART-0883;Cable électrique 883;REF-0883;;litre;14.21;83;16;83
+ART-0884;Joint torique 884;REF-0884;;boîte;14.58;84;16;84
+ART-0885;Robinet thermostatique 885;REF-0885;Description article 885;unité;14.95;85;17;85
+ART-0886;Collier de serrage 886;REF-0886;;mètre;15.32;86;17;86
+ART-0887;Isolant laine 887;REF-0887;;kg;15.69;87;17;87
+ART-0888;Peinture acrylique 888;REF-0888;;litre;16.06;88;17;88
+ART-0889;Mastic 889;REF-0889;;boîte;16.43;89;17;89
+ART-0890;Joint silicone 890;REF-0890;Description article 890;unité;16.80;90;18;90
+ART-0891;Tuyau PVC 891;REF-0891;;mètre;17.17;91;18;91
+ART-0892;Vis inox 892;REF-0892;;kg;17.54;92;18;92
+ART-0893;Cable électrique 893;REF-0893;;litre;17.91;93;18;93
+ART-0894;Joint torique 894;REF-0894;;boîte;18.28;94;18;94
+ART-0895;Robinet thermostatique 895;REF-0895;Description article 895;unité;18.65;95;19;95
+ART-0896;Collier de serrage 896;REF-0896;;mètre;19.02;96;19;96
+ART-0897;Isolant laine 897;REF-0897;;kg;19.39;97;19;97
+ART-0898;Peinture acrylique 898;REF-0898;;litre;19.76;98;19;98
+ART-0899;Mastic 899;REF-0899;;boîte;20.13;99;19;99
+ART-0900;Joint silicone 900;REF-0900;Description article 900;unité;2.00;100;20;100
+ART-0901;Tuyau PVC 901;REF-0901;;mètre;2.37;101;20;101
+ART-0902;Vis inox 902;REF-0902;;kg;2.74;102;20;102
+ART-0903;Cable électrique 903;REF-0903;;litre;3.11;103;20;103
+ART-0904;Joint torique 904;REF-0904;;boîte;3.48;104;20;104
+ART-0905;Robinet thermostatique 905;REF-0905;Description article 905;unité;3.85;105;20;105
+ART-0906;Collier de serrage 906;REF-0906;;mètre;4.22;106;20;106
+ART-0907;Isolant laine 907;REF-0907;;kg;4.59;107;20;107
+ART-0908;Peinture acrylique 908;REF-0908;;litre;4.96;108;20;108
+ART-0909;Mastic 909;REF-0909;;boîte;5.33;109;20;109
+ART-0910;Joint silicone 910;REF-0910;Description article 910;unité;5.70;110;20;110
+ART-0911;Tuyau PVC 911;REF-0911;;mètre;6.07;111;20;111
+ART-0912;Vis inox 912;REF-0912;;kg;6.44;112;20;112
+ART-0913;Cable électrique 913;REF-0913;;litre;6.81;113;20;113
+ART-0914;Joint torique 914;REF-0914;;boîte;7.18;114;20;114
+ART-0915;Robinet thermostatique 915;REF-0915;Description article 915;unité;7.55;115;20;115
+ART-0916;Collier de serrage 916;REF-0916;;mètre;7.92;116;20;116
+ART-0917;Isolant laine 917;REF-0917;;kg;8.29;117;20;117
+ART-0918;Peinture acrylique 918;REF-0918;;litre;8.66;118;20;118
+ART-0919;Mastic 919;REF-0919;;boîte;9.03;119;20;119
+ART-0920;Joint silicone 920;REF-0920;Description article 920;unité;9.40;120;20;120
+ART-0921;Tuyau PVC 921;REF-0921;;mètre;9.77;121;20;121
+ART-0922;Vis inox 922;REF-0922;;kg;10.14;122;20;122
+ART-0923;Cable électrique 923;REF-0923;;litre;10.51;123;20;123
+ART-0924;Joint torique 924;REF-0924;;boîte;10.88;124;20;124
+ART-0925;Robinet thermostatique 925;REF-0925;Description article 925;unité;11.25;125;20;125
+ART-0926;Collier de serrage 926;REF-0926;;mètre;11.62;126;20;126
+ART-0927;Isolant laine 927;REF-0927;;kg;11.99;127;20;127
+ART-0928;Peinture acrylique 928;REF-0928;;litre;12.36;128;20;128
+ART-0929;Mastic 929;REF-0929;;boîte;12.73;129;20;129
+ART-0930;Joint silicone 930;REF-0930;Description article 930;unité;13.10;130;20;130
+ART-0931;Tuyau PVC 931;REF-0931;;mètre;13.47;131;20;131
+ART-0932;Vis inox 932;REF-0932;;kg;13.84;132;20;132
+ART-0933;Cable électrique 933;REF-0933;;litre;14.21;133;20;133
+ART-0934;Joint torique 934;REF-0934;;boîte;14.58;134;20;134
+ART-0935;Robinet thermostatique 935;REF-0935;Description article 935;unité;14.95;135;20;135
+ART-0936;Collier de serrage 936;REF-0936;;mètre;15.32;136;20;136
+ART-0937;Isolant laine 937;REF-0937;;kg;15.69;137;20;137
+ART-0938;Peinture acrylique 938;REF-0938;;litre;16.06;138;20;138
+ART-0939;Mastic 939;REF-0939;;boîte;16.43;139;20;139
+ART-0940;Joint silicone 940;REF-0940;Description article 940;unité;16.80;140;20;140
+ART-0941;Tuyau PVC 941;REF-0941;;mètre;17.17;141;20;141
+ART-0942;Vis inox 942;REF-0942;;kg;17.54;142;20;142
+ART-0943;Cable électrique 943;REF-0943;;litre;17.91;143;20;143
+ART-0944;Joint torique 944;REF-0944;;boîte;18.28;144;20;144
+ART-0945;Robinet thermostatique 945;REF-0945;Description article 945;unité;18.65;145;20;145
+ART-0946;Collier de serrage 946;REF-0946;;mètre;19.02;146;20;146
+ART-0947;Isolant laine 947;REF-0947;;kg;19.39;147;20;147
+ART-0948;Peinture acrylique 948;REF-0948;;litre;19.76;148;20;148
+ART-0949;Mastic 949;REF-0949;;boîte;20.13;149;20;149
+ART-0950;Joint silicone 950;REF-0950;Description article 950;unité;2.00;150;20;150
+ART-0951;Tuyau PVC 951;REF-0951;;mètre;2.37;151;20;151
+ART-0952;Vis inox 952;REF-0952;;kg;2.74;152;20;152
+ART-0953;Cable électrique 953;REF-0953;;litre;3.11;153;20;153
+ART-0954;Joint torique 954;REF-0954;;boîte;3.48;154;20;154
+ART-0955;Robinet thermostatique 955;REF-0955;Description article 955;unité;3.85;155;20;155
+ART-0956;Collier de serrage 956;REF-0956;;mètre;4.22;156;20;156
+ART-0957;Isolant laine 957;REF-0957;;kg;4.59;157;20;157
+ART-0958;Peinture acrylique 958;REF-0958;;litre;4.96;158;20;158
+ART-0959;Mastic 959;REF-0959;;boîte;5.33;159;20;159
+ART-0960;Joint silicone 960;REF-0960;Description article 960;unité;5.70;160;20;160
+ART-0961;Tuyau PVC 961;REF-0961;;mètre;6.07;161;20;161
+ART-0962;Vis inox 962;REF-0962;;kg;6.44;162;20;162
+ART-0963;Cable électrique 963;REF-0963;;litre;6.81;163;20;163
+ART-0964;Joint torique 964;REF-0964;;boîte;7.18;164;20;164
+ART-0965;Robinet thermostatique 965;REF-0965;Description article 965;unité;7.55;165;20;165
+ART-0966;Collier de serrage 966;REF-0966;;mètre;7.92;166;20;166
+ART-0967;Isolant laine 967;REF-0967;;kg;8.29;167;20;167
+ART-0968;Peinture acrylique 968;REF-0968;;litre;8.66;168;20;168
+ART-0969;Mastic 969;REF-0969;;boîte;9.03;169;20;169
+ART-0970;Joint silicone 970;REF-0970;Description article 970;unité;9.40;170;20;170
+ART-0971;Tuyau PVC 971;REF-0971;;mètre;9.77;171;20;171
+ART-0972;Vis inox 972;REF-0972;;kg;10.14;172;20;172
+ART-0973;Cable électrique 973;REF-0973;;litre;10.51;173;20;173
+ART-0974;Joint torique 974;REF-0974;;boîte;10.88;174;20;174
+ART-0975;Robinet thermostatique 975;REF-0975;Description article 975;unité;11.25;175;20;175
+ART-0976;Collier de serrage 976;REF-0976;;mètre;11.62;176;20;176
+ART-0977;Isolant laine 977;REF-0977;;kg;11.99;177;20;177
+ART-0978;Peinture acrylique 978;REF-0978;;litre;12.36;178;20;178
+ART-0979;Mastic 979;REF-0979;;boîte;12.73;179;20;179
+ART-0980;Joint silicone 980;REF-0980;Description article 980;unité;13.10;180;20;180
+ART-0981;Tuyau PVC 981;REF-0981;;mètre;13.47;181;20;181
+ART-0982;Vis inox 982;REF-0982;;kg;13.84;182;20;182
+ART-0983;Cable électrique 983;REF-0983;;litre;14.21;183;20;183
+ART-0984;Joint torique 984;REF-0984;;boîte;14.58;184;20;184
+ART-0985;Robinet thermostatique 985;REF-0985;Description article 985;unité;14.95;185;20;185
+ART-0986;Collier de serrage 986;REF-0986;;mètre;15.32;186;20;186
+ART-0987;Isolant laine 987;REF-0987;;kg;15.69;187;20;187
+ART-0988;Peinture acrylique 988;REF-0988;;litre;16.06;188;20;188
+ART-0989;Mastic 989;REF-0989;;boîte;16.43;189;20;189
+ART-0990;Joint silicone 990;REF-0990;Description article 990;unité;16.80;190;20;190
+ART-0991;Tuyau PVC 991;REF-0991;;mètre;17.17;191;20;191
+ART-0992;Vis inox 992;REF-0992;;kg;17.54;192;20;192
+ART-0993;Cable électrique 993;REF-0993;;litre;17.91;193;20;193
+ART-0994;Joint torique 994;REF-0994;;boîte;18.28;194;20;194
+ART-0995;Robinet thermostatique 995;REF-0995;Description article 995;unité;18.65;195;20;195
+ART-0996;Collier de serrage 996;REF-0996;;mètre;19.02;196;20;196
+ART-0997;Isolant laine 997;REF-0997;;kg;19.39;197;20;197
+ART-0998;Peinture acrylique 998;REF-0998;;litre;19.76;198;20;198
+ART-0999;Mastic 999;REF-0999;;boîte;20.13;199;20;199
+ART-1000;Joint silicone 1000;REF-1000;Description article 1000;unité;2.00;0;0;5

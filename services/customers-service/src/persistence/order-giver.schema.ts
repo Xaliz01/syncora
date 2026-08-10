@@ -45,6 +45,10 @@ export class OrderGiverDocument extends Document {
 
   @Prop({ default: false })
   isTestData!: boolean;
+
+  /** Identifiant dans le CRM source (import). */
+  @Prop()
+  importExternalId?: string;
 }
 
 export const OrderGiverSchema = SchemaFactory.createForClass(OrderGiverDocument);
@@ -56,3 +60,13 @@ OrderGiverSchema.index({
   lastName: 1,
   email: 1,
 });
+OrderGiverSchema.index(
+  { organizationId: 1, importExternalId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      deletedAt: null,
+      importExternalId: { $type: "string" },
+    },
+  },
+);

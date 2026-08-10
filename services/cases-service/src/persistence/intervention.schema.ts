@@ -93,9 +93,23 @@ export class InterventionDocument extends Document {
 
   @Prop({ default: false })
   isTestData!: boolean;
+
+  /** Identifiant dans le CRM source (import). */
+  @Prop()
+  importExternalId?: string;
 }
 
 export const InterventionSchema = SchemaFactory.createForClass(InterventionDocument);
 InterventionSchema.index({ organizationId: 1, caseId: 1 });
 InterventionSchema.index({ organizationId: 1, assigneeId: 1, scheduledStart: 1 });
 InterventionSchema.index({ organizationId: 1, scheduledStart: 1, scheduledEnd: 1 });
+InterventionSchema.index(
+  { organizationId: 1, importExternalId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      deletedAt: null,
+      importExternalId: { $type: "string" },
+    },
+  },
+);

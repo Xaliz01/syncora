@@ -577,6 +577,17 @@ export const PERMISSION_METADATA: Record<PermissionCode, PermissionMetadata> = {
     label: "Facturer en mode démo",
     description: "Créer et suivre une facture simulée depuis un dossier (essai).",
   },
+  "data_import.read": {
+    code: "data_import.read",
+    label: "Voir l’import de données",
+    description: "Accéder à l’écran d’import de données et télécharger les modèles CSV.",
+  },
+  "data_import.run": {
+    code: "data_import.run",
+    label: "Exécuter un import de données",
+    description:
+      "Valider et importer des fichiers CSV (clients, catalogues, dossiers, interventions).",
+  },
 };
 
 export function getPermissionLabel(permissionCode: PermissionCode): string {

@@ -26,6 +26,7 @@ import { ExportsModule } from "./exports.module";
 import { IntegrationsModule } from "./integrations.module";
 import { GatewayHttpModule } from "./gateway-http.module";
 import { TrialTestDataModule } from "./trial-test-data.module";
+import { DataImportModule } from "./data-import.module";
 import { PlatformModule } from "./platform.module";
 import { AssistantModule } from "./assistant.module";
 
@@ -53,6 +54,7 @@ import { AssistantModule } from "./assistant.module";
     ExportsModule,
     IntegrationsModule,
     TrialTestDataModule,
+    DataImportModule,
   ],
   controllers: [AppController],
   providers: [

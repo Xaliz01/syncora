@@ -8,13 +8,17 @@ import {
 } from "@planwise/shared/nest";
 import { OrganizationsController } from "../presentation/http/organizations.controller";
 import { AnalyticsController } from "../presentation/http/analytics.controller";
+import { DataImportRunsController } from "../presentation/http/data-import-runs.controller";
 import { OrganizationSchema } from "../persistence/organization.schema";
 import { CronRunSchema } from "../persistence/cron-run.schema";
 import { PageViewSchema } from "../persistence/page-view.schema";
+import { DataImportRunSchema } from "../persistence/data-import-run.schema";
 import { AbstractOrganizationsService } from "../domain/ports/organizations.service.port";
 import { OrganizationsService } from "../domain/organizations.service";
 import { AbstractAnalyticsService } from "../domain/ports/analytics.service.port";
 import { AnalyticsService } from "../domain/analytics.service";
+import { AbstractDataImportRunsService } from "../domain/ports/data-import-runs.service.port";
+import { DataImportRunsService } from "../domain/data-import-runs.service";
 import { TrialTestDataCleanupScheduler } from "../domain/trial-test-data-cleanup.scheduler";
 import { CronRunRecorder } from "../domain/cron-run.recorder";
 import { PlatformOpsController } from "../presentation/http/platform-ops.controller";
@@ -29,11 +33,13 @@ import { PlatformOpsController } from "../presentation/http/platform-ops.control
       { name: "Organization", schema: OrganizationSchema },
       { name: "CronRun", schema: CronRunSchema },
       { name: "PageView", schema: PageViewSchema },
+      { name: "DataImportRun", schema: DataImportRunSchema },
     ]),
   ],
   controllers: [
     OrganizationsController,
     AnalyticsController,
+    DataImportRunsController,
     PlatformOpsController,
     HealthController,
   ],
@@ -42,6 +48,7 @@ import { PlatformOpsController } from "../presentation/http/platform-ops.control
     provideHttpAccessLogInterceptor(),
     { provide: AbstractOrganizationsService, useClass: OrganizationsService },
     { provide: AbstractAnalyticsService, useClass: AnalyticsService },
+    { provide: AbstractDataImportRunsService, useClass: DataImportRunsService },
     CronRunRecorder,
     TrialTestDataCleanupScheduler,
   ],

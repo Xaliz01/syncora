@@ -8,10 +8,13 @@ import {
 import { CustomersController } from "../presentation/http/customers.controller";
 import { OrderGiversController } from "../presentation/http/order-givers.controller";
 import { TestDataController } from "../presentation/http/test-data.controller";
+import { CustomersDataImportController } from "../presentation/http/customers-data-import.controller";
 import { AbstractCustomersService } from "../domain/ports/customers.service.port";
 import { CustomersService } from "../domain/customers.service";
 import { AbstractOrderGiversService } from "../domain/ports/order-givers.service.port";
 import { OrderGiversService } from "../domain/order-givers.service";
+import { AbstractCustomersDataImportService } from "../domain/ports/customers-data-import.service.port";
+import { CustomersDataImportService } from "../domain/customers-data-import.service";
 import { CustomerSchema } from "../persistence/customer.schema";
 import { OrderGiverSchema } from "../persistence/order-giver.schema";
 
@@ -25,12 +28,19 @@ import { OrderGiverSchema } from "../persistence/order-giver.schema";
       { name: "OrderGiver", schema: OrderGiverSchema },
     ]),
   ],
-  controllers: [CustomersController, OrderGiversController, TestDataController, HealthController],
+  controllers: [
+    CustomersController,
+    OrderGiversController,
+    CustomersDataImportController,
+    TestDataController,
+    HealthController,
+  ],
   providers: [
     provideHealthServiceName("planwise-customers-service"),
     provideHttpAccessLogInterceptor(),
     { provide: AbstractCustomersService, useClass: CustomersService },
     { provide: AbstractOrderGiversService, useClass: OrderGiversService },
+    { provide: AbstractCustomersDataImportService, useClass: CustomersDataImportService },
   ],
 })
 export class AppModule {}

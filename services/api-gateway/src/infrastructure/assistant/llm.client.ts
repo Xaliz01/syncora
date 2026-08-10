@@ -17,14 +17,23 @@ export class AssistantLlmClient {
     return Boolean(process.env.OPENAI_API_KEY?.trim() || process.env.ANTHROPIC_API_KEY?.trim());
   }
 
-  async complete(system: string, userMessage: string): Promise<LlmCompletionResult> {
+  async complete(
+    system: string,
+    userMessage: string,
+    options?: { /** Si true, n’ajoute pas le wrapping assistant chat. */ rawUserMessage?: boolean },
+  ): Promise<LlmCompletionResult> {
     const openaiKey = process.env.OPENAI_API_KEY?.trim();
     if (openaiKey) {
-      return this.completeOpenAi(openaiKey, system, userMessage);
+      return this.completeOpenAi(openaiKey, system, userMessage, options?.rawUserMessage === true);
     }
     const anthropicKey = process.env.ANTHROPIC_API_KEY?.trim();
     if (anthropicKey) {
-      return this.completeAnthropic(anthropicKey, system, userMessage);
+      return this.completeAnthropic(
+        anthropicKey,
+        system,
+        userMessage,
+        options?.rawUserMessage === true,
+      );
     }
     throw new ServiceUnavailableException("Aucun prestataire LLM configuré");
   }
@@ -33,12 +42,16 @@ export class AssistantLlmClient {
     apiKey: string,
     system: string,
     userMessage: string,
+    rawUserMessage: boolean,
   ): Promise<LlmCompletionResult> {
     const model = process.env.OPENAI_MODEL?.trim() || "gpt-4o-mini";
     const base = (process.env.OPENAI_API_BASE?.trim() || "https://api.openai.com/v1").replace(
       /\/$/,
       "",
     );
+    const userContent = rawUserMessage
+      ? userMessage
+      : `Question de l'utilisateur :\n${userMessage}\n\nRéponds uniquement avec l'objet JSON demandé (reply, suggestions, escalateToSupport).`;
     try {
       const { data } = await firstValueFrom(
         this.http.post<{
@@ -52,10 +65,7 @@ export class AssistantLlmClient {
             response_format: { type: "json_object" },
             messages: [
               { role: "system", content: system },
-              {
-                role: "user",
-                content: `Question de l'utilisateur :\n${userMessage}\n\nRéponds uniquement avec l'objet JSON demandé (reply, suggestions, escalateToSupport).`,
-              },
+              { role: "user", content: userContent },
             ],
           },
           {
@@ -82,8 +92,12 @@ export class AssistantLlmClient {
     apiKey: string,
     system: string,
     userMessage: string,
+    rawUserMessage: boolean,
   ): Promise<LlmCompletionResult> {
     const model = process.env.ANTHROPIC_MODEL?.trim() || "claude-3-5-haiku-latest";
+    const userContent = rawUserMessage
+      ? userMessage
+      : `Question de l'utilisateur :\n${userMessage}\n\nRéponds uniquement avec un objet JSON { "reply", "suggestions", "escalateToSupport" }.`;
     try {
       const { data } = await firstValueFrom(
         this.http.post<{
@@ -95,12 +109,7 @@ export class AssistantLlmClient {
             max_tokens: 1200,
             temperature: 0.2,
             system,
-            messages: [
-              {
-                role: "user",
-                content: `Question de l'utilisateur :\n${userMessage}\n\nRéponds uniquement avec un objet JSON { "reply", "suggestions", "escalateToSupport" }.`,
-              },
-            ],
+            messages: [{ role: "user", content: userContent }],
           },
           {
             headers: {

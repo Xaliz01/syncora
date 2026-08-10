@@ -1,0 +1,13 @@
+Code client;Type fiche;Raison sociale;Prénom;Nom;SIRET;Courriel;Téléphone;Portable;Adresse;Complément;CP;Ville;Pays;Commentaire
+ACME-1001;company;Plomberie Dupont SARL;;;89233400100012;contact@dupont-plomberie.fr;0145236789;0612345678;12 rue des Lilas;Bât A;75011;Paris;FR;Client historique
+ACME-1002;individual;;Marie;Martin;;marie.martin@email.fr;;0699887766;8 avenue Victor Hugo;;69003;Lyon;FR;
+ACME-1003;company;Électricité Nord SAS;;;44322110900045;ops@elec-nord.fr;0320123456;0788112233;45 bd de la République;;59000;Lille;FR;Compte VIP
+ACME-1004;individual;;Jean;Bernard;;jean.bernard@mail.com;0555123456;;3 chemin des Vignes;;33000;Bordeaux;France;
+ACME-1005;company;Chauffage Atlas;;;77889900100033;hello@atlas-chauffage.com;0478123456;0622334455;22 rue de la Paix;Étage 2;13001;Marseille;FR;Export SoftCRM 2024
+ACME-1006;individual;;Sophie;Petit;;s.petit@exemple.fr;;0611223344;17 place Bellecour;;69002;Lyon;FR;
+ACME-1007;company;Menuiserie Loire;;;11223344500018;admin@menuiserie-loire.fr;0240123456;;9 quai de la Loire;;44000;Nantes;FR;À recontacter
+ACME-1008;individual;;Lucas;Moreau;;lucas.moreau@mail.fr;0388123456;0677889900;5 rue Stanislas;;54000;Nancy;FR;
+ACME-1009;company;Toiture Est SARL;;;55667788900021;devis@toiture-est.fr;0388556677;0699001122;101 route de Metz;;57000;Metz;FR;
+ACME-1010;individual;;Camille;Leroy;;camille.leroy@email.com;;0655443322;14 allée des Roses;Appt 12;31000;Toulouse;FR;Nouveau 2023
+ACME-1011;company;Clim Ouest;;;99887766500009;contact@clim-ouest.fr;0298123456;0612340099;66 rue de Brest;;29000;Brest;FR;
+ACME-1012;individual;;Antoine;Roux;;a.roux@exemple.com;0488123456;;28 cours Mirabeau;;13100;Aix-en-Provence;FR;

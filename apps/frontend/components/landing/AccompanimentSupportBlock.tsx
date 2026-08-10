@@ -13,7 +13,7 @@ function isCrispRuntimeReady(): boolean {
 }
 
 /**
- * Message d’accompagnement éditeur (évolution, import CRM, chat).
+ * Message d’accompagnement éditeur (évolution, import de données, chat).
  * Sur les pages publiques, Crisp n’est en général chargé qu’après connexion :
  * bouton chat si le widget est prêt, sinon rappel que le chat est dispo dans l’app.
  */

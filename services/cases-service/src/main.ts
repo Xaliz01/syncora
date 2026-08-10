@@ -5,6 +5,7 @@ config({ path: resolve(__dirname, "../.env") });
 
 import "./tracer";
 import "reflect-metadata";
+import { json } from "express";
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./modules/app.module";
 import { createNestLogger, runPendingMigrations } from "@planwise/shared/nest";
@@ -24,7 +25,8 @@ async function bootstrap() {
     process.exit(1);
   }
 
-  const app = await NestFactory.create(AppModule, { logger });
+  const app = await NestFactory.create(AppModule, { logger, bodyParser: false });
+  app.use(json({ limit: "5mb" }));
   const port = process.env.PORT ?? 3004;
   await app.listen(port);
   logger.info("Cases service is running", { port });

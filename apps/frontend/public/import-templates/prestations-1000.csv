@@ -1,0 +1,1001 @@
+externalId;name;reference;description;unit;defaultPrice;defaultTvaRate
+PREST-0001;Déplacement 1;PREST-REF-0001;;heure;26.25;20
+PREST-0002;Diagnostic 2;PREST-REF-0002;;heure;27.50;10
+PREST-0003;Mise en service 3;PREST-REF-0003;;forfait;28.75;5.5
+PREST-0004;Entretien annuel 4;PREST-REF-0004;;heure;30.00;0
+PREST-0005;Remplacement pièce 5;PREST-REF-0005;;heure;31.25;20
+PREST-0006;Nettoyage 6;PREST-REF-0006;Prestation import 6;forfait;32.50;20
+PREST-0007;Réglage 7;PREST-REF-0007;;heure;33.75;10
+PREST-0008;Formation client 8;PREST-REF-0008;;heure;35.00;5.5
+PREST-0009;Urgence weekend 9;PREST-REF-0009;;forfait;36.25;0
+PREST-0010;Main d'œuvre 10;PREST-REF-0010;;heure;37.50;20
+PREST-0011;Déplacement 11;PREST-REF-0011;;heure;38.75;20
+PREST-0012;Diagnostic 12;PREST-REF-0012;Prestation import 12;forfait;40.00;10
+PREST-0013;Mise en service 13;PREST-REF-0013;;heure;41.25;5.5
+PREST-0014;Entretien annuel 14;PREST-REF-0014;;heure;42.50;0
+PREST-0015;Remplacement pièce 15;PREST-REF-0015;;forfait;43.75;20
+PREST-0016;Nettoyage 16;PREST-REF-0016;;heure;45.00;20
+PREST-0017;Réglage 17;PREST-REF-0017;;heure;46.25;10
+PREST-0018;Formation client 18;PREST-REF-0018;Prestation import 18;forfait;47.50;5.5
+PREST-0019;Urgence weekend 19;PREST-REF-0019;;heure;48.75;0
+PREST-0020;Main d'œuvre 20;PREST-REF-0020;;heure;50.00;20
+PREST-0021;Déplacement 21;PREST-REF-0021;;forfait;51.25;20
+PREST-0022;Diagnostic 22;PREST-REF-0022;;heure;52.50;10
+PREST-0023;Mise en service 23;PREST-REF-0023;;heure;53.75;5.5
+PREST-0024;Entretien annuel 24;PREST-REF-0024;Prestation import 24;forfait;55.00;0
+PREST-0025;Remplacement pièce 25;PREST-REF-0025;;heure;56.25;20
+PREST-0026;Nettoyage 26;PREST-REF-0026;;heure;57.50;20
+PREST-0027;Réglage 27;PREST-REF-0027;;forfait;58.75;10
+PREST-0028;Formation client 28;PREST-REF-0028;;heure;60.00;5.5
+PREST-0029;Urgence weekend 29;PREST-REF-0029;;heure;61.25;0
+PREST-0030;Main d'œuvre 30;PREST-REF-0030;Prestation import 30;forfait;62.50;20
+PREST-0031;Déplacement 31;PREST-REF-0031;;heure;63.75;20
+PREST-0032;Diagnostic 32;PREST-REF-0032;;heure;65.00;10
+PREST-0033;Mise en service 33;PREST-REF-0033;;forfait;66.25;5.5
+PREST-0034;Entretien annuel 34;PREST-REF-0034;;heure;67.50;0
+PREST-0035;Remplacement pièce 35;PREST-REF-0035;;heure;68.75;20
+PREST-0036;Nettoyage 36;PREST-REF-0036;Prestation import 36;forfait;70.00;20
+PREST-0037;Réglage 37;PREST-REF-0037;;heure;71.25;10
+PREST-0038;Formation client 38;PREST-REF-0038;;heure;72.50;5.5
+PREST-0039;Urgence weekend 39;PREST-REF-0039;;forfait;73.75;0
+PREST-0040;Main d'œuvre 40;PREST-REF-0040;;heure;75.00;20
+PREST-0041;Déplacement 41;PREST-REF-0041;;heure;76.25;20
+PREST-0042;Diagnostic 42;PREST-REF-0042;Prestation import 42;forfait;77.50;10
+PREST-0043;Mise en service 43;PREST-REF-0043;;heure;78.75;5.5
+PREST-0044;Entretien annuel 44;PREST-REF-0044;;heure;80.00;0
+PREST-0045;Remplacement pièce 45;PREST-REF-0045;;forfait;81.25;20
+PREST-0046;Nettoyage 46;PREST-REF-0046;;heure;82.50;20
+PREST-0047;Réglage 47;PREST-REF-0047;;heure;83.75;10
+PREST-0048;Formation client 48;PREST-REF-0048;Prestation import 48;forfait;85.00;5.5
+PREST-0049;Urgence weekend 49;PREST-REF-0049;;heure;86.25;0
+PREST-0050;Main d'œuvre 50;PREST-REF-0050;;heure;87.50;20
+PREST-0051;Déplacement 51;PREST-REF-0051;;forfait;88.75;20
+PREST-0052;Diagnostic 52;PREST-REF-0052;;heure;90.00;10
+PREST-0053;Mise en service 53;PREST-REF-0053;;heure;91.25;5.5
+PREST-0054;Entretien annuel 54;PREST-REF-0054;Prestation import 54;forfait;92.50;0
+PREST-0055;Remplacement pièce 55;PREST-REF-0055;;heure;93.75;20
+PREST-0056;Nettoyage 56;PREST-REF-0056;;heure;95.00;20
+PREST-0057;Réglage 57;PREST-REF-0057;;forfait;96.25;10
+PREST-0058;Formation client 58;PREST-REF-0058;;heure;97.50;5.5
+PREST-0059;Urgence weekend 59;PREST-REF-0059;;heure;98.75;0
+PREST-0060;Main d'œuvre 60;PREST-REF-0060;Prestation import 60;forfait;100.00;20
+PREST-0061;Déplacement 61;PREST-REF-0061;;heure;101.25;20
+PREST-0062;Diagnostic 62;PREST-REF-0062;;heure;102.50;10
+PREST-0063;Mise en service 63;PREST-REF-0063;;forfait;103.75;5.5
+PREST-0064;Entretien annuel 64;PREST-REF-0064;;heure;105.00;0
+PREST-0065;Remplacement pièce 65;PREST-REF-0065;;heure;106.25;20
+PREST-0066;Nettoyage 66;PREST-REF-0066;Prestation import 66;forfait;107.50;20
+PREST-0067;Réglage 67;PREST-REF-0067;;heure;108.75;10
+PREST-0068;Formation client 68;PREST-REF-0068;;heure;110.00;5.5
+PREST-0069;Urgence weekend 69;PREST-REF-0069;;forfait;111.25;0
+PREST-0070;Main d'œuvre 70;PREST-REF-0070;;heure;112.50;20
+PREST-0071;Déplacement 71;PREST-REF-0071;;heure;113.75;20
+PREST-0072;Diagnostic 72;PREST-REF-0072;Prestation import 72;forfait;115.00;10
+PREST-0073;Mise en service 73;PREST-REF-0073;;heure;116.25;5.5
+PREST-0074;Entretien annuel 74;PREST-REF-0074;;heure;117.50;0
+PREST-0075;Remplacement pièce 75;PREST-REF-0075;;forfait;118.75;20
+PREST-0076;Nettoyage 76;PREST-REF-0076;;heure;120.00;20
+PREST-0077;Réglage 77;PREST-REF-0077;;heure;121.25;10
+PREST-0078;Formation client 78;PREST-REF-0078;Prestation import 78;forfait;122.50;5.5
+PREST-0079;Urgence weekend 79;PREST-REF-0079;;heure;123.75;0
+PREST-0080;Main d'œuvre 80;PREST-REF-0080;;heure;25.00;20
+PREST-0081;Déplacement 81;PREST-REF-0081;;forfait;26.25;20
+PREST-0082;Diagnostic 82;PREST-REF-0082;;heure;27.50;10
+PREST-0083;Mise en service 83;PREST-REF-0083;;heure;28.75;5.5
+PREST-0084;Entretien annuel 84;PREST-REF-0084;Prestation import 84;forfait;30.00;0
+PREST-0085;Remplacement pièce 85;PREST-REF-0085;;heure;31.25;20
+PREST-0086;Nettoyage 86;PREST-REF-0086;;heure;32.50;20
+PREST-0087;Réglage 87;PREST-REF-0087;;forfait;33.75;10
+PREST-0088;Formation client 88;PREST-REF-0088;;heure;35.00;5.5
+PREST-0089;Urgence weekend 89;PREST-REF-0089;;heure;36.25;0
+PREST-0090;Main d'œuvre 90;PREST-REF-0090;Prestation import 90;forfait;37.50;20
+PREST-0091;Déplacement 91;PREST-REF-0091;;heure;38.75;20
+PREST-0092;Diagnostic 92;PREST-REF-0092;;heure;40.00;10
+PREST-0093;Mise en service 93;PREST-REF-0093;;forfait;41.25;5.5
+PREST-0094;Entretien annuel 94;PREST-REF-0094;;heure;42.50;0
+PREST-0095;Remplacement pièce 95;PREST-REF-0095;;heure;43.75;20
+PREST-0096;Nettoyage 96;PREST-REF-0096;Prestation import 96;forfait;45.00;20
+PREST-0097;Réglage 97;PREST-REF-0097;;heure;46.25;10
+PREST-0098;Formation client 98;PREST-REF-0098;;heure;47.50;5.5
+PREST-0099;Urgence weekend 99;PREST-REF-0099;;forfait;48.75;0
+PREST-0100;Main d'œuvre 100;PREST-REF-0100;;heure;50.00;20
+PREST-0101;Déplacement 101;PREST-REF-0101;;heure;51.25;20
+PREST-0102;Diagnostic 102;PREST-REF-0102;Prestation import 102;forfait;52.50;10
+PREST-0103;Mise en service 103;PREST-REF-0103;;heure;53.75;5.5
+PREST-0104;Entretien annuel 104;PREST-REF-0104;;heure;55.00;0
+PREST-0105;Remplacement pièce 105;PREST-REF-0105;;forfait;56.25;20
+PREST-0106;Nettoyage 106;PREST-REF-0106;;heure;57.50;20
+PREST-0107;Réglage 107;PREST-REF-0107;;heure;58.75;10
+PREST-0108;Formation client 108;PREST-REF-0108;Prestation import 108;forfait;60.00;5.5
+PREST-0109;Urgence weekend 109;PREST-REF-0109;;heure;61.25;0
+PREST-0110;Main d'œuvre 110;PREST-REF-0110;;heure;62.50;20
+PREST-0111;Déplacement 111;PREST-REF-0111;;forfait;63.75;20
+PREST-0112;Diagnostic 112;PREST-REF-0112;;heure;65.00;10
+PREST-0113;Mise en service 113;PREST-REF-0113;;heure;66.25;5.5
+PREST-0114;Entretien annuel 114;PREST-REF-0114;Prestation import 114;forfait;67.50;0
+PREST-0115;Remplacement pièce 115;PREST-REF-0115;;heure;68.75;20
+PREST-0116;Nettoyage 116;PREST-REF-0116;;heure;70.00;20
+PREST-0117;Réglage 117;PREST-REF-0117;;forfait;71.25;10
+PREST-0118;Formation client 118;PREST-REF-0118;;heure;72.50;5.5
+PREST-0119;Urgence weekend 119;PREST-REF-0119;;heure;73.75;0
+PREST-0120;Main d'œuvre 120;PREST-REF-0120;Prestation import 120;forfait;75.00;20
+PREST-0121;Déplacement 121;PREST-REF-0121;;heure;76.25;20
+PREST-0122;Diagnostic 122;PREST-REF-0122;;heure;77.50;10
+PREST-0123;Mise en service 123;PREST-REF-0123;;forfait;78.75;5.5
+PREST-0124;Entretien annuel 124;PREST-REF-0124;;heure;80.00;0
+PREST-0125;Remplacement pièce 125;PREST-REF-0125;;heure;81.25;20
+PREST-0126;Nettoyage 126;PREST-REF-0126;Prestation import 126;forfait;82.50;20
+PREST-0127;Réglage 127;PREST-REF-0127;;heure;83.75;10
+PREST-0128;Formation client 128;PREST-REF-0128;;heure;85.00;5.5
+PREST-0129;Urgence weekend 129;PREST-REF-0129;;forfait;86.25;0
+PREST-0130;Main d'œuvre 130;PREST-REF-0130;;heure;87.50;20
+PREST-0131;Déplacement 131;PREST-REF-0131;;heure;88.75;20
+PREST-0132;Diagnostic 132;PREST-REF-0132;Prestation import 132;forfait;90.00;10
+PREST-0133;Mise en service 133;PREST-REF-0133;;heure;91.25;5.5
+PREST-0134;Entretien annuel 134;PREST-REF-0134;;heure;92.50;0
+PREST-0135;Remplacement pièce 135;PREST-REF-0135;;forfait;93.75;20
+PREST-0136;Nettoyage 136;PREST-REF-0136;;heure;95.00;20
+PREST-0137;Réglage 137;PREST-REF-0137;;heure;96.25;10
+PREST-0138;Formation client 138;PREST-REF-0138;Prestation import 138;forfait;97.50;5.5
+PREST-0139;Urgence weekend 139;PREST-REF-0139;;heure;98.75;0
+PREST-0140;Main d'œuvre 140;PREST-REF-0140;;heure;100.00;20
+PREST-0141;Déplacement 141;PREST-REF-0141;;forfait;101.25;20
+PREST-0142;Diagnostic 142;PREST-REF-0142;;heure;102.50;10
+PREST-0143;Mise en service 143;PREST-REF-0143;;heure;103.75;5.5
+PREST-0144;Entretien annuel 144;PREST-REF-0144;Prestation import 144;forfait;105.00;0
+PREST-0145;Remplacement pièce 145;PREST-REF-0145;;heure;106.25;20
+PREST-0146;Nettoyage 146;PREST-REF-0146;;heure;107.50;20
+PREST-0147;Réglage 147;PREST-REF-0147;;forfait;108.75;10
+PREST-0148;Formation client 148;PREST-REF-0148;;heure;110.00;5.5
+PREST-0149;Urgence weekend 149;PREST-REF-0149;;heure;111.25;0
+PREST-0150;Main d'œuvre 150;PREST-REF-0150;Prestation import 150;forfait;112.50;20
+PREST-0151;Déplacement 151;PREST-REF-0151;;heure;113.75;20
+PREST-0152;Diagnostic 152;PREST-REF-0152;;heure;115.00;10
+PREST-0153;Mise en service 153;PREST-REF-0153;;forfait;116.25;5.5
+PREST-0154;Entretien annuel 154;PREST-REF-0154;;heure;117.50;0
+PREST-0155;Remplacement pièce 155;PREST-REF-0155;;heure;118.75;20
+PREST-0156;Nettoyage 156;PREST-REF-0156;Prestation import 156;forfait;120.00;20
+PREST-0157;Réglage 157;PREST-REF-0157;;heure;121.25;10
+PREST-0158;Formation client 158;PREST-REF-0158;;heure;122.50;5.5
+PREST-0159;Urgence weekend 159;PREST-REF-0159;;forfait;123.75;0
+PREST-0160;Main d'œuvre 160;PREST-REF-0160;;heure;25.00;20
+PREST-0161;Déplacement 161;PREST-REF-0161;;heure;26.25;20
+PREST-0162;Diagnostic 162;PREST-REF-0162;Prestation import 162;forfait;27.50;10
+PREST-0163;Mise en service 163;PREST-REF-0163;;heure;28.75;5.5
+PREST-0164;Entretien annuel 164;PREST-REF-0164;;heure;30.00;0
+PREST-0165;Remplacement pièce 165;PREST-REF-0165;;forfait;31.25;20
+PREST-0166;Nettoyage 166;PREST-REF-0166;;heure;32.50;20
+PREST-0167;Réglage 167;PREST-REF-0167;;heure;33.75;10
+PREST-0168;Formation client 168;PREST-REF-0168;Prestation import 168;forfait;35.00;5.5
+PREST-0169;Urgence weekend 169;PREST-REF-0169;;heure;36.25;0
+PREST-0170;Main d'œuvre 170;PREST-REF-0170;;heure;37.50;20
+PREST-0171;Déplacement 171;PREST-REF-0171;;forfait;38.75;20
+PREST-0172;Diagnostic 172;PREST-REF-0172;;heure;40.00;10
+PREST-0173;Mise en service 173;PREST-REF-0173;;heure;41.25;5.5
+PREST-0174;Entretien annuel 174;PREST-REF-0174;Prestation import 174;forfait;42.50;0
+PREST-0175;Remplacement pièce 175;PREST-REF-0175;;heure;43.75;20
+PREST-0176;Nettoyage 176;PREST-REF-0176;;heure;45.00;20
+PREST-0177;Réglage 177;PREST-REF-0177;;forfait;46.25;10
+PREST-0178;Formation client 178;PREST-REF-0178;;heure;47.50;5.5
+PREST-0179;Urgence weekend 179;PREST-REF-0179;;heure;48.75;0
+PREST-0180;Main d'œuvre 180;PREST-REF-0180;Prestation import 180;forfait;50.00;20
+PREST-0181;Déplacement 181;PREST-REF-0181;;heure;51.25;20
+PREST-0182;Diagnostic 182;PREST-REF-0182;;heure;52.50;10
+PREST-0183;Mise en service 183;PREST-REF-0183;;forfait;53.75;5.5
+PREST-0184;Entretien annuel 184;PREST-REF-0184;;heure;55.00;0
+PREST-0185;Remplacement pièce 185;PREST-REF-0185;;heure;56.25;20
+PREST-0186;Nettoyage 186;PREST-REF-0186;Prestation import 186;forfait;57.50;20
+PREST-0187;Réglage 187;PREST-REF-0187;;heure;58.75;10
+PREST-0188;Formation client 188;PREST-REF-0188;;heure;60.00;5.5
+PREST-0189;Urgence weekend 189;PREST-REF-0189;;forfait;61.25;0
+PREST-0190;Main d'œuvre 190;PREST-REF-0190;;heure;62.50;20
+PREST-0191;Déplacement 191;PREST-REF-0191;;heure;63.75;20
+PREST-0192;Diagnostic 192;PREST-REF-0192;Prestation import 192;forfait;65.00;10
+PREST-0193;Mise en service 193;PREST-REF-0193;;heure;66.25;5.5
+PREST-0194;Entretien annuel 194;PREST-REF-0194;;heure;67.50;0
+PREST-0195;Remplacement pièce 195;PREST-REF-0195;;forfait;68.75;20
+PREST-0196;Nettoyage 196;PREST-REF-0196;;heure;70.00;20
+PREST-0197;Réglage 197;PREST-REF-0197;;heure;71.25;10
+PREST-0198;Formation client 198;PREST-REF-0198;Prestation import 198;forfait;72.50;5.5
+PREST-0199;Urgence weekend 199;PREST-REF-0199;;heure;73.75;0
+PREST-0200;Main d'œuvre 200;PREST-REF-0200;;heure;75.00;20
+PREST-0201;Déplacement 201;PREST-REF-0201;;forfait;76.25;20
+PREST-0202;Diagnostic 202;PREST-REF-0202;;heure;77.50;10
+PREST-0203;Mise en service 203;PREST-REF-0203;;heure;78.75;5.5
+PREST-0204;Entretien annuel 204;PREST-REF-0204;Prestation import 204;forfait;80.00;0
+PREST-0205;Remplacement pièce 205;PREST-REF-0205;;heure;81.25;20
+PREST-0206;Nettoyage 206;PREST-REF-0206;;heure;82.50;20
+PREST-0207;Réglage 207;PREST-REF-0207;;forfait;83.75;10
+PREST-0208;Formation client 208;PREST-REF-0208;;heure;85.00;5.5
+PREST-0209;Urgence weekend 209;PREST-REF-0209;;heure;86.25;0
+PREST-0210;Main d'œuvre 210;PREST-REF-0210;Prestation import 210;forfait;87.50;20
+PREST-0211;Déplacement 211;PREST-REF-0211;;heure;88.75;20
+PREST-0212;Diagnostic 212;PREST-REF-0212;;heure;90.00;10
+PREST-0213;Mise en service 213;PREST-REF-0213;;forfait;91.25;5.5
+PREST-0214;Entretien annuel 214;PREST-REF-0214;;heure;92.50;0
+PREST-0215;Remplacement pièce 215;PREST-REF-0215;;heure;93.75;20
+PREST-0216;Nettoyage 216;PREST-REF-0216;Prestation import 216;forfait;95.00;20
+PREST-0217;Réglage 217;PREST-REF-0217;;heure;96.25;10
+PREST-0218;Formation client 218;PREST-REF-0218;;heure;97.50;5.5
+PREST-0219;Urgence weekend 219;PREST-REF-0219;;forfait;98.75;0
+PREST-0220;Main d'œuvre 220;PREST-REF-0220;;heure;100.00;20
+PREST-0221;Déplacement 221;PREST-REF-0221;;heure;101.25;20
+PREST-0222;Diagnostic 222;PREST-REF-0222;Prestation import 222;forfait;102.50;10
+PREST-0223;Mise en service 223;PREST-REF-0223;;heure;103.75;5.5
+PREST-0224;Entretien annuel 224;PREST-REF-0224;;heure;105.00;0
+PREST-0225;Remplacement pièce 225;PREST-REF-0225;;forfait;106.25;20
+PREST-0226;Nettoyage 226;PREST-REF-0226;;heure;107.50;20
+PREST-0227;Réglage 227;PREST-REF-0227;;heure;108.75;10
+PREST-0228;Formation client 228;PREST-REF-0228;Prestation import 228;forfait;110.00;5.5
+PREST-0229;Urgence weekend 229;PREST-REF-0229;;heure;111.25;0
+PREST-0230;Main d'œuvre 230;PREST-REF-0230;;heure;112.50;20
+PREST-0231;Déplacement 231;PREST-REF-0231;;forfait;113.75;20
+PREST-0232;Diagnostic 232;PREST-REF-0232;;heure;115.00;10
+PREST-0233;Mise en service 233;PREST-REF-0233;;heure;116.25;5.5
+PREST-0234;Entretien annuel 234;PREST-REF-0234;Prestation import 234;forfait;117.50;0
+PREST-0235;Remplacement pièce 235;PREST-REF-0235;;heure;118.75;20
+PREST-0236;Nettoyage 236;PREST-REF-0236;;heure;120.00;20
+PREST-0237;Réglage 237;PREST-REF-0237;;forfait;121.25;10
+PREST-0238;Formation client 238;PREST-REF-0238;;heure;122.50;5.5
+PREST-0239;Urgence weekend 239;PREST-REF-0239;;heure;123.75;0
+PREST-0240;Main d'œuvre 240;PREST-REF-0240;Prestation import 240;forfait;25.00;20
+PREST-0241;Déplacement 241;PREST-REF-0241;;heure;26.25;20
+PREST-0242;Diagnostic 242;PREST-REF-0242;;heure;27.50;10
+PREST-0243;Mise en service 243;PREST-REF-0243;;forfait;28.75;5.5
+PREST-0244;Entretien annuel 244;PREST-REF-0244;;heure;30.00;0
+PREST-0245;Remplacement pièce 245;PREST-REF-0245;;heure;31.25;20
+PREST-0246;Nettoyage 246;PREST-REF-0246;Prestation import 246;forfait;32.50;20
+PREST-0247;Réglage 247;PREST-REF-0247;;heure;33.75;10
+PREST-0248;Formation client 248;PREST-REF-0248;;heure;35.00;5.5
+PREST-0249;Urgence weekend 249;PREST-REF-0249;;forfait;36.25;0
+PREST-0250;Main d'œuvre 250;PREST-REF-0250;;heure;37.50;20
+PREST-0251;Déplacement 251;PREST-REF-0251;;heure;38.75;20
+PREST-0252;Diagnostic 252;PREST-REF-0252;Prestation import 252;forfait;40.00;10
+PREST-0253;Mise en service 253;PREST-REF-0253;;heure;41.25;5.5
+PREST-0254;Entretien annuel 254;PREST-REF-0254;;heure;42.50;0
+PREST-0255;Remplacement pièce 255;PREST-REF-0255;;forfait;43.75;20
+PREST-0256;Nettoyage 256;PREST-REF-0256;;heure;45.00;20
+PREST-0257;Réglage 257;PREST-REF-0257;;heure;46.25;10
+PREST-0258;Formation client 258;PREST-REF-0258;Prestation import 258;forfait;47.50;5.5
+PREST-0259;Urgence weekend 259;PREST-REF-0259;;heure;48.75;0
+PREST-0260;Main d'œuvre 260;PREST-REF-0260;;heure;50.00;20
+PREST-0261;Déplacement 261;PREST-REF-0261;;forfait;51.25;20
+PREST-0262;Diagnostic 262;PREST-REF-0262;;heure;52.50;10
+PREST-0263;Mise en service 263;PREST-REF-0263;;heure;53.75;5.5
+PREST-0264;Entretien annuel 264;PREST-REF-0264;Prestation import 264;forfait;55.00;0
+PREST-0265;Remplacement pièce 265;PREST-REF-0265;;heure;56.25;20
+PREST-0266;Nettoyage 266;PREST-REF-0266;;heure;57.50;20
+PREST-0267;Réglage 267;PREST-REF-0267;;forfait;58.75;10
+PREST-0268;Formation client 268;PREST-REF-0268;;heure;60.00;5.5
+PREST-0269;Urgence weekend 269;PREST-REF-0269;;heure;61.25;0
+PREST-0270;Main d'œuvre 270;PREST-REF-0270;Prestation import 270;forfait;62.50;20
+PREST-0271;Déplacement 271;PREST-REF-0271;;heure;63.75;20
+PREST-0272;Diagnostic 272;PREST-REF-0272;;heure;65.00;10
+PREST-0273;Mise en service 273;PREST-REF-0273;;forfait;66.25;5.5
+PREST-0274;Entretien annuel 274;PREST-REF-0274;;heure;67.50;0
+PREST-0275;Remplacement pièce 275;PREST-REF-0275;;heure;68.75;20
+PREST-0276;Nettoyage 276;PREST-REF-0276;Prestation import 276;forfait;70.00;20
+PREST-0277;Réglage 277;PREST-REF-0277;;heure;71.25;10
+PREST-0278;Formation client 278;PREST-REF-0278;;heure;72.50;5.5
+PREST-0279;Urgence weekend 279;PREST-REF-0279;;forfait;73.75;0
+PREST-0280;Main d'œuvre 280;PREST-REF-0280;;heure;75.00;20
+PREST-0281;Déplacement 281;PREST-REF-0281;;heure;76.25;20
+PREST-0282;Diagnostic 282;PREST-REF-0282;Prestation import 282;forfait;77.50;10
+PREST-0283;Mise en service 283;PREST-REF-0283;;heure;78.75;5.5
+PREST-0284;Entretien annuel 284;PREST-REF-0284;;heure;80.00;0
+PREST-0285;Remplacement pièce 285;PREST-REF-0285;;forfait;81.25;20
+PREST-0286;Nettoyage 286;PREST-REF-0286;;heure;82.50;20
+PREST-0287;Réglage 287;PREST-REF-0287;;heure;83.75;10
+PREST-0288;Formation client 288;PREST-REF-0288;Prestation import 288;forfait;85.00;5.5
+PREST-0289;Urgence weekend 289;PREST-REF-0289;;heure;86.25;0
+PREST-0290;Main d'œuvre 290;PREST-REF-0290;;heure;87.50;20
+PREST-0291;Déplacement 291;PREST-REF-0291;;forfait;88.75;20
+PREST-0292;Diagnostic 292;PREST-REF-0292;;heure;90.00;10
+PREST-0293;Mise en service 293;PREST-REF-0293;;heure;91.25;5.5
+PREST-0294;Entretien annuel 294;PREST-REF-0294;Prestation import 294;forfait;92.50;0
+PREST-0295;Remplacement pièce 295;PREST-REF-0295;;heure;93.75;20
+PREST-0296;Nettoyage 296;PREST-REF-0296;;heure;95.00;20
+PREST-0297;Réglage 297;PREST-REF-0297;;forfait;96.25;10
+PREST-0298;Formation client 298;PREST-REF-0298;;heure;97.50;5.5
+PREST-0299;Urgence weekend 299;PREST-REF-0299;;heure;98.75;0
+PREST-0300;Main d'œuvre 300;PREST-REF-0300;Prestation import 300;forfait;100.00;20
+PREST-0301;Déplacement 301;PREST-REF-0301;;heure;101.25;20
+PREST-0302;Diagnostic 302;PREST-REF-0302;;heure;102.50;10
+PREST-0303;Mise en service 303;PREST-REF-0303;;forfait;103.75;5.5
+PREST-0304;Entretien annuel 304;PREST-REF-0304;;heure;105.00;0
+PREST-0305;Remplacement pièce 305;PREST-REF-0305;;heure;106.25;20
+PREST-0306;Nettoyage 306;PREST-REF-0306;Prestation import 306;forfait;107.50;20
+PREST-0307;Réglage 307;PREST-REF-0307;;heure;108.75;10
+PREST-0308;Formation client 308;PREST-REF-0308;;heure;110.00;5.5
+PREST-0309;Urgence weekend 309;PREST-REF-0309;;forfait;111.25;0
+PREST-0310;Main d'œuvre 310;PREST-REF-0310;;heure;112.50;20
+PREST-0311;Déplacement 311;PREST-REF-0311;;heure;113.75;20
+PREST-0312;Diagnostic 312;PREST-REF-0312;Prestation import 312;forfait;115.00;10
+PREST-0313;Mise en service 313;PREST-REF-0313;;heure;116.25;5.5
+PREST-0314;Entretien annuel 314;PREST-REF-0314;;heure;117.50;0
+PREST-0315;Remplacement pièce 315;PREST-REF-0315;;forfait;118.75;20
+PREST-0316;Nettoyage 316;PREST-REF-0316;;heure;120.00;20
+PREST-0317;Réglage 317;PREST-REF-0317;;heure;121.25;10
+PREST-0318;Formation client 318;PREST-REF-0318;Prestation import 318;forfait;122.50;5.5
+PREST-0319;Urgence weekend 319;PREST-REF-0319;;heure;123.75;0
+PREST-0320;Main d'œuvre 320;PREST-REF-0320;;heure;25.00;20
+PREST-0321;Déplacement 321;PREST-REF-0321;;forfait;26.25;20
+PREST-0322;Diagnostic 322;PREST-REF-0322;;heure;27.50;10
+PREST-0323;Mise en service 323;PREST-REF-0323;;heure;28.75;5.5
+PREST-0324;Entretien annuel 324;PREST-REF-0324;Prestation import 324;forfait;30.00;0
+PREST-0325;Remplacement pièce 325;PREST-REF-0325;;heure;31.25;20
+PREST-0326;Nettoyage 326;PREST-REF-0326;;heure;32.50;20
+PREST-0327;Réglage 327;PREST-REF-0327;;forfait;33.75;10
+PREST-0328;Formation client 328;PREST-REF-0328;;heure;35.00;5.5
+PREST-0329;Urgence weekend 329;PREST-REF-0329;;heure;36.25;0
+PREST-0330;Main d'œuvre 330;PREST-REF-0330;Prestation import 330;forfait;37.50;20
+PREST-0331;Déplacement 331;PREST-REF-0331;;heure;38.75;20
+PREST-0332;Diagnostic 332;PREST-REF-0332;;heure;40.00;10
+PREST-0333;Mise en service 333;PREST-REF-0333;;forfait;41.25;5.5
+PREST-0334;Entretien annuel 334;PREST-REF-0334;;heure;42.50;0
+PREST-0335;Remplacement pièce 335;PREST-REF-0335;;heure;43.75;20
+PREST-0336;Nettoyage 336;PREST-REF-0336;Prestation import 336;forfait;45.00;20
+PREST-0337;Réglage 337;PREST-REF-0337;;heure;46.25;10
+PREST-0338;Formation client 338;PREST-REF-0338;;heure;47.50;5.5
+PREST-0339;Urgence weekend 339;PREST-REF-0339;;forfait;48.75;0
+PREST-0340;Main d'œuvre 340;PREST-REF-0340;;heure;50.00;20
+PREST-0341;Déplacement 341;PREST-REF-0341;;heure;51.25;20
+PREST-0342;Diagnostic 342;PREST-REF-0342;Prestation import 342;forfait;52.50;10
+PREST-0343;Mise en service 343;PREST-REF-0343;;heure;53.75;5.5
+PREST-0344;Entretien annuel 344;PREST-REF-0344;;heure;55.00;0
+PREST-0345;Remplacement pièce 345;PREST-REF-0345;;forfait;56.25;20
+PREST-0346;Nettoyage 346;PREST-REF-0346;;heure;57.50;20
+PREST-0347;Réglage 347;PREST-REF-0347;;heure;58.75;10
+PREST-0348;Formation client 348;PREST-REF-0348;Prestation import 348;forfait;60.00;5.5
+PREST-0349;Urgence weekend 349;PREST-REF-0349;;heure;61.25;0
+PREST-0350;Main d'œuvre 350;PREST-REF-0350;;heure;62.50;20
+PREST-0351;Déplacement 351;PREST-REF-0351;;forfait;63.75;20
+PREST-0352;Diagnostic 352;PREST-REF-0352;;heure;65.00;10
+PREST-0353;Mise en service 353;PREST-REF-0353;;heure;66.25;5.5
+PREST-0354;Entretien annuel 354;PREST-REF-0354;Prestation import 354;forfait;67.50;0
+PREST-0355;Remplacement pièce 355;PREST-REF-0355;;heure;68.75;20
+PREST-0356;Nettoyage 356;PREST-REF-0356;;heure;70.00;20
+PREST-0357;Réglage 357;PREST-REF-0357;;forfait;71.25;10
+PREST-0358;Formation client 358;PREST-REF-0358;;heure;72.50;5.5
+PREST-0359;Urgence weekend 359;PREST-REF-0359;;heure;73.75;0
+PREST-0360;Main d'œuvre 360;PREST-REF-0360;Prestation import 360;forfait;75.00;20
+PREST-0361;Déplacement 361;PREST-REF-0361;;heure;76.25;20
+PREST-0362;Diagnostic 362;PREST-REF-0362;;heure;77.50;10
+PREST-0363;Mise en service 363;PREST-REF-0363;;forfait;78.75;5.5
+PREST-0364;Entretien annuel 364;PREST-REF-0364;;heure;80.00;0
+PREST-0365;Remplacement pièce 365;PREST-REF-0365;;heure;81.25;20
+PREST-0366;Nettoyage 366;PREST-REF-0366;Prestation import 366;forfait;82.50;20
+PREST-0367;Réglage 367;PREST-REF-0367;;heure;83.75;10
+PREST-0368;Formation client 368;PREST-REF-0368;;heure;85.00;5.5
+PREST-0369;Urgence weekend 369;PREST-REF-0369;;forfait;86.25;0
+PREST-0370;Main d'œuvre 370;PREST-REF-0370;;heure;87.50;20
+PREST-0371;Déplacement 371;PREST-REF-0371;;heure;88.75;20
+PREST-0372;Diagnostic 372;PREST-REF-0372;Prestation import 372;forfait;90.00;10
+PREST-0373;Mise en service 373;PREST-REF-0373;;heure;91.25;5.5
+PREST-0374;Entretien annuel 374;PREST-REF-0374;;heure;92.50;0
+PREST-0375;Remplacement pièce 375;PREST-REF-0375;;forfait;93.75;20
+PREST-0376;Nettoyage 376;PREST-REF-0376;;heure;95.00;20
+PREST-0377;Réglage 377;PREST-REF-0377;;heure;96.25;10
+PREST-0378;Formation client 378;PREST-REF-0378;Prestation import 378;forfait;97.50;5.5
+PREST-0379;Urgence weekend 379;PREST-REF-0379;;heure;98.75;0
+PREST-0380;Main d'œuvre 380;PREST-REF-0380;;heure;100.00;20
+PREST-0381;Déplacement 381;PREST-REF-0381;;forfait;101.25;20
+PREST-0382;Diagnostic 382;PREST-REF-0382;;heure;102.50;10
+PREST-0383;Mise en service 383;PREST-REF-0383;;heure;103.75;5.5
+PREST-0384;Entretien annuel 384;PREST-REF-0384;Prestation import 384;forfait;105.00;0
+PREST-0385;Remplacement pièce 385;PREST-REF-0385;;heure;106.25;20
+PREST-0386;Nettoyage 386;PREST-REF-0386;;heure;107.50;20
+PREST-0387;Réglage 387;PREST-REF-0387;;forfait;108.75;10
+PREST-0388;Formation client 388;PREST-REF-0388;;heure;110.00;5.5
+PREST-0389;Urgence weekend 389;PREST-REF-0389;;heure;111.25;0
+PREST-0390;Main d'œuvre 390;PREST-REF-0390;Prestation import 390;forfait;112.50;20
+PREST-0391;Déplacement 391;PREST-REF-0391;;heure;113.75;20
+PREST-0392;Diagnostic 392;PREST-REF-0392;;heure;115.00;10
+PREST-0393;Mise en service 393;PREST-REF-0393;;forfait;116.25;5.5
+PREST-0394;Entretien annuel 394;PREST-REF-0394;;heure;117.50;0
+PREST-0395;Remplacement pièce 395;PREST-REF-0395;;heure;118.75;20
+PREST-0396;Nettoyage 396;PREST-REF-0396;Prestation import 396;forfait;120.00;20
+PREST-0397;Réglage 397;PREST-REF-0397;;heure;121.25;10
+PREST-0398;Formation client 398;PREST-REF-0398;;heure;122.50;5.5
+PREST-0399;Urgence weekend 399;PREST-REF-0399;;forfait;123.75;0
+PREST-0400;Main d'œuvre 400;PREST-REF-0400;;heure;25.00;20
+PREST-0401;Déplacement 401;PREST-REF-0401;;heure;26.25;20
+PREST-0402;Diagnostic 402;PREST-REF-0402;Prestation import 402;forfait;27.50;10
+PREST-0403;Mise en service 403;PREST-REF-0403;;heure;28.75;5.5
+PREST-0404;Entretien annuel 404;PREST-REF-0404;;heure;30.00;0
+PREST-0405;Remplacement pièce 405;PREST-REF-0405;;forfait;31.25;20
+PREST-0406;Nettoyage 406;PREST-REF-0406;;heure;32.50;20
+PREST-0407;Réglage 407;PREST-REF-0407;;heure;33.75;10
+PREST-0408;Formation client 408;PREST-REF-0408;Prestation import 408;forfait;35.00;5.5
+PREST-0409;Urgence weekend 409;PREST-REF-0409;;heure;36.25;0
+PREST-0410;Main d'œuvre 410;PREST-REF-0410;;heure;37.50;20
+PREST-0411;Déplacement 411;PREST-REF-0411;;forfait;38.75;20
+PREST-0412;Diagnostic 412;PREST-REF-0412;;heure;40.00;10
+PREST-0413;Mise en service 413;PREST-REF-0413;;heure;41.25;5.5
+PREST-0414;Entretien annuel 414;PREST-REF-0414;Prestation import 414;forfait;42.50;0
+PREST-0415;Remplacement pièce 415;PREST-REF-0415;;heure;43.75;20
+PREST-0416;Nettoyage 416;PREST-REF-0416;;heure;45.00;20
+PREST-0417;Réglage 417;PREST-REF-0417;;forfait;46.25;10
+PREST-0418;Formation client 418;PREST-REF-0418;;heure;47.50;5.5
+PREST-0419;Urgence weekend 419;PREST-REF-0419;;heure;48.75;0
+PREST-0420;Main d'œuvre 420;PREST-REF-0420;Prestation import 420;forfait;50.00;20
+PREST-0421;Déplacement 421;PREST-REF-0421;;heure;51.25;20
+PREST-0422;Diagnostic 422;PREST-REF-0422;;heure;52.50;10
+PREST-0423;Mise en service 423;PREST-REF-0423;;forfait;53.75;5.5
+PREST-0424;Entretien annuel 424;PREST-REF-0424;;heure;55.00;0
+PREST-0425;Remplacement pièce 425;PREST-REF-0425;;heure;56.25;20
+PREST-0426;Nettoyage 426;PREST-REF-0426;Prestation import 426;forfait;57.50;20
+PREST-0427;Réglage 427;PREST-REF-0427;;heure;58.75;10
+PREST-0428;Formation client 428;PREST-REF-0428;;heure;60.00;5.5
+PREST-0429;Urgence weekend 429;PREST-REF-0429;;forfait;61.25;0
+PREST-0430;Main d'œuvre 430;PREST-REF-0430;;heure;62.50;20
+PREST-0431;Déplacement 431;PREST-REF-0431;;heure;63.75;20
+PREST-0432;Diagnostic 432;PREST-REF-0432;Prestation import 432;forfait;65.00;10
+PREST-0433;Mise en service 433;PREST-REF-0433;;heure;66.25;5.5
+PREST-0434;Entretien annuel 434;PREST-REF-0434;;heure;67.50;0
+PREST-0435;Remplacement pièce 435;PREST-REF-0435;;forfait;68.75;20
+PREST-0436;Nettoyage 436;PREST-REF-0436;;heure;70.00;20
+PREST-0437;Réglage 437;PREST-REF-0437;;heure;71.25;10
+PREST-0438;Formation client 438;PREST-REF-0438;Prestation import 438;forfait;72.50;5.5
+PREST-0439;Urgence weekend 439;PREST-REF-0439;;heure;73.75;0
+PREST-0440;Main d'œuvre 440;PREST-REF-0440;;heure;75.00;20
+PREST-0441;Déplacement 441;PREST-REF-0441;;forfait;76.25;20
+PREST-0442;Diagnostic 442;PREST-REF-0442;;heure;77.50;10
+PREST-0443;Mise en service 443;PREST-REF-0443;;heure;78.75;5.5
+PREST-0444;Entretien annuel 444;PREST-REF-0444;Prestation import 444;forfait;80.00;0
+PREST-0445;Remplacement pièce 445;PREST-REF-0445;;heure;81.25;20
+PREST-0446;Nettoyage 446;PREST-REF-0446;;heure;82.50;20
+PREST-0447;Réglage 447;PREST-REF-0447;;forfait;83.75;10
+PREST-0448;Formation client 448;PREST-REF-0448;;heure;85.00;5.5
+PREST-0449;Urgence weekend 449;PREST-REF-0449;;heure;86.25;0
+PREST-0450;Main d'œuvre 450;PREST-REF-0450;Prestation import 450;forfait;87.50;20
+PREST-0451;Déplacement 451;PREST-REF-0451;;heure;88.75;20
+PREST-0452;Diagnostic 452;PREST-REF-0452;;heure;90.00;10
+PREST-0453;Mise en service 453;PREST-REF-0453;;forfait;91.25;5.5
+PREST-0454;Entretien annuel 454;PREST-REF-0454;;heure;92.50;0
+PREST-0455;Remplacement pièce 455;PREST-REF-0455;;heure;93.75;20
+PREST-0456;Nettoyage 456;PREST-REF-0456;Prestation import 456;forfait;95.00;20
+PREST-0457;Réglage 457;PREST-REF-0457;;heure;96.25;10
+PREST-0458;Formation client 458;PREST-REF-0458;;heure;97.50;5.5
+PREST-0459;Urgence weekend 459;PREST-REF-0459;;forfait;98.75;0
+PREST-0460;Main d'œuvre 460;PREST-REF-0460;;heure;100.00;20
+PREST-0461;Déplacement 461;PREST-REF-0461;;heure;101.25;20
+PREST-0462;Diagnostic 462;PREST-REF-0462;Prestation import 462;forfait;102.50;10
+PREST-0463;Mise en service 463;PREST-REF-0463;;heure;103.75;5.5
+PREST-0464;Entretien annuel 464;PREST-REF-0464;;heure;105.00;0
+PREST-0465;Remplacement pièce 465;PREST-REF-0465;;forfait;106.25;20
+PREST-0466;Nettoyage 466;PREST-REF-0466;;heure;107.50;20
+PREST-0467;Réglage 467;PREST-REF-0467;;heure;108.75;10
+PREST-0468;Formation client 468;PREST-REF-0468;Prestation import 468;forfait;110.00;5.5
+PREST-0469;Urgence weekend 469;PREST-REF-0469;;heure;111.25;0
+PREST-0470;Main d'œuvre 470;PREST-REF-0470;;heure;112.50;20
+PREST-0471;Déplacement 471;PREST-REF-0471;;forfait;113.75;20
+PREST-0472;Diagnostic 472;PREST-REF-0472;;heure;115.00;10
+PREST-0473;Mise en service 473;PREST-REF-0473;;heure;116.25;5.5
+PREST-0474;Entretien annuel 474;PREST-REF-0474;Prestation import 474;forfait;117.50;0
+PREST-0475;Remplacement pièce 475;PREST-REF-0475;;heure;118.75;20
+PREST-0476;Nettoyage 476;PREST-REF-0476;;heure;120.00;20
+PREST-0477;Réglage 477;PREST-REF-0477;;forfait;121.25;10
+PREST-0478;Formation client 478;PREST-REF-0478;;heure;122.50;5.5
+PREST-0479;Urgence weekend 479;PREST-REF-0479;;heure;123.75;0
+PREST-0480;Main d'œuvre 480;PREST-REF-0480;Prestation import 480;forfait;25.00;20
+PREST-0481;Déplacement 481;PREST-REF-0481;;heure;26.25;20
+PREST-0482;Diagnostic 482;PREST-REF-0482;;heure;27.50;10
+PREST-0483;Mise en service 483;PREST-REF-0483;;forfait;28.75;5.5
+PREST-0484;Entretien annuel 484;PREST-REF-0484;;heure;30.00;0
+PREST-0485;Remplacement pièce 485;PREST-REF-0485;;heure;31.25;20
+PREST-0486;Nettoyage 486;PREST-REF-0486;Prestation import 486;forfait;32.50;20
+PREST-0487;Réglage 487;PREST-REF-0487;;heure;33.75;10
+PREST-0488;Formation client 488;PREST-REF-0488;;heure;35.00;5.5
+PREST-0489;Urgence weekend 489;PREST-REF-0489;;forfait;36.25;0
+PREST-0490;Main d'œuvre 490;PREST-REF-0490;;heure;37.50;20
+PREST-0491;Déplacement 491;PREST-REF-0491;;heure;38.75;20
+PREST-0492;Diagnostic 492;PREST-REF-0492;Prestation import 492;forfait;40.00;10
+PREST-0493;Mise en service 493;PREST-REF-0493;;heure;41.25;5.5
+PREST-0494;Entretien annuel 494;PREST-REF-0494;;heure;42.50;0
+PREST-0495;Remplacement pièce 495;PREST-REF-0495;;forfait;43.75;20
+PREST-0496;Nettoyage 496;PREST-REF-0496;;heure;45.00;20
+PREST-0497;Réglage 497;PREST-REF-0497;;heure;46.25;10
+PREST-0498;Formation client 498;PREST-REF-0498;Prestation import 498;forfait;47.50;5.5
+PREST-0499;Urgence weekend 499;PREST-REF-0499;;heure;48.75;0
+PREST-0500;Main d'œuvre 500;PREST-REF-0500;;heure;50.00;20
+PREST-0501;Déplacement 501;PREST-REF-0501;;forfait;51.25;20
+PREST-0502;Diagnostic 502;PREST-REF-0502;;heure;52.50;10
+PREST-0503;Mise en service 503;PREST-REF-0503;;heure;53.75;5.5
+PREST-0504;Entretien annuel 504;PREST-REF-0504;Prestation import 504;forfait;55.00;0
+PREST-0505;Remplacement pièce 505;PREST-REF-0505;;heure;56.25;20
+PREST-0506;Nettoyage 506;PREST-REF-0506;;heure;57.50;20
+PREST-0507;Réglage 507;PREST-REF-0507;;forfait;58.75;10
+PREST-0508;Formation client 508;PREST-REF-0508;;heure;60.00;5.5
+PREST-0509;Urgence weekend 509;PREST-REF-0509;;heure;61.25;0
+PREST-0510;Main d'œuvre 510;PREST-REF-0510;Prestation import 510;forfait;62.50;20
+PREST-0511;Déplacement 511;PREST-REF-0511;;heure;63.75;20
+PREST-0512;Diagnostic 512;PREST-REF-0512;;heure;65.00;10
+PREST-0513;Mise en service 513;PREST-REF-0513;;forfait;66.25;5.5
+PREST-0514;Entretien annuel 514;PREST-REF-0514;;heure;67.50;0
+PREST-0515;Remplacement pièce 515;PREST-REF-0515;;heure;68.75;20
+PREST-0516;Nettoyage 516;PREST-REF-0516;Prestation import 516;forfait;70.00;20
+PREST-0517;Réglage 517;PREST-REF-0517;;heure;71.25;10
+PREST-0518;Formation client 518;PREST-REF-0518;;heure;72.50;5.5
+PREST-0519;Urgence weekend 519;PREST-REF-0519;;forfait;73.75;0
+PREST-0520;Main d'œuvre 520;PREST-REF-0520;;heure;75.00;20
+PREST-0521;Déplacement 521;PREST-REF-0521;;heure;76.25;20
+PREST-0522;Diagnostic 522;PREST-REF-0522;Prestation import 522;forfait;77.50;10
+PREST-0523;Mise en service 523;PREST-REF-0523;;heure;78.75;5.5
+PREST-0524;Entretien annuel 524;PREST-REF-0524;;heure;80.00;0
+PREST-0525;Remplacement pièce 525;PREST-REF-0525;;forfait;81.25;20
+PREST-0526;Nettoyage 526;PREST-REF-0526;;heure;82.50;20
+PREST-0527;Réglage 527;PREST-REF-0527;;heure;83.75;10
+PREST-0528;Formation client 528;PREST-REF-0528;Prestation import 528;forfait;85.00;5.5
+PREST-0529;Urgence weekend 529;PREST-REF-0529;;heure;86.25;0
+PREST-0530;Main d'œuvre 530;PREST-REF-0530;;heure;87.50;20
+PREST-0531;Déplacement 531;PREST-REF-0531;;forfait;88.75;20
+PREST-0532;Diagnostic 532;PREST-REF-0532;;heure;90.00;10
+PREST-0533;Mise en service 533;PREST-REF-0533;;heure;91.25;5.5
+PREST-0534;Entretien annuel 534;PREST-REF-0534;Prestation import 534;forfait;92.50;0
+PREST-0535;Remplacement pièce 535;PREST-REF-0535;;heure;93.75;20
+PREST-0536;Nettoyage 536;PREST-REF-0536;;heure;95.00;20
+PREST-0537;Réglage 537;PREST-REF-0537;;forfait;96.25;10
+PREST-0538;Formation client 538;PREST-REF-0538;;heure;97.50;5.5
+PREST-0539;Urgence weekend 539;PREST-REF-0539;;heure;98.75;0
+PREST-0540;Main d'œuvre 540;PREST-REF-0540;Prestation import 540;forfait;100.00;20
+PREST-0541;Déplacement 541;PREST-REF-0541;;heure;101.25;20
+PREST-0542;Diagnostic 542;PREST-REF-0542;;heure;102.50;10
+PREST-0543;Mise en service 543;PREST-REF-0543;;forfait;103.75;5.5
+PREST-0544;Entretien annuel 544;PREST-REF-0544;;heure;105.00;0
+PREST-0545;Remplacement pièce 545;PREST-REF-0545;;heure;106.25;20
+PREST-0546;Nettoyage 546;PREST-REF-0546;Prestation import 546;forfait;107.50;20
+PREST-0547;Réglage 547;PREST-REF-0547;;heure;108.75;10
+PREST-0548;Formation client 548;PREST-REF-0548;;heure;110.00;5.5
+PREST-0549;Urgence weekend 549;PREST-REF-0549;;forfait;111.25;0
+PREST-0550;Main d'œuvre 550;PREST-REF-0550;;heure;112.50;20
+PREST-0551;Déplacement 551;PREST-REF-0551;;heure;113.75;20
+PREST-0552;Diagnostic 552;PREST-REF-0552;Prestation import 552;forfait;115.00;10
+PREST-0553;Mise en service 553;PREST-REF-0553;;heure;116.25;5.5
+PREST-0554;Entretien annuel 554;PREST-REF-0554;;heure;117.50;0
+PREST-0555;Remplacement pièce 555;PREST-REF-0555;;forfait;118.75;20
+PREST-0556;Nettoyage 556;PREST-REF-0556;;heure;120.00;20
+PREST-0557;Réglage 557;PREST-REF-0557;;heure;121.25;10
+PREST-0558;Formation client 558;PREST-REF-0558;Prestation import 558;forfait;122.50;5.5
+PREST-0559;Urgence weekend 559;PREST-REF-0559;;heure;123.75;0
+PREST-0560;Main d'œuvre 560;PREST-REF-0560;;heure;25.00;20
+PREST-0561;Déplacement 561;PREST-REF-0561;;forfait;26.25;20
+PREST-0562;Diagnostic 562;PREST-REF-0562;;heure;27.50;10
+PREST-0563;Mise en service 563;PREST-REF-0563;;heure;28.75;5.5
+PREST-0564;Entretien annuel 564;PREST-REF-0564;Prestation import 564;forfait;30.00;0
+PREST-0565;Remplacement pièce 565;PREST-REF-0565;;heure;31.25;20
+PREST-0566;Nettoyage 566;PREST-REF-0566;;heure;32.50;20
+PREST-0567;Réglage 567;PREST-REF-0567;;forfait;33.75;10
+PREST-0568;Formation client 568;PREST-REF-0568;;heure;35.00;5.5
+PREST-0569;Urgence weekend 569;PREST-REF-0569;;heure;36.25;0
+PREST-0570;Main d'œuvre 570;PREST-REF-0570;Prestation import 570;forfait;37.50;20
+PREST-0571;Déplacement 571;PREST-REF-0571;;heure;38.75;20
+PREST-0572;Diagnostic 572;PREST-REF-0572;;heure;40.00;10
+PREST-0573;Mise en service 573;PREST-REF-0573;;forfait;41.25;5.5
+PREST-0574;Entretien annuel 574;PREST-REF-0574;;heure;42.50;0
+PREST-0575;Remplacement pièce 575;PREST-REF-0575;;heure;43.75;20
+PREST-0576;Nettoyage 576;PREST-REF-0576;Prestation import 576;forfait;45.00;20
+PREST-0577;Réglage 577;PREST-REF-0577;;heure;46.25;10
+PREST-0578;Formation client 578;PREST-REF-0578;;heure;47.50;5.5
+PREST-0579;Urgence weekend 579;PREST-REF-0579;;forfait;48.75;0
+PREST-0580;Main d'œuvre 580;PREST-REF-0580;;heure;50.00;20
+PREST-0581;Déplacement 581;PREST-REF-0581;;heure;51.25;20
+PREST-0582;Diagnostic 582;PREST-REF-0582;Prestation import 582;forfait;52.50;10
+PREST-0583;Mise en service 583;PREST-REF-0583;;heure;53.75;5.5
+PREST-0584;Entretien annuel 584;PREST-REF-0584;;heure;55.00;0
+PREST-0585;Remplacement pièce 585;PREST-REF-0585;;forfait;56.25;20
+PREST-0586;Nettoyage 586;PREST-REF-0586;;heure;57.50;20
+PREST-0587;Réglage 587;PREST-REF-0587;;heure;58.75;10
+PREST-0588;Formation client 588;PREST-REF-0588;Prestation import 588;forfait;60.00;5.5
+PREST-0589;Urgence weekend 589;PREST-REF-0589;;heure;61.25;0
+PREST-0590;Main d'œuvre 590;PREST-REF-0590;;heure;62.50;20
+PREST-0591;Déplacement 591;PREST-REF-0591;;forfait;63.75;20
+PREST-0592;Diagnostic 592;PREST-REF-0592;;heure;65.00;10
+PREST-0593;Mise en service 593;PREST-REF-0593;;heure;66.25;5.5
+PREST-0594;Entretien annuel 594;PREST-REF-0594;Prestation import 594;forfait;67.50;0
+PREST-0595;Remplacement pièce 595;PREST-REF-0595;;heure;68.75;20
+PREST-0596;Nettoyage 596;PREST-REF-0596;;heure;70.00;20
+PREST-0597;Réglage 597;PREST-REF-0597;;forfait;71.25;10
+PREST-0598;Formation client 598;PREST-REF-0598;;heure;72.50;5.5
+PREST-0599;Urgence weekend 599;PREST-REF-0599;;heure;73.75;0
+PREST-0600;Main d'œuvre 600;PREST-REF-0600;Prestation import 600;forfait;75.00;20
+PREST-0601;Déplacement 601;PREST-REF-0601;;heure;76.25;20
+PREST-0602;Diagnostic 602;PREST-REF-0602;;heure;77.50;10
+PREST-0603;Mise en service 603;PREST-REF-0603;;forfait;78.75;5.5
+PREST-0604;Entretien annuel 604;PREST-REF-0604;;heure;80.00;0
+PREST-0605;Remplacement pièce 605;PREST-REF-0605;;heure;81.25;20
+PREST-0606;Nettoyage 606;PREST-REF-0606;Prestation import 606;forfait;82.50;20
+PREST-0607;Réglage 607;PREST-REF-0607;;heure;83.75;10
+PREST-0608;Formation client 608;PREST-REF-0608;;heure;85.00;5.5
+PREST-0609;Urgence weekend 609;PREST-REF-0609;;forfait;86.25;0
+PREST-0610;Main d'œuvre 610;PREST-REF-0610;;heure;87.50;20
+PREST-0611;Déplacement 611;PREST-REF-0611;;heure;88.75;20
+PREST-0612;Diagnostic 612;PREST-REF-0612;Prestation import 612;forfait;90.00;10
+PREST-0613;Mise en service 613;PREST-REF-0613;;heure;91.25;5.5
+PREST-0614;Entretien annuel 614;PREST-REF-0614;;heure;92.50;0
+PREST-0615;Remplacement pièce 615;PREST-REF-0615;;forfait;93.75;20
+PREST-0616;Nettoyage 616;PREST-REF-0616;;heure;95.00;20
+PREST-0617;Réglage 617;PREST-REF-0617;;heure;96.25;10
+PREST-0618;Formation client 618;PREST-REF-0618;Prestation import 618;forfait;97.50;5.5
+PREST-0619;Urgence weekend 619;PREST-REF-0619;;heure;98.75;0
+PREST-0620;Main d'œuvre 620;PREST-REF-0620;;heure;100.00;20
+PREST-0621;Déplacement 621;PREST-REF-0621;;forfait;101.25;20
+PREST-0622;Diagnostic 622;PREST-REF-0622;;heure;102.50;10
+PREST-0623;Mise en service 623;PREST-REF-0623;;heure;103.75;5.5
+PREST-0624;Entretien annuel 624;PREST-REF-0624;Prestation import 624;forfait;105.00;0
+PREST-0625;Remplacement pièce 625;PREST-REF-0625;;heure;106.25;20
+PREST-0626;Nettoyage 626;PREST-REF-0626;;heure;107.50;20
+PREST-0627;Réglage 627;PREST-REF-0627;;forfait;108.75;10
+PREST-0628;Formation client 628;PREST-REF-0628;;heure;110.00;5.5
+PREST-0629;Urgence weekend 629;PREST-REF-0629;;heure;111.25;0
+PREST-0630;Main d'œuvre 630;PREST-REF-0630;Prestation import 630;forfait;112.50;20
+PREST-0631;Déplacement 631;PREST-REF-0631;;heure;113.75;20
+PREST-0632;Diagnostic 632;PREST-REF-0632;;heure;115.00;10
+PREST-0633;Mise en service 633;PREST-REF-0633;;forfait;116.25;5.5
+PREST-0634;Entretien annuel 634;PREST-REF-0634;;heure;117.50;0
+PREST-0635;Remplacement pièce 635;PREST-REF-0635;;heure;118.75;20
+PREST-0636;Nettoyage 636;PREST-REF-0636;Prestation import 636;forfait;120.00;20
+PREST-0637;Réglage 637;PREST-REF-0637;;heure;121.25;10
+PREST-0638;Formation client 638;PREST-REF-0638;;heure;122.50;5.5
+PREST-0639;Urgence weekend 639;PREST-REF-0639;;forfait;123.75;0
+PREST-0640;Main d'œuvre 640;PREST-REF-0640;;heure;25.00;20
+PREST-0641;Déplacement 641;PREST-REF-0641;;heure;26.25;20
+PREST-0642;Diagnostic 642;PREST-REF-0642;Prestation import 642;forfait;27.50;10
+PREST-0643;Mise en service 643;PREST-REF-0643;;heure;28.75;5.5
+PREST-0644;Entretien annuel 644;PREST-REF-0644;;heure;30.00;0
+PREST-0645;Remplacement pièce 645;PREST-REF-0645;;forfait;31.25;20
+PREST-0646;Nettoyage 646;PREST-REF-0646;;heure;32.50;20
+PREST-0647;Réglage 647;PREST-REF-0647;;heure;33.75;10
+PREST-0648;Formation client 648;PREST-REF-0648;Prestation import 648;forfait;35.00;5.5
+PREST-0649;Urgence weekend 649;PREST-REF-0649;;heure;36.25;0
+PREST-0650;Main d'œuvre 650;PREST-REF-0650;;heure;37.50;20
+PREST-0651;Déplacement 651;PREST-REF-0651;;forfait;38.75;20
+PREST-0652;Diagnostic 652;PREST-REF-0652;;heure;40.00;10
+PREST-0653;Mise en service 653;PREST-REF-0653;;heure;41.25;5.5
+PREST-0654;Entretien annuel 654;PREST-REF-0654;Prestation import 654;forfait;42.50;0
+PREST-0655;Remplacement pièce 655;PREST-REF-0655;;heure;43.75;20
+PREST-0656;Nettoyage 656;PREST-REF-0656;;heure;45.00;20
+PREST-0657;Réglage 657;PREST-REF-0657;;forfait;46.25;10
+PREST-0658;Formation client 658;PREST-REF-0658;;heure;47.50;5.5
+PREST-0659;Urgence weekend 659;PREST-REF-0659;;heure;48.75;0
+PREST-0660;Main d'œuvre 660;PREST-REF-0660;Prestation import 660;forfait;50.00;20
+PREST-0661;Déplacement 661;PREST-REF-0661;;heure;51.25;20
+PREST-0662;Diagnostic 662;PREST-REF-0662;;heure;52.50;10
+PREST-0663;Mise en service 663;PREST-REF-0663;;forfait;53.75;5.5
+PREST-0664;Entretien annuel 664;PREST-REF-0664;;heure;55.00;0
+PREST-0665;Remplacement pièce 665;PREST-REF-0665;;heure;56.25;20
+PREST-0666;Nettoyage 666;PREST-REF-0666;Prestation import 666;forfait;57.50;20
+PREST-0667;Réglage 667;PREST-REF-0667;;heure;58.75;10
+PREST-0668;Formation client 668;PREST-REF-0668;;heure;60.00;5.5
+PREST-0669;Urgence weekend 669;PREST-REF-0669;;forfait;61.25;0
+PREST-0670;Main d'œuvre 670;PREST-REF-0670;;heure;62.50;20
+PREST-0671;Déplacement 671;PREST-REF-0671;;heure;63.75;20
+PREST-0672;Diagnostic 672;PREST-REF-0672;Prestation import 672;forfait;65.00;10
+PREST-0673;Mise en service 673;PREST-REF-0673;;heure;66.25;5.5
+PREST-0674;Entretien annuel 674;PREST-REF-0674;;heure;67.50;0
+PREST-0675;Remplacement pièce 675;PREST-REF-0675;;forfait;68.75;20
+PREST-0676;Nettoyage 676;PREST-REF-0676;;heure;70.00;20
+PREST-0677;Réglage 677;PREST-REF-0677;;heure;71.25;10
+PREST-0678;Formation client 678;PREST-REF-0678;Prestation import 678;forfait;72.50;5.5
+PREST-0679;Urgence weekend 679;PREST-REF-0679;;heure;73.75;0
+PREST-0680;Main d'œuvre 680;PREST-REF-0680;;heure;75.00;20
+PREST-0681;Déplacement 681;PREST-REF-0681;;forfait;76.25;20
+PREST-0682;Diagnostic 682;PREST-REF-0682;;heure;77.50;10
+PREST-0683;Mise en service 683;PREST-REF-0683;;heure;78.75;5.5
+PREST-0684;Entretien annuel 684;PREST-REF-0684;Prestation import 684;forfait;80.00;0
+PREST-0685;Remplacement pièce 685;PREST-REF-0685;;heure;81.25;20
+PREST-0686;Nettoyage 686;PREST-REF-0686;;heure;82.50;20
+PREST-0687;Réglage 687;PREST-REF-0687;;forfait;83.75;10
+PREST-0688;Formation client 688;PREST-REF-0688;;heure;85.00;5.5
+PREST-0689;Urgence weekend 689;PREST-REF-0689;;heure;86.25;0
+PREST-0690;Main d'œuvre 690;PREST-REF-0690;Prestation import 690;forfait;87.50;20
+PREST-0691;Déplacement 691;PREST-REF-0691;;heure;88.75;20
+PREST-0692;Diagnostic 692;PREST-REF-0692;;heure;90.00;10
+PREST-0693;Mise en service 693;PREST-REF-0693;;forfait;91.25;5.5
+PREST-0694;Entretien annuel 694;PREST-REF-0694;;heure;92.50;0
+PREST-0695;Remplacement pièce 695;PREST-REF-0695;;heure;93.75;20
+PREST-0696;Nettoyage 696;PREST-REF-0696;Prestation import 696;forfait;95.00;20
+PREST-0697;Réglage 697;PREST-REF-0697;;heure;96.25;10
+PREST-0698;Formation client 698;PREST-REF-0698;;heure;97.50;5.5
+PREST-0699;Urgence weekend 699;PREST-REF-0699;;forfait;98.75;0
+PREST-0700;Main d'œuvre 700;PREST-REF-0700;;heure;100.00;20
+PREST-0701;Déplacement 701;PREST-REF-0701;;heure;101.25;20
+PREST-0702;Diagnostic 702;PREST-REF-0702;Prestation import 702;forfait;102.50;10
+PREST-0703;Mise en service 703;PREST-REF-0703;;heure;103.75;5.5
+PREST-0704;Entretien annuel 704;PREST-REF-0704;;heure;105.00;0
+PREST-0705;Remplacement pièce 705;PREST-REF-0705;;forfait;106.25;20
+PREST-0706;Nettoyage 706;PREST-REF-0706;;heure;107.50;20
+PREST-0707;Réglage 707;PREST-REF-0707;;heure;108.75;10
+PREST-0708;Formation client 708;PREST-REF-0708;Prestation import 708;forfait;110.00;5.5
+PREST-0709;Urgence weekend 709;PREST-REF-0709;;heure;111.25;0
+PREST-0710;Main d'œuvre 710;PREST-REF-0710;;heure;112.50;20
+PREST-0711;Déplacement 711;PREST-REF-0711;;forfait;113.75;20
+PREST-0712;Diagnostic 712;PREST-REF-0712;;heure;115.00;10
+PREST-0713;Mise en service 713;PREST-REF-0713;;heure;116.25;5.5
+PREST-0714;Entretien annuel 714;PREST-REF-0714;Prestation import 714;forfait;117.50;0
+PREST-0715;Remplacement pièce 715;PREST-REF-0715;;heure;118.75;20
+PREST-0716;Nettoyage 716;PREST-REF-0716;;heure;120.00;20
+PREST-0717;Réglage 717;PREST-REF-0717;;forfait;121.25;10
+PREST-0718;Formation client 718;PREST-REF-0718;;heure;122.50;5.5
+PREST-0719;Urgence weekend 719;PREST-REF-0719;;heure;123.75;0
+PREST-0720;Main d'œuvre 720;PREST-REF-0720;Prestation import 720;forfait;25.00;20
+PREST-0721;Déplacement 721;PREST-REF-0721;;heure;26.25;20
+PREST-0722;Diagnostic 722;PREST-REF-0722;;heure;27.50;10
+PREST-0723;Mise en service 723;PREST-REF-0723;;forfait;28.75;5.5
+PREST-0724;Entretien annuel 724;PREST-REF-0724;;heure;30.00;0
+PREST-0725;Remplacement pièce 725;PREST-REF-0725;;heure;31.25;20
+PREST-0726;Nettoyage 726;PREST-REF-0726;Prestation import 726;forfait;32.50;20
+PREST-0727;Réglage 727;PREST-REF-0727;;heure;33.75;10
+PREST-0728;Formation client 728;PREST-REF-0728;;heure;35.00;5.5
+PREST-0729;Urgence weekend 729;PREST-REF-0729;;forfait;36.25;0
+PREST-0730;Main d'œuvre 730;PREST-REF-0730;;heure;37.50;20
+PREST-0731;Déplacement 731;PREST-REF-0731;;heure;38.75;20
+PREST-0732;Diagnostic 732;PREST-REF-0732;Prestation import 732;forfait;40.00;10
+PREST-0733;Mise en service 733;PREST-REF-0733;;heure;41.25;5.5
+PREST-0734;Entretien annuel 734;PREST-REF-0734;;heure;42.50;0
+PREST-0735;Remplacement pièce 735;PREST-REF-0735;;forfait;43.75;20
+PREST-0736;Nettoyage 736;PREST-REF-0736;;heure;45.00;20
+PREST-0737;Réglage 737;PREST-REF-0737;;heure;46.25;10
+PREST-0738;Formation client 738;PREST-REF-0738;Prestation import 738;forfait;47.50;5.5
+PREST-0739;Urgence weekend 739;PREST-REF-0739;;heure;48.75;0
+PREST-0740;Main d'œuvre 740;PREST-REF-0740;;heure;50.00;20
+PREST-0741;Déplacement 741;PREST-REF-0741;;forfait;51.25;20
+PREST-0742;Diagnostic 742;PREST-REF-0742;;heure;52.50;10
+PREST-0743;Mise en service 743;PREST-REF-0743;;heure;53.75;5.5
+PREST-0744;Entretien annuel 744;PREST-REF-0744;Prestation import 744;forfait;55.00;0
+PREST-0745;Remplacement pièce 745;PREST-REF-0745;;heure;56.25;20
+PREST-0746;Nettoyage 746;PREST-REF-0746;;heure;57.50;20
+PREST-0747;Réglage 747;PREST-REF-0747;;forfait;58.75;10
+PREST-0748;Formation client 748;PREST-REF-0748;;heure;60.00;5.5
+PREST-0749;Urgence weekend 749;PREST-REF-0749;;heure;61.25;0
+PREST-0750;Main d'œuvre 750;PREST-REF-0750;Prestation import 750;forfait;62.50;20
+PREST-0751;Déplacement 751;PREST-REF-0751;;heure;63.75;20
+PREST-0752;Diagnostic 752;PREST-REF-0752;;heure;65.00;10
+PREST-0753;Mise en service 753;PREST-REF-0753;;forfait;66.25;5.5
+PREST-0754;Entretien annuel 754;PREST-REF-0754;;heure;67.50;0
+PREST-0755;Remplacement pièce 755;PREST-REF-0755;;heure;68.75;20
+PREST-0756;Nettoyage 756;PREST-REF-0756;Prestation import 756;forfait;70.00;20
+PREST-0757;Réglage 757;PREST-REF-0757;;heure;71.25;10
+PREST-0758;Formation client 758;PREST-REF-0758;;heure;72.50;5.5
+PREST-0759;Urgence weekend 759;PREST-REF-0759;;forfait;73.75;0
+PREST-0760;Main d'œuvre 760;PREST-REF-0760;;heure;75.00;20
+PREST-0761;Déplacement 761;PREST-REF-0761;;heure;76.25;20
+PREST-0762;Diagnostic 762;PREST-REF-0762;Prestation import 762;forfait;77.50;10
+PREST-0763;Mise en service 763;PREST-REF-0763;;heure;78.75;5.5
+PREST-0764;Entretien annuel 764;PREST-REF-0764;;heure;80.00;0
+PREST-0765;Remplacement pièce 765;PREST-REF-0765;;forfait;81.25;20
+PREST-0766;Nettoyage 766;PREST-REF-0766;;heure;82.50;20
+PREST-0767;Réglage 767;PREST-REF-0767;;heure;83.75;10
+PREST-0768;Formation client 768;PREST-REF-0768;Prestation import 768;forfait;85.00;5.5
+PREST-0769;Urgence weekend 769;PREST-REF-0769;;heure;86.25;0
+PREST-0770;Main d'œuvre 770;PREST-REF-0770;;heure;87.50;20
+PREST-0771;Déplacement 771;PREST-REF-0771;;forfait;88.75;20
+PREST-0772;Diagnostic 772;PREST-REF-0772;;heure;90.00;10
+PREST-0773;Mise en service 773;PREST-REF-0773;;heure;91.25;5.5
+PREST-0774;Entretien annuel 774;PREST-REF-0774;Prestation import 774;forfait;92.50;0
+PREST-0775;Remplacement pièce 775;PREST-REF-0775;;heure;93.75;20
+PREST-0776;Nettoyage 776;PREST-REF-0776;;heure;95.00;20
+PREST-0777;Réglage 777;PREST-REF-0777;;forfait;96.25;10
+PREST-0778;Formation client 778;PREST-REF-0778;;heure;97.50;5.5
+PREST-0779;Urgence weekend 779;PREST-REF-0779;;heure;98.75;0
+PREST-0780;Main d'œuvre 780;PREST-REF-0780;Prestation import 780;forfait;100.00;20
+PREST-0781;Déplacement 781;PREST-REF-0781;;heure;101.25;20
+PREST-0782;Diagnostic 782;PREST-REF-0782;;heure;102.50;10
+PREST-0783;Mise en service 783;PREST-REF-0783;;forfait;103.75;5.5
+PREST-0784;Entretien annuel 784;PREST-REF-0784;;heure;105.00;0
+PREST-0785;Remplacement pièce 785;PREST-REF-0785;;heure;106.25;20
+PREST-0786;Nettoyage 786;PREST-REF-0786;Prestation import 786;forfait;107.50;20
+PREST-0787;Réglage 787;PREST-REF-0787;;heure;108.75;10
+PREST-0788;Formation client 788;PREST-REF-0788;;heure;110.00;5.5
+PREST-0789;Urgence weekend 789;PREST-REF-0789;;forfait;111.25;0
+PREST-0790;Main d'œuvre 790;PREST-REF-0790;;heure;112.50;20
+PREST-0791;Déplacement 791;PREST-REF-0791;;heure;113.75;20
+PREST-0792;Diagnostic 792;PREST-REF-0792;Prestation import 792;forfait;115.00;10
+PREST-0793;Mise en service 793;PREST-REF-0793;;heure;116.25;5.5
+PREST-0794;Entretien annuel 794;PREST-REF-0794;;heure;117.50;0
+PREST-0795;Remplacement pièce 795;PREST-REF-0795;;forfait;118.75;20
+PREST-0796;Nettoyage 796;PREST-REF-0796;;heure;120.00;20
+PREST-0797;Réglage 797;PREST-REF-0797;;heure;121.25;10
+PREST-0798;Formation client 798;PREST-REF-0798;Prestation import 798;forfait;122.50;5.5
+PREST-0799;Urgence weekend 799;PREST-REF-0799;;heure;123.75;0
+PREST-0800;Main d'œuvre 800;PREST-REF-0800;;heure;25.00;20
+PREST-0801;Déplacement 801;PREST-REF-0801;;forfait;26.25;20
+PREST-0802;Diagnostic 802;PREST-REF-0802;;heure;27.50;10
+PREST-0803;Mise en service 803;PREST-REF-0803;;heure;28.75;5.5
+PREST-0804;Entretien annuel 804;PREST-REF-0804;Prestation import 804;forfait;30.00;0
+PREST-0805;Remplacement pièce 805;PREST-REF-0805;;heure;31.25;20
+PREST-0806;Nettoyage 806;PREST-REF-0806;;heure;32.50;20
+PREST-0807;Réglage 807;PREST-REF-0807;;forfait;33.75;10
+PREST-0808;Formation client 808;PREST-REF-0808;;heure;35.00;5.5
+PREST-0809;Urgence weekend 809;PREST-REF-0809;;heure;36.25;0
+PREST-0810;Main d'œuvre 810;PREST-REF-0810;Prestation import 810;forfait;37.50;20
+PREST-0811;Déplacement 811;PREST-REF-0811;;heure;38.75;20
+PREST-0812;Diagnostic 812;PREST-REF-0812;;heure;40.00;10
+PREST-0813;Mise en service 813;PREST-REF-0813;;forfait;41.25;5.5
+PREST-0814;Entretien annuel 814;PREST-REF-0814;;heure;42.50;0
+PREST-0815;Remplacement pièce 815;PREST-REF-0815;;heure;43.75;20
+PREST-0816;Nettoyage 816;PREST-REF-0816;Prestation import 816;forfait;45.00;20
+PREST-0817;Réglage 817;PREST-REF-0817;;heure;46.25;10
+PREST-0818;Formation client 818;PREST-REF-0818;;heure;47.50;5.5
+PREST-0819;Urgence weekend 819;PREST-REF-0819;;forfait;48.75;0
+PREST-0820;Main d'œuvre 820;PREST-REF-0820;;heure;50.00;20
+PREST-0821;Déplacement 821;PREST-REF-0821;;heure;51.25;20
+PREST-0822;Diagnostic 822;PREST-REF-0822;Prestation import 822;forfait;52.50;10
+PREST-0823;Mise en service 823;PREST-REF-0823;;heure;53.75;5.5
+PREST-0824;Entretien annuel 824;PREST-REF-0824;;heure;55.00;0
+PREST-0825;Remplacement pièce 825;PREST-REF-0825;;forfait;56.25;20
+PREST-0826;Nettoyage 826;PREST-REF-0826;;heure;57.50;20
+PREST-0827;Réglage 827;PREST-REF-0827;;heure;58.75;10
+PREST-0828;Formation client 828;PREST-REF-0828;Prestation import 828;forfait;60.00;5.5
+PREST-0829;Urgence weekend 829;PREST-REF-0829;;heure;61.25;0
+PREST-0830;Main d'œuvre 830;PREST-REF-0830;;heure;62.50;20
+PREST-0831;Déplacement 831;PREST-REF-0831;;forfait;63.75;20
+PREST-0832;Diagnostic 832;PREST-REF-0832;;heure;65.00;10
+PREST-0833;Mise en service 833;PREST-REF-0833;;heure;66.25;5.5
+PREST-0834;Entretien annuel 834;PREST-REF-0834;Prestation import 834;forfait;67.50;0
+PREST-0835;Remplacement pièce 835;PREST-REF-0835;;heure;68.75;20
+PREST-0836;Nettoyage 836;PREST-REF-0836;;heure;70.00;20
+PREST-0837;Réglage 837;PREST-REF-0837;;forfait;71.25;10
+PREST-0838;Formation client 838;PREST-REF-0838;;heure;72.50;5.5
+PREST-0839;Urgence weekend 839;PREST-REF-0839;;heure;73.75;0
+PREST-0840;Main d'œuvre 840;PREST-REF-0840;Prestation import 840;forfait;75.00;20
+PREST-0841;Déplacement 841;PREST-REF-0841;;heure;76.25;20
+PREST-0842;Diagnostic 842;PREST-REF-0842;;heure;77.50;10
+PREST-0843;Mise en service 843;PREST-REF-0843;;forfait;78.75;5.5
+PREST-0844;Entretien annuel 844;PREST-REF-0844;;heure;80.00;0
+PREST-0845;Remplacement pièce 845;PREST-REF-0845;;heure;81.25;20
+PREST-0846;Nettoyage 846;PREST-REF-0846;Prestation import 846;forfait;82.50;20
+PREST-0847;Réglage 847;PREST-REF-0847;;heure;83.75;10
+PREST-0848;Formation client 848;PREST-REF-0848;;heure;85.00;5.5
+PREST-0849;Urgence weekend 849;PREST-REF-0849;;forfait;86.25;0
+PREST-0850;Main d'œuvre 850;PREST-REF-0850;;heure;87.50;20
+PREST-0851;Déplacement 851;PREST-REF-0851;;heure;88.75;20
+PREST-0852;Diagnostic 852;PREST-REF-0852;Prestation import 852;forfait;90.00;10
+PREST-0853;Mise en service 853;PREST-REF-0853;;heure;91.25;5.5
+PREST-0854;Entretien annuel 854;PREST-REF-0854;;heure;92.50;0
+PREST-0855;Remplacement pièce 855;PREST-REF-0855;;forfait;93.75;20
+PREST-0856;Nettoyage 856;PREST-REF-0856;;heure;95.00;20
+PREST-0857;Réglage 857;PREST-REF-0857;;heure;96.25;10
+PREST-0858;Formation client 858;PREST-REF-0858;Prestation import 858;forfait;97.50;5.5
+PREST-0859;Urgence weekend 859;PREST-REF-0859;;heure;98.75;0
+PREST-0860;Main d'œuvre 860;PREST-REF-0860;;heure;100.00;20
+PREST-0861;Déplacement 861;PREST-REF-0861;;forfait;101.25;20
+PREST-0862;Diagnostic 862;PREST-REF-0862;;heure;102.50;10
+PREST-0863;Mise en service 863;PREST-REF-0863;;heure;103.75;5.5
+PREST-0864;Entretien annuel 864;PREST-REF-0864;Prestation import 864;forfait;105.00;0
+PREST-0865;Remplacement pièce 865;PREST-REF-0865;;heure;106.25;20
+PREST-0866;Nettoyage 866;PREST-REF-0866;;heure;107.50;20
+PREST-0867;Réglage 867;PREST-REF-0867;;forfait;108.75;10
+PREST-0868;Formation client 868;PREST-REF-0868;;heure;110.00;5.5
+PREST-0869;Urgence weekend 869;PREST-REF-0869;;heure;111.25;0
+PREST-0870;Main d'œuvre 870;PREST-REF-0870;Prestation import 870;forfait;112.50;20
+PREST-0871;Déplacement 871;PREST-REF-0871;;heure;113.75;20
+PREST-0872;Diagnostic 872;PREST-REF-0872;;heure;115.00;10
+PREST-0873;Mise en service 873;PREST-REF-0873;;forfait;116.25;5.5
+PREST-0874;Entretien annuel 874;PREST-REF-0874;;heure;117.50;0
+PREST-0875;Remplacement pièce 875;PREST-REF-0875;;heure;118.75;20
+PREST-0876;Nettoyage 876;PREST-REF-0876;Prestation import 876;forfait;120.00;20
+PREST-0877;Réglage 877;PREST-REF-0877;;heure;121.25;10
+PREST-0878;Formation client 878;PREST-REF-0878;;heure;122.50;5.5
+PREST-0879;Urgence weekend 879;PREST-REF-0879;;forfait;123.75;0
+PREST-0880;Main d'œuvre 880;PREST-REF-0880;;heure;25.00;20
+PREST-0881;Déplacement 881;PREST-REF-0881;;heure;26.25;20
+PREST-0882;Diagnostic 882;PREST-REF-0882;Prestation import 882;forfait;27.50;10
+PREST-0883;Mise en service 883;PREST-REF-0883;;heure;28.75;5.5
+PREST-0884;Entretien annuel 884;PREST-REF-0884;;heure;30.00;0
+PREST-0885;Remplacement pièce 885;PREST-REF-0885;;forfait;31.25;20
+PREST-0886;Nettoyage 886;PREST-REF-0886;;heure;32.50;20
+PREST-0887;Réglage 887;PREST-REF-0887;;heure;33.75;10
+PREST-0888;Formation client 888;PREST-REF-0888;Prestation import 888;forfait;35.00;5.5
+PREST-0889;Urgence weekend 889;PREST-REF-0889;;heure;36.25;0
+PREST-0890;Main d'œuvre 890;PREST-REF-0890;;heure;37.50;20
+PREST-0891;Déplacement 891;PREST-REF-0891;;forfait;38.75;20
+PREST-0892;Diagnostic 892;PREST-REF-0892;;heure;40.00;10
+PREST-0893;Mise en service 893;PREST-REF-0893;;heure;41.25;5.5
+PREST-0894;Entretien annuel 894;PREST-REF-0894;Prestation import 894;forfait;42.50;0
+PREST-0895;Remplacement pièce 895;PREST-REF-0895;;heure;43.75;20
+PREST-0896;Nettoyage 896;PREST-REF-0896;;heure;45.00;20
+PREST-0897;Réglage 897;PREST-REF-0897;;forfait;46.25;10
+PREST-0898;Formation client 898;PREST-REF-0898;;heure;47.50;5.5
+PREST-0899;Urgence weekend 899;PREST-REF-0899;;heure;48.75;0
+PREST-0900;Main d'œuvre 900;PREST-REF-0900;Prestation import 900;forfait;50.00;20
+PREST-0901;Déplacement 901;PREST-REF-0901;;heure;51.25;20
+PREST-0902;Diagnostic 902;PREST-REF-0902;;heure;52.50;10
+PREST-0903;Mise en service 903;PREST-REF-0903;;forfait;53.75;5.5
+PREST-0904;Entretien annuel 904;PREST-REF-0904;;heure;55.00;0
+PREST-0905;Remplacement pièce 905;PREST-REF-0905;;heure;56.25;20
+PREST-0906;Nettoyage 906;PREST-REF-0906;Prestation import 906;forfait;57.50;20
+PREST-0907;Réglage 907;PREST-REF-0907;;heure;58.75;10
+PREST-0908;Formation client 908;PREST-REF-0908;;heure;60.00;5.5
+PREST-0909;Urgence weekend 909;PREST-REF-0909;;forfait;61.25;0
+PREST-0910;Main d'œuvre 910;PREST-REF-0910;;heure;62.50;20
+PREST-0911;Déplacement 911;PREST-REF-0911;;heure;63.75;20
+PREST-0912;Diagnostic 912;PREST-REF-0912;Prestation import 912;forfait;65.00;10
+PREST-0913;Mise en service 913;PREST-REF-0913;;heure;66.25;5.5
+PREST-0914;Entretien annuel 914;PREST-REF-0914;;heure;67.50;0
+PREST-0915;Remplacement pièce 915;PREST-REF-0915;;forfait;68.75;20
+PREST-0916;Nettoyage 916;PREST-REF-0916;;heure;70.00;20
+PREST-0917;Réglage 917;PREST-REF-0917;;heure;71.25;10
+PREST-0918;Formation client 918;PREST-REF-0918;Prestation import 918;forfait;72.50;5.5
+PREST-0919;Urgence weekend 919;PREST-REF-0919;;heure;73.75;0
+PREST-0920;Main d'œuvre 920;PREST-REF-0920;;heure;75.00;20
+PREST-0921;Déplacement 921;PREST-REF-0921;;forfait;76.25;20
+PREST-0922;Diagnostic 922;PREST-REF-0922;;heure;77.50;10
+PREST-0923;Mise en service 923;PREST-REF-0923;;heure;78.75;5.5
+PREST-0924;Entretien annuel 924;PREST-REF-0924;Prestation import 924;forfait;80.00;0
+PREST-0925;Remplacement pièce 925;PREST-REF-0925;;heure;81.25;20
+PREST-0926;Nettoyage 926;PREST-REF-0926;;heure;82.50;20
+PREST-0927;Réglage 927;PREST-REF-0927;;forfait;83.75;10
+PREST-0928;Formation client 928;PREST-REF-0928;;heure;85.00;5.5
+PREST-0929;Urgence weekend 929;PREST-REF-0929;;heure;86.25;0
+PREST-0930;Main d'œuvre 930;PREST-REF-0930;Prestation import 930;forfait;87.50;20
+PREST-0931;Déplacement 931;PREST-REF-0931;;heure;88.75;20
+PREST-0932;Diagnostic 932;PREST-REF-0932;;heure;90.00;10
+PREST-0933;Mise en service 933;PREST-REF-0933;;forfait;91.25;5.5
+PREST-0934;Entretien annuel 934;PREST-REF-0934;;heure;92.50;0
+PREST-0935;Remplacement pièce 935;PREST-REF-0935;;heure;93.75;20
+PREST-0936;Nettoyage 936;PREST-REF-0936;Prestation import 936;forfait;95.00;20
+PREST-0937;Réglage 937;PREST-REF-0937;;heure;96.25;10
+PREST-0938;Formation client 938;PREST-REF-0938;;heure;97.50;5.5
+PREST-0939;Urgence weekend 939;PREST-REF-0939;;forfait;98.75;0
+PREST-0940;Main d'œuvre 940;PREST-REF-0940;;heure;100.00;20
+PREST-0941;Déplacement 941;PREST-REF-0941;;heure;101.25;20
+PREST-0942;Diagnostic 942;PREST-REF-0942;Prestation import 942;forfait;102.50;10
+PREST-0943;Mise en service 943;PREST-REF-0943;;heure;103.75;5.5
+PREST-0944;Entretien annuel 944;PREST-REF-0944;;heure;105.00;0
+PREST-0945;Remplacement pièce 945;PREST-REF-0945;;forfait;106.25;20
+PREST-0946;Nettoyage 946;PREST-REF-0946;;heure;107.50;20
+PREST-0947;Réglage 947;PREST-REF-0947;;heure;108.75;10
+PREST-0948;Formation client 948;PREST-REF-0948;Prestation import 948;forfait;110.00;5.5
+PREST-0949;Urgence weekend 949;PREST-REF-0949;;heure;111.25;0
+PREST-0950;Main d'œuvre 950;PREST-REF-0950;;heure;112.50;20
+PREST-0951;Déplacement 951;PREST-REF-0951;;forfait;113.75;20
+PREST-0952;Diagnostic 952;PREST-REF-0952;;heure;115.00;10
+PREST-0953;Mise en service 953;PREST-REF-0953;;heure;116.25;5.5
+PREST-0954;Entretien annuel 954;PREST-REF-0954;Prestation import 954;forfait;117.50;0
+PREST-0955;Remplacement pièce 955;PREST-REF-0955;;heure;118.75;20
+PREST-0956;Nettoyage 956;PREST-REF-0956;;heure;120.00;20
+PREST-0957;Réglage 957;PREST-REF-0957;;forfait;121.25;10
+PREST-0958;Formation client 958;PREST-REF-0958;;heure;122.50;5.5
+PREST-0959;Urgence weekend 959;PREST-REF-0959;;heure;123.75;0
+PREST-0960;Main d'œuvre 960;PREST-REF-0960;Prestation import 960;forfait;25.00;20
+PREST-0961;Déplacement 961;PREST-REF-0961;;heure;26.25;20
+PREST-0962;Diagnostic 962;PREST-REF-0962;;heure;27.50;10
+PREST-0963;Mise en service 963;PREST-REF-0963;;forfait;28.75;5.5
+PREST-0964;Entretien annuel 964;PREST-REF-0964;;heure;30.00;0
+PREST-0965;Remplacement pièce 965;PREST-REF-0965;;heure;31.25;20
+PREST-0966;Nettoyage 966;PREST-REF-0966;Prestation import 966;forfait;32.50;20
+PREST-0967;Réglage 967;PREST-REF-0967;;heure;33.75;10
+PREST-0968;Formation client 968;PREST-REF-0968;;heure;35.00;5.5
+PREST-0969;Urgence weekend 969;PREST-REF-0969;;forfait;36.25;0
+PREST-0970;Main d'œuvre 970;PREST-REF-0970;;heure;37.50;20
+PREST-0971;Déplacement 971;PREST-REF-0971;;heure;38.75;20
+PREST-0972;Diagnostic 972;PREST-REF-0972;Prestation import 972;forfait;40.00;10
+PREST-0973;Mise en service 973;PREST-REF-0973;;heure;41.25;5.5
+PREST-0974;Entretien annuel 974;PREST-REF-0974;;heure;42.50;0
+PREST-0975;Remplacement pièce 975;PREST-REF-0975;;forfait;43.75;20
+PREST-0976;Nettoyage 976;PREST-REF-0976;;heure;45.00;20
+PREST-0977;Réglage 977;PREST-REF-0977;;heure;46.25;10
+PREST-0978;Formation client 978;PREST-REF-0978;Prestation import 978;forfait;47.50;5.5
+PREST-0979;Urgence weekend 979;PREST-REF-0979;;heure;48.75;0
+PREST-0980;Main d'œuvre 980;PREST-REF-0980;;heure;50.00;20
+PREST-0981;Déplacement 981;PREST-REF-0981;;forfait;51.25;20
+PREST-0982;Diagnostic 982;PREST-REF-0982;;heure;52.50;10
+PREST-0983;Mise en service 983;PREST-REF-0983;;heure;53.75;5.5
+PREST-0984;Entretien annuel 984;PREST-REF-0984;Prestation import 984;forfait;55.00;0
+PREST-0985;Remplacement pièce 985;PREST-REF-0985;;heure;56.25;20
+PREST-0986;Nettoyage 986;PREST-REF-0986;;heure;57.50;20
+PREST-0987;Réglage 987;PREST-REF-0987;;forfait;58.75;10
+PREST-0988;Formation client 988;PREST-REF-0988;;heure;60.00;5.5
+PREST-0989;Urgence weekend 989;PREST-REF-0989;;heure;61.25;0
+PREST-0990;Main d'œuvre 990;PREST-REF-0990;Prestation import 990;forfait;62.50;20
+PREST-0991;Déplacement 991;PREST-REF-0991;;heure;63.75;20
+PREST-0992;Diagnostic 992;PREST-REF-0992;;heure;65.00;10
+PREST-0993;Mise en service 993;PREST-REF-0993;;forfait;66.25;5.5
+PREST-0994;Entretien annuel 994;PREST-REF-0994;;heure;67.50;0
+PREST-0995;Remplacement pièce 995;PREST-REF-0995;;heure;68.75;20
+PREST-0996;Nettoyage 996;PREST-REF-0996;Prestation import 996;forfait;70.00;20
+PREST-0997;Réglage 997;PREST-REF-0997;;heure;71.25;10
+PREST-0998;Formation client 998;PREST-REF-0998;;heure;72.50;5.5
+PREST-0999;Urgence weekend 999;PREST-REF-0999;;forfait;73.75;0
+PREST-1000;Main d'œuvre 1000;PREST-REF-1000;;heure;75.00;20

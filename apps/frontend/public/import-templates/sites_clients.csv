@@ -1,0 +1,3 @@
+externalId;customerExternalId;label;addressLine1;addressLine2;postalCode;city;country;isDefault;notes
+SITE-001;CLI-001;Siège;12 rue de la Paix;;75002;Paris;FR;true;
+SITE-002;CLI-001;Entrepôt;8 rue du Port;;93000;Bobigny;FR;false;

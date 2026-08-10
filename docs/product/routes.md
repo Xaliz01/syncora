@@ -36,6 +36,7 @@ Source alignée sur le menu [`AppShell.tsx`](../../apps/frontend/components/layo
 | Profils                 | `/settings/profiles`           | `profiles.read`                                            |
 | Notifications           | `/settings/notifications`      | `notifications.manage_preferences`                         |
 | Intégrations            | `/settings/integrations`       | `integrations.pennylane.read` ou `integrations.qonto.read` |
+| Import de données       | `/settings/data-import`        | `data_import.read`                                         |
 | Recherche               | `/search`                      |                                                            |
 
 ## Routes détail (dynamiques)

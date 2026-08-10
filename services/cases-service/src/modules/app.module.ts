@@ -8,6 +8,7 @@ import {
 } from "@planwise/shared/nest";
 import { CasesController } from "../presentation/http/cases.controller";
 import { TestDataController } from "../presentation/http/test-data.controller";
+import { CasesDataImportController } from "../presentation/http/cases-data-import.controller";
 import {
   CasesPlatformOpsController,
   MaintenanceContractsController,
@@ -20,6 +21,7 @@ import { AbstractCaseHistoryService } from "../domain/ports/case-history.service
 import { AbstractDashboardService } from "../domain/ports/dashboard.service.port";
 import { AbstractCaseTemplatesService } from "../domain/ports/case-templates.service.port";
 import { AbstractInterventionTypesService } from "../domain/ports/intervention-types.service.port";
+import { AbstractCasesDataImportService } from "../domain/ports/cases-data-import.service.port";
 import { CasesService } from "../domain/cases.service";
 import { InterventionsService } from "../domain/interventions.service";
 import { QuotesService } from "../domain/quotes.service";
@@ -28,6 +30,7 @@ import { CaseHistoryService } from "../domain/case-history.service";
 import { DashboardService } from "../domain/dashboard.service";
 import { CaseTemplatesService } from "../domain/case-templates.service";
 import { InterventionTypesService } from "../domain/intervention-types.service";
+import { CasesDataImportService } from "../domain/cases-data-import.service";
 import { MaintenanceContractsService } from "../domain/maintenance-contracts.service";
 import { MaintenanceContractVisitsScheduler } from "../domain/maintenance-contract-visits.scheduler";
 import { CronRunRecorder } from "../domain/cron-run.recorder";
@@ -59,6 +62,7 @@ import { CronRunSchema } from "../persistence/cron-run.schema";
   ],
   controllers: [
     CasesController,
+    CasesDataImportController,
     MaintenanceContractsController,
     CasesPlatformOpsController,
     TestDataController,
@@ -75,6 +79,7 @@ import { CronRunSchema } from "../persistence/cron-run.schema";
     { provide: AbstractDashboardService, useClass: DashboardService },
     { provide: AbstractCaseTemplatesService, useClass: CaseTemplatesService },
     { provide: AbstractInterventionTypesService, useClass: InterventionTypesService },
+    { provide: AbstractCasesDataImportService, useClass: CasesDataImportService },
     MaintenanceContractsService,
     MaintenanceContractVisitsScheduler,
     CronRunRecorder,

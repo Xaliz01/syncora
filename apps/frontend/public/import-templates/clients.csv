@@ -1,0 +1,3 @@
+externalId;kind;firstName;lastName;companyName;legalIdentifier;email;phone;mobile;addressLine1;addressLine2;postalCode;city;country;notes
+CLI-001;company;;;Dupont SAS;12345678900012;contact@dupont.fr;0142000000;;12 rue de la Paix;;75002;Paris;FR;Client historique
+CLI-002;individual;Marie;Martin;;martin@email.fr;0612345678;;5 avenue Victor Hugo;;69003;Lyon;FR;

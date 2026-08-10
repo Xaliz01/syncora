@@ -1,0 +1,3 @@
+externalId;name;reference;description;unit;defaultPrice;defaultTvaRate
+PREST-001;Main d'œuvre plomberie;MO-PLOMB;Taux horaire;heure;55;20
+PREST-002;Déplacement;DEPLAC;;forfait;35;20

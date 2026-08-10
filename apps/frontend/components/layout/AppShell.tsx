@@ -360,6 +360,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (hasAnyPermission(user, ["integrations.pennylane.read", "integrations.qonto.read"])) {
       settingsLinks.push({ label: "Intégrations", href: "/settings/integrations" });
     }
+    if (hasPermission(user, "data_import.read")) {
+      settingsLinks.push({ label: "Import de données", href: "/settings/data-import" });
+    }
     if (settingsLinks.length > 0) {
       menuSections.push({ label: "Paramètres", links: settingsLinks });
     }

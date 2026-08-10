@@ -34,6 +34,10 @@ export class PrestationDocument extends Document {
 
   @Prop({ default: false })
   isTestData!: boolean;
+
+  /** Identifiant dans le CRM source (import). */
+  @Prop()
+  importExternalId?: string;
 }
 
 export const PrestationSchema = SchemaFactory.createForClass(PrestationDocument);
@@ -42,3 +46,13 @@ PrestationSchema.index(
   { unique: true, partialFilterExpression: { deletedAt: null } },
 );
 PrestationSchema.index({ organizationId: 1, name: 1 });
+PrestationSchema.index(
+  { organizationId: 1, importExternalId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      deletedAt: null,
+      importExternalId: { $type: "string" },
+    },
+  },
+);

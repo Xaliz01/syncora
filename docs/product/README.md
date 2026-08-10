@@ -22,30 +22,31 @@ Documentation **fonctionnelle** destinée à l’assistant in-app et à l’équ
 
 ### Parcours (`journeys/`)
 
-| Fichier | Sujet                        |
-| ------- | ---------------------------- |
-| 01      | Créer un client              |
-| 02      | Créer un dossier             |
-| 03      | Ma journée / intervention    |
-| 04      | Planning                     |
-| 05      | Devis & facturation          |
-| 06      | Intégrations                 |
-| 07      | Inviter un utilisateur       |
-| 08      | Assigner une intervention    |
-| 09      | Favoris                      |
-| 10      | Contrats de maintenance      |
-| 11      | Onboarding & données de démo |
-| 12      | Tableau de bord              |
-| 13      | Profils & modèles de dossier |
-| 14      | Notifications                |
-| 15      | Abonnement, essai & addons   |
-| 16      | Stock                        |
-| 17      | Reporting                    |
-| 18      | Recherche & historique       |
-| 19      | Organisation                 |
-| 20      | Compte & PWA                 |
-| 21      | Flotte (véhicules / agences) |
-| 22      | Donneurs d'ordre             |
+| Fichier | Sujet                              |
+| ------- | ---------------------------------- |
+| 01      | Créer un client                    |
+| 02      | Créer un dossier                   |
+| 03      | Ma journée / intervention          |
+| 04      | Planning                           |
+| 05      | Devis & facturation                |
+| 06      | Intégrations                       |
+| 07      | Inviter un utilisateur             |
+| 08      | Assigner une intervention          |
+| 09      | Favoris                            |
+| 10      | Contrats de maintenance            |
+| 11      | Onboarding & données de démo       |
+| 12      | Tableau de bord                    |
+| 13      | Profils & modèles de dossier       |
+| 14      | Notifications                      |
+| 15      | Abonnement, essai & addons         |
+| 16      | Stock                              |
+| 17      | Reporting                          |
+| 18      | Recherche & historique             |
+| 19      | Organisation                       |
+| 20      | Compte & PWA                       |
+| 21      | Flotte (véhicules / agences)       |
+| 22      | Donneurs d'ordre                   |
+| 23      | Import de données (CSV historique) |
 
 ## Maintenance
 

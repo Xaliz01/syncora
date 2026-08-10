@@ -78,6 +78,8 @@ function AssistantIcon({ className }: { className?: string }) {
   );
 }
 
+export { AssistantIcon };
+
 export function AssistantButton() {
   const [open, setOpen] = useState(false);
 

@@ -103,6 +103,7 @@ const ALL_PROTECTED_PATHS = [
   "/settings/stock/locations",
   "/settings/notifications",
   "/settings/integrations",
+  "/settings/data-import",
   "/billing",
   "/reporting",
   "/reporting/cases_list",

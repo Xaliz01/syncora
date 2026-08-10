@@ -117,6 +117,11 @@ export const ASSISTANT_ROUTE_CATALOG: readonly AssistantRouteEntry[] = [
       "integrations.demo.read",
     ],
   },
+  {
+    label: "Import de données",
+    href: "/settings/data-import",
+    permissions: ["data_import.read"],
+  },
   { label: "Recherche", href: "/search", permissions: [] },
 ] as const;
 

@@ -112,6 +112,8 @@ export const DEFAULT_PERMISSION_PROFILE_PRESETS: readonly DefaultPermissionProfi
       "exports.cases",
       "exports.customers",
       "exports.interventions",
+      "data_import.read",
+      "data_import.run",
     ],
   },
   {

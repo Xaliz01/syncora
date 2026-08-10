@@ -55,6 +55,10 @@ export class ArticleDocument extends Document {
 
   @Prop({ default: false })
   isTestData!: boolean;
+
+  /** Identifiant dans le CRM source (import). */
+  @Prop()
+  importExternalId?: string;
 }
 
 export const ArticleSchema = SchemaFactory.createForClass(ArticleDocument);
@@ -64,3 +68,13 @@ ArticleSchema.index(
 );
 ArticleSchema.index({ organizationId: 1, name: 1 });
 ArticleSchema.index({ organizationId: 1, stockQuantity: 1 });
+ArticleSchema.index(
+  { organizationId: 1, importExternalId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      deletedAt: null,
+      importExternalId: { $type: "string" },
+    },
+  },
+);
