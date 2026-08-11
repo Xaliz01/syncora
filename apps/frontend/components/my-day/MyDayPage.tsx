@@ -543,7 +543,10 @@ export function MyDayPage() {
     enabled: !!user,
     refetchInterval: viewingToday ? 30_000 : false,
   });
-  const interventions = interventionsData?.interventions ?? [];
+  const interventions = useMemo(
+    () => interventionsData?.interventions ?? [],
+    [interventionsData?.interventions],
+  );
 
   const filtered = useMemo(() => {
     if (activeFilter === "all") return interventions;

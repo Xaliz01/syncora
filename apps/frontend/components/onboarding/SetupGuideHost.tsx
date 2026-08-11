@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/components/auth/AuthContext";
@@ -46,7 +46,10 @@ export function SetupGuideHost() {
     Boolean(user?.isFoundingAdmin) &&
     hasActiveSubscriptionAccess(user);
 
-  const prefsQueryKey = ["account-preferences", user?.id, user?.organizationId] as const;
+  const prefsQueryKey = useMemo(
+    () => ["account-preferences", user?.id, user?.organizationId] as const,
+    [user?.id, user?.organizationId],
+  );
 
   const { data: prefsData, isLoading: prefsLoading } = useQuery({
     queryKey: prefsQueryKey,

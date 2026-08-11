@@ -97,7 +97,7 @@ function QuoteForm({
     enabled: can("stock.articles.read"),
     staleTime: 60_000,
   });
-  const articles = articlesData?.articles ?? [];
+  const articles = useMemo(() => articlesData?.articles ?? [], [articlesData?.articles]);
 
   const { data: prestationsData } = useQuery({
     queryKey: ["prestations-for-quotes"],
@@ -105,7 +105,10 @@ function QuoteForm({
     enabled: can("prestations.read"),
     staleTime: 60_000,
   });
-  const prestations = prestationsData?.prestations ?? [];
+  const prestations = useMemo(
+    () => prestationsData?.prestations ?? [],
+    [prestationsData?.prestations],
+  );
 
   const catalogItems = useMemo((): CatalogPickItem[] => {
     const fromArticles: CatalogPickItem[] = articles.map((a) => ({
@@ -177,7 +180,7 @@ function QuoteForm({
     }
   };
 
-  const filledLines = lines.filter((l) => l.description.trim());
+  const filledLines = useMemo(() => lines.filter((l) => l.description.trim()), [lines]);
 
   useEffect(() => {
     if (filledLines.length === 0) {
@@ -225,7 +228,7 @@ function QuoteForm({
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [caseId, subject, notes, validUntil, lines]);
+  }, [caseId, subject, notes, validUntil, filledLines]);
 
   useEffect(() => {
     return () => {

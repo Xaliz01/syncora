@@ -381,7 +381,7 @@ export function extractVoiceFieldTargetHint(phrase: string): {
 }
 
 function stripLeadingAction(raw: string, patterns: RegExp[]): string {
-  let text = raw.trim();
+  const text = raw.trim();
   for (const re of patterns) {
     const next = text.replace(re, "").trim();
     if (next !== text) return next;

@@ -108,7 +108,7 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
       }),
   });
 
-  const articles = articlesData?.articles ?? [];
+  const articles = useMemo(() => articlesData?.articles ?? [], [articlesData?.articles]);
   const total = articlesData?.total ?? 0;
 
   const { data: pickerArticlesData } = useQuery({

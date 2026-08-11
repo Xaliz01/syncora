@@ -127,7 +127,7 @@ export function InterventionTypesSettingsPage() {
     queryKey: ["intervention-types"],
     queryFn: () => api.listInterventionTypes(),
   });
-  const types = data?.types ?? [];
+  const types = useMemo(() => data?.types ?? [], [data?.types]);
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ["intervention-types"] });

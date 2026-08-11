@@ -63,7 +63,7 @@ export function StockLocationDetailPage({ locationId }: { locationId: string }) 
     queryFn: () => stockApi.listArticles({ locationId, activeOnly: true, limit: MAX_PAGE_LIMIT }),
     enabled: canReadArticles,
   });
-  const articles = articlesData?.articles ?? [];
+  const articles = useMemo(() => articlesData?.articles ?? [], [articlesData?.articles]);
 
   const { data: movements = [], isLoading: movementsLoading } = useQuery({
     queryKey: ["stock-movements", "location", locationId],
