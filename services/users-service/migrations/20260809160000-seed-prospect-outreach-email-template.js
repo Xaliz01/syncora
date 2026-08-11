@@ -7,7 +7,7 @@ const DEFAULT_BODY = `{{greeting}}
 
 Vous avez créé récemment votre entreprise : c’est le bon moment pour structurer votre activité sans vous ruiner en outils.
 
-Planwise est un CRM pensé pour les indépendants, artisans et TPE. Il est actuellement en beta : simple, abordable, et adapté à une structure qui démarre. Pendant toute la beta, Planwise reste **gratuit**. Ensuite, l’abonnement Essentiel sera à **9,99 €** par mois, sans engagement, résiliable à tout moment. En rejoignant la beta, vous bénéficierez d’avantages réservés aux premiers utilisateurs.
+Planwise est un CRM pensé pour les indépendants, artisans et TPE. Il est actuellement en beta : simple, accessible, et adapté à une structure qui démarre. Pendant toute la beta, Planwise reste **gratuit**. Ensuite, l’abonnement Essentiel sera à **9,99 €** par mois, sans engagement, résiliable à tout moment. En rejoignant la beta, vous bénéficierez d’avantages réservés aux premiers utilisateurs.
 
 Découvrez Planwise : {{landingUrl}}
 
@@ -30,7 +30,7 @@ module.exports = {
     await col.insertOne({
       name: DEFAULT_NAME,
       purpose: "prospect_outreach",
-      subject: "Planwise — un CRM simple et abordable pour démarrer votre activité",
+      subject: "Planwise — un CRM simple et accessible pour démarrer votre activité",
       body: DEFAULT_BODY,
       footer:
         "Cet e-mail est une présentation de Planwise destinée aux entreprises récemment créées. Répondez STOP pour ne plus être contacté.",

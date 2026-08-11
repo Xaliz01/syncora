@@ -6,7 +6,7 @@ test.describe("Parcours actions rapides (garde auth)", () => {
     // Invité : landing marketing (pas le dashboard app)
     await expect(
       page.getByRole("heading", {
-        name: "Le CRM terrain abordable pour indépendants, artisans et TPE",
+        name: "Le CRM terrain accessible pour indépendants, artisans et TPE",
       }),
     ).toBeVisible();
   });

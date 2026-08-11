@@ -9,7 +9,7 @@ test.describe("Accès invité", () => {
     await expect(page).toHaveURL("/");
     await expect(
       page.getByRole("heading", {
-        name: "Le CRM terrain abordable pour indépendants, artisans et TPE",
+        name: "Le CRM terrain accessible pour indépendants, artisans et TPE",
       }),
     ).toBeVisible();
   });
@@ -222,7 +222,7 @@ test.describe("Navigation catch-all", () => {
     await expect(page).toHaveURL("/");
     await expect(
       page.getByRole("heading", {
-        name: "Le CRM terrain abordable pour indépendants, artisans et TPE",
+        name: "Le CRM terrain accessible pour indépendants, artisans et TPE",
       }),
     ).toBeVisible();
   });
@@ -232,7 +232,7 @@ test.describe("Navigation catch-all", () => {
     await expect(page).toHaveURL("/");
     await expect(
       page.getByRole("heading", {
-        name: "Le CRM terrain abordable pour indépendants, artisans et TPE",
+        name: "Le CRM terrain accessible pour indépendants, artisans et TPE",
       }),
     ).toBeVisible();
   });
@@ -243,7 +243,7 @@ test.describe("Parcours landing publique", () => {
     await page.goto("/");
     await expect(
       page.getByRole("heading", {
-        name: "Le CRM terrain abordable pour indépendants, artisans et TPE",
+        name: "Le CRM terrain accessible pour indépendants, artisans et TPE",
       }),
     ).toBeVisible();
 
