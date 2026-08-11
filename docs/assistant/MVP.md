@@ -6,7 +6,7 @@
 
 ## Objectif MVP
 
-Un utilisateur authentifié peut ouvrir un panneau « Assistant », poser une question métier (« comment créer un devis ? », « où est le planning ? ») et recevoir :
+Un utilisateur authentifié peut ouvrir un panneau « Assistant », poser une question métier (« comment créer une intervention ? », « où est le planning ? ») et recevoir :
 
 1. Une réponse courte en français
 2. Des **liens internes** uniquement vers des routes autorisées pour ses permissions

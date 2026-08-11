@@ -23,6 +23,7 @@ import {
 } from "@/lib/organization-address";
 import { LegalConsentCheckbox } from "@/components/legal/LegalConsentCheckbox";
 import { BetaBadge } from "@/components/ui/BetaBadge";
+import { ProductScreenshotsRegister } from "@/components/landing/ProductScreenshots";
 import { LANDING_TAGLINE } from "@/lib/landing-copy";
 
 type RegisterStep = "account" | "verify-email" | "organization";
@@ -297,6 +298,7 @@ export function RegisterPage() {
                     </li>
                   ))}
                 </ul>
+                <ProductScreenshotsRegister />
               </aside>
               <form
                 onSubmit={handleAccountSubmit}

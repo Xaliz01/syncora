@@ -112,7 +112,7 @@ function AssistantDrawer({ open, onClose }: { open: boolean; onClose: () => void
     {
       id: "welcome",
       role: "assistant",
-      text: "Posez une question sur Planwise (ex. « comment créer un devis ? », « où est le planning ? »). Je propose des liens vers les bons écrans.",
+      text: "Posez une question sur Planwise (ex. « comment créer une intervention ? », « où est le planning ? »). Je propose des liens vers les bons écrans.",
       suggestions: [],
     },
   ]);

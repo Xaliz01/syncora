@@ -13,6 +13,7 @@ import { sanitizeAuthReturnPath } from "@/lib/auth-return-url";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { BetaBadge } from "@/components/ui/BetaBadge";
 import { AccompanimentSupportBlock } from "@/components/landing/AccompanimentSupportBlock";
+import { ProductScreenshotsLoginBackdrop } from "@/components/landing/ProductScreenshots";
 import {
   LANDING_BETA_FREE_NOTE,
   LANDING_HERO_HEADING,
@@ -60,34 +61,6 @@ const LOGIN_HIGHLIGHTS = [
           strokeWidth="1.75"
         />
         <circle cx="12" cy="10" r="2.5" stroke="currentColor" strokeWidth="1.75" />
-      </svg>
-    ),
-  },
-  {
-    label: "Contrats de maintenance automatisés",
-    icon: (
-      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" aria-hidden>
-        <path
-          d="M8 7h8M8 12h8M8 17h5"
-          stroke="currentColor"
-          strokeWidth="1.75"
-          strokeLinecap="round"
-        />
-        <rect x="4" y="3" width="16" height="18" rx="2" stroke="currentColor" strokeWidth="1.75" />
-      </svg>
-    ),
-  },
-  {
-    label: "Devis et facturation sans double saisie",
-    icon: (
-      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" aria-hidden>
-        <path
-          d="M4 7h16M4 12h10M4 17h7"
-          stroke="currentColor"
-          strokeWidth="1.75"
-          strokeLinecap="round"
-        />
-        <path d="M16 14l2 2 4-4" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
       </svg>
     ),
   },
@@ -183,8 +156,9 @@ export function LoginPage() {
           className="pointer-events-none absolute inset-0 bg-gradient-to-br from-brand-600/10 via-transparent to-violet-600/5 dark:from-brand-600/20 dark:to-violet-950/30"
           aria-hidden
         />
-        <div className="relative w-full max-w-6xl grid gap-6 md:grid-cols-2 md:items-stretch">
-          <section className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 p-6 sm:p-7 shadow-sm dark:shadow-slate-950/20">
+        <ProductScreenshotsLoginBackdrop />
+        <div className="relative z-10 w-full max-w-6xl grid gap-6 md:grid-cols-2 md:items-stretch">
+          <section className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 p-6 sm:p-7 shadow-sm dark:shadow-slate-950/20 backdrop-blur-[2px]">
             <div className="mb-4">
               <div className="flex flex-wrap items-center gap-2">
                 <BetaBadge />
@@ -246,7 +220,9 @@ export function LoginPage() {
             </p>
           </section>
 
-          <AccompanimentSupportBlock variant="login" onLoginClick={() => setLoginOpen(true)} />
+          <div className="relative z-10">
+            <AccompanimentSupportBlock variant="login" onLoginClick={() => setLoginOpen(true)} />
+          </div>
         </div>
       </main>
 

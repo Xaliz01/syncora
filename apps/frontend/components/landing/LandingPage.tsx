@@ -9,6 +9,7 @@ import {
 } from "@planwise/shared";
 import { ScrollReveal } from "@/components/landing/ScrollReveal";
 import { AccompanimentSupportBlock } from "@/components/landing/AccompanimentSupportBlock";
+import { ProductScreenshotsHero } from "@/components/landing/ProductScreenshots";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { BetaBadge } from "@/components/ui/BetaBadge";
 import {
@@ -178,8 +179,8 @@ export function LandingPage() {
             className="pointer-events-none absolute inset-0 bg-gradient-to-br from-brand-600/10 via-transparent to-violet-600/5 dark:from-brand-600/20 dark:to-violet-950/30"
             aria-hidden
           />
-          <div className="relative max-w-6xl mx-auto px-4 py-14 sm:py-20 lg:py-24">
-            <div className="grid gap-10 lg:grid-cols-2 lg:gap-12 lg:items-start">
+          <div className="relative max-w-6xl mx-auto px-4 py-10 sm:py-12 lg:py-12">
+            <div className="grid gap-8 lg:grid-cols-2 lg:gap-10 lg:items-start">
               <div>
                 <ScrollReveal when="mount">
                   <div className="mb-4">
@@ -237,8 +238,9 @@ export function LandingPage() {
               </div>
 
               <ScrollReveal when="mount" delayMs={200}>
-                <div id="accompagnement" className="lg:pl-2">
+                <div id="accompagnement" className="lg:pl-2 space-y-3">
                   <AccompanimentSupportBlock variant="landing" />
+                  <ProductScreenshotsHero />
                 </div>
               </ScrollReveal>
             </div>

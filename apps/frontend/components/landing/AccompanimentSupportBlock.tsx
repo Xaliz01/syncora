@@ -45,7 +45,7 @@ export function AccompanimentSupportBlock({
       className={
         banner
           ? "h-full rounded-2xl border-2 border-brand-300 dark:border-brand-500/50 bg-white/95 dark:bg-slate-900/95 px-5 py-4 sm:px-6 sm:py-5 shadow-md shadow-brand-600/10 ring-1 ring-brand-100 dark:ring-brand-900/40"
-          : "rounded-2xl border-2 border-brand-300 dark:border-brand-500/50 bg-white dark:bg-slate-900 p-5 sm:p-6 shadow-lg shadow-brand-600/10 dark:shadow-brand-950/40 ring-1 ring-brand-100 dark:ring-brand-900/40"
+          : "rounded-2xl border-2 border-brand-300 dark:border-brand-500/50 bg-white dark:bg-slate-900 px-4 py-3.5 sm:px-4 sm:py-4 shadow-lg shadow-brand-600/10 dark:shadow-brand-950/40 ring-1 ring-brand-100 dark:ring-brand-900/40"
       }
       aria-labelledby={banner ? "login-accompaniment-title" : "landing-accompaniment-title"}
     >
@@ -55,7 +55,7 @@ export function AccompanimentSupportBlock({
             className={
               banner
                 ? "inline-flex items-center rounded-full bg-brand-600 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white mb-2"
-                : "inline-flex items-center rounded-full bg-brand-600 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white mb-3"
+                : "inline-flex items-center rounded-full bg-brand-600 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white mb-2"
             }
           >
             Accompagnement
@@ -65,7 +65,7 @@ export function AccompanimentSupportBlock({
             className={
               banner
                 ? "text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100"
-                : "text-xl font-bold text-slate-900 dark:text-white"
+                : "text-base sm:text-lg font-bold text-slate-900 dark:text-white"
             }
           >
             {LANDING_ACCOMPANIMENT.title}
@@ -74,7 +74,7 @@ export function AccompanimentSupportBlock({
             className={
               banner
                 ? "mt-1.5 text-sm text-slate-600 dark:text-slate-300 leading-relaxed"
-                : "mt-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed"
+                : "mt-1 text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-snug"
             }
           >
             {LANDING_ACCOMPANIMENT.intro}
@@ -83,9 +83,7 @@ export function AccompanimentSupportBlock({
 
         <ul
           className={
-            banner
-              ? "mt-1 grid gap-2.5 sm:grid-cols-2 auto-rows-fr"
-              : "mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2"
+            banner ? "mt-1 grid gap-2.5 sm:grid-cols-2 auto-rows-fr" : "mt-3 grid grid-cols-2 gap-2"
           }
         >
           {LANDING_ACCOMPANIMENT.points.map((point) => (
@@ -94,17 +92,23 @@ export function AccompanimentSupportBlock({
               className={
                 banner
                   ? "h-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-950/50 px-3 py-2.5"
-                  : "rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-950/50 px-3.5 py-3"
+                  : "rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-950/50 px-2.5 py-2"
               }
             >
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+              <h3
+                className={
+                  banner
+                    ? "text-sm font-semibold text-slate-900 dark:text-slate-100"
+                    : "text-xs font-semibold text-slate-900 dark:text-slate-100"
+                }
+              >
                 {point.title}
               </h3>
               <p
                 className={
                   banner
                     ? "mt-0.5 text-xs text-slate-600 dark:text-slate-400 leading-snug"
-                    : "mt-1 text-sm text-slate-600 dark:text-slate-400 leading-relaxed"
+                    : "mt-0.5 text-[11px] text-slate-600 dark:text-slate-400 leading-snug"
                 }
               >
                 {point.description}
@@ -159,17 +163,17 @@ export function AccompanimentSupportBlock({
       </div>
 
       {!banner ? (
-        <div className="mt-5">
+        <div className="mt-3">
           {chatReady ? (
             <button
               type="button"
               onClick={onOpenChat}
-              className="inline-flex w-full sm:w-auto justify-center rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-500 transition shadow-sm"
+              className="inline-flex w-full sm:w-auto justify-center rounded-lg bg-brand-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-brand-500 transition shadow-sm"
             >
               Ouvrir le chat
             </button>
           ) : (
-            <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-snug">
               Le chat est disponible dans l’application une fois connecté.
             </p>
           )}

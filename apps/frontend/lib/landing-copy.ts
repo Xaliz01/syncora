@@ -33,7 +33,7 @@ export const LANDING_ACCOMPANIMENT = {
     {
       title: "Assistant IA",
       description:
-        "Guide in-app : où cliquer, comment créer un devis — avec liens vers les écrans.",
+        "Guide in-app : où cliquer, comment créer une intervention — avec liens vers les écrans.",
     },
     {
       title: "Chat support",
