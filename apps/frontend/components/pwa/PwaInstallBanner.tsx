@@ -14,7 +14,7 @@ export function PwaInstallBanner() {
     >
       <div className="flex items-start gap-3">
         <span className="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-lg font-semibold text-white">
-          S
+          P
         </span>
 
         <div className="flex-1 min-w-0">
