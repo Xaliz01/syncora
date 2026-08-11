@@ -29,8 +29,9 @@ export function PolitiqueConfidentialiteContent() {
             "Organisation : raison sociale, SIRET, adresse postale.",
             "Facturation de l'abonnement Planwise : identifiants Stripe, historique d'abonnement (via Stripe).",
             "Intégrations de facturation (optionnelles, activées par le Client) : jetons d'accès OAuth ou clés API (stockés chiffrés), identifiants techniques de connexion (ex. nom / identifiant d'entreprise côté outil), métadonnées de synchronisation des factures créées depuis Planwise (statut distant, numéro, lien, montants associés).",
-            "Usage : journaux techniques, préférences compte (thème, sidebar, favoris / raccourcis par organisation), historique de navigation stocké uniquement dans le navigateur (localStorage), notifications.",
+            "Usage : journaux techniques, préférences compte (thème, sidebar, favoris / raccourcis par organisation, activation des commandes vocales terrain), historique de navigation stocké uniquement dans le navigateur (localStorage), notifications.",
             "Assistant produit in-app (optionnel) : questions posées à l'assistant et contexte de page courant, transmis à un prestataire d'IA générative pour produire une réponse d'aide à la navigation ; pas de données métier (clients, dossiers) dans le prompt MVP.",
+            "Commandes vocales terrain (optionnelles, opt-in sur Mon compte, Ma journée) : le micro du terminal est utilisé localement via l'API de reconnaissance vocale du navigateur pour convertir la parole en texte et déclencher des actions déjà disponibles à l'écran (démarrer / terminer une intervention, commentaire, navigation). Planwise ne reçoit ni n'enregistre l'audio ; seuls le transcript utile à l'action et la préférence d'activation peuvent être traités. Le prestataire de reconnaissance du navigateur (selon le navigateur et l'appareil) peut traiter l'audio selon ses propres conditions.",
             "Mesure d'audience first-party : pages vues (chemin, surface landing/app, referrer hôte, pays/région approximatifs dérivés de l'IP sans conservation de l'IP, identifiants aléatoires navigateur), sans publicité ni revente.",
             "Support : échanges via Crisp (si consentement cookies).",
             "Données saisies par le Client : clients, donneurs d’ordre, interventions, géolocalisation optionnelle, photos, signatures, devis et éléments nécessaires à la facturation.",
@@ -77,6 +78,15 @@ export function PolitiqueConfidentialiteContent() {
               durée limitée).
             </>,
             <>
+              <strong>Commandes vocales terrain</strong> — exécution du contrat lorsque
+              l&apos;utilisateur active volontairement la fonctionnalité (art. 6.1.b). Finalité :
+              faciliter les actions sur Ma journée sans saisir à l&apos;écran. Distinct de
+              l&apos;assistant produit IA : pas d&apos;envoi de l&apos;audio ni du transcript à un
+              prestataire d&apos;IA générative choisi par Planwise. La reconnaissance vocale est
+              assurée par le navigateur / le système ; l&apos;utilisateur peut désactiver la
+              préférence ou retirer l&apos;autorisation micro à tout moment.
+            </>,
+            <>
               <strong>Amélioration du produit</strong> — intérêt légitime, données agrégées ou
               anonymisées lorsque possible, y compris la mesure d&apos;audience first-party (pages
               vues, pays/région approximatifs dérivés de l&apos;IP sans conservation de l&apos;IP)
@@ -106,6 +116,13 @@ export function PolitiqueConfidentialiteContent() {
           ]}
         />
         <LegalParagraph>
+          Pour les commandes vocales terrain, le traitement de l&apos;audio (reconnaissance vocale)
+          peut être réalisé par le navigateur ou le système d&apos;exploitation et, le cas échéant,
+          par le prestataire associé à ce navigateur (ex. services de reconnaissance Google sur
+          Chrome). Ce traitement n&apos;est pas opéré par les serveurs Planwise ; il relève des
+          conditions du navigateur / de l&apos;appareil choisis par l&apos;utilisateur.
+        </LegalParagraph>
+        <LegalParagraph>
           Lorsque le Client active une intégration de facturation (notamment{" "}
           <strong>Pennylane</strong> ou <strong>Qonto</strong>), des données nécessaires à
           l&apos;émission et au suivi des factures (identité / coordonnées du client ou du donneur
@@ -134,6 +151,7 @@ export function PolitiqueConfidentialiteContent() {
             "Données de démonstration et factures démo d'essai : jusqu'à purge manuelle, fin d'essai, ou suppression du compte.",
             "Journaux techniques : jusqu'à 12 mois.",
             "Requêtes assistant produit : durée du traitement de la requête ; pas d'historique conversationnel serveur durable en MVP (historique affiché uniquement dans la session navigateur).",
+            "Commandes vocales terrain : pas de conservation de l'audio par Planwise ; préférence d'activation conservée avec le compte ; actions métier (commentaires, statuts d'intervention, etc.) selon les durées applicables aux données saisies par le Client.",
             "Mesure d'audience first-party (pages vues, pays/région approximatifs — sans IP stockée) : environ 400 jours.",
             "Données saisies par le Client : selon paramétrage ou demande de suppression de l'organisation.",
           ]}

@@ -319,6 +319,7 @@ test.describe("Parcours onboarding sans données de démo", () => {
     preferences: {
       theme: "light",
       sidebarCollapsed: "expanded",
+      voiceFieldEnabled: false,
       quickActions: [
         { id: "qa_default_case_new", href: "/cases/new", label: "Nouveau dossier" },
         { id: "qa_default_cases_list", href: "/cases", label: "Tous les dossiers" },
@@ -473,6 +474,7 @@ test.describe("Invitation utilisateur sans profil", () => {
             preferences: {
               theme: "light",
               sidebarCollapsed: "expanded",
+              voiceFieldEnabled: false,
               quickActions: [
                 { id: "qa_default_case_new", href: "/cases/new", label: "Nouveau dossier" },
                 { id: "qa_default_cases_list", href: "/cases", label: "Tous les dossiers" },

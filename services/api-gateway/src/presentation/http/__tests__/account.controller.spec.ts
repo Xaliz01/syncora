@@ -97,6 +97,7 @@ describe("AccountController", () => {
         preferences: {
           theme: "light",
           sidebarCollapsed: "expanded",
+          voiceFieldEnabled: false,
           quickActions: defaultQuickActions,
           onboardingCompletedOrganizationIds: [],
           onboardingProfileCompleted: false,
@@ -121,6 +122,7 @@ describe("AccountController", () => {
         preferences: {
           theme: "dark",
           sidebarCollapsed: "expanded",
+          voiceFieldEnabled: false,
           quickActions: defaultQuickActions,
           onboardingCompletedOrganizationIds: [],
           onboardingProfileCompleted: false,

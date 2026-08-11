@@ -27,6 +27,13 @@ export function CguContent() {
           sans transmission vers un outil tiers. Les fonctionnalités peuvent évoluer ; les CGU
           applicables sont celles en vigueur à la date d&apos;utilisation.
         </LegalParagraph>
+        <LegalParagraph>
+          Des <strong>commandes vocales terrain</strong> peuvent être proposées sur Ma journée,
+          après activation volontaire dans les préférences du compte. Elles permettent de déclencher
+          par la voix des actions déjà disponibles à l&apos;écran (démarrage / clôture
+          d&apos;intervention, commentaire, etc.). La reconnaissance vocale repose sur le navigateur
+          ; l&apos;utilisateur reste responsable des actions qu&apos;il confirme.
+        </LegalParagraph>
       </LegalSection>
 
       <LegalSection title="3. Création de compte">

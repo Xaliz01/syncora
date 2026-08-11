@@ -13,6 +13,8 @@ import {
 } from "@/components/interventions/InterventionPhotos";
 import { InterventionSignatureDialog } from "@/components/interventions/InterventionSignatureDialog";
 import { CommentsSection } from "@/components/comments/CommentsSection";
+import { MyDayVoiceField } from "@/components/my-day/MyDayVoiceField";
+import { MyDayVoiceFieldCta } from "@/components/my-day/MyDayVoiceFieldCta";
 import * as api from "@/lib/cases.api";
 import type { GeoLocation, InterventionResponse, InterventionStatus } from "@planwise/shared";
 import { MAX_PAGE_LIMIT_WIDE } from "@planwise/shared";
@@ -515,6 +517,7 @@ export function MyDayPage() {
   const queryClient = useQueryClient();
   const [activeFilter, setActiveFilter] = useState<FilterTab>("todo");
   const [actingOnId, setActingOnId] = useState<string | null>(null);
+  const [lastStartedId, setLastStartedId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState(() => startOfLocalDay(new Date()));
 
   const dayStart = useMemo(() => startOfLocalDay(selectedDate), [selectedDate]);
@@ -550,12 +553,11 @@ export function MyDayPage() {
   }, [interventions, activeFilter]);
 
   const stats = useMemo(() => {
-    const todo = interventions.filter(
-      (i) => i.status === "planned" || i.status === "in_progress",
-    ).length;
-    const done = interventions.filter((i) => i.status === "completed").length;
+    const planned = interventions.filter((i) => i.status === "planned").length;
     const inProgress = interventions.filter((i) => i.status === "in_progress").length;
-    return { total: interventions.length, todo, done, inProgress };
+    const done = interventions.filter((i) => i.status === "completed").length;
+    const todo = planned + inProgress;
+    return { total: interventions.length, planned, todo, done, inProgress };
   }, [interventions]);
 
   const invalidateQueries = useCallback(() => {
@@ -568,7 +570,8 @@ export function MyDayPage() {
       const location = await getGeoLocation();
       return api.startIntervention(interventionId, { location });
     },
-    onSuccess: () => {
+    onSuccess: (_data, interventionId) => {
+      setLastStartedId(interventionId);
       showToast("Intervention démarrée", "success");
       invalidateQueries();
     },
@@ -611,9 +614,18 @@ export function MyDayPage() {
     <div className="max-w-2xl mx-auto px-4 py-6 sm:py-10">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-slate-100">
-          Ma journée
-        </h1>
+        <div className="flex items-start justify-between gap-3">
+          <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-slate-100">
+            Ma journée
+          </h1>
+          <MyDayVoiceField
+            interventions={interventions}
+            viewingToday={viewingToday}
+            onStart={handleStart}
+            onComplete={handleComplete}
+            lastStartedId={lastStartedId}
+          />
+        </div>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <button
             type="button"
@@ -645,13 +657,15 @@ export function MyDayPage() {
         </div>
       </div>
 
-      {/* Stats summary */}
+      <MyDayVoiceFieldCta viewingToday={viewingToday} />
+
+      {/* Stats summary — compteurs disjoints (planifiées / en cours / terminées) */}
       {stats.total > 0 && (
         <div className="grid grid-cols-3 gap-3 mb-6">
           <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 text-center">
-            <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{stats.todo}</p>
+            <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{stats.planned}</p>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              {stats.todo > 1 ? "à faire" : "à faire"}
+              {stats.planned > 1 ? "planifiées" : "planifiée"}
             </p>
           </div>
           <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20 p-3 text-center">

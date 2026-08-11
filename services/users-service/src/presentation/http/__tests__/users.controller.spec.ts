@@ -287,6 +287,7 @@ describe("UsersController", () => {
         preferences: {
           theme: "light",
           sidebarCollapsed: "expanded",
+          voiceFieldEnabled: false,
           quickActions: defaultQuickActions,
           onboardingCompletedOrganizationIds: [],
           onboardingProfileCompleted: false,
@@ -311,6 +312,7 @@ describe("UsersController", () => {
         preferences: {
           theme: "dark",
           sidebarCollapsed: "expanded",
+          voiceFieldEnabled: false,
           quickActions: defaultQuickActions,
           onboardingCompletedOrganizationIds: [],
           onboardingProfileCompleted: false,

@@ -129,6 +129,11 @@ export type SidebarPreference = "expanded" | "collapsed";
 export interface UserPreferences {
   theme: ThemePreference;
   sidebarCollapsed: SidebarPreference;
+  /**
+   * Commandes vocales terrain (Ma journée) — opt-in.
+   * Sur appareil non mobile, l’UI reste masquée sauf environnement de dev local.
+   */
+  voiceFieldEnabled: boolean;
   /** Favoris / actions rapides (URL + libellé, ordre d'affichage). */
   quickActions: QuickActionBookmark[];
   /**
@@ -151,6 +156,7 @@ export interface UserPreferences {
 export const DEFAULT_USER_PREFERENCES: UserPreferences = {
   theme: "light",
   sidebarCollapsed: "expanded",
+  voiceFieldEnabled: false,
   quickActions: [...DEFAULT_QUICK_ACTIONS],
   onboardingCompletedOrganizationIds: [],
   onboardingProfileCompleted: false,
@@ -170,6 +176,8 @@ export interface ChangePasswordBody {
 export interface UpdateUserPreferencesBody {
   theme?: ThemePreference;
   sidebarCollapsed?: SidebarPreference;
+  /** Active / désactive les commandes vocales terrain (Ma journée). */
+  voiceFieldEnabled?: boolean;
   /**
    * Favoris pour l’organisation courante (`organizationId` requis).
    * Stockés par org — une fiche dossier d’une org ne fuit pas vers une autre.

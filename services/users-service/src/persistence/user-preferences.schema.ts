@@ -14,6 +14,10 @@ export class UserPreferencesDocument extends Document {
   @Prop({ required: true, enum: ["expanded", "collapsed"], default: "expanded" })
   sidebarCollapsed!: "expanded" | "collapsed";
 
+  /** Commandes vocales terrain (Ma journée). */
+  @Prop({ type: Boolean, default: false })
+  voiceFieldEnabled!: boolean;
+
   /** Favoris URL (modèle actuel). */
   @Prop({
     type: [

@@ -211,6 +211,12 @@ apps/frontend/tests/e2e/assistant.spec.ts # T4 ✓
 
 ---
 
+## Hors scope volontaire : commandes vocales terrain
+
+Les **commandes vocales** sur Ma journée (préférence utilisateur, mobile uniquement) sont une expérimentation **séparée** : exécution d’actions terrain (démarrer / terminer / commentaire), pas le guide produit. Ne pas fusionner dans `POST /assistant/chat` (qui reste lecture + liens uniquement).
+
+---
+
 ## Risques & mitigations
 
 | Risque                  | Mitigation                                     |

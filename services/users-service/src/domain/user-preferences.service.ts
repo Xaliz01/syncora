@@ -60,6 +60,7 @@ export class UserPreferencesService extends AbstractUserPreferencesService {
     const $set: Record<string, unknown> = {};
     if (body.theme !== undefined) $set.theme = body.theme;
     if (body.sidebarCollapsed !== undefined) $set.sidebarCollapsed = body.sidebarCollapsed;
+    if (body.voiceFieldEnabled !== undefined) $set.voiceFieldEnabled = body.voiceFieldEnabled;
     if (body.quickActions !== undefined && orgId) {
       const normalized = normalizeQuickActions(body.quickActions);
       if (!normalized) {
@@ -75,6 +76,9 @@ export class UserPreferencesService extends AbstractUserPreferencesService {
       ...(body.theme === undefined ? { theme: DEFAULT_USER_PREFERENCES.theme } : {}),
       ...(body.sidebarCollapsed === undefined
         ? { sidebarCollapsed: DEFAULT_USER_PREFERENCES.sidebarCollapsed }
+        : {}),
+      ...(body.voiceFieldEnabled === undefined
+        ? { voiceFieldEnabled: DEFAULT_USER_PREFERENCES.voiceFieldEnabled }
         : {}),
       ...(body.quickActions === undefined
         ? { quickActions: DEFAULT_USER_PREFERENCES.quickActions.map((b) => ({ ...b })) }

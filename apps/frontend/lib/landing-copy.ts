@@ -20,7 +20,7 @@ export const LANDING_BETA_FREE_NOTE = "Pendant toute la beta, Planwise reste gra
 export const LANDING_ACCOMPANIMENT = {
   title: "On avance avec vous",
   intro:
-    "Planwise évolue avec vous : import de données, assistant IA dans l’app, et chat pour échanger avec nous.",
+    "Planwise évolue avec vous : import de données, assistant IA, et chat pour échanger avec nous.",
   points: [
     {
       title: "Produit vivant",
@@ -52,6 +52,16 @@ export const LANDING_ASSISTANT_FEATURE = {
   ],
 } as const;
 
+/** Bloc fonctionnalités landing — commandes vocales terrain (Ma journée). */
+export const LANDING_VOICE_FEATURE = {
+  title: "Commandes vocales terrain",
+  items: [
+    "Sur Ma journée (mobile) : activez l’option, dites « Planwise » ou « Plan »",
+    "Démarrez, terminez ou commentez une intervention sans toucher l’écran",
+    "Opt-in dans Mon compte — distinct de l’assistant guide IA",
+  ],
+} as const;
+
 /** Pastille login — assistant in-app. */
 export const LOGIN_ASSISTANT_HIGHLIGHT = "Assistant IA pour vous guider dans Planwise";
 
@@ -80,7 +90,7 @@ export const LANDING_PILLARS = [
   {
     title: "Terrain et preuve d'intervention",
     description:
-      "Vos techniciens démarrent, documentent en photos, font signer le client et génèrent le rapport PDF depuis le chantier.",
+      "Vos techniciens démarrent, documentent en photos, font signer le client et génèrent le rapport PDF — aussi à la voix sur Ma journée (mobile).",
   },
   {
     title: "Contrats de maintenance suivis",

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/components/auth/AuthContext";
 import { useToast } from "@/components/ui/ToastProvider";
 import * as accountApi from "@/lib/account.api";
@@ -244,10 +245,58 @@ function SidebarRadioGroup({
   );
 }
 
+function VoiceFieldPreferenceToggle({
+  value,
+  onChange,
+  readOnly = false,
+}: {
+  value: boolean;
+  onChange?: (v: boolean) => void;
+  readOnly?: boolean;
+}) {
+  return (
+    <div>
+      <span className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+        Commandes vocales (Ma journée)
+      </span>
+      <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">
+        Disponibles sur mobile. Sur Ma journée, dites « Planwise » ou « Plan », ou utilisez le
+        micro.
+      </p>
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          role="switch"
+          aria-checked={value}
+          aria-label="Commandes vocales"
+          disabled={readOnly}
+          onClick={() => {
+            if (!readOnly) onChange?.(!value);
+          }}
+          className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 ${
+            value ? "bg-brand-600" : "bg-slate-200 dark:bg-slate-600"
+          } ${readOnly ? "cursor-default opacity-70" : "cursor-pointer"}`}
+        >
+          <span
+            aria-hidden
+            className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
+              value ? "translate-x-6" : "translate-x-1"
+            }`}
+          />
+        </button>
+        <span className="text-sm text-slate-700 dark:text-slate-200">
+          {value ? "Activées" : "Désactivées"}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export function AccountPage() {
   const { user, refreshSession } = useAuth();
   const { showToast } = useToast();
   const { setTheme, resolvedTheme } = useTheme();
+  const queryClient = useQueryClient();
 
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [editingName, setEditingName] = useState(false);
@@ -257,6 +306,7 @@ export function AccountPage() {
   const [editingPrefs, setEditingPrefs] = useState(false);
   const [themePreference, setThemePreference] = useState<ThemePreference>("light");
   const [sidebarPreference, setSidebarPreference] = useState<SidebarPreference>("expanded");
+  const [voiceFieldEnabled, setVoiceFieldEnabled] = useState(false);
   const [prefsSaving, setPrefsSaving] = useState(false);
   const [prefsLoaded, setPrefsLoaded] = useState(false);
 
@@ -276,6 +326,7 @@ export function AccountPage() {
       const res = await accountApi.getPreferences();
       setThemePreference(res.preferences.theme);
       setSidebarPreference(res.preferences.sidebarCollapsed);
+      setVoiceFieldEnabled(res.preferences.voiceFieldEnabled === true);
     } catch {
       syncDisplayPreferencesFromLive();
     } finally {
@@ -332,6 +383,7 @@ export function AccountPage() {
       const prefs = (event as CustomEvent<UserPreferences>).detail;
       setThemePreference(prefs.theme);
       setSidebarPreference(prefs.sidebarCollapsed);
+      setVoiceFieldEnabled(prefs.voiceFieldEnabled === true);
     };
 
     window.addEventListener(USER_THEME_PREFERENCE_CHANGED, onThemeChanged);
@@ -350,9 +402,9 @@ export function AccountPage() {
   }, [user?.name]);
 
   const cancelPrefsEdit = useCallback(() => {
-    syncDisplayPreferencesFromLive();
+    void loadPreferencesFromServer();
     setEditingPrefs(false);
-  }, [syncDisplayPreferencesFromLive]);
+  }, [loadPreferencesFromServer]);
 
   const handleNameSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -381,11 +433,14 @@ export function AccountPage() {
         const res = await accountApi.updatePreferences({
           theme: themePreference,
           sidebarCollapsed: sidebarPreference,
+          voiceFieldEnabled,
         });
         applyUserPreferences(res.preferences, setTheme);
         setThemePreference(res.preferences.theme);
         setSidebarPreference(res.preferences.sidebarCollapsed);
+        setVoiceFieldEnabled(res.preferences.voiceFieldEnabled === true);
         setEditingPrefs(false);
+        void queryClient.invalidateQueries({ queryKey: ["account-preferences"] });
         showToast("Préférences mises à jour");
       } catch (err) {
         showToast((err as Error).message, "error");
@@ -393,7 +448,7 @@ export function AccountPage() {
         setPrefsSaving(false);
       }
     },
-    [themePreference, sidebarPreference, setTheme, showToast],
+    [themePreference, sidebarPreference, voiceFieldEnabled, setTheme, showToast, queryClient],
   );
 
   const handleRevokeSession = useCallback(
@@ -533,11 +588,13 @@ export function AccountPage() {
           <div className="space-y-6">
             <ThemeRadioGroup value={themePreference} readOnly />
             <SidebarRadioGroup value={sidebarPreference} readOnly />
+            <VoiceFieldPreferenceToggle value={voiceFieldEnabled} readOnly />
           </div>
         ) : (
           <form onSubmit={handlePrefsSubmit} className="space-y-6">
             <ThemeRadioGroup value={themePreference} onChange={setThemePreference} />
             <SidebarRadioGroup value={sidebarPreference} onChange={setSidebarPreference} />
+            <VoiceFieldPreferenceToggle value={voiceFieldEnabled} onChange={setVoiceFieldEnabled} />
             <div className="flex justify-end">
               <button type="submit" disabled={prefsSaving} className={saveButtonClassName}>
                 {prefsSaving ? "Enregistrement…" : "Enregistrer"}

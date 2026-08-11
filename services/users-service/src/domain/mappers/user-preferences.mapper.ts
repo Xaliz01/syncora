@@ -20,6 +20,7 @@ export function toUserPreferences(
   return {
     theme: doc.theme,
     sidebarCollapsed: doc.sidebarCollapsed,
+    voiceFieldEnabled: doc.voiceFieldEnabled === true,
     quickActions,
     onboardingCompletedOrganizationIds: onboardingOrgIds,
     onboardingProfileCompleted: false,

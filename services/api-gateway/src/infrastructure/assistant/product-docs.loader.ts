@@ -92,6 +92,7 @@ Suite : planifier une intervention, devis, facturer via intégration.`,
     pathPrefixes: ["/my-day"],
     text: `Objectif : interventions du jour, démarrer/clôturer, photos, signature, PDF. Prérequis : interventions.read ; compte lié à un technicien.
 Étapes : 1) Suivi → Ma journée (/my-day). 2) Ouvrir l'intervention. 3) Démarrer, photos, notes. 4) Signature client, terminer. 5) Rapport PDF si proposé.
+Commandes vocales (expérimental, opt-in Mon compte, sur mobile) : sur Ma journée, si désactivées, un bandeau propose l’activation. Écoute mains libres — dire « Planwise » ou « Plan » puis « démarre », « termine » (confirmation : dire « oui » ou « terminer », ou « annuler » ; si plusieurs interventions en cours → choix), « note que … », « prochaine », « ouvre le dossier » (ou « Planwise démarre » / « Plan démarre »). Cible inline possible : « termine la première », « démarre Intervention démo », « ajoute un commentaire à la deuxième ». Bouton micro = couper/reprendre ou autoriser le micro une fois si le navigateur le demande. Distinct de l'assistant guide (Aide). SpeechRecognition requis.
 Liste vide = pas d'assignation aujourd'hui, mauvais technicien, ou technicien non lié. Vue équipe : Planning /cases/calendar.`,
   },
   {

@@ -35,6 +35,7 @@ test.describe("Assistant Planwise", () => {
             preferences: {
               theme: "light",
               sidebarCollapsed: "expanded",
+              voiceFieldEnabled: false,
               quickActions: [],
               onboardingCompletedOrganizationIds: ["org-e2e"],
               onboardingProfileCompleted: true,

@@ -147,6 +147,19 @@ Exemples de référence :
 - Respecter l'architecture existante ; pas de refactor hors scope.
 - Contrats typés via `@planwise/shared` quand le front et le back partagent un modèle.
 
+## Messages in-app — orientés utilisateur
+
+Les textes visibles dans l’app (libellés, aides sous un champ, toasts, empty states, tooltips, confirmations) s’adressent **à l’utilisateur métier**, pas à un développeur.
+
+- Écrire ce que l’utilisateur doit **faire** ou **savoir** pour utiliser la fonctionnalité.
+- **Ne pas** exposer détails d’implémentation, exceptions de dev (`localhost`, « pour les tests », feature flags internes, noms de variables d’env, chemins de code).
+- Les nuances techniques (ex. exception locale en dev) restent dans le **code**, les **commentaires**, ou la **doc interne** (`docs/`, README) — pas dans l’UI.
+
+```text
+❌ Sur mobile uniquement (sauf en local pour les tests).
+✅ Disponibles sur mobile. Sur Ma journée, dites « Planwise » ou utilisez le micro.
+```
+
 ## Vérifications avant commit (obligatoires)
 
 Un hook **husky + lint-staged** pré-commit est configuré et formate/lint automatiquement les fichiers stagés. En complément, **avant chaque push**, exécuter manuellement :

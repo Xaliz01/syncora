@@ -19,6 +19,7 @@ import {
   LANDING_HERO_SUPPORT,
   LANDING_PILLARS,
   LANDING_TAGLINE,
+  LANDING_VOICE_FEATURE,
 } from "@/lib/landing-copy";
 
 const FEATURE_SECTIONS = [
@@ -31,6 +32,7 @@ const FEATURE_SECTIONS = [
     ],
   },
   LANDING_ASSISTANT_FEATURE,
+  LANDING_VOICE_FEATURE,
   {
     title: "Favoris & historique",
     items: [
@@ -61,6 +63,7 @@ const FEATURE_SECTIONS = [
     title: "Interventions terrain",
     items: [
       "« Ma journée » : la liste du jour pour chaque technicien, sur mobile",
+      "Commandes vocales (opt-in) : démarrez, terminez ou commentez à la voix",
       "Démarrage et clôture horodatés, géolocalisés, avec photos",
       "Signature client et rapport PDF générés sur place",
       "Prélèvement de stock directement depuis l’intervention",

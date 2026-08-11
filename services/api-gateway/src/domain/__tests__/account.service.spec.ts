@@ -109,6 +109,7 @@ describe("AccountService", () => {
         preferences: {
           theme: "light",
           sidebarCollapsed: "expanded",
+          voiceFieldEnabled: false,
           quickActions: defaultQuickActions,
           onboardingCompletedOrganizationIds: [],
           onboardingProfileCompleted: false,
@@ -137,6 +138,7 @@ describe("AccountService", () => {
         preferences: {
           theme: "dark",
           sidebarCollapsed: "collapsed",
+          voiceFieldEnabled: false,
           quickActions: defaultQuickActions,
           onboardingCompletedOrganizationIds: [],
           onboardingProfileCompleted: false,
@@ -149,6 +151,7 @@ describe("AccountService", () => {
       const result = await service.updatePreferences(mockUser, {
         theme: "dark",
         sidebarCollapsed: "collapsed",
+        voiceFieldEnabled: false,
       });
 
       expect(mockHttpService.request).toHaveBeenCalledWith(
@@ -157,6 +160,7 @@ describe("AccountService", () => {
           data: expect.objectContaining({
             theme: "dark",
             sidebarCollapsed: "collapsed",
+            voiceFieldEnabled: false,
             organizationId: "org-1",
           }),
         }),
@@ -200,6 +204,7 @@ describe("AccountService", () => {
         preferences: {
           theme: "light",
           sidebarCollapsed: "expanded",
+          voiceFieldEnabled: false,
           quickActions: defaultQuickActions,
           onboardingCompletedOrganizationIds: ["org-1"],
           onboardingProfileCompleted: true,
@@ -249,6 +254,7 @@ describe("AccountService", () => {
         preferences: {
           theme: "light",
           sidebarCollapsed: "expanded",
+          voiceFieldEnabled: false,
           quickActions: defaultQuickActions,
           onboardingCompletedOrganizationIds: ["org-1"],
           onboardingProfileCompleted: true,
