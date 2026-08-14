@@ -104,8 +104,11 @@ export function PolitiqueCookiesContent() {
             </>,
             <>
               <strong>Google Ads</strong> (googletagmanager.com / googleadservices.com) — balise de
-              mesure des campagnes publicitaires et des conversions. Finalité : mesurer
-              l&apos;efficacité des annonces Planwise. Durée : selon Google (voir{" "}
+              mesure des campagnes publicitaires et des conversions (Consent Mode). La balise peut
+              être chargée pour le fonctionnement technique de la mesure ; le stockage publicitaire
+              (cookies / identifiants Ads) n&apos;est activé qu&apos;après votre accord sur la
+              catégorie Publicité. Finalité : mesurer l&apos;efficacité des annonces Planwise. Durée
+              : selon Google (voir{" "}
               <a
                 href="https://policies.google.com/privacy"
                 target="_blank"
@@ -114,7 +117,7 @@ export function PolitiqueCookiesContent() {
               >
                 règles de confidentialité Google
               </a>
-              ). Non chargé si vous refusez les cookies optionnels ou la catégorie Publicité.
+              ).
             </>,
           ]}
         />
