@@ -118,7 +118,8 @@ export function MyDayVoiceFieldCta({ viewingToday }: { viewingToday: boolean }) 
 
         <div className="relative min-w-0 flex-1">
           <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-            Travaillez les mains libres
+            Travaillez les mains libres{" "}
+            <span className="font-medium text-slate-500 dark:text-slate-400">(expérimental)</span>
           </p>
           <p className="mt-1 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
             Dites « Planwise » ou « Plan », puis démarrez, terminez ou commentez une intervention —

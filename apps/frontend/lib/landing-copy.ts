@@ -54,7 +54,7 @@ export const LANDING_ASSISTANT_FEATURE = {
 
 /** Bloc fonctionnalités landing — commandes vocales terrain (Ma journée). */
 export const LANDING_VOICE_FEATURE = {
-  title: "Commandes vocales terrain",
+  title: "Commandes vocales terrain (expérimental)",
   items: [
     "Sur Ma journée (mobile) : activez l’option, dites « Planwise » ou « Plan »",
     "Démarrez, terminez ou commentez une intervention sans toucher l’écran",

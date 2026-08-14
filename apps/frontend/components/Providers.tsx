@@ -13,6 +13,7 @@ import { PwaInstallBanner } from "@/components/pwa/PwaInstallBanner";
 import { CookieConsentBanner } from "@/components/legal/CookieConsentBanner";
 import { ImpersonationBanner } from "@/components/platform/ImpersonationBanner";
 import { AnalyticsTracker } from "@/components/analytics/AnalyticsTracker";
+import { GoogleAdsTag } from "@/components/analytics/GoogleAdsTag";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());
@@ -28,6 +29,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
                   <DeepLinkOrganizationSync />
                 </Suspense>
                 <AnalyticsTracker />
+                <GoogleAdsTag />
                 <ImpersonationBanner />
                 <CrispSupport />
                 <PwaInstallBanner />

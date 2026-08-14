@@ -102,6 +102,20 @@ export function PolitiqueCookiesContent() {
               </a>
               ).
             </>,
+            <>
+              <strong>Google Ads</strong> (googletagmanager.com / googleadservices.com) — balise de
+              mesure des campagnes publicitaires et des conversions. Finalité : mesurer
+              l&apos;efficacité des annonces Planwise. Durée : selon Google (voir{" "}
+              <a
+                href="https://policies.google.com/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-brand-600 underline"
+              >
+                règles de confidentialité Google
+              </a>
+              ). Non chargé si vous refusez les cookies optionnels ou la catégorie Publicité.
+            </>,
           ]}
         />
       </LegalSection>

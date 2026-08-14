@@ -9,9 +9,10 @@ export const test = base.extend({
       localStorage.setItem(
         storageKey,
         JSON.stringify({
-          version: 1,
+          version: 2,
           necessary: true,
           support: false,
+          marketing: false,
           decidedAt: "2000-01-01T00:00:00.000Z",
         }),
       );

@@ -1,7 +1,7 @@
 import { getAppOrigin, getMarketingOrigin } from "@/lib/host-routing";
 
 /** Date de dernière mise à jour des documents légaux (affichée sur chaque page). */
-export const LEGAL_LAST_UPDATED = "11 août 2026";
+export const LEGAL_LAST_UPDATED = "14 août 2026";
 
 /** Valeurs par défaut — Benoist Babin, entrepreneur individuel (SIREN 979 102 803). */
 const DEFAULT_LEGAL = {

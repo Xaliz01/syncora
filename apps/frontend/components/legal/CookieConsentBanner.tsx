@@ -15,6 +15,7 @@ export function CookieConsentBanner() {
   const [visible, setVisible] = useState(false);
   const [customizeOpen, setCustomizeOpen] = useState(false);
   const [supportEnabled, setSupportEnabled] = useState(true);
+  const [marketingEnabled, setMarketingEnabled] = useState(true);
   const [embedded, setEmbedded] = useState(false);
 
   useEffect(() => {
@@ -38,7 +39,7 @@ export function CookieConsentBanner() {
   };
 
   const handleSavePreferences = () => {
-    saveCookieConsent(supportEnabled);
+    saveCookieConsent({ support: supportEnabled, marketing: marketingEnabled });
     close();
   };
 
@@ -60,7 +61,8 @@ export function CookieConsentBanner() {
           <p id="cookie-consent-desc" className="mt-2 text-sm text-slate-600 dark:text-slate-300">
             Nous utilisons des cookies et stockages locaux strictement nécessaires au fonctionnement
             de Planwise (session, préférences). Avec votre accord, nous activons également le chat
-            support (Crisp). Consultez notre{" "}
+            support (Crisp) et la mesure de nos campagnes publicitaires (Google Ads). Consultez
+            notre{" "}
             <Link
               href="/politique-cookies"
               className="text-brand-600 dark:text-brand-400 underline"
@@ -110,6 +112,26 @@ export function CookieConsentBanner() {
                 type="checkbox"
                 checked={supportEnabled}
                 onChange={(e) => setSupportEnabled(e.target.checked)}
+                className="mt-1 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+              />
+            </div>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <label
+                  htmlFor="cookie-marketing"
+                  className="font-medium text-slate-900 dark:text-slate-100"
+                >
+                  Publicité (Google Ads)
+                </label>
+                <p className="text-slate-500 dark:text-slate-400 mt-0.5">
+                  Mesure des campagnes et conversion (balise Google).
+                </p>
+              </div>
+              <input
+                id="cookie-marketing"
+                type="checkbox"
+                checked={marketingEnabled}
+                onChange={(e) => setMarketingEnabled(e.target.checked)}
                 className="mt-1 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
               />
             </div>
@@ -171,6 +193,20 @@ export function useCookieConsentSupport(): boolean {
 
   useEffect(() => {
     const sync = () => setAllowed(getCookieConsent()?.support === true);
+    sync();
+    window.addEventListener(COOKIE_CONSENT_CHANGED_EVENT, sync);
+    return () => window.removeEventListener(COOKIE_CONSENT_CHANGED_EVENT, sync);
+  }, []);
+
+  return allowed;
+}
+
+/** Consentement publicité / Google Ads. */
+export function useCookieConsentMarketing(): boolean {
+  const [allowed, setAllowed] = useState(false);
+
+  useEffect(() => {
+    const sync = () => setAllowed(getCookieConsent()?.marketing === true);
     sync();
     window.addEventListener(COOKIE_CONSENT_CHANGED_EVENT, sync);
     return () => window.removeEventListener(COOKIE_CONSENT_CHANGED_EVENT, sync);

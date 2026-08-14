@@ -110,6 +110,7 @@ export function PolitiqueConfidentialiteContent() {
             "Stripe — paiements et facturation de l'abonnement Planwise (États-Unis, clauses contractuelles types).",
             "OVHcloud — hébergement applicatif et stockage (France, datacenter de Gravelines).",
             "Crisp — support client (consentement requis).",
+            "Google Ads — mesure des campagnes et conversions (consentement publicité requis).",
             "Prestataire d'IA générative (OpenAI et/ou Anthropic, selon configuration) — assistant produit in-app ; messages utilisateur et contexte de page.",
             "Prestataire email (SMTP) — notifications transactionnelles.",
             "API publiques françaises (recherche-entreprises.api.gouv.fr, data.geopf.fr/geocodage) — préremplissage SIRET/adresse.",

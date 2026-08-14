@@ -1,5 +1,6 @@
 export const COOKIE_CONSENT_STORAGE_KEY = "planwise_cookie_consent";
-export const COOKIE_CONSENT_VERSION = 1;
+/** v2 : ajout du consentement marketing (Google Ads). */
+export const COOKIE_CONSENT_VERSION = 2;
 export const COOKIE_CONSENT_CHANGED_EVENT = "planwise:cookie-consent";
 
 export type CookieConsent = {
@@ -8,6 +9,8 @@ export type CookieConsent = {
   necessary: true;
   /** Support client (Crisp). */
   support: boolean;
+  /** Publicité / mesure des campagnes (Google Ads). */
+  marketing: boolean;
   decidedAt: string;
 };
 
@@ -19,6 +22,8 @@ export function getCookieConsent(): CookieConsent | null {
     const parsed = JSON.parse(raw) as CookieConsent;
     if (parsed.version !== COOKIE_CONSENT_VERSION) return null;
     if (parsed.necessary !== true) return null;
+    if (typeof parsed.support !== "boolean") return null;
+    if (typeof parsed.marketing !== "boolean") return null;
     return parsed;
   } catch {
     return null;
@@ -33,11 +38,19 @@ export function hasSupportCookieConsent(): boolean {
   return getCookieConsent()?.support === true;
 }
 
-export function saveCookieConsent(support: boolean): CookieConsent {
+export function hasMarketingCookieConsent(): boolean {
+  return getCookieConsent()?.marketing === true;
+}
+
+export function saveCookieConsent(options: {
+  support: boolean;
+  marketing: boolean;
+}): CookieConsent {
   const consent: CookieConsent = {
     version: COOKIE_CONSENT_VERSION,
     necessary: true,
-    support,
+    support: options.support,
+    marketing: options.marketing,
     decidedAt: new Date().toISOString(),
   };
   if (typeof window !== "undefined") {
@@ -48,9 +61,9 @@ export function saveCookieConsent(support: boolean): CookieConsent {
 }
 
 export function acceptAllCookies(): CookieConsent {
-  return saveCookieConsent(true);
+  return saveCookieConsent({ support: true, marketing: true });
 }
 
 export function rejectOptionalCookies(): CookieConsent {
-  return saveCookieConsent(false);
+  return saveCookieConsent({ support: false, marketing: false });
 }

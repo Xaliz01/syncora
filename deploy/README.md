@@ -94,6 +94,7 @@ Variables de l'environnement `planwise-cd`, injectées au build du frontend (bun
 | `NEXT_PUBLIC_APP_HOST`               | `app.exemple.fr`             |
 | `NEXT_PUBLIC_CRISP_WEBSITE_ID`       | identifiant Crisp            |
 | `NEXT_PUBLIC_CRISP_HELPDESK_ENABLED` | `false`                      |
+| `NEXT_PUBLIC_GOOGLE_ADS_ID`          | `AW-…` (Google Ads / gtag)   |
 
 Le push des images utilise le `GITHUB_TOKEN` intégré (registry GHCR).
 

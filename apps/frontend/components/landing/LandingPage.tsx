@@ -64,7 +64,7 @@ const FEATURE_SECTIONS = [
     title: "Interventions terrain",
     items: [
       "« Ma journée » : la liste du jour pour chaque technicien, sur mobile",
-      "Commandes vocales (opt-in) : démarrez, terminez ou commentez à la voix",
+      "Commandes vocales expérimentales (opt-in) : démarrez, terminez ou commentez à la voix",
       "Démarrage et clôture horodatés, géolocalisés, avec photos",
       "Signature client et rapport PDF générés sur place",
       "Prélèvement de stock directement depuis l’intervention",

@@ -257,11 +257,11 @@ function VoiceFieldPreferenceToggle({
   return (
     <div>
       <span className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-        Commandes vocales (Ma journée)
+        Commandes vocales (Ma journée) — expérimental
       </span>
       <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">
         Disponibles sur mobile. Sur Ma journée, dites « Planwise » ou « Plan », ou utilisez le
-        micro.
+        micro. Fonctionnalité expérimentale : le comportement peut encore évoluer.
       </p>
       <div className="flex items-center gap-3">
         <button
