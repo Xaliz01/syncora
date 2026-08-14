@@ -19,6 +19,7 @@ import {
   LANDING_HERO_HOOK,
   LANDING_HERO_SUPPORT,
   LANDING_PILLARS,
+  LANDING_PRICE_LINE,
   LANDING_TAGLINE,
   LANDING_VOICE_FEATURE,
 } from "@/lib/landing-copy";
@@ -142,9 +143,12 @@ function LandingHeader() {
           >
             Fonctionnalités
           </a>
-          <a href="#tarifs" className="hover:text-brand-600 dark:hover:text-brand-400 transition">
+          <Link
+            href="/tarifs"
+            className="hover:text-brand-600 dark:hover:text-brand-400 transition"
+          >
             Tarifs
-          </a>
+          </Link>
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
@@ -201,6 +205,9 @@ export function LandingPage() {
                   <h1 className="text-3xl sm:text-4xl lg:text-[2.75rem] lg:leading-tight font-bold tracking-tight text-slate-900 dark:text-white">
                     {LANDING_HERO_HEADING}
                   </h1>
+                  <p className="mt-3 text-base sm:text-lg font-semibold text-brand-700 dark:text-brand-300">
+                    {LANDING_PRICE_LINE}
+                  </p>
                 </ScrollReveal>
                 <ScrollReveal when="mount" delayMs={160}>
                   <p className="mt-5 text-lg text-slate-600 dark:text-slate-300 leading-relaxed">
@@ -333,9 +340,20 @@ export function LandingPage() {
                 Un prix clair, pensé pour vous
               </h2>
               <p className="text-slate-600 dark:text-slate-400 mb-10 max-w-2xl">
-                Abordable pour un indépendant, scalable pour une TPE. Démarrez par{" "}
+                Abordable pour un indépendant, scalable pour une TPE. Abonnement Essentiel à{" "}
+                <strong className="text-slate-800 dark:text-slate-200">
+                  {BASE_SUBSCRIPTION_PLAN.priceDisplay} HT / mois
+                </strong>
+                , {BASE_SUBSCRIPTION_PLAN.commitmentDisplay}. Démarrez par{" "}
                 {BASE_SUBSCRIPTION_PLAN.trialDays} jours d&apos;essai gratuit, sans carte bancaire —
-                vous ne payez que si vous continuez.
+                vous ne payez que si vous continuez.{" "}
+                <Link
+                  href="/tarifs"
+                  className="font-medium text-brand-600 dark:text-brand-400 hover:underline"
+                >
+                  Voir la page tarifs
+                </Link>
+                .
               </p>
             </ScrollReveal>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 max-w-6xl">

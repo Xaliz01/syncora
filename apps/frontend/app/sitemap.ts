@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { LEGAL_LAST_UPDATED } from "@/lib/legal/config";
 import { LEGAL_PATHS } from "@/lib/legal/routes";
+import { MARKETING_CONTENT_PATHS } from "@/lib/marketing-routes";
 import { getMarketingOrigin } from "@/lib/host-routing";
 
 function parseFrenchLegalDate(label: string): Date {
@@ -38,6 +39,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "weekly",
       priority: 1,
     },
+    ...MARKETING_CONTENT_PATHS.map((path) => ({
+      url: `${base}${path}`,
+      lastModified: new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.9,
+    })),
     ...LEGAL_PATHS.map((path) => ({
       url: `${base}${path}`,
       lastModified: legalUpdated,

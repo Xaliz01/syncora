@@ -58,6 +58,11 @@ test.describe("Routage par hostname — redirections middleware", () => {
     expect(response.status()).toBe(200);
   });
 
+  test("planwise.fr/tarifs reste sur le domaine marketing", async ({ request }) => {
+    const response = await requestWithHost(request, "/tarifs", MARKETING_HOST);
+    expect(response.status()).toBe(200);
+  });
+
   test("planwise.fr/mentions-legales reste sur le domaine marketing", async ({ request }) => {
     const response = await requestWithHost(request, "/mentions-legales", MARKETING_HOST);
     expect(response.status()).toBe(200);
@@ -77,6 +82,7 @@ test.describe("Routage par hostname — redirections middleware", () => {
     const body = await response.text();
     expect(body).toContain("https://planwise.fr");
     expect(body).toContain("/mentions-legales");
+    expect(body).toContain("/tarifs");
   });
 
   test("app.planwise.fr/robots.txt décourage l'indexation", async ({ request }) => {

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getLegalPublisherConfig } from "@/lib/legal/config";
 import { getMarketingOrigin } from "@/lib/host-routing";
 import { LEGAL_PATHS } from "@/lib/legal/routes";
+import { MARKETING_CONTENT_PATHS } from "@/lib/marketing-routes";
 
 export const SEO_SITE_NAME = "Planwise";
 
@@ -9,11 +10,14 @@ export const SEO_DEFAULT_TITLE =
   "Planwise — CRM terrain accessible pour indépendants, artisans et TPE";
 
 export const SEO_DEFAULT_DESCRIPTION =
-  "CRM abordable pour indépendants, artisans et TPE : dossiers, interventions, contrats de maintenance, planning, stock et facturation via votre outil comptable. Dès 9,99 €/mois, essai gratuit sans carte bancaire.";
+  "CRM accessible pour indépendants, artisans et TPE : dossiers, interventions, contrats de maintenance, planning, stock et facturation via votre outil comptable. Dès 9,99 €/mois HT, essai gratuit sans carte bancaire.";
 
 export const SEO_KEYWORDS = [
   "CRM accessible",
   "CRM abordable",
+  "CRM 9,99",
+  "CRM artisans prix",
+  "logiciel BTP pas cher",
   "CRM indépendant",
   "CRM artisans",
   "CRM TPE",
@@ -26,10 +30,11 @@ export const SEO_KEYWORDS = [
   "Pennylane",
   "Qonto",
   "Planwise",
+  "Planwise tarif",
 ] as const;
 
 /** Chemins publics indexables sur le domaine marketing (hors robots/sitemap). */
-export const MARKETING_INDEXABLE_PATHS = ["/", ...LEGAL_PATHS] as const;
+export const MARKETING_INDEXABLE_PATHS = ["/", ...MARKETING_CONTENT_PATHS, ...LEGAL_PATHS] as const;
 
 export function getSeoMetadataBase(): URL {
   return new URL(getMarketingOrigin());
@@ -148,9 +153,9 @@ export function buildSoftwareApplicationJsonLd(): Record<string, unknown> {
       price: "9.99",
       priceCurrency: "EUR",
       availability: "https://schema.org/InStock",
-      url: `${base}/#tarifs`,
+      url: `${base}/tarifs`,
       description:
-        "Abonnement Essentiel — 9,99 € / mois, sans engagement : CRM terrain, assistant IA et chat support inclus",
+        "Abonnement Essentiel — 9,99 € HT / mois, sans engagement : CRM terrain, assistant IA et chat support inclus",
     },
     inLanguage: "fr-FR",
     publisher: {

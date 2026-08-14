@@ -276,6 +276,7 @@ test.describe("Parcours landing publique", () => {
 
   test("met en avant accessibilité prix et contrats de maintenance", async ({ page }) => {
     await page.goto("/");
+    await expect(page.getByText(/9,99 € HT \/ mois/i).first()).toBeVisible();
     await expect(page.getByText(/Un prix clair, pensé pour vous/i)).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Contrats de maintenance", exact: true }),
@@ -283,6 +284,15 @@ test.describe("Parcours landing publique", () => {
     await expect(
       page.getByText(/Rappel avant échéance|à programmer|auto-planification/i),
     ).toBeVisible();
+  });
+
+  test("page tarifs publique affiche le prix Essentiel", async ({ page }) => {
+    await page.goto("/tarifs");
+    await expect(
+      page.getByRole("heading", { name: /Tarifs Planwise : 9,99 € \/ mois/i }),
+    ).toBeVisible();
+    await expect(page.getByText(/9,99 € HT \/ mois/i).first()).toBeVisible();
+    await expect(page.getByText(/Quel est le prix de Planwise/i)).toBeVisible();
   });
 });
 
