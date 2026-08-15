@@ -4,14 +4,20 @@ import { createPortal } from "react-dom";
 import { useEffect, useState } from "react";
 
 /**
- * Overlay plein écran pendant le changement d’organisation (JWT + invalidations).
+ * Overlay plein écran (changement d’organisation, garde onboarding, etc.).
  */
 export function OrganizationSwitchOverlay({
   visible,
   organizationName,
+  title = "Changement d'organisation",
+  detail = "Rechargement des données pour votre organisation…",
+  ariaLabel = "Changement d'organisation en cours",
 }: {
   visible: boolean;
   organizationName?: string | null;
+  title?: string;
+  detail?: string;
+  ariaLabel?: string;
 }) {
   const [mounted, setMounted] = useState(false);
 
@@ -33,7 +39,7 @@ export function OrganizationSwitchOverlay({
       role="alertdialog"
       aria-live="assertive"
       aria-busy="true"
-      aria-label="Changement d'organisation en cours"
+      aria-label={ariaLabel}
       className="fixed inset-0 z-[10050] flex items-center justify-center p-6"
     >
       <div className="animate-org-switch-backdrop absolute inset-0 bg-white/88 dark:bg-slate-950/92 backdrop-blur-md" />
@@ -43,9 +49,7 @@ export function OrganizationSwitchOverlay({
           aria-hidden
         />
         <div>
-          <p className="text-base font-semibold text-slate-800 dark:text-slate-100">
-            Changement d&apos;organisation
-          </p>
+          <p className="text-base font-semibold text-slate-800 dark:text-slate-100">{title}</p>
           {organizationName ? (
             <p className="mt-2 text-sm font-medium text-brand-600 dark:text-brand-400">
               {organizationName}
@@ -55,9 +59,7 @@ export function OrganizationSwitchOverlay({
               Préparation de votre espace…
             </p>
           )}
-          <p className="mt-3 text-xs text-slate-400 dark:text-slate-500">
-            Rechargement des données pour votre organisation…
-          </p>
+          <p className="mt-3 text-xs text-slate-400 dark:text-slate-500">{detail}</p>
         </div>
       </div>
     </div>,

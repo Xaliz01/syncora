@@ -161,10 +161,10 @@ function SubscriptionSectionInner({ mode = "full" }: { mode?: "full" | "pitchChe
       await refreshSession();
       try {
         const me = await authApi.getMe();
-        // Fondateur : aller directement à l’onboarding (évite de monter le dashboard / carte démo).
-        router.replace(me.isFoundingAdmin ? "/onboarding" : postAuthHomePath(me));
+        // RequireAuth décide / vs /onboarding après chargement des prefs (évite flash onboarding).
+        router.replace(postAuthHomePath(me));
       } catch {
-        router.replace("/onboarding");
+        router.replace("/");
       }
     },
     onError: (err: Error) => {

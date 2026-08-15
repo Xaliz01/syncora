@@ -12,6 +12,7 @@ import {
 } from "@/lib/subscription-access";
 import { buildLoginHref } from "@/lib/auth-return-url";
 import * as accountApi from "@/lib/account.api";
+import { OrganizationSwitchOverlay } from "@/components/organization/OrganizationSwitchOverlay";
 
 export function RequireAuth({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isReady, user } = useAuth();
@@ -25,23 +26,28 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
     isReady && isAuthenticated && user && subscriptionOk && eligibleForOnboarding,
   );
 
-  const { data: prefsData, isPending: prefsPending } = useQuery({
+  const {
+    data: prefsData,
+    isPending: prefsPending,
+    isFetched,
+  } = useQuery({
     queryKey: ["account-preferences", user?.id, user?.organizationId],
     queryFn: () => accountApi.getPreferences(),
     enabled: prefsQueryEnabled,
     staleTime: 30_000,
   });
 
-  /** Uniquement true si les prefs l’affirment explicitement (fail-closed sinon). */
+  /** Prefs reçues (ou query inactive). Tant que pending sans cache → décision inconnue. */
+  const prefsSettled = !prefsQueryEnabled || isFetched || !prefsPending;
   const onboardingDone = prefsData?.preferences.onboardingProfileCompleted === true;
-
-  /**
-   * Fondateur + essai/abo actif : bloquer l’app tant que l’onboarding n’est pas terminé.
-   * Ne pas exiger `prefsData` — sans prefs (chargement / erreur), on bloque (évite dashboard + démo).
-   */
-  const mustCompleteOnboarding = Boolean(
-    subscriptionOk && eligibleForOnboarding && !onboardingDone,
+  /** Uniquement après réponse prefs : on sait qu’il faut l’onboarding. */
+  const onboardingIncomplete = Boolean(
+    prefsQueryEnabled && prefsSettled && prefsData && !onboardingDone,
   );
+  /** Fondateur + abo : ne pas monter l’app ni rediriger vers /onboarding tant que prefs inconnues. */
+  const awaitingOnboardingDecision = Boolean(prefsQueryEnabled && !prefsSettled);
+  const showSessionLoading =
+    !isReady || awaitingOnboardingDecision || (onboardingIncomplete && !onOnboarding);
 
   React.useEffect(() => {
     if (!isReady) return;
@@ -68,27 +74,30 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
       return;
     }
     if (!eligibleForOnboarding) return;
-    if (mustCompleteOnboarding && !onOnboarding) {
+    // Ne rediriger vers /onboarding que lorsque les prefs confirment l’incomplet
+    // (évite un flash onboarding pour un fondateur déjà onboardé).
+    if (onboardingIncomplete && !onOnboarding) {
       router.replace("/onboarding");
     }
-    // La sortie de /onboarding (accueil, fiche client…) est gérée par la page elle-même
-    // pour éviter une course avec un router.replace concurrent.
   }, [
     isReady,
     isAuthenticated,
     user,
     subscriptionOk,
     eligibleForOnboarding,
-    mustCompleteOnboarding,
+    onboardingIncomplete,
     onOnboarding,
     router,
   ]);
 
   if (!isReady) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <div className="text-slate-500 dark:text-slate-400">Chargement…</div>
-      </div>
+      <OrganizationSwitchOverlay
+        visible
+        title="Chargement"
+        detail="Préparation de votre session…"
+        ariaLabel="Chargement de la session"
+      />
     );
   }
 
@@ -100,21 +109,18 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
     return null;
   }
 
-  // Ne pas monter le dashboard (ni carte démo) tant que l’onboarding fondateur n’est pas fait.
-  if (mustCompleteOnboarding && !onOnboarding) {
+  if (showSessionLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <div className="text-slate-500 dark:text-slate-400">Chargement…</div>
-      </div>
-    );
-  }
-
-  // Sur /onboarding, attendre les prefs si besoin (évite un flash du formulaire si déjà terminé).
-  if (onOnboarding && eligibleForOnboarding && prefsQueryEnabled && prefsPending && !prefsData) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <div className="text-slate-500 dark:text-slate-400">Chargement…</div>
-      </div>
+      <OrganizationSwitchOverlay
+        visible
+        title="Préparation de votre espace"
+        detail={
+          awaitingOnboardingDecision
+            ? "Chargement de vos préférences…"
+            : "Redirection vers l’accueil…"
+        }
+        ariaLabel="Chargement de votre espace"
+      />
     );
   }
 
