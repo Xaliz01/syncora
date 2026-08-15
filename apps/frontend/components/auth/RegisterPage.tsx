@@ -286,7 +286,7 @@ export function RegisterPage() {
                 <ul className="space-y-2.5 text-sm text-slate-600 dark:text-slate-300">
                   {[
                     "CRM terrain pour indépendants, artisans et TPE",
-                    "Planning, interventions, contrats et facturation",
+                    "Planning, interventions, contrats et devis",
                     "Sans engagement · résiliable à tout moment",
                   ].map((item) => (
                     <li key={item} className="flex gap-2.5 leading-snug">

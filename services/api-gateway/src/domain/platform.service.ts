@@ -54,6 +54,8 @@ import type {
   ProspectOutreachesBySirensResponse,
   ProspectOutreachesListResponse,
   ProspectOutreachStatus,
+  PlatformSendUserEmailBody,
+  PlatformSendUserEmailResponse,
   SendEmailNotificationResponse,
   StartImpersonationBody,
   UserResponse,
@@ -278,12 +280,14 @@ export class PlatformService extends AbstractPlatformService {
   async listUsers(filters?: {
     search?: string;
     organizationId?: string;
+    activeOnly?: boolean;
     limit?: number;
     offset?: number;
   }): Promise<PlatformUsersListResponse> {
-    const params: Record<string, string | number> = {};
+    const params: Record<string, string | number | boolean> = {};
     if (filters?.search?.trim()) params.search = filters.search.trim();
     if (filters?.organizationId?.trim()) params.organizationId = filters.organizationId.trim();
+    if (filters?.activeOnly) params.activeOnly = true;
     if (filters?.limit != null) params.limit = filters.limit;
     if (filters?.offset != null) params.offset = filters.offset;
 
@@ -300,6 +304,84 @@ export class PlatformService extends AbstractPlatformService {
     const orgNames = await this.resolveOrganizationNames(orgIds);
     const users = await this.enrichUsersWithOrgNames(res.data.users, orgNames);
     return { users, total: res.data.total };
+  }
+
+  async sendUserEmail(
+    staff: PlatformAuthUser,
+    userId: string,
+    body: PlatformSendUserEmailBody,
+  ): Promise<PlatformSendUserEmailResponse> {
+    const reason = body.reason?.trim() ?? "";
+    if (reason.length < MIN_REASON_LENGTH) {
+      throw new BadRequestException(
+        `Le motif support doit contenir au moins ${MIN_REASON_LENGTH} caractères`,
+      );
+    }
+    const subject = body.subject?.trim() ?? "";
+    if (subject.length < 3) {
+      throw new BadRequestException("L’objet de l’e-mail doit contenir au moins 3 caractères");
+    }
+    const emailBody = body.body?.trim() ?? "";
+    if (emailBody.length < 10) {
+      throw new BadRequestException("Le message doit contenir au moins 10 caractères");
+    }
+
+    let target: UserResponse;
+    try {
+      const res = await firstValueFrom(
+        this.httpService.get<UserResponse>(`${SERVICE_URLS.users}/users/${userId}`),
+      );
+      target = res.data;
+    } catch (err: unknown) {
+      this.logger.warn(`sendUserEmail: user ${userId} not found: ${(err as Error).message}`);
+      throw new NotFoundException("Utilisateur introuvable");
+    }
+
+    const to = target.email?.trim().toLowerCase() ?? "";
+    if (!to.includes("@")) {
+      throw new BadRequestException("Cet utilisateur n’a pas d’adresse e-mail");
+    }
+
+    this.logger.log(
+      `Platform staff ${staff.email} sending email to user ${userId} (${to})${
+        body.templateId?.trim() ? ` template=${body.templateId.trim()}` : ""
+      }: ${reason.slice(0, 120)}`,
+    );
+
+    const footer =
+      body.footer?.trim() ||
+      "Cet e-mail vous a été envoyé par l’équipe Planwise. Pour toute question, répondez à cet e-mail ou contactez le support.";
+    const ctaLabel = body.ctaLabel?.trim() || undefined;
+    const ctaUrl = body.ctaUrl?.trim() || undefined;
+
+    let sent = false;
+    let sendReason: string | undefined;
+    try {
+      const res = await firstValueFrom(
+        this.httpService.post<SendEmailNotificationResponse>(
+          `${SERVICE_URLS.notifications}/email/transactional`,
+          {
+            to,
+            subject,
+            body: emailBody,
+            footer,
+            ...(ctaLabel ? { ctaLabel } : {}),
+            ...(ctaUrl ? { url: ctaUrl } : {}),
+          },
+        ),
+      );
+      sent = Boolean(res.data.sent);
+      sendReason = res.data.reason;
+      if (!sent) {
+        this.logger.warn(`Platform user email not sent to ${to}: ${sendReason ?? "unknown"}`);
+      }
+    } catch (err: unknown) {
+      this.logger.warn(`Platform user email SMTP error: ${(err as Error).message}`);
+      sendReason = "Erreur d’envoi e-mail";
+      sent = false;
+    }
+
+    return { sent, to, ...(sendReason ? { reason: sendReason } : {}) };
   }
 
   async startImpersonation(

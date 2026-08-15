@@ -1,8 +1,10 @@
 import {
   isPlatformStaffEmail,
+  isPlatformUserActive,
   interpolateEmailTemplatePlaceholders,
   parsePlatformStaffEmailDomains,
   parsePlatformStaffEmails,
+  PLATFORM_USER_ACTIVE_WITHIN_MS,
 } from "../platform";
 
 describe("platform staff allowlist", () => {
@@ -55,5 +57,31 @@ describe("interpolateEmailTemplatePlaceholders", () => {
         companyName: "Dupont SARL",
       }),
     ).toBe("Bonjour, — Dupont SARL");
+  });
+});
+
+describe("isPlatformUserActive", () => {
+  const now = Date.parse("2026-08-15T12:00:00.000Z");
+
+  it("is true within the activity window", () => {
+    expect(
+      isPlatformUserActive(
+        new Date(now - PLATFORM_USER_ACTIVE_WITHIN_MS + 1_000).toISOString(),
+        now,
+      ),
+    ).toBe(true);
+  });
+
+  it("is false when lastSeen is older than the window", () => {
+    expect(
+      isPlatformUserActive(
+        new Date(now - PLATFORM_USER_ACTIVE_WITHIN_MS - 1_000).toISOString(),
+        now,
+      ),
+    ).toBe(false);
+  });
+
+  it("is false without lastSeen", () => {
+    expect(isPlatformUserActive(undefined, now)).toBe(false);
   });
 });

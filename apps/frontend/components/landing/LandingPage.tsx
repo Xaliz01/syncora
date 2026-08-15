@@ -284,7 +284,7 @@ export function LandingPage() {
               </h2>
               <p className="text-slate-600 dark:text-slate-400 mb-10 max-w-2xl">
                 Pensé pour les indépendants comme pour les TPE : planning interactif, interventions,
-                contrats, flotte, stock et facturation — sans surcouche inutile.
+                contrats, flotte, stock et devis — sans surcouche inutile.
               </p>
             </ScrollReveal>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

@@ -28,6 +28,7 @@ import {
   type OrganizationMembershipResponse,
   type PatchUserBody,
   type AccountUserResponse,
+  PLATFORM_USER_ACTIVE_WITHIN_MS,
   type PlatformUserSummary,
   type UpdateUserNameBody,
   type UserResponse,
@@ -46,6 +47,8 @@ const SALT_ROUNDS = 12;
 const DEFAULT_ROLE: UserRole = "member";
 const EMAIL_OTP_TTL_MS = 15 * 60 * 1000;
 const EMAIL_OTP_RESEND_COOLDOWN_MS = 60 * 1000;
+/** Cap candidats avant filtre « en activité » (search / org). */
+const PLATFORM_ACTIVE_CANDIDATE_CAP = 5000;
 
 function assertPasswordPolicy(password: string): void {
   const error = getPasswordPolicyError(password);
@@ -723,6 +726,7 @@ export class UsersService extends AbstractUsersService {
   async listPlatformDirectory(filters?: {
     search?: string;
     organizationId?: string;
+    activeOnly?: boolean;
     limit?: number;
     offset?: number;
   }): Promise<PlatformUsersDirectoryResult> {
@@ -743,6 +747,10 @@ export class UsersService extends AbstractUsersService {
       ];
     }
 
+    if (filters?.activeOnly) {
+      return this.listPlatformDirectoryActiveOnly(query, limit, offset);
+    }
+
     const [total, docs] = await Promise.all([
       this.userModel.countDocuments(query).exec(),
       this.userModel
@@ -753,6 +761,65 @@ export class UsersService extends AbstractUsersService {
         .exec(),
     ]);
 
+    const users = await this.toPlatformUserSummaries(docs);
+    const lastSeenByUser = await this.sessionsService.getLatestLastSeenByUserIds(
+      users.map((u) => u.id),
+    );
+    for (const user of users) {
+      const lastSeenAt = lastSeenByUser[user.id];
+      if (lastSeenAt) user.lastSeenAt = lastSeenAt;
+    }
+
+    return { users, total };
+  }
+
+  private async listPlatformDirectoryActiveOnly(
+    query: Record<string, unknown>,
+    limit: number,
+    offset: number,
+  ): Promise<PlatformUsersDirectoryResult> {
+    const since = new Date(Date.now() - PLATFORM_USER_ACTIVE_WITHIN_MS);
+    const hasUserFilter = Boolean(query.organizationId || query.$or);
+
+    let candidateIds: string[] | undefined;
+    if (hasUserFilter) {
+      const candidates = await this.userModel
+        .find(query)
+        .select("_id")
+        .limit(PLATFORM_ACTIVE_CANDIDATE_CAP)
+        .exec();
+      candidateIds = candidates.map((d) => d._id.toString());
+      if (candidateIds.length === 0) {
+        return { users: [], total: 0 };
+      }
+    }
+
+    const { userIds, total } = await this.sessionsService.listUserIdsActiveSince(since, {
+      limit,
+      offset,
+      userIds: candidateIds,
+    });
+    if (userIds.length === 0) {
+      return { users: [], total };
+    }
+
+    const docs = await this.userModel
+      .find({ _id: { $in: userIds }, ...activeDocumentFilter })
+      .exec();
+    const byId = new Map(docs.map((d) => [d._id.toString(), d]));
+    const ordered = userIds.map((id) => byId.get(id)).filter(Boolean) as UserDocument[];
+    const users = await this.toPlatformUserSummaries(ordered);
+    const lastSeenByUser = await this.sessionsService.getLatestLastSeenByUserIds(
+      users.map((u) => u.id),
+    );
+    for (const user of users) {
+      const lastSeenAt = lastSeenByUser[user.id];
+      if (lastSeenAt) user.lastSeenAt = lastSeenAt;
+    }
+    return { users, total };
+  }
+
+  private async toPlatformUserSummaries(docs: UserDocument[]): Promise<PlatformUserSummary[]> {
     const users: PlatformUserSummary[] = [];
     for (const doc of docs) {
       const uid = doc._id.toString();
@@ -778,8 +845,7 @@ export class UsersService extends AbstractUsersService {
         createdAt: doc.get("createdAt")?.toISOString(),
       });
     }
-
-    return { users, total };
+    return users;
   }
 
   async countUsersByOrganizationIds(

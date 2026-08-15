@@ -26,6 +26,8 @@ import type {
   ProspectOutreachStatus,
   ProspectOutreachesListResponse,
   PlatformUsersListResponse,
+  PlatformSendUserEmailBody,
+  PlatformSendUserEmailResponse,
   StartImpersonationBody,
   PlatformAnalyticsOverviewResponse,
   PlatformLandingToAppVisitsResponse,
@@ -47,9 +49,15 @@ export abstract class AbstractPlatformService {
   abstract listUsers(filters?: {
     search?: string;
     organizationId?: string;
+    activeOnly?: boolean;
     limit?: number;
     offset?: number;
   }): Promise<PlatformUsersListResponse>;
+  abstract sendUserEmail(
+    staff: PlatformAuthUser,
+    userId: string,
+    body: PlatformSendUserEmailBody,
+  ): Promise<PlatformSendUserEmailResponse>;
   abstract startImpersonation(
     staff: PlatformAuthUser,
     body: StartImpersonationBody,

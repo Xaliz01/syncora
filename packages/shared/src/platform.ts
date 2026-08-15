@@ -98,12 +98,47 @@ export interface PlatformUserSummary {
   organizationName?: string;
   role?: UserRole;
   lastLoginAt?: string;
+  /** Dernière activité session (heartbeat API, résolution ~5 min). */
+  lastSeenAt?: string;
   createdAt?: string;
+}
+
+/** Fenêtre « en activité » backoffice (alignée sur le throttle lastSeen + marge). */
+export const PLATFORM_USER_ACTIVE_WITHIN_MS = 15 * 60 * 1000;
+
+export function isPlatformUserActive(
+  lastSeenAt: string | undefined,
+  nowMs: number = Date.now(),
+  withinMs: number = PLATFORM_USER_ACTIVE_WITHIN_MS,
+): boolean {
+  if (!lastSeenAt) return false;
+  const t = Date.parse(lastSeenAt);
+  if (!Number.isFinite(t)) return false;
+  return nowMs - t <= withinMs;
 }
 
 export interface PlatformUsersListResponse {
   users: PlatformUserSummary[];
   total: number;
+}
+
+export interface PlatformSendUserEmailBody {
+  subject: string;
+  /** Corps du message (texte ; les sauts de ligne sont conservés). */
+  body: string;
+  /** Motif support (audit), min. 10 caractères. */
+  reason: string;
+  /** Contenu e-mail utilisé (audit / traçabilité). */
+  templateId?: string;
+  footer?: string;
+  ctaLabel?: string;
+  ctaUrl?: string;
+}
+
+export interface PlatformSendUserEmailResponse {
+  sent: boolean;
+  to: string;
+  reason?: string;
 }
 
 export interface PlatformOrganizationDetailResponse {
@@ -254,8 +289,14 @@ export interface PlatformProspectOutreachResponse {
 
 /* ── Contenus e-mail backoffice ─────────────────────────────── */
 
-export const PLATFORM_EMAIL_TEMPLATE_PURPOSES = ["prospect_outreach"] as const;
+export const PLATFORM_EMAIL_TEMPLATE_PURPOSES = ["prospect_outreach", "user_support"] as const;
 export type PlatformEmailTemplatePurpose = (typeof PLATFORM_EMAIL_TEMPLATE_PURPOSES)[number];
+
+export const PLATFORM_EMAIL_TEMPLATE_PURPOSE_LABELS: Record<PlatformEmailTemplatePurpose, string> =
+  {
+    prospect_outreach: "Prospection",
+    user_support: "Support utilisateurs",
+  };
 
 export function isPlatformEmailTemplatePurpose(
   value: string,

@@ -743,4 +743,97 @@ describe("PlatformService", () => {
       expect(credits).toEqual({ configured: true, creditsRemaining: 99 });
     });
   });
+
+  describe("sendUserEmail", () => {
+    const staff = { id: "staff-1", email: "mail@benoistbabin.fr", name: "Benoist" };
+
+    it("rejects short reason / subject / body", async () => {
+      await expect(
+        service.sendUserEmail(staff, "user-1", {
+          subject: "Hi",
+          body: "Too short",
+          reason: "short",
+        }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+
+      await expect(
+        service.sendUserEmail(staff, "user-1", {
+          subject: "ab",
+          body: "Message assez long pour passer",
+          reason: "Motif support ticket 42",
+        }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+
+      await expect(
+        service.sendUserEmail(staff, "user-1", {
+          subject: "Objet ok",
+          body: "court",
+          reason: "Motif support ticket 42",
+        }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it("sends transactional email to the user address", async () => {
+      httpService.get.mockReturnValue(
+        of({
+          data: {
+            id: "user-1",
+            email: "client@acme.fr",
+            status: "active",
+            organizationId: "org-1",
+          },
+        }),
+      );
+      httpService.post.mockReturnValue(of({ data: { sent: true } }));
+
+      const result = await service.sendUserEmail(staff, "user-1", {
+        subject: "Suite à votre essai",
+        body: "Bonjour, on peut en discuter demain ?",
+        reason: "Ticket support #88 — relance",
+      });
+
+      expect(result).toEqual({ sent: true, to: "client@acme.fr" });
+      expect(httpService.post).toHaveBeenCalledWith(
+        expect.stringContaining("/email/transactional"),
+        expect.objectContaining({
+          to: "client@acme.fr",
+          subject: "Suite à votre essai",
+          body: "Bonjour, on peut en discuter demain ?",
+        }),
+      );
+    });
+
+    it("forwards footer and CTA when provided", async () => {
+      httpService.get.mockReturnValue(
+        of({
+          data: {
+            id: "user-1",
+            email: "client@acme.fr",
+            status: "active",
+            organizationId: "org-1",
+          },
+        }),
+      );
+      httpService.post.mockReturnValue(of({ data: { sent: true } }));
+
+      await service.sendUserEmail(staff, "user-1", {
+        subject: "Suite à votre essai",
+        body: "Bonjour, on peut en discuter demain ?",
+        reason: "Ticket support #88 — relance",
+        templateId: "tpl-1",
+        footer: "Pied custom",
+        ctaLabel: "Ouvrir",
+        ctaUrl: "/login",
+      });
+
+      expect(httpService.post).toHaveBeenCalledWith(
+        expect.stringContaining("/email/transactional"),
+        expect.objectContaining({
+          footer: "Pied custom",
+          ctaLabel: "Ouvrir",
+          url: "/login",
+        }),
+      );
+    });
+  });
 });

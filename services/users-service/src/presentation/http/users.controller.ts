@@ -161,12 +161,14 @@ export class UsersController {
   async listPlatformDirectory(
     @Query("search") search?: string,
     @Query("organizationId") organizationId?: string,
+    @Query("activeOnly") activeOnly?: string,
     @Query("limit") limit?: string,
     @Query("offset") offset?: string,
   ) {
     return this.usersService.listPlatformDirectory({
       search,
       organizationId,
+      activeOnly: activeOnly === "true" || activeOnly === "1",
       limit: limit ? Number.parseInt(limit, 10) : undefined,
       offset: offset ? Number.parseInt(offset, 10) : undefined,
     });

@@ -21,16 +21,26 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
   const onOnboarding = isOnboardingRoute(pathname);
   const eligibleForOnboarding = Boolean(user?.isFoundingAdmin);
 
-  const { data: prefsData, isLoading: prefsLoading } = useQuery({
+  const prefsQueryEnabled = Boolean(
+    isReady && isAuthenticated && user && subscriptionOk && eligibleForOnboarding,
+  );
+
+  const { data: prefsData, isPending: prefsPending } = useQuery({
     queryKey: ["account-preferences", user?.id, user?.organizationId],
     queryFn: () => accountApi.getPreferences(),
-    enabled: Boolean(isReady && isAuthenticated && user && subscriptionOk && eligibleForOnboarding),
+    enabled: prefsQueryEnabled,
     staleTime: 30_000,
   });
 
+  /** Uniquement true si les prefs l’affirment explicitement (fail-closed sinon). */
   const onboardingDone = prefsData?.preferences.onboardingProfileCompleted === true;
-  const needsOnboarding = Boolean(
-    subscriptionOk && eligibleForOnboarding && prefsData && !onboardingDone,
+
+  /**
+   * Fondateur + essai/abo actif : bloquer l’app tant que l’onboarding n’est pas terminé.
+   * Ne pas exiger `prefsData` — sans prefs (chargement / erreur), on bloque (évite dashboard + démo).
+   */
+  const mustCompleteOnboarding = Boolean(
+    subscriptionOk && eligibleForOnboarding && !onboardingDone,
   );
 
   React.useEffect(() => {
@@ -58,8 +68,7 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
       return;
     }
     if (!eligibleForOnboarding) return;
-    if (prefsLoading || !prefsData) return;
-    if (needsOnboarding && !onOnboarding) {
+    if (mustCompleteOnboarding && !onOnboarding) {
       router.replace("/onboarding");
     }
     // La sortie de /onboarding (accueil, fiche client…) est gérée par la page elle-même
@@ -70,9 +79,7 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
     user,
     subscriptionOk,
     eligibleForOnboarding,
-    prefsLoading,
-    prefsData,
-    needsOnboarding,
+    mustCompleteOnboarding,
     onOnboarding,
     router,
   ]);
@@ -93,11 +100,17 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
     return null;
   }
 
-  if (
-    subscriptionOk &&
-    eligibleForOnboarding &&
-    (prefsLoading || (needsOnboarding && !onOnboarding))
-  ) {
+  // Ne pas monter le dashboard (ni carte démo) tant que l’onboarding fondateur n’est pas fait.
+  if (mustCompleteOnboarding && !onOnboarding) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <div className="text-slate-500 dark:text-slate-400">Chargement…</div>
+      </div>
+    );
+  }
+
+  // Sur /onboarding, attendre les prefs si besoin (évite un flash du formulaire si déjà terminé).
+  if (onOnboarding && eligibleForOnboarding && prefsQueryEnabled && prefsPending && !prefsData) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
         <div className="text-slate-500 dark:text-slate-400">Chargement…</div>

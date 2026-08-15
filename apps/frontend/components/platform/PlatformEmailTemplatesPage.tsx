@@ -1,7 +1,12 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
-import type { PlatformEmailTemplate } from "@planwise/shared";
+import {
+  PLATFORM_EMAIL_TEMPLATE_PURPOSE_LABELS,
+  PLATFORM_EMAIL_TEMPLATE_PURPOSES,
+  type PlatformEmailTemplate,
+  type PlatformEmailTemplatePurpose,
+} from "@planwise/shared";
 import * as platformApi from "@/lib/platform.api";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
@@ -14,7 +19,7 @@ const EMPTY_FORM = {
   subject: "",
   body: "",
   footer: "",
-  ctaLabel: "Découvrir Planwise",
+  ctaLabel: "Voir dans Planwise",
   ctaUrl: "/",
   isDefault: false,
 };
@@ -22,6 +27,7 @@ const EMPTY_FORM = {
 export function PlatformEmailTemplatesPage() {
   const { showToast } = useToast();
   const confirm = useConfirm();
+  const [purpose, setPurpose] = useState<PlatformEmailTemplatePurpose>("prospect_outreach");
   const [templates, setTemplates] = useState<PlatformEmailTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,14 +42,14 @@ export function PlatformEmailTemplatesPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await platformApi.listPlatformEmailTemplates("prospect_outreach");
+      const res = await platformApi.listPlatformEmailTemplates(purpose);
       setTemplates(res.templates);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur de chargement");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [purpose]);
 
   useEffect(() => {
     void load();
@@ -51,10 +57,23 @@ export function PlatformEmailTemplatesPage() {
 
   const startCreate = () => {
     setEditingId(null);
-    setForm(EMPTY_FORM);
+    setForm({
+      ...EMPTY_FORM,
+      ctaLabel: purpose === "user_support" ? "Ouvrir Planwise" : "Découvrir Planwise",
+    });
     setPreviewHtml(null);
     setPreviewSubject(null);
   };
+
+  useEffect(() => {
+    setEditingId(null);
+    setForm({
+      ...EMPTY_FORM,
+      ctaLabel: purpose === "user_support" ? "Ouvrir Planwise" : "Découvrir Planwise",
+    });
+    setPreviewHtml(null);
+    setPreviewSubject(null);
+  }, [purpose]);
 
   const startEdit = (tpl: PlatformEmailTemplate) => {
     setEditingId(tpl.id);
@@ -89,7 +108,7 @@ export function PlatformEmailTemplatesPage() {
       } else {
         await platformApi.createPlatformEmailTemplate({
           name: form.name,
-          purpose: "prospect_outreach",
+          purpose,
           subject: form.subject,
           body: form.body,
           footer: form.footer,
@@ -163,9 +182,26 @@ export function PlatformEmailTemplatesPage() {
           Contenus e-mail
         </h1>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          Gérez les textes envoyés depuis la prospection. Choisissez le contenu au moment de
-          l’envoi.
+          Gérez les textes envoyés depuis la prospection et le support utilisateurs. Choisissez le
+          contenu au moment de l’envoi.
         </p>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {PLATFORM_EMAIL_TEMPLATE_PURPOSES.map((p) => (
+          <button
+            key={p}
+            type="button"
+            onClick={() => setPurpose(p)}
+            className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
+              purpose === p
+                ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900"
+                : "border border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
+            }`}
+          >
+            {PLATFORM_EMAIL_TEMPLATE_PURPOSE_LABELS[p]}
+          </button>
+        ))}
       </div>
 
       {error ? (
@@ -178,7 +214,7 @@ export function PlatformEmailTemplatesPage() {
         <section className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
           <div className="mb-3 flex items-center justify-between gap-2">
             <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-              Prospection ({templates.length})
+              {PLATFORM_EMAIL_TEMPLATE_PURPOSE_LABELS[purpose]} ({templates.length})
             </h2>
             <button
               type="button"

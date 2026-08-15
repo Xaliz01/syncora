@@ -23,6 +23,7 @@ import type {
   PlatformProspectManualCreateBody,
   PlatformProspectNoteBody,
   PlatformProspectOutreachBody,
+  PlatformSendUserEmailBody,
   StartImpersonationBody,
   UpdatePlatformEmailTemplateBody,
 } from "@planwise/shared";
@@ -74,15 +75,27 @@ export class PlatformController {
   listUsers(
     @Query("search") search?: string,
     @Query("organizationId") organizationId?: string,
+    @Query("activeOnly") activeOnly?: string,
     @Query("limit") limit?: string,
     @Query("offset") offset?: string,
   ) {
     return this.platformService.listUsers({
       search,
       organizationId,
+      activeOnly: activeOnly === "true" || activeOnly === "1",
       limit: limit ? Number.parseInt(limit, 10) : undefined,
       offset: offset ? Number.parseInt(offset, 10) : undefined,
     });
+  }
+
+  @Post("users/:userId/send-email")
+  @UseGuards(PlatformJwtAuthGuard)
+  sendUserEmail(
+    @CurrentPlatformUser() user: PlatformAuthUser,
+    @Param("userId") userId: string,
+    @Body() body: PlatformSendUserEmailBody,
+  ) {
+    return this.platformService.sendUserEmail(user, userId, body);
   }
 
   @Post("impersonate")

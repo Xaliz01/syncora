@@ -78,6 +78,8 @@ describe("UsersService", () => {
   };
   let mockSessionsService: {
     revokeSession: jest.Mock;
+    getLatestLastSeenByUserIds: jest.Mock;
+    listUserIdsActiveSince: jest.Mock;
   };
 
   beforeEach(async () => {
@@ -119,6 +121,8 @@ describe("UsersService", () => {
 
     mockSessionsService = {
       revokeSession: jest.fn().mockResolvedValue(undefined),
+      getLatestLastSeenByUserIds: jest.fn().mockResolvedValue({}),
+      listUserIdsActiveSince: jest.fn().mockResolvedValue({ userIds: [], total: 0 }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -986,6 +990,57 @@ describe("UsersService", () => {
     it("should return null when organizationId is empty", async () => {
       await expect(service.findFoundingAdminUserId("  ")).resolves.toBeNull();
       expect(mockMembershipModel.findOne).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("listPlatformDirectory", () => {
+    it("enriches users with lastSeenAt", async () => {
+      const doc = mockDoc({ lastLoginAt: new Date("2026-08-10T10:00:00.000Z") });
+      mockUserModel.countDocuments.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(1),
+      });
+      mockUserModel.find.mockReturnValue({
+        sort: jest.fn().mockReturnValue({
+          skip: jest.fn().mockReturnValue({
+            limit: jest.fn().mockReturnValue({
+              exec: jest.fn().mockResolvedValue([doc]),
+            }),
+          }),
+        }),
+      });
+      mockSessionsService.getLatestLastSeenByUserIds.mockResolvedValue({
+        "user-123": "2026-08-15T11:55:00.000Z",
+      });
+
+      const result = await service.listPlatformDirectory({ limit: 50, offset: 0 });
+
+      expect(result.total).toBe(1);
+      expect(result.users[0]?.lastSeenAt).toBe("2026-08-15T11:55:00.000Z");
+      expect(mockSessionsService.getLatestLastSeenByUserIds).toHaveBeenCalledWith(["user-123"]);
+    });
+
+    it("filters activeOnly via sessions", async () => {
+      mockSessionsService.listUserIdsActiveSince.mockResolvedValue({
+        userIds: ["user-123"],
+        total: 1,
+      });
+      const doc = mockDoc();
+      mockUserModel.find.mockReturnValue({
+        exec: jest.fn().mockResolvedValue([doc]),
+      });
+      mockSessionsService.getLatestLastSeenByUserIds.mockResolvedValue({
+        "user-123": "2026-08-15T11:55:00.000Z",
+      });
+
+      const result = await service.listPlatformDirectory({
+        activeOnly: true,
+        limit: 20,
+        offset: 0,
+      });
+
+      expect(mockSessionsService.listUserIdsActiveSince).toHaveBeenCalled();
+      expect(result.users).toHaveLength(1);
+      expect(result.total).toBe(1);
     });
   });
 });

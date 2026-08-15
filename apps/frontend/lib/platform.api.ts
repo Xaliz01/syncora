@@ -27,6 +27,8 @@ import type {
   ProspectOutreachStatus,
   ProspectOutreachesListResponse,
   PlatformUsersListResponse,
+  PlatformSendUserEmailBody,
+  PlatformSendUserEmailResponse,
   StartImpersonationBody,
 } from "@planwise/shared";
 import { apiRequestJson, getPlatformToken } from "./api-client";
@@ -110,12 +112,14 @@ export async function staffExtendOrganizationTrial(organizationId: string) {
 export async function listPlatformUsers(filters?: {
   search?: string;
   organizationId?: string;
+  activeOnly?: boolean;
   limit?: number;
   offset?: number;
 }) {
   const params = new URLSearchParams();
   if (filters?.search) params.set("search", filters.search);
   if (filters?.organizationId) params.set("organizationId", filters.organizationId);
+  if (filters?.activeOnly) params.set("activeOnly", "true");
   if (filters?.limit != null) params.set("limit", String(filters.limit));
   if (filters?.offset != null) params.set("offset", String(filters.offset));
   const qs = params.toString();
@@ -123,6 +127,18 @@ export async function listPlatformUsers(filters?: {
     platformBearer: true,
     fallbackError: "Impossible de charger les utilisateurs",
   });
+}
+
+export async function sendPlatformUserEmail(userId: string, body: PlatformSendUserEmailBody) {
+  return apiRequestJson<PlatformSendUserEmailResponse>(
+    "POST",
+    `/platform/users/${encodeURIComponent(userId)}/send-email`,
+    {
+      body,
+      platformBearer: true,
+      fallbackError: "Impossible d’envoyer l’e-mail",
+    },
+  );
 }
 
 export async function startImpersonation(body: StartImpersonationBody) {

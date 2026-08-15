@@ -66,6 +66,7 @@ export abstract class AbstractUsersService {
   abstract listPlatformDirectory(filters?: {
     search?: string;
     organizationId?: string;
+    activeOnly?: boolean;
     limit?: number;
     offset?: number;
   }): Promise<PlatformUsersDirectoryResult>;

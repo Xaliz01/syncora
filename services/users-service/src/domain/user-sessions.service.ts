@@ -122,4 +122,50 @@ export class UserSessionsService extends AbstractUserSessionsService {
     const current = currentSessionId?.trim() ?? "";
     return docs.map((doc) => toUserSessionResponse(doc, current));
   }
+
+  async getLatestLastSeenByUserIds(userIds: string[]): Promise<Record<string, string>> {
+    const ids = [...new Set(userIds.map((id) => id.trim()).filter(Boolean))];
+    if (ids.length === 0) return {};
+
+    const rows = await this.sessionModel
+      .aggregate<{
+        _id: string;
+        lastSeenAt: Date;
+      }>([{ $match: { userId: { $in: ids } } }, { $group: { _id: "$userId", lastSeenAt: { $max: "$lastSeenAt" } } }])
+      .exec();
+
+    const out: Record<string, string> = {};
+    for (const row of rows) {
+      if (row._id && row.lastSeenAt) {
+        out[row._id] = new Date(row.lastSeenAt).toISOString();
+      }
+    }
+    return out;
+  }
+
+  async listUserIdsActiveSince(
+    since: Date,
+    options?: { limit?: number; offset?: number; userIds?: string[] },
+  ): Promise<{ userIds: string[]; total: number }> {
+    const limit = Math.min(Math.max(options?.limit ?? 50, 1), 200);
+    const offset = Math.max(options?.offset ?? 0, 0);
+    const match: Record<string, unknown> = { lastSeenAt: { $gte: since } };
+    const scoped = options?.userIds?.map((id) => id.trim()).filter(Boolean);
+    if (scoped && scoped.length > 0) {
+      match.userId = { $in: [...new Set(scoped)] };
+    } else if (scoped && scoped.length === 0) {
+      return { userIds: [], total: 0 };
+    }
+
+    const grouped = await this.sessionModel
+      .aggregate<{
+        _id: string;
+        lastSeenAt: Date;
+      }>([{ $match: match }, { $group: { _id: "$userId", lastSeenAt: { $max: "$lastSeenAt" } } }, { $sort: { lastSeenAt: -1 } }])
+      .exec();
+
+    const total = grouped.length;
+    const userIds = grouped.slice(offset, offset + limit).map((r) => r._id);
+    return { userIds, total };
+  }
 }

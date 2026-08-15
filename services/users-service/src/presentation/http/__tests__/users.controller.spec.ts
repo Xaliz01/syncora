@@ -52,6 +52,8 @@ describe("UsersController", () => {
       revokeSession: jest.fn(),
       revokeOtherSessions: jest.fn(),
       listSessions: jest.fn(),
+      getLatestLastSeenByUserIds: jest.fn(),
+      listUserIdsActiveSince: jest.fn(),
     };
 
     mockPreferencesService = {
