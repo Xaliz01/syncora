@@ -16,6 +16,7 @@ describe("OrganizationsController", () => {
       updateTrialTestData: jest.fn(),
       listOrganizationsWithReadyTrialTestData: jest.fn(),
       listOrganizations: jest.fn(),
+      getPlatformDashboardStats: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({

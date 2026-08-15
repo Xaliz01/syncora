@@ -117,6 +117,26 @@ export function isPlatformUserActive(
   return nowMs - t <= withinMs;
 }
 
+/** Domaines exclus des KPI backoffice (comptes internes / de test / E2E). */
+export const PLATFORM_METRICS_EXCLUDED_EMAIL_DOMAINS = [
+  "benoistbabin.fr",
+  "planwise.fr",
+  "planwise.test",
+] as const;
+
+export function isPlatformMetricsExcludedEmail(email: string | null | undefined): boolean {
+  const domain = email?.trim().toLowerCase().split("@")[1] ?? "";
+  return (PLATFORM_METRICS_EXCLUDED_EMAIL_DOMAINS as readonly string[]).includes(domain);
+}
+
+/** Regex Mongo / JS : e-mails se terminant par `@domaine` exclus des métriques. */
+export function platformMetricsExcludedEmailDomainRegex(): RegExp {
+  const escaped = PLATFORM_METRICS_EXCLUDED_EMAIL_DOMAINS.map((d) => d.replace(/\./g, "\\.")).join(
+    "|",
+  );
+  return new RegExp(`@(${escaped})$`, "i");
+}
+
 export interface PlatformUsersListResponse {
   users: PlatformUserSummary[];
   total: number;

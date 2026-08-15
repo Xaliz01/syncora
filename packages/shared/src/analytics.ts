@@ -15,6 +15,11 @@ export interface TrackPageviewBody {
   /** true si une session app authentifiée est présente (sans userId). */
   authenticated?: boolean;
   /**
+   * Domaine e-mail de l’utilisateur connecté (ex. `exemple.fr`), sans la partie locale.
+   * Sert à exclure les comptes internes / E2E des stats audience.
+   */
+  emailDomain?: string;
+  /**
    * Rempli côté serveur uniquement (ISO 3166-1 alpha-2).
    * Ignoré / écrasé s'il est envoyé par le client.
    */
@@ -105,3 +110,22 @@ export interface PlatformLandingVisitsResponse {
  * Même forme que les visites landing.
  */
 export type PlatformLandingToAppVisitsResponse = PlatformLandingVisitsResponse;
+
+/** Visite récente pour le tableau de bord backoffice (même forme que landing). */
+export type PlatformDashboardVisit = PlatformLandingVisit;
+
+export interface PlatformDashboardResponse {
+  /** Organisations hors e-mails @benoistbabin.fr / @planwise.fr / @planwise.test. */
+  organizationCount: number;
+  /** Utilisateurs hors e-mails de test. */
+  userCount: number;
+  /** Utilisateurs avec activité session récente (hors e-mails de test). */
+  connectedUserCount: number;
+  /** Essais en cours (trialing + fin d’essai dans le futur), hors orgs de test. */
+  activeTrialCount: number;
+  /** Abonnements payants (active / past_due), hors orgs de test. */
+  subscriberCount: number;
+  recentLandingVisits: PlatformDashboardVisit[];
+  recentLoginVisits: PlatformDashboardVisit[];
+  recentRegisterVisits: PlatformDashboardVisit[];
+}

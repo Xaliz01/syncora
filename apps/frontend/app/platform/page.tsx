@@ -1,5 +1,5 @@
-import { PlatformOrganizationsPage } from "@/components/platform/PlatformOrganizationsPage";
+import { PlatformDashboardPage } from "@/components/platform/PlatformDashboardPage";
 
-export default function PlatformHomePage() {
-  return <PlatformOrganizationsPage />;
+export default function PlatformDashboardRoute() {
+  return <PlatformDashboardPage />;
 }

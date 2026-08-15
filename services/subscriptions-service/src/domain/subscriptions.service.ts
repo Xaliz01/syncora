@@ -439,6 +439,35 @@ export class SubscriptionsService {
     return toSubscriptionResponse(doc, this.readAddonQuantities(doc), monthly);
   }
 
+  async getPlatformDashboardCounts(options?: {
+    excludeOrganizationIds?: string[];
+  }): Promise<{ activeTrialCount: number; subscriberCount: number }> {
+    const excluded = [
+      ...new Set((options?.excludeOrganizationIds ?? []).map((id) => id.trim()).filter(Boolean)),
+    ];
+    const orgFilter =
+      excluded.length > 0 ? { organizationId: { $nin: excluded } } : ({} as Record<string, never>);
+    const now = new Date();
+
+    const [activeTrialCount, subscriberCount] = await Promise.all([
+      this.subscriptionModel
+        .countDocuments({
+          ...orgFilter,
+          stripeStatus: "trialing",
+          trialEndsAt: { $gt: now },
+        })
+        .exec(),
+      this.subscriptionModel
+        .countDocuments({
+          ...orgFilter,
+          stripeStatus: { $in: ["active", "past_due"] },
+        })
+        .exec(),
+    ]);
+
+    return { activeTrialCount, subscriberCount };
+  }
+
   async createCheckoutSession(params: {
     organizationId: string;
     customerEmail?: string;

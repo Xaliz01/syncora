@@ -50,6 +50,7 @@ import type {
   PlatformAnalyticsOverviewResponse,
   PlatformLandingToAppVisitsResponse,
   PlatformLandingVisitsResponse,
+  PlatformDashboardResponse,
   PlatformUsersListResponse,
   ProspectOutreachesBySirensResponse,
   ProspectOutreachesListResponse,
@@ -591,6 +592,73 @@ export class PlatformService extends AbstractPlatformService {
     offset?: number;
   }): Promise<PlatformLandingToAppVisitsResponse> {
     return this.analyticsGateway.listLandingToAppVisits(options);
+  }
+
+  async getDashboard(): Promise<PlatformDashboardResponse> {
+    try {
+      const visitLimit = 10;
+      const visitDays = 90;
+
+      const [orgStats, userStats, landing, login, register] = await Promise.all([
+        firstValueFrom(
+          this.httpService.get<{
+            organizationCount: number;
+            excludedOrganizationIds: string[];
+          }>(`${SERVICE_URLS.organizations}/organizations/platform/dashboard-stats`, {
+            timeout: 10000,
+          }),
+        ).then((r) => r.data),
+        firstValueFrom(
+          this.httpService.get<{ userCount: number; connectedUserCount: number }>(
+            `${SERVICE_URLS.users}/users/platform/dashboard-stats`,
+            { timeout: 10000 },
+          ),
+        ).then((r) => r.data),
+        this.analyticsGateway.listPathVisits({
+          surface: "marketing",
+          path: "/",
+          limit: visitLimit,
+          days: visitDays,
+        }),
+        this.analyticsGateway.listPathVisits({
+          surface: "app",
+          path: "/login",
+          limit: visitLimit,
+          days: visitDays,
+        }),
+        this.analyticsGateway.listPathVisits({
+          surface: "app",
+          path: "/register",
+          limit: visitLimit,
+          days: visitDays,
+        }),
+      ]);
+
+      const excludeQs = orgStats.excludedOrganizationIds.join(",");
+      const subCounts = await firstValueFrom(
+        this.httpService.get<{ activeTrialCount: number; subscriberCount: number }>(
+          `${SERVICE_URLS.subscriptions}/subscriptions/platform/dashboard-counts`,
+          {
+            params: excludeQs ? { excludeOrganizationIds: excludeQs } : {},
+            timeout: 10000,
+          },
+        ),
+      ).then((r) => r.data);
+
+      return {
+        organizationCount: orgStats.organizationCount,
+        userCount: userStats.userCount,
+        connectedUserCount: userStats.connectedUserCount,
+        activeTrialCount: subCounts.activeTrialCount,
+        subscriberCount: subCounts.subscriberCount,
+        recentLandingVisits: landing.items,
+        recentLoginVisits: login.items,
+        recentRegisterVisits: register.items,
+      };
+    } catch (err: unknown) {
+      this.logger.warn(`platform dashboard failed: ${(err as Error).message}`);
+      throw new ServiceUnavailableException("Tableau de bord temporairement indisponible");
+    }
   }
 
   async searchProspects(filters?: {

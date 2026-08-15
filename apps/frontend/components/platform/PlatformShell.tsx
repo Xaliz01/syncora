@@ -8,7 +8,8 @@ import * as platformApi from "@/lib/platform.api";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 const NAV = [
-  { href: "/platform", label: "Organisations" },
+  { href: "/platform", label: "Tableau de bord" },
+  { href: "/platform/organizations", label: "Organisations" },
   { href: "/platform/users", label: "Utilisateurs" },
   { href: "/platform/integrations", label: "Intégrations" },
   { href: "/platform/prospection", label: "Prospection" },
@@ -19,9 +20,9 @@ const NAV = [
 
 function navItemActive(pathname: string, href: string) {
   if (href === "/platform") {
-    return pathname === "/platform" || pathname.startsWith("/platform/organizations");
+    return pathname === "/platform";
   }
-  return pathname.startsWith(href);
+  return pathname === href || pathname.startsWith(`${href}/`);
 }
 
 export function PlatformShell({ children }: { children: React.ReactNode }) {

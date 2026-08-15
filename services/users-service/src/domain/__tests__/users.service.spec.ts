@@ -80,6 +80,7 @@ describe("UsersService", () => {
     revokeSession: jest.Mock;
     getLatestLastSeenByUserIds: jest.Mock;
     listUserIdsActiveSince: jest.Mock;
+    listAllDistinctUserIdsActiveSince: jest.Mock;
   };
 
   beforeEach(async () => {
@@ -123,6 +124,7 @@ describe("UsersService", () => {
       revokeSession: jest.fn().mockResolvedValue(undefined),
       getLatestLastSeenByUserIds: jest.fn().mockResolvedValue({}),
       listUserIdsActiveSince: jest.fn().mockResolvedValue({ userIds: [], total: 0 }),
+      listAllDistinctUserIdsActiveSince: jest.fn().mockResolvedValue([]),
     };
 
     const module: TestingModule = await Test.createTestingModule({

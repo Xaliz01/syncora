@@ -107,6 +107,43 @@ describe("AnalyticsService", () => {
         }),
       ).rejects.toBeInstanceOf(BadRequestException);
     });
+
+    it("skips persisting platform surface", async () => {
+      const result = await service.trackPageview({
+        ...validBody,
+        surface: "platform",
+        path: "/platform",
+      });
+      expect(result).toEqual({ ok: true });
+      expect(mockPageViewModel.create).not.toHaveBeenCalled();
+    });
+
+    it("skips persisting excluded email domains", async () => {
+      const result = await service.trackPageview({
+        ...validBody,
+        surface: "app",
+        path: "/login",
+        emailDomain: "planwise.test",
+      });
+      expect(result).toEqual({ ok: true });
+      expect(mockPageViewModel.create).not.toHaveBeenCalled();
+    });
+
+    it("persists emailDomain for non-excluded accounts", async () => {
+      await service.trackPageview({
+        ...validBody,
+        surface: "app",
+        path: "/cases",
+        emailDomain: "exemple.fr",
+        authenticated: true,
+      });
+      expect(mockPageViewModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          emailDomain: "exemple.fr",
+          authenticated: true,
+        }),
+      );
+    });
   });
 
   describe("getOverview", () => {
@@ -119,6 +156,11 @@ describe("AnalyticsService", () => {
       expect(overview.bySurface).toEqual([]);
       expect(overview.topPaths).toEqual([]);
       expect(overview.topCountries).toEqual([]);
+      const firstMatch = mockPageViewModel.aggregate.mock.calls[0][0][0].$match;
+      expect(firstMatch.surface).toEqual({ $in: ["marketing", "app"] });
+      expect(firstMatch.emailDomain.$nin).toEqual(
+        expect.arrayContaining(["benoistbabin.fr", "planwise.fr", "planwise.test"]),
+      );
     });
 
     it("maps aggregation rows", async () => {

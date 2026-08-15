@@ -19,4 +19,11 @@ export abstract class AbstractAnalyticsGatewayService {
     limit?: number;
     offset?: number;
   }): Promise<PlatformLandingToAppVisitsResponse>;
+  abstract listPathVisits(options: {
+    surface: "marketing" | "app" | "platform";
+    path: string;
+    days?: number;
+    limit?: number;
+    offset?: number;
+  }): Promise<PlatformLandingVisitsResponse>;
 }

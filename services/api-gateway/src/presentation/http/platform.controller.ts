@@ -140,6 +140,12 @@ export class PlatformController {
     });
   }
 
+  @Get("dashboard")
+  @UseGuards(PlatformJwtAuthGuard)
+  getDashboard() {
+    return this.platformService.getDashboard();
+  }
+
   @Get("analytics/overview")
   @UseGuards(PlatformJwtAuthGuard)
   getAnalyticsOverview(@Query("days") days?: string) {

@@ -1,4 +1,5 @@
 import type { AnalyticsSurface, TrackPageviewBody } from "@planwise/shared";
+import { isPlatformMetricsExcludedEmail } from "@planwise/shared";
 import { API_BASE, getAccessToken, getPlatformToken } from "@/lib/api-client";
 import { isAppHost, isBackofficeHost, isLocalDevHost, isMarketingHost } from "@/lib/host-routing";
 import { isLegalPath } from "@/lib/legal/routes";
@@ -59,7 +60,18 @@ function referrerHost(): string | undefined {
   }
 }
 
-export async function trackPageview(pathname: string): Promise<void> {
+function emailDomainFromAddress(email?: string | null): string | undefined {
+  const domain = email?.trim().toLowerCase().split("@")[1];
+  return domain || undefined;
+}
+
+/**
+ * @param options.userEmail — e-mail session app (AuthContext) pour exclure comptes internes / E2E
+ */
+export async function trackPageview(
+  pathname: string,
+  options?: { userEmail?: string | null },
+): Promise<void> {
   if (typeof window === "undefined") return;
   if (isAnalyticsOptedOut()) return;
 
@@ -67,10 +79,19 @@ export async function trackPageview(pathname: string): Promise<void> {
   if (path === "/~offline") return;
 
   const surface = resolveAnalyticsSurface(path, window.location.hostname);
+  // Pas de mesure backoffice.
+  if (surface === "platform") return;
+
+  const email = options?.userEmail?.trim() || null;
+  if (email && isPlatformMetricsExcludedEmail(email)) return;
+  // Session staff backoffice ouverte dans le même navigateur.
+  if (getPlatformToken()) return;
+
   const dedupeKey = `${surface}:${path}`;
   if (lastTrackedKey === dedupeKey) return;
   lastTrackedKey = dedupeKey;
 
+  const emailDomain = emailDomainFromAddress(email);
   const body: TrackPageviewBody = {
     surface,
     path,
@@ -78,6 +99,7 @@ export async function trackPageview(pathname: string): Promise<void> {
     visitorId: getOrCreateId(window.localStorage, ANALYTICS_VISITOR_KEY),
     sessionId: getOrCreateId(window.sessionStorage, ANALYTICS_SESSION_KEY),
     authenticated: Boolean(getAccessToken() || getPlatformToken()),
+    ...(emailDomain ? { emailDomain } : {}),
   };
 
   try {

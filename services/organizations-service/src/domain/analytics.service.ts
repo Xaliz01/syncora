@@ -10,7 +10,11 @@ import type {
   TrackPageviewBody,
   TrackPageviewResponse,
 } from "@planwise/shared";
-import { clampPagination } from "@planwise/shared";
+import {
+  clampPagination,
+  isPlatformMetricsExcludedEmail,
+  PLATFORM_METRICS_EXCLUDED_EMAIL_DOMAINS,
+} from "@planwise/shared";
 import type { PageViewDocument } from "../persistence/page-view.schema";
 import { AbstractAnalyticsService } from "./ports/analytics.service.port";
 
@@ -20,6 +24,17 @@ const SURFACES = new Set<AnalyticsSurface>(["marketing", "app", "platform"]);
 const LANDING_SURFACE: AnalyticsSurface = "marketing";
 const LANDING_PATH = "/";
 const APP_SURFACE: AnalyticsSurface = "app";
+/** Surfaces exposées dans Audience / dashboard (pas le backoffice). */
+const AUDIENCE_SURFACES: AnalyticsSurface[] = ["marketing", "app"];
+
+/** Filtre commun : hors backoffice + hors domaines e-mail de test / internes. */
+function audienceMatchExtra(): Record<string, unknown> {
+  return {
+    surface: { $in: AUDIENCE_SURFACES },
+    // $nin inclut aussi les docs sans emailDomain (visiteurs anonymes).
+    emailDomain: { $nin: [...PLATFORM_METRICS_EXCLUDED_EMAIL_DOMAINS] },
+  };
+}
 
 function marketingReferrerHosts(): string[] {
   const raw = (process.env.MARKETING_DOMAIN || process.env.APP_PUBLIC_URL || "planwise.fr").trim();
@@ -47,12 +62,21 @@ export class AnalyticsService extends AbstractAnalyticsService {
     if (!SURFACES.has(surface)) {
       throw new BadRequestException("surface invalide");
     }
+    // Backoffice : on n’enregistre pas (et Audience ne le remonte pas).
+    if (surface === "platform") {
+      return { ok: true };
+    }
 
     const path = this.normalizePath(body.path);
     const visitorId = body.visitorId?.trim() ?? "";
     const sessionId = body.sessionId?.trim() ?? "";
     if (!UUID_RE.test(visitorId) || !UUID_RE.test(sessionId)) {
       throw new BadRequestException("visitorId/sessionId invalides");
+    }
+
+    const emailDomain = this.normalizeEmailDomain(body.emailDomain);
+    if (emailDomain && isPlatformMetricsExcludedEmail(`user@${emailDomain}`)) {
+      return { ok: true };
     }
 
     const referrerHost = this.normalizeReferrerHost(body.referrerHost);
@@ -66,6 +90,7 @@ export class AnalyticsService extends AbstractAnalyticsService {
       visitorId,
       sessionId,
       authenticated: body.authenticated === true,
+      ...(emailDomain ? { emailDomain } : {}),
       ...(country ? { country } : {}),
       ...(region ? { region } : {}),
     });
@@ -77,7 +102,7 @@ export class AnalyticsService extends AbstractAnalyticsService {
     const windowDays = Math.min(Math.max(Math.floor(days) || 30, 1), 90);
     const { from, to } = this.windowBounds(windowDays);
 
-    const match = { createdAt: { $gte: from, $lte: to } };
+    const match = { createdAt: { $gte: from, $lte: to }, ...audienceMatchExtra() };
 
     const [totalsAgg, bySurface, byDay, topPaths, topCountries] = await Promise.all([
       this.pageViewModel
@@ -215,6 +240,7 @@ export class AnalyticsService extends AbstractAnalyticsService {
         surface: LANDING_SURFACE,
         path: LANDING_PATH,
         createdAt: { $gte: from, $lte: to },
+        emailDomain: { $nin: [...PLATFORM_METRICS_EXCLUDED_EMAIL_DOMAINS] },
       },
       { windowDays, from, to, limit, offset },
     );
@@ -236,6 +262,42 @@ export class AnalyticsService extends AbstractAnalyticsService {
         surface: APP_SURFACE,
         referrerHost: { $in: marketingReferrerHosts() },
         createdAt: { $gte: from, $lte: to },
+        emailDomain: { $nin: [...PLATFORM_METRICS_EXCLUDED_EMAIL_DOMAINS] },
+      },
+      { windowDays, from, to, limit, offset },
+    );
+  }
+
+  async listPathVisits(options: {
+    surface: AnalyticsSurface;
+    path: string;
+    days?: number;
+    limit?: number;
+    offset?: number;
+  }): Promise<PlatformLandingVisitsResponse> {
+    const surface = options.surface;
+    if (!SURFACES.has(surface)) {
+      throw new BadRequestException("surface invalide");
+    }
+    if (surface === "platform") {
+      throw new BadRequestException("surface platform non disponible pour l’audience");
+    }
+    const path = options.path.trim() || "/";
+    if (path.length > MAX_PATH_LENGTH || !path.startsWith("/")) {
+      throw new BadRequestException("path invalide");
+    }
+    const windowDays = Math.min(Math.max(Math.floor(options.days ?? 90) || 90, 1), 90);
+    const { limit, offset } = clampPagination({
+      limit: options.limit,
+      offset: options.offset,
+    });
+    const { from, to } = this.windowBounds(windowDays);
+    return this.listVisitsPage(
+      {
+        surface,
+        path,
+        createdAt: { $gte: from, $lte: to },
+        emailDomain: { $nin: [...PLATFORM_METRICS_EXCLUDED_EMAIL_DOMAINS] },
       },
       { windowDays, from, to, limit, offset },
     );
@@ -370,6 +432,13 @@ export class AnalyticsService extends AbstractAnalyticsService {
     } catch {
       return undefined;
     }
+  }
+
+  private normalizeEmailDomain(raw?: string): string | undefined {
+    const value = (raw ?? "").trim().toLowerCase().replace(/^@/, "");
+    if (!value || value.includes("@") || value.length > 100) return undefined;
+    if (!/^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$/.test(value)) return undefined;
+    return value;
   }
 
   private normalizeCountry(raw?: string): string | undefined {

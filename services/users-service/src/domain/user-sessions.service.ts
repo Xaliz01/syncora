@@ -175,4 +175,13 @@ export class UserSessionsService extends AbstractUserSessionsService {
     const userIds = grouped.slice(offset, offset + limit).map((r) => r._id);
     return { userIds, total };
   }
+
+  async listAllDistinctUserIdsActiveSince(since: Date): Promise<string[]> {
+    const grouped = await this.sessionModel
+      .aggregate<{
+        _id: string;
+      }>([{ $match: { lastSeenAt: { $gte: since } } }, { $group: { _id: "$userId" } }])
+      .exec();
+    return grouped.map((r) => r._id).filter(Boolean);
+  }
 }

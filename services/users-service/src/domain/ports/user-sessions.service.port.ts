@@ -20,4 +20,6 @@ export abstract class AbstractUserSessionsService {
     since: Date,
     options?: { limit?: number; offset?: number; userIds?: string[] },
   ): Promise<{ userIds: string[]; total: number }>;
+  /** Tous les userIds distincts actifs depuis `since` (sans pagination). */
+  abstract listAllDistinctUserIdsActiveSince(since: Date): Promise<string[]>;
 }

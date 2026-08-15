@@ -70,6 +70,10 @@ export abstract class AbstractUsersService {
     limit?: number;
     offset?: number;
   }): Promise<PlatformUsersDirectoryResult>;
+  abstract getPlatformDashboardStats(): Promise<{
+    userCount: number;
+    connectedUserCount: number;
+  }>;
   abstract countUsersByOrganizationIds(
     organizationIds: string[],
   ): Promise<Record<string, { userCount: number; lastUserLoginAt?: string }>>;

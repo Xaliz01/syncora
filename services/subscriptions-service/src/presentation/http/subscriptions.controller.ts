@@ -19,6 +19,17 @@ export class SubscriptionsController {
     return this.subscriptionsService.getByOrganization(organizationId);
   }
 
+  @Get("platform/dashboard-counts")
+  getPlatformDashboardCounts(@Query("excludeOrganizationIds") excludeOrganizationIds?: string) {
+    const ids = (excludeOrganizationIds ?? "")
+      .split(",")
+      .map((id) => id.trim())
+      .filter(Boolean);
+    return this.subscriptionsService.getPlatformDashboardCounts({
+      excludeOrganizationIds: ids,
+    });
+  }
+
   @Post("start-trial")
   startTrial(@Body() body: StartTrialBody) {
     this.ensureOrg(body.organizationId);

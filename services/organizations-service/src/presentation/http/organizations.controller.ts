@@ -43,6 +43,11 @@ export class OrganizationsController {
     return this.organizationsService.listOrganizationsWithReadyTrialTestData();
   }
 
+  @Get("platform/dashboard-stats")
+  getPlatformDashboardStats() {
+    return this.organizationsService.getPlatformDashboardStats();
+  }
+
   @Get(":id")
   async findById(@Param("id") id: string) {
     const org = await this.organizationsService.findById(id);

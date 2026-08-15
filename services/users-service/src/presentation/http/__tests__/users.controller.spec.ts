@@ -43,6 +43,7 @@ describe("UsersController", () => {
       changePassword: jest.fn(),
       findFoundingAdminUserId: jest.fn(),
       listPlatformDirectory: jest.fn(),
+      getPlatformDashboardStats: jest.fn(),
       countUsersByOrganizationIds: jest.fn(),
     };
 
@@ -54,6 +55,7 @@ describe("UsersController", () => {
       listSessions: jest.fn(),
       getLatestLastSeenByUserIds: jest.fn(),
       listUserIdsActiveSince: jest.fn(),
+      listAllDistinctUserIdsActiveSince: jest.fn(),
     };
 
     mockPreferencesService = {

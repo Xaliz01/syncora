@@ -29,6 +29,7 @@ import type {
   PlatformUsersListResponse,
   PlatformSendUserEmailBody,
   PlatformSendUserEmailResponse,
+  PlatformDashboardResponse,
   StartImpersonationBody,
 } from "@planwise/shared";
 import { apiRequestJson, getPlatformToken } from "./api-client";
@@ -64,6 +65,13 @@ export async function platformMe() {
     platformBearer: true,
     noTokenMessage: "Session backoffice expirée",
     fallbackError: "Session backoffice expirée",
+  });
+}
+
+export async function getPlatformDashboard() {
+  return apiRequestJson<PlatformDashboardResponse>("GET", "/platform/dashboard", {
+    platformBearer: true,
+    fallbackError: "Impossible de charger le tableau de bord",
   });
 }
 

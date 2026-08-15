@@ -112,8 +112,9 @@ export function PlatformAudiencePage() {
         <div>
           <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Audience</h1>
           <p className="text-sm text-slate-500">
-            Mesure first-party (pages vues, pays approximatif via IP — IP non stockée, ~400 jours),
-            avec le détail landing et les passages landing → application.
+            Mesure first-party (landing + application). Hors backoffice et hors comptes de test
+            (@benoistbabin.fr / @planwise.fr / @planwise.test). Pays approximatif via IP — IP non
+            stockée (~400 jours).
           </p>
         </div>
         <div className="flex gap-1 rounded-lg border border-slate-200 p-1 dark:border-slate-700">

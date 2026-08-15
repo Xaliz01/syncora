@@ -4,6 +4,7 @@ import type {
   PlatformLandingVisitsResponse,
   TrackPageviewBody,
   TrackPageviewResponse,
+  AnalyticsSurface,
 } from "@planwise/shared";
 
 export abstract class AbstractAnalyticsService {
@@ -19,4 +20,12 @@ export abstract class AbstractAnalyticsService {
     limit?: number;
     offset?: number;
   }): Promise<PlatformLandingToAppVisitsResponse>;
+  /** Dernières visites pour un couple surface + path (ex. app `/login`). */
+  abstract listPathVisits(options: {
+    surface: AnalyticsSurface;
+    path: string;
+    days?: number;
+    limit?: number;
+    offset?: number;
+  }): Promise<PlatformLandingVisitsResponse>;
 }

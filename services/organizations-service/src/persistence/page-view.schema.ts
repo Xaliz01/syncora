@@ -22,6 +22,10 @@ export class PageViewDocument extends Document {
   @Prop({ default: false })
   authenticated!: boolean;
 
+  /** Domaine e-mail si session authentifiée (ex. `exemple.fr`) — exclusion KPI internes. */
+  @Prop()
+  emailDomain?: string;
+
   /** ISO 3166-1 alpha-2 dérivé serveur (pas d'IP stockée). */
   @Prop()
   country?: string;

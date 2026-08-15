@@ -10,6 +10,7 @@ import {
   type TrialTestDataStatusResponse,
   type UpdateOrganizationBody,
   type UpdateOrganizationTrialTestDataBody,
+  platformMetricsExcludedEmailDomainRegex,
 } from "@planwise/shared";
 import { AbstractOrganizationsService } from "./ports/organizations.service.port";
 import { toOrganizationResponse } from "./mappers/organization.mapper";
@@ -149,6 +150,34 @@ export class OrganizationsService extends AbstractOrganizationsService {
     return {
       organizations: docs.map((doc) => toOrganizationResponse(doc)),
       total,
+    };
+  }
+
+  async getPlatformDashboardStats(): Promise<{
+    organizationCount: number;
+    excludedOrganizationIds: string[];
+  }> {
+    const excludedEmailRe = platformMetricsExcludedEmailDomainRegex();
+    const base = { ...activeDocumentFilter };
+    const [organizationCount, excludedDocs] = await Promise.all([
+      this.organizationModel
+        .countDocuments({
+          ...base,
+          email: { $not: excludedEmailRe },
+        })
+        .exec(),
+      this.organizationModel
+        .find({
+          ...base,
+          email: excludedEmailRe,
+        })
+        .select("_id")
+        .lean()
+        .exec(),
+    ]);
+    return {
+      organizationCount,
+      excludedOrganizationIds: excludedDocs.map((d) => String(d._id)),
     };
   }
 

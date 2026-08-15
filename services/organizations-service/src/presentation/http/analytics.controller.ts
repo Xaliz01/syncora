@@ -41,4 +41,21 @@ export class AnalyticsController {
       offset: offset ? Number.parseInt(offset, 10) : undefined,
     });
   }
+
+  @Get("platform/analytics/path-visits")
+  listPathVisits(
+    @Query("surface") surface?: string,
+    @Query("path") path?: string,
+    @Query("days") days?: string,
+    @Query("limit") limit?: string,
+    @Query("offset") offset?: string,
+  ) {
+    return this.analyticsService.listPathVisits({
+      surface: (surface as "marketing" | "app" | "platform") || "app",
+      path: path || "/",
+      days: days ? Number.parseInt(days, 10) : undefined,
+      limit: limit ? Number.parseInt(limit, 10) : undefined,
+      offset: offset ? Number.parseInt(offset, 10) : undefined,
+    });
+  }
 }

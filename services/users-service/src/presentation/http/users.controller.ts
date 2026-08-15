@@ -174,6 +174,11 @@ export class UsersController {
     });
   }
 
+  @Get("platform/dashboard-stats")
+  getPlatformDashboardStats() {
+    return this.usersService.getPlatformDashboardStats();
+  }
+
   @Post("platform/organization-stats")
   async countUsersByOrganizationIds(@Body() body: { organizationIds?: string[] }) {
     return this.usersService.countUsersByOrganizationIds(body.organizationIds ?? []);

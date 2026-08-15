@@ -34,6 +34,7 @@ import {
   type UserResponse,
   type UserRole,
   type ValidateCredentialsResponse,
+  platformMetricsExcludedEmailDomainRegex,
 } from "@planwise/shared";
 import {
   AbstractUsersService,
@@ -817,6 +818,32 @@ export class UsersService extends AbstractUsersService {
       if (lastSeenAt) user.lastSeenAt = lastSeenAt;
     }
     return { users, total };
+  }
+
+  async getPlatformDashboardStats(): Promise<{
+    userCount: number;
+    connectedUserCount: number;
+  }> {
+    const excludedEmailRe = platformMetricsExcludedEmailDomainRegex();
+    const metricsUserFilter = {
+      ...activeDocumentFilter,
+      email: { $not: excludedEmailRe },
+    };
+    const userCount = await this.userModel.countDocuments(metricsUserFilter).exec();
+
+    const since = new Date(Date.now() - PLATFORM_USER_ACTIVE_WITHIN_MS);
+    const activeIds = await this.sessionsService.listAllDistinctUserIdsActiveSince(since);
+    const connectedUserCount =
+      activeIds.length === 0
+        ? 0
+        : await this.userModel
+            .countDocuments({
+              ...metricsUserFilter,
+              _id: { $in: activeIds },
+            })
+            .exec();
+
+    return { userCount, connectedUserCount };
   }
 
   private async toPlatformUserSummaries(docs: UserDocument[]): Promise<PlatformUserSummary[]> {

@@ -26,4 +26,9 @@ export abstract class AbstractOrganizationsService {
     limit?: number;
     offset?: number;
   }): Promise<OrganizationsListResult>;
+  /** KPI dashboard : orgs hors domaines de test + ids exclus pour filtrer les abos. */
+  abstract getPlatformDashboardStats(): Promise<{
+    organizationCount: number;
+    excludedOrganizationIds: string[];
+  }>;
 }

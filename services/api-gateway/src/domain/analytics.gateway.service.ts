@@ -99,4 +99,25 @@ export class AnalyticsGatewayService extends AbstractAnalyticsGatewayService {
       throw new ServiceUnavailableException("Statistiques temporairement indisponibles");
     }
   }
+
+  async listPathVisits(options: {
+    surface: "marketing" | "app" | "platform";
+    path: string;
+    days?: number;
+    limit?: number;
+    offset?: number;
+  }): Promise<PlatformLandingVisitsResponse> {
+    try {
+      const res = await firstValueFrom(
+        this.httpService.get<PlatformLandingVisitsResponse>(
+          `${SERVICE_URLS.organizations}/platform/analytics/path-visits`,
+          { params: options, timeout: 10000 },
+        ),
+      );
+      return res.data;
+    } catch (err: unknown) {
+      this.logger.warn(`analytics path visits failed: ${(err as Error).message}`);
+      throw new ServiceUnavailableException("Statistiques temporairement indisponibles");
+    }
+  }
 }
