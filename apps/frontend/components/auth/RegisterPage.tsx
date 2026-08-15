@@ -61,15 +61,16 @@ export function RegisterPage() {
     completeOrganization,
     isOnboarding,
     isAuthenticated,
+    user,
     onboardingUser,
   } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (isAuthenticated) {
-      router.replace("/");
+    if (isAuthenticated && user) {
+      router.replace(postAuthHomePath(user));
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, user, router]);
 
   useEffect(() => {
     if (initialStep === "organization" && isOnboarding) {
@@ -173,7 +174,9 @@ export function RegisterPage() {
         email: organizationEmail.trim(),
         ...toCreateOrganizationAddress(organizationAddress),
       });
-      router.replace(postAuthHomePath(user));
+      // Navigation pleine page : le JWT vient d’être posé ; un soft replace peut rester
+      // sur /register (effet isAuthenticated + Suspense) avant que RequireAuth prenne le relais.
+      window.location.assign(postAuthHomePath(user));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Création de l'organisation impossible");
     } finally {
@@ -549,7 +552,7 @@ export function RegisterPage() {
                     >
                       {loading ? "Création…" : "Créer l'organisation"}
                     </button>
-                    {!isOnboarding && (
+                    {!isOnboarding && !isAuthenticated && (
                       <p className="text-xs text-amber-600 dark:text-amber-400">
                         Session expirée.{" "}
                         <button

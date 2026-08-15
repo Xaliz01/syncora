@@ -14,6 +14,8 @@
     "test": "echo \"No unit tests yet\"",
     "e2e:install": "playwright install chromium",
     "e2e": "npm run e2e:install && playwright test",
+    "e2e:live": "E2E_LIVE=1 PW_HEADED=1 npm run e2e:install && E2E_LIVE=1 PW_HEADED=1 playwright test tests/e2e/signup-onboarding.live.spec.ts --headed --workers=1",
+    "e2e:live:headless": "E2E_LIVE=1 npm run e2e:install && E2E_LIVE=1 playwright test tests/e2e/signup-onboarding.live.spec.ts --workers=1",
     "e2e:watch": "PW_HEADED=1 playwright test --headed --workers=1",
     "e2e:ui": "playwright test --ui",
     "e2e:headed": "npm run e2e:watch",

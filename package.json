@@ -19,6 +19,7 @@
     "build": "npm run build --workspaces --if-present",
     "build:shared": "npm run build --workspace @planwise/shared --if-present && npm run build --workspace @planwise/telemetry --if-present",
     "e2e": "npm run e2e --workspace @planwise/frontend --if-present",
+    "e2e:live": "npm run e2e:live --workspace @planwise/frontend --if-present",
     "pwa:preview": "npm run pwa:preview -w @planwise/frontend",
     "backend": "docker compose up -d --wait && npm run backend:run",
     "monitoring:local": "docker compose --profile monitoring up -d --wait && node scripts/monitoring-local-verify.mjs",
