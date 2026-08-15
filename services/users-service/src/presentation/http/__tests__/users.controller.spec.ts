@@ -44,6 +44,7 @@ describe("UsersController", () => {
       findFoundingAdminUserId: jest.fn(),
       listPlatformDirectory: jest.fn(),
       getPlatformDashboardStats: jest.fn(),
+      listOrganizationIdsWithExcludedEmails: jest.fn(),
       countUsersByOrganizationIds: jest.fn(),
     };
 

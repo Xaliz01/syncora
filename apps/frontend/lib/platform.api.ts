@@ -77,11 +77,13 @@ export async function getPlatformDashboard() {
 
 export async function listPlatformOrganizations(filters?: {
   search?: string;
+  includeTestAccounts?: boolean;
   limit?: number;
   offset?: number;
 }) {
   const params = new URLSearchParams();
   if (filters?.search) params.set("search", filters.search);
+  if (filters?.includeTestAccounts) params.set("includeTestAccounts", "true");
   if (filters?.limit != null) params.set("limit", String(filters.limit));
   if (filters?.offset != null) params.set("offset", String(filters.offset));
   const qs = params.toString();
@@ -121,6 +123,7 @@ export async function listPlatformUsers(filters?: {
   search?: string;
   organizationId?: string;
   activeOnly?: boolean;
+  includeTestAccounts?: boolean;
   limit?: number;
   offset?: number;
 }) {
@@ -128,6 +131,7 @@ export async function listPlatformUsers(filters?: {
   if (filters?.search) params.set("search", filters.search);
   if (filters?.organizationId) params.set("organizationId", filters.organizationId);
   if (filters?.activeOnly) params.set("activeOnly", "true");
+  if (filters?.includeTestAccounts) params.set("includeTestAccounts", "true");
   if (filters?.limit != null) params.set("limit", String(filters.limit));
   if (filters?.offset != null) params.set("offset", String(filters.offset));
   const qs = params.toString();

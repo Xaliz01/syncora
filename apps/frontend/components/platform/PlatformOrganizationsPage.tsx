@@ -18,6 +18,7 @@ function formatDate(iso?: string) {
 export function PlatformOrganizationsPage() {
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
+  const [includeTestAccounts, setIncludeTestAccounts] = useState(false);
   const [offset, setOffset] = useState(0);
   const [items, setItems] = useState<PlatformOrganizationSummary[]>([]);
   const [total, setTotal] = useState(0);
@@ -26,7 +27,7 @@ export function PlatformOrganizationsPage() {
 
   useEffect(() => {
     setOffset(0);
-  }, [query]);
+  }, [query, includeTestAccounts]);
 
   useEffect(() => {
     let cancelled = false;
@@ -34,6 +35,7 @@ export function PlatformOrganizationsPage() {
     platformApi
       .listPlatformOrganizations({
         search: query || undefined,
+        includeTestAccounts: includeTestAccounts || undefined,
         limit: LIST_PAGE_SIZE,
         offset,
       })
@@ -53,7 +55,7 @@ export function PlatformOrganizationsPage() {
     return () => {
       cancelled = true;
     };
-  }, [query, offset]);
+  }, [query, offset, includeTestAccounts]);
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -69,7 +71,16 @@ export function PlatformOrganizationsPage() {
           </h1>
           <p className="text-sm text-slate-500">{total} organisation(s)</p>
         </div>
-        <form onSubmit={onSubmit} className="flex gap-2">
+        <form onSubmit={onSubmit} className="flex flex-wrap items-center gap-2">
+          <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+            <input
+              type="checkbox"
+              checked={includeTestAccounts}
+              onChange={(e) => setIncludeTestAccounts(e.target.checked)}
+              className="rounded border-slate-300"
+            />
+            Inclure les comptes de test
+          </label>
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}

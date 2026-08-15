@@ -273,7 +273,10 @@ jobs:
               printf 'REGISTRY=%s\n' "$REGISTRY" >> .env.production
             fi
             # Ne conserve que les images Planwise de la MEP courante + précédente.
+            # (tags exacts IMAGE_TAG / PREVIOUS ; conteneurs stoppés orphelins retirés
+            # avant rmi pour ne pas bloquer le clean.)
             export PREVIOUS_IMAGE_TAG
+            echo "Prune Planwise : IMAGE_TAG=${IMAGE_TAG} PREVIOUS_IMAGE_TAG=${PREVIOUS_IMAGE_TAG:-<none>}"
             ./prune-planwise-images.sh
             docker logout ghcr.io
 

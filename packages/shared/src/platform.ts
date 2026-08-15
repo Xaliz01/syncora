@@ -124,17 +124,64 @@ export const PLATFORM_METRICS_EXCLUDED_EMAIL_DOMAINS = [
   "planwise.test",
 ] as const;
 
+/**
+ * Sous-chaînes exclues partout dans l’adresse (local + domaine), ex. Gmail perso
+ * contenant benoistbabin / hugobabin.
+ */
+export const PLATFORM_METRICS_EXCLUDED_EMAIL_SUBSTRINGS = ["benoistbabin", "hugobabin"] as const;
+
+function escapeRegexLiteral(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 export function isPlatformMetricsExcludedEmail(email: string | null | undefined): boolean {
-  const domain = email?.trim().toLowerCase().split("@")[1] ?? "";
+  const normalized = email?.trim().toLowerCase() ?? "";
+  if (!normalized) return false;
+  if (
+    (PLATFORM_METRICS_EXCLUDED_EMAIL_SUBSTRINGS as readonly string[]).some((s) =>
+      normalized.includes(s),
+    )
+  ) {
+    return true;
+  }
+  const domain = normalized.split("@")[1] ?? "";
   return (PLATFORM_METRICS_EXCLUDED_EMAIL_DOMAINS as readonly string[]).includes(domain);
 }
 
-/** Regex Mongo / JS : e-mails se terminant par `@domaine` exclus des métriques. */
-export function platformMetricsExcludedEmailDomainRegex(): RegExp {
-  const escaped = PLATFORM_METRICS_EXCLUDED_EMAIL_DOMAINS.map((d) => d.replace(/\./g, "\\.")).join(
-    "|",
+/** Domaine seul (analytics `emailDomain`) : liste + sous-chaînes. */
+export function isPlatformMetricsExcludedEmailDomain(domain: string | null | undefined): boolean {
+  const normalized = domain?.trim().toLowerCase() ?? "";
+  if (!normalized) return false;
+  if ((PLATFORM_METRICS_EXCLUDED_EMAIL_DOMAINS as readonly string[]).includes(normalized)) {
+    return true;
+  }
+  return (PLATFORM_METRICS_EXCLUDED_EMAIL_SUBSTRINGS as readonly string[]).some((s) =>
+    normalized.includes(s),
   );
-  return new RegExp(`@(${escaped})$`, "i");
+}
+
+/**
+ * Regex Mongo / JS sur le champ `email` : sous-chaînes exclus ou `@domaine` exclus.
+ */
+export function platformMetricsExcludedEmailDomainRegex(): RegExp {
+  const domains = PLATFORM_METRICS_EXCLUDED_EMAIL_DOMAINS.map(escapeRegexLiteral).join("|");
+  const substrings = PLATFORM_METRICS_EXCLUDED_EMAIL_SUBSTRINGS.map(escapeRegexLiteral).join("|");
+  return new RegExp(`(?:${substrings})|@(?:${domains})$`, "i");
+}
+
+/**
+ * Regex Mongo sur le champ `emailDomain` (valeur domaine seule).
+ * `$not` inclut aussi les docs sans emailDomain (visiteurs anonymes).
+ */
+export function platformMetricsExcludedEmailDomainFieldRegex(): RegExp {
+  const domains = PLATFORM_METRICS_EXCLUDED_EMAIL_DOMAINS.map(escapeRegexLiteral).join("|");
+  const substrings = PLATFORM_METRICS_EXCLUDED_EMAIL_SUBSTRINGS.map(escapeRegexLiteral).join("|");
+  return new RegExp(`^(?:${domains})$|(?:${substrings})`, "i");
+}
+
+/** Filtre Mongo `emailDomain` pour Audience / dashboard (hors internes / test). */
+export function platformMetricsAudienceEmailDomainFilter(): Record<string, unknown> {
+  return { emailDomain: { $not: platformMetricsExcludedEmailDomainFieldRegex() } };
 }
 
 export interface PlatformUsersListResponse {

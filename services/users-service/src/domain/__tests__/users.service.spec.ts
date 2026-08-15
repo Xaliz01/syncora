@@ -1019,6 +1019,35 @@ describe("UsersService", () => {
       expect(result.total).toBe(1);
       expect(result.users[0]?.lastSeenAt).toBe("2026-08-15T11:55:00.000Z");
       expect(mockSessionsService.getLatestLastSeenByUserIds).toHaveBeenCalledWith(["user-123"]);
+      expect(mockUserModel.countDocuments).toHaveBeenCalledWith(
+        expect.objectContaining({
+          email: expect.objectContaining({ $not: expect.any(RegExp) }),
+        }),
+      );
+    });
+
+    it("includes test accounts when includeTestAccounts is true", async () => {
+      mockUserModel.countDocuments.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(0),
+      });
+      mockUserModel.find.mockReturnValue({
+        sort: jest.fn().mockReturnValue({
+          skip: jest.fn().mockReturnValue({
+            limit: jest.fn().mockReturnValue({
+              exec: jest.fn().mockResolvedValue([]),
+            }),
+          }),
+        }),
+      });
+      mockSessionsService.getLatestLastSeenByUserIds.mockResolvedValue({});
+
+      await service.listPlatformDirectory({ includeTestAccounts: true, limit: 50, offset: 0 });
+
+      expect(mockUserModel.countDocuments).toHaveBeenCalledWith(
+        expect.not.objectContaining({
+          email: expect.anything(),
+        }),
+      );
     });
 
     it("filters activeOnly via sessions", async () => {
@@ -1036,6 +1065,7 @@ describe("UsersService", () => {
 
       const result = await service.listPlatformDirectory({
         activeOnly: true,
+        includeTestAccounts: true,
         limit: 20,
         offset: 0,
       });
@@ -1043,6 +1073,81 @@ describe("UsersService", () => {
       expect(mockSessionsService.listUserIdsActiveSince).toHaveBeenCalled();
       expect(result.users).toHaveLength(1);
       expect(result.total).toBe(1);
+    });
+  });
+
+  describe("listOrganizationIdsWithExcludedEmails", () => {
+    it("returns org ids from excluded users and their memberships", async () => {
+      mockUserModel.find.mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          lean: jest.fn().mockReturnValue({
+            exec: jest.fn().mockResolvedValue([
+              { _id: { toString: () => "user-a" }, organizationId: "org-a" },
+              { _id: { toString: () => "user-b" }, organizationId: "" },
+            ]),
+          }),
+        }),
+      });
+      mockMembershipModel.find.mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          lean: jest.fn().mockReturnValue({
+            exec: jest.fn().mockResolvedValue([{ organizationId: "org-b" }]),
+          }),
+        }),
+      });
+
+      const ids = await service.listOrganizationIdsWithExcludedEmails();
+
+      expect(ids.sort()).toEqual(["org-a", "org-b"]);
+      expect(mockUserModel.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          email: expect.any(RegExp),
+        }),
+      );
+    });
+  });
+
+  describe("getPlatformDashboardStats", () => {
+    it("returns counts and recent logins excluding test emails", async () => {
+      mockUserModel.countDocuments
+        .mockReturnValueOnce({ exec: jest.fn().mockResolvedValue(12) })
+        .mockReturnValueOnce({ exec: jest.fn().mockResolvedValue(3) });
+      mockSessionsService.listAllDistinctUserIdsActiveSince = jest
+        .fn()
+        .mockResolvedValue(["user-1", "user-2", "user-3"]);
+      mockUserModel.find.mockReturnValue({
+        sort: jest.fn().mockReturnValue({
+          limit: jest.fn().mockReturnValue({
+            select: jest.fn().mockReturnValue({
+              lean: jest.fn().mockReturnValue({
+                exec: jest.fn().mockResolvedValue([
+                  {
+                    _id: { toString: () => "user-1" },
+                    email: "a@client.fr",
+                    name: "Alice",
+                    organizationId: "org-1",
+                    lastLoginAt: new Date("2026-08-15T10:00:00.000Z"),
+                  },
+                ]),
+              }),
+            }),
+          }),
+        }),
+      });
+
+      const result = await service.getPlatformDashboardStats();
+
+      expect(result.userCount).toBe(12);
+      expect(result.connectedUserCount).toBe(3);
+      expect(result.recentLogins).toEqual([
+        {
+          userId: "user-1",
+          email: "a@client.fr",
+          name: "Alice",
+          organizationId: "org-1",
+          lastLoginAt: "2026-08-15T10:00:00.000Z",
+        },
+      ]);
     });
   });
 });

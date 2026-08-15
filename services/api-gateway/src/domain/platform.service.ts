@@ -150,13 +150,33 @@ export class PlatformService extends AbstractPlatformService {
 
   async listOrganizations(filters?: {
     search?: string;
+    includeTestAccounts?: boolean;
     limit?: number;
     offset?: number;
   }): Promise<PlatformOrganizationsListResponse> {
-    const params: Record<string, string | number> = {};
+    const params: Record<string, string | number | boolean> = {};
     if (filters?.search?.trim()) params.search = filters.search.trim();
+    if (filters?.includeTestAccounts) params.includeTestAccounts = true;
     if (filters?.limit != null) params.limit = filters.limit;
     if (filters?.offset != null) params.offset = filters.offset;
+
+    if (!filters?.includeTestAccounts) {
+      try {
+        const excludedRes = await firstValueFrom(
+          this.httpService.get<string[]>(
+            `${SERVICE_URLS.users}/users/platform/excluded-organization-ids`,
+            { timeout: 10000 },
+          ),
+        );
+        if (excludedRes.data.length > 0) {
+          params.excludeOrganizationIds = excludedRes.data.join(",");
+        }
+      } catch (err: unknown) {
+        this.logger.warn(
+          `listOrganizations: excluded-organization-ids unavailable: ${(err as Error).message}`,
+        );
+      }
+    }
 
     const res = await firstValueFrom(
       this.httpService.get<{ organizations: OrganizationResponse[]; total: number }>(
@@ -208,7 +228,7 @@ export class PlatformService extends AbstractPlatformService {
     const usersRes = await firstValueFrom(
       this.httpService.get<{ users: PlatformUserSummary[]; total: number }>(
         `${SERVICE_URLS.users}/users/platform/directory`,
-        { params: { organizationId, limit: 200 } },
+        { params: { organizationId, limit: 200, includeTestAccounts: true } },
       ),
     );
 
@@ -282,6 +302,7 @@ export class PlatformService extends AbstractPlatformService {
     search?: string;
     organizationId?: string;
     activeOnly?: boolean;
+    includeTestAccounts?: boolean;
     limit?: number;
     offset?: number;
   }): Promise<PlatformUsersListResponse> {
@@ -289,6 +310,7 @@ export class PlatformService extends AbstractPlatformService {
     if (filters?.search?.trim()) params.search = filters.search.trim();
     if (filters?.organizationId?.trim()) params.organizationId = filters.organizationId.trim();
     if (filters?.activeOnly) params.activeOnly = true;
+    if (filters?.includeTestAccounts) params.includeTestAccounts = true;
     if (filters?.limit != null) params.limit = filters.limit;
     if (filters?.offset != null) params.offset = filters.offset;
 
@@ -599,20 +621,34 @@ export class PlatformService extends AbstractPlatformService {
       const visitLimit = 10;
       const visitDays = 90;
 
-      const [orgStats, userStats, landing, login, register] = await Promise.all([
+      const [userExcludedOrgIds, userStats, landing, login, register] = await Promise.all([
         firstValueFrom(
-          this.httpService.get<{
-            organizationCount: number;
-            excludedOrganizationIds: string[];
-          }>(`${SERVICE_URLS.organizations}/organizations/platform/dashboard-stats`, {
-            timeout: 10000,
-          }),
-        ).then((r) => r.data),
-        firstValueFrom(
-          this.httpService.get<{ userCount: number; connectedUserCount: number }>(
-            `${SERVICE_URLS.users}/users/platform/dashboard-stats`,
+          this.httpService.get<string[]>(
+            `${SERVICE_URLS.users}/users/platform/excluded-organization-ids`,
             { timeout: 10000 },
           ),
+        )
+          .then((r) => r.data)
+          .catch((err: unknown) => {
+            this.logger.warn(
+              `platform dashboard: excluded-organization-ids unavailable: ${(err as Error).message}`,
+            );
+            return [] as string[];
+          }),
+        firstValueFrom(
+          this.httpService.get<{
+            userCount: number;
+            connectedUserCount: number;
+            recentLogins: Array<{
+              userId: string;
+              email: string;
+              name?: string;
+              organizationId?: string;
+              lastLoginAt: string;
+            }>;
+          }>(`${SERVICE_URLS.users}/users/platform/dashboard-stats`, {
+            timeout: 10000,
+          }),
         ).then((r) => r.data),
         this.analyticsGateway.listPathVisits({
           surface: "marketing",
@@ -634,6 +670,19 @@ export class PlatformService extends AbstractPlatformService {
         }),
       ]);
 
+      const orgStats = await firstValueFrom(
+        this.httpService.get<{
+          organizationCount: number;
+          excludedOrganizationIds: string[];
+        }>(`${SERVICE_URLS.organizations}/organizations/platform/dashboard-stats`, {
+          params:
+            userExcludedOrgIds.length > 0
+              ? { extraExcludeOrganizationIds: userExcludedOrgIds.join(",") }
+              : {},
+          timeout: 10000,
+        }),
+      ).then((r) => r.data);
+
       const excludeQs = orgStats.excludedOrganizationIds.join(",");
       const subCounts = await firstValueFrom(
         this.httpService.get<{ activeTrialCount: number; subscriberCount: number }>(
@@ -645,12 +694,26 @@ export class PlatformService extends AbstractPlatformService {
         ),
       ).then((r) => r.data);
 
+      const recentLoginOrgIds = [
+        ...new Set(
+          (userStats.recentLogins ?? [])
+            .map((login) => login.organizationId)
+            .filter((id): id is string => Boolean(id)),
+        ),
+      ];
+      const orgNames = await this.resolveOrganizationNames(recentLoginOrgIds);
+      const recentLogins = (userStats.recentLogins ?? []).map((login) => ({
+        ...login,
+        organizationName: login.organizationId ? orgNames[login.organizationId] : undefined,
+      }));
+
       return {
         organizationCount: orgStats.organizationCount,
         userCount: userStats.userCount,
         connectedUserCount: userStats.connectedUserCount,
         activeTrialCount: subCounts.activeTrialCount,
         subscriberCount: subCounts.subscriberCount,
+        recentLogins,
         recentLandingVisits: landing.items,
         recentLoginVisits: login.items,
         recentRegisterVisits: register.items,

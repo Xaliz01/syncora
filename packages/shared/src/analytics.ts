@@ -114,6 +114,16 @@ export type PlatformLandingToAppVisitsResponse = PlatformLandingVisitsResponse;
 /** Visite récente pour le tableau de bord backoffice (même forme que landing). */
 export type PlatformDashboardVisit = PlatformLandingVisit;
 
+/** Connexion applicative récente (champ `lastLoginAt` utilisateur). */
+export interface PlatformDashboardRecentLogin {
+  userId: string;
+  email: string;
+  name?: string;
+  organizationId?: string;
+  organizationName?: string;
+  lastLoginAt: string;
+}
+
 export interface PlatformDashboardResponse {
   /** Organisations hors e-mails @benoistbabin.fr / @planwise.fr / @planwise.test. */
   organizationCount: number;
@@ -125,6 +135,8 @@ export interface PlatformDashboardResponse {
   activeTrialCount: number;
   /** Abonnements payants (active / past_due), hors orgs de test. */
   subscriberCount: number;
+  /** 10 dernières connexions app (hors e-mails de test). */
+  recentLogins: PlatformDashboardRecentLogin[];
   recentLandingVisits: PlatformDashboardVisit[];
   recentLoginVisits: PlatformDashboardVisit[];
   recentRegisterVisits: PlatformDashboardVisit[];

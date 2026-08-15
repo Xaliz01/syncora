@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { PlatformDashboardResponse, PlatformDashboardVisit } from "@planwise/shared";
+import Link from "next/link";
+import type {
+  PlatformDashboardRecentLogin,
+  PlatformDashboardResponse,
+  PlatformDashboardVisit,
+} from "@planwise/shared";
 import * as platformApi from "@/lib/platform.api";
 
 function formatNumber(n: number) {
@@ -19,14 +24,28 @@ function formatDateTime(iso: string) {
   }
 }
 
-function formatCountry(code?: string): string {
-  if (!code) return "—";
+/** Date/heure compacte pour les listes denses du dashboard. */
+function formatDateTimeCompact(iso: string) {
   try {
-    const name = new Intl.DisplayNames(["fr"], { type: "region" }).of(code);
-    return name ? `${name} (${code})` : code;
+    return new Intl.DateTimeFormat("fr-FR", {
+      day: "2-digit",
+      month: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(new Date(iso));
   } catch {
-    return code;
+    return iso;
   }
+}
+
+function formatCountryCode(code?: string): string {
+  return code?.trim().toUpperCase() || "—";
+}
+
+function shortVisitorKey(key: string): string {
+  const trimmed = key.trim();
+  if (trimmed.length <= 10) return trimmed;
+  return `${trimmed.slice(0, 8)}…`;
 }
 
 type KpiTone = "brand" | "sky" | "emerald" | "amber" | "violet";
@@ -134,48 +153,128 @@ function VisitsTable({
   const styles = VISIT_ACCENTS[accent];
   return (
     <div
-      className={`overflow-x-auto rounded-xl border bg-white shadow-sm dark:bg-slate-900 ${styles.wrap}`}
+      className={`flex min-h-0 flex-col overflow-hidden rounded-xl border bg-white shadow-sm dark:bg-slate-900 ${styles.wrap}`}
     >
       <div
-        className={`flex items-center gap-2 border-b px-4 py-3 text-sm font-medium ${styles.head}`}
+        className={`flex shrink-0 items-center justify-between gap-2 border-b px-3 py-2 text-xs font-medium ${styles.head}`}
       >
-        <span className={`h-2 w-2 shrink-0 rounded-full ${styles.dot}`} aria-hidden />
-        {title}
+        <span className="flex min-w-0 items-center gap-2">
+          <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${styles.dot}`} aria-hidden />
+          <span className="truncate">{title}</span>
+        </span>
+        <span className="shrink-0 tabular-nums text-[11px] opacity-70">{items.length}</span>
       </div>
       {items.length === 0 ? (
-        <p className="px-4 py-6 text-sm text-slate-500">Aucune visite récente.</p>
+        <p className="px-3 py-4 text-xs text-slate-500">Aucune visite récente.</p>
+      ) : (
+        <div className="max-h-52 overflow-auto">
+          <table className="min-w-full text-left text-xs">
+            <thead className="sticky top-0 bg-slate-50 text-[10px] uppercase tracking-wide text-slate-500 dark:bg-slate-950 dark:text-slate-400">
+              <tr>
+                <th className="px-2.5 py-1.5 font-medium">Quand</th>
+                <th className="px-2.5 py-1.5 font-medium">Pays</th>
+                <th className="px-2.5 py-1.5 font-medium">Visiteur</th>
+                <th className="px-2.5 py-1.5 font-medium">Referrer</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              {items.map((visit) => (
+                <tr key={visit.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
+                  <td className="whitespace-nowrap px-2.5 py-1 tabular-nums text-slate-700 dark:text-slate-200">
+                    {formatDateTimeCompact(visit.viewedAt)}
+                  </td>
+                  <td className="px-2.5 py-1 font-medium text-slate-600 dark:text-slate-300">
+                    {formatCountryCode(visit.country)}
+                  </td>
+                  <td className="px-2.5 py-1">
+                    <span className="inline-flex items-center gap-1.5">
+                      <span
+                        className="font-mono text-[11px] text-slate-500"
+                        title={visit.visitorKey}
+                      >
+                        {shortVisitorKey(visit.visitorKey)}
+                      </span>
+                      {visit.isReturningVisitor ? (
+                        <span className="rounded bg-slate-100 px-1 py-px text-[9px] font-sans text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                          Retour
+                        </span>
+                      ) : (
+                        <span className="rounded bg-emerald-50 px-1 py-px text-[9px] font-sans text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+                          Nouveau
+                        </span>
+                      )}
+                    </span>
+                  </td>
+                  <td
+                    className="max-w-[7rem] truncate px-2.5 py-1 text-slate-500"
+                    title={visit.referrerHost ?? undefined}
+                  >
+                    {visit.referrerHost ?? "—"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RecentLoginsTable({ items }: { items: PlatformDashboardRecentLogin[] }) {
+  return (
+    <div className="overflow-x-auto rounded-xl border border-emerald-200/70 bg-white shadow-sm dark:border-emerald-800/50 dark:bg-slate-900">
+      <div className="flex items-center gap-2 border-b border-emerald-100 bg-emerald-50/80 px-4 py-3 text-sm font-medium text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-100">
+        <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-500" aria-hidden />
+        10 dernières connexions
+      </div>
+      {items.length === 0 ? (
+        <p className="px-4 py-6 text-sm text-slate-500">Aucune connexion récente.</p>
       ) : (
         <table className="min-w-full text-left text-sm">
           <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-950 dark:text-slate-400">
             <tr>
-              <th className="px-4 py-2 font-medium">Date</th>
-              <th className="px-4 py-2 font-medium">Pays</th>
-              <th className="px-4 py-2 font-medium">Visiteur</th>
-              <th className="px-4 py-2 font-medium">Referrer</th>
+              <th className="px-4 py-2 font-medium">Connexion</th>
+              <th className="px-4 py-2 font-medium">Utilisateur</th>
+              <th className="px-4 py-2 font-medium">Organisation</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-            {items.map((visit) => (
-              <tr key={visit.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
+            {items.map((login) => (
+              <tr
+                key={`${login.userId}-${login.lastLoginAt}`}
+                className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40"
+              >
                 <td className="whitespace-nowrap px-4 py-2 text-slate-700 dark:text-slate-200">
-                  {formatDateTime(visit.viewedAt)}
+                  {formatDateTime(login.lastLoginAt)}
+                </td>
+                <td className="px-4 py-2">
+                  <Link
+                    href={`/platform/users?search=${encodeURIComponent(login.email)}`}
+                    className="group block"
+                  >
+                    <p className="font-medium text-brand-600 group-hover:underline dark:text-brand-400">
+                      {login.name?.trim() || login.email}
+                    </p>
+                    {login.name?.trim() ? (
+                      <p className="text-xs text-slate-500 group-hover:text-brand-600/80 dark:group-hover:text-brand-400/80">
+                        {login.email}
+                      </p>
+                    ) : null}
+                  </Link>
                 </td>
                 <td className="px-4 py-2 text-slate-600 dark:text-slate-300">
-                  {formatCountry(visit.country)}
-                </td>
-                <td className="px-4 py-2 font-mono text-xs text-slate-500">
-                  {visit.visitorKey}
-                  {visit.isReturningVisitor ? (
-                    <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-sans text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                      Retour
-                    </span>
+                  {login.organizationId ? (
+                    <Link
+                      href={`/platform/organizations/${login.organizationId}`}
+                      className="text-brand-600 hover:underline dark:text-brand-400"
+                    >
+                      {login.organizationName?.trim() || login.organizationId}
+                    </Link>
                   ) : (
-                    <span className="ml-2 rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-sans text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
-                      Nouveau
-                    </span>
+                    "—"
                   )}
                 </td>
-                <td className="px-4 py-2 text-slate-500">{visit.referrerHost ?? "—"}</td>
               </tr>
             ))}
           </tbody>
@@ -263,22 +362,12 @@ export function PlatformDashboardPage() {
             />
           </div>
 
-          <div className="grid gap-6 xl:grid-cols-3">
-            <VisitsTable
-              title="10 dernières visites — Landing (`/`)"
-              items={data.recentLandingVisits}
-              accent="brand"
-            />
-            <VisitsTable
-              title="10 dernières visites — Login"
-              items={data.recentLoginVisits}
-              accent="sky"
-            />
-            <VisitsTable
-              title="10 dernières visites — Register"
-              items={data.recentRegisterVisits}
-              accent="violet"
-            />
+          <RecentLoginsTable items={data.recentLogins ?? []} />
+
+          <div className="grid gap-3 xl:grid-cols-3">
+            <VisitsTable title="Landing `/`" items={data.recentLandingVisits} accent="brand" />
+            <VisitsTable title="Login" items={data.recentLoginVisits} accent="sky" />
+            <VisitsTable title="Register" items={data.recentRegisterVisits} accent="violet" />
           </div>
         </>
       ) : null}

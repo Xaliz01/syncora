@@ -136,4 +136,57 @@ describe("OrganizationsService", () => {
       expect(result).toBeNull();
     });
   });
+
+  describe("listOrganizations", () => {
+    it("excludes test accounts by default", async () => {
+      mockOrganizationModel.countDocuments.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(0),
+      });
+      mockOrganizationModel.find.mockReturnValue({
+        sort: jest.fn().mockReturnValue({
+          skip: jest.fn().mockReturnValue({
+            limit: jest.fn().mockReturnValue({
+              exec: jest.fn().mockResolvedValue([]),
+            }),
+          }),
+        }),
+      });
+
+      await service.listOrganizations({ limit: 50, offset: 0 });
+
+      expect(mockOrganizationModel.countDocuments).toHaveBeenCalledWith(
+        expect.objectContaining({
+          email: expect.objectContaining({ $not: expect.any(RegExp) }),
+        }),
+      );
+    });
+
+    it("excludes explicit organization ids", async () => {
+      mockOrganizationModel.countDocuments.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(0),
+      });
+      mockOrganizationModel.find.mockReturnValue({
+        sort: jest.fn().mockReturnValue({
+          skip: jest.fn().mockReturnValue({
+            limit: jest.fn().mockReturnValue({
+              exec: jest.fn().mockResolvedValue([]),
+            }),
+          }),
+        }),
+      });
+
+      await service.listOrganizations({
+        includeTestAccounts: true,
+        excludeOrganizationIds: ["org-test-1", "org-test-2"],
+        limit: 50,
+        offset: 0,
+      });
+
+      expect(mockOrganizationModel.countDocuments).toHaveBeenCalledWith(
+        expect.objectContaining({
+          _id: { $nin: ["org-test-1", "org-test-2"] },
+        }),
+      );
+    });
+  });
 });

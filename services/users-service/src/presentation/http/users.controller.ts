@@ -162,6 +162,7 @@ export class UsersController {
     @Query("search") search?: string,
     @Query("organizationId") organizationId?: string,
     @Query("activeOnly") activeOnly?: string,
+    @Query("includeTestAccounts") includeTestAccounts?: string,
     @Query("limit") limit?: string,
     @Query("offset") offset?: string,
   ) {
@@ -169,6 +170,7 @@ export class UsersController {
       search,
       organizationId,
       activeOnly: activeOnly === "true" || activeOnly === "1",
+      includeTestAccounts: includeTestAccounts === "true" || includeTestAccounts === "1",
       limit: limit ? Number.parseInt(limit, 10) : undefined,
       offset: offset ? Number.parseInt(offset, 10) : undefined,
     });
@@ -177,6 +179,11 @@ export class UsersController {
   @Get("platform/dashboard-stats")
   getPlatformDashboardStats() {
     return this.usersService.getPlatformDashboardStats();
+  }
+
+  @Get("platform/excluded-organization-ids")
+  listOrganizationIdsWithExcludedEmails() {
+    return this.usersService.listOrganizationIdsWithExcludedEmails();
   }
 
   @Post("platform/organization-stats")

@@ -728,6 +728,7 @@ export class UsersService extends AbstractUsersService {
     search?: string;
     organizationId?: string;
     activeOnly?: boolean;
+    includeTestAccounts?: boolean;
     limit?: number;
     offset?: number;
   }): Promise<PlatformUsersDirectoryResult> {
@@ -737,6 +738,10 @@ export class UsersService extends AbstractUsersService {
 
     if (filters?.organizationId?.trim()) {
       query.organizationId = filters.organizationId.trim();
+    }
+
+    if (!filters?.includeTestAccounts) {
+      query.email = { $not: platformMetricsExcludedEmailDomainRegex() };
     }
 
     const search = filters?.search?.trim();
@@ -780,7 +785,7 @@ export class UsersService extends AbstractUsersService {
     offset: number,
   ): Promise<PlatformUsersDirectoryResult> {
     const since = new Date(Date.now() - PLATFORM_USER_ACTIVE_WITHIN_MS);
-    const hasUserFilter = Boolean(query.organizationId || query.$or);
+    const hasUserFilter = Boolean(query.organizationId || query.$or || query.email);
 
     let candidateIds: string[] | undefined;
     if (hasUserFilter) {
@@ -823,6 +828,13 @@ export class UsersService extends AbstractUsersService {
   async getPlatformDashboardStats(): Promise<{
     userCount: number;
     connectedUserCount: number;
+    recentLogins: Array<{
+      userId: string;
+      email: string;
+      name?: string;
+      organizationId?: string;
+      lastLoginAt: string;
+    }>;
   }> {
     const excludedEmailRe = platformMetricsExcludedEmailDomainRegex();
     const metricsUserFilter = {
@@ -843,7 +855,60 @@ export class UsersService extends AbstractUsersService {
             })
             .exec();
 
-    return { userCount, connectedUserCount };
+    const recentLoginDocs = await this.userModel
+      .find({
+        ...metricsUserFilter,
+        lastLoginAt: { $exists: true, $ne: null },
+      })
+      .sort({ lastLoginAt: -1 })
+      .limit(10)
+      .select({ email: 1, name: 1, organizationId: 1, lastLoginAt: 1 })
+      .lean()
+      .exec();
+
+    const recentLogins = recentLoginDocs
+      .filter((doc) => doc.lastLoginAt)
+      .map((doc) => ({
+        userId: String(doc._id),
+        email: String(doc.email ?? ""),
+        name: typeof doc.name === "string" && doc.name.trim() ? doc.name.trim() : undefined,
+        organizationId:
+          typeof doc.organizationId === "string" && doc.organizationId.trim()
+            ? doc.organizationId.trim()
+            : undefined,
+        lastLoginAt: new Date(doc.lastLoginAt as Date).toISOString(),
+      }));
+
+    return { userCount, connectedUserCount, recentLogins };
+  }
+
+  async listOrganizationIdsWithExcludedEmails(): Promise<string[]> {
+    const excludedEmailRe = platformMetricsExcludedEmailDomainRegex();
+    const users = await this.userModel
+      .find({ ...activeDocumentFilter, email: excludedEmailRe })
+      .select({ organizationId: 1 })
+      .lean()
+      .exec();
+    const orgIds = new Set<string>();
+    const userIds: string[] = [];
+    for (const user of users) {
+      userIds.push(String(user._id));
+      const orgId = typeof user.organizationId === "string" ? user.organizationId.trim() : "";
+      if (orgId) orgIds.add(orgId);
+    }
+    if (userIds.length > 0) {
+      const memberships = await this.membershipModel
+        .find({ userId: { $in: userIds }, deletedAt: null })
+        .select({ organizationId: 1 })
+        .lean()
+        .exec();
+      for (const membership of memberships) {
+        const orgId =
+          typeof membership.organizationId === "string" ? membership.organizationId.trim() : "";
+        if (orgId) orgIds.add(orgId);
+      }
+    }
+    return [...orgIds];
   }
 
   private async toPlatformUserSummaries(docs: UserDocument[]): Promise<PlatformUserSummary[]> {

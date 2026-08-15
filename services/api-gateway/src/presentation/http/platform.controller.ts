@@ -48,11 +48,13 @@ export class PlatformController {
   @UseGuards(PlatformJwtAuthGuard)
   listOrganizations(
     @Query("search") search?: string,
+    @Query("includeTestAccounts") includeTestAccounts?: string,
     @Query("limit") limit?: string,
     @Query("offset") offset?: string,
   ) {
     return this.platformService.listOrganizations({
       search,
+      includeTestAccounts: includeTestAccounts === "true" || includeTestAccounts === "1",
       limit: limit ? Number.parseInt(limit, 10) : undefined,
       offset: offset ? Number.parseInt(offset, 10) : undefined,
     });
@@ -76,6 +78,7 @@ export class PlatformController {
     @Query("search") search?: string,
     @Query("organizationId") organizationId?: string,
     @Query("activeOnly") activeOnly?: string,
+    @Query("includeTestAccounts") includeTestAccounts?: string,
     @Query("limit") limit?: string,
     @Query("offset") offset?: string,
   ) {
@@ -83,6 +86,7 @@ export class PlatformController {
       search,
       organizationId,
       activeOnly: activeOnly === "true" || activeOnly === "1",
+      includeTestAccounts: includeTestAccounts === "true" || includeTestAccounts === "1",
       limit: limit ? Number.parseInt(limit, 10) : undefined,
       offset: offset ? Number.parseInt(offset, 10) : undefined,
     });

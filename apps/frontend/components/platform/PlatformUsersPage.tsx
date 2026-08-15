@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   interpolateEmailTemplatePlaceholders,
   isPlatformUserActive,
@@ -43,9 +44,12 @@ function applyTemplateToFields(
 }
 
 export function PlatformUsersPage() {
-  const [search, setSearch] = useState("");
-  const [query, setQuery] = useState("");
+  const searchParams = useSearchParams();
+  const initialSearch = searchParams.get("search")?.trim() ?? "";
+  const [search, setSearch] = useState(initialSearch);
+  const [query, setQuery] = useState(initialSearch);
   const [activeOnly, setActiveOnly] = useState(false);
+  const [includeTestAccounts, setIncludeTestAccounts] = useState(false);
   const [offset, setOffset] = useState(0);
   const [items, setItems] = useState<PlatformUserSummary[]>([]);
   const [total, setTotal] = useState(0);
@@ -70,8 +74,14 @@ export function PlatformUsersPage() {
   const [refreshTick, setRefreshTick] = useState(0);
 
   useEffect(() => {
+    const fromUrl = searchParams.get("search")?.trim() ?? "";
+    setSearch(fromUrl);
+    setQuery(fromUrl);
+  }, [searchParams]);
+
+  useEffect(() => {
     setOffset(0);
-  }, [query, activeOnly]);
+  }, [query, activeOnly, includeTestAccounts]);
 
   useEffect(() => {
     const id = window.setInterval(() => setRefreshTick((n) => n + 1), ACTIVE_REFRESH_MS);
@@ -85,6 +95,7 @@ export function PlatformUsersPage() {
       .listPlatformUsers({
         search: query || undefined,
         activeOnly: activeOnly || undefined,
+        includeTestAccounts: includeTestAccounts || undefined,
         limit: LIST_PAGE_SIZE,
         offset,
       })
@@ -104,7 +115,7 @@ export function PlatformUsersPage() {
     return () => {
       cancelled = true;
     };
-  }, [query, offset, activeOnly, refreshTick]);
+  }, [query, offset, activeOnly, includeTestAccounts, refreshTick]);
 
   const loadEmailTemplates = useCallback(async () => {
     try {
@@ -274,6 +285,15 @@ export function PlatformUsersPage() {
               className="rounded border-slate-300"
             />
             En activité seulement
+          </label>
+          <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+            <input
+              type="checkbox"
+              checked={includeTestAccounts}
+              onChange={(e) => setIncludeTestAccounts(e.target.checked)}
+              className="rounded border-slate-300"
+            />
+            Inclure les comptes de test
           </label>
           <input
             value={search}

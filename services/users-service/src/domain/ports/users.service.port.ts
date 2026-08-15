@@ -67,13 +67,24 @@ export abstract class AbstractUsersService {
     search?: string;
     organizationId?: string;
     activeOnly?: boolean;
+    /** Si false (défaut), exclut les e-mails de test / internes des métriques BO. */
+    includeTestAccounts?: boolean;
     limit?: number;
     offset?: number;
   }): Promise<PlatformUsersDirectoryResult>;
   abstract getPlatformDashboardStats(): Promise<{
     userCount: number;
     connectedUserCount: number;
+    recentLogins: Array<{
+      userId: string;
+      email: string;
+      name?: string;
+      organizationId?: string;
+      lastLoginAt: string;
+    }>;
   }>;
+  /** Orgs ayant au moins un utilisateur dont l’e-mail est exclu des métriques BO. */
+  abstract listOrganizationIdsWithExcludedEmails(): Promise<string[]>;
   abstract countUsersByOrganizationIds(
     organizationIds: string[],
   ): Promise<Record<string, { userCount: number; lastUserLoginAt?: string }>>;

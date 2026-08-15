@@ -12,8 +12,8 @@ import type {
 } from "@planwise/shared";
 import {
   clampPagination,
-  isPlatformMetricsExcludedEmail,
-  PLATFORM_METRICS_EXCLUDED_EMAIL_DOMAINS,
+  isPlatformMetricsExcludedEmailDomain,
+  platformMetricsAudienceEmailDomainFilter,
 } from "@planwise/shared";
 import type { PageViewDocument } from "../persistence/page-view.schema";
 import { AbstractAnalyticsService } from "./ports/analytics.service.port";
@@ -27,12 +27,11 @@ const APP_SURFACE: AnalyticsSurface = "app";
 /** Surfaces exposées dans Audience / dashboard (pas le backoffice). */
 const AUDIENCE_SURFACES: AnalyticsSurface[] = ["marketing", "app"];
 
-/** Filtre commun : hors backoffice + hors domaines e-mail de test / internes. */
+/** Filtre commun : hors backoffice + hors e-mails / domaines de test / internes. */
 function audienceMatchExtra(): Record<string, unknown> {
   return {
     surface: { $in: AUDIENCE_SURFACES },
-    // $nin inclut aussi les docs sans emailDomain (visiteurs anonymes).
-    emailDomain: { $nin: [...PLATFORM_METRICS_EXCLUDED_EMAIL_DOMAINS] },
+    ...platformMetricsAudienceEmailDomainFilter(),
   };
 }
 
@@ -75,7 +74,7 @@ export class AnalyticsService extends AbstractAnalyticsService {
     }
 
     const emailDomain = this.normalizeEmailDomain(body.emailDomain);
-    if (emailDomain && isPlatformMetricsExcludedEmail(`user@${emailDomain}`)) {
+    if (emailDomain && isPlatformMetricsExcludedEmailDomain(emailDomain)) {
       return { ok: true };
     }
 
@@ -240,7 +239,7 @@ export class AnalyticsService extends AbstractAnalyticsService {
         surface: LANDING_SURFACE,
         path: LANDING_PATH,
         createdAt: { $gte: from, $lte: to },
-        emailDomain: { $nin: [...PLATFORM_METRICS_EXCLUDED_EMAIL_DOMAINS] },
+        ...platformMetricsAudienceEmailDomainFilter(),
       },
       { windowDays, from, to, limit, offset },
     );
@@ -262,7 +261,7 @@ export class AnalyticsService extends AbstractAnalyticsService {
         surface: APP_SURFACE,
         referrerHost: { $in: marketingReferrerHosts() },
         createdAt: { $gte: from, $lte: to },
-        emailDomain: { $nin: [...PLATFORM_METRICS_EXCLUDED_EMAIL_DOMAINS] },
+        ...platformMetricsAudienceEmailDomainFilter(),
       },
       { windowDays, from, to, limit, offset },
     );
@@ -297,7 +296,7 @@ export class AnalyticsService extends AbstractAnalyticsService {
         surface,
         path,
         createdAt: { $gte: from, $lte: to },
-        emailDomain: { $nin: [...PLATFORM_METRICS_EXCLUDED_EMAIL_DOMAINS] },
+        ...platformMetricsAudienceEmailDomainFilter(),
       },
       { windowDays, from, to, limit, offset },
     );

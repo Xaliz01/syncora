@@ -129,6 +129,17 @@ describe("AnalyticsService", () => {
       expect(mockPageViewModel.create).not.toHaveBeenCalled();
     });
 
+    it("skips persisting domains containing hugobabin / benoistbabin", async () => {
+      const result = await service.trackPageview({
+        ...validBody,
+        surface: "app",
+        path: "/login",
+        emailDomain: "mail.hugobabin.org",
+      });
+      expect(result).toEqual({ ok: true });
+      expect(mockPageViewModel.create).not.toHaveBeenCalled();
+    });
+
     it("persists emailDomain for non-excluded accounts", async () => {
       await service.trackPageview({
         ...validBody,
@@ -158,9 +169,10 @@ describe("AnalyticsService", () => {
       expect(overview.topCountries).toEqual([]);
       const firstMatch = mockPageViewModel.aggregate.mock.calls[0][0][0].$match;
       expect(firstMatch.surface).toEqual({ $in: ["marketing", "app"] });
-      expect(firstMatch.emailDomain.$nin).toEqual(
-        expect.arrayContaining(["benoistbabin.fr", "planwise.fr", "planwise.test"]),
-      );
+      expect(firstMatch.emailDomain.$not).toBeInstanceOf(RegExp);
+      expect(firstMatch.emailDomain.$not.test("planwise.test")).toBe(true);
+      expect(firstMatch.emailDomain.$not.test("mail.hugobabin.org")).toBe(true);
+      expect(firstMatch.emailDomain.$not.test("exemple.fr")).toBe(false);
     });
 
     it("maps aggregation rows", async () => {

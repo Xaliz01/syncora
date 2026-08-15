@@ -40,6 +40,7 @@ export abstract class AbstractPlatformService {
   abstract getMe(user: PlatformAuthUser): Promise<PlatformAuthUser>;
   abstract listOrganizations(filters?: {
     search?: string;
+    includeTestAccounts?: boolean;
     limit?: number;
     offset?: number;
   }): Promise<PlatformOrganizationsListResponse>;
@@ -51,6 +52,7 @@ export abstract class AbstractPlatformService {
     search?: string;
     organizationId?: string;
     activeOnly?: boolean;
+    includeTestAccounts?: boolean;
     limit?: number;
     offset?: number;
   }): Promise<PlatformUsersListResponse>;

@@ -125,12 +125,23 @@ export class OrganizationsService extends AbstractOrganizationsService {
 
   async listOrganizations(filters?: {
     search?: string;
+    includeTestAccounts?: boolean;
+    excludeOrganizationIds?: string[];
     limit?: number;
     offset?: number;
   }): Promise<{ organizations: OrganizationResponse[]; total: number }> {
     const limit = Math.min(Math.max(filters?.limit ?? 50, 1), 200);
     const offset = Math.max(filters?.offset ?? 0, 0);
     const query: Record<string, unknown> = { ...activeDocumentFilter };
+    if (!filters?.includeTestAccounts) {
+      query.email = { $not: platformMetricsExcludedEmailDomainRegex() };
+    }
+    const excludeIds = [
+      ...new Set((filters?.excludeOrganizationIds ?? []).map((id) => id.trim()).filter(Boolean)),
+    ];
+    if (excludeIds.length > 0) {
+      query._id = { $nin: excludeIds };
+    }
     const search = filters?.search?.trim();
     if (search) {
       const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -153,31 +164,36 @@ export class OrganizationsService extends AbstractOrganizationsService {
     };
   }
 
-  async getPlatformDashboardStats(): Promise<{
+  async getPlatformDashboardStats(options?: { extraExcludeOrganizationIds?: string[] }): Promise<{
     organizationCount: number;
     excludedOrganizationIds: string[];
   }> {
     const excludedEmailRe = platformMetricsExcludedEmailDomainRegex();
     const base = { ...activeDocumentFilter };
-    const [organizationCount, excludedDocs] = await Promise.all([
-      this.organizationModel
-        .countDocuments({
-          ...base,
-          email: { $not: excludedEmailRe },
-        })
-        .exec(),
-      this.organizationModel
-        .find({
-          ...base,
-          email: excludedEmailRe,
-        })
-        .select("_id")
-        .lean()
-        .exec(),
-    ]);
+    const emailExcludedDocs = await this.organizationModel
+      .find({
+        ...base,
+        email: excludedEmailRe,
+      })
+      .select("_id")
+      .lean()
+      .exec();
+    const excludedOrganizationIds = [
+      ...new Set([
+        ...emailExcludedDocs.map((d) => String(d._id)),
+        ...(options?.extraExcludeOrganizationIds ?? []).map((id) => id.trim()).filter(Boolean),
+      ]),
+    ];
+    const organizationCount = await this.organizationModel
+      .countDocuments({
+        ...base,
+        email: { $not: excludedEmailRe },
+        ...(excludedOrganizationIds.length > 0 ? { _id: { $nin: excludedOrganizationIds } } : {}),
+      })
+      .exec();
     return {
       organizationCount,
-      excludedOrganizationIds: excludedDocs.map((d) => String(d._id)),
+      excludedOrganizationIds,
     };
   }
 

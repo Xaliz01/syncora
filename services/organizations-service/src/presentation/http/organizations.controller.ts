@@ -28,11 +28,18 @@ export class OrganizationsController {
   @Get()
   async list(
     @Query("search") search?: string,
+    @Query("includeTestAccounts") includeTestAccounts?: string,
+    @Query("excludeOrganizationIds") excludeOrganizationIds?: string,
     @Query("limit") limit?: string,
     @Query("offset") offset?: string,
   ) {
     return this.organizationsService.listOrganizations({
       search,
+      includeTestAccounts: includeTestAccounts === "true" || includeTestAccounts === "1",
+      excludeOrganizationIds: excludeOrganizationIds
+        ?.split(",")
+        .map((id) => id.trim())
+        .filter(Boolean),
       limit: limit ? Number.parseInt(limit, 10) : undefined,
       offset: offset ? Number.parseInt(offset, 10) : undefined,
     });
@@ -44,8 +51,15 @@ export class OrganizationsController {
   }
 
   @Get("platform/dashboard-stats")
-  getPlatformDashboardStats() {
-    return this.organizationsService.getPlatformDashboardStats();
+  getPlatformDashboardStats(
+    @Query("extraExcludeOrganizationIds") extraExcludeOrganizationIds?: string,
+  ) {
+    return this.organizationsService.getPlatformDashboardStats({
+      extraExcludeOrganizationIds: extraExcludeOrganizationIds
+        ?.split(",")
+        .map((id) => id.trim())
+        .filter(Boolean),
+    });
   }
 
   @Get(":id")
