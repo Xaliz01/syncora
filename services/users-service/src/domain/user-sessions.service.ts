@@ -131,7 +131,10 @@ export class UserSessionsService extends AbstractUserSessionsService {
       .aggregate<{
         _id: string;
         lastSeenAt: Date;
-      }>([{ $match: { userId: { $in: ids } } }, { $group: { _id: "$userId", lastSeenAt: { $max: "$lastSeenAt" } } }])
+      }>([
+        { $match: { userId: { $in: ids } } },
+        { $group: { _id: "$userId", lastSeenAt: { $max: "$lastSeenAt" } } },
+      ])
       .exec();
 
     const out: Record<string, string> = {};
@@ -161,7 +164,11 @@ export class UserSessionsService extends AbstractUserSessionsService {
       .aggregate<{
         _id: string;
         lastSeenAt: Date;
-      }>([{ $match: match }, { $group: { _id: "$userId", lastSeenAt: { $max: "$lastSeenAt" } } }, { $sort: { lastSeenAt: -1 } }])
+      }>([
+        { $match: match },
+        { $group: { _id: "$userId", lastSeenAt: { $max: "$lastSeenAt" } } },
+        { $sort: { lastSeenAt: -1 } },
+      ])
       .exec();
 
     const total = grouped.length;
