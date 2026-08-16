@@ -39,6 +39,7 @@ import { useToast } from "@/components/ui/ToastProvider";
 import { ResourceNotFoundPanel } from "@/components/ui/AppErrorAlert";
 import { ExportButton } from "@/components/ui/ExportButton";
 import { EntityRef } from "@/components/ui/EntityRef";
+import { PlanwiseLoader } from "@/components/ui/PlanwiseLoader";
 import { useRegisterQuickActionLabel } from "@/components/dashboard/QuickActionLabelContext";
 import * as exportsApi from "@/lib/exports.api";
 import * as integrationsApi from "@/lib/integrations.api";
@@ -356,13 +357,17 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   const confirm = useConfirm();
   const { showToast } = useToast();
   const { can, canAny } = usePermissions();
-  const { sessionOrganizationId, organizations, isLoading: orgsLoading } = useOrganization();
+  const {
+    sessionOrganizationId,
+    isLoading: orgsLoading,
+    isSwitchingOrganization,
+  } = useOrganization();
   const deepLinkOrg = searchParams.get("organizationId")?.trim() || null;
-  const canSwitchToDeepLinkOrg = Boolean(
-    deepLinkOrg && organizations.some((o) => o.id === deepLinkOrg),
-  );
+  /** Attendre le chargement orgs / bascule en cours — évite un Chargement… bloqué si la bascule échoue. */
   const waitingForOrgSwitch = Boolean(
-    deepLinkOrg && deepLinkOrg !== sessionOrganizationId && (orgsLoading || canSwitchToDeepLinkOrg),
+    deepLinkOrg &&
+    deepLinkOrg !== sessionOrganizationId &&
+    (orgsLoading || isSwitchingOrganization),
   );
   const canAssignCase = canAny(["cases.assign", "cases.update"]);
   const canSyncPennylane = can("integrations.pennylane.sync");
@@ -893,7 +898,11 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   useRegisterQuickActionLabel(caseData?.title);
 
   if (waitingForOrgSwitch || isLoading) {
-    return <div className="text-sm text-slate-500 dark:text-slate-400">Chargement…</div>;
+    return (
+      <div className="flex justify-center py-16">
+        <PlanwiseLoader size="md" label="Chargement…" />
+      </div>
+    );
   }
 
   if (isError || !caseData) {
@@ -902,7 +911,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
         error={isError ? error : undefined}
         resourceLabel="Dossier"
         backHref="/cases"
-        backLabel="← Retour aux dossiers"
+        backLabel="Retour aux dossiers"
         onRetry={() => void refetch()}
       />
     );

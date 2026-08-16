@@ -2,10 +2,12 @@
 
 export const API_FORBIDDEN_MESSAGE = "Vous n'avez pas l'autorisation pour effectuer cette action.";
 
+export const API_NOT_FOUND_MESSAGE = "Cette ressource est introuvable ou a été supprimée.";
+
 export const NETWORK_UNAVAILABLE_MESSAGE =
   "Impossible de contacter le serveur. Vérifiez votre connexion internet, puis réessayez.";
 
-export type ApiErrorVariant = "error" | "forbidden";
+export type ApiErrorVariant = "error" | "forbidden" | "not_found";
 
 export class ApiError extends Error {
   readonly status: number;
@@ -19,10 +21,22 @@ export class ApiError extends Error {
   get isForbidden(): boolean {
     return this.status === 403;
   }
+
+  get isNotFound(): boolean {
+    return this.status === 404;
+  }
 }
 
 export function isApiError(error: unknown): error is ApiError {
   return error instanceof ApiError;
+}
+
+export function isApiErrorNotFound(error: unknown): boolean {
+  return isApiError(error) && error.isNotFound;
+}
+
+export function isApiErrorForbidden(error: unknown): boolean {
+  return isApiError(error) && error.isForbidden;
 }
 
 const GENERIC_FORBIDDEN_MESSAGES = new Set(["Forbidden", "Forbidden resource", "Accès refusé"]);
@@ -69,6 +83,12 @@ export function normalizeApiErrorMessage(
     }
     return API_MESSAGE_FR[trimmed] ?? trimmed;
   }
+  if (status === 404) {
+    if (!trimmed || /^not\s*found$/i.test(trimmed) || trimmed === "Not Found") {
+      return API_NOT_FOUND_MESSAGE;
+    }
+    return API_MESSAGE_FR[trimmed] ?? trimmed;
+  }
   if (trimmed && API_MESSAGE_FR[trimmed]) {
     return API_MESSAGE_FR[trimmed];
   }
@@ -81,6 +101,9 @@ export function resolveErrorDisplay(
 ): { message: string; variant: ApiErrorVariant } {
   if (isApiError(error) && error.isForbidden) {
     return { message: error.message, variant: "forbidden" };
+  }
+  if (isApiError(error) && error.isNotFound) {
+    return { message: error.message || API_NOT_FOUND_MESSAGE, variant: "not_found" };
   }
   if (typeof error === "string" && error.trim()) {
     const message = isNetworkErrorMessage(error) ? NETWORK_UNAVAILABLE_MESSAGE : error.trim();
@@ -100,4 +123,12 @@ export function getApiErrorMessage(
   fallbackMessage = "Une erreur est survenue.",
 ): string {
   return resolveErrorDisplay(error, fallbackMessage).message;
+}
+
+/** Ne pas retenter les 4xx client (404, 403…) — évite un long « Chargement… ». */
+export function shouldRetryQuery(failureCount: number, error: unknown): boolean {
+  if (isApiError(error) && error.status >= 400 && error.status < 500) {
+    return false;
+  }
+  return failureCount < 2;
 }

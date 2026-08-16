@@ -11,6 +11,7 @@ import { usePermissions } from "@/lib/hooks/usePermissions";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/ToastProvider";
 import { ResourceNotFoundPanel } from "@/components/ui/AppErrorAlert";
+import { PlanwiseLoader } from "@/components/ui/PlanwiseLoader";
 import { TestDataBadgeIf } from "@/components/test-data/TestDataBadge";
 import { StockMovementsHistory } from "@/components/stock/StockMovementsHistory";
 
@@ -112,7 +113,11 @@ export function StockLocationDetailPage({ locationId }: { locationId: string }) 
   }, [articles, locationId]);
 
   if (isLoading) {
-    return <div className="text-sm text-slate-500 dark:text-slate-400">Chargement…</div>;
+    return (
+      <div className="flex justify-center py-16">
+        <PlanwiseLoader size="md" label="Chargement…" />
+      </div>
+    );
   }
 
   if (isError || !location) {
@@ -121,7 +126,7 @@ export function StockLocationDetailPage({ locationId }: { locationId: string }) 
         error={isError ? error : undefined}
         resourceLabel="Emplacement"
         backHref="/settings/stock/locations"
-        backLabel="← Emplacements de stock"
+        backLabel="Retour aux emplacements"
         onRetry={() => void refetch()}
       />
     );

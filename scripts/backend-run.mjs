@@ -3,9 +3,16 @@
  * Phase 1 : démarre les 11 microservices (backend:microservices).
  * Phase 2 : attend que tous les ports TCP soient ouverts (logs de progression).
  * Phase 3 : démarre l’API gateway.
+ *
+ * Ctrl+C / SIGTERM : tue tout l’arbre (npm → concurrently → ts-node-dev), puis
+ * libère les ports (certains ts-node-dev ignorent SIGTERM).
  */
-import { spawn } from "node:child_process";
+import { spawn, execFileSync } from "node:child_process";
 import net from "node:net";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const SERVICE_PORTS = [3001, 3002, 3003, 3004, 3005, 3006, 3007, 3008, 3009, 3010, 3011, 3012, 3013];
 const PORT_LABELS = {
@@ -28,18 +35,52 @@ const PROGRESS_INTERVAL_MS = 3_000;
 
 /** @type {import('node:child_process').ChildProcess[]} */
 const children = [];
+let shuttingDown = false;
 
 function log(message) {
   console.log(`[backend] ${message}`);
 }
 
-function shutdown(exitCode = 0) {
-  for (const child of children) {
-    if (child.pid && !child.killed) {
-      child.kill("SIGTERM");
+/** Tue le process group (npm + concurrently + ts-node-dev), pas seulement le shell. */
+function killProcessTree(pid, signal = "SIGTERM") {
+  if (!pid) return;
+  try {
+    process.kill(-pid, signal);
+  } catch {
+    try {
+      process.kill(pid, signal);
+    } catch {
+      /* déjà terminé */
     }
   }
-  process.exit(exitCode);
+}
+
+function freeBackendPorts() {
+  try {
+    execFileSync(process.execPath, [join(__dirname, "free-backend-ports.mjs")], {
+      stdio: "inherit",
+    });
+  } catch {
+    /* ignore — déjà loggé par le script */
+  }
+}
+
+function shutdown(exitCode = 0) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  log("Arrêt des services…");
+
+  for (const child of children) {
+    if (child.pid) killProcessTree(child.pid, "SIGTERM");
+  }
+
+  setTimeout(() => {
+    for (const child of children) {
+      if (child.pid) killProcessTree(child.pid, "SIGKILL");
+    }
+    freeBackendPorts();
+    process.exit(exitCode);
+  }, 700);
 }
 
 function sleep(ms) {
@@ -125,9 +166,11 @@ function withLocalOtelEnv(baseEnv = process.env) {
 }
 
 function spawnNpmScript(scriptName) {
+  // `detached: true` → nouveau process group ; Ctrl+C peut tuer tout l’arbre via kill(-pid).
   const child = spawn("npm", ["run", scriptName], {
     stdio: "inherit",
     shell: true,
+    detached: true,
     env: withLocalOtelEnv(),
   });
   children.push(child);
@@ -142,6 +185,7 @@ async function main() {
   const microservices = spawnNpmScript("backend:microservices");
 
   microservices.on("exit", (code) => {
+    if (shuttingDown) return;
     if (code !== null && code !== 0) {
       log(`Microservices arrêtés (code ${code}).`);
       shutdown(code);
@@ -154,7 +198,7 @@ async function main() {
     const detail = err instanceof Error ? err.message : String(err);
     log(`Échec : ${detail}`);
     log(
-      "Astuce : relancez après « npm run backend:down » ou vérifiez les logs du service manquant (souvent subscriptions ou users).",
+      "Astuce : relancez après « npm run backend:free-ports » ou vérifiez les logs du service manquant (souvent subscriptions ou users).",
     );
     shutdown(1);
     return;
@@ -164,6 +208,7 @@ async function main() {
   const gateway = spawnNpmScript("backend:gateway");
 
   gateway.on("exit", (code) => {
+    if (shuttingDown) return;
     shutdown(code ?? 1);
   });
 }

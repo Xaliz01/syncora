@@ -7,6 +7,7 @@ import type {
   PlatformDashboardResponse,
   PlatformDashboardVisit,
   PlatformOpsHealthResponse,
+  PlatformServiceHealthSlot,
   PlatformServiceHealthStatus,
 } from "@planwise/shared";
 import * as platformApi from "@/lib/platform.api";
@@ -356,75 +357,192 @@ function OpsMetricCard({
   );
 }
 
-function OpsHealthDetailsTable({ data }: { data: PlatformOpsHealthResponse }) {
+function formatPercent(value: number | null): string {
+  if (value == null) return "—";
+  return `${value % 1 === 0 ? value.toFixed(0) : value.toFixed(1)} %`;
+}
+
+function formatBytes(bytes: number | null): string {
+  if (bytes == null || !Number.isFinite(bytes)) return "—";
+  const gib = bytes / (1024 * 1024 * 1024);
+  if (gib >= 10) return `${Math.round(gib)} Go`;
+  if (gib >= 1) return `${gib.toFixed(1)} Go`;
+  const mib = bytes / (1024 * 1024);
+  if (mib >= 1) return `${Math.round(mib)} Mo`;
+  const kib = bytes / 1024;
+  return `${Math.round(kib)} Ko`;
+}
+
+function formatCpuCores(cores: number | null): string {
+  if (cores == null) return "—";
+  if (cores < 0.01) return `${Math.round(cores * 1000)} m`;
+  return `${cores.toFixed(2)}`;
+}
+
+function ServiceSlots({ slots }: { slots?: PlatformServiceHealthSlot[] }) {
+  if (!slots || slots.length === 0) return null;
   return (
-    <div className="overflow-x-auto border-t border-slate-100 dark:border-slate-800">
-      <table className="min-w-full text-left text-sm">
-        <thead className="bg-slate-50 text-[11px] uppercase tracking-wide text-slate-500 dark:bg-slate-950 dark:text-slate-400">
-          <tr>
-            <th className="px-4 py-2 font-medium">Service</th>
-            <th className="px-4 py-2 font-medium">Statut</th>
-            <th className="px-4 py-2 font-medium">Latence moy.</th>
-            <th className="px-4 py-2 font-medium">Latence p95</th>
-            <th className="px-4 py-2 font-medium">4xx</th>
-            <th className="px-4 py-2 font-medium">5xx</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-          {data.services.map((row) => (
-            <tr key={row.service} className="text-slate-800 dark:text-slate-200">
-              <td className="px-4 py-2.5">
-                <div className="font-medium">{row.label}</div>
-                {row.slots && row.slots.length > 0 ? (
-                  <div className="mt-0.5 flex flex-wrap gap-1">
-                    {row.slots.map((slot) => (
-                      <span
-                        key={slot.slot}
-                        className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${statusBadgeClass(slot.status)}`}
-                      >
-                        {slot.slot}: {statusLabel(slot.status)}
-                      </span>
-                    ))}
-                  </div>
-                ) : null}
-              </td>
-              <td className="px-4 py-2.5">
-                <span
-                  className={`inline-flex rounded-md px-2 py-0.5 text-xs font-semibold ${statusBadgeClass(row.status)}`}
-                >
-                  {statusLabel(row.status)}
-                </span>
-              </td>
-              <td className="px-4 py-2.5 tabular-nums text-slate-600 dark:text-slate-300">
-                {formatLatency(row.latencyMsAvg)}
-              </td>
-              <td className="px-4 py-2.5 tabular-nums text-slate-600 dark:text-slate-300">
-                {formatLatency(row.latencyMsP95)}
-              </td>
-              <td
-                className={`px-4 py-2.5 tabular-nums ${
-                  (row.errorRate4xx ?? 0) > 0.05
-                    ? "text-amber-700 dark:text-amber-300"
-                    : "text-slate-600 dark:text-slate-300"
-                }`}
-              >
-                {formatRate(row.errorRate4xx)}
-              </td>
-              <td
-                className={`px-4 py-2.5 tabular-nums ${
-                  (row.errorRate5xx ?? 0) > 0.01
-                    ? "text-red-700 dark:text-red-300"
-                    : "text-slate-600 dark:text-slate-300"
-                }`}
-              >
-                {formatRate(row.errorRate5xx)}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="mt-0.5 flex flex-wrap gap-1">
+      {slots.map((slot) => (
+        <span
+          key={slot.slot}
+          className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${statusBadgeClass(slot.status)}`}
+        >
+          {slot.slot}: {statusLabel(slot.status)}
+        </span>
+      ))}
     </div>
   );
+}
+
+function OpsHealthDetailsTable({ data }: { data: PlatformOpsHealthResponse }) {
+  return (
+    <>
+      {/* Mobile: stacked cards */}
+      <ul className="divide-y divide-slate-100 md:hidden dark:divide-slate-800">
+        {data.services.map((row) => (
+          <li
+            key={row.service}
+            className="space-y-3 px-4 py-3.5 text-sm text-slate-800 dark:text-slate-200"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="font-medium">{row.label}</div>
+                <ServiceSlots slots={row.slots} />
+              </div>
+              <span
+                className={`shrink-0 inline-flex rounded-md px-2 py-0.5 text-xs font-semibold ${statusBadgeClass(row.status)}`}
+              >
+                {statusLabel(row.status)}
+              </span>
+            </div>
+            <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+              <div>
+                <dt className="text-slate-500 dark:text-slate-400">Latence moy.</dt>
+                <dd className="mt-0.5 tabular-nums text-slate-700 dark:text-slate-200">
+                  {formatLatency(row.latencyMsAvg)}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-slate-500 dark:text-slate-400">Latence p95</dt>
+                <dd className="mt-0.5 tabular-nums text-slate-700 dark:text-slate-200">
+                  {formatLatency(row.latencyMsP95)}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-slate-500 dark:text-slate-400">4xx</dt>
+                <dd
+                  className={`mt-0.5 tabular-nums ${
+                    (row.errorRate4xx ?? 0) > 0.05
+                      ? "text-amber-700 dark:text-amber-300"
+                      : "text-slate-700 dark:text-slate-200"
+                  }`}
+                >
+                  {formatRate(row.errorRate4xx)}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-slate-500 dark:text-slate-400">5xx</dt>
+                <dd
+                  className={`mt-0.5 tabular-nums ${
+                    (row.errorRate5xx ?? 0) > 0.01
+                      ? "text-red-700 dark:text-red-300"
+                      : "text-slate-700 dark:text-slate-200"
+                  }`}
+                >
+                  {formatRate(row.errorRate5xx)}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-slate-500 dark:text-slate-400">CPU</dt>
+                <dd className="mt-0.5 tabular-nums text-slate-700 dark:text-slate-200">
+                  {formatCpuCores(row.cpuCores)}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-slate-500 dark:text-slate-400">RAM</dt>
+                <dd className="mt-0.5 tabular-nums text-slate-700 dark:text-slate-200">
+                  {formatBytes(row.memoryBytes)}
+                </dd>
+              </div>
+            </dl>
+          </li>
+        ))}
+      </ul>
+
+      {/* Desktop: table */}
+      <div className="hidden overflow-x-auto border-t border-slate-100 md:block dark:border-slate-800">
+        <table className="min-w-full text-left text-sm">
+          <thead className="bg-slate-50 text-[11px] uppercase tracking-wide text-slate-500 dark:bg-slate-950 dark:text-slate-400">
+            <tr>
+              <th className="px-4 py-2 font-medium">Service</th>
+              <th className="px-4 py-2 font-medium">Statut</th>
+              <th className="px-4 py-2 font-medium">Latence moy.</th>
+              <th className="px-4 py-2 font-medium">Latence p95</th>
+              <th className="px-4 py-2 font-medium">4xx</th>
+              <th className="px-4 py-2 font-medium">5xx</th>
+              <th className="px-4 py-2 font-medium">CPU</th>
+              <th className="px-4 py-2 font-medium">RAM</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            {data.services.map((row) => (
+              <tr key={row.service} className="text-slate-800 dark:text-slate-200">
+                <td className="px-4 py-2.5">
+                  <div className="font-medium">{row.label}</div>
+                  <ServiceSlots slots={row.slots} />
+                </td>
+                <td className="px-4 py-2.5">
+                  <span
+                    className={`inline-flex rounded-md px-2 py-0.5 text-xs font-semibold ${statusBadgeClass(row.status)}`}
+                  >
+                    {statusLabel(row.status)}
+                  </span>
+                </td>
+                <td className="px-4 py-2.5 tabular-nums text-slate-600 dark:text-slate-300">
+                  {formatLatency(row.latencyMsAvg)}
+                </td>
+                <td className="px-4 py-2.5 tabular-nums text-slate-600 dark:text-slate-300">
+                  {formatLatency(row.latencyMsP95)}
+                </td>
+                <td
+                  className={`px-4 py-2.5 tabular-nums ${
+                    (row.errorRate4xx ?? 0) > 0.05
+                      ? "text-amber-700 dark:text-amber-300"
+                      : "text-slate-600 dark:text-slate-300"
+                  }`}
+                >
+                  {formatRate(row.errorRate4xx)}
+                </td>
+                <td
+                  className={`px-4 py-2.5 tabular-nums ${
+                    (row.errorRate5xx ?? 0) > 0.01
+                      ? "text-red-700 dark:text-red-300"
+                      : "text-slate-600 dark:text-slate-300"
+                  }`}
+                >
+                  {formatRate(row.errorRate5xx)}
+                </td>
+                <td className="px-4 py-2.5 tabular-nums text-slate-600 dark:text-slate-300">
+                  {formatCpuCores(row.cpuCores)}
+                </td>
+                <td className="px-4 py-2.5 tabular-nums text-slate-600 dark:text-slate-300">
+                  {formatBytes(row.memoryBytes)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+}
+
+function hostUsageTone(percent: number | null): KpiTone {
+  if (percent == null) return "sky";
+  if (percent >= 90) return "red";
+  if (percent >= 75) return "amber";
+  return "sky";
 }
 
 function OpsHealthSection({
@@ -464,6 +582,13 @@ function OpsHealthSection({
         ? "sky"
         : "emerald";
 
+  const cpuPercent = data?.available ? data.summary.cpuUsagePercent : null;
+  const memoryPercent = data?.available ? data.summary.memoryUsagePercent : null;
+  const memoryHint =
+    data?.available && data.summary.memoryUsedBytes != null && data.summary.memoryTotalBytes != null
+      ? `${formatBytes(data.summary.memoryUsedBytes)} / ${formatBytes(data.summary.memoryTotalBytes)}`
+      : "Serveur";
+
   return (
     <section className="space-y-3">
       {loading && !data ? (
@@ -477,31 +602,85 @@ function OpsHealthSection({
         </p>
       ) : (
         <>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <OpsMetricCard label="Statut" value={statusValue} hint={statusHint} tone={statusTone} />
-            <OpsMetricCard
-              label="Latence"
-              value={formatLatency(latencyAvg)}
-              hint={`p95 ${formatLatency(latencyP95)} · tous services`}
-              tone="brand"
-            />
-            <OpsMetricCard label="4xx" value={formatRate(avg4xx)} hint="Taux moyen" tone="yellow" />
-            <OpsMetricCard label="5xx" value={formatRate(avg5xx)} hint="Taux moyen" tone="red" />
-          </div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
+            <div className="min-w-0 flex-1 grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
+              <OpsMetricCard
+                label="Statut"
+                value={statusValue}
+                hint={statusHint}
+                tone={statusTone}
+              />
+              <OpsMetricCard
+                label="Latence"
+                value={formatLatency(latencyAvg)}
+                hint={`p95 ${formatLatency(latencyP95)} · tous services`}
+                tone="brand"
+              />
+              <OpsMetricCard
+                label="4xx"
+                value={formatRate(avg4xx)}
+                hint="Taux moyen"
+                tone="yellow"
+              />
+              <OpsMetricCard label="5xx" value={formatRate(avg5xx)} hint="Taux moyen" tone="red" />
+              <OpsMetricCard
+                label="CPU"
+                value={formatPercent(cpuPercent)}
+                hint="Serveur"
+                tone={hostUsageTone(cpuPercent)}
+              />
+              <OpsMetricCard
+                label="RAM"
+                value={formatPercent(memoryPercent)}
+                hint={memoryHint}
+                tone={hostUsageTone(memoryPercent)}
+              />
+            </div>
 
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={() => setDetailsOpen((open) => !open)}
-              className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
-              aria-expanded={detailsOpen}
-            >
-              {detailsOpen ? "Masquer le détail" : "Voir le détail"}
-            </button>
+            <div className="flex shrink-0 justify-end sm:relative sm:w-9">
+              <button
+                type="button"
+                onClick={() => setDetailsOpen((open) => !open)}
+                title={detailsOpen ? "Masquer le détail" : "Voir le détail"}
+                aria-label={detailsOpen ? "Masquer le détail" : "Voir le détail"}
+                aria-expanded={detailsOpen}
+                className="inline-flex items-center justify-center rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white sm:absolute sm:inset-y-0 sm:right-0 sm:w-9 sm:flex-col sm:gap-1 sm:p-1.5"
+              >
+                {/* Table / list affordance */}
+                <svg
+                  className="h-4 w-4 shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.75}
+                  aria-hidden
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
+                  />
+                </svg>
+                <svg
+                  className={`h-4 w-4 shrink-0 transition-transform ${detailsOpen ? "rotate-180" : ""}`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.75}
+                  aria-hidden
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M19.5 8.25l-7.5 7.5-7.5-7.5"
+                  />
+                </svg>
+              </button>
+            </div>
           </div>
 
           {detailsOpen ? (
-            <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
               <OpsHealthDetailsTable data={data} />
             </div>
           ) : null}
@@ -547,6 +726,10 @@ export function PlatformDashboardPage() {
             unknownCount: 0,
             latencyMsAvg: null,
             latencyMsP95: null,
+            cpuUsagePercent: null,
+            memoryUsagePercent: null,
+            memoryUsedBytes: null,
+            memoryTotalBytes: null,
           },
         }),
       )

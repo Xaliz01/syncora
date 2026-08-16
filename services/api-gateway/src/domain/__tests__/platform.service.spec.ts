@@ -42,6 +42,10 @@ describe("PlatformService", () => {
         unknownCount: 0,
         latencyMsAvg: null,
         latencyMsP95: null,
+        cpuUsagePercent: null,
+        memoryUsagePercent: null,
+        memoryUsedBytes: null,
+        memoryTotalBytes: null,
       },
     }),
   };

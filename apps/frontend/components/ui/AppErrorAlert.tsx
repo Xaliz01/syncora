@@ -3,13 +3,17 @@
 import Link from "next/link";
 import React from "react";
 import type { ApiErrorVariant } from "@/lib/api-errors";
-import { resolveErrorDisplay } from "@/lib/api-errors";
+import { isApiErrorForbidden, isApiErrorNotFound, resolveErrorDisplay } from "@/lib/api-errors";
+import { isCrispEnabled, openCrispChat } from "@/lib/crisp-client";
 
 function cn(...parts: (string | false | undefined | null)[]): string {
   return parts.filter(Boolean).join(" ");
 }
 
-const VARIANT_STYLES: Record<ApiErrorVariant, { container: string; retryButton: string }> = {
+const VARIANT_STYLES: Record<
+  Exclude<ApiErrorVariant, "not_found">,
+  { container: string; retryButton: string }
+> = {
   error: {
     container:
       "border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300",
@@ -36,7 +40,7 @@ export function AppErrorAlert({
   message?: string;
   fallbackMessage?: string;
   /** Force l’apparence (sinon déduite de `error`, ex. 403 → orange). */
-  variant?: ApiErrorVariant;
+  variant?: Exclude<ApiErrorVariant, "not_found">;
   onRetry?: () => void;
   className?: string;
 }) {
@@ -44,7 +48,9 @@ export function AppErrorAlert({
     error !== undefined
       ? resolveErrorDisplay(error, fallbackMessage)
       : { message: message ?? fallbackMessage, variant: variant ?? ("error" as const) };
-  const styles = VARIANT_STYLES[variant ?? resolved.variant];
+  const displayVariant: Exclude<ApiErrorVariant, "not_found"> =
+    variant ?? (resolved.variant === "not_found" ? "error" : resolved.variant);
+  const styles = VARIANT_STYLES[displayVariant];
 
   return (
     <div
@@ -72,7 +78,30 @@ export function AppErrorAlert({
   );
 }
 
-/** État vide après chargement : erreur API (ex. 403) ou ressource absente. */
+function MissingResourceIllustration() {
+  return (
+    <div
+      className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 shadow-inner dark:bg-slate-800 dark:text-slate-500"
+      aria-hidden
+    >
+      <svg
+        className="h-10 w-10"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={1.5}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m5.231 13.481L15 17.25m-4.5-15H5.625c-.621 0-1.125.504-1.125 1.125v16.5c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9zm3.75 11.625a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"
+        />
+      </svg>
+    </div>
+  );
+}
+
+/** État vide après chargement : ressource absente (404) ou erreur API (ex. 403). */
 export function ResourceNotFoundPanel({
   error,
   resourceLabel,
@@ -86,16 +115,84 @@ export function ResourceNotFoundPanel({
   backLabel: string;
   onRetry?: () => void;
 }) {
-  return (
-    <div className="space-y-3">
-      {error ? (
+  const missing = !error || isApiErrorNotFound(error);
+  const forbidden = isApiErrorForbidden(error);
+  const canOpenChat = isCrispEnabled();
+
+  if (!missing && !forbidden && error) {
+    return (
+      <div className="space-y-3">
         <AppErrorAlert error={error} onRetry={onRetry} />
-      ) : (
-        <p className="text-slate-700 dark:text-slate-200">{resourceLabel} introuvable.</p>
-      )}
-      <Link href={backHref} className="text-brand-600 dark:text-brand-400 hover:underline">
-        {backLabel}
-      </Link>
+        <Link href={backHref} className="text-brand-600 dark:text-brand-400 hover:underline">
+          {backLabel}
+        </Link>
+      </div>
+    );
+  }
+
+  if (forbidden) {
+    return (
+      <div className="space-y-3">
+        <AppErrorAlert error={error} onRetry={onRetry} />
+        <Link href={backHref} className="text-brand-600 dark:text-brand-400 hover:underline">
+          {backLabel}
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white px-6 py-10 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:px-10">
+      <div
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(67,56,202,0.08),_transparent_55%)] dark:bg-[radial-gradient(ellipse_at_top,_rgba(67,56,202,0.14),_transparent_55%)]"
+        aria-hidden
+      />
+      <div className="relative z-10 mx-auto max-w-md">
+        <MissingResourceIllustration />
+        <h1 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-50">
+          {resourceLabel} introuvable
+        </h1>
+        <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+          Cette fiche n’existe pas, a été supprimée, ou le lien n’est plus valide.
+        </p>
+        <p className="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+          Si vous pensez qu’il s’agit d’une erreur, contactez le support — on vous aidera à y voir
+          clair.
+        </p>
+
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          <Link
+            href={backHref}
+            className="inline-flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-500"
+          >
+            {backLabel}
+          </Link>
+          {canOpenChat ? (
+            <button
+              type="button"
+              onClick={() => openCrispChat()}
+              className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+            >
+              Contacter le support
+            </button>
+          ) : null}
+          {onRetry ? (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="inline-flex items-center justify-center rounded-lg px-3 py-2.5 text-sm font-medium text-slate-500 underline-offset-2 hover:underline dark:text-slate-400"
+            >
+              Réessayer
+            </button>
+          ) : null}
+        </div>
+
+        {!canOpenChat ? (
+          <p className="mt-4 text-xs text-slate-500 dark:text-slate-400">
+            Utilisez le chat en bas à droite de l’écran si le support est disponible.
+          </p>
+        ) : null}
+      </div>
     </div>
   );
 }

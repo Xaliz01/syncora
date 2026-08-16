@@ -15,6 +15,8 @@ import { useAuth } from "@/components/auth/AuthContext";
 import { getOrganizationUserStatusLabel } from "@/lib/organization-user-status";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { hasPermission } from "@/lib/auth-permissions";
+import { ResourceNotFoundPanel } from "@/components/ui/AppErrorAlert";
+import { PlanwiseLoader } from "@/components/ui/PlanwiseLoader";
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Administrateur",
@@ -230,20 +232,19 @@ export function UserDetailsPage({ userId }: { userId: string }) {
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 text-sm text-slate-500 dark:text-slate-400">
-        Chargement de la fiche utilisateur...
+      <div className="flex justify-center py-16">
+        <PlanwiseLoader size="md" label="Chargement…" />
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div className="space-y-3">
-        <p className="text-slate-700 dark:text-slate-200">Utilisateur introuvable.</p>
-        <Link href="/users" className="text-brand-600 dark:text-brand-400 hover:underline">
-          Retour à la liste
-        </Link>
-      </div>
+      <ResourceNotFoundPanel
+        resourceLabel="Utilisateur"
+        backHref="/users"
+        backLabel="Retour à la liste"
+      />
     );
   }
 

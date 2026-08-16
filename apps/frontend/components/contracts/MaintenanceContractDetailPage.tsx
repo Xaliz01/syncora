@@ -12,6 +12,8 @@ import * as casesApi from "@/lib/cases.api";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { ResourceNotFoundPanel } from "@/components/ui/AppErrorAlert";
+import { PlanwiseLoader } from "@/components/ui/PlanwiseLoader";
 
 const STATUS_LABELS: Record<MaintenanceContractStatus, string> = {
   draft: "Brouillon",
@@ -129,12 +131,21 @@ export function MaintenanceContractDetailPage({ contractId }: { contractId: stri
     setScheduleOpen(true);
   };
 
-  if (isLoading) return <p className="text-sm text-slate-500">Chargement…</p>;
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-16">
+        <PlanwiseLoader size="md" label="Chargement…" />
+      </div>
+    );
+  }
   if (error || !contract) {
     return (
-      <p className="text-sm text-red-600">
-        {error instanceof Error ? error.message : "Contrat introuvable"}
-      </p>
+      <ResourceNotFoundPanel
+        error={error}
+        resourceLabel="Contrat"
+        backHref="/contracts"
+        backLabel="Retour aux contrats"
+      />
     );
   }
 

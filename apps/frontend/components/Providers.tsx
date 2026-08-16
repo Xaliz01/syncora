@@ -14,9 +14,19 @@ import { CookieConsentBanner } from "@/components/legal/CookieConsentBanner";
 import { ImpersonationBanner } from "@/components/platform/ImpersonationBanner";
 import { AnalyticsTracker } from "@/components/analytics/AnalyticsTracker";
 import { GoogleAdsTag } from "@/components/analytics/GoogleAdsTag";
+import { shouldRetryQuery } from "@/lib/api-errors";
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient());
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            retry: shouldRetryQuery,
+          },
+        },
+      }),
+  );
 
   return (
     <ThemeProvider>

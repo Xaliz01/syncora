@@ -16,7 +16,8 @@ import { CustomerSitesSection } from "./CustomerSitesSection";
 import { PartyLinkedInvoicesSection } from "@/components/billing/PartyLinkedInvoicesSection";
 import { CUSTOMER_KIND_LABELS } from "./customer-kind-labels";
 import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
-import { AppErrorAlert } from "@/components/ui/AppErrorAlert";
+import { ResourceNotFoundPanel } from "@/components/ui/AppErrorAlert";
+import { PlanwiseLoader } from "@/components/ui/PlanwiseLoader";
 import { TestDataBadgeIf } from "@/components/test-data/TestDataBadge";
 import { useRegisterQuickActionLabel } from "@/components/dashboard/QuickActionLabelContext";
 
@@ -82,24 +83,22 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
   useRegisterQuickActionLabel(c?.displayName);
 
   if (isLoading) {
-    return <div className="text-sm text-slate-500 dark:text-slate-400">Chargement…</div>;
+    return (
+      <div className="flex justify-center py-16">
+        <PlanwiseLoader size="md" label="Chargement…" />
+      </div>
+    );
   }
 
   if (isError || !c) {
     return (
-      <div className="space-y-4">
-        <Link
-          href="/customers"
-          className="text-sm font-medium text-brand-600 dark:text-brand-400 hover:text-brand-500"
-        >
-          &larr; Clients
-        </Link>
-        {isError ? (
-          <AppErrorAlert error={error} onRetry={() => void refetch()} />
-        ) : (
-          <p className="text-sm text-slate-700 dark:text-slate-200">Client introuvable.</p>
-        )}
-      </div>
+      <ResourceNotFoundPanel
+        error={isError ? error : undefined}
+        resourceLabel="Client"
+        backHref="/customers"
+        backLabel="Retour aux clients"
+        onRetry={() => void refetch()}
+      />
     );
   }
 

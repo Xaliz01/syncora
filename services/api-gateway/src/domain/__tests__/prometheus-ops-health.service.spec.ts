@@ -117,6 +117,86 @@ describe("PrometheusOpsHealthService", () => {
           },
         });
       }
+      if (q.includes("node_cpu_seconds_total")) {
+        return of({
+          status: 200,
+          data: {
+            status: "success",
+            data: {
+              resultType: "vector",
+              result: [{ metric: {}, value: [1, "23.4"] }],
+            },
+          },
+        });
+      }
+      if (q.includes("node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes")) {
+        return of({
+          status: 200,
+          data: {
+            status: "success",
+            data: {
+              resultType: "vector",
+              result: [{ metric: {}, value: [1, "61.2"] }],
+            },
+          },
+        });
+      }
+      if (q.includes("node_memory_MemTotal_bytes") && !q.includes("MemAvailable")) {
+        return of({
+          status: 200,
+          data: {
+            status: "success",
+            data: {
+              resultType: "vector",
+              result: [{ metric: {}, value: [1, String(16 * 1024 ** 3)] }],
+            },
+          },
+        });
+      }
+      if (q === "node_memory_MemAvailable_bytes") {
+        return of({
+          status: 200,
+          data: {
+            status: "success",
+            data: {
+              resultType: "vector",
+              result: [{ metric: {}, value: [1, String(6 * 1024 ** 3)] }],
+            },
+          },
+        });
+      }
+      if (q.includes("container_cpu_usage_seconds_total")) {
+        return of({
+          status: 200,
+          data: {
+            status: "success",
+            data: {
+              resultType: "vector",
+              result: [
+                { metric: { container: "api-gateway-blue" }, value: [1, "0.12"] },
+                { metric: { container: "api-gateway-green" }, value: [1, "0.03"] },
+                { metric: { container: "cases-service" }, value: [1, "0.08"] },
+              ],
+            },
+          },
+        });
+      }
+      if (q.includes("container_memory_working_set_bytes")) {
+        return of({
+          status: 200,
+          data: {
+            status: "success",
+            data: {
+              resultType: "vector",
+              result: [
+                { metric: { container: "api-gateway-blue" }, value: [1, String(200 * 1024 ** 2)] },
+                { metric: { container: "api-gateway-green" }, value: [1, String(50 * 1024 ** 2)] },
+                { metric: { container: "cases-service" }, value: [1, String(180 * 1024 ** 2)] },
+              ],
+            },
+          },
+        });
+      }
       return of({ status: 200, data: { status: "success", data: { result: [] } } });
     });
 
@@ -137,8 +217,18 @@ describe("PrometheusOpsHealthService", () => {
     expect(gateway?.latencyMsP95).toBe(88);
     expect(gateway?.errorRate4xx).toBe(0.12);
     expect(gateway?.errorRate5xx).toBe(0.01);
+    expect(gateway?.cpuCores).toBe(0.15);
+    expect(gateway?.memoryBytes).toBe(250 * 1024 ** 2);
+
+    const cases = result.services.find((s) => s.service === "cases");
+    expect(cases?.cpuCores).toBe(0.08);
+    expect(cases?.memoryBytes).toBe(180 * 1024 ** 2);
     expect(result.summary.latencyMsAvg).toBe(40);
     expect(result.summary.latencyMsP95).toBe(120);
+    expect(result.summary.cpuUsagePercent).toBe(23.4);
+    expect(result.summary.memoryUsagePercent).toBe(61.2);
+    expect(result.summary.memoryTotalBytes).toBe(16 * 1024 ** 3);
+    expect(result.summary.memoryUsedBytes).toBe(10 * 1024 ** 3);
 
     const users = result.services.find((s) => s.service === "users");
     expect(users?.status).toBe("down");

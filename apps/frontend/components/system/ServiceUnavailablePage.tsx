@@ -1,5 +1,8 @@
 "use client";
 
+import Image from "next/image";
+import { PLANWISE_LOGO_SRC } from "@/lib/brand-assets";
+
 type ServiceUnavailablePageProps = {
   title?: string;
   description?: string;
@@ -37,9 +40,14 @@ export function ServiceUnavailablePage({
       />
 
       <div className="relative z-10 flex w-full max-w-md flex-col items-center text-center">
-        <div className="mb-6 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-600 text-xl font-semibold text-white shadow-lg shadow-brand-600/30">
-          P
-        </div>
+        <Image
+          src={PLANWISE_LOGO_SRC}
+          alt=""
+          width={56}
+          height={56}
+          className="mb-6 rounded-2xl shadow-lg shadow-brand-600/30"
+          priority
+        />
         <p className="mb-2 text-sm font-semibold tracking-wide text-brand-600 dark:text-brand-400">
           Planwise
         </p>

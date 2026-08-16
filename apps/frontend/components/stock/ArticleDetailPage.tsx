@@ -9,6 +9,7 @@ import { usePermissions } from "@/lib/hooks/usePermissions";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/ToastProvider";
 import { ResourceNotFoundPanel } from "@/components/ui/AppErrorAlert";
+import { PlanwiseLoader } from "@/components/ui/PlanwiseLoader";
 import { TestDataBadgeIf } from "@/components/test-data/TestDataBadge";
 import { StockMovementsHistory } from "@/components/stock/StockMovementsHistory";
 
@@ -107,7 +108,11 @@ export function ArticleDetailPage({ articleId }: { articleId: string }) {
   const locationNameById = new Map(locations.map((l) => [l.id, l.name]));
 
   if (isLoading) {
-    return <div className="text-sm text-slate-500 dark:text-slate-400">Chargement…</div>;
+    return (
+      <div className="flex justify-center py-16">
+        <PlanwiseLoader size="md" label="Chargement…" />
+      </div>
+    );
   }
 
   if (isError || !article) {
@@ -116,7 +121,7 @@ export function ArticleDetailPage({ articleId }: { articleId: string }) {
         error={isError ? error : undefined}
         resourceLabel="Article"
         backHref="/settings/stock/articles"
-        backLabel="← Catalogue articles"
+        backLabel="Retour au catalogue"
         onRetry={() => void refetch()}
       />
     );

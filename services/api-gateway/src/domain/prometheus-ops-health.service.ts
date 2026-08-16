@@ -89,6 +89,14 @@ function normalizeServiceKey(raw: string): string {
   return s;
 }
 
+/** Conteneurs Compose (`api-gateway-blue`, `cases-service`) → clé service BO. */
+function normalizeContainerKey(raw: string): string {
+  let s = raw.trim();
+  if (s.endsWith("-blue")) s = s.slice(0, -"-blue".length);
+  else if (s.endsWith("-green")) s = s.slice(0, -"-green".length);
+  return normalizeServiceKey(s);
+}
+
 function sortServices(a: string, b: string): number {
   const ia = KNOWN_ORDER.indexOf(a);
   const ib = KNOWN_ORDER.indexOf(b);
@@ -123,6 +131,10 @@ export class PrometheusOpsHealthService extends AbstractPrometheusOpsHealthServi
           unknownCount: 0,
           latencyMsAvg: null,
           latencyMsP95: null,
+          cpuUsagePercent: null,
+          memoryUsagePercent: null,
+          memoryUsedBytes: null,
+          memoryTotalBytes: null,
         },
       };
     }
@@ -136,6 +148,12 @@ export class PrometheusOpsHealthService extends AbstractPrometheusOpsHealthServi
         latencyP95Global,
         rate4xx,
         rate5xx,
+        hostCpu,
+        hostMemoryRatio,
+        hostMemoryTotal,
+        hostMemoryAvailable,
+        containerCpu,
+        containerMemory,
       ] = await Promise.all([
         this.query(base, 'probe_success{job="blackbox_http"}'),
         this.query(
@@ -174,12 +192,26 @@ export class PrometheusOpsHealthService extends AbstractPrometheusOpsHealthServi
             clamp_min(sum by (service) (rate(traces_spanmetrics_calls_total{http_method!="OPTIONS"}[${WINDOW}])), 1e-9)
           )`,
         ),
+        this.query(base, `100 * (1 - avg(rate(node_cpu_seconds_total{mode="idle"}[${WINDOW}])))`),
+        this.query(
+          base,
+          `100 * (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes))`,
+        ),
+        this.query(base, "node_memory_MemTotal_bytes"),
+        this.query(base, "node_memory_MemAvailable_bytes"),
+        this.query(
+          base,
+          `sum by (container) (rate(container_cpu_usage_seconds_total{container!=""}[${WINDOW}]))`,
+        ),
+        this.query(base, `sum by (container) (container_memory_working_set_bytes{container!=""})`),
       ]);
 
       const latencyMap = toServiceMap(latencyByService);
       const latencyP95Map = toServiceMap(latencyP95ByService);
       const rate4xxMap = toServiceMap(rate4xx);
       const rate5xxMap = toServiceMap(rate5xx);
+      const cpuCoresMap = toContainerServiceMap(containerCpu);
+      const memoryBytesMap = toContainerServiceMap(containerMemory);
 
       const byService = new Map<
         string,
@@ -206,6 +238,12 @@ export class PrometheusOpsHealthService extends AbstractPrometheusOpsHealthServi
           byService.set(service, { slots: [], bare: null });
         }
       }
+      // Conteneurs cAdvisor sans sonde HTTP (ex. mongodb).
+      for (const key of [...cpuCoresMap.keys(), ...memoryBytesMap.keys()]) {
+        if (!byService.has(key)) {
+          byService.set(key, { slots: [], bare: null });
+        }
+      }
 
       const services: PlatformServiceHealthRow[] = [...byService.keys()]
         .sort(sortServices)
@@ -229,6 +267,9 @@ export class PrometheusOpsHealthService extends AbstractPrometheusOpsHealthServi
             status = statusFromProbe(entry.bare);
           }
 
+          const cpuCores = cpuCoresMap.get(service);
+          const memoryBytes = memoryBytesMap.get(service);
+
           return {
             service,
             label: displayLabel(service),
@@ -238,11 +279,19 @@ export class PrometheusOpsHealthService extends AbstractPrometheusOpsHealthServi
             latencyMsP95: roundOrNull(latencyP95Map.get(service) ?? null, 1),
             errorRate4xx: clampRate(rate4xxMap.get(service) ?? null),
             errorRate5xx: clampRate(rate5xxMap.get(service) ?? null),
+            cpuCores: cpuCores != null ? roundOrNull(cpuCores, 3) : null,
+            memoryBytes: memoryBytes != null ? roundOrNull(memoryBytes, 0) : null,
           };
         });
 
       const summaryLatencyAvg = roundOrNull(firstVectorValue(latencyGlobal), 1);
       const summaryLatencyP95 = roundOrNull(firstVectorValue(latencyP95Global), 1);
+      const memoryTotalBytes = roundOrNull(firstVectorValue(hostMemoryTotal), 0);
+      const memoryAvailableBytes = roundOrNull(firstVectorValue(hostMemoryAvailable), 0);
+      const memoryUsedBytes =
+        memoryTotalBytes != null && memoryAvailableBytes != null
+          ? Math.max(0, memoryTotalBytes - memoryAvailableBytes)
+          : null;
 
       const summary = {
         upCount: services.filter((s) => s.status === "up").length,
@@ -253,6 +302,10 @@ export class PrometheusOpsHealthService extends AbstractPrometheusOpsHealthServi
           summaryLatencyAvg ?? roundOrNull(averageOf(services.map((s) => s.latencyMsAvg)), 1),
         latencyMsP95:
           summaryLatencyP95 ?? roundOrNull(averageOf(services.map((s) => s.latencyMsP95)), 1),
+        cpuUsagePercent: clampPercent(firstVectorValue(hostCpu)),
+        memoryUsagePercent: clampPercent(firstVectorValue(hostMemoryRatio)),
+        memoryUsedBytes,
+        memoryTotalBytes,
       };
 
       return {
@@ -279,6 +332,10 @@ export class PrometheusOpsHealthService extends AbstractPrometheusOpsHealthServi
           unknownCount: 0,
           latencyMsAvg: null,
           latencyMsP95: null,
+          cpuUsagePercent: null,
+          memoryUsagePercent: null,
+          memoryUsedBytes: null,
+          memoryTotalBytes: null,
         },
       };
     }
@@ -311,6 +368,19 @@ function toServiceMap(rows: PromSample[]): Map<string, number> {
   return map;
 }
 
+/** Agrège blue/green (et aliases) sous la même clé service. */
+function toContainerServiceMap(rows: PromSample[]): Map<string, number> {
+  const map = new Map<string, number>();
+  for (const row of rows) {
+    const raw = row.metric.container?.trim();
+    const value = parseNumber(row.value?.[1]);
+    if (!raw || value == null) continue;
+    const key = normalizeContainerKey(raw);
+    map.set(key, (map.get(key) ?? 0) + value);
+  }
+  return map;
+}
+
 function firstVectorValue(rows: PromSample[]): number | null {
   return parseNumber(rows[0]?.value?.[1]);
 }
@@ -330,4 +400,9 @@ function roundOrNull(value: number | null, digits: number): number | null {
 function clampRate(value: number | null): number | null {
   if (value == null || !Number.isFinite(value)) return null;
   return Math.min(1, Math.max(0, Math.round(value * 10000) / 10000));
+}
+
+function clampPercent(value: number | null): number | null {
+  if (value == null || !Number.isFinite(value)) return null;
+  return Math.min(100, Math.max(0, Math.round(value * 10) / 10));
 }

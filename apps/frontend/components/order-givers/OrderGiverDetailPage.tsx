@@ -12,7 +12,8 @@ import { OrderGiverEditForm } from "./OrderGiverEditForm";
 import { OrderGiverCasesSection } from "./OrderGiverCasesSection";
 import { PartyLinkedInvoicesSection } from "@/components/billing/PartyLinkedInvoicesSection";
 import { CUSTOMER_KIND_LABELS } from "@/components/customers/customer-kind-labels";
-import { AppErrorAlert } from "@/components/ui/AppErrorAlert";
+import { ResourceNotFoundPanel } from "@/components/ui/AppErrorAlert";
+import { PlanwiseLoader } from "@/components/ui/PlanwiseLoader";
 import { TestDataBadgeIf } from "@/components/test-data/TestDataBadge";
 import { useRegisterQuickActionLabel } from "@/components/dashboard/QuickActionLabelContext";
 
@@ -78,26 +79,22 @@ export function OrderGiverDetailPage({ orderGiverId }: { orderGiverId: string })
   useRegisterQuickActionLabel(og?.displayName);
 
   if (isLoading) {
-    return <div className="text-sm text-slate-500 dark:text-slate-400">Chargement…</div>;
+    return (
+      <div className="flex justify-center py-16">
+        <PlanwiseLoader size="md" label="Chargement…" />
+      </div>
+    );
   }
 
   if (isError || !og) {
     return (
-      <div className="space-y-4">
-        <Link
-          href="/order-givers"
-          className="text-sm font-medium text-brand-600 dark:text-brand-400 hover:text-brand-500"
-        >
-          &larr; Donneurs d&apos;ordre
-        </Link>
-        {isError ? (
-          <AppErrorAlert error={error} onRetry={() => void refetch()} />
-        ) : (
-          <p className="text-sm text-slate-700 dark:text-slate-200">
-            Donneur d&apos;ordre introuvable.
-          </p>
-        )}
-      </div>
+      <ResourceNotFoundPanel
+        error={isError ? error : undefined}
+        resourceLabel="Donneur d'ordre"
+        backHref="/order-givers"
+        backLabel="Retour aux donneurs d'ordre"
+        onRetry={() => void refetch()}
+      />
     );
   }
 
