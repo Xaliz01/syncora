@@ -20,6 +20,10 @@ const nextConfig: NextConfig = {
   output: "standalone",
   // Monorepo : tracer les dépendances depuis la racine du repo (inclut @planwise/shared).
   outputFileTracingRoot: join(__dirname, "../../"),
+  images: {
+    // Logo avec `?v=` (cache-bust) : requis avant Next 16 (sinon warning / rejet).
+    localPatterns: [{ pathname: "/**" }],
+  },
   async headers() {
     return [
       {
