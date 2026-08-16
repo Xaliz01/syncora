@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -25,6 +26,7 @@ import { LegalConsentCheckbox } from "@/components/legal/LegalConsentCheckbox";
 import { BetaBadge } from "@/components/ui/BetaBadge";
 import { ProductScreenshotsRegister } from "@/components/landing/ProductScreenshots";
 import { LANDING_TAGLINE } from "@/lib/landing-copy";
+import { PLANWISE_LOGO_SRC } from "@/lib/brand-assets";
 
 type RegisterStep = "account" | "verify-email" | "organization";
 
@@ -201,10 +203,14 @@ export function RegisterPage() {
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950">
       <header className="border-b border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white font-semibold">
-              P
-            </span>
+          <Link href="/" className="flex items-center gap-2" aria-label="Planwise">
+            <Image
+              src={PLANWISE_LOGO_SRC}
+              alt=""
+              width={32}
+              height={32}
+              className="h-8 w-8 shrink-0"
+            />
             <div>
               <div className="font-semibold text-lg text-slate-900 dark:text-slate-100">
                 Planwise

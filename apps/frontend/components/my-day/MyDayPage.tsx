@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/components/auth/AuthContext";
 import { usePermissions } from "@/lib/hooks/usePermissions";
 import { useToast } from "@/components/ui/ToastProvider";
+import { PlanwiseLoader } from "@/components/ui/PlanwiseLoader";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import {
   InterventionPhotos,
@@ -717,7 +718,7 @@ export function MyDayPage() {
       {/* Content */}
       {isLoading ? (
         <div className="flex items-center justify-center py-16">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" />
+          <PlanwiseLoader size="md" label="Chargement…" />
         </div>
       ) : filtered.length === 0 && stats.total === 0 ? (
         <EmptyState />

@@ -1,17 +1,23 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { LEGAL_LAST_UPDATED } from "@/lib/legal/config";
 import { LegalFooter } from "@/components/legal/LegalFooter";
+import { PLANWISE_LOGO_SRC } from "@/lib/brand-assets";
 
 export function LegalPageLayout({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950">
       <header className="border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white font-semibold">
-              P
-            </span>
+          <Link href="/" className="flex items-center gap-2" aria-label="Planwise">
+            <Image
+              src={PLANWISE_LOGO_SRC}
+              alt=""
+              width={32}
+              height={32}
+              className="h-8 w-8 shrink-0"
+            />
             <span className="font-semibold text-slate-900 dark:text-slate-100">Planwise</span>
           </Link>
           <Link

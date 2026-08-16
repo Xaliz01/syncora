@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useRef, useState, Suspense } from "react";
 import { SidebarNavIcon } from "@/components/layout/sidebar-nav-icons";
@@ -15,6 +16,7 @@ import { OrganizationSwitcher } from "@/components/organization/OrganizationSwit
 import { hasAnyPermission, hasPermission } from "@/lib/auth-permissions";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { LANDING_TAGLINE } from "@/lib/landing-copy";
+import { PLANWISE_LOGO_SRC } from "@/lib/brand-assets";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { CrispHelpButton } from "@/components/support/CrispHelpButton";
 import { AssistantButton } from "@/components/assistant/AssistantDrawer";
@@ -402,9 +404,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </svg>
               </button>
               <Link href="/" className="flex items-center gap-2.5">
-                <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white font-semibold text-sm">
-                  P
-                </span>
+                <Image
+                  src={PLANWISE_LOGO_SRC}
+                  alt=""
+                  width={32}
+                  height={32}
+                  className="h-8 w-8 rounded-lg shrink-0"
+                  priority
+                />
                 <div className="hidden sm:block">
                   <div className="font-semibold text-sm leading-tight">Planwise</div>
                   <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
@@ -546,9 +553,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               />
               <aside className="absolute top-0 left-0 bottom-0 w-[280px] bg-white dark:bg-slate-900 shadow-xl overflow-y-auto border-r border-slate-200 dark:border-slate-800">
                 <div className="flex items-center gap-2.5 border-b border-slate-200 dark:border-slate-800 px-4 py-3">
-                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white font-semibold text-sm">
-                    P
-                  </span>
+                  <Image
+                    src={PLANWISE_LOGO_SRC}
+                    alt=""
+                    width={32}
+                    height={32}
+                    className="h-8 w-8 rounded-lg shrink-0"
+                  />
                   <div>
                     <div className="font-semibold text-sm leading-tight">Planwise</div>
                     <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">

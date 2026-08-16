@@ -4,6 +4,7 @@ import Link from "next/link";
 import React from "react";
 import { DEFAULT_PAGE_LIMIT } from "@planwise/shared";
 import { AppErrorAlert } from "@/components/ui/AppErrorAlert";
+import { PlanwiseLoader } from "@/components/ui/PlanwiseLoader";
 
 export const LIST_PAGE_SIZE = DEFAULT_PAGE_LIMIT;
 
@@ -120,8 +121,8 @@ export function ListToolbar({ children }: { children: React.ReactNode }) {
 
 export function ListLoadingState() {
   return (
-    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 text-sm text-slate-500 dark:text-slate-400">
-      Chargement…
+    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-10 flex justify-center">
+      <PlanwiseLoader size="md" label="Chargement…" />
     </div>
   );
 }

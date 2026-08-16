@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import {
   ADDON_CATALOG,
   BASE_SUBSCRIPTION_INCLUDED_USERS,
@@ -23,6 +24,7 @@ import {
   LANDING_TAGLINE,
   LANDING_VOICE_FEATURE,
 } from "@/lib/landing-copy";
+import { PLANWISE_LOGO_SRC } from "@/lib/brand-assets";
 
 const FEATURE_SECTIONS = [
   {
@@ -123,9 +125,14 @@ function LandingHeader() {
     <header className="sticky top-0 z-30 border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur">
       <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
         <Link href="/" className="flex items-center gap-2.5 shrink-0">
-          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white font-semibold text-sm">
-            P
-          </span>
+          <Image
+            src={PLANWISE_LOGO_SRC}
+            alt=""
+            width={32}
+            height={32}
+            className="h-8 w-8 rounded-lg shrink-0"
+            priority
+          />
           <div>
             <div className="font-semibold text-sm leading-tight text-slate-900 dark:text-slate-100">
               Planwise
@@ -513,9 +520,13 @@ export function LandingPage() {
       <footer className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
         <div className="max-w-6xl mx-auto px-4 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-500 dark:text-slate-400">
           <div className="flex items-center gap-2">
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-brand-600 text-white font-semibold text-xs">
-              P
-            </span>
+            <Image
+              src={PLANWISE_LOGO_SRC}
+              alt=""
+              width={28}
+              height={28}
+              className="h-7 w-7 rounded-md shrink-0"
+            />
             <span>Planwise — {LANDING_TAGLINE}</span>
             <BetaBadge />
           </div>

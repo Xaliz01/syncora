@@ -2,6 +2,7 @@
 
 import { createPortal } from "react-dom";
 import { useEffect, useState } from "react";
+import { PlanwiseLoader } from "@/components/ui/PlanwiseLoader";
 
 /**
  * Overlay plein écran (changement d’organisation, garde onboarding, etc.).
@@ -44,10 +45,7 @@ export function OrganizationSwitchOverlay({
     >
       <div className="animate-org-switch-backdrop absolute inset-0 bg-white/88 dark:bg-slate-950/92 backdrop-blur-md" />
       <div className="animate-org-switch-pop-in relative flex max-w-sm flex-col items-center gap-5 rounded-2xl border border-slate-200/90 bg-white/96 px-10 py-9 text-center shadow-2xl shadow-slate-900/15 dark:border-slate-700/90 dark:bg-slate-900/96 dark:shadow-black/50">
-        <div
-          className="h-14 w-14 rounded-full border-[3px] border-brand-500 border-t-transparent animate-spin"
-          aria-hidden
-        />
+        <PlanwiseLoader size="lg" ariaLabel={ariaLabel} />
         <div>
           <p className="text-base font-semibold text-slate-800 dark:text-slate-100">{title}</p>
           {organizationName ? (

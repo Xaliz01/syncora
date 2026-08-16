@@ -19,6 +19,7 @@ import {
 } from "@/lib/team-calendar-colors";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { ExportButton } from "@/components/ui/ExportButton";
+import { PlanwiseLoader } from "@/components/ui/PlanwiseLoader";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useAuth } from "@/components/auth/AuthContext";
 import { hasPermission } from "@/lib/auth-permissions";
@@ -830,7 +831,7 @@ function UnscheduledPanel({
       <div className="scrollbar-visible flex-1 min-h-0 overflow-y-scroll overscroll-contain p-2 pr-1 space-y-1.5">
         {isLoading && (
           <div className="flex items-center justify-center py-8">
-            <div className="w-5 h-5 border-2 border-slate-200 dark:border-slate-700 border-t-brand-600 rounded-full animate-spin" />
+            <PlanwiseLoader size="sm" ariaLabel="Chargement du planning" />
           </div>
         )}
 

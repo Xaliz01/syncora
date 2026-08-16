@@ -31,6 +31,7 @@ import {
   downloadTextFiles,
   parseFlexibleCsv,
 } from "@/lib/data-import-convert";
+import { PlanwiseLoader } from "@/components/ui/PlanwiseLoader";
 
 const CARD =
   "rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 space-y-3";
@@ -141,14 +142,16 @@ function SoftProgressLoader({
       className="rounded-xl border border-brand-200/80 dark:border-brand-500/30 bg-gradient-to-br from-brand-50 via-white to-slate-50 dark:from-brand-950/40 dark:via-slate-900 dark:to-slate-900 px-4 py-5"
     >
       <div className="flex items-start gap-3">
-        <div className="relative mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center">
-          <div className="absolute inset-0 rounded-full border-2 border-brand-200 dark:border-brand-500/40 border-t-brand-600 dark:border-t-brand-400 animate-spin" />
-          <span className="relative text-[10px] font-bold tracking-wide text-brand-700 dark:text-brand-300">
-            {badge}
-          </span>
+        <div className="mt-0.5 shrink-0">
+          <PlanwiseLoader size="md" ariaLabel={title} />
         </div>
         <div className="min-w-0 flex-1 space-y-2">
-          <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{title}</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{title}</p>
+            <span className="rounded-md bg-brand-100/80 dark:bg-brand-900/50 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-brand-700 dark:text-brand-300">
+              {badge}
+            </span>
+          </div>
           <p key={statusIndex} className="text-xs text-slate-600 dark:text-slate-300">
             {statusLines[statusIndex]}
           </p>

@@ -1,11 +1,10 @@
 import { Suspense } from "react";
 import { RegisterPage } from "@/components/auth/RegisterPage";
+import { PageLoadingFallback } from "@/components/ui/PageLoadingFallback";
 
 export default function Register() {
   return (
-    <Suspense
-      fallback={<div className="min-h-screen flex items-center justify-center">Chargement…</div>}
-    >
+    <Suspense fallback={<PageLoadingFallback />}>
       <RegisterPage />
     </Suspense>
   );

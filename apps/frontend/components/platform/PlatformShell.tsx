@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import type { PlatformAuthUser } from "@planwise/shared";
 import * as platformApi from "@/lib/platform.api";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { PlanwiseLoader } from "@/components/ui/PlanwiseLoader";
 
 const NAV = [
   { href: "/platform", label: "Tableau de bord" },
@@ -75,8 +76,8 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
 
   if (!ready) {
     return (
-      <div className="flex min-h-screen items-center justify-center text-sm text-slate-500">
-        Chargement…
+      <div className="flex min-h-screen items-center justify-center bg-slate-100 dark:bg-slate-950">
+        <PlanwiseLoader size="lg" label="Chargement…" />
       </div>
     );
   }

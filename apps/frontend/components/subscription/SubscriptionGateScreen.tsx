@@ -1,9 +1,11 @@
 "use client";
 
+import Image from "next/image";
 import { useAuth } from "@/components/auth/AuthContext";
 import { SubscriptionSection } from "@/components/subscription/SubscriptionSection";
 import { OrganizationSwitcher } from "@/components/organization/OrganizationSwitcher";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { PLANWISE_LOGO_SRC } from "@/lib/brand-assets";
 
 /**
  * Plein écran tant que l’organisation n’a pas `subscription.active`.
@@ -17,9 +19,14 @@ export function SubscriptionGateScreen() {
       <header className="border-b border-slate-200 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-slate-900/80">
         <div className="mx-auto flex max-w-4xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
           <div className="flex items-center gap-2.5">
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-white font-semibold text-sm">
-              P
-            </span>
+            <Image
+              src={PLANWISE_LOGO_SRC}
+              alt=""
+              width={36}
+              height={36}
+              className="h-9 w-9 rounded-lg shrink-0"
+              priority
+            />
             <div>
               <div className="font-semibold text-sm leading-tight text-slate-900 dark:text-slate-100">
                 Planwise

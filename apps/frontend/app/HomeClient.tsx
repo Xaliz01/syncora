@@ -9,6 +9,7 @@ import { RequireAuth } from "@/components/auth/RequireAuth";
 import { useAuth } from "@/components/auth/AuthContext";
 import { getAppOrigin, isLocalDevHost, isMarketingHost } from "@/lib/host-routing";
 import { postAuthHomePath } from "@/lib/subscription-access";
+import { PlanwiseLoader } from "@/components/ui/PlanwiseLoader";
 
 export function HomeClient() {
   const { isAuthenticated, isReady, user } = useAuth();
@@ -26,7 +27,7 @@ export function HomeClient() {
   if (!isReady) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <div className="text-slate-500 dark:text-slate-400">Chargement…</div>
+        <PlanwiseLoader size="lg" label="Chargement…" />
       </div>
     );
   }

@@ -15,6 +15,7 @@ import type {
 } from "@planwise/shared";
 import { TrialTestDataCard } from "@/components/test-data/TrialTestDataCard";
 import { ExportButton } from "@/components/ui/ExportButton";
+import { PlanwiseLoader } from "@/components/ui/PlanwiseLoader";
 import * as exportsApi from "@/lib/exports.api";
 import {
   getInterventionTypeAccentStyle,
@@ -375,8 +376,8 @@ export function DashboardPage() {
 
   if (canReadCases && isLoading) {
     return (
-      <div className="text-sm text-slate-500 dark:text-slate-400">
-        Chargement du tableau de bord…
+      <div className="flex justify-center py-16">
+        <PlanwiseLoader size="md" label="Chargement du tableau de bord…" />
       </div>
     );
   }

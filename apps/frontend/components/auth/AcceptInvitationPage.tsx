@@ -1,11 +1,13 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PASSWORD_POLICY_HINT, isPasswordPolicyValid } from "@planwise/shared";
 import { useAuth } from "@/components/auth/AuthContext";
 import { postAuthHomePath } from "@/lib/subscription-access";
 import { LegalConsentCheckbox } from "@/components/legal/LegalConsentCheckbox";
+import { PLANWISE_LOGO_SRC } from "@/lib/brand-assets";
 import * as authApi from "@/lib/auth.api";
 
 export function AcceptInvitationPage() {
@@ -96,9 +98,13 @@ export function AcceptInvitationPage() {
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950">
       <header className="border-b border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center gap-2">
-          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white font-semibold">
-            P
-          </span>
+          <Image
+            src={PLANWISE_LOGO_SRC}
+            alt=""
+            width={32}
+            height={32}
+            className="h-8 w-8 shrink-0"
+          />
           <div>
             <div className="font-semibold text-lg text-slate-900 dark:text-slate-100">Planwise</div>
             <div className="text-xs text-slate-500 dark:text-slate-400">

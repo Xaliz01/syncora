@@ -21,6 +21,7 @@ import {
   LANDING_TAGLINE,
   LOGIN_ASSISTANT_HIGHLIGHT,
 } from "@/lib/landing-copy";
+import { PLANWISE_LOGO_SRC } from "@/lib/brand-assets";
 
 const LOGIN_HIGHLIGHTS = [
   {
@@ -116,7 +117,7 @@ export function LoginPage() {
             aria-label="Planwise"
           >
             <Image
-              src="/planwise-logo-512.png"
+              src={PLANWISE_LOGO_SRC}
               alt=""
               width={32}
               height={32}
@@ -173,7 +174,7 @@ export function LoginPage() {
 
             <div className="mb-4 flex items-center gap-3">
               <Image
-                src="/planwise-logo-512.png"
+                src={PLANWISE_LOGO_SRC}
                 alt=""
                 width={44}
                 height={44}

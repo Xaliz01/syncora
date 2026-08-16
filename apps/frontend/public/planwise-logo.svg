@@ -1,13 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Planwise">
-  <rect width="512" height="512" rx="128" fill="#4338ca"/>
-  <text
-    x="256"
-    y="268"
-    text-anchor="middle"
-    dominant-baseline="central"
-    fill="#ffffff"
-    font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif"
-    font-size="300"
-    font-weight="600"
-  >P</text>
+  <rect width="512" height="512" rx="112" fill="#4338ca"/>
+  <!-- Balanced mark (~15% padding) -->
+  <g transform="translate(256 256) scale(0.85) translate(-256 -256)">
+    <rect x="148" y="118" width="56" height="276" rx="28" fill="#ffffff"/>
+    <path
+      fill="none"
+      stroke="#ffffff"
+      stroke-width="56"
+      stroke-linecap="round"
+      d="M204 146 H268 C328 146 372 190 372 250 C372 310 328 354 268 354 H236"
+    />
+    <rect x="230" y="210" width="48" height="18" rx="9" fill="#ffffff"/>
+    <rect x="230" y="241" width="78" height="18" rx="9" fill="#ffffff"/>
+    <rect x="230" y="272" width="48" height="18" rx="9" fill="#ffffff"/>
+  </g>
 </svg>

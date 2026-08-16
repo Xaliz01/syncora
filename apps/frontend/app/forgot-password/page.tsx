@@ -1,11 +1,10 @@
 import { Suspense } from "react";
 import { ForgotPasswordPage } from "@/components/auth/ForgotPasswordPage";
+import { PageLoadingFallback } from "@/components/ui/PageLoadingFallback";
 
 export default function ForgotPassword() {
   return (
-    <Suspense
-      fallback={<div className="min-h-screen flex items-center justify-center">Chargement…</div>}
-    >
+    <Suspense fallback={<PageLoadingFallback />}>
       <ForgotPasswordPage />
     </Suspense>
   );

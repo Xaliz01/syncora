@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
   ADDON_CATALOG,
   BASE_SUBSCRIPTION_INCLUDED_USERS,
@@ -8,6 +9,7 @@ import {
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { BetaBadge } from "@/components/ui/BetaBadge";
 import { LANDING_BETA_FREE_NOTE, LANDING_TAGLINE } from "@/lib/landing-copy";
+import { PLANWISE_LOGO_SRC } from "@/lib/brand-assets";
 
 const teamSuggestionAddon = ADDON_CATALOG.team_suggestion;
 const extraUsersAddon = ADDON_CATALOG.extra_users;
@@ -37,9 +39,14 @@ function TarifsHeader() {
     <header className="sticky top-0 z-30 border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur">
       <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
         <Link href="/" className="flex items-center gap-2.5 shrink-0">
-          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white font-semibold text-sm">
-            P
-          </span>
+          <Image
+            src={PLANWISE_LOGO_SRC}
+            alt=""
+            width={32}
+            height={32}
+            className="h-8 w-8 rounded-lg shrink-0"
+            priority
+          />
           <div>
             <div className="font-semibold text-sm leading-tight text-slate-900 dark:text-slate-100">
               Planwise

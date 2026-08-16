@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import Link from "next/link";
 import { globalSearch, type SearchResultItem } from "@/lib/search.api";
+import { PlanwiseLoader } from "@/components/ui/PlanwiseLoader";
 
 const TYPE_LABELS: Record<string, string> = {
   case: "Dossiers",
@@ -373,10 +374,7 @@ export function SearchResultsPage() {
 
       {isLoading && (
         <div className="flex items-center justify-center py-16">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 dark:border-slate-700 border-t-brand-600" />
-          <span className="ml-3 text-sm text-slate-500 dark:text-slate-400">
-            Recherche en cours…
-          </span>
+          <PlanwiseLoader size="md" label="Recherche en cours…" />
         </div>
       )}
 
