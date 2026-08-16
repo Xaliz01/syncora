@@ -9,7 +9,7 @@ import {
   Query,
   UseGuards,
 } from "@nestjs/common";
-import { AbstractPlatformService } from "../../domain/ports/platform.service.port";
+import { AbstractPlatformService } from "../../domain/ports/platform/platform.service.port";
 import {
   CurrentPlatformUser,
   PlatformJwtAuthGuard,
@@ -148,6 +148,12 @@ export class PlatformController {
   @UseGuards(PlatformJwtAuthGuard)
   getDashboard() {
     return this.platformService.getDashboard();
+  }
+
+  @Get("ops-health")
+  @UseGuards(PlatformJwtAuthGuard)
+  getOpsHealth() {
+    return this.platformService.getOpsHealth();
   }
 
   @Get("analytics/overview")

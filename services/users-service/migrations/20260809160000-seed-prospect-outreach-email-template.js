@@ -48,12 +48,12 @@ module.exports = {
     try {
       await col.dropIndex("purpose_1_name_1");
     } catch (err) {
-      if (err?.code !== 27 && err?.codeName !== "IndexNotFound") throw err;
+      if (err?.code !== 27 && err?.code !== 26 && err?.codeName !== "IndexNotFound" && err?.codeName !== "NamespaceNotFound") throw err;
     }
     try {
       await col.dropIndex("purpose_1_isDefault_1");
     } catch (err) {
-      if (err?.code !== 27 && err?.codeName !== "IndexNotFound") throw err;
+      if (err?.code !== 27 && err?.code !== 26 && err?.codeName !== "IndexNotFound" && err?.codeName !== "NamespaceNotFound") throw err;
     }
   },
 };

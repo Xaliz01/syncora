@@ -33,6 +33,7 @@ import type {
   PlatformLandingToAppVisitsResponse,
   PlatformLandingVisitsResponse,
   PlatformDashboardResponse,
+  PlatformOpsHealthResponse,
 } from "@planwise/shared";
 
 export abstract class AbstractPlatformService {
@@ -89,6 +90,7 @@ export abstract class AbstractPlatformService {
     offset?: number;
   }): Promise<PlatformLandingToAppVisitsResponse>;
   abstract getDashboard(): Promise<PlatformDashboardResponse>;
+  abstract getOpsHealth(): Promise<PlatformOpsHealthResponse>;
   abstract searchProspects(filters?: {
     page?: number;
     perPage?: number;

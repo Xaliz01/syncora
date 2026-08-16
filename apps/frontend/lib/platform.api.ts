@@ -30,6 +30,7 @@ import type {
   PlatformSendUserEmailBody,
   PlatformSendUserEmailResponse,
   PlatformDashboardResponse,
+  PlatformOpsHealthResponse,
   StartImpersonationBody,
 } from "@planwise/shared";
 import { apiRequestJson, getPlatformToken } from "./api-client";
@@ -72,6 +73,13 @@ export async function getPlatformDashboard() {
   return apiRequestJson<PlatformDashboardResponse>("GET", "/platform/dashboard", {
     platformBearer: true,
     fallbackError: "Impossible de charger le tableau de bord",
+  });
+}
+
+export async function getPlatformOpsHealth() {
+  return apiRequestJson<PlatformOpsHealthResponse>("GET", "/platform/ops-health", {
+    platformBearer: true,
+    fallbackError: "Impossible de charger la santé des services",
   });
 }
 

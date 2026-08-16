@@ -18,7 +18,7 @@ module.exports = {
       try {
         await db.collection("data_import_runs").dropIndex(name);
       } catch (err) {
-        if (err?.code !== 27 && err?.codeName !== "IndexNotFound") throw err;
+        if (err?.code !== 27 && err?.code !== 26 && err?.codeName !== "IndexNotFound" && err?.codeName !== "NamespaceNotFound") throw err;
       }
     }
   },

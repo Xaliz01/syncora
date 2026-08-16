@@ -6,8 +6,11 @@ import type {
   PlatformDashboardRecentLogin,
   PlatformDashboardResponse,
   PlatformDashboardVisit,
+  PlatformOpsHealthResponse,
+  PlatformServiceHealthStatus,
 } from "@planwise/shared";
 import * as platformApi from "@/lib/platform.api";
+import { PlanwiseLoader } from "@/components/ui/PlanwiseLoader";
 
 function formatNumber(n: number) {
   return new Intl.NumberFormat("fr-FR").format(n);
@@ -48,7 +51,7 @@ function shortVisitorKey(key: string): string {
   return `${trimmed.slice(0, 8)}…`;
 }
 
-type KpiTone = "brand" | "sky" | "emerald" | "amber" | "violet";
+type KpiTone = "brand" | "sky" | "emerald" | "amber" | "violet" | "yellow" | "red";
 
 const KPI_TONES: Record<
   KpiTone,
@@ -94,6 +97,20 @@ const KPI_TONES: Record<
     value: "text-violet-900 dark:text-violet-100",
     hint: "text-violet-600/70 dark:text-violet-400/70",
     bar: "bg-violet-500",
+  },
+  yellow: {
+    card: "border-yellow-200/80 bg-gradient-to-br from-yellow-50 to-white dark:border-yellow-800/60 dark:from-yellow-950/40 dark:to-slate-900",
+    label: "text-yellow-800 dark:text-yellow-300",
+    value: "text-yellow-950 dark:text-yellow-100",
+    hint: "text-yellow-700/70 dark:text-yellow-400/70",
+    bar: "bg-yellow-500",
+  },
+  red: {
+    card: "border-red-200/80 bg-gradient-to-br from-red-50 to-white dark:border-red-800/60 dark:from-red-950/40 dark:to-slate-900",
+    label: "text-red-700 dark:text-red-300",
+    value: "text-red-900 dark:text-red-100",
+    hint: "text-red-600/70 dark:text-red-400/70",
+    bar: "bg-red-500",
   },
 };
 
@@ -284,13 +301,226 @@ function RecentLoginsTable({ items }: { items: PlatformDashboardRecentLogin[] })
   );
 }
 
+function statusBadgeClass(status: PlatformServiceHealthStatus): string {
+  if (status === "up") {
+    return "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300";
+  }
+  if (status === "down") {
+    return "bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-300";
+  }
+  return "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300";
+}
+
+function statusLabel(status: PlatformServiceHealthStatus): string {
+  if (status === "up") return "UP";
+  if (status === "down") return "DOWN";
+  return "?";
+}
+
+function formatLatency(ms: number | null): string {
+  if (ms == null) return "—";
+  if (ms < 10) return `${ms.toFixed(1)} ms`;
+  return `${Math.round(ms)} ms`;
+}
+
+function formatRate(rate: number | null): string {
+  if (rate == null) return "—";
+  return `${(rate * 100).toFixed(rate < 0.01 ? 2 : 1)} %`;
+}
+
+function averageNullable(values: Array<number | null | undefined>): number | null {
+  const nums = values.filter((v): v is number => typeof v === "number" && Number.isFinite(v));
+  if (nums.length === 0) return null;
+  return nums.reduce((sum, v) => sum + v, 0) / nums.length;
+}
+
+function OpsMetricCard({
+  label,
+  value,
+  hint,
+  tone,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  tone: KpiTone;
+}) {
+  const styles = KPI_TONES[tone];
+  return (
+    <div className={`relative overflow-hidden rounded-xl border p-4 shadow-sm ${styles.card}`}>
+      <span className={`absolute inset-y-0 left-0 w-1 ${styles.bar}`} aria-hidden />
+      <p className={`pl-2 text-xs font-medium uppercase tracking-wide ${styles.label}`}>{label}</p>
+      <p className={`mt-1 pl-2 text-2xl font-semibold tabular-nums ${styles.value}`}>{value}</p>
+      {hint ? <p className={`mt-1 pl-2 text-[11px] ${styles.hint}`}>{hint}</p> : null}
+    </div>
+  );
+}
+
+function OpsHealthDetailsTable({ data }: { data: PlatformOpsHealthResponse }) {
+  return (
+    <div className="overflow-x-auto border-t border-slate-100 dark:border-slate-800">
+      <table className="min-w-full text-left text-sm">
+        <thead className="bg-slate-50 text-[11px] uppercase tracking-wide text-slate-500 dark:bg-slate-950 dark:text-slate-400">
+          <tr>
+            <th className="px-4 py-2 font-medium">Service</th>
+            <th className="px-4 py-2 font-medium">Statut</th>
+            <th className="px-4 py-2 font-medium">Latence moy.</th>
+            <th className="px-4 py-2 font-medium">Latence p95</th>
+            <th className="px-4 py-2 font-medium">4xx</th>
+            <th className="px-4 py-2 font-medium">5xx</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+          {data.services.map((row) => (
+            <tr key={row.service} className="text-slate-800 dark:text-slate-200">
+              <td className="px-4 py-2.5">
+                <div className="font-medium">{row.label}</div>
+                {row.slots && row.slots.length > 0 ? (
+                  <div className="mt-0.5 flex flex-wrap gap-1">
+                    {row.slots.map((slot) => (
+                      <span
+                        key={slot.slot}
+                        className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${statusBadgeClass(slot.status)}`}
+                      >
+                        {slot.slot}: {statusLabel(slot.status)}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+              </td>
+              <td className="px-4 py-2.5">
+                <span
+                  className={`inline-flex rounded-md px-2 py-0.5 text-xs font-semibold ${statusBadgeClass(row.status)}`}
+                >
+                  {statusLabel(row.status)}
+                </span>
+              </td>
+              <td className="px-4 py-2.5 tabular-nums text-slate-600 dark:text-slate-300">
+                {formatLatency(row.latencyMsAvg)}
+              </td>
+              <td className="px-4 py-2.5 tabular-nums text-slate-600 dark:text-slate-300">
+                {formatLatency(row.latencyMsP95)}
+              </td>
+              <td
+                className={`px-4 py-2.5 tabular-nums ${
+                  (row.errorRate4xx ?? 0) > 0.05
+                    ? "text-amber-700 dark:text-amber-300"
+                    : "text-slate-600 dark:text-slate-300"
+                }`}
+              >
+                {formatRate(row.errorRate4xx)}
+              </td>
+              <td
+                className={`px-4 py-2.5 tabular-nums ${
+                  (row.errorRate5xx ?? 0) > 0.01
+                    ? "text-red-700 dark:text-red-300"
+                    : "text-slate-600 dark:text-slate-300"
+                }`}
+              >
+                {formatRate(row.errorRate5xx)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function OpsHealthSection({
+  data,
+  loading,
+}: {
+  data: PlatformOpsHealthResponse | null;
+  loading: boolean;
+}) {
+  const [detailsOpen, setDetailsOpen] = useState(false);
+
+  const avg4xx = data?.available ? averageNullable(data.services.map((s) => s.errorRate4xx)) : null;
+  const avg5xx = data?.available ? averageNullable(data.services.map((s) => s.errorRate5xx)) : null;
+  const latencyAvg = data?.available
+    ? (data.summary.latencyMsAvg ?? averageNullable(data.services.map((s) => s.latencyMsAvg)))
+    : null;
+  const latencyP95 = data?.available
+    ? (data.summary.latencyMsP95 ?? averageNullable(data.services.map((s) => s.latencyMsP95)))
+    : null;
+
+  const statusValue = !data?.available
+    ? "—"
+    : data.summary.downCount > 0
+      ? `${data.summary.downCount} DOWN`
+      : data.summary.unknownCount > 0 && data.summary.upCount === 0
+        ? "?"
+        : "UP";
+  const statusHint = data?.available
+    ? `${data.summary.upCount} up · ${data.summary.downCount} down${
+        data.summary.unknownCount > 0 ? ` · ${data.summary.unknownCount} ?` : ""
+      }`
+    : undefined;
+  const statusTone: KpiTone =
+    !data?.available || data.summary.downCount > 0
+      ? "amber"
+      : data.summary.unknownCount > 0
+        ? "sky"
+        : "emerald";
+
+  return (
+    <section className="space-y-3">
+      {loading && !data ? (
+        <div className="flex justify-center rounded-xl border border-slate-200 bg-white py-10 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+          <PlanwiseLoader size="sm" label="Chargement…" />
+        </div>
+      ) : !data?.available ? (
+        <p className="rounded-xl border border-slate-200 bg-white px-4 py-6 text-sm text-slate-500 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+          {data?.message ??
+            "Métriques indisponibles. Vérifiez le profil monitoring et PROMETHEUS_URL."}
+        </p>
+      ) : (
+        <>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <OpsMetricCard label="Statut" value={statusValue} hint={statusHint} tone={statusTone} />
+            <OpsMetricCard
+              label="Latence"
+              value={formatLatency(latencyAvg)}
+              hint={`p95 ${formatLatency(latencyP95)} · tous services`}
+              tone="brand"
+            />
+            <OpsMetricCard label="4xx" value={formatRate(avg4xx)} hint="Taux moyen" tone="yellow" />
+            <OpsMetricCard label="5xx" value={formatRate(avg5xx)} hint="Taux moyen" tone="red" />
+          </div>
+
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => setDetailsOpen((open) => !open)}
+              className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
+              aria-expanded={detailsOpen}
+            >
+              {detailsOpen ? "Masquer le détail" : "Voir le détail"}
+            </button>
+          </div>
+
+          {detailsOpen ? (
+            <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+              <OpsHealthDetailsTable data={data} />
+            </div>
+          ) : null}
+        </>
+      )}
+    </section>
+  );
+}
+
 export function PlatformDashboardPage() {
   const [data, setData] = useState<PlatformDashboardResponse | null>(null);
+  const [opsHealth, setOpsHealth] = useState<PlatformOpsHealthResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [opsLoading, setOpsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const load = () => {
     setLoading(true);
+    setOpsLoading(true);
     platformApi
       .getPlatformDashboard()
       .then((res) => {
@@ -299,6 +529,28 @@ export function PlatformDashboardPage() {
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Erreur"))
       .finally(() => setLoading(false));
+
+    platformApi
+      .getPlatformOpsHealth()
+      .then((res) => setOpsHealth(res))
+      .catch(() =>
+        setOpsHealth({
+          available: false,
+          source: "unavailable",
+          window: "5m",
+          fetchedAt: new Date().toISOString(),
+          message: "Impossible de charger la santé des services.",
+          services: [],
+          summary: {
+            upCount: 0,
+            downCount: 0,
+            unknownCount: 0,
+            latencyMsAvg: null,
+            latencyMsP95: null,
+          },
+        }),
+      )
+      .finally(() => setOpsLoading(false));
   };
 
   useEffect(() => {
@@ -330,8 +582,12 @@ export function PlatformDashboardPage() {
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
+      <OpsHealthSection data={opsHealth} loading={opsLoading} />
+
       {loading && !data ? (
-        <p className="text-sm text-slate-500">Chargement…</p>
+        <div className="flex justify-center py-10">
+          <PlanwiseLoader size="md" label="Chargement…" />
+        </div>
       ) : data ? (
         <>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">

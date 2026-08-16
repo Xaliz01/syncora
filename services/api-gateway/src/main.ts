@@ -1,3 +1,9 @@
+import { config } from "dotenv";
+import { resolve } from "node:path";
+
+/** Avant `tracer` : OTEL_* doit être chargé avant initTelemetry. */
+config({ path: resolve(__dirname, "../.env") });
+
 import "./tracer";
 import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";

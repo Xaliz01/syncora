@@ -109,14 +109,26 @@ async function waitForAllMicroservices() {
   );
 }
 
+/**
+ * OTEL doit être dans process.env *avant* le premier import de `tracer.ts`.
+ * Les `.env` Nest / dotenv arrivent trop tard ; on injecte donc ici pour tout
+ * `npm run backend` (gateway + microservices). Surcharge possible via export shell.
+ */
+function withLocalOtelEnv(baseEnv = process.env) {
+  return {
+    ...baseEnv,
+    TS_NODE_TRANSPILE_ONLY: "true",
+    OTEL_TRACES_ENABLED: baseEnv.OTEL_TRACES_ENABLED ?? "true",
+    OTEL_EXPORTER_OTLP_ENDPOINT:
+      baseEnv.OTEL_EXPORTER_OTLP_ENDPOINT ?? "http://127.0.0.1:4318",
+  };
+}
+
 function spawnNpmScript(scriptName) {
   const child = spawn("npm", ["run", scriptName], {
     stdio: "inherit",
     shell: true,
-    env: {
-      ...process.env,
-      TS_NODE_TRANSPILE_ONLY: "true",
-    },
+    env: withLocalOtelEnv(),
   });
   children.push(child);
   return child;

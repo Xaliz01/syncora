@@ -25,7 +25,7 @@ module.exports = {
       } catch (err) {
         const code = err && typeof err === "object" ? err.code : undefined;
         const codeName = err && typeof err === "object" ? err.codeName : undefined;
-        if (code !== 27 && codeName !== "IndexNotFound") throw err;
+        if (code !== 27 && code !== 26 && codeName !== "IndexNotFound" && codeName !== "NamespaceNotFound") throw err;
       }
     }
   },

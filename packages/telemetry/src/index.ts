@@ -74,6 +74,8 @@ export function initTelemetry(defaultServiceName: string): void {
 
   sdk.start();
   started = true;
+  // Visible au boot local pour confirmer que Tempo/collector recevront bien des spans.
+  console.info(`[otel] traces enabled → ${tracesUrl} (service=${serviceName})`);
 
   const shutdown = () => {
     void sdk.shutdown();

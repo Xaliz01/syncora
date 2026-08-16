@@ -38,6 +38,7 @@ export * from "./test-data";
 export * from "./data-import";
 export * from "./platform";
 export * from "./analytics";
+export * from "./platform-ops-health";
 export * from "./cron-run";
 export * from "./pagination";
 export * from "./maintenance-contract";

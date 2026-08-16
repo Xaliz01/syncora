@@ -8,9 +8,9 @@
 #   → OTel OTLP http://127.0.0.1:4318
 #
 # Backend avec traces :
-#   export OTEL_TRACES_ENABLED=true
-#   export OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318
+#   npm run monitoring:local
 #   npm run backend
+#   (`scripts/backend-run.mjs` active OTEL → http://127.0.0.1:4318 par défaut)
 
 services:
   mongodb:

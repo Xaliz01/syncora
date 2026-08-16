@@ -6,7 +6,14 @@ import {
 } from "@nestjs/common";
 import { of, throwError } from "rxjs";
 import { PLATFORM_CRON_JOBS } from "@planwise/shared";
-import { PlatformService } from "../platform.service";
+import { PlatformService } from "../platform/platform.service";
+import { PlatformAuthService } from "../platform/platform-auth.service";
+import { PlatformDashboardService } from "../platform/platform-dashboard.service";
+import { PlatformDirectoryService } from "../platform/platform-directory.service";
+import { PlatformEmailTemplatesService } from "../platform/platform-email-templates.service";
+import { PlatformIntegrationsCronsService } from "../platform/platform-integrations-crons.service";
+import { PlatformOrgLookupService } from "../platform/platform-org-lookup.service";
+import { PlatformProspectsService } from "../platform/platform-prospects.service";
 
 describe("PlatformService", () => {
   const httpService = { get: jest.fn(), post: jest.fn() };
@@ -18,6 +25,25 @@ describe("PlatformService", () => {
   const analyticsGateway = {
     trackPageview: jest.fn(),
     getOverview: jest.fn(),
+    listLandingVisits: jest.fn(),
+    listLandingToAppVisits: jest.fn(),
+    listPathVisits: jest.fn(),
+  };
+  const prometheusOpsHealth = {
+    getOpsHealth: jest.fn().mockResolvedValue({
+      available: false,
+      source: "unavailable",
+      window: "5m",
+      fetchedAt: new Date().toISOString(),
+      services: [],
+      summary: {
+        upCount: 0,
+        downCount: 0,
+        unknownCount: 0,
+        latencyMsAvg: null,
+        latencyMsP95: null,
+      },
+    }),
   };
 
   let service: PlatformService;
@@ -26,11 +52,33 @@ describe("PlatformService", () => {
     jest.clearAllMocks();
     process.env.PLATFORM_STAFF_EMAILS = "mail@benoistbabin.fr";
     process.env.PLATFORM_STAFF_EMAIL_DOMAINS = "planwise.fr";
-    service = new PlatformService(
-      httpService as never,
+
+    const http = httpService as never;
+    const orgLookup = new PlatformOrgLookupService(http);
+    const auth = new PlatformAuthService(http, jwtService as never);
+    const directory = new PlatformDirectoryService(
+      http,
       jwtService as never,
       subscriptionsGateway as never,
+      orgLookup,
+    );
+    const integrationsCrons = new PlatformIntegrationsCronsService(http, orgLookup);
+    const dashboard = new PlatformDashboardService(
+      http,
       analyticsGateway as never,
+      prometheusOpsHealth as never,
+      orgLookup,
+    );
+    const emailTemplates = new PlatformEmailTemplatesService(http);
+    const prospects = new PlatformProspectsService(http, emailTemplates);
+
+    service = new PlatformService(
+      auth,
+      directory,
+      integrationsCrons,
+      dashboard,
+      prospects,
+      emailTemplates,
     );
   });
 

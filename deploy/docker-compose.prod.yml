@@ -51,6 +51,7 @@ x-api-gateway: &api-gateway
     <<: *service-urls
     OTEL_TRACES_ENABLED: ${OTEL_TRACES_ENABLED:-false}
     OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
+    PROMETHEUS_URL: ${PROMETHEUS_URL:-http://prometheus:9090}
     NODE_ENV: production
     PORT: "3000"
     JWT_SECRET: ${JWT_SECRET:?JWT_SECRET requis}

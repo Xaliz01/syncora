@@ -426,6 +426,11 @@ Dashboards provisionnés automatiquement (dossier Grafana **Planwise**) :
 - **Planwise — Logs** — volume + recherche filtrée par service Compose
 - **Planwise — API & traces** — (si Tempo / OTEL activés)
 
+Le tableau de bord backoffice (`/platform`) affiche aussi une section **Santé des
+services** (UP blackbox, latence moyenne, taux 4xx/5xx) via Prometheus
+(`PROMETHEUS_URL`, défaut `http://prometheus:9090` sur le réseau Docker). Les
+latences / taux d’erreur nécessitent `OTEL_TRACES_ENABLED=true` (métriques Tempo).
+
 ### Logs applicatifs (Loki)
 
 Dans Grafana : **Explore** → datasource **Loki**, ou dashboard **Planwise — Logs**.
@@ -513,10 +518,14 @@ En local (`npm run backend`) avec le collector Docker :
 
 ```bash
 npm run monitoring:local
-export OTEL_TRACES_ENABLED=true
-export OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318
 npm run backend
 ```
+
+`scripts/backend-run.mjs` active automatiquement `OTEL_TRACES_ENABLED=true` et
+`OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318` (surcharge possible via `export`).
+Après démarrage, les logs doivent contenir `[otel] traces enabled → …`.
+Si Tempo reste vide : le tracer a démarré **avant** le chargement des variables
+(souvent un `start:dev` isolé sans `npm run backend`) — relancer via `npm run backend`.
 
 Grafana local : [http://localhost:3030](http://localhost:3030) (`admin` / `admin` par défaut).
 Dashboards : **Infra & disponibilité**, **API & traces** (endpoints, statuts HTTP, latence).
