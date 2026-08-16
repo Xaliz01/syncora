@@ -68,6 +68,7 @@ describe("MaintenanceContractsService", () => {
       dueDate: string;
       generatedAt: string;
     }>,
+    deletedAt: null as Date | null,
     save: jest.fn().mockResolvedValue(undefined),
     createdAt: new Date("2026-01-01"),
     updatedAt: new Date("2026-01-01"),
@@ -315,6 +316,19 @@ describe("MaintenanceContractsService", () => {
 
       expect(doc.reminderSentForDueDate).toBe("2026-03-15");
       expect(result.reminderSentForDueDate).toBe("2026-03-15");
+    });
+  });
+
+  describe("remove", () => {
+    it("soft-delete le contrat", async () => {
+      const doc = mockContractDoc();
+      mockContractModel.findOne.mockReturnValue({ exec: () => Promise.resolve(doc) });
+
+      const result = await service.remove(orgId, contractId);
+
+      expect(doc.deletedAt).toEqual(expect.any(Date));
+      expect(doc.save).toHaveBeenCalled();
+      expect(result).toEqual({ deleted: true });
     });
   });
 

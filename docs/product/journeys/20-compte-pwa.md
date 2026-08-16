@@ -12,6 +12,13 @@ Gérer le compte personnel, le confort d’usage, et l’installation mobile.
 4. Liens vers les pages légales.
 5. Préférences synchronisées (serveur + local pour thème / sidebar). Le thème est aussi accessible via le toggle de l’en-tête.
 
+## Mot de passe oublié
+
+1. Depuis **Connexion**, lien **Mot de passe oublié ?** → `/forgot-password`.
+2. Saisir l’e-mail du compte : message neutre (même si l’adresse est inconnue).
+3. Lien reçu par e-mail → `/reset-password?token=…` (valable 1 heure, usage unique).
+4. Nouveau mot de passe → connexion ; les sessions ouvertes sont déconnectées.
+
 ## Application installable (PWA)
 
 - Planwise est installable (manifest « standalone », démarrage souvent via `/login`).

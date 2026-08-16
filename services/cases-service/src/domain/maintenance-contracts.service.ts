@@ -8,6 +8,7 @@ import {
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import {
+  activeDocumentFilter,
   clampPagination,
   MAINTENANCE_CONTRACT_STATUSES,
   organizationScopeFilter,
@@ -151,6 +152,7 @@ export class MaintenanceContractsService {
     });
     const query: Record<string, unknown> = {
       ...organizationScopeFilter(organizationId),
+      ...activeDocumentFilter,
     };
     if (filters?.customerId?.trim()) query.customerId = filters.customerId.trim();
     if (filters?.status?.trim()) {
@@ -278,7 +280,8 @@ export class MaintenanceContractsService {
 
   async remove(organizationId: string, contractId: string): Promise<{ deleted: true }> {
     const doc = await this.findInOrg(organizationId, contractId);
-    await doc.deleteOne();
+    doc.deletedAt = new Date();
+    await doc.save();
     return { deleted: true };
   }
 
@@ -394,6 +397,7 @@ export class MaintenanceContractsService {
       .find({
         status: "active",
         nextDueDate: { $lte: horizon },
+        ...activeDocumentFilter,
       })
       .exec();
 
@@ -453,6 +457,7 @@ export class MaintenanceContractsService {
     const docs = await this.contractModel
       .find({
         ...organizationScopeFilter(organizationId),
+        ...activeDocumentFilter,
         ...this.toScheduleMongoFilter(today),
       })
       .sort({ nextDueDate: 1 })
@@ -483,6 +488,7 @@ export class MaintenanceContractsService {
       .find({
         status: "active",
         nextDueDate: { $lte: horizon },
+        ...activeDocumentFilter,
         $or: [
           { schedulingMode: "schedule_with_client" },
           { schedulingMode: { $exists: false } },
@@ -560,7 +566,11 @@ export class MaintenanceContractsService {
     contractId: string,
   ): Promise<MaintenanceContractDocument> {
     const doc = await this.contractModel
-      .findOne({ _id: contractId, ...organizationScopeFilter(organizationId) })
+      .findOne({
+        _id: contractId,
+        ...organizationScopeFilter(organizationId),
+        ...activeDocumentFilter,
+      })
       .exec();
     if (!doc) throw new NotFoundException("Contrat de maintenance introuvable");
     return doc;

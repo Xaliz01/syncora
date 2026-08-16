@@ -45,6 +45,24 @@ export interface IssueEmailVerificationResult {
   emailVerificationCode: string;
 }
 
+/**
+ * Résultat interne users-service → gateway (jeton une seule fois pour l'e-mail).
+ * Ne jamais exposer `resetToken` au client.
+ */
+export interface IssuePasswordResetResult {
+  email: string;
+  resetToken: string;
+}
+
+export interface RequestPasswordResetBody {
+  email: string;
+}
+
+export interface ConfirmPasswordResetBody {
+  token: string;
+  newPassword: string;
+}
+
 export interface UserResponse {
   id: string;
   organizationId: string;

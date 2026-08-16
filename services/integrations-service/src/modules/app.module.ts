@@ -8,6 +8,7 @@ import {
   provideHttpAccessLogInterceptor,
 } from "@planwise/shared/nest";
 import { IntegrationsController } from "../presentation/http/integrations.controller";
+import { TestDataController } from "../presentation/http/test-data.controller";
 import { AbstractIntegrationsService } from "../domain/ports/integrations.service.port";
 import { IntegrationsService } from "../domain/integrations.service";
 import {
@@ -38,7 +39,7 @@ import { CronRunRecorder } from "../domain/cron-run.recorder";
       { name: "CronRun", schema: CronRunSchema },
     ]),
   ],
-  controllers: [IntegrationsController, HealthController],
+  controllers: [IntegrationsController, TestDataController, HealthController],
   providers: [
     provideHealthServiceName("planwise-integrations-service"),
     provideHttpAccessLogInterceptor(),

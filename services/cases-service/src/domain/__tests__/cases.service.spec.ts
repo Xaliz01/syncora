@@ -65,6 +65,7 @@ describe("CasesService", () => {
     findOne: jest.Mock;
     findOneAndUpdate: jest.Mock;
     updateOne: jest.Mock;
+    updateMany: jest.Mock;
     countDocuments: jest.Mock;
   };
 
@@ -193,6 +194,7 @@ describe("CasesService", () => {
       findOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
       findOneAndUpdate: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
       updateOne: jest.fn().mockImplementation(() => updateChain()),
+      updateMany: jest.fn().mockImplementation(() => updateChain()),
       countDocuments: jest.fn().mockResolvedValue(0),
     };
 
@@ -521,7 +523,7 @@ describe("CasesService", () => {
   });
 
   describe("deleteCase", () => {
-    it("should soft-delete case and interventions", async () => {
+    it("should soft-delete case, interventions, comments and quotes", async () => {
       const result = await service.deleteCase("case-123", "org-1");
 
       expect(mockCaseModel.updateOne).toHaveBeenCalledWith(
@@ -529,6 +531,10 @@ describe("CasesService", () => {
         { $set: { deletedAt: expect.any(Date) } },
       );
       expect(mockInterventionModel.updateMany).toHaveBeenCalledWith(
+        { caseId: "case-123", organizationId: "org-1", ...activeDocumentFilter },
+        { $set: { deletedAt: expect.any(Date) } },
+      );
+      expect(mockQuoteModel.updateMany).toHaveBeenCalledWith(
         { caseId: "case-123", organizationId: "org-1", ...activeDocumentFilter },
         { $set: { deletedAt: expect.any(Date) } },
       );

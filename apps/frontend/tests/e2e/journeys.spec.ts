@@ -31,6 +31,12 @@ test.describe("Accès invité", () => {
 
     await page.goto("/accept-invitation");
     await expect(page.getByRole("heading", { name: "Rejoindre l'organisation" })).toBeVisible();
+
+    await page.goto("/forgot-password");
+    await expect(page.getByRole("heading", { name: "Mot de passe oublié" })).toBeVisible();
+
+    await page.goto("/reset-password?token=test-token");
+    await expect(page.getByRole("heading", { name: "Nouveau mot de passe" })).toBeVisible();
   });
 });
 
@@ -52,6 +58,17 @@ test.describe("Parcours navigation auth", () => {
     ]);
     // Lien register → /login?open=1 : modal déjà ouverte
     await expect(page.getByRole("heading", { name: "Connexion" })).toBeVisible();
+  });
+
+  test("ouvre mot de passe oublié depuis la connexion", async ({ page }) => {
+    await page.goto("/login?open=1");
+    await expect(page.getByRole("heading", { name: "Connexion" })).toBeVisible();
+
+    await Promise.all([
+      page.waitForURL(/\/forgot-password/),
+      page.getByRole("link", { name: "Mot de passe oublié ?" }).click(),
+    ]);
+    await expect(page.getByRole("heading", { name: "Mot de passe oublié" })).toBeVisible();
   });
 
   test("utilise le token d'invitation depuis l'URL sans champ manuel", async ({ page }) => {

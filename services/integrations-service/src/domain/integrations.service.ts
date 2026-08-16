@@ -170,7 +170,11 @@ export class IntegrationsService extends AbstractIntegrationsService {
       throw new BadRequestException("caseId est requis.");
     }
     const docs = await this.syncModel
-      .find({ ...organizationScopeFilter(orgId), caseId: caseId.trim() })
+      .find({
+        ...organizationScopeFilter(orgId),
+        caseId: caseId.trim(),
+        detachedAt: { $exists: false },
+      })
       .sort({ createdAt: -1 })
       .exec();
     return { invoices: docs.map((doc) => toCaseInvoiceSyncStatus(doc)) };
@@ -296,7 +300,10 @@ export class IntegrationsService extends AbstractIntegrationsService {
       caseIds?: string[];
     },
   ): Record<string, unknown> {
-    const query: Record<string, unknown> = { ...organizationScopeFilter(organizationId) };
+    const query: Record<string, unknown> = {
+      ...organizationScopeFilter(organizationId),
+      detachedAt: { $exists: false },
+    };
     if (filters?.caseIds?.length) {
       const ids = [...new Set(filters.caseIds.map((id) => id.trim()).filter(Boolean))].slice(
         0,
@@ -409,7 +416,12 @@ export class IntegrationsService extends AbstractIntegrationsService {
       }
     }
 
-    await this.syncModel.deleteOne({ _id: doc._id, ...organizationScopeFilter(orgId) }).exec();
+    await this.syncModel
+      .updateOne(
+        { _id: doc._id, ...organizationScopeFilter(orgId) },
+        { $set: { detachedAt: new Date() } },
+      )
+      .exec();
     return this.getCaseInvoiceSync(orgId, caseId);
   }
 
@@ -419,6 +431,8 @@ export class IntegrationsService extends AbstractIntegrationsService {
     // quand le volume dépasse la taille du batch.
     const pending = await this.syncModel
       .find({
+        caseMissingAt: { $exists: false },
+        detachedAt: { $exists: false },
         $or: [
           { draft: true },
           { remoteStatus: { $in: ["draft", "finalized", "unknown", null] } },
@@ -472,6 +486,37 @@ export class IntegrationsService extends AbstractIntegrationsService {
     }
 
     return { refreshed: pending.length, skipped, updated, errors };
+  }
+
+  async markInvoiceSyncsCaseMissing(organizationId: string, caseId: string): Promise<number> {
+    const orgId = organizationId.trim();
+    const cid = caseId.trim();
+    if (!orgId || !cid) return 0;
+    const result = await this.syncModel
+      .updateMany(
+        {
+          ...organizationScopeFilter(orgId),
+          caseId: cid,
+          caseMissingAt: { $exists: false },
+          detachedAt: { $exists: false },
+        },
+        { $set: { caseMissingAt: new Date(), lastSyncedAt: new Date() } },
+      )
+      .exec();
+    return result.modifiedCount ?? 0;
+  }
+
+  async purgeTestData(organizationId: string): Promise<{ purged: true }> {
+    const orgId = organizationId.trim();
+    if (!orgId) return { purged: true };
+    const scope = organizationScopeFilter(orgId);
+    // Mode démo uniquement : ne pas toucher aux syncs / credentials Pennylane ou Qonto réels.
+    await Promise.all([
+      this.syncModel.deleteMany({ ...scope, provider: "demo" }).exec(),
+      this.credentialModel.deleteMany({ ...scope, authMethod: "demo" }).exec(),
+      this.credentialModel.deleteMany({ ...scope, provider: "demo" }).exec(),
+    ]);
+    return { purged: true };
   }
 
   async listPlatformIntegrations(filters?: {
@@ -543,6 +588,7 @@ export class IntegrationsService extends AbstractIntegrationsService {
         ...organizationScopeFilter(organizationId),
         caseId: caseId.trim(),
         _id: syncId.trim(),
+        detachedAt: { $exists: false },
       })
       .exec();
     if (!doc) {

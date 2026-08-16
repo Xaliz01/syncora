@@ -109,6 +109,15 @@ export abstract class AbstractIntegrationsService {
 
   abstract refreshPendingInvoiceSyncs(): Promise<RefreshPendingInvoiceSyncsResult>;
 
+  /**
+   * Marque les syncs d’un dossier comme orphelines (dossier 404) sans les supprimer —
+   * conserve la trace facture ; le cron les ignore ensuite.
+   */
+  abstract markInvoiceSyncsCaseMissing(organizationId: string, caseId: string): Promise<number>;
+
+  /** Purge données d’essai : syncs + credentials mode démo de l’organisation. */
+  abstract purgeTestData(organizationId: string): Promise<{ purged: true }>;
+
   abstract listPlatformIntegrations(filters?: {
     provider?: string;
     organizationId?: string;

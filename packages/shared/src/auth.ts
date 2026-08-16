@@ -45,6 +45,29 @@ export interface ResendEmailVerificationResponse {
   debugVerificationCode?: string;
 }
 
+/** Demande de réinitialisation de mot de passe (réponse toujours neutre). */
+export interface ForgotPasswordBody {
+  email: string;
+}
+
+export interface ForgotPasswordResponse {
+  ok: true;
+  /**
+   * Présent uniquement hors production (tests locaux).
+   * Ne jamais s'y fier en production.
+   */
+  debugResetToken?: string;
+}
+
+export interface ResetPasswordBody {
+  token: string;
+  newPassword: string;
+}
+
+export interface ResetPasswordResponse {
+  ok: true;
+}
+
 /** Profil minimal pendant l'onboarding (pas encore d'organisation). */
 export interface OnboardingUser {
   id: string;

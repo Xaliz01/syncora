@@ -1,15 +1,17 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getModelToken } from "@nestjs/mongoose";
 import { BadRequestException, ConflictException, NotFoundException } from "@nestjs/common";
+import { activeDocumentFilter } from "@planwise/shared";
 import { TeamsService } from "../teams.service";
 
 describe("TeamsService", () => {
   let service: TeamsService;
   let mockTeamModel: {
     create: jest.Mock;
-    findById: jest.Mock;
+    findOne: jest.Mock;
     find: jest.Mock;
     findOneAndUpdate: jest.Mock;
+    updateOne: jest.Mock;
   };
   let mockAgenceModel: {
     find: jest.Mock;
@@ -31,7 +33,6 @@ describe("TeamsService", () => {
           : undefined,
     ),
     save: jest.fn().mockResolvedValue(undefined),
-    deleteOne: jest.fn().mockResolvedValue(undefined),
     ...overrides,
   });
 
@@ -40,11 +41,14 @@ describe("TeamsService", () => {
 
     mockTeamModel = {
       create: jest.fn(),
-      findById: jest.fn().mockReturnValue({ exec: execMock }),
+      findOne: jest.fn().mockReturnValue({ exec: execMock }),
       find: jest.fn().mockReturnValue({
         sort: jest.fn().mockReturnValue({ exec: execMock }),
       }),
       findOneAndUpdate: jest.fn().mockReturnValue({ exec: execMock }),
+      updateOne: jest.fn().mockReturnValue({
+        exec: jest.fn().mockResolvedValue({ matchedCount: 1, modifiedCount: 1 }),
+      }),
     };
 
     mockAgenceModel = {
@@ -156,7 +160,7 @@ describe("TeamsService", () => {
   describe("updateTeam", () => {
     it("should update fields and save", async () => {
       const doc = mockTeamDoc();
-      mockTeamModel.findById.mockReturnValue({
+      mockTeamModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(doc),
       });
 
@@ -170,7 +174,7 @@ describe("TeamsService", () => {
     });
 
     it("should throw NotFoundException when not found", async () => {
-      mockTeamModel.findById.mockReturnValue({
+      mockTeamModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(null),
       });
 
@@ -183,19 +187,23 @@ describe("TeamsService", () => {
   describe("getTeam", () => {
     it("should return team when found", async () => {
       const doc = mockTeamDoc();
-      mockTeamModel.findById.mockReturnValue({
+      mockTeamModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(doc),
       });
 
       const result = await service.getTeam("org-1", "team-123");
 
-      expect(mockTeamModel.findById).toHaveBeenCalledWith("team-123");
+      expect(mockTeamModel.findOne).toHaveBeenCalledWith({
+        _id: "team-123",
+        organizationId: "org-1",
+        ...activeDocumentFilter,
+      });
       expect(result.id).toBe("team-123");
       expect(result.name).toBe("Équipe A");
     });
 
     it("should throw NotFoundException when not found", async () => {
-      mockTeamModel.findById.mockReturnValue({
+      mockTeamModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(null),
       });
 
@@ -223,7 +231,10 @@ describe("TeamsService", () => {
 
       const result = await service.listTeams("org-1");
 
-      expect(mockTeamModel.find).toHaveBeenCalledWith({ organizationId: "org-1" });
+      expect(mockTeamModel.find).toHaveBeenCalledWith({
+        organizationId: "org-1",
+        ...activeDocumentFilter,
+      });
       expect(result).toHaveLength(2);
       expect(result[0].agenceName).toBe("Agence Paris");
       expect(result[1].agenceName).toBe("Agence Lyon");
@@ -231,15 +242,13 @@ describe("TeamsService", () => {
   });
 
   describe("deleteTeam", () => {
-    it("should delete team when found", async () => {
-      const doc = mockTeamDoc();
-      mockTeamModel.findById.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(doc),
-      });
-
+    it("should soft-delete team when found", async () => {
       const result = await service.deleteTeam("org-1", "team-123");
 
-      expect(doc.deleteOne).toHaveBeenCalled();
+      expect(mockTeamModel.updateOne).toHaveBeenCalledWith(
+        { _id: "team-123", organizationId: "org-1", ...activeDocumentFilter },
+        { $set: { deletedAt: expect.any(Date) } },
+      );
       expect(result).toEqual({ deleted: true });
     });
   });
@@ -247,7 +256,7 @@ describe("TeamsService", () => {
   describe("addMember", () => {
     it("should add technician to team", async () => {
       const doc = mockTeamDoc({ technicianIds: ["tech-1"] });
-      mockTeamModel.findById.mockReturnValue({
+      mockTeamModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(doc),
       });
 
@@ -269,7 +278,7 @@ describe("TeamsService", () => {
       const result = await service.removeMember("org-1", "team-123", "tech-2");
 
       expect(mockTeamModel.findOneAndUpdate).toHaveBeenCalledWith(
-        { _id: "team-123", organizationId: "org-1" },
+        { _id: "team-123", organizationId: "org-1", ...activeDocumentFilter },
         { $pull: { technicianIds: "tech-2" } },
         { new: true },
       );

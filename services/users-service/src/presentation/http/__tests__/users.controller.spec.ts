@@ -25,6 +25,8 @@ describe("UsersController", () => {
       createAccount: jest.fn(),
       verifyEmail: jest.fn(),
       resendEmailVerification: jest.fn(),
+      requestPasswordReset: jest.fn(),
+      confirmPasswordReset: jest.fn(),
       findAccountById: jest.fn(),
       invite: jest.fn(),
       activateInvitedUser: jest.fn(),

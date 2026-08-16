@@ -17,6 +17,7 @@ describe("IntegrationsService", () => {
     find: jest.fn(),
     findOneAndUpdate: jest.fn(),
     deleteOne: jest.fn(),
+    deleteMany: jest.fn(),
     updateOne: jest.fn(),
   };
   const syncModel = {
@@ -24,6 +25,9 @@ describe("IntegrationsService", () => {
     find: jest.fn(),
     create: jest.fn(),
     deleteOne: jest.fn(),
+    deleteMany: jest.fn(),
+    updateOne: jest.fn(),
+    updateMany: jest.fn(),
     countDocuments: jest.fn(),
   };
   const httpService = {
@@ -1056,13 +1060,18 @@ describe("IntegrationsService", () => {
           invoiceKind: "full",
         };
         syncModel.findOne.mockReturnValue({ exec: async () => doc });
-        syncModel.deleteOne.mockReturnValue({ exec: async () => ({ deletedCount: 1 }) });
+        syncModel.updateOne.mockReturnValue({
+          exec: async () => ({ matchedCount: 1, modifiedCount: 1 }),
+        });
         syncModel.find.mockReturnValue({
           sort: () => ({ exec: async () => [] }),
         });
 
         const list = await service.deleteCaseInvoiceSync("org-1", "c1", "sync-cancel");
-        expect(syncModel.deleteOne).toHaveBeenCalled();
+        expect(syncModel.updateOne).toHaveBeenCalledWith(
+          expect.objectContaining({ _id: "sync-cancel" }),
+          { $set: { detachedAt: expect.any(Date) } },
+        );
         expect(list).toEqual({ invoices: [] });
       });
 
@@ -1082,7 +1091,9 @@ describe("IntegrationsService", () => {
           invoiceKind: "full",
         };
         syncModel.findOne.mockReturnValue({ exec: async () => doc });
-        syncModel.deleteOne.mockReturnValue({ exec: async () => ({ deletedCount: 1 }) });
+        syncModel.updateOne.mockReturnValue({
+          exec: async () => ({ matchedCount: 1, modifiedCount: 1 }),
+        });
         syncModel.find.mockReturnValue({
           sort: () => ({ exec: async () => [] }),
         });
@@ -1099,7 +1110,7 @@ describe("IntegrationsService", () => {
           expect.stringContaining("/client_invoices/inv-draft"),
           expect.any(Object),
         );
-        expect(syncModel.deleteOne).toHaveBeenCalled();
+        expect(syncModel.updateOne).toHaveBeenCalled();
         expect(list).toEqual({ invoices: [] });
       });
 
@@ -1400,7 +1411,9 @@ describe("IntegrationsService", () => {
         remoteStatus: "draft",
       };
       syncModel.findOne.mockReturnValue({ exec: async () => doc });
-      syncModel.deleteOne.mockReturnValue({ exec: async () => ({ deletedCount: 1 }) });
+      syncModel.updateOne.mockReturnValue({
+        exec: async () => ({ matchedCount: 1, modifiedCount: 1 }),
+      });
       syncModel.find.mockReturnValue({
         sort: () => ({ exec: async () => [] }),
       });
@@ -1409,7 +1422,34 @@ describe("IntegrationsService", () => {
         invoices: [],
       });
       expect(httpService.delete).not.toHaveBeenCalled();
-      expect(syncModel.deleteOne).toHaveBeenCalled();
+      expect(syncModel.updateOne).toHaveBeenCalled();
+    });
+  });
+
+  describe("orphan / test-data cleanup", () => {
+    it("marks syncs as case-missing without deleting them", async () => {
+      syncModel.updateMany.mockReturnValue({ exec: async () => ({ modifiedCount: 2 }) });
+      await expect(service.markInvoiceSyncsCaseMissing("org-1", "case-gone")).resolves.toBe(2);
+      expect(syncModel.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          organizationId: "org-1",
+          caseId: "case-gone",
+          caseMissingAt: { $exists: false },
+        }),
+        expect.objectContaining({
+          $set: expect.objectContaining({ caseMissingAt: expect.any(Date) }),
+        }),
+      );
+    });
+
+    it("purges demo syncs and demo credentials", async () => {
+      syncModel.deleteMany.mockReturnValue({ exec: async () => ({ deletedCount: 3 }) });
+      credentialModel.deleteMany.mockReturnValue({ exec: async () => ({ deletedCount: 1 }) });
+      await expect(service.purgeTestData("org-1")).resolves.toEqual({ purged: true });
+      expect(syncModel.deleteMany).toHaveBeenCalledWith(
+        expect.objectContaining({ organizationId: "org-1", provider: "demo" }),
+      );
+      expect(credentialModel.deleteMany).toHaveBeenCalled();
     });
   });
 });

@@ -2,6 +2,7 @@ import type {
   AccountUserResponse,
   ActivateInvitedUserBody,
   ChangePasswordBody,
+  ConfirmPasswordResetBody,
   CreateAccountBody,
   CreateAccountResult,
   CreateInvitedUserBody,
@@ -9,6 +10,7 @@ import type {
   CreateUserBody,
   InvitationActivationHintsResponse,
   IssueEmailVerificationResult,
+  IssuePasswordResetResult,
   OrganizationMembershipResponse,
   PatchUserBody,
   PlatformUserSummary,
@@ -29,6 +31,8 @@ export abstract class AbstractUsersService {
   abstract createAccount(body: CreateAccountBody): Promise<CreateAccountResult>;
   abstract verifyEmail(email: string, code: string): Promise<AccountUserResponse>;
   abstract resendEmailVerification(email: string): Promise<IssueEmailVerificationResult>;
+  abstract requestPasswordReset(email: string): Promise<IssuePasswordResetResult>;
+  abstract confirmPasswordReset(body: ConfirmPasswordResetBody): Promise<void>;
   abstract findAccountById(id: string): Promise<AccountUserResponse | null>;
   abstract invite(body: CreateInvitedUserBody): Promise<UserResponse>;
   abstract activateInvitedUser(id: string, body: ActivateInvitedUserBody): Promise<UserResponse>;

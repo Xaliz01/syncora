@@ -22,9 +22,15 @@ export class TeamDocument extends Document {
   @Prop()
   calendarColor?: string;
 
+  @Prop({ type: Date })
+  deletedAt?: Date | null;
+
   @Prop({ default: false })
   isTestData!: boolean;
 }
 
 export const TeamSchema = SchemaFactory.createForClass(TeamDocument);
-TeamSchema.index({ organizationId: 1, name: 1 }, { unique: true });
+TeamSchema.index(
+  { organizationId: 1, name: 1 },
+  { unique: true, partialFilterExpression: { deletedAt: null } },
+);

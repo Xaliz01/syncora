@@ -24,11 +24,17 @@ export class StockLocationDocument extends Document {
   @Prop({ required: true, default: false })
   isDefault!: boolean;
 
+  @Prop({ type: Date })
+  deletedAt?: Date | null;
+
   @Prop({ default: false })
   isTestData!: boolean;
 }
 
 export const StockLocationSchema = SchemaFactory.createForClass(StockLocationDocument);
-StockLocationSchema.index({ organizationId: 1, name: 1 }, { unique: true });
+StockLocationSchema.index(
+  { organizationId: 1, name: 1 },
+  { unique: true, partialFilterExpression: { deletedAt: null } },
+);
 StockLocationSchema.index({ organizationId: 1, type: 1 });
 StockLocationSchema.index({ organizationId: 1, isDefault: 1 });

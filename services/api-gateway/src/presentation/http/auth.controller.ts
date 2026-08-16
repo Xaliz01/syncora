@@ -22,6 +22,10 @@ import type {
   VerifyEmailBody,
   ResendEmailVerificationBody,
   ResendEmailVerificationResponse,
+  ForgotPasswordBody,
+  ForgotPasswordResponse,
+  ResetPasswordBody,
+  ResetPasswordResponse,
   ResolveInvitationPreviewResponse,
 } from "@planwise/shared";
 import { isOnboardingJwtPayload } from "@planwise/shared";
@@ -78,6 +82,16 @@ export class AuthController {
     @Body() body: ResendEmailVerificationBody,
   ): Promise<ResendEmailVerificationResponse> {
     return this.authService.resendEmailVerification(body);
+  }
+
+  @Post("forgot-password")
+  async forgotPassword(@Body() body: ForgotPasswordBody): Promise<ForgotPasswordResponse> {
+    return this.authService.forgotPassword(body);
+  }
+
+  @Post("reset-password")
+  async resetPassword(@Body() body: ResetPasswordBody): Promise<ResetPasswordResponse> {
+    return this.authService.resetPassword(body);
   }
 
   @Post("login")

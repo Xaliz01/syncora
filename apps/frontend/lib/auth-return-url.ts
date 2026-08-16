@@ -6,7 +6,14 @@ export function sanitizeAuthReturnPath(raw: string | null | undefined): string |
   if (!raw) return null;
   const trimmed = raw.trim();
   if (!trimmed.startsWith("/") || trimmed.startsWith("//")) return null;
-  if (trimmed.startsWith("/login") || trimmed.startsWith("/register")) return null;
+  if (
+    trimmed.startsWith("/login") ||
+    trimmed.startsWith("/register") ||
+    trimmed.startsWith("/forgot-password") ||
+    trimmed.startsWith("/reset-password")
+  ) {
+    return null;
+  }
   return trimmed;
 }
 

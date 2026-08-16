@@ -97,6 +97,9 @@ export class MaintenanceContractDocument extends Document {
   @Prop()
   notes?: string;
 
+  @Prop({ type: Date })
+  deletedAt?: Date | null;
+
   createdAt!: Date;
   updatedAt!: Date;
 }

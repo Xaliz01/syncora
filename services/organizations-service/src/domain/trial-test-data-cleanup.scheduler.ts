@@ -120,6 +120,7 @@ export class TrialTestDataCleanupScheduler implements OnModuleInit, OnModuleDest
       SERVICE_URLS.technicians,
       SERVICE_URLS.customers,
       SERVICE_URLS.permissions,
+      SERVICE_URLS.integrations,
     ];
     for (const url of urls) {
       try {

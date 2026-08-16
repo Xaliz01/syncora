@@ -6,9 +6,14 @@ import {
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
+import {
+  activeDocumentFilter,
+  type CreateTeamBody,
+  type UpdateTeamBody,
+  type TeamResponse,
+} from "@planwise/shared";
 import type { TeamDocument } from "../persistence/team.schema";
 import type { AgenceDocument } from "../persistence/agence.schema";
-import type { CreateTeamBody, UpdateTeamBody, TeamResponse } from "@planwise/shared";
 import { AbstractTeamsService } from "./ports/teams.service.port";
 import { toTeamResponse } from "./mappers/team.mapper";
 
@@ -50,8 +55,10 @@ export class TeamsService extends AbstractTeamsService {
     teamId: string,
     body: UpdateTeamBody,
   ): Promise<TeamResponse> {
-    const doc = await this.teamModel.findById(teamId).exec();
-    if (!doc || doc.organizationId !== organizationId) {
+    const doc = await this.teamModel
+      .findOne({ _id: teamId, organizationId, ...activeDocumentFilter })
+      .exec();
+    if (!doc) {
       throw new NotFoundException("Équipe introuvable");
     }
     if (body.name !== undefined) doc.name = body.name;
@@ -77,20 +84,25 @@ export class TeamsService extends AbstractTeamsService {
   }
 
   async getTeam(organizationId: string, teamId: string): Promise<TeamResponse> {
-    const doc = await this.teamModel.findById(teamId).exec();
-    if (!doc || doc.organizationId !== organizationId) {
+    const doc = await this.teamModel
+      .findOne({ _id: teamId, organizationId, ...activeDocumentFilter })
+      .exec();
+    if (!doc) {
       throw new NotFoundException("Équipe introuvable");
     }
     return toTeamResponse(doc);
   }
 
   async listTeams(organizationId: string): Promise<TeamResponse[]> {
-    const docs = await this.teamModel.find({ organizationId }).sort({ name: 1 }).exec();
+    const docs = await this.teamModel
+      .find({ organizationId, ...activeDocumentFilter })
+      .sort({ name: 1 })
+      .exec();
 
     const agenceIds = [...new Set(docs.map((d) => d.agenceId).filter(Boolean))] as string[];
     const agences = agenceIds.length
       ? await this.agenceModel
-          .find({ _id: { $in: agenceIds } })
+          .find({ _id: { $in: agenceIds }, ...activeDocumentFilter })
           .select("_id name")
           .exec()
       : [];
@@ -100,11 +112,15 @@ export class TeamsService extends AbstractTeamsService {
   }
 
   async deleteTeam(organizationId: string, teamId: string): Promise<{ deleted: true }> {
-    const doc = await this.teamModel.findById(teamId).exec();
-    if (!doc || doc.organizationId !== organizationId) {
+    const result = await this.teamModel
+      .updateOne(
+        { _id: teamId, organizationId, ...activeDocumentFilter },
+        { $set: { deletedAt: new Date() } },
+      )
+      .exec();
+    if (!result.matchedCount) {
       throw new NotFoundException("Équipe introuvable");
     }
-    await doc.deleteOne();
     return { deleted: true };
   }
 
@@ -113,8 +129,10 @@ export class TeamsService extends AbstractTeamsService {
     teamId: string,
     technicianId: string,
   ): Promise<TeamResponse> {
-    const doc = await this.teamModel.findById(teamId).exec();
-    if (!doc || doc.organizationId !== organizationId) {
+    const doc = await this.teamModel
+      .findOne({ _id: teamId, organizationId, ...activeDocumentFilter })
+      .exec();
+    if (!doc) {
       throw new NotFoundException("Équipe introuvable");
     }
     if (!doc.technicianIds.includes(technicianId)) {
@@ -131,7 +149,7 @@ export class TeamsService extends AbstractTeamsService {
   ): Promise<TeamResponse> {
     const doc = await this.teamModel
       .findOneAndUpdate(
-        { _id: teamId, organizationId },
+        { _id: teamId, organizationId, ...activeDocumentFilter },
         { $pull: { technicianIds: technicianId } },
         { new: true },
       )

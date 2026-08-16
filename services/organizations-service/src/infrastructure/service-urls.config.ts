@@ -6,4 +6,5 @@ export const SERVICE_URLS = {
   technicians: process.env.TECHNICIANS_SERVICE_URL ?? "http://localhost:3006",
   customers: process.env.CUSTOMERS_SERVICE_URL ?? "http://localhost:3009",
   permissions: process.env.PERMISSIONS_SERVICE_URL ?? "http://localhost:3003",
+  integrations: process.env.INTEGRATIONS_SERVICE_URL ?? "http://localhost:3013",
 } as const;

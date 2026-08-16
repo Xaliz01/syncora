@@ -355,6 +355,14 @@ function LoginDialog({
               autoComplete="current-password"
               className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-3 text-base text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
             />
+            <div className="mt-2 text-right">
+              <Link
+                href="/forgot-password"
+                className="text-sm font-medium text-brand-600 hover:text-brand-500 dark:text-brand-400"
+              >
+                Mot de passe oublié ?
+              </Link>
+            </div>
           </div>
           <button
             type="submit"

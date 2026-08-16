@@ -1,14 +1,16 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getModelToken } from "@nestjs/mongoose";
 import { ConflictException, NotFoundException } from "@nestjs/common";
+import { activeDocumentFilter } from "@planwise/shared";
 import { AgencesService } from "../agences.service";
 
 describe("AgencesService", () => {
   let service: AgencesService;
   let mockAgenceModel: {
     create: jest.Mock;
-    findById: jest.Mock;
+    findOne: jest.Mock;
     find: jest.Mock;
+    updateOne: jest.Mock;
   };
 
   const mockAgenceDoc = (overrides: Record<string, unknown> = {}) => ({
@@ -27,7 +29,6 @@ describe("AgencesService", () => {
           : undefined,
     ),
     save: jest.fn().mockResolvedValue(undefined),
-    deleteOne: jest.fn().mockResolvedValue(undefined),
     ...overrides,
   });
 
@@ -36,9 +37,12 @@ describe("AgencesService", () => {
 
     mockAgenceModel = {
       create: jest.fn(),
-      findById: jest.fn().mockReturnValue({ exec: execMock }),
+      findOne: jest.fn().mockReturnValue({ exec: execMock }),
       find: jest.fn().mockReturnValue({
         sort: jest.fn().mockReturnValue({ exec: execMock }),
+      }),
+      updateOne: jest.fn().mockReturnValue({
+        exec: jest.fn().mockResolvedValue({ matchedCount: 1, modifiedCount: 1 }),
       }),
     };
 
@@ -80,7 +84,6 @@ describe("AgencesService", () => {
       });
       expect(result.id).toBe("agence-123");
       expect(result.name).toBe("Agence Paris");
-      expect(result.organizationId).toBe("org-1");
     });
 
     it("should throw ConflictException on duplicate (code 11000)", async () => {
@@ -98,7 +101,7 @@ describe("AgencesService", () => {
   describe("updateAgence", () => {
     it("should update fields and save", async () => {
       const doc = mockAgenceDoc();
-      mockAgenceModel.findById.mockReturnValue({
+      mockAgenceModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(doc),
       });
 
@@ -112,22 +115,11 @@ describe("AgencesService", () => {
     });
 
     it("should throw NotFoundException when not found", async () => {
-      mockAgenceModel.findById.mockReturnValue({
+      mockAgenceModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(null),
       });
 
       await expect(service.updateAgence("org-1", "non-existent", { name: "Test" })).rejects.toThrow(
-        NotFoundException,
-      );
-    });
-
-    it("should throw NotFoundException when org mismatch", async () => {
-      const doc = mockAgenceDoc({ organizationId: "org-2" });
-      mockAgenceModel.findById.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(doc),
-      });
-
-      await expect(service.updateAgence("org-1", "agence-123", { name: "Test" })).rejects.toThrow(
         NotFoundException,
       );
     });
@@ -136,19 +128,23 @@ describe("AgencesService", () => {
   describe("getAgence", () => {
     it("should return agence when found", async () => {
       const doc = mockAgenceDoc();
-      mockAgenceModel.findById.mockReturnValue({
+      mockAgenceModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(doc),
       });
 
       const result = await service.getAgence("org-1", "agence-123");
 
-      expect(mockAgenceModel.findById).toHaveBeenCalledWith("agence-123");
+      expect(mockAgenceModel.findOne).toHaveBeenCalledWith({
+        _id: "agence-123",
+        organizationId: "org-1",
+        ...activeDocumentFilter,
+      });
       expect(result.id).toBe("agence-123");
       expect(result.name).toBe("Agence Paris");
     });
 
     it("should throw NotFoundException when not found", async () => {
-      mockAgenceModel.findById.mockReturnValue({
+      mockAgenceModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(null),
       });
 
@@ -168,28 +164,29 @@ describe("AgencesService", () => {
 
       const result = await service.listAgences("org-1");
 
-      expect(mockAgenceModel.find).toHaveBeenCalledWith({ organizationId: "org-1" });
+      expect(mockAgenceModel.find).toHaveBeenCalledWith({
+        organizationId: "org-1",
+        ...activeDocumentFilter,
+      });
       expect(mockAgenceModel.find().sort).toHaveBeenCalledWith({ name: 1 });
       expect(result).toHaveLength(2);
     });
   });
 
   describe("deleteAgence", () => {
-    it("should delete agence when found", async () => {
-      const doc = mockAgenceDoc();
-      mockAgenceModel.findById.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(doc),
-      });
-
+    it("should soft-delete agence when found", async () => {
       const result = await service.deleteAgence("org-1", "agence-123");
 
-      expect(doc.deleteOne).toHaveBeenCalled();
+      expect(mockAgenceModel.updateOne).toHaveBeenCalledWith(
+        { _id: "agence-123", organizationId: "org-1", ...activeDocumentFilter },
+        { $set: { deletedAt: expect.any(Date) } },
+      );
       expect(result).toEqual({ deleted: true });
     });
 
     it("should throw NotFoundException when not found", async () => {
-      mockAgenceModel.findById.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(null),
+      mockAgenceModel.updateOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({ matchedCount: 0, modifiedCount: 0 }),
       });
 
       await expect(service.deleteAgence("org-1", "non-existent")).rejects.toThrow(

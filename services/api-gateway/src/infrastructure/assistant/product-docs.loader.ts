@@ -206,6 +206,7 @@ Documents déposés sur les fiches dossier. Ne jamais dire « aucune limite » n
     title: "Mon compte et application (PWA)",
     pathPrefixes: ["/account"],
     text: `Mon compte /account : identité, mot de passe, thème clair/sombre, sidebar, sessions, liens légaux. Thème aussi via toggle header.
+Mot de passe oublié (hors session) : depuis Connexion → Mot de passe oublié ? → e-mail avec lien /reset-password (1 h, usage unique) ; les sessions ouvertes sont déconnectées. Changement de mot de passe connecté reste dans Mon compte.
 PWA : installable (standalone) ; Service Worker ; page hors connexion /~offline. Pas d'app store native. Ne pas promettre édition métier offline complète. Assistant « offline » (sans LLM) = catalogue sans IA, distinct du hors-réseau navigateur. Push : voir Notifications.`,
   },
   {

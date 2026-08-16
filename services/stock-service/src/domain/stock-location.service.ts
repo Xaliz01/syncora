@@ -40,7 +40,7 @@ export class StockLocationService extends AbstractStockLocationService {
     }
 
     const existingDefault = await this.stockLocationModel
-      .findOne({ organizationId: body.organizationId, isDefault: true })
+      .findOne({ organizationId: body.organizationId, isDefault: true, ...activeDocumentFilter })
       .exec();
     const isDefault = !existingDefault;
 
@@ -64,14 +64,16 @@ export class StockLocationService extends AbstractStockLocationService {
 
   async listStockLocations(organizationId: string): Promise<StockLocationResponse[]> {
     const docs = await this.stockLocationModel
-      .find({ organizationId })
+      .find({ organizationId, ...activeDocumentFilter })
       .sort({ isDefault: -1, name: 1 })
       .exec();
     return docs.map((doc) => toStockLocationResponse(doc));
   }
 
   async getStockLocation(id: string, organizationId: string): Promise<StockLocationResponse> {
-    const doc = await this.stockLocationModel.findOne({ _id: id, organizationId }).exec();
+    const doc = await this.stockLocationModel
+      .findOne({ _id: id, organizationId, ...activeDocumentFilter })
+      .exec();
     if (!doc) throw new NotFoundException("Stock location not found");
     return toStockLocationResponse(doc);
   }
@@ -81,7 +83,7 @@ export class StockLocationService extends AbstractStockLocationService {
     body: UpdateStockLocationBody,
   ): Promise<StockLocationResponse> {
     const doc = await this.stockLocationModel
-      .findOne({ _id: id, organizationId: body.organizationId })
+      .findOne({ _id: id, organizationId: body.organizationId, ...activeDocumentFilter })
       .exec();
     if (!doc) throw new NotFoundException("Stock location not found");
 
@@ -106,7 +108,9 @@ export class StockLocationService extends AbstractStockLocationService {
   }
 
   async deleteStockLocation(id: string, organizationId: string): Promise<{ deleted: true }> {
-    const doc = await this.stockLocationModel.findOne({ _id: id, organizationId }).exec();
+    const doc = await this.stockLocationModel
+      .findOne({ _id: id, organizationId, ...activeDocumentFilter })
+      .exec();
     if (!doc) throw new NotFoundException("Stock location not found");
     if (doc.isDefault) {
       throw new BadRequestException("Cannot delete the default stock location");
@@ -127,28 +131,33 @@ export class StockLocationService extends AbstractStockLocationService {
     }
 
     await this.articleModel.updateMany(
-      { organizationId, "locationStocks.locationId": id },
+      { organizationId, "locationStocks.locationId": id, ...activeDocumentFilter },
       { $pull: { locationStocks: { locationId: id } } },
     );
 
-    await doc.deleteOne();
+    doc.deletedAt = new Date();
+    await doc.save();
     return { deleted: true };
   }
 
   async resolveLocationId(organizationId: string, locationId: string): Promise<string> {
-    const loc = await this.stockLocationModel.findOne({ _id: locationId, organizationId }).exec();
+    const loc = await this.stockLocationModel
+      .findOne({ _id: locationId, organizationId, ...activeDocumentFilter })
+      .exec();
     if (!loc) throw new NotFoundException("Stock location not found");
     return loc._id.toString();
   }
 
   async getDefaultLocationId(organizationId: string): Promise<string | null> {
-    const loc = await this.stockLocationModel.findOne({ organizationId, isDefault: true }).exec();
+    const loc = await this.stockLocationModel
+      .findOne({ organizationId, isDefault: true, ...activeDocumentFilter })
+      .exec();
     return loc?._id.toString() ?? null;
   }
 
   async getLocationName(organizationId: string, locationId: string): Promise<string | undefined> {
     const loc = await this.stockLocationModel
-      .findOne({ _id: locationId, organizationId })
+      .findOne({ _id: locationId, organizationId, ...activeDocumentFilter })
       .select("name")
       .exec();
     return loc?.name;

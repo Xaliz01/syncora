@@ -22,12 +22,14 @@ import { AbstractImpersonationAuditService } from "../../domain/ports/impersonat
 import type {
   ActivateInvitedUserBody,
   ChangePasswordBody,
+  ConfirmPasswordResetBody,
   CreateAccountBody,
   CreateInvitedUserBody,
   CreateOrganizationMembershipBody,
   CreateUserBody,
   CreateUserSessionBody,
   PatchUserBody,
+  RequestPasswordResetBody,
   ResendEmailVerificationBody,
   UpdateUserNameBody,
   UpdateUserPreferencesBody,
@@ -66,6 +68,22 @@ export class UsersController {
       throw new BadRequestException("email is required");
     }
     return this.usersService.resendEmailVerification(body.email);
+  }
+
+  @Post("accounts/request-password-reset")
+  @HttpCode(HttpStatus.OK)
+  async requestPasswordReset(@Body() body: RequestPasswordResetBody) {
+    if (!body.email?.trim()) {
+      throw new BadRequestException("email is required");
+    }
+    return this.usersService.requestPasswordReset(body.email);
+  }
+
+  @Post("accounts/reset-password")
+  @HttpCode(HttpStatus.OK)
+  async confirmPasswordReset(@Body() body: ConfirmPasswordResetBody) {
+    await this.usersService.confirmPasswordReset(body);
+    return { ok: true as const };
   }
 
   @Get("accounts/:id")

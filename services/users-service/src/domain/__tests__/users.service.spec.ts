@@ -37,6 +37,9 @@ const mockDoc = (overrides: Record<string, unknown> = {}) => ({
   passwordHash: "hashed",
   name: "Test User",
   status: "active",
+  passwordResetTokenHash: undefined as string | undefined,
+  passwordResetExpiresAt: null as Date | null,
+  passwordResetSentAt: null as Date | null,
   get: jest.fn((key: string) => (key === "createdAt" ? new Date("2025-01-01") : undefined)),
   save: jest.fn().mockResolvedValue(undefined),
   ...overrides,
@@ -967,6 +970,90 @@ describe("UsersService", () => {
           newPassword: "new-pass1",
         }),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe("requestPasswordReset", () => {
+    it("issues a reset token when user has a password", async () => {
+      const doc = mockDoc({
+        email: "user@example.com",
+        passwordHash: "hashed",
+        save: jest.fn().mockResolvedValue(undefined),
+      });
+      mockUserModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+
+      const result = await service.requestPasswordReset("user@example.com");
+
+      expect(result.email).toBe("user@example.com");
+      expect(result.resetToken).toMatch(/^[A-Za-z0-9_-]+$/);
+      expect(doc.passwordResetTokenHash).toMatch(/^[a-f0-9]{64}$/);
+      expect(doc.passwordResetExpiresAt).toBeInstanceOf(Date);
+      expect(doc.save).toHaveBeenCalled();
+    });
+
+    it("throws NotFound when email unknown", async () => {
+      mockUserModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null),
+      });
+      await expect(service.requestPasswordReset("missing@example.com")).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it("throws BadRequest on cooldown", async () => {
+      const doc = mockDoc({
+        passwordHash: "hashed",
+        passwordResetSentAt: new Date(),
+      });
+      mockUserModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+      await expect(service.requestPasswordReset("user@example.com")).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+  });
+
+  describe("confirmPasswordReset", () => {
+    it("updates password, clears token and revokes sessions", async () => {
+      const { createHash } = await import("crypto");
+      const rawToken = "test-reset-token-value";
+      const tokenHash = createHash("sha256").update(rawToken, "utf8").digest("hex");
+      const doc = mockDoc({
+        passwordResetTokenHash: tokenHash,
+        passwordResetExpiresAt: new Date(Date.now() + 60_000),
+        save: jest.fn().mockResolvedValue(undefined),
+      });
+      mockUserModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+
+      await service.confirmPasswordReset({ token: rawToken, newPassword: "Newpass1" });
+
+      expect(bcrypt.hash).toHaveBeenCalledWith("Newpass1", 12);
+      expect(doc.passwordResetTokenHash).toBeUndefined();
+      expect(doc.save).toHaveBeenCalled();
+      expect(mockSessionsService.revokeSession).toHaveBeenCalledWith("user-123");
+    });
+
+    it("rejects expired token", async () => {
+      const { createHash } = await import("crypto");
+      const rawToken = "expired-token";
+      const tokenHash = createHash("sha256").update(rawToken, "utf8").digest("hex");
+      const doc = mockDoc({
+        passwordResetTokenHash: tokenHash,
+        passwordResetExpiresAt: new Date(Date.now() - 1000),
+        save: jest.fn().mockResolvedValue(undefined),
+      });
+      mockUserModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+
+      await expect(
+        service.confirmPasswordReset({ token: rawToken, newPassword: "Newpass1" }),
+      ).rejects.toThrow(UnauthorizedException);
     });
   });
 

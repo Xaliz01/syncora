@@ -15,6 +15,10 @@ import type {
   VerifyEmailBody,
   ResendEmailVerificationBody,
   ResendEmailVerificationResponse,
+  ForgotPasswordBody,
+  ForgotPasswordResponse,
+  ResetPasswordBody,
+  ResetPasswordResponse,
   ResolveInvitationPreviewResponse,
 } from "@planwise/shared";
 
@@ -32,6 +36,8 @@ export abstract class AbstractAuthService {
   abstract resendEmailVerification(
     body: ResendEmailVerificationBody,
   ): Promise<ResendEmailVerificationResponse>;
+  abstract forgotPassword(body: ForgotPasswordBody): Promise<ForgotPasswordResponse>;
+  abstract resetPassword(body: ResetPasswordBody): Promise<ResetPasswordResponse>;
   abstract getOnboardingUser(jwt: OnboardingJwtPayload): Promise<OnboardingUser>;
   abstract login(
     body: LoginBody,

@@ -34,6 +34,16 @@ export class UserDocument extends Document {
   @Prop({ type: Date })
   emailVerificationSentAt?: Date | null;
 
+  /** SHA-256 hex du jeton de reset (jamais le jeton en clair). */
+  @Prop()
+  passwordResetTokenHash?: string;
+
+  @Prop({ type: Date })
+  passwordResetExpiresAt?: Date | null;
+
+  @Prop({ type: Date })
+  passwordResetSentAt?: Date | null;
+
   @Prop()
   invitedByUserId?: string;
 
@@ -46,3 +56,10 @@ export class UserDocument extends Document {
 
 export const UserSchema = SchemaFactory.createForClass(UserDocument);
 UserSchema.index({ email: 1 }, { unique: true, partialFilterExpression: { deletedAt: null } });
+UserSchema.index(
+  { passwordResetTokenHash: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { passwordResetTokenHash: { $type: "string" } },
+  },
+);

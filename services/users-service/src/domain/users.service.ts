@@ -9,7 +9,7 @@ import {
 import { InjectModel } from "@nestjs/mongoose";
 import type { Model } from "mongoose";
 import { Types } from "mongoose";
-import { randomInt } from "crypto";
+import { randomInt, randomBytes, createHash } from "crypto";
 import * as bcrypt from "bcrypt";
 import type { UserDocument } from "../persistence/user.schema";
 import type { OrganizationMembershipDocument } from "../persistence/organization-membership.schema";
@@ -18,6 +18,7 @@ import {
   getPasswordPolicyError,
   type ActivateInvitedUserBody,
   type ChangePasswordBody,
+  type ConfirmPasswordResetBody,
   type CreateAccountBody,
   type CreateAccountResult,
   type CreateInvitedUserBody,
@@ -25,6 +26,7 @@ import {
   type CreateUserBody,
   type InvitationActivationHintsResponse,
   type IssueEmailVerificationResult,
+  type IssuePasswordResetResult,
   type OrganizationMembershipResponse,
   type PatchUserBody,
   type AccountUserResponse,
@@ -48,12 +50,22 @@ const SALT_ROUNDS = 12;
 const DEFAULT_ROLE: UserRole = "member";
 const EMAIL_OTP_TTL_MS = 15 * 60 * 1000;
 const EMAIL_OTP_RESEND_COOLDOWN_MS = 60 * 1000;
+const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000;
+const PASSWORD_RESET_COOLDOWN_MS = 60 * 1000;
 /** Cap candidats avant filtre « en activité » (search / org). */
 const PLATFORM_ACTIVE_CANDIDATE_CAP = 5000;
 
 function assertPasswordPolicy(password: string): void {
   const error = getPasswordPolicyError(password);
   if (error) throw new BadRequestException(error);
+}
+
+function hashPasswordResetToken(token: string): string {
+  return createHash("sha256").update(token, "utf8").digest("hex");
+}
+
+function generatePasswordResetToken(): string {
+  return randomBytes(32).toString("base64url");
 }
 
 @Injectable()
@@ -190,6 +202,68 @@ export class UsersService extends AbstractUsersService {
 
     const emailVerificationCode = await this.storeEmailVerificationOtp(doc);
     return { email: doc.email, emailVerificationCode };
+  }
+
+  /**
+   * Émet un jeton de reset si le compte existe et a un mot de passe.
+   * Sinon NotFound (le gateway répond toujours `{ ok: true }` au client).
+   */
+  async requestPasswordReset(email: string): Promise<IssuePasswordResetResult> {
+    const normalized = email?.trim().toLowerCase();
+    if (!normalized) throw new BadRequestException("email is required");
+
+    const doc = await this.userModel.findOne({ email: normalized, ...activeDocumentFilter }).exec();
+    if (!doc?.passwordHash) {
+      throw new NotFoundException("User not found");
+    }
+
+    if (doc.passwordResetSentAt) {
+      const elapsed = Date.now() - doc.passwordResetSentAt.getTime();
+      if (elapsed < PASSWORD_RESET_COOLDOWN_MS) {
+        throw new BadRequestException("Veuillez patienter avant de demander un nouveau lien");
+      }
+    }
+
+    const resetToken = generatePasswordResetToken();
+    doc.passwordResetTokenHash = hashPasswordResetToken(resetToken);
+    doc.passwordResetExpiresAt = new Date(Date.now() + PASSWORD_RESET_TTL_MS);
+    doc.passwordResetSentAt = new Date();
+    await doc.save();
+
+    return { email: doc.email, resetToken };
+  }
+
+  async confirmPasswordReset(body: ConfirmPasswordResetBody): Promise<void> {
+    const token = body.token?.trim();
+    if (!token) throw new BadRequestException("Le lien de réinitialisation est invalide");
+    assertPasswordPolicy(body.newPassword);
+
+    const tokenHash = hashPasswordResetToken(token);
+    const doc = await this.userModel
+      .findOne({ passwordResetTokenHash: tokenHash, ...activeDocumentFilter })
+      .exec();
+    if (!doc) {
+      throw new UnauthorizedException("Lien de réinitialisation invalide ou expiré");
+    }
+    if (!doc.passwordResetExpiresAt || doc.passwordResetExpiresAt.getTime() < Date.now()) {
+      doc.passwordResetTokenHash = undefined;
+      doc.passwordResetExpiresAt = null;
+      await doc.save();
+      throw new UnauthorizedException("Lien de réinitialisation invalide ou expiré");
+    }
+
+    doc.passwordHash = await bcrypt.hash(body.newPassword, SALT_ROUNDS);
+    doc.passwordResetTokenHash = undefined;
+    doc.passwordResetExpiresAt = null;
+    doc.passwordResetSentAt = null;
+    if (doc.emailVerified === false) {
+      doc.emailVerified = true;
+      doc.emailVerificationCodeHash = undefined;
+      doc.emailVerificationExpiresAt = null;
+      doc.emailVerificationSentAt = null;
+    }
+    await doc.save();
+    await this.sessionsService.revokeSession(doc._id.toString());
   }
 
   async findAccountById(id: string): Promise<AccountUserResponse | null> {

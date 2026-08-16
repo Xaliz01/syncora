@@ -404,4 +404,59 @@ describe("AuthService", () => {
       expect(user.name).toBe("Stale JWT Name");
     });
   });
+
+  describe("forgotPassword", () => {
+    it("returns ok without revealing missing email", async () => {
+      jest.spyOn(httpService, "post").mockImplementation((url: string) => {
+        if (url.includes("/request-password-reset")) {
+          return throwError(() => ({ response: { status: 404 } }));
+        }
+        return of({ data: {}, status: 200 } as AxiosResponse);
+      });
+
+      await expect(service.forgotPassword({ email: "unknown@example.com" })).resolves.toEqual({
+        ok: true,
+      });
+    });
+
+    it("sends reset email when user exists", async () => {
+      jest.spyOn(httpService, "post").mockImplementation((url: string) => {
+        if (url.includes("/request-password-reset")) {
+          return of({
+            data: { email: "user@example.com", resetToken: "tok-abc" },
+            status: 200,
+          } as AxiosResponse);
+        }
+        if (url.includes("/email/transactional")) {
+          return of({ data: { sent: true }, status: 200 } as AxiosResponse);
+        }
+        return of({ data: {}, status: 200 } as AxiosResponse);
+      });
+
+      const result = await service.forgotPassword({ email: "user@example.com" });
+      expect(result.ok).toBe(true);
+      expect(httpService.post).toHaveBeenCalledWith(
+        expect.stringContaining("/email/transactional"),
+        expect.objectContaining({
+          to: "user@example.com",
+          url: expect.stringContaining("/reset-password?token="),
+        }),
+      );
+    });
+  });
+
+  describe("resetPassword", () => {
+    it("confirms reset via users-service", async () => {
+      jest.spyOn(httpService, "post").mockImplementation((url: string) => {
+        if (url.includes("/accounts/reset-password")) {
+          return of({ data: { ok: true }, status: 200 } as AxiosResponse);
+        }
+        return of({ data: {}, status: 200 } as AxiosResponse);
+      });
+
+      await expect(
+        service.resetPassword({ token: "tok", newPassword: "Newpass1" }),
+      ).resolves.toEqual({ ok: true });
+    });
+  });
 });

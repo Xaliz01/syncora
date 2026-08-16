@@ -37,7 +37,12 @@ import type {
   VerifyEmailBody,
   ResendEmailVerificationBody,
   ResendEmailVerificationResponse,
+  ForgotPasswordBody,
+  ForgotPasswordResponse,
+  ResetPasswordBody,
+  ResetPasswordResponse,
   IssueEmailVerificationResult,
+  IssuePasswordResetResult,
   SendEmailNotificationResponse,
   CreateUserSessionResponse,
   InvitationActivationHintsResponse,
@@ -307,6 +312,72 @@ export class AuthService extends AbstractAuthService {
     return response;
   }
 
+  async forgotPassword(body: ForgotPasswordBody): Promise<ForgotPasswordResponse> {
+    let issued: IssuePasswordResetResult | null = null;
+    try {
+      const res = await firstValueFrom(
+        this.httpService.post<IssuePasswordResetResult>(
+          `${SERVICE_URLS.users}/users/accounts/request-password-reset`,
+          { email: body.email },
+        ),
+      );
+      issued = res.data;
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number; data?: { message?: string } } })
+        ?.response?.status;
+      const message = (err as { response?: { data?: { message?: string } } })?.response?.data
+        ?.message;
+      if (status === 400) {
+        throw new BadRequestException(
+          message ?? "Veuillez patienter avant de demander un nouveau lien",
+        );
+      }
+      // 404 : ne pas révéler si l'email existe — réponse neutre.
+      if (status === 404) {
+        return { ok: true };
+      }
+      throw err;
+    }
+
+    if (issued) {
+      await this.sendPasswordResetEmail(issued.email, issued.resetToken);
+    }
+
+    const response: ForgotPasswordResponse = { ok: true };
+    if (issued && isNonProduction()) {
+      response.debugResetToken = issued.resetToken;
+    }
+    return response;
+  }
+
+  async resetPassword(body: ResetPasswordBody): Promise<ResetPasswordResponse> {
+    const policyError = getPasswordPolicyError(body.newPassword ?? "");
+    if (policyError) {
+      throw new BadRequestException(policyError);
+    }
+    try {
+      await firstValueFrom(
+        this.httpService.post<{ ok: true }>(`${SERVICE_URLS.users}/users/accounts/reset-password`, {
+          token: body.token,
+          newPassword: body.newPassword,
+        }),
+      );
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number; data?: { message?: string } } })
+        ?.response?.status;
+      const message = (err as { response?: { data?: { message?: string } } })?.response?.data
+        ?.message;
+      if (status === 401) {
+        throw new UnauthorizedException("Lien de réinitialisation invalide ou expiré");
+      }
+      if (status === 400) {
+        throw new BadRequestException(message ?? "Réinitialisation impossible");
+      }
+      throw err;
+    }
+    return { ok: true };
+  }
+
   async getOnboardingUser(jwt: OnboardingJwtPayload): Promise<OnboardingUser> {
     const account = await this.resolveAccountProfile(jwt.sub);
     if (!account) {
@@ -362,6 +433,31 @@ export class AuthService extends AbstractAuthService {
       }
     } catch (err) {
       this.logger.warn(`Failed to send email verification OTP to ${email}`, (err as Error).message);
+    }
+  }
+
+  private async sendPasswordResetEmail(email: string, resetToken: string): Promise<void> {
+    const resetPath = `/reset-password?token=${encodeURIComponent(resetToken)}`;
+    try {
+      const res = await firstValueFrom(
+        this.httpService.post<SendEmailNotificationResponse>(
+          `${SERVICE_URLS.notifications}/email/transactional`,
+          {
+            to: email,
+            subject: "Réinitialisation de votre mot de passe",
+            body: `Bonjour,\n\nVous avez demandé à réinitialiser votre mot de passe Planwise.\n\nCliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe. Ce lien expire dans 1 heure.\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail — votre mot de passe actuel reste inchangé.`,
+            url: resetPath,
+            ctaLabel: "Choisir un nouveau mot de passe",
+          },
+        ),
+      );
+      if (!res.data.sent) {
+        this.logger.warn(
+          `Password reset email not sent to ${email}: ${res.data.reason ?? "unknown"}`,
+        );
+      }
+    } catch (err) {
+      this.logger.warn(`Failed to send password reset email to ${email}`, (err as Error).message);
     }
   }
 

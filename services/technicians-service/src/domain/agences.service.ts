@@ -1,8 +1,13 @@
 import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
+import {
+  activeDocumentFilter,
+  type CreateAgenceBody,
+  type UpdateAgenceBody,
+  type AgenceResponse,
+} from "@planwise/shared";
 import type { AgenceDocument } from "../persistence/agence.schema";
-import type { CreateAgenceBody, UpdateAgenceBody, AgenceResponse } from "@planwise/shared";
 import { AbstractAgencesService } from "./ports/agences.service.port";
 import { toAgenceResponse } from "./mappers/agence.mapper";
 
@@ -40,8 +45,10 @@ export class AgencesService extends AbstractAgencesService {
     agenceId: string,
     body: UpdateAgenceBody,
   ): Promise<AgenceResponse> {
-    const doc = await this.agenceModel.findById(agenceId).exec();
-    if (!doc || doc.organizationId !== organizationId) {
+    const doc = await this.agenceModel
+      .findOne({ _id: agenceId, organizationId, ...activeDocumentFilter })
+      .exec();
+    if (!doc) {
       throw new NotFoundException("Agence introuvable");
     }
     if (body.name !== undefined) doc.name = body.name;
@@ -61,24 +68,33 @@ export class AgencesService extends AbstractAgencesService {
   }
 
   async getAgence(organizationId: string, agenceId: string): Promise<AgenceResponse> {
-    const doc = await this.agenceModel.findById(agenceId).exec();
-    if (!doc || doc.organizationId !== organizationId) {
+    const doc = await this.agenceModel
+      .findOne({ _id: agenceId, organizationId, ...activeDocumentFilter })
+      .exec();
+    if (!doc) {
       throw new NotFoundException("Agence introuvable");
     }
     return toAgenceResponse(doc);
   }
 
   async listAgences(organizationId: string): Promise<AgenceResponse[]> {
-    const docs = await this.agenceModel.find({ organizationId }).sort({ name: 1 }).exec();
+    const docs = await this.agenceModel
+      .find({ organizationId, ...activeDocumentFilter })
+      .sort({ name: 1 })
+      .exec();
     return docs.map((doc) => toAgenceResponse(doc));
   }
 
   async deleteAgence(organizationId: string, agenceId: string): Promise<{ deleted: true }> {
-    const doc = await this.agenceModel.findById(agenceId).exec();
-    if (!doc || doc.organizationId !== organizationId) {
+    const result = await this.agenceModel
+      .updateOne(
+        { _id: agenceId, organizationId, ...activeDocumentFilter },
+        { $set: { deletedAt: new Date() } },
+      )
+      .exec();
+    if (!result.matchedCount) {
       throw new NotFoundException("Agence introuvable");
     }
-    await doc.deleteOne();
     return { deleted: true };
   }
 }

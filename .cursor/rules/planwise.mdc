@@ -50,6 +50,20 @@ L’assistant **guide** (explique + liens) ; il ne lit pas les données org et n
 - **Gateway** : appels downstream via `OrganizationScopedHttpClient` (injection `organizationId` depuis `AuthUser`, validation des réponses).
 - **Microservices** : requêtes Mongo avec `organizationScopeFilter`, et `assertOrganizationScopedListNest` / `assertOrganizationScopedResourceNest` en sortie de service (défense en profondeur).
 
+## Suppressions / cycle de vie des données
+
+Un objet « supprimé » est souvent encore référencé ailleurs. Règle : **retirer de la vie active, pas effacer l’histoire** (sauf jetable).
+
+| Type | Exemples | Action |
+| --- | --- | --- |
+| Référentiel métier | client, dossier, article, user, devis, membership, équipe, agence, emplacement stock, contrat maintenance | **Soft-delete** (`deletedAt`) ; listes via `activeDocumentFilter` |
+| Trace / ledger | sync facture, audit impersonation, historique, `cron_runs` | **Ne pas supprimer** ; jobs : skip + marquage (ex. `caseMissingAt`, `detachedAt`) si cible absente / détachée |
+| Jetable | démo `isTestData`, provider `demo`, sessions, tokens OAuth | **Hard-delete** OK (purge essai / nettoyage technique) |
+
+- UI « Supprimer » = soft-delete : disparaît des listes, l’id reste pour les liens existants.
+- Lecteurs / crons : tolérer l’absence (libellé dégradé, skip) — **pas** de cascade destructive sur les traces.
+- RGPD / anonymisation : procédure dédiée (souvent soft + scrub), pas un delete opportuniste dans un job métier.
+
 ## Migrations Mongo (migrate-mongo) — obligatoire
 
 Toute **évolution de schéma / index / données** Mongo d’un microservice passe par [migrate-mongo](https://github.com/seppevs/migrate-mongo). **Interdit** : drop/create d’index ou migration ad hoc dans `main.ts`, `OnModuleInit`, ou un helper one-shot hors changelog.

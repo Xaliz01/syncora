@@ -365,6 +365,7 @@ export class TrialTestDataService extends AbstractTrialTestDataService {
       { url: SERVICE_URLS.technicians, label: "technicians" },
       { url: SERVICE_URLS.customers, label: "customers" },
       { url: SERVICE_URLS.permissions, label: "permissions" },
+      { url: SERVICE_URLS.integrations, label: "integrations" },
     ];
     for (const { url, label } of urls) {
       try {

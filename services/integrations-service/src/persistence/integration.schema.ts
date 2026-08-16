@@ -110,12 +110,26 @@ export class IntegrationSyncDocument extends Document {
 
   @Prop()
   lastSyncedAt?: Date;
+
+  /**
+   * Dossier introuvable (ex. purge essai) : on conserve la sync pour l’historique,
+   * mais le cron ne la retraite plus (évite les GET /cases 404).
+   */
+  @Prop()
+  caseMissingAt?: Date;
+
+  /**
+   * Facture détachée du dossier (brouillon distant supprimé ou annulée retirée de l’UI).
+   * Conservée pour l’historique ; exclue des listes actives et du cron.
+   */
+  @Prop()
+  detachedAt?: Date;
 }
 
 export const IntegrationSyncSchema = SchemaFactory.createForClass(IntegrationSyncDocument);
 IntegrationSyncSchema.index(
   { organizationId: 1, provider: 1, providerInvoiceId: 1 },
-  { unique: true },
+  { unique: true, partialFilterExpression: { detachedAt: null } },
 );
 IntegrationSyncSchema.index({ organizationId: 1, caseId: 1 });
 /** File d’attente du cron de rafraîchissement (plus anciennes d’abord). */

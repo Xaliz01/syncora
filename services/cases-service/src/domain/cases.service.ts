@@ -19,6 +19,7 @@ import type { InterventionDocument } from "../persistence/intervention.schema";
 import type { InterventionTypeDocument } from "../persistence/intervention-type.schema";
 import type { CaseHistoryDocument } from "../persistence/case-history.schema";
 import type { CommentDocument } from "../persistence/comment.schema";
+import type { QuoteDocument } from "../persistence/quote.schema";
 import { AbstractCasesService } from "./ports/cases.service.port";
 import { AbstractInterventionsService } from "./ports/interventions.service.port";
 import { AbstractCaseTemplatesService } from "./ports/case-templates.service.port";
@@ -39,6 +40,8 @@ export class CasesService extends AbstractCasesService {
     private readonly caseHistoryModel: Model<CaseHistoryDocument>,
     @InjectModel("Comment")
     private readonly commentModel: Model<CommentDocument>,
+    @InjectModel("Quote")
+    private readonly quoteModel: Model<QuoteDocument>,
     @Inject(AbstractInterventionsService)
     private readonly interventionsService: AbstractInterventionsService,
     @Inject(AbstractCaseTemplatesService)
@@ -212,6 +215,12 @@ export class CasesService extends AbstractCasesService {
       )
       .exec();
     await this.commentModel
+      .updateMany(
+        { caseId: id, organizationId, ...activeDocumentFilter },
+        { $set: { deletedAt: now } },
+      )
+      .exec();
+    await this.quoteModel
       .updateMany(
         { caseId: id, organizationId, ...activeDocumentFilter },
         { $set: { deletedAt: now } },

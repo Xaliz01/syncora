@@ -219,5 +219,30 @@ describe("StockLocationService", () => {
         BadRequestException,
       );
     });
+
+    it("should soft-delete a non-default empty location", async () => {
+      const doc = {
+        _id: { toString: () => "loc-1" },
+        organizationId: "org-1",
+        name: "Secondary",
+        type: "warehouse",
+        isDefault: false,
+        deletedAt: null as Date | null,
+        save: jest.fn().mockResolvedValue(undefined),
+      };
+      mockStockLocationModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+      mockArticleModel.countDocuments.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(0),
+      });
+      mockArticleModel.updateMany = jest.fn().mockResolvedValue({ modifiedCount: 0 });
+
+      const result = await service.deleteStockLocation("loc-1", "org-1");
+
+      expect(doc.deletedAt).toEqual(expect.any(Date));
+      expect(doc.save).toHaveBeenCalled();
+      expect(result).toEqual({ deleted: true });
+    });
   });
 });

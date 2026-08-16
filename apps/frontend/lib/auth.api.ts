@@ -3,9 +3,11 @@ import type {
   AuthUser,
   CreateOrganizationBody,
   EmailVerificationRequiredResponse,
+  ForgotPasswordResponse,
   OnboardingAuthResponse,
   OnboardingUser,
   ResendEmailVerificationResponse,
+  ResetPasswordResponse,
 } from "@planwise/shared";
 import { apiRequestJson, getAccessToken, getOnboardingToken } from "./api-client";
 
@@ -43,6 +45,22 @@ export async function resendEmailVerification(payload: { email: string }) {
       fallbackError: "Renvoi du code impossible",
     },
   );
+}
+
+export async function forgotPassword(payload: { email: string }) {
+  return apiRequestJson<ForgotPasswordResponse>("POST", "/auth/forgot-password", {
+    body: payload,
+    bearer: false,
+    fallbackError: "Demande impossible",
+  });
+}
+
+export async function resetPassword(payload: { token: string; newPassword: string }) {
+  return apiRequestJson<ResetPasswordResponse>("POST", "/auth/reset-password", {
+    body: payload,
+    bearer: false,
+    fallbackError: "Réinitialisation impossible",
+  });
 }
 
 export async function acceptInvitation(payload: {

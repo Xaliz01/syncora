@@ -1,12 +1,14 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { HttpService } from "@nestjs/axios";
+import axios from "axios";
 import { firstValueFrom } from "rxjs";
 import type { BillingStatus, CaseInvoiceSyncStatus, CaseResponse } from "@planwise/shared";
 import { aggregateCaseBillingStatus, shouldUpgradeBillingStatus } from "@planwise/shared";
 import { AbstractIntegrationsService } from "./ports/integrations.service.port";
 import { CronRunRecorder } from "./cron-run.recorder";
 import { SERVICE_URLS } from "../infrastructure/service-urls.config";
+
 const JOB_KEY = "integrations.invoice-sync";
 
 @Injectable()
@@ -45,21 +47,28 @@ export class InvoiceSyncScheduler {
       }
 
       let billingUpdates = 0;
+      let caseMissingSkipped = 0;
       for (const [key, partial] of byCase) {
         const [organizationId, caseId] = key.split(":");
         if (!organizationId || !caseId) continue;
         const full = await this.integrationsService.getCaseInvoiceSync(organizationId, caseId);
-        const applied = await this.applyAggregatedBillingStatus(
+        const outcome = await this.applyAggregatedBillingStatus(
           organizationId,
           caseId,
           full.invoices.length ? full.invoices : partial,
         );
-        if (applied) billingUpdates += 1;
+        if (outcome === "updated") billingUpdates += 1;
+        if (outcome === "case_missing") caseMissingSkipped += 1;
       }
 
-      if (result.refreshed > 0 || result.errors.length > 0 || result.skipped > 0) {
+      if (
+        result.refreshed > 0 ||
+        result.errors.length > 0 ||
+        result.skipped > 0 ||
+        caseMissingSkipped > 0
+      ) {
         this.logger.log(
-          `Invoice sync cron: refreshed=${result.refreshed} succeeded=${result.updated.length} skipped=${result.skipped} billingUpdates=${billingUpdates} errors=${result.errors.length}`,
+          `Invoice sync cron: refreshed=${result.refreshed} succeeded=${result.updated.length} skipped=${result.skipped} billingUpdates=${billingUpdates} caseMissingSkipped=${caseMissingSkipped} errors=${result.errors.length}`,
         );
       }
       for (const err of result.errors.slice(0, 5)) {
@@ -74,8 +83,9 @@ export class InvoiceSyncScheduler {
           processed: result.refreshed,
           succeeded: result.updated.length,
           failed: result.errors.length,
-          skipped: result.skipped,
+          skipped: result.skipped + caseMissingSkipped,
           billingUpdates,
+          caseMissingSkipped,
         },
         errorMessage:
           result.errors.length > 0
@@ -95,10 +105,7 @@ export class InvoiceSyncScheduler {
     organizationId: string,
     caseId: string,
     invoices: CaseInvoiceSyncStatus[],
-  ): Promise<boolean> {
-    const next = aggregateCaseBillingStatus(invoices, 0);
-    if (!next) return false;
-
+  ): Promise<"updated" | "case_missing" | "noop"> {
     try {
       const res = await firstValueFrom(
         this.httpService.get<CaseResponse>(`${SERVICE_URLS.cases}/cases/${caseId}`, {
@@ -106,12 +113,16 @@ export class InvoiceSyncScheduler {
           timeout: 15000,
         }),
       );
+
+      const next = aggregateCaseBillingStatus(invoices, 0);
+      if (!next) return "noop";
+
       const current = res.data.billingStatus;
       const mayApply =
         shouldUpgradeBillingStatus(current, next) ||
         current === "to_invoice" ||
         (current === "invoice_draft" && next === "partially_invoiced");
-      if (!mayApply || current === next) return false;
+      if (!mayApply || current === next) return "noop";
 
       await firstValueFrom(
         this.httpService.patch(
@@ -120,14 +131,26 @@ export class InvoiceSyncScheduler {
           { timeout: 15000 },
         ),
       );
-      return true;
+      return "updated";
     } catch (err) {
+      const status = axios.isAxiosError(err) ? err.response?.status : undefined;
+      if (status === 404) {
+        // Conserve la trace facture ; marque pour ne plus retraiter (évite les 404 en boucle).
+        const marked = await this.integrationsService.markInvoiceSyncsCaseMissing(
+          organizationId,
+          caseId,
+        );
+        this.logger.warn(
+          `Dossier ${caseId} introuvable — skip billing (${marked} sync(s) marquée(s), conservées)`,
+        );
+        return "case_missing";
+      }
       this.logger.warn(
         `Billing status update failed case=${caseId}: ${
           err instanceof Error ? err.message : String(err)
         }`,
       );
-      return false;
+      return "noop";
     }
   }
 }

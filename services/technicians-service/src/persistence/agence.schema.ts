@@ -21,9 +21,15 @@ export class AgenceDocument extends Document {
   @Prop()
   phone?: string;
 
+  @Prop({ type: Date })
+  deletedAt?: Date | null;
+
   @Prop({ default: false })
   isTestData!: boolean;
 }
 
 export const AgenceSchema = SchemaFactory.createForClass(AgenceDocument);
-AgenceSchema.index({ organizationId: 1, name: 1 }, { unique: true });
+AgenceSchema.index(
+  { organizationId: 1, name: 1 },
+  { unique: true, partialFilterExpression: { deletedAt: null } },
+);
