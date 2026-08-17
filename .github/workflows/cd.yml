@@ -137,6 +137,7 @@ jobs:
             NEXT_PUBLIC_CRISP_WEBSITE_ID=${{ vars.NEXT_PUBLIC_CRISP_WEBSITE_ID }}
             NEXT_PUBLIC_CRISP_HELPDESK_ENABLED=${{ vars.NEXT_PUBLIC_CRISP_HELPDESK_ENABLED }}
             NEXT_PUBLIC_GOOGLE_ADS_ID=${{ vars.NEXT_PUBLIC_GOOGLE_ADS_ID }}
+            NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL=${{ vars.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL }}
             NEXT_PUBLIC_APP_VERSION=${{ needs.prepare.outputs.version }}
             NEXT_PUBLIC_GIT_SHA=${{ needs.prepare.outputs.sha }}
           push: true

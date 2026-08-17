@@ -12,8 +12,15 @@ declare global {
   }
 }
 
+const SIGNUP_CONVERSION_SESSION_KEY = "planwise_gads_signup_conversion";
+
 export function getGoogleAdsId(): string {
   return process.env.NEXT_PUBLIC_GOOGLE_ADS_ID?.trim() ?? "";
+}
+
+/** Label d’événement (partie après `AW-…/` dans send_to). */
+export function getGoogleAdsSignupConversionLabel(): string {
+  return process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL?.trim() ?? "";
 }
 
 function pushConsentUpdate(granted: boolean) {
@@ -23,6 +30,50 @@ function pushConsentUpdate(granted: boolean) {
     ad_storage: value,
     ad_user_data: value,
     ad_personalization: value,
+  });
+}
+
+/**
+ * Conversion Google Ads « inscription » — uniquement après création d’organisation réussie.
+ * Nécessite `NEXT_PUBLIC_GOOGLE_ADS_ID` + `NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL`.
+ * Consent Mode : l’événement part même sans consentement marketing (modélisation) ;
+ * le stockage pub reste régi par le consentement.
+ *
+ * @returns Promise résolue après envoi (ou timeout court) pour enchaîner une navigation.
+ */
+export function reportGoogleAdsSignupConversion(opts?: { transactionId?: string }): Promise<void> {
+  if (typeof window === "undefined") return Promise.resolve();
+  const adsId = getGoogleAdsId();
+  const label = getGoogleAdsSignupConversionLabel();
+  if (!adsId || !label || typeof window.gtag !== "function") {
+    return Promise.resolve();
+  }
+
+  try {
+    if (sessionStorage.getItem(SIGNUP_CONVERSION_SESSION_KEY) === "1") {
+      return Promise.resolve();
+    }
+    sessionStorage.setItem(SIGNUP_CONVERSION_SESSION_KEY, "1");
+  } catch {
+    // sessionStorage indisponible : on envoie quand même (risque faible de double envoi).
+  }
+
+  return new Promise((resolve) => {
+    let settled = false;
+    const done = () => {
+      if (settled) return;
+      settled = true;
+      resolve();
+    };
+    const timeout = window.setTimeout(done, 1000);
+    window.gtag!("event", "conversion", {
+      send_to: `${adsId}/${label}`,
+      ...(opts?.transactionId ? { transaction_id: opts.transactionId } : {}),
+      event_callback: () => {
+        window.clearTimeout(timeout);
+        done();
+      },
+    });
   });
 }
 

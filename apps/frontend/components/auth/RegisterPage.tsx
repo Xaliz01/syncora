@@ -27,6 +27,7 @@ import { BetaBadge } from "@/components/ui/BetaBadge";
 import { ProductScreenshotsRegister } from "@/components/landing/ProductScreenshots";
 import { LANDING_TAGLINE } from "@/lib/landing-copy";
 import { PLANWISE_LOGO_SRC } from "@/lib/brand-assets";
+import { reportGoogleAdsSignupConversion } from "@/components/analytics/GoogleAdsTag";
 
 type RegisterStep = "account" | "verify-email" | "organization";
 
@@ -176,12 +177,14 @@ export function RegisterPage() {
         email: organizationEmail.trim(),
         ...toCreateOrganizationAddress(organizationAddress),
       });
+      await reportGoogleAdsSignupConversion({
+        transactionId: user.organizationId || user.id,
+      });
       // Navigation pleine page : le JWT vient d’être posé ; un soft replace peut rester
       // sur /register (effet isAuthenticated + Suspense) avant que RequireAuth prenne le relais.
       window.location.assign(postAuthHomePath(user));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Création de l'organisation impossible");
-    } finally {
       setLoading(false);
     }
   };

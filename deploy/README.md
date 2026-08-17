@@ -87,14 +87,29 @@ Secrets de l'environnement `planwise-cd` :
 
 Variables de l'environnement `planwise-cd`, injectées au build du frontend (bundle client) :
 
-| Variable                             | Exemple                      |
-| ------------------------------------ | ---------------------------- |
-| `NEXT_PUBLIC_API_URL`                | `https://api.exemple.fr/api` |
-| `NEXT_PUBLIC_MARKETING_HOST`         | `exemple.fr`                 |
-| `NEXT_PUBLIC_APP_HOST`               | `app.exemple.fr`             |
-| `NEXT_PUBLIC_CRISP_WEBSITE_ID`       | identifiant Crisp            |
-| `NEXT_PUBLIC_CRISP_HELPDESK_ENABLED` | `false`                      |
-| `NEXT_PUBLIC_GOOGLE_ADS_ID`          | `AW-…` (Google Ads / gtag)   |
+| Variable                                  | Exemple                         |
+| ----------------------------------------- | ------------------------------- |
+| `NEXT_PUBLIC_API_URL`                     | `https://api.exemple.fr/api`    |
+| `NEXT_PUBLIC_MARKETING_HOST`              | `exemple.fr`                    |
+| `NEXT_PUBLIC_APP_HOST`                    | `app.exemple.fr`                |
+| `NEXT_PUBLIC_CRISP_WEBSITE_ID`            | identifiant Crisp               |
+| `NEXT_PUBLIC_CRISP_HELPDESK_ENABLED`      | `false`                         |
+| `NEXT_PUBLIC_GOOGLE_ADS_ID`               | `AW-…` (Google Ads / gtag)      |
+| `NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL` | label événement (après `AW-…/`) |
+
+#### Google Ads — conversion « inscription »
+
+Ne pas utiliser une conversion **page vue** (landing / `/register`) : elle compte les
+visites, pas les comptes. Le front envoie un événement `conversion` **uniquement**
+après création d’organisation réussie (`reportGoogleAdsSignupConversion`).
+
+1. Google Ads → Objectifs → Conversions → créer / modifier l’action **Inscription**.
+2. Source **Site Web**, type **Événement** (snippet d’événement), pas « chargement de page ».
+3. Copier le label dans `send_to: AW-XXXX/LABEL` → variable GitHub
+   `NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL` (+ `NEXT_PUBLIC_GOOGLE_ADS_ID` déjà présent).
+4. Passer l’ancienne action page vue en **secondaire** ou la retirer des objectifs
+   d’enchères pour ne plus polluer les rapports.
+5. Redéployer le frontend (build-arg) pour bake le label dans le bundle.
 
 Le push des images utilise le `GITHUB_TOKEN` intégré (registry GHCR).
 
