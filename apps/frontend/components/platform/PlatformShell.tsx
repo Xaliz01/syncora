@@ -149,7 +149,7 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
               onClick={logout}
               title="Déconnexion"
               aria-label="Déconnexion"
-              className="inline-flex items-center justify-center rounded-md border border-slate-200 p-1.5 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 sm:gap-1.5 sm:px-3 sm:py-1.5"
+              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-slate-200 p-0 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 md:h-auto md:w-auto md:gap-1.5 md:px-3 md:py-1.5"
             >
               <svg
                 className="h-4 w-4 shrink-0"
@@ -165,7 +165,7 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
                   d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"
                 />
               </svg>
-              <span className="hidden text-sm sm:inline">Déconnexion</span>
+              <span className="hidden text-sm md:inline">Déconnexion</span>
             </button>
           </div>
         </div>

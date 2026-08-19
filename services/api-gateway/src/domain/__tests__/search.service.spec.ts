@@ -47,6 +47,12 @@ describe("SearchGatewayService", () => {
                 companyName: "Acme Plomberie SARL",
                 email: "contact@acme.fr",
                 legalIdentifier: "12345678900012",
+                address: {
+                  line1: "12 rue de Vaugirard",
+                  postalCode: "75015",
+                  city: "Paris",
+                  country: "FR",
+                },
               },
               {
                 id: "cust-2",
@@ -56,6 +62,18 @@ describe("SearchGatewayService", () => {
                 firstName: "Jean",
                 lastName: "Moulin",
                 email: "jean.moulin@example.fr",
+                sites: [
+                  {
+                    id: "site-1",
+                    label: "Chantier Lyon",
+                    address: {
+                      line1: "5 place Bellecour",
+                      postalCode: "69002",
+                      city: "Lyon",
+                      country: "FR",
+                    },
+                  },
+                ],
               },
             ],
             total: 2,
@@ -184,6 +202,35 @@ describe("SearchGatewayService", () => {
           type: "customer",
           title: "Jean Moulin",
           url: "/customers/cust-2",
+        }),
+      ]),
+    );
+  });
+
+  it("should match customers by main address", async () => {
+    const result = await service.search(user, "Vaugirard");
+
+    expect(result.results).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "cust-1",
+          type: "customer",
+          title: "Acme Plomberie",
+          subtitle: expect.stringContaining("12 rue de Vaugirard"),
+        }),
+      ]),
+    );
+  });
+
+  it("should match customers by site address", async () => {
+    const result = await service.search(user, "Bellecour Lyon");
+
+    expect(result.results).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "cust-2",
+          type: "customer",
+          title: "Jean Moulin",
         }),
       ]),
     );

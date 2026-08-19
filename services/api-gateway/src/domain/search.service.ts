@@ -14,6 +14,7 @@ import type {
   CustomersListResponse,
   OrderGiverResponse,
   OrderGiversListResponse,
+  PostalAddress,
   PrestationResponse,
   PrestationsListResponse,
   TeamResponse,
@@ -119,6 +120,7 @@ export class SearchGatewayService extends AbstractSearchService {
     }
 
     for (const customer of this.settled(customers)) {
+      const addressFields = this.addressSearchFields(customer.address, customer.sites);
       if (
         this.matches(
           normalizedQuery,
@@ -130,10 +132,14 @@ export class SearchGatewayService extends AbstractSearchService {
           customer.phone,
           customer.mobile,
           customer.legalIdentifier,
+          ...addressFields,
         )
       ) {
         const kindLabel = customer.kind === "company" ? "Entreprise" : "Particulier";
-        const detail = [customer.email, customer.legalIdentifier].filter(Boolean).join(" · ");
+        const addressHint = this.formatAddressHint(customer.address, customer.sites);
+        const detail = [customer.email, customer.legalIdentifier, addressHint]
+          .filter(Boolean)
+          .join(" · ");
         results.push({
           id: customer.id,
           type: "customer",
@@ -145,6 +151,7 @@ export class SearchGatewayService extends AbstractSearchService {
     }
 
     for (const orderGiver of this.settled(orderGivers)) {
+      const addressFields = this.addressSearchFields(orderGiver.address);
       if (
         this.matches(
           normalizedQuery,
@@ -156,10 +163,14 @@ export class SearchGatewayService extends AbstractSearchService {
           orderGiver.phone,
           orderGiver.mobile,
           orderGiver.legalIdentifier,
+          ...addressFields,
         )
       ) {
         const kindLabel = orderGiver.kind === "company" ? "Entreprise" : "Particulier";
-        const detail = [orderGiver.email, orderGiver.legalIdentifier].filter(Boolean).join(" · ");
+        const addressHint = this.formatAddressHint(orderGiver.address);
+        const detail = [orderGiver.email, orderGiver.legalIdentifier, addressHint]
+          .filter(Boolean)
+          .join(" · ");
         results.push({
           id: orderGiver.id,
           type: "order_giver",
@@ -290,6 +301,37 @@ export class SearchGatewayService extends AbstractSearchService {
     const tokens = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
     if (tokens.length === 0) return false;
     return tokens.every((token) => haystack.includes(token));
+  }
+
+  private addressSearchFields(
+    address?: PostalAddress | null,
+    sites?: Array<{ label?: string; address: PostalAddress }> | null,
+  ): string[] {
+    const fields: Array<string | undefined> = [];
+    if (address) {
+      fields.push(address.line1, address.line2, address.postalCode, address.city, address.country);
+    }
+    for (const site of sites ?? []) {
+      fields.push(site.label);
+      fields.push(
+        site.address.line1,
+        site.address.line2,
+        site.address.postalCode,
+        site.address.city,
+        site.address.country,
+      );
+    }
+    return fields.filter((f): f is string => Boolean(f && String(f).trim()));
+  }
+
+  private formatAddressHint(
+    address?: PostalAddress | null,
+    sites?: Array<{ address: PostalAddress }> | null,
+  ): string | undefined {
+    const primary = address ?? sites?.[0]?.address;
+    if (!primary) return undefined;
+    const line = [primary.line1, primary.postalCode, primary.city].filter(Boolean).join(", ");
+    return line || undefined;
   }
 
   private settled<T>(result: PromiseSettledResult<T[]>): T[] {
