@@ -23,7 +23,6 @@ import {
   type OrganizationAddressForm,
 } from "@/lib/organization-address";
 import { LegalConsentCheckbox } from "@/components/legal/LegalConsentCheckbox";
-import { BetaBadge } from "@/components/ui/BetaBadge";
 import { ProductScreenshotsRegister } from "@/components/landing/ProductScreenshots";
 import { LANDING_TAGLINE } from "@/lib/landing-copy";
 import { PLANWISE_LOGO_SRC } from "@/lib/brand-assets";
@@ -282,8 +281,7 @@ export function RegisterPage() {
           {step === "account" ? (
             <div className="grid gap-6 md:grid-cols-2 md:items-stretch">
               <aside className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 p-8 shadow-sm dark:shadow-slate-950/20">
-                <div className="mb-4 flex flex-wrap items-center gap-2">
-                  <BetaBadge />
+                <div className="mb-4">
                   <span className="inline-flex items-center rounded-full border border-brand-200 dark:border-brand-500/40 bg-brand-50 dark:bg-brand-950/40 px-3 py-1 text-xs font-semibold text-brand-700 dark:text-brand-300">
                     {BASE_SUBSCRIPTION_PLAN.trialDays} jours d&apos;essai · sans carte bancaire
                   </span>
@@ -548,8 +546,7 @@ export function RegisterPage() {
                       placeholder="facturation@exemple.fr"
                     />
                     <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                      Obligatoire pour la facturation. L&apos;utilisation de Planwise n&apos;aura
-                      aucun coût durant la beta.
+                      Obligatoire pour la facturation. Aucun prélèvement pendant l&apos;essai.
                     </p>
                   </div>
 

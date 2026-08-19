@@ -11,11 +11,9 @@ import { getMarketingHomeHref } from "@/lib/host-routing";
 import { postAuthHomePath } from "@/lib/subscription-access";
 import { sanitizeAuthReturnPath } from "@/lib/auth-return-url";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
-import { BetaBadge } from "@/components/ui/BetaBadge";
 import { AccompanimentSupportBlock } from "@/components/landing/AccompanimentSupportBlock";
 import { ProductScreenshotsLoginBackdrop } from "@/components/landing/ProductScreenshots";
 import {
-  LANDING_BETA_FREE_NOTE,
   LANDING_HERO_HEADING,
   LANDING_HERO_SUPPORT,
   LANDING_TAGLINE,
@@ -161,15 +159,9 @@ export function LoginPage() {
         <div className="relative z-10 w-full max-w-6xl grid gap-6 md:grid-cols-2 md:items-stretch">
           <section className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 p-6 sm:p-7 shadow-sm dark:shadow-slate-950/20 backdrop-blur-[2px]">
             <div className="mb-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <BetaBadge />
-                <span className="inline-flex items-center rounded-full border border-brand-200 dark:border-brand-500/40 bg-brand-50 dark:bg-brand-950/40 px-3 py-1 text-xs font-semibold text-brand-700 dark:text-brand-300">
-                  {BASE_SUBSCRIPTION_PLAN.trialDays} jours d&apos;essai · sans carte bancaire
-                </span>
-              </div>
-              <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
-                {LANDING_BETA_FREE_NOTE}
-              </p>
+              <span className="inline-flex items-center rounded-full border border-brand-200 dark:border-brand-500/40 bg-brand-50 dark:bg-brand-950/40 px-3 py-1 text-xs font-semibold text-brand-700 dark:text-brand-300">
+                {BASE_SUBSCRIPTION_PLAN.trialDays} jours d&apos;essai · sans carte bancaire
+              </span>
             </div>
 
             <div className="mb-4 flex items-center gap-3">

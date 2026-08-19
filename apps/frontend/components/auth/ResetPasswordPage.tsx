@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { isPasswordPolicyValid, PASSWORD_POLICY_HINT } from "@planwise/shared";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
-import { BetaBadge } from "@/components/ui/BetaBadge";
 import { LANDING_TAGLINE } from "@/lib/landing-copy";
 import * as authApi from "@/lib/auth.api";
 
@@ -47,7 +46,6 @@ export function ResetPasswordPage() {
           className="flex items-center gap-2 font-semibold text-slate-900 dark:text-white"
         >
           Planwise
-          <BetaBadge />
         </Link>
         <ThemeToggle />
       </header>

@@ -7,8 +7,7 @@ import {
   BASE_SUBSCRIPTION_TRIAL_LABEL,
 } from "@planwise/shared";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
-import { BetaBadge } from "@/components/ui/BetaBadge";
-import { LANDING_BETA_FREE_NOTE, LANDING_TAGLINE } from "@/lib/landing-copy";
+import { LANDING_TAGLINE } from "@/lib/landing-copy";
 import { PLANWISE_LOGO_SRC } from "@/lib/brand-assets";
 
 const teamSuggestionAddon = ADDON_CATALOG.team_suggestion;
@@ -21,7 +20,7 @@ export const TARIFS_FAQ = [
   },
   {
     question: "Y a-t-il un essai gratuit ?",
-    answer: `Oui : ${BASE_SUBSCRIPTION_PLAN.trialDays} jours d’essai gratuit, sans carte bancaire. Pendant toute la beta, Planwise reste gratuit.`,
+    answer: `Oui : ${BASE_SUBSCRIPTION_PLAN.trialDays} jours d’essai gratuit, sans carte bancaire.`,
   },
   {
     question: "Planwise est-il un CRM pour artisans et TPE du BTP ?",
@@ -89,15 +88,11 @@ export function TarifsPage() {
       <main className="flex-1">
         <section className="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40">
           <div className="max-w-6xl mx-auto px-4 py-12 sm:py-16">
-            <div className="mb-4 flex flex-wrap items-center gap-2">
-              <BetaBadge />
+            <div className="mb-4">
               <span className="inline-flex items-center rounded-full border border-brand-200 dark:border-brand-500/40 bg-brand-50 dark:bg-brand-950/40 px-3 py-1 text-xs font-semibold text-brand-700 dark:text-brand-300">
                 {BASE_SUBSCRIPTION_PLAN.trialDays} jours d&apos;essai · sans carte bancaire
               </span>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-              {LANDING_BETA_FREE_NOTE}
-            </p>
             <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 dark:text-white">
               Tarifs Planwise : {BASE_SUBSCRIPTION_PLAN.priceDisplay} / mois
             </h1>
@@ -110,8 +105,7 @@ export function TarifsPage() {
               , {BASE_SUBSCRIPTION_PLAN.commitmentDisplay}, résiliable à tout moment.
             </p>
             <p className="mt-3 text-base text-slate-600 dark:text-slate-300 max-w-2xl">
-              {BASE_SUBSCRIPTION_TRIAL_LABEL} sans carte bancaire. Pendant toute la beta, Planwise
-              reste gratuit.
+              {BASE_SUBSCRIPTION_TRIAL_LABEL} sans carte bancaire.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link

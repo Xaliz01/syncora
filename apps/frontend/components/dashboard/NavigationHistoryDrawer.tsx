@@ -11,6 +11,8 @@ import {
   type NavigationHistoryEntry,
 } from "@/lib/navigation-history";
 
+const DRAWER_TRANSITION_MS = 300;
+
 function HistoryClockIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -33,6 +35,8 @@ function HistoryClockIcon({ className }: { className?: string }) {
 export function NavigationHistoryButton() {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [entered, setEntered] = useState(false);
   const [entries, setEntries] = useState<NavigationHistoryEntry[]>([]);
 
   const refresh = useCallback(() => {
@@ -44,12 +48,29 @@ export function NavigationHistoryButton() {
   }, [user?.id, user?.organizationId]);
 
   useEffect(() => {
-    if (!open) return;
-    refresh();
+    if (open) {
+      setMounted(true);
+      refresh();
+      const reduceMotion =
+        typeof window !== "undefined" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (reduceMotion) {
+        setEntered(true);
+        return;
+      }
+      const id = window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => setEntered(true));
+      });
+      return () => window.cancelAnimationFrame(id);
+    }
+
+    setEntered(false);
+    const t = window.setTimeout(() => setMounted(false), DRAWER_TRANSITION_MS);
+    return () => window.clearTimeout(t);
   }, [open, refresh]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!mounted) return;
     function onChanged(e: Event) {
       const detail = (e as CustomEvent<{ userId?: string; organizationId?: string }>).detail;
       if (
@@ -63,10 +84,10 @@ export function NavigationHistoryButton() {
     }
     window.addEventListener(NAVIGATION_HISTORY_CHANGED_EVENT, onChanged);
     return () => window.removeEventListener(NAVIGATION_HISTORY_CHANGED_EVENT, onChanged);
-  }, [open, refresh, user?.id, user?.organizationId]);
+  }, [mounted, refresh, user?.id, user?.organizationId]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!mounted) return;
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") setOpen(false);
     }
@@ -77,7 +98,7 @@ export function NavigationHistoryButton() {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = previousOverflow;
     };
-  }, [open]);
+  }, [mounted]);
 
   if (!user?.id || !user.organizationId) return null;
 
@@ -98,12 +119,14 @@ export function NavigationHistoryButton() {
         <HistoryClockIcon className="h-5 w-5" />
       </button>
 
-      {open && typeof document !== "undefined"
+      {typeof document !== "undefined" && mounted
         ? createPortal(
             <div className="fixed inset-0 z-[80]" role="presentation">
               <button
                 type="button"
-                className="absolute inset-0 bg-slate-950/40"
+                className={`absolute inset-0 bg-slate-950/40 transition-opacity duration-300 ease-out motion-reduce:transition-none ${
+                  entered ? "opacity-100" : "opacity-0"
+                }`}
                 aria-label="Fermer l’historique"
                 onClick={() => setOpen(false)}
               />
@@ -111,7 +134,9 @@ export function NavigationHistoryButton() {
                 role="dialog"
                 aria-modal="true"
                 aria-label="Historique de navigation"
-                className="absolute inset-y-0 right-0 flex w-full max-w-sm flex-col border-l border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900"
+                className={`absolute inset-y-0 right-0 flex w-full max-w-sm flex-col border-l border-slate-200 bg-white shadow-xl transition-transform duration-300 ease-out motion-reduce:transition-none dark:border-slate-700 dark:bg-slate-900 ${
+                  entered ? "translate-x-0" : "translate-x-full"
+                }`}
               >
                 <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-slate-800">
                   <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">

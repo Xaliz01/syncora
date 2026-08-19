@@ -6,6 +6,8 @@ import { buildRootMetadata } from "@/lib/seo";
 export const metadata: Metadata = buildRootMetadata();
 
 export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
   themeColor: "#4338ca",
   viewportFit: "cover",
 };

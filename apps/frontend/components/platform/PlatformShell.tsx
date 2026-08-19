@@ -96,10 +96,10 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
     }`;
 
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-slate-950">
+    <div className="min-h-screen overflow-x-clip bg-slate-100 dark:bg-slate-950">
       <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
-          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-3 py-3 sm:gap-3 sm:px-4">
+          <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
             <button
               type="button"
               onClick={() => setMobileMenuOpen((open) => !open)}
@@ -122,7 +122,7 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
                 )}
               </svg>
             </button>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
                 Planwise Backoffice
               </p>
@@ -142,15 +142,30 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
               })}
             </nav>
           </div>
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             <ThemeToggle />
             <button
               type="button"
               onClick={logout}
-              className="rounded-md border border-slate-200 px-2.5 py-1.5 text-sm dark:border-slate-700 sm:px-3"
+              title="Déconnexion"
+              aria-label="Déconnexion"
+              className="inline-flex items-center justify-center rounded-md border border-slate-200 p-1.5 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 sm:gap-1.5 sm:px-3 sm:py-1.5"
             >
-              <span className="sm:hidden">Quitter</span>
-              <span className="hidden sm:inline">Déconnexion</span>
+              <svg
+                className="h-4 w-4 shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.75}
+                aria-hidden
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"
+                />
+              </svg>
+              <span className="hidden text-sm sm:inline">Déconnexion</span>
             </button>
           </div>
         </div>
@@ -178,7 +193,7 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
           </div>
         )}
       </header>
-      <main className="mx-auto max-w-6xl overflow-x-auto px-4 py-6">{children}</main>
+      <main className="mx-auto max-w-6xl min-w-0 px-3 py-6 sm:px-4">{children}</main>
     </div>
   );
 }

@@ -19,6 +19,8 @@ export interface PlatformServiceHealthRow {
   latencyMsAvg: number | null;
   /** Latence p95 (ms) sur la fenêtre, ou null si pas de données. */
   latencyMsP95: number | null;
+  /** Requêtes / seconde (fenêtre), ou null si pas de trafic. */
+  requestsPerSecond: number | null;
   /** Part des requêtes en 4xx (0–1), ou null si pas de trafic. */
   errorRate4xx: number | null;
   /** Part des requêtes en 5xx (0–1), ou null si pas de trafic. */
@@ -46,6 +48,8 @@ export interface PlatformOpsHealthResponse {
     latencyMsAvg: number | null;
     /** Latence p95 globale (ms), tous services. */
     latencyMsP95: number | null;
+    /** Requêtes / seconde globales (tous services). */
+    requestsPerSecond: number | null;
     /** Utilisation CPU hôte (0–100), node-exporter. */
     cpuUsagePercent: number | null;
     /** Utilisation RAM hôte (0–100), node-exporter. */

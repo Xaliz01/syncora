@@ -1,4 +1,4 @@
-/** Badge discret pour signaler la phase beta (landing, abonnement). */
+/** Badge discret pour signaler la phase beta (écrans abonnement / in-app uniquement). */
 export function BetaBadge({ className = "" }: { className?: string }) {
   return (
     <span

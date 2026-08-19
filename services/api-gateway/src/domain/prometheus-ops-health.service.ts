@@ -131,6 +131,7 @@ export class PrometheusOpsHealthService extends AbstractPrometheusOpsHealthServi
           unknownCount: 0,
           latencyMsAvg: null,
           latencyMsP95: null,
+          requestsPerSecond: null,
           cpuUsagePercent: null,
           memoryUsagePercent: null,
           memoryUsedBytes: null,
@@ -146,6 +147,8 @@ export class PrometheusOpsHealthService extends AbstractPrometheusOpsHealthServi
         latencyP95ByService,
         latencyGlobal,
         latencyP95Global,
+        rpsByService,
+        rpsGlobal,
         rate4xx,
         rate5xx,
         hostCpu,
@@ -175,6 +178,14 @@ export class PrometheusOpsHealthService extends AbstractPrometheusOpsHealthServi
         this.query(
           base,
           `1000 * histogram_quantile(0.95, sum by (le) (rate(traces_spanmetrics_latency_bucket{http_method!="OPTIONS"}[${WINDOW}])))`,
+        ),
+        this.query(
+          base,
+          `sum by (service) (rate(traces_spanmetrics_calls_total{http_method!="OPTIONS"}[${WINDOW}]))`,
+        ),
+        this.query(
+          base,
+          `sum(rate(traces_spanmetrics_calls_total{http_method!="OPTIONS"}[${WINDOW}]))`,
         ),
         this.query(
           base,
@@ -208,6 +219,7 @@ export class PrometheusOpsHealthService extends AbstractPrometheusOpsHealthServi
 
       const latencyMap = toServiceMap(latencyByService);
       const latencyP95Map = toServiceMap(latencyP95ByService);
+      const rpsMap = toServiceMap(rpsByService);
       const rate4xxMap = toServiceMap(rate4xx);
       const rate5xxMap = toServiceMap(rate5xx);
       const cpuCoresMap = toContainerServiceMap(containerCpu);
@@ -277,6 +289,7 @@ export class PrometheusOpsHealthService extends AbstractPrometheusOpsHealthServi
             slots,
             latencyMsAvg: roundOrNull(latencyMap.get(service) ?? null, 1),
             latencyMsP95: roundOrNull(latencyP95Map.get(service) ?? null, 1),
+            requestsPerSecond: roundOrNull(rpsMap.get(service) ?? null, 2),
             errorRate4xx: clampRate(rate4xxMap.get(service) ?? null),
             errorRate5xx: clampRate(rate5xxMap.get(service) ?? null),
             cpuCores: cpuCores != null ? roundOrNull(cpuCores, 3) : null,
@@ -286,6 +299,9 @@ export class PrometheusOpsHealthService extends AbstractPrometheusOpsHealthServi
 
       const summaryLatencyAvg = roundOrNull(firstVectorValue(latencyGlobal), 1);
       const summaryLatencyP95 = roundOrNull(firstVectorValue(latencyP95Global), 1);
+      const summaryRps =
+        roundOrNull(firstVectorValue(rpsGlobal), 2) ??
+        roundOrNull(sumOf(services.map((s) => s.requestsPerSecond)), 2);
       const memoryTotalBytes = roundOrNull(firstVectorValue(hostMemoryTotal), 0);
       const memoryAvailableBytes = roundOrNull(firstVectorValue(hostMemoryAvailable), 0);
       const memoryUsedBytes =
@@ -302,6 +318,7 @@ export class PrometheusOpsHealthService extends AbstractPrometheusOpsHealthServi
           summaryLatencyAvg ?? roundOrNull(averageOf(services.map((s) => s.latencyMsAvg)), 1),
         latencyMsP95:
           summaryLatencyP95 ?? roundOrNull(averageOf(services.map((s) => s.latencyMsP95)), 1),
+        requestsPerSecond: summaryRps,
         cpuUsagePercent: clampPercent(firstVectorValue(hostCpu)),
         memoryUsagePercent: clampPercent(firstVectorValue(hostMemoryRatio)),
         memoryUsedBytes,
@@ -332,6 +349,7 @@ export class PrometheusOpsHealthService extends AbstractPrometheusOpsHealthServi
           unknownCount: 0,
           latencyMsAvg: null,
           latencyMsP95: null,
+          requestsPerSecond: null,
           cpuUsagePercent: null,
           memoryUsagePercent: null,
           memoryUsedBytes: null,
@@ -389,6 +407,12 @@ function averageOf(values: Array<number | null | undefined>): number | null {
   const nums = values.filter((v): v is number => typeof v === "number" && Number.isFinite(v));
   if (nums.length === 0) return null;
   return nums.reduce((sum, v) => sum + v, 0) / nums.length;
+}
+
+function sumOf(values: Array<number | null | undefined>): number | null {
+  const nums = values.filter((v): v is number => typeof v === "number" && Number.isFinite(v));
+  if (nums.length === 0) return null;
+  return nums.reduce((sum, v) => sum + v, 0);
 }
 
 function roundOrNull(value: number | null, digits: number): number | null {

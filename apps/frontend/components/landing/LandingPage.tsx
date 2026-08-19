@@ -12,10 +12,8 @@ import { ScrollReveal } from "@/components/landing/ScrollReveal";
 import { AccompanimentSupportBlock } from "@/components/landing/AccompanimentSupportBlock";
 import { ProductScreenshotsHero } from "@/components/landing/ProductScreenshots";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
-import { BetaBadge } from "@/components/ui/BetaBadge";
 import {
   LANDING_ASSISTANT_FEATURE,
-  LANDING_BETA_FREE_NOTE,
   LANDING_HERO_HEADING,
   LANDING_HERO_HOOK,
   LANDING_HERO_SUPPORT,
@@ -40,18 +38,17 @@ const FEATURE_SECTIONS = [
   {
     title: "Favoris & historique",
     items: [
+      "Simplifiez votre navigation en utilisant les favoris et l'historique",
       "Barre de favoris personnalisable : glissez un lien du menu ou épinglez la page courante",
-      "Raccourcis par organisation — vos fiches dossier ou client ne se mélangent pas entre sociétés",
       "Historique de navigation : retrouvez rapidement les dernières pages visitées",
     ],
   },
   {
     title: "Planning interactif",
     items: [
-      "Vue jour, semaine ou mois pour voir d’un coup d’œil qui fait quoi",
+      "Vue jour, semaine ou mois pour voir d’un coup d’œil toutes vos interventions",
       "Glisser-déposer pour déplacer ou réorganiser une intervention",
       "Couleurs par équipe et affectation rapide des techniciens",
-      "Aligné avec les dossiers, la flotte et les contrats de maintenance",
     ],
   },
   {
@@ -67,7 +64,6 @@ const FEATURE_SECTIONS = [
     title: "Interventions terrain",
     items: [
       "« Ma journée » : la liste du jour pour chaque technicien, sur mobile",
-      "Commandes vocales expérimentales (opt-in) : démarrez, terminez ou commentez à la voix",
       "Démarrage et clôture horodatés, géolocalisés, avec photos",
       "Signature client et rapport PDF générés sur place",
       "Prélèvement de stock directement depuis l’intervention",
@@ -92,7 +88,7 @@ const FEATURE_SECTIONS = [
   {
     title: "Clients, flotte & stock",
     items: [
-      "Clients particuliers et entreprises avec historique lié aux dossiers",
+      "Clients particuliers et entreprises",
       "Donneurs d’ordre : facturez le bon tiers quand le client n’est pas le payeur",
       "Équipes, véhicules et agences alignés sur le planning",
       "Stock multi-emplacements (entrepôt, agence, véhicule) avec alertes",
@@ -102,14 +98,14 @@ const FEATURE_SECTIONS = [
     title: "Facturation & intégrations",
     items: [
       "Devis liés au dossier, prêts à être transformés en facture",
-      "Connexion à votre outil de facturation : envoi sans ressaisie, une connexion active à la fois",
+      "Connexion à votre outil de facturation : envoi sans ressaisie",
       "Suivi et validation des factures synchronisées depuis Planwise",
     ],
   },
   {
-    title: "Gouvernance & collaboration",
+    title: "Gestion des droits & utilisateurs",
     items: [
-      "Droits fins par rôle : bureau, terrain, lecture seule…",
+      "Droits par rôle : bureau, terrain, lecture seule…",
       "Profils de permissions prêts à importer pour démarrer sans tout paramétrer",
       "Invitation des collaborateurs et isolation par organisation",
       "Préférences de notification par type d’événement et par canal",
@@ -195,17 +191,11 @@ export function LandingPage() {
               <div>
                 <ScrollReveal when="mount">
                   <div className="mb-4">
-                    <span className="inline-flex items-center gap-2">
-                      <BetaBadge />
-                      <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 dark:border-brand-500/40 bg-brand-50 dark:bg-brand-950/40 px-3 py-1 text-xs font-semibold text-brand-700 dark:text-brand-300">
-                        <span aria-hidden>✦</span>
-                        {BASE_SUBSCRIPTION_PLAN.trialDays} jours d&apos;essai gratuit · sans carte
-                        bancaire
-                      </span>
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 dark:border-brand-500/40 bg-brand-50 dark:bg-brand-950/40 px-3 py-1 text-xs font-semibold text-brand-700 dark:text-brand-300">
+                      <span aria-hidden>✦</span>
+                      {BASE_SUBSCRIPTION_PLAN.trialDays} jours d&apos;essai gratuit · sans carte
+                      bancaire
                     </span>
-                    <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
-                      {LANDING_BETA_FREE_NOTE}
-                    </p>
                   </div>
                 </ScrollReveal>
                 <ScrollReveal when="mount" delayMs={80}>
@@ -528,7 +518,6 @@ export function LandingPage() {
               className="h-7 w-7 rounded-md shrink-0"
             />
             <span>Planwise — {LANDING_TAGLINE}</span>
-            <BetaBadge />
           </div>
           <div className="flex flex-wrap justify-center gap-4">
             <Link

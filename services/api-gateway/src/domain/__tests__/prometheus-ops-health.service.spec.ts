@@ -93,6 +93,41 @@ describe("PrometheusOpsHealthService", () => {
           },
         });
       }
+      if (
+        q.includes("traces_spanmetrics_calls_total") &&
+        q.includes("sum by (service)") &&
+        !q.includes("http_status_code")
+      ) {
+        return of({
+          status: 200,
+          data: {
+            status: "success",
+            data: {
+              resultType: "vector",
+              result: [
+                { metric: { service: "planwise-api-gateway" }, value: [1, "3.5"] },
+                { metric: { service: "cases" }, value: [1, "1.2"] },
+              ],
+            },
+          },
+        });
+      }
+      if (
+        q.includes("traces_spanmetrics_calls_total") &&
+        q.startsWith("sum(rate") &&
+        !q.includes("sum by")
+      ) {
+        return of({
+          status: 200,
+          data: {
+            status: "success",
+            data: {
+              resultType: "vector",
+              result: [{ metric: {}, value: [1, "4.7"] }],
+            },
+          },
+        });
+      }
       if (q.includes('http_status_code=~"4.."')) {
         return of({
           status: 200,
@@ -217,14 +252,17 @@ describe("PrometheusOpsHealthService", () => {
     expect(gateway?.latencyMsP95).toBe(88);
     expect(gateway?.errorRate4xx).toBe(0.12);
     expect(gateway?.errorRate5xx).toBe(0.01);
+    expect(gateway?.requestsPerSecond).toBe(3.5);
     expect(gateway?.cpuCores).toBe(0.15);
     expect(gateway?.memoryBytes).toBe(250 * 1024 ** 2);
 
     const cases = result.services.find((s) => s.service === "cases");
     expect(cases?.cpuCores).toBe(0.08);
     expect(cases?.memoryBytes).toBe(180 * 1024 ** 2);
+    expect(cases?.requestsPerSecond).toBe(1.2);
     expect(result.summary.latencyMsAvg).toBe(40);
     expect(result.summary.latencyMsP95).toBe(120);
+    expect(result.summary.requestsPerSecond).toBe(4.7);
     expect(result.summary.cpuUsagePercent).toBe(23.4);
     expect(result.summary.memoryUsagePercent).toBe(61.2);
     expect(result.summary.memoryTotalBytes).toBe(16 * 1024 ** 3);

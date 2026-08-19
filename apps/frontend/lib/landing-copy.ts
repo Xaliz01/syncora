@@ -15,8 +15,11 @@ export const LANDING_PRICE_LINE =
 export const LANDING_HERO_HOOK =
   "Essayez Planwise en moins de deux minutes : créez votre compte, renseignez votre SIRET, injectez en un clic un jeu de données de démo.";
 
-/** Précision beta : gratuit pendant toute la phase beta. */
-export const LANDING_BETA_FREE_NOTE = "Pendant toute la beta, Planwise reste gratuit.";
+/** Rassurance essai (landing / login) — sans mention « beta ». */
+export const LANDING_TRIAL_REASSURANCE = "Sans carte bancaire · résiliable à tout moment.";
+
+/** @deprecated Utiliser LANDING_TRIAL_REASSURANCE */
+export const LANDING_BETA_FREE_NOTE = LANDING_TRIAL_REASSURANCE;
 
 /**
  * Accompagnement éditeur (landing + login) : évolution produit, aide à l’import, assistant, chat.
@@ -37,7 +40,7 @@ export const LANDING_ACCOMPANIMENT = {
     {
       title: "Assistant IA",
       description:
-        "Guide in-app : où cliquer, comment créer une intervention — avec liens vers les écrans.",
+        "Guide in-app : où cliquer, comment créer une intervention ; vous êtes guidé pour trouver rapidement ce que vous cherchez.",
     },
     {
       title: "Chat support",
@@ -51,8 +54,8 @@ export const LANDING_ASSISTANT_FEATURE = {
   title: "Assistant IA",
   items: [
     "Posez une question : « où est le planning ? », « comment inviter un utilisateur ? »",
-    "Réponses courtes avec liens vers les bons écrans, selon vos droits",
-    "Escalade vers le chat support humain quand il faut une vraie personne",
+    "Réponses courtes avec liens vers les bons écrans",
+    "D'autres fonctionnalités autour de l'intelligence artificielle à venir",
   ],
 } as const;
 
@@ -60,9 +63,9 @@ export const LANDING_ASSISTANT_FEATURE = {
 export const LANDING_VOICE_FEATURE = {
   title: "Commandes vocales terrain (expérimental)",
   items: [
+    "Gardez les yeux sur la route et optimisez votre temps de travail",
     "Sur Ma journée (mobile) : activez l’option, dites « Planwise » ou « Plan »",
     "Démarrez, terminez ou commentez une intervention sans toucher l’écran",
-    "Opt-in dans Mon compte — distinct de l’assistant guide IA",
   ],
 } as const;
 
@@ -79,7 +82,7 @@ export const LANDING_PILLARS = [
   {
     title: "Assistant IA intégré",
     description:
-      "Un guide in-app répond à vos questions et vous envoie vers le bon menu — pour trouver rapidement planning, clients, devis ou invitations.",
+      "Un guide in-app répond à vos questions et vous envoie vers le bon menu — pour trouver rapidement planning, clients ou devis.",
   },
   {
     title: "Planning interactif",
@@ -89,12 +92,12 @@ export const LANDING_PILLARS = [
   {
     title: "Dossiers et interventions centralisés",
     description:
-      "Suivez chaque dossier, son avancement, ses tâches et son historique depuis un seul endroit.",
+      "Suivez chaque dossier, son avancement, ses tâches à faire, ses documents et son historique depuis un seul endroit.",
   },
   {
     title: "Terrain et preuve d'intervention",
     description:
-      "Vos techniciens démarrent, documentent en photos, font signer le client et génèrent le rapport PDF — aussi à la voix sur Ma journée (mobile).",
+      "Vos techniciens démarrent, documentent en photos, font signer le client et génèrent le rapport PDF — reconnaissance vocale disponible sur mobile.",
   },
   {
     title: "Contrats de maintenance suivis",

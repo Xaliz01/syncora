@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
-import { BetaBadge } from "@/components/ui/BetaBadge";
 import { LANDING_TAGLINE } from "@/lib/landing-copy";
 import * as authApi from "@/lib/auth.api";
 
@@ -37,7 +36,6 @@ export function ForgotPasswordPage() {
           className="flex items-center gap-2 font-semibold text-slate-900 dark:text-white"
         >
           Planwise
-          <BetaBadge />
         </Link>
         <ThemeToggle />
       </header>

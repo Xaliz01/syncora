@@ -379,6 +379,13 @@ function formatCpuCores(cores: number | null): string {
   return `${cores.toFixed(2)}`;
 }
 
+function formatRps(rps: number | null): string {
+  if (rps == null) return "—";
+  if (rps < 0.1) return rps.toFixed(2);
+  if (rps < 10) return rps.toFixed(1);
+  return `${Math.round(rps)}`;
+}
+
 function ServiceSlots({ slots }: { slots?: PlatformServiceHealthSlot[] }) {
   if (!slots || slots.length === 0) return null;
   return (
@@ -427,6 +434,12 @@ function OpsHealthDetailsTable({ data }: { data: PlatformOpsHealthResponse }) {
                 <dt className="text-slate-500 dark:text-slate-400">Latence p95</dt>
                 <dd className="mt-0.5 tabular-nums text-slate-700 dark:text-slate-200">
                   {formatLatency(row.latencyMsP95)}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-slate-500 dark:text-slate-400">Req/s</dt>
+                <dd className="mt-0.5 tabular-nums text-slate-700 dark:text-slate-200">
+                  {formatRps(row.requestsPerSecond)}
                 </dd>
               </div>
               <div>
@@ -479,6 +492,7 @@ function OpsHealthDetailsTable({ data }: { data: PlatformOpsHealthResponse }) {
               <th className="px-4 py-2 font-medium">Statut</th>
               <th className="px-4 py-2 font-medium">Latence moy.</th>
               <th className="px-4 py-2 font-medium">Latence p95</th>
+              <th className="px-4 py-2 font-medium">Req/s</th>
               <th className="px-4 py-2 font-medium">4xx</th>
               <th className="px-4 py-2 font-medium">5xx</th>
               <th className="px-4 py-2 font-medium">CPU</th>
@@ -504,6 +518,9 @@ function OpsHealthDetailsTable({ data }: { data: PlatformOpsHealthResponse }) {
                 </td>
                 <td className="px-4 py-2.5 tabular-nums text-slate-600 dark:text-slate-300">
                   {formatLatency(row.latencyMsP95)}
+                </td>
+                <td className="px-4 py-2.5 tabular-nums text-slate-600 dark:text-slate-300">
+                  {formatRps(row.requestsPerSecond)}
                 </td>
                 <td
                   className={`px-4 py-2.5 tabular-nums ${
@@ -603,7 +620,7 @@ function OpsHealthSection({
       ) : (
         <>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
-            <div className="min-w-0 flex-1 grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
+            <div className="min-w-0 flex-1 grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-7">
               <OpsMetricCard
                 label="Statut"
                 value={statusValue}
@@ -615,6 +632,12 @@ function OpsHealthSection({
                 value={formatLatency(latencyAvg)}
                 hint={`p95 ${formatLatency(latencyP95)} · tous services`}
                 tone="brand"
+              />
+              <OpsMetricCard
+                label="Req/s"
+                value={formatRps(data.summary.requestsPerSecond)}
+                hint="Tous services"
+                tone="sky"
               />
               <OpsMetricCard
                 label="4xx"
@@ -726,6 +749,7 @@ export function PlatformDashboardPage() {
             unknownCount: 0,
             latencyMsAvg: null,
             latencyMsP95: null,
+            requestsPerSecond: null,
             cpuUsagePercent: null,
             memoryUsagePercent: null,
             memoryUsedBytes: null,
