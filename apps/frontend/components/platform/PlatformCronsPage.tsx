@@ -153,51 +153,50 @@ export function PlatformCronsPage() {
           <p className="text-sm text-slate-500">Chargement…</p>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
-            <table className="min-w-[36rem] w-full text-left text-sm">
-              <thead className="border-b border-slate-100 bg-slate-50 text-xs uppercase text-slate-500 dark:border-slate-800 dark:bg-slate-950">
-                <tr>
-                  <th className="px-4 py-3">Job</th>
-                  <th className="px-4 py-3">Statut</th>
-                  <th className="px-4 py-3">Début</th>
-                  <th className="px-4 py-3">Durée</th>
-                  <th className="px-4 py-3">Stats</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {runs.map((run) => (
-                  <tr key={run.id}>
-                    <td className="px-4 py-3">
-                      <p className="font-medium">{run.jobKey}</p>
-                      <p className="text-xs text-slate-500">{run.service}</p>
-                      {run.errorMessage ? (
-                        <p className="mt-1 text-xs text-red-600">{run.errorMessage}</p>
-                      ) : null}
-                    </td>
-                    <td className={`px-4 py-3 font-medium ${statusClass(run.status)}`}>
-                      {run.status}
-                    </td>
-                    <td className="px-4 py-3 tabular-nums">{formatDate(run.startedAt)}</td>
-                    <td className="px-4 py-3 tabular-nums">{formatDuration(run.durationMs)}</td>
-                    <td className="px-4 py-3 text-xs text-slate-500">{formatStats(run)}</td>
-                  </tr>
-                ))}
-                {runs.length === 0 ? (
+            <ListPagination
+              offset={runsOffset}
+              limit={LIST_PAGE_SIZE}
+              total={runsTotal}
+              onOffsetChange={setRunsOffset}
+            >
+              <table className="min-w-[36rem] w-full text-left text-sm">
+                <thead className="border-b border-slate-100 bg-slate-50 text-xs uppercase text-slate-500 dark:border-slate-800 dark:bg-slate-950">
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
-                      Aucun run enregistré pour l’instant
-                    </td>
+                    <th className="px-4 py-3">Job</th>
+                    <th className="px-4 py-3">Statut</th>
+                    <th className="px-4 py-3">Début</th>
+                    <th className="px-4 py-3">Durée</th>
+                    <th className="px-4 py-3">Stats</th>
                   </tr>
-                ) : null}
-              </tbody>
-            </table>
-            <div className="px-4 pb-3">
-              <ListPagination
-                offset={runsOffset}
-                limit={LIST_PAGE_SIZE}
-                total={runsTotal}
-                onOffsetChange={setRunsOffset}
-              />
-            </div>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {runs.map((run) => (
+                    <tr key={run.id}>
+                      <td className="px-4 py-3">
+                        <p className="font-medium">{run.jobKey}</p>
+                        <p className="text-xs text-slate-500">{run.service}</p>
+                        {run.errorMessage ? (
+                          <p className="mt-1 text-xs text-red-600">{run.errorMessage}</p>
+                        ) : null}
+                      </td>
+                      <td className={`px-4 py-3 font-medium ${statusClass(run.status)}`}>
+                        {run.status}
+                      </td>
+                      <td className="px-4 py-3 tabular-nums">{formatDate(run.startedAt)}</td>
+                      <td className="px-4 py-3 tabular-nums">{formatDuration(run.durationMs)}</td>
+                      <td className="px-4 py-3 text-xs text-slate-500">{formatStats(run)}</td>
+                    </tr>
+                  ))}
+                  {runs.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
+                        Aucun run enregistré pour l’instant
+                      </td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </ListPagination>
           </div>
         )}
       </section>

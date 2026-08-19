@@ -75,6 +75,7 @@ export class SearchGatewayService extends AbstractSearchService {
       if (
         this.matches(
           normalizedQuery,
+          c.caseNumber,
           c.title,
           assigneesText,
           c.customer?.displayName,

@@ -87,7 +87,12 @@ export function OrderGiversListPage() {
       ) : rows.length === 0 ? (
         <ListNoResults message="Aucun donneur d'ordre ne correspond à ce filtre." />
       ) : (
-        <>
+        <ListPagination
+          offset={offset}
+          limit={LIST_PAGE_SIZE}
+          total={total}
+          onOffsetChange={setOffset}
+        >
           <ListTableShell
             gridTemplateClass={GRID}
             headerCells={
@@ -113,13 +118,7 @@ export function OrderGiversListPage() {
               </ListRowLink>
             ))}
           </ListTableShell>
-          <ListPagination
-            offset={offset}
-            limit={LIST_PAGE_SIZE}
-            total={total}
-            onOffsetChange={setOffset}
-          />
-        </>
+        </ListPagination>
       )}
     </ListPageRoot>
   );

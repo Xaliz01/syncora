@@ -2,7 +2,7 @@
 
 import { RequireAuth } from "@/components/auth/RequireAuth";
 import { RequirePermission } from "@/components/auth/RequirePermission";
-import { VehicleCreatePage } from "@/components/fleet/VehicleCreatePage";
+import { VehicleFormPage } from "@/components/fleet/VehicleCreatePage";
 import { AppShell } from "@/components/layout/AppShell";
 
 export default function NewVehiclePage() {
@@ -10,7 +10,7 @@ export default function NewVehiclePage() {
     <RequireAuth>
       <RequirePermission permission="fleet.vehicles.create">
         <AppShell>
-          <VehicleCreatePage />
+          <VehicleFormPage />
         </AppShell>
       </RequirePermission>
     </RequireAuth>

@@ -52,6 +52,15 @@ export function canCreateCaseInvoice(status: BillingStatus): boolean {
 }
 
 /**
+ * Libellé d’affichage d’un dossier : numéro + client (ou autre libellé de partie).
+ * Ex. `2026-0001 - Dupont SARL` ou `2026-0001` s’il n’y a pas de client.
+ */
+export function buildCaseDisplayTitle(caseNumber: string, partyLabel?: string | null): string {
+  const label = partyLabel?.trim();
+  return label ? `${caseNumber} - ${label}` : caseNumber;
+}
+
+/**
  * Lorsqu’un devis est accepté, on peut passer le dossier à « À facturer »
  * uniquement s’il n’est pas déjà plus avancé dans le cycle de facturation.
  */
@@ -208,7 +217,13 @@ export interface CaseStep {
 export interface CreateCaseBody {
   organizationId: string;
   templateId?: string;
-  title: string;
+  /**
+   * Libellé libre optionnel (import, maintenance, démo) utilisé comme suffixe
+   * d’affichage si `customerDisplayName` est absent. Ignoré côté UI app.
+   */
+  title?: string;
+  /** Nom d’affichage du client pour construire le titre (`YYYY-0001 - Client`). */
+  customerDisplayName?: string;
   description?: string;
   priority?: CasePriority;
   /** Resolved by api-gateway from user ids */
@@ -225,7 +240,10 @@ export interface CreateCaseBody {
 
 export interface UpdateCaseBody {
   organizationId: string;
+  /** @deprecated Titre dérivé du numéro + client — ignoré si fourni. */
   title?: string;
+  /** Recalcule le titre d’affichage avec le `caseNumber` existant. */
+  customerDisplayName?: string | null;
   description?: string;
   status?: CaseStatus;
   billingStatus?: BillingStatus;
@@ -251,6 +269,9 @@ export interface CaseResponse {
   interventionSiteId?: string;
   /** Adresse d'intervention résolue depuis le site client */
   interventionAddress?: PostalAddress;
+  /** Numéro métier immuable (`YYYY-0001`). */
+  caseNumber: string;
+  /** Libellé d’affichage (`caseNumber - client`). */
   title: string;
   description?: string;
   status: CaseStatus;
@@ -276,6 +297,8 @@ export interface CaseSummaryResponse {
   orderGiver?: CaseOrderGiverRef;
   interventionSiteId?: string;
   interventionAddress?: PostalAddress;
+  /** Numéro métier immuable (`YYYY-0001`). */
+  caseNumber: string;
   title: string;
   status: CaseStatus;
   billingStatus: BillingStatus;

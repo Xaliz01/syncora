@@ -3,6 +3,7 @@ import { InjectModel } from "@nestjs/mongoose";
 import { Model, Types } from "mongoose";
 import {
   activeDocumentFilter,
+  buildCaseDisplayTitle,
   type CasePriority,
   type CaseStatus,
   type DataImportBulkResult,
@@ -17,6 +18,8 @@ import type { CaseDocument } from "../persistence/case.schema";
 import type { InterventionDocument } from "../persistence/intervention.schema";
 import type { InterventionTypeDocument } from "../persistence/intervention-type.schema";
 import { AbstractCasesDataImportService } from "./ports/cases-data-import.service.port";
+import { generateCaseNumber } from "./utils/case-number.utils";
+import { isDuplicateKeyError } from "./utils";
 
 const CASE_STATUSES: CaseStatus[] = [
   "draft",
@@ -175,34 +178,51 @@ export class CasesDataImportService extends AbstractCasesDataImportService {
         const existing = await this.caseModel
           .findOne({ organizationId, importExternalId: externalId, ...activeDocumentFilter })
           .exec();
-        const fields = {
-          title: row.title.trim(),
-          description: row.description?.trim() || undefined,
-          status,
-          priority,
-          customerId,
-          orderGiverId,
-          interventionSiteId,
-          dueDate,
-          tags,
-          importExternalId: externalId,
-        };
+        const label = row.title.trim();
         if (existing) {
-          Object.assign(existing, fields);
+          existing.title = buildCaseDisplayTitle(existing.caseNumber, label);
+          existing.description = row.description?.trim() || undefined;
+          existing.status = status;
+          existing.priority = priority;
+          existing.customerId = customerId;
+          existing.orderGiverId = orderGiverId;
+          existing.interventionSiteId = interventionSiteId;
+          existing.dueDate = dueDate;
+          existing.tags = tags;
+          existing.importExternalId = externalId;
           await existing.save();
           result.updated += 1;
           result.mappings.push({ externalId, id: existing._id.toString(), action: "updated" });
         } else {
-          const doc = await this.caseModel.create({
-            organizationId,
-            ...fields,
-            billingStatus: "none",
-            assignees: [],
-            steps: [],
-            interventionCount: 0,
-          });
-          result.created += 1;
-          result.mappings.push({ externalId, id: doc._id.toString(), action: "created" });
+          let created = false;
+          for (let attempt = 0; attempt < 5 && !created; attempt += 1) {
+            try {
+              const caseNumber = await generateCaseNumber(this.caseModel, organizationId);
+              const doc = await this.caseModel.create({
+                organizationId,
+                caseNumber,
+                title: buildCaseDisplayTitle(caseNumber, label),
+                description: row.description?.trim() || undefined,
+                status,
+                priority,
+                customerId,
+                orderGiverId,
+                interventionSiteId,
+                dueDate,
+                tags,
+                importExternalId: externalId,
+                billingStatus: "none",
+                assignees: [],
+                steps: [],
+                interventionCount: 0,
+              });
+              result.created += 1;
+              result.mappings.push({ externalId, id: doc._id.toString(), action: "created" });
+              created = true;
+            } catch (err) {
+              if (!isDuplicateKeyError(err) || attempt === 4) throw err;
+            }
+          }
         }
       } catch (e) {
         result.skipped += 1;

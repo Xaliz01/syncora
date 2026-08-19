@@ -88,72 +88,72 @@ function PartyLinkedInvoicesSectionInner({ customerId, orderGiverId, emptyMessag
         </p>
       )}
 
-      {!isLoading && !isError && total === 0 && (
-        <p className="text-sm text-slate-500 dark:text-slate-400">{emptyMessage}</p>
-      )}
-
-      {!isLoading && !isError && invoices.length > 0 && (
-        <div className="space-y-2">
-          {invoices.map((invoice) => {
-            const status = (invoice.remoteStatus ??
-              (invoice.draft ? "draft" : "finalized")) as RemoteInvoiceLifecycle;
-            const kind = (invoice.invoiceKind ?? "full") as CaseInvoiceKind;
-            return (
-              <div
-                key={invoice.id}
-                className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2.5"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <Link
-                      href={`/cases/${invoice.caseId}`}
-                      className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate hover:underline"
-                    >
-                      {invoice.caseTitle ?? "Dossier"}
-                    </Link>
-                    <span className="inline-flex shrink-0 rounded-full border border-slate-200 dark:border-slate-600 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:text-slate-300">
-                      {REMOTE_INVOICE_STATUS_LABELS[status] ?? status}
-                    </span>
-                  </div>
-                  <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-slate-500 dark:text-slate-400">
-                    <span>{PROVIDER_LABELS[invoice.provider] ?? invoice.provider}</span>
-                    <span>{CASE_INVOICE_KIND_LABELS[kind] ?? kind}</span>
-                    <span className="tabular-nums">{formatAmount(invoice.amountHt)}</span>
-                    {invoice.invoiceNumber ? <span>N° {invoice.invoiceNumber}</span> : null}
-                    <span>{formatDate(invoice.createdAt ?? invoice.lastSyncedAt)}</span>
-                  </div>
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  {invoice.invoiceUrl ? (
-                    <a
-                      href={invoice.invoiceUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-xs font-medium text-brand-600 hover:underline dark:text-brand-400"
-                    >
-                      Ouvrir
-                    </a>
-                  ) : null}
-                  <Link
-                    href={`/cases/${invoice.caseId}`}
-                    className="text-xs text-slate-400 dark:text-slate-500"
-                  >
-                    →
-                  </Link>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {!isLoading && !isError && total > 0 && (
+      {!isLoading && !isError && (
         <ListPagination
           offset={offset}
           limit={LIST_PAGE_SIZE}
           total={total}
           onOffsetChange={setOffset}
-        />
+        >
+          {total === 0 && (
+            <p className="text-sm text-slate-500 dark:text-slate-400">{emptyMessage}</p>
+          )}
+
+          {invoices.length > 0 && (
+            <div className="space-y-2">
+              {invoices.map((invoice) => {
+                const status = (invoice.remoteStatus ??
+                  (invoice.draft ? "draft" : "finalized")) as RemoteInvoiceLifecycle;
+                const kind = (invoice.invoiceKind ?? "full") as CaseInvoiceKind;
+                return (
+                  <div
+                    key={invoice.id}
+                    className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2.5"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Link
+                          href={`/cases/${invoice.caseId}`}
+                          className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate hover:underline"
+                        >
+                          {invoice.caseTitle ?? "Dossier"}
+                        </Link>
+                        <span className="inline-flex shrink-0 rounded-full border border-slate-200 dark:border-slate-600 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:text-slate-300">
+                          {REMOTE_INVOICE_STATUS_LABELS[status] ?? status}
+                        </span>
+                      </div>
+                      <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-slate-500 dark:text-slate-400">
+                        <span>{PROVIDER_LABELS[invoice.provider] ?? invoice.provider}</span>
+                        <span>{CASE_INVOICE_KIND_LABELS[kind] ?? kind}</span>
+                        <span className="tabular-nums">{formatAmount(invoice.amountHt)}</span>
+                        {invoice.invoiceNumber ? <span>N° {invoice.invoiceNumber}</span> : null}
+                        <span>{formatDate(invoice.createdAt ?? invoice.lastSyncedAt)}</span>
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      {invoice.invoiceUrl ? (
+                        <a
+                          href={invoice.invoiceUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs font-medium text-brand-600 hover:underline dark:text-brand-400"
+                        >
+                          Ouvrir
+                        </a>
+                      ) : null}
+                      <Link
+                        href={`/cases/${invoice.caseId}`}
+                        className="text-xs text-slate-400 dark:text-slate-500"
+                      >
+                        →
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </ListPagination>
       )}
     </div>
   );

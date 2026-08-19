@@ -196,8 +196,10 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
 
   async createCase(user: AuthUser, body: CreateCaseForOrgBody) {
     const { assigneeIds, customerId, orderGiverId, ...rest } = body;
+    let customerDisplayName: string | undefined;
     if (customerId?.trim()) {
-      await this.customersGateway.getCustomer(user, customerId.trim());
+      const customer = await this.customersGateway.getCustomer(user, customerId.trim());
+      customerDisplayName = customer.displayName;
     }
     if (orderGiverId?.trim()) {
       await this.orderGiversGateway.getOrderGiver(user, orderGiverId.trim());
@@ -215,6 +217,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
         ...rest,
         ...(customerId?.trim() ? { customerId: customerId.trim() } : {}),
         ...(orderGiverId?.trim() ? { orderGiverId: orderGiverId.trim() } : {}),
+        ...(customerDisplayName ? { customerDisplayName } : {}),
         ...(assignees !== undefined ? { assignees } : {}),
       } as CreateCaseBody,
     });
@@ -285,8 +288,14 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
   }
 
   async updateCase(user: AuthUser, caseId: string, body: UpdateCaseForOrgBody) {
-    if (body.customerId !== undefined && body.customerId !== null && body.customerId.trim()) {
-      await this.customersGateway.getCustomer(user, body.customerId.trim());
+    let customerDisplayName: string | null | undefined;
+    if (body.customerId !== undefined) {
+      if (body.customerId !== null && body.customerId.trim()) {
+        const customer = await this.customersGateway.getCustomer(user, body.customerId.trim());
+        customerDisplayName = customer.displayName;
+      } else {
+        customerDisplayName = null;
+      }
     }
     if (body.orderGiverId !== undefined && body.orderGiverId !== null && body.orderGiverId.trim()) {
       await this.orderGiversGateway.getOrderGiver(user, body.orderGiverId.trim());
@@ -306,6 +315,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     const casesBody = {
       organizationId: user.organizationId,
       ...body,
+      ...(customerDisplayName !== undefined ? { customerDisplayName } : {}),
     } as UpdateCaseBody;
 
     if (body.billingStatus !== undefined) {
@@ -1017,7 +1027,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
 
       // Case reference
       this.pdfSection(doc, "Dossier");
-      this.pdfField(doc, "Référence", caseData.title);
+      this.pdfField(doc, "Référence", caseData.caseNumber || caseData.title);
 
       // Quote metadata
       this.pdfSection(doc, "Informations du devis");
@@ -1321,7 +1331,8 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       // Case & customer info
       if (caseData) {
         this.pdfSection(doc, "Dossier");
-        this.pdfField(doc, "Titre", caseData.title);
+        this.pdfField(doc, "Dossier", caseData.title);
+        if (caseData.caseNumber) this.pdfField(doc, "N° dossier", caseData.caseNumber);
         if (caseData.description) this.pdfField(doc, "Description", caseData.description);
       }
 
@@ -1617,6 +1628,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     const summaries: CaseSummaryResponse[] = rows.map((r) => ({
       id: r.caseId,
       organizationId: user.organizationId,
+      caseNumber: "",
       title: r.caseTitle,
       status: r.status,
       billingStatus: "none" as const,
@@ -1869,8 +1881,8 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     }
 
     const changes: CaseHistoryChange[] = [];
-    if (body.title !== undefined && prev && body.title !== prev.title) {
-      changes.push({ field: "title", oldValue: prev.title, newValue: body.title });
+    if (prev && updated.title !== prev.title) {
+      changes.push({ field: "title", oldValue: prev.title, newValue: updated.title });
     }
     if (body.description !== undefined && prev && body.description !== prev.description) {
       changes.push({

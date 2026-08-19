@@ -7,6 +7,15 @@ import * as api from "@/lib/cases.api";
 import * as adminApi from "@/lib/admin.api";
 import type { TodoDashboardVisibility } from "@planwise/shared";
 import { AppErrorAlert } from "@/components/ui/AppErrorAlert";
+import {
+  FormDialogCancelButton,
+  FormDialogPrimaryButton,
+  FormDialogSection,
+  FormPage,
+  formFieldHintClassName,
+  formFieldInputClassName,
+  formFieldLabelClassName,
+} from "@/components/ui/FormDialog";
 
 interface TodoDashboardRuleForm {
   showOnDashboard: boolean;
@@ -240,50 +249,50 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
   const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-xl sm:text-2xl font-semibold">
-          {isEdit ? "Modifier le modèle" : "Nouveau modèle de dossier"}
-        </h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Définissez les étapes et tâches qui seront automatiquement créées pour chaque dossier basé
-          sur ce modèle.
-        </p>
-      </div>
-
-      {error ? <AppErrorAlert error={error} /> : null}
-
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="space-y-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/20">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
-              Nom du modèle
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-              placeholder="Ex: Dossier CEED, Audit énergétique…"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
-              Description
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={2}
-              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-              placeholder="Description optionnelle du modèle…"
-            />
-          </div>
+    <FormPage
+      title={isEdit ? "Modifier le modèle" : "Nouveau modèle de dossier"}
+      description="Définissez les étapes et tâches qui seront automatiquement créées pour chaque dossier basé sur ce modèle."
+      breadcrumb={{ href: "/settings/case-templates", label: "Modèles de dossier" }}
+      error={error ? <AppErrorAlert error={error} /> : undefined}
+      onSubmit={handleSubmit}
+      footer={
+        <>
+          <FormDialogCancelButton
+            onClick={() => router.push("/settings/case-templates")}
+            disabled={isPending}
+          />
+          <FormDialogPrimaryButton type="submit" disabled={isPending}>
+            {isPending ? "Enregistrement…" : isEdit ? "Mettre à jour" : "Créer le modèle"}
+          </FormDialogPrimaryButton>
+        </>
+      }
+    >
+      <FormDialogSection title="Informations générales">
+        <div>
+          <label className={formFieldLabelClassName}>Nom du modèle</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className={formFieldInputClassName}
+            placeholder="Ex: Dossier CEED, Audit énergétique…"
+          />
         </div>
+        <div>
+          <label className={formFieldLabelClassName}>Description</label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={2}
+            className={formFieldInputClassName}
+            placeholder="Description optionnelle du modèle…"
+          />
+        </div>
+      </FormDialogSection>
 
+      <FormDialogSection title="Étapes et tâches">
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Étapes</h2>
             <button
               type="button"
               onClick={addStep}
@@ -308,7 +317,7 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
                       type="text"
                       value={step.name}
                       onChange={(e) => updateStep(stepIdx, "name", e.target.value)}
-                      className="flex-1 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                      className={`${formFieldInputClassName} mt-0 flex-1 py-1.5`}
                       placeholder="Nom de l'étape"
                     />
                   </div>
@@ -316,7 +325,7 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
                     type="text"
                     value={step.description}
                     onChange={(e) => updateStep(stepIdx, "description", e.target.value)}
-                    className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-xs focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                    className={`${formFieldInputClassName} mt-0 py-1.5 text-xs`}
                     placeholder="Description de l'étape (optionnel)"
                   />
                 </div>
@@ -332,9 +341,7 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
               </div>
 
               <div className="ml-8 space-y-3">
-                <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                  Tâches :
-                </div>
+                <div className={formFieldLabelClassName}>Tâches :</div>
                 {step.todos.map((todo, todoIdx) => (
                   <div key={todoIdx} className="space-y-2">
                     <div className="flex items-center gap-2">
@@ -343,7 +350,7 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
                         type="text"
                         value={todo.label}
                         onChange={(e) => updateTodo(stepIdx, todoIdx, "label", e.target.value)}
-                        className="flex-1 rounded border border-slate-200 dark:border-slate-700 px-2 py-1 text-xs focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                        className={`${formFieldInputClassName} mt-0 flex-1 rounded py-1 text-xs`}
                         placeholder="Libellé de la tâche"
                       />
                       {step.todos.length > 1 && (
@@ -377,9 +384,7 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
                       {todo.dashboardRule.showOnDashboard && (
                         <div className="space-y-2 pl-5">
                           <div>
-                            <label className="block text-[11px] text-slate-500 dark:text-slate-400 mb-1">
-                              Visibilité
-                            </label>
+                            <label className={formFieldHintClassName}>Visibilité</label>
                             <select
                               value={todo.dashboardRule.visibility}
                               onChange={(e) =>
@@ -389,7 +394,7 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
                                   userIds: [],
                                 })
                               }
-                              className="w-full rounded border border-slate-200 dark:border-slate-700 px-2 py-1 text-xs bg-white dark:bg-slate-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                              className={`${formFieldInputClassName} py-1 text-xs`}
                             >
                               <option value="all">Tous les utilisateurs</option>
                               <option value="by_profile">Par profil</option>
@@ -399,7 +404,7 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
 
                           {todo.dashboardRule.visibility === "by_profile" && (
                             <div>
-                              <label className="block text-[11px] text-slate-500 dark:text-slate-400 mb-1">
+                              <label className={formFieldHintClassName}>
                                 Profils de permissions
                               </label>
                               <div className="space-y-1">
@@ -439,9 +444,7 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
 
                           {todo.dashboardRule.visibility === "by_user" && (
                             <div>
-                              <label className="block text-[11px] text-slate-500 dark:text-slate-400 mb-1">
-                                Utilisateurs
-                              </label>
+                              <label className={formFieldHintClassName}>Utilisateurs</label>
                               <div className="space-y-1">
                                 {(usersData?.users ?? []).map((u) => (
                                   <label
@@ -490,24 +493,7 @@ export function TemplateFormPage({ templateId }: { templateId?: string }) {
             </div>
           ))}
         </div>
-
-        <div className="flex flex-wrap justify-end gap-3">
-          <button
-            type="button"
-            onClick={() => router.push("/settings/case-templates")}
-            className="rounded-lg border border-slate-200 dark:border-slate-700 px-5 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
-          >
-            Annuler
-          </button>
-          <button
-            type="submit"
-            disabled={isPending}
-            className="rounded-lg bg-brand-600 px-5 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
-          >
-            {isPending ? "Enregistrement…" : isEdit ? "Mettre à jour" : "Créer le modèle"}
-          </button>
-        </div>
-      </form>
-    </div>
+      </FormDialogSection>
+    </FormPage>
   );
 }

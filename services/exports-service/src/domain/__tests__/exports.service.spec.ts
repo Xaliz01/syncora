@@ -26,6 +26,7 @@ describe("ExportsService", () => {
       const caseData: CaseResponse = {
         id: "case-1",
         organizationId: "org-123",
+        caseNumber: "2026-0001",
         title: "Dossier Test",
         status: "in_progress",
         billingStatus: "none",
@@ -92,6 +93,7 @@ describe("ExportsService", () => {
         {
           id: "case-1",
           organizationId: "org-123",
+          caseNumber: "2026-0001",
           title: "Dossier A",
           status: "open",
           billingStatus: "none",
@@ -308,6 +310,7 @@ describe("ExportsService", () => {
         {
           id: "case-1",
           organizationId: "org-123",
+          caseNumber: "2026-0001",
           title: "Dossier A",
           status: "open",
           billingStatus: "none",
@@ -323,6 +326,7 @@ describe("ExportsService", () => {
         {
           id: "case-2",
           organizationId: "org-123",
+          caseNumber: "2026-0001",
           title: 'Dossier "B"',
           status: "in_progress",
           billingStatus: "to_invoice",
@@ -607,6 +611,7 @@ describe("ExportsService", () => {
         {
           id: "c1",
           organizationId: "org-123",
+          caseNumber: "2026-0001",
           title: "Case 1",
           status: "completed",
           billingStatus: "none",
@@ -620,6 +625,7 @@ describe("ExportsService", () => {
         {
           id: "c2",
           organizationId: "org-123",
+          caseNumber: "2026-0001",
           title: "Case 2",
           status: "in_progress",
           billingStatus: "to_invoice",
@@ -634,6 +640,7 @@ describe("ExportsService", () => {
         {
           id: "c3",
           organizationId: "org-123",
+          caseNumber: "2026-0001",
           title: "Case 3",
           status: "in_progress",
           billingStatus: "invoice_draft",
@@ -647,6 +654,7 @@ describe("ExportsService", () => {
         {
           id: "c4",
           organizationId: "org-123",
+          caseNumber: "2026-0001",
           title: "Case 4",
           status: "completed",
           billingStatus: "paid",
@@ -741,6 +749,7 @@ describe("ExportsService", () => {
         {
           id: "c1",
           organizationId: "org-123",
+          caseNumber: "2026-0001",
           title: "In range",
           status: "completed",
           billingStatus: "none",
@@ -754,6 +763,7 @@ describe("ExportsService", () => {
         {
           id: "c2",
           organizationId: "org-123",
+          caseNumber: "2026-0001",
           title: "Out of range",
           status: "in_progress",
           billingStatus: "none",
@@ -859,6 +869,7 @@ describe("ExportsService", () => {
             data: {
               id: "case-1",
               organizationId: "org-123",
+              caseNumber: "2026-0001",
               title: "Chantier A",
               customerId: "cust-42",
               status: "open",
@@ -1185,6 +1196,7 @@ describe("ExportsService", () => {
       const caseData: CaseResponse = {
         id: "case-1",
         organizationId: "org-123",
+        caseNumber: "2026-0001",
         title: "Dossier Haveluy",
         status: "in_progress",
         billingStatus: "none",

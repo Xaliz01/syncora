@@ -11,6 +11,15 @@ import { CaseCustomerPicker } from "@/components/cases/CaseCustomerPicker";
 import { CaseOrderGiverPicker } from "@/components/cases/CaseOrderGiverPicker";
 import { CaseInterventionSitePicker } from "@/components/cases/CaseInterventionSitePicker";
 import type { CasePriority, CustomerSiteResponse } from "@planwise/shared";
+import {
+  FormDialogCancelButton,
+  FormDialogPrimaryButton,
+  FormDialogSection,
+  FormPage,
+  formFieldHintClassName,
+  formFieldInputClassName,
+  formFieldLabelClassName,
+} from "@/components/ui/FormDialog";
 
 export function CaseCreatePage() {
   const router = useRouter();
@@ -27,7 +36,6 @@ export function CaseCreatePage() {
   });
 
   const [templateId, setTemplateId] = useState("");
-  const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<CasePriority>("medium");
   const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
@@ -76,13 +84,8 @@ export function CaseCreatePage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (!title.trim()) {
-      setError("Le titre est obligatoire");
-      return;
-    }
     createMutation.mutate({
       templateId: templateId || undefined,
-      title: title.trim(),
       description: description.trim() || undefined,
       priority,
       assigneeIds: assigneeIds.length > 0 ? assigneeIds : undefined,
@@ -98,30 +101,36 @@ export function CaseCreatePage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-xl sm:text-2xl font-semibold">Nouveau dossier</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Créez un dossier, optionnellement basé sur un modèle existant.
-        </p>
-      </div>
-
-      {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-          {error}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-5">
-        {templates && templates.length > 0 && (
-          <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-4 space-y-2">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
+    <FormPage
+      title="Nouveau dossier"
+      description="Créez un dossier, optionnellement basé sur un modèle existant. Un numéro est attribué automatiquement."
+      breadcrumb={{ href: "/cases", label: "Dossiers" }}
+      error={error || undefined}
+      onSubmit={handleSubmit}
+      footer={
+        <>
+          <FormDialogCancelButton
+            onClick={() => router.push("/cases")}
+            disabled={createMutation.isPending}
+          />
+          <FormDialogPrimaryButton type="submit" disabled={createMutation.isPending}>
+            {createMutation.isPending ? "Création…" : "Créer le dossier"}
+          </FormDialogPrimaryButton>
+        </>
+      }
+    >
+      {templates && templates.length > 0 ? (
+        <FormDialogSection title="Modèle" id="case-create-template">
+          <div>
+            <label htmlFor="case-create-template-select" className={formFieldLabelClassName}>
               Modèle de dossier (optionnel)
             </label>
             <select
+              id="case-create-template-select"
               value={templateId}
               onChange={(e) => setTemplateId(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none bg-white dark:bg-slate-900"
+              className={formFieldInputClassName}
+              disabled={createMutation.isPending}
             >
               <option value="">Sans modèle (dossier vierge)</option>
               {templates.map((t) => (
@@ -130,52 +139,45 @@ export function CaseCreatePage() {
                 </option>
               ))}
             </select>
-            {selectedTemplate && (
-              <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            {selectedTemplate ? (
+              <p className={formFieldHintClassName}>
                 Ce dossier contiendra {selectedTemplate.steps.length} étape(s) et{" "}
                 {selectedTemplate.steps.reduce((a, s) => a + s.todos.length, 0)} tâche(s)
                 prédéfinies.
-              </div>
-            )}
+              </p>
+            ) : null}
           </div>
-        )}
+        </FormDialogSection>
+      ) : null}
 
-        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/20 space-y-4">
+      <div className="grid gap-8 lg:grid-cols-2 lg:gap-10">
+        <FormDialogSection title="Dossier" id="case-create-details">
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
-              Titre
-            </label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-              placeholder="Titre du dossier"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+            <label htmlFor="case-create-description" className={formFieldLabelClassName}>
               Description
             </label>
             <textarea
+              id="case-create-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+              className={formFieldInputClassName}
               placeholder="Description du dossier…"
+              disabled={createMutation.isPending}
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+              <label htmlFor="case-create-priority" className={formFieldLabelClassName}>
                 Priorité
               </label>
               <select
+                id="case-create-priority"
                 value={priority}
                 onChange={(e) => setPriority(e.target.value as CasePriority)}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
+                className={formFieldInputClassName}
+                disabled={createMutation.isPending}
               >
                 <option value="low">Basse</option>
                 <option value="medium">Moyenne</option>
@@ -184,37 +186,57 @@ export function CaseCreatePage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+              <label htmlFor="case-create-due-date" className={formFieldLabelClassName}>
                 Échéance
               </label>
               <input
+                id="case-create-due-date"
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                className={formFieldInputClassName}
+                disabled={createMutation.isPending}
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
-              Assignés (optionnel)
+            <label htmlFor="case-create-tags" className={formFieldLabelClassName}>
+              Tags
             </label>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
+            <input
+              id="case-create-tags"
+              type="text"
+              value={tagsInput}
+              onChange={(e) => setTagsInput(e.target.value)}
+              className={formFieldInputClassName}
+              placeholder="ceed, audit, rénovation…"
+              disabled={createMutation.isPending}
+            />
+            <p className={formFieldHintClassName}>Séparez les tags par des virgules.</p>
+          </div>
+        </FormDialogSection>
+
+        <FormDialogSection title="Parties prenantes" id="case-create-parties">
+          <div>
+            <span className={formFieldLabelClassName}>Assignés (optionnel)</span>
+            <p className={formFieldHintClassName}>
               Saisissez un nom ou un e-mail pour ajouter des membres sous forme de tags.
             </p>
-            {assigneeOptions.length > 0 ? (
-              <CaseAssigneesTagsInput
-                options={assigneeOptions}
-                value={assigneeIds}
-                onChange={setAssigneeIds}
-                placeholder="Rechercher un membre à assigner…"
-              />
-            ) : (
-              <p className="text-xs text-slate-500 dark:text-slate-400 rounded-lg border border-dashed border-slate-200 dark:border-slate-700 px-3 py-2">
-                Aucun utilisateur dans l&apos;organisation.
-              </p>
-            )}
+            <div className="mt-1">
+              {assigneeOptions.length > 0 ? (
+                <CaseAssigneesTagsInput
+                  options={assigneeOptions}
+                  value={assigneeIds}
+                  onChange={setAssigneeIds}
+                  placeholder="Rechercher un membre à assigner…"
+                />
+              ) : (
+                <p className="rounded-lg border border-dashed border-slate-200 px-3 py-2 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                  Aucun utilisateur dans l&apos;organisation.
+                </p>
+              )}
+            </div>
           </div>
 
           <CaseCustomerPicker
@@ -231,46 +253,16 @@ export function CaseCreatePage() {
             disabled={createMutation.isPending}
           />
 
-          {customerId && customerSites.length > 0 && (
+          {customerId && customerSites.length > 0 ? (
             <CaseInterventionSitePicker
               sites={customerSites}
               value={interventionSiteId}
               onChange={setInterventionSiteId}
               disabled={createMutation.isPending}
             />
-          )}
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
-              Tags (séparés par des virgules)
-            </label>
-            <input
-              type="text"
-              value={tagsInput}
-              onChange={(e) => setTagsInput(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-              placeholder="ceed, audit, rénovation…"
-            />
-          </div>
-        </div>
-
-        <div className="flex flex-wrap justify-end gap-3">
-          <button
-            type="button"
-            onClick={() => router.push("/cases")}
-            className="rounded-lg border border-slate-200 dark:border-slate-700 px-5 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
-          >
-            Annuler
-          </button>
-          <button
-            type="submit"
-            disabled={createMutation.isPending}
-            className="rounded-lg bg-brand-600 px-5 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
-          >
-            {createMutation.isPending ? "Création…" : "Créer le dossier"}
-          </button>
-        </div>
-      </form>
-    </div>
+          ) : null}
+        </FormDialogSection>
+      </div>
+    </FormPage>
   );
 }

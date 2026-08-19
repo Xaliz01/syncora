@@ -80,80 +80,84 @@ export function CustomerCasesSection({ customerId }: { customerId: string }) {
 
       {isLoading && <div className="text-sm text-slate-500 dark:text-slate-400">Chargement…</div>}
 
-      {!isLoading && total === 0 && (
-        <p className="text-sm text-slate-500 dark:text-slate-400">Aucun dossier lié à ce client.</p>
-      )}
-
-      {!isLoading && activeCases.length > 0 && (
-        <div className="space-y-2">
-          {activeCases.map((c) => (
-            <Link
-              key={c.id}
-              href={`/cases/${c.id}`}
-              className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2.5 transition hover:bg-slate-50 dark:hover:bg-slate-800/50"
-            >
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">
-                    {c.title}
-                  </span>
-                  <span
-                    className={`inline-flex shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUS_COLORS[c.status]}`}
-                  >
-                    {STATUS_LABELS[c.status]}
-                  </span>
-                </div>
-                <div className="mt-0.5 flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
-                  <span className={PRIORITY_COLORS[c.priority]}>{PRIORITY_LABELS[c.priority]}</span>
-                  {c.dueDate && <span>Échéance : {formatDate(c.dueDate)}</span>}
-                  {c.progress > 0 && <span>{c.progress} %</span>}
-                </div>
-              </div>
-              <span className="text-xs text-slate-400 dark:text-slate-500 shrink-0">→</span>
-            </Link>
-          ))}
-        </div>
-      )}
-
-      {!isLoading && closedCases.length > 0 && (
-        <details className={activeCases.length > 0 ? "mt-3" : ""}>
-          <summary className="cursor-pointer text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
-            {closedCases.length} dossier{closedCases.length > 1 ? "s" : ""} terminé
-            {closedCases.length > 1 ? "s" : ""} / annulé{closedCases.length > 1 ? "s" : ""}
-          </summary>
-          <div className="mt-2 space-y-2">
-            {closedCases.map((c) => (
-              <Link
-                key={c.id}
-                href={`/cases/${c.id}`}
-                className="flex items-center justify-between gap-3 rounded-lg border border-slate-100 dark:border-slate-800 px-3 py-2 transition hover:bg-slate-50 dark:hover:bg-slate-800/50 opacity-75"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm text-slate-600 dark:text-slate-300 truncate">
-                      {c.title}
-                    </span>
-                    <span
-                      className={`inline-flex shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUS_COLORS[c.status]}`}
-                    >
-                      {STATUS_LABELS[c.status]}
-                    </span>
-                  </div>
-                </div>
-                <span className="text-xs text-slate-400 dark:text-slate-500 shrink-0">→</span>
-              </Link>
-            ))}
-          </div>
-        </details>
-      )}
-
-      {!isLoading && total > 0 && (
+      {!isLoading && (
         <ListPagination
           offset={offset}
           limit={LIST_PAGE_SIZE}
           total={total}
           onOffsetChange={setOffset}
-        />
+        >
+          {total === 0 && (
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Aucun dossier lié à ce client.
+            </p>
+          )}
+
+          {activeCases.length > 0 && (
+            <div className="space-y-2">
+              {activeCases.map((c) => (
+                <Link
+                  key={c.id}
+                  href={`/cases/${c.id}`}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2.5 transition hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">
+                        {c.title}
+                      </span>
+                      <span
+                        className={`inline-flex shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUS_COLORS[c.status]}`}
+                      >
+                        {STATUS_LABELS[c.status]}
+                      </span>
+                    </div>
+                    <div className="mt-0.5 flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+                      <span className={PRIORITY_COLORS[c.priority]}>
+                        {PRIORITY_LABELS[c.priority]}
+                      </span>
+                      {c.dueDate && <span>Échéance : {formatDate(c.dueDate)}</span>}
+                      {c.progress > 0 && <span>{c.progress} %</span>}
+                    </div>
+                  </div>
+                  <span className="text-xs text-slate-400 dark:text-slate-500 shrink-0">→</span>
+                </Link>
+              ))}
+            </div>
+          )}
+
+          {closedCases.length > 0 && (
+            <details className={activeCases.length > 0 ? "mt-3" : ""}>
+              <summary className="cursor-pointer text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+                {closedCases.length} dossier{closedCases.length > 1 ? "s" : ""} terminé
+                {closedCases.length > 1 ? "s" : ""} / annulé{closedCases.length > 1 ? "s" : ""}
+              </summary>
+              <div className="mt-2 space-y-2">
+                {closedCases.map((c) => (
+                  <Link
+                    key={c.id}
+                    href={`/cases/${c.id}`}
+                    className="flex items-center justify-between gap-3 rounded-lg border border-slate-100 dark:border-slate-800 px-3 py-2 transition hover:bg-slate-50 dark:hover:bg-slate-800/50 opacity-75"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm text-slate-600 dark:text-slate-300 truncate">
+                          {c.title}
+                        </span>
+                        <span
+                          className={`inline-flex shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUS_COLORS[c.status]}`}
+                        >
+                          {STATUS_LABELS[c.status]}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-xs text-slate-400 dark:text-slate-500 shrink-0">→</span>
+                  </Link>
+                ))}
+              </div>
+            </details>
+          )}
+        </ListPagination>
       )}
     </div>
   );

@@ -17,6 +17,7 @@ import { PermissionGate } from "@/components/auth/PermissionGate";
 import { hasPermission } from "@/lib/auth-permissions";
 import { ResourceNotFoundPanel } from "@/components/ui/AppErrorAlert";
 import { PlanwiseLoader } from "@/components/ui/PlanwiseLoader";
+import { PageBreadcrumb } from "@/components/ui/FormDialog";
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Administrateur",
@@ -250,14 +251,8 @@ export function UserDetailsPage({ userId }: { userId: string }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-semibold mb-1">Fiche utilisateur</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Détail de{" "}
-            <span className="font-medium text-slate-700 dark:text-slate-200">{user.email}</span>.
-          </p>
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <PageBreadcrumb href="/users" label="Utilisateurs" />
         <div className="flex items-center gap-2 flex-wrap">
           {!isSelf && !isInvited ? (
             <PermissionGate permission="users.deactivate">
@@ -291,13 +286,15 @@ export function UserDetailsPage({ userId }: { userId: string }) {
               {isEditing ? "Annuler" : "Modifier"}
             </button>
           )}
-          <Link
-            href="/users"
-            className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
-          >
-            Retour à la liste
-          </Link>
         </div>
+      </div>
+
+      <div>
+        <h1 className="text-xl sm:text-2xl font-semibold mb-1">Fiche utilisateur</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          Détail de{" "}
+          <span className="font-medium text-slate-700 dark:text-slate-200">{user.email}</span>.
+        </p>
       </div>
 
       {error && (

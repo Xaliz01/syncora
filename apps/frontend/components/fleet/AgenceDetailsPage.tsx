@@ -3,12 +3,12 @@
 import Link from "next/link";
 import React, { useCallback, useEffect, useState } from "react";
 import type { AgenceResponse, TeamResponse } from "@planwise/shared";
-import { PostalAddressFields } from "@/components/address/PostalAddressFields";
 import * as fleetApi from "@/lib/fleet.api";
 import { useToast } from "@/components/ui/ToastProvider";
 import { usePermissions } from "@/lib/hooks/usePermissions";
 import { useRouter } from "next/navigation";
 import { AppErrorAlert, ResourceNotFoundPanel } from "@/components/ui/AppErrorAlert";
+import { PageBreadcrumb } from "@/components/ui/FormDialog";
 
 export function AgenceDetailsPage({ agenceId }: { agenceId: string }) {
   const router = useRouter();
@@ -17,15 +17,7 @@ export function AgenceDetailsPage({ agenceId }: { agenceId: string }) {
   const [agence, setAgence] = useState<AgenceResponse | null>(null);
   const [teams, setTeams] = useState<TeamResponse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isEditing, setIsEditing] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<unknown>(null);
-
-  const [editName, setEditName] = useState("");
-  const [editAddress, setEditAddress] = useState("");
-  const [editCity, setEditCity] = useState("");
-  const [editPostalCode, setEditPostalCode] = useState("");
-  const [editPhone, setEditPhone] = useState("");
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -37,12 +29,6 @@ export function AgenceDetailsPage({ agenceId }: { agenceId: string }) {
       ]);
       setAgence(agenceData);
       setTeams(teamList.filter((t) => t.agenceId === agenceId));
-
-      setEditName(agenceData.name);
-      setEditAddress(agenceData.address ?? "");
-      setEditCity(agenceData.city ?? "");
-      setEditPostalCode(agenceData.postalCode ?? "");
-      setEditPhone(agenceData.phone ?? "");
     } catch (err) {
       setError(err);
     } finally {
@@ -53,28 +39,6 @@ export function AgenceDetailsPage({ agenceId }: { agenceId: string }) {
   useEffect(() => {
     void refresh();
   }, [refresh]);
-
-  const handleSave = async () => {
-    if (!agence) return;
-    setSaving(true);
-    setError(null);
-    try {
-      await fleetApi.updateAgence(agence.id, {
-        name: editName.trim(),
-        address: editAddress.trim() || undefined,
-        city: editCity.trim() || undefined,
-        postalCode: editPostalCode.trim() || undefined,
-        phone: editPhone.trim() || undefined,
-      });
-      showToast("Agence mise à jour.");
-      setIsEditing(false);
-      await refresh();
-    } catch (err) {
-      setError(err);
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const handleDelete = async () => {
     if (!agence || !confirm("Supprimer cette agence ?")) return;
@@ -109,23 +73,16 @@ export function AgenceDetailsPage({ agenceId }: { agenceId: string }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-semibold mb-1">{agence.name}</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Fiche agence
-            {agence.city ? ` — ${agence.city}` : ""}
-          </p>
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <PageBreadcrumb href="/fleet/agences" label="Agences" />
         <div className="flex items-center gap-2">
           {can("agences.update") && (
-            <button
-              type="button"
-              onClick={() => setIsEditing((p) => !p)}
+            <Link
+              href={`/fleet/agences/${agence.id}/edit`}
               className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
             >
-              {isEditing ? "Annuler" : "Modifier"}
-            </button>
+              Modifier
+            </Link>
           )}
           {can("agences.delete") && (
             <button
@@ -136,99 +93,44 @@ export function AgenceDetailsPage({ agenceId }: { agenceId: string }) {
               Supprimer
             </button>
           )}
-          <Link
-            href="/fleet/agences"
-            className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
-          >
-            Retour
-          </Link>
         </div>
+      </div>
+
+      <div>
+        <h1 className="text-xl sm:text-2xl font-semibold mb-1">{agence.name}</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          Fiche agence
+          {agence.city ? ` — ${agence.city}` : ""}
+        </p>
       </div>
 
       {error ? <AppErrorAlert error={error} onRetry={() => void refresh()} /> : null}
 
-      {!isEditing ? (
-        <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
-          <h2 className="font-semibold mb-3">Informations</h2>
-          <div className="grid gap-3 md:grid-cols-2 text-sm">
-            <div>
-              <span className="text-slate-400 dark:text-slate-500">Nom</span>
-              <p className="font-medium">{agence.name}</p>
-            </div>
-            <div>
-              <span className="text-slate-400 dark:text-slate-500">Adresse</span>
-              <p>{agence.address || "—"}</p>
-            </div>
-            <div>
-              <span className="text-slate-400 dark:text-slate-500">Ville</span>
-              <p>{agence.city || "—"}</p>
-            </div>
-            <div>
-              <span className="text-slate-400 dark:text-slate-500">Code postal</span>
-              <p>{agence.postalCode || "—"}</p>
-            </div>
-            <div>
-              <span className="text-slate-400 dark:text-slate-500">Téléphone</span>
-              <p>{agence.phone || "—"}</p>
-            </div>
+      <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
+        <h2 className="font-semibold mb-3">Informations</h2>
+        <div className="grid gap-3 md:grid-cols-2 text-sm">
+          <div>
+            <span className="text-slate-400 dark:text-slate-500">Nom</span>
+            <p className="font-medium">{agence.name}</p>
           </div>
-        </section>
-      ) : (
-        <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 space-y-4">
-          <h2 className="font-semibold">Modifier l&apos;agence</h2>
-          <div className="grid gap-3 md:grid-cols-2">
-            <div>
-              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Nom</label>
-              <input
-                type="text"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">
-                Téléphone
-              </label>
-              <input
-                type="tel"
-                value={editPhone}
-                onChange={(e) => setEditPhone(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
-              />
-            </div>
+          <div>
+            <span className="text-slate-400 dark:text-slate-500">Adresse</span>
+            <p>{agence.address || "—"}</p>
           </div>
-          <div className="md:col-span-2">
-            <PostalAddressFields
-              legend="Adresse du site (Base Adresse Nationale)"
-              line1={editAddress}
-              line2=""
-              postalCode={editPostalCode}
-              city={editCity}
-              country="FR"
-              onLine1Change={setEditAddress}
-              onLine2Change={() => {}}
-              onPostalChange={setEditPostalCode}
-              onCityChange={setEditCity}
-              onCountryChange={() => {}}
-              showLine2={false}
-              showCountry={false}
-              labelCls="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200"
-              inputCls="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-            />
+          <div>
+            <span className="text-slate-400 dark:text-slate-500">Ville</span>
+            <p>{agence.city || "—"}</p>
           </div>
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={() => void handleSave()}
-              disabled={saving}
-              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50"
-            >
-              {saving ? "Enregistrement..." : "Enregistrer"}
-            </button>
+          <div>
+            <span className="text-slate-400 dark:text-slate-500">Code postal</span>
+            <p>{agence.postalCode || "—"}</p>
           </div>
-        </section>
-      )}
+          <div>
+            <span className="text-slate-400 dark:text-slate-500">Téléphone</span>
+            <p>{agence.phone || "—"}</p>
+          </div>
+        </div>
+      </section>
 
       <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 space-y-3">
         <h2 className="font-semibold">Équipes rattachées</h2>

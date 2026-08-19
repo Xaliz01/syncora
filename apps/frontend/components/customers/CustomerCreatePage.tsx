@@ -1,34 +1,41 @@
 "use client";
 
-import Link from "next/link";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CustomerCreateForm } from "./CustomerCreateForm";
+import {
+  FormDialogCancelButton,
+  FormDialogPrimaryButton,
+  FormPage,
+} from "@/components/ui/FormDialog";
+
+const FORM_ID = "customer-create-form";
 
 export function CustomerCreatePage() {
   const router = useRouter();
+  const [saving, setSaving] = useState(false);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <Link
-          href="/customers"
-          className="text-sm font-medium text-brand-600 dark:text-brand-400 hover:text-brand-500"
-        >
-          &larr; Clients
-        </Link>
-        <h1 className="mt-3 text-xl font-semibold sm:text-2xl">Nouveau client</h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          Ajoutez une personne physique ou morale pour la lier ensuite à vos dossiers.
-        </p>
-      </div>
-
-      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/20 sm:p-6">
-        <CustomerCreateForm
-          submitLabel="Créer le client"
-          onCancel={() => router.push("/customers")}
-          onSuccess={(c) => router.push(`/customers/${c.id}`)}
-        />
-      </div>
-    </div>
+    <FormPage
+      title="Nouveau client"
+      description="Ajoutez une personne physique ou morale pour la lier ensuite à vos dossiers."
+      breadcrumb={{ href: "/customers", label: "Clients" }}
+      asForm={false}
+      footer={
+        <>
+          <FormDialogCancelButton onClick={() => router.push("/customers")} disabled={saving} />
+          <FormDialogPrimaryButton type="submit" form={FORM_ID} disabled={saving}>
+            {saving ? "Création…" : "Créer le client"}
+          </FormDialogPrimaryButton>
+        </>
+      }
+    >
+      <CustomerCreateForm
+        formId={FORM_ID}
+        hideActions
+        onPendingChange={setSaving}
+        onSuccess={(c) => router.push(`/customers/${c.id}`)}
+      />
+    </FormPage>
   );
 }

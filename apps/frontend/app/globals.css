@@ -80,6 +80,32 @@ html.dark .scrollbar-visible::-webkit-scrollbar-thumb {
   animation: org-switch-pop-in 420ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
+@keyframes mobile-nav-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes mobile-nav-panel-in {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-mobile-nav-backdrop {
+  animation: mobile-nav-backdrop-in 200ms ease-out forwards;
+}
+
+.animate-mobile-nav-panel {
+  animation: mobile-nav-panel-in 240ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
 @keyframes planwise-loader-breathe {
   0%,
   100% {

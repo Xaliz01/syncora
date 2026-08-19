@@ -10,7 +10,8 @@ Avant toute feature, lire (ou se réaligner sur) :
 - `planwise.vision.md` — cible (artisans / TPE), vision, roadmap par phases
 - `planwise.product.config.yml` — métier, entités, auth/permissions
 - `planwise.tech.config.yml` — stack (Nest hexagonal, Mongo, gateway, `@planwise/shared`, CI)
-- `planwise.ui.config.yml` — design (slate + brand violet, cartes, libellés)
+- `planwise.ui.config.yml` — design (slate + brand violet) **et conventions formulaires / pages**
+
 
 ## Tests obligatoires
 
@@ -160,6 +161,33 @@ Exemples de référence :
 
 - Respecter l'architecture existante ; pas de refactor hors scope.
 - Contrats typés via `@planwise/shared` quand le front et le back partagent un modèle.
+
+## Frontend — formulaires et pages (harmonisation)
+
+Référence code : `apps/frontend/components/ui/FormDialog.tsx` (`FormPage`, `FormDialog`, boutons), `FormSidePanel.tsx`, tokens `formField*ClassName`. Détail design : `planwise.ui.config.yml` § `forms`.
+
+### Choix de shell
+
+| Contexte | Composant | Actions |
+| --- | --- | --- |
+| Création / édition pleine page | `FormPage` | `footer` obligatoire : Annuler + primaire **en bas à droite** |
+| Modal (confirm, petit formulaire) | `FormDialog` | idem `footer` bas droite |
+| Création à la volée (picker → nouveau client / donneur d’ordre) | `FormSidePanel` | idem `footer` bas droite |
+
+- Ne pas inventer un layout custom (bouton pleine largeur sous la 1ʳᵉ colonne, actions collées au bas du body sans barre, etc.).
+- Réutiliser `FormDialogCancelButton` / `FormDialogPrimaryButton` et les classes `formFieldLabelClassName` / `formFieldInputClassName` / `formFieldHintClassName`.
+- Fil d’Ariane : `PageBreadcrumb` (ou `breadcrumb` de `FormPage`) vers la liste ou la fiche.
+
+### Routes
+
+- **Création** : `…/new` + page `*CreatePage` / `*FormPage`.
+- **Édition** : `…/[id]/edit` + page `*EditPage` (ou form page partagée create/edit).
+- **Fiche détail** : lecture + lien « Modifier » vers `/edit` — pas d’édition inline des champs principaux de l’entité sur la fiche.
+- Listes : CTA « Nouveau… » → `/new` ; ligne / menu → fiche ou `/edit` selon le parcours.
+
+### Formulaires hors shell app (ex. `/register`)
+
+Même convention d’actions : barre footer pleine largeur, primaire **à droite** (`justify-end`), séparée du corps (border-t). Pour une sélection SIRET : mettre à jour nom **et** adresse à chaque `onSelect` (comme les fiches client).
 
 ## Messages in-app — orientés utilisateur
 

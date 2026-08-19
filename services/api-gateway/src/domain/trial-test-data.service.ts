@@ -29,6 +29,7 @@ import {
   buildDemoCaseTemplates,
   buildDemoCases,
   buildDemoCustomers,
+  demoCustomerDisplayName,
   buildDemoInterventions,
   buildDemoInterventionTypes,
   buildDemoPermissionProfiles,
@@ -172,13 +173,14 @@ export class TrialTestDataService extends AbstractTrialTestDataService {
 
       const interventionTypeIds = await this.ensureDemoInterventionTypeIds(organizationId);
 
-      const customers = await runInBatches(
-        buildDemoCustomers(organizationId),
-        INJECT_BATCH_SIZE,
-        (body) =>
-          this.post<{ id: string }>(SERVICE_URLS.customers, organizationId, "/customers", body),
+      const customerBodies = buildDemoCustomers(organizationId);
+      const customers = await runInBatches(customerBodies, INJECT_BATCH_SIZE, (body) =>
+        this.post<{ id: string }>(SERVICE_URLS.customers, organizationId, "/customers", body),
       );
-      const customerIds = customers.map((c) => c.id);
+      const demoCustomers = customers.map((c, i) => ({
+        id: c.id,
+        displayName: demoCustomerDisplayName(customerBodies[i]!),
+      }));
 
       await runInBatches(buildDemoArticles(organizationId, orgSuffix), INJECT_BATCH_SIZE, (body) =>
         this.post(SERVICE_URLS.stock, organizationId, "/articles", body),
@@ -188,7 +190,7 @@ export class TrialTestDataService extends AbstractTrialTestDataService {
         userId: user.id,
         name: user.name?.trim() || user.email,
       };
-      const caseSeeds = buildDemoCases(organizationId, customerIds, templateIds, caseAssignee);
+      const caseSeeds = buildDemoCases(organizationId, demoCustomers, templateIds, caseAssignee);
       const createdCases = await runInBatches(caseSeeds, INJECT_BATCH_SIZE, async (seed) => {
         const created = await this.post<{ id: string }>(
           SERVICE_URLS.cases,

@@ -647,146 +647,146 @@ export function PlatformProspectionPage() {
         {trackedError ? <p className="text-sm text-red-600">{trackedError}</p> : null}
 
         <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm">
-          <table className="min-w-full text-left text-sm">
-            <thead className="bg-slate-50 dark:bg-slate-800/80 text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
-              <tr>
-                <th className="px-3 py-2.5 font-medium">Entreprise</th>
-                <th className="px-3 py-2.5 font-medium">SIREN</th>
-                <th className="px-3 py-2.5 font-medium">Statut</th>
-                <th className="px-3 py-2.5 font-medium">Mis à jour</th>
-                <th className="px-3 py-2.5 font-medium min-w-[12rem]">E-mail</th>
-                <th className="px-3 py-2.5 font-medium min-w-[12rem]">Commentaire</th>
-                <th className="px-3 py-2.5 font-medium">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {trackedLoading ? (
+          <ListPagination
+            total={trackedTotal}
+            offset={trackedOffset}
+            limit={TRACKED_PAGE_LIMIT}
+            onOffsetChange={setTrackedOffset}
+          >
+            <table className="min-w-full text-left text-sm">
+              <thead className="bg-slate-50 dark:bg-slate-800/80 text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
                 <tr>
-                  <td colSpan={7} className="px-3 py-8 text-center text-slate-500">
-                    Chargement…
-                  </td>
+                  <th className="px-3 py-2.5 font-medium">Entreprise</th>
+                  <th className="px-3 py-2.5 font-medium">SIREN</th>
+                  <th className="px-3 py-2.5 font-medium">Statut</th>
+                  <th className="px-3 py-2.5 font-medium">Mis à jour</th>
+                  <th className="px-3 py-2.5 font-medium min-w-[12rem]">E-mail</th>
+                  <th className="px-3 py-2.5 font-medium min-w-[12rem]">Commentaire</th>
+                  <th className="px-3 py-2.5 font-medium">Action</th>
                 </tr>
-              ) : tracked.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-3 py-8 text-center text-slate-500">
-                    {trackedSearch || trackedStatus
-                      ? "Aucun prospect ne correspond à ces filtres."
-                      : "Aucun prospect suivi. Ajoutez-en un ci-dessus ou lancez une recherche Pappers."}
-                  </td>
-                </tr>
-              ) : (
-                tracked.map((o) => (
-                  <tr
-                    key={o.id}
-                    className="border-t border-slate-100 dark:border-slate-800 hover:bg-slate-50/80 dark:hover:bg-slate-800/40"
-                  >
-                    <td className="px-3 py-2 align-middle max-w-[14rem]">
-                      <div className="font-medium text-slate-800 dark:text-slate-100 truncate">
-                        {o.companyName}
-                      </div>
-                      <div className="text-[11px] text-slate-400 truncate">{o.sentByEmail}</div>
-                    </td>
-                    <td className="px-3 py-2 align-middle tabular-nums text-slate-600 dark:text-slate-300">
-                      {o.siren}
-                    </td>
-                    <td className="px-3 py-2 align-middle">
-                      <span
-                        className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                          o.status === "sent"
-                            ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200"
-                            : o.status === "email_not_found"
-                              ? "bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200"
-                              : o.status === "failed"
-                                ? "bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-200"
-                                : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
-                        }`}
-                      >
-                        {STATUS_LABELS[o.status]}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2 align-middle tabular-nums text-slate-600 dark:text-slate-300">
-                      {formatDateTime(o.sentAt)}
-                    </td>
-                    <td className="px-3 py-2 align-middle">
-                      {o.status === "sent" ? (
-                        <span className="text-xs text-slate-600 dark:text-slate-300">
-                          {o.email || "—"}
-                        </span>
-                      ) : (
-                        <input
-                          type="email"
-                          value={emails[o.siren] ?? ""}
-                          onChange={(e) =>
-                            setEmails((prev) => ({ ...prev, [o.siren]: e.target.value }))
-                          }
-                          placeholder="contact@…"
-                          className="w-full min-w-[10rem] rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-2 py-1.5 text-xs"
-                        />
-                      )}
-                    </td>
-                    <td className="px-3 py-2 align-middle">
-                      <div className="flex flex-col gap-1 min-w-[11rem]">
-                        <textarea
-                          value={comments[o.siren] ?? ""}
-                          onChange={(e) =>
-                            setComments((prev) => ({ ...prev, [o.siren]: e.target.value }))
-                          }
-                          maxLength={PROSPECT_OUTREACH_COMMENT_MAX_LENGTH}
-                          rows={2}
-                          placeholder="Note (site, LinkedIn…)"
-                          className="w-full rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-2 py-1.5 text-xs resize-y min-h-[2.5rem]"
-                        />
-                        <button
-                          type="button"
-                          disabled={
-                            savingCommentSiren === o.siren ||
-                            (comments[o.siren] ?? "") === (o.comment ?? "")
-                          }
-                          onClick={() =>
-                            void saveComment({
-                              siren: o.siren,
-                              name: o.companyName,
-                              comment: o.comment,
-                            })
-                          }
-                          className="self-start rounded-md border border-slate-200 dark:border-slate-600 px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40"
-                        >
-                          {savingCommentSiren === o.siren ? "…" : "Enregistrer"}
-                        </button>
-                      </div>
-                    </td>
-                    <td className="px-3 py-2 align-middle">
-                      {o.status === "sent" ? (
-                        <span className="text-xs text-slate-400">—</span>
-                      ) : (
-                        <button
-                          type="button"
-                          disabled={sendingSiren === o.siren || savingCommentSiren === o.siren}
-                          onClick={() =>
-                            void sendOutreach({
-                              siren: o.siren,
-                              name: o.companyName,
-                            })
-                          }
-                          className="rounded-md bg-brand-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-brand-500 disabled:opacity-50"
-                        >
-                          {sendingSiren === o.siren ? "Envoi…" : "Inviter"}
-                        </button>
-                      )}
+              </thead>
+              <tbody>
+                {trackedLoading ? (
+                  <tr>
+                    <td colSpan={7} className="px-3 py-8 text-center text-slate-500">
+                      Chargement…
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : tracked.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-3 py-8 text-center text-slate-500">
+                      {trackedSearch || trackedStatus
+                        ? "Aucun prospect ne correspond à ces filtres."
+                        : "Aucun prospect suivi. Ajoutez-en un ci-dessus ou lancez une recherche Pappers."}
+                    </td>
+                  </tr>
+                ) : (
+                  tracked.map((o) => (
+                    <tr
+                      key={o.id}
+                      className="border-t border-slate-100 dark:border-slate-800 hover:bg-slate-50/80 dark:hover:bg-slate-800/40"
+                    >
+                      <td className="px-3 py-2 align-middle max-w-[14rem]">
+                        <div className="font-medium text-slate-800 dark:text-slate-100 truncate">
+                          {o.companyName}
+                        </div>
+                        <div className="text-[11px] text-slate-400 truncate">{o.sentByEmail}</div>
+                      </td>
+                      <td className="px-3 py-2 align-middle tabular-nums text-slate-600 dark:text-slate-300">
+                        {o.siren}
+                      </td>
+                      <td className="px-3 py-2 align-middle">
+                        <span
+                          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                            o.status === "sent"
+                              ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200"
+                              : o.status === "email_not_found"
+                                ? "bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200"
+                                : o.status === "failed"
+                                  ? "bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-200"
+                                  : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                          }`}
+                        >
+                          {STATUS_LABELS[o.status]}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 align-middle tabular-nums text-slate-600 dark:text-slate-300">
+                        {formatDateTime(o.sentAt)}
+                      </td>
+                      <td className="px-3 py-2 align-middle">
+                        {o.status === "sent" ? (
+                          <span className="text-xs text-slate-600 dark:text-slate-300">
+                            {o.email || "—"}
+                          </span>
+                        ) : (
+                          <input
+                            type="email"
+                            value={emails[o.siren] ?? ""}
+                            onChange={(e) =>
+                              setEmails((prev) => ({ ...prev, [o.siren]: e.target.value }))
+                            }
+                            placeholder="contact@…"
+                            className="w-full min-w-[10rem] rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-2 py-1.5 text-xs"
+                          />
+                        )}
+                      </td>
+                      <td className="px-3 py-2 align-middle">
+                        <div className="flex flex-col gap-1 min-w-[11rem]">
+                          <textarea
+                            value={comments[o.siren] ?? ""}
+                            onChange={(e) =>
+                              setComments((prev) => ({ ...prev, [o.siren]: e.target.value }))
+                            }
+                            maxLength={PROSPECT_OUTREACH_COMMENT_MAX_LENGTH}
+                            rows={2}
+                            placeholder="Note (site, LinkedIn…)"
+                            className="w-full rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-2 py-1.5 text-xs resize-y min-h-[2.5rem]"
+                          />
+                          <button
+                            type="button"
+                            disabled={
+                              savingCommentSiren === o.siren ||
+                              (comments[o.siren] ?? "") === (o.comment ?? "")
+                            }
+                            onClick={() =>
+                              void saveComment({
+                                siren: o.siren,
+                                name: o.companyName,
+                                comment: o.comment,
+                              })
+                            }
+                            className="self-start rounded-md border border-slate-200 dark:border-slate-600 px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40"
+                          >
+                            {savingCommentSiren === o.siren ? "…" : "Enregistrer"}
+                          </button>
+                        </div>
+                      </td>
+                      <td className="px-3 py-2 align-middle">
+                        {o.status === "sent" ? (
+                          <span className="text-xs text-slate-400">—</span>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={sendingSiren === o.siren || savingCommentSiren === o.siren}
+                            onClick={() =>
+                              void sendOutreach({
+                                siren: o.siren,
+                                name: o.companyName,
+                              })
+                            }
+                            className="rounded-md bg-brand-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-brand-500 disabled:opacity-50"
+                          >
+                            {sendingSiren === o.siren ? "Envoi…" : "Inviter"}
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </ListPagination>
         </div>
-
-        <ListPagination
-          total={trackedTotal}
-          offset={trackedOffset}
-          limit={TRACKED_PAGE_LIMIT}
-          onOffsetChange={setTrackedOffset}
-        />
       </section>
 
       <section className="space-y-3">
@@ -962,201 +962,209 @@ export function PlatformProspectionPage() {
         )}
 
         <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm">
-          <table className="min-w-full text-left text-sm">
-            <thead className="bg-slate-50 dark:bg-slate-800/80 text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
-              <tr>
-                <th className="px-3 py-2.5 font-medium">Entreprise</th>
-                <th className="px-3 py-2.5 font-medium">SIREN</th>
-                <th className="px-3 py-2.5 font-medium">NAF</th>
-                <th className="px-3 py-2.5 font-medium">Créée le</th>
-                <th className="px-3 py-2.5 font-medium">Ville</th>
-                <th className="px-3 py-2.5 font-medium">Dirigeant</th>
-                <th className="px-3 py-2.5 font-medium min-w-[12rem]">E-mail</th>
-                <th className="px-3 py-2.5 font-medium min-w-[12rem]">Commentaire</th>
-                <th className="px-3 py-2.5 font-medium">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={9} className="px-3 py-8 text-center text-slate-500">
-                    Chargement…
-                  </td>
-                </tr>
-              ) : visibleResults.length === 0 ? (
-                <tr>
-                  <td colSpan={9} className="px-3 py-8 text-center text-slate-500">
-                    {activeQuery
-                      ? hideTreated && results.length > 0
-                        ? "Tous les résultats de cette page sont déjà traités (décochez le filtre pour les voir)."
-                        : "Aucun prospect pour ces critères."
-                      : isSiretLookup
-                        ? hideTreated && results.length > 0
-                          ? "Cette entreprise est déjà traitée (décochez le filtre pour la voir)."
-                          : "Aucune entreprise trouvée pour ce SIRET / SIREN."
-                        : "Choisissez vos filtres puis cliquez sur Rechercher (consomme des crédits Pappers)."}
-                  </td>
-                </tr>
-              ) : (
-                visibleResults.map((p) => (
-                  <tr
-                    key={p.siren}
-                    className="border-t border-slate-100 dark:border-slate-800 hover:bg-slate-50/80 dark:hover:bg-slate-800/40"
-                  >
-                    <td className="px-3 py-2 align-middle max-w-[14rem]">
-                      <div className="font-medium text-slate-800 dark:text-slate-100 truncate">
-                        {p.name}
-                      </div>
-                      {p.website && (
-                        <a
-                          href={p.website.startsWith("http") ? p.website : `https://${p.website}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-[11px] text-brand-600 dark:text-brand-400 hover:underline truncate block"
-                        >
-                          {p.website}
-                        </a>
-                      )}
-                    </td>
-                    <td className="px-3 py-2 align-middle tabular-nums text-slate-600 dark:text-slate-300">
-                      {p.siren}
-                    </td>
-                    <td className="px-3 py-2 align-middle text-slate-600 dark:text-slate-300">
-                      <span className="font-mono text-xs">{p.naf ?? "—"}</span>
-                      {p.nafLabel && (
-                        <span className="block text-[10px] text-slate-400 truncate max-w-[8rem]">
-                          {p.nafLabel}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2 align-middle tabular-nums text-slate-600 dark:text-slate-300">
-                      {formatDate(p.createdAt)}
-                    </td>
-                    <td className="px-3 py-2 align-middle text-slate-600 dark:text-slate-300">
-                      {[p.postalCode, p.city].filter(Boolean).join(" ") || "—"}
-                    </td>
-                    <td className="px-3 py-2 align-middle text-slate-600 dark:text-slate-300 max-w-[8rem] truncate">
-                      {p.dirigeants?.[0] ?? "—"}
-                    </td>
-                    <td className="px-3 py-2 align-middle">
-                      {p.alreadyContacted ? (
-                        <span className="text-xs text-emerald-700 dark:text-emerald-300">
-                          Déjà contacté
-                          {p.lastContactedAt ? ` · ${formatDate(p.lastContactedAt)}` : ""}
-                        </span>
-                      ) : p.emailNotFound ? (
-                        <div className="space-y-1.5">
-                          <span className="block text-xs text-amber-700 dark:text-amber-300">
-                            Email non trouvé
-                            {p.lastContactedAt ? ` · ${formatDate(p.lastContactedAt)}` : ""}
-                          </span>
-                          <input
-                            type="email"
-                            value={emails[p.siren] ?? ""}
-                            onChange={(e) =>
-                              setEmails((prev) => ({ ...prev, [p.siren]: e.target.value }))
-                            }
-                            placeholder="trouvé plus tard…"
-                            className="w-full min-w-[10rem] rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-2 py-1.5 text-xs"
-                          />
-                        </div>
-                      ) : (
-                        <input
-                          type="email"
-                          value={emails[p.siren] ?? ""}
-                          onChange={(e) =>
-                            setEmails((prev) => ({ ...prev, [p.siren]: e.target.value }))
-                          }
-                          placeholder="contact@…"
-                          className="w-full min-w-[10rem] rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-2 py-1.5 text-xs"
-                        />
-                      )}
-                    </td>
-                    <td className="px-3 py-2 align-middle">
-                      <div className="flex flex-col gap-1 min-w-[11rem]">
-                        <textarea
-                          value={comments[p.siren] ?? ""}
-                          onChange={(e) =>
-                            setComments((prev) => ({ ...prev, [p.siren]: e.target.value }))
-                          }
-                          maxLength={PROSPECT_OUTREACH_COMMENT_MAX_LENGTH}
-                          rows={2}
-                          placeholder="Note (site, LinkedIn…)"
-                          className="w-full rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-2 py-1.5 text-xs resize-y min-h-[2.5rem]"
-                        />
-                        <button
-                          type="button"
-                          disabled={
-                            savingCommentSiren === p.siren ||
-                            (comments[p.siren] ?? "") === (p.comment ?? "")
-                          }
-                          onClick={() => void saveComment(p)}
-                          className="self-start rounded-md border border-slate-200 dark:border-slate-600 px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40"
-                        >
-                          {savingCommentSiren === p.siren ? "…" : "Enregistrer"}
-                        </button>
-                      </div>
-                    </td>
-                    <td className="px-3 py-2 align-middle">
-                      {p.alreadyContacted ? (
-                        <span className="text-xs text-slate-400">—</span>
-                      ) : (
-                        <div className="flex flex-col gap-1.5 items-stretch min-w-[7.5rem]">
-                          <button
-                            type="button"
-                            disabled={
-                              sendingSiren === p.siren ||
-                              markingSiren === p.siren ||
-                              savingCommentSiren === p.siren
-                            }
-                            onClick={() =>
-                              void sendOutreach({
-                                siren: p.siren,
-                                name: p.name,
-                                contactName: p.dirigeants?.[0],
-                                postalCode: p.postalCode,
-                              })
-                            }
-                            className="rounded-md bg-brand-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-brand-500 disabled:opacity-50"
-                          >
-                            {sendingSiren === p.siren ? "Envoi…" : "Inviter"}
-                          </button>
-                          {!p.emailNotFound && (
+          {(() => {
+            const resultsTable = (
+              <table className="min-w-full text-left text-sm">
+                <thead className="bg-slate-50 dark:bg-slate-800/80 text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  <tr>
+                    <th className="px-3 py-2.5 font-medium">Entreprise</th>
+                    <th className="px-3 py-2.5 font-medium">SIREN</th>
+                    <th className="px-3 py-2.5 font-medium">NAF</th>
+                    <th className="px-3 py-2.5 font-medium">Créée le</th>
+                    <th className="px-3 py-2.5 font-medium">Ville</th>
+                    <th className="px-3 py-2.5 font-medium">Dirigeant</th>
+                    <th className="px-3 py-2.5 font-medium min-w-[12rem]">E-mail</th>
+                    <th className="px-3 py-2.5 font-medium min-w-[12rem]">Commentaire</th>
+                    <th className="px-3 py-2.5 font-medium">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    <tr>
+                      <td colSpan={9} className="px-3 py-8 text-center text-slate-500">
+                        Chargement…
+                      </td>
+                    </tr>
+                  ) : visibleResults.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} className="px-3 py-8 text-center text-slate-500">
+                        {activeQuery
+                          ? hideTreated && results.length > 0
+                            ? "Tous les résultats de cette page sont déjà traités (décochez le filtre pour les voir)."
+                            : "Aucun prospect pour ces critères."
+                          : isSiretLookup
+                            ? hideTreated && results.length > 0
+                              ? "Cette entreprise est déjà traitée (décochez le filtre pour la voir)."
+                              : "Aucune entreprise trouvée pour ce SIRET / SIREN."
+                            : "Choisissez vos filtres puis cliquez sur Rechercher (consomme des crédits Pappers)."}
+                      </td>
+                    </tr>
+                  ) : (
+                    visibleResults.map((p) => (
+                      <tr
+                        key={p.siren}
+                        className="border-t border-slate-100 dark:border-slate-800 hover:bg-slate-50/80 dark:hover:bg-slate-800/40"
+                      >
+                        <td className="px-3 py-2 align-middle max-w-[14rem]">
+                          <div className="font-medium text-slate-800 dark:text-slate-100 truncate">
+                            {p.name}
+                          </div>
+                          {p.website && (
+                            <a
+                              href={
+                                p.website.startsWith("http") ? p.website : `https://${p.website}`
+                              }
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-[11px] text-brand-600 dark:text-brand-400 hover:underline truncate block"
+                            >
+                              {p.website}
+                            </a>
+                          )}
+                        </td>
+                        <td className="px-3 py-2 align-middle tabular-nums text-slate-600 dark:text-slate-300">
+                          {p.siren}
+                        </td>
+                        <td className="px-3 py-2 align-middle text-slate-600 dark:text-slate-300">
+                          <span className="font-mono text-xs">{p.naf ?? "—"}</span>
+                          {p.nafLabel && (
+                            <span className="block text-[10px] text-slate-400 truncate max-w-[8rem]">
+                              {p.nafLabel}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2 align-middle tabular-nums text-slate-600 dark:text-slate-300">
+                          {formatDate(p.createdAt)}
+                        </td>
+                        <td className="px-3 py-2 align-middle text-slate-600 dark:text-slate-300">
+                          {[p.postalCode, p.city].filter(Boolean).join(" ") || "—"}
+                        </td>
+                        <td className="px-3 py-2 align-middle text-slate-600 dark:text-slate-300 max-w-[8rem] truncate">
+                          {p.dirigeants?.[0] ?? "—"}
+                        </td>
+                        <td className="px-3 py-2 align-middle">
+                          {p.alreadyContacted ? (
+                            <span className="text-xs text-emerald-700 dark:text-emerald-300">
+                              Déjà contacté
+                              {p.lastContactedAt ? ` · ${formatDate(p.lastContactedAt)}` : ""}
+                            </span>
+                          ) : p.emailNotFound ? (
+                            <div className="space-y-1.5">
+                              <span className="block text-xs text-amber-700 dark:text-amber-300">
+                                Email non trouvé
+                                {p.lastContactedAt ? ` · ${formatDate(p.lastContactedAt)}` : ""}
+                              </span>
+                              <input
+                                type="email"
+                                value={emails[p.siren] ?? ""}
+                                onChange={(e) =>
+                                  setEmails((prev) => ({ ...prev, [p.siren]: e.target.value }))
+                                }
+                                placeholder="trouvé plus tard…"
+                                className="w-full min-w-[10rem] rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-2 py-1.5 text-xs"
+                              />
+                            </div>
+                          ) : (
+                            <input
+                              type="email"
+                              value={emails[p.siren] ?? ""}
+                              onChange={(e) =>
+                                setEmails((prev) => ({ ...prev, [p.siren]: e.target.value }))
+                              }
+                              placeholder="contact@…"
+                              className="w-full min-w-[10rem] rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-2 py-1.5 text-xs"
+                            />
+                          )}
+                        </td>
+                        <td className="px-3 py-2 align-middle">
+                          <div className="flex flex-col gap-1 min-w-[11rem]">
+                            <textarea
+                              value={comments[p.siren] ?? ""}
+                              onChange={(e) =>
+                                setComments((prev) => ({ ...prev, [p.siren]: e.target.value }))
+                              }
+                              maxLength={PROSPECT_OUTREACH_COMMENT_MAX_LENGTH}
+                              rows={2}
+                              placeholder="Note (site, LinkedIn…)"
+                              className="w-full rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-2 py-1.5 text-xs resize-y min-h-[2.5rem]"
+                            />
                             <button
                               type="button"
                               disabled={
-                                sendingSiren === p.siren ||
-                                markingSiren === p.siren ||
-                                savingCommentSiren === p.siren
+                                savingCommentSiren === p.siren ||
+                                (comments[p.siren] ?? "") === (p.comment ?? "")
                               }
-                              onClick={() => void markEmailNotFound(p)}
-                              className="rounded-md border border-slate-200 dark:border-slate-600 px-2.5 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50"
+                              onClick={() => void saveComment(p)}
+                              className="self-start rounded-md border border-slate-200 dark:border-slate-600 px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40"
                             >
-                              {markingSiren === p.siren ? "…" : "Email non trouvé"}
+                              {savingCommentSiren === p.siren ? "…" : "Enregistrer"}
                             </button>
+                          </div>
+                        </td>
+                        <td className="px-3 py-2 align-middle">
+                          {p.alreadyContacted ? (
+                            <span className="text-xs text-slate-400">—</span>
+                          ) : (
+                            <div className="flex flex-col gap-1.5 items-stretch min-w-[7.5rem]">
+                              <button
+                                type="button"
+                                disabled={
+                                  sendingSiren === p.siren ||
+                                  markingSiren === p.siren ||
+                                  savingCommentSiren === p.siren
+                                }
+                                onClick={() =>
+                                  void sendOutreach({
+                                    siren: p.siren,
+                                    name: p.name,
+                                    contactName: p.dirigeants?.[0],
+                                    postalCode: p.postalCode,
+                                  })
+                                }
+                                className="rounded-md bg-brand-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-brand-500 disabled:opacity-50"
+                              >
+                                {sendingSiren === p.siren ? "Envoi…" : "Inviter"}
+                              </button>
+                              {!p.emailNotFound && (
+                                <button
+                                  type="button"
+                                  disabled={
+                                    sendingSiren === p.siren ||
+                                    markingSiren === p.siren ||
+                                    savingCommentSiren === p.siren
+                                  }
+                                  onClick={() => void markEmailNotFound(p)}
+                                  className="rounded-md border border-slate-200 dark:border-slate-600 px-2.5 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50"
+                                >
+                                  {markingSiren === p.siren ? "…" : "Email non trouvé"}
+                                </button>
+                              )}
+                            </div>
                           )}
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            );
+            if (isSiretLookup) return resultsTable;
+            return (
+              <ListPagination
+                total={total}
+                offset={offset}
+                limit={PER_PAGE}
+                onOffsetChange={(nextOffset) => {
+                  const nextPage = Math.floor(nextOffset / PER_PAGE) + 1;
+                  setPage(nextPage);
+                  setStartPageInput(String(nextPage));
+                }}
+              >
+                {resultsTable}
+              </ListPagination>
+            );
+          })()}
         </div>
-
-        {!isSiretLookup ? (
-          <ListPagination
-            total={total}
-            offset={offset}
-            limit={PER_PAGE}
-            onOffsetChange={(nextOffset) => {
-              const nextPage = Math.floor(nextOffset / PER_PAGE) + 1;
-              setPage(nextPage);
-              setStartPageInput(String(nextPage));
-            }}
-          />
-        ) : null}
       </section>
     </div>
   );

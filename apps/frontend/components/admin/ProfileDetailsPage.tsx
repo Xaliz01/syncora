@@ -8,23 +8,18 @@ import * as adminApi from "@/lib/admin.api";
 import { getPermissionLabel } from "@/lib/permissions-catalog";
 import { useToast } from "@/components/ui/ToastProvider";
 import { usePermissions } from "@/lib/hooks/usePermissions";
-
-function togglePermission(list: PermissionCode[], permission: PermissionCode): PermissionCode[] {
-  if (list.includes(permission)) return list.filter((item) => item !== permission);
-  return [...list, permission];
-}
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { PageBreadcrumb } from "@/components/ui/FormDialog";
 
 export function ProfileDetailsPage({ profileId }: { profileId: string }) {
   const router = useRouter();
   const { showToast } = useToast();
   const { can } = usePermissions();
-  const [catalog, setCatalog] = useState<PermissionCode[]>([]);
+  const confirm = useConfirm();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [permissions, setPermissions] = useState<PermissionCode[]>([]);
-  const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,15 +27,10 @@ export function ProfileDetailsPage({ profileId }: { profileId: string }) {
     setLoading(true);
     setError(null);
     try {
-      const [catalogRes, profileRes] = await Promise.all([
-        adminApi.getPermissionsCatalog(),
-        adminApi.getPermissionProfile(profileId),
-      ]);
-      setCatalog(catalogRes.availablePermissions);
+      const profileRes = await adminApi.getPermissionProfile(profileId);
       setName(profileRes.name);
       setDescription(profileRes.description ?? "");
       setPermissions(profileRes.permissions);
-      setIsEditing(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur de chargement du profil");
     } finally {
@@ -52,27 +42,14 @@ export function ProfileDetailsPage({ profileId }: { profileId: string }) {
     void refresh();
   }, [refresh]);
 
-  const handleSave = async (event: React.FormEvent) => {
-    event.preventDefault();
-    setSaving(true);
-    setError(null);
-    try {
-      await adminApi.updatePermissionProfile(profileId, {
-        name,
-        description: description.trim() || undefined,
-        permissions,
-      });
-      showToast("Profil mis à jour.");
-      setIsEditing(false);
-      await refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Impossible de mettre à jour ce profil");
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const handleDelete = async () => {
+    const ok = await confirm({
+      title: "Supprimer ce profil ?",
+      description: "Les utilisateurs qui l’utilisent devront être réaffectés.",
+      confirmLabel: "Supprimer",
+      variant: "danger",
+    });
+    if (!ok) return;
     setDeleting(true);
     setError(null);
     try {
@@ -89,21 +66,27 @@ export function ProfileDetailsPage({ profileId }: { profileId: string }) {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link
-          href="/settings/profiles"
-          className="text-sm font-medium text-brand-600 dark:text-brand-400 hover:text-brand-500"
-        >
-          &larr; Profils
-        </Link>
-        {can("profiles.update") && (
-          <button
-            type="button"
-            onClick={() => setIsEditing((previous) => !previous)}
-            className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
-          >
-            {isEditing ? "Annuler" : "Modifier"}
-          </button>
-        )}
+        <PageBreadcrumb href="/settings/profiles" label="Profils" />
+        <div className="flex flex-wrap gap-2">
+          {can("profiles.update") && (
+            <Link
+              href={`/settings/profiles/${profileId}/edit`}
+              className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+            >
+              Modifier
+            </Link>
+          )}
+          {can("profiles.delete") && (
+            <button
+              type="button"
+              onClick={() => void handleDelete()}
+              disabled={deleting}
+              className="rounded-lg border border-red-300 px-3 py-1.5 text-sm text-red-700 hover:bg-red-50 disabled:opacity-50"
+            >
+              {deleting ? "Suppression…" : "Supprimer"}
+            </button>
+          )}
+        </div>
       </div>
 
       <div>
@@ -126,103 +109,37 @@ export function ProfileDetailsPage({ profileId }: { profileId: string }) {
           <p className="text-sm text-slate-500 dark:text-slate-400">Chargement...</p>
         ) : (
           <div className="space-y-4">
-            {!isEditing ? (
-              <>
-                <div className="grid gap-3 md:grid-cols-2 text-sm">
-                  <div>
-                    <span className="text-slate-400 dark:text-slate-500">Nom</span>
-                    <p className="text-slate-700 dark:text-slate-200">{name}</p>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 dark:text-slate-500">Description</span>
-                    <p className="text-slate-700 dark:text-slate-200">{description || "—"}</p>
-                  </div>
-                </div>
-                <div>
-                  <span className="text-sm text-slate-400 dark:text-slate-500">Permissions</span>
-                  <div className="mt-2 grid gap-2 md:grid-cols-2">
-                    {permissions.map((permission) => (
-                      <div
-                        key={permission}
-                        className="rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2"
-                      >
-                        <div className="text-slate-700 dark:text-slate-200">
-                          {getPermissionLabel(permission)}
-                        </div>
-                        <div className="text-xs text-slate-400 dark:text-slate-500 font-mono">
-                          {permission}
-                        </div>
-                      </div>
-                    ))}
-                    {permissions.length === 0 && (
-                      <p className="text-slate-500 dark:text-slate-400 text-sm">
-                        Aucune permission.
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </>
-            ) : (
-              <form onSubmit={handleSave} className="space-y-4">
-                <div className="grid gap-3 md:grid-cols-2">
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                    className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
-                  />
-                  <input
-                    type="text"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Description (optionnel)"
-                    className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
-                  />
-                </div>
-                <div className="grid gap-2 md:grid-cols-2">
-                  {catalog.map((permission) => (
-                    <label key={permission} className="flex items-start gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        className="mt-1"
-                        checked={permissions.includes(permission)}
-                        onChange={() =>
-                          setPermissions((previous) => togglePermission(previous, permission))
-                        }
-                      />
-                      <span>
-                        <span className="block text-slate-700 dark:text-slate-200">
-                          {getPermissionLabel(permission)}
-                        </span>
-                        <span className="block text-xs text-slate-400 dark:text-slate-500 font-mono">
-                          {permission}
-                        </span>
-                      </span>
-                    </label>
-                  ))}
-                </div>
-                <div className="flex flex-wrap items-center justify-end gap-3">
-                  {can("profiles.delete") && (
-                    <button
-                      type="button"
-                      onClick={() => void handleDelete()}
-                      disabled={deleting}
-                      className="rounded-lg border border-red-300 px-4 py-2 text-red-700 hover:bg-red-50 disabled:opacity-50"
-                    >
-                      {deleting ? "Suppression..." : "Supprimer le profil"}
-                    </button>
-                  )}
-                  <button
-                    type="submit"
-                    disabled={saving}
-                    className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50"
+            <div className="grid gap-3 md:grid-cols-2 text-sm">
+              <div>
+                <span className="text-slate-400 dark:text-slate-500">Nom</span>
+                <p className="text-slate-700 dark:text-slate-200">{name}</p>
+              </div>
+              <div>
+                <span className="text-slate-400 dark:text-slate-500">Description</span>
+                <p className="text-slate-700 dark:text-slate-200">{description || "—"}</p>
+              </div>
+            </div>
+            <div>
+              <span className="text-sm text-slate-400 dark:text-slate-500">Permissions</span>
+              <div className="mt-2 grid gap-2 md:grid-cols-2">
+                {permissions.map((permission) => (
+                  <div
+                    key={permission}
+                    className="rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2"
                   >
-                    {saving ? "Enregistrement..." : "Enregistrer"}
-                  </button>
-                </div>
-              </form>
-            )}
+                    <div className="text-slate-700 dark:text-slate-200">
+                      {getPermissionLabel(permission)}
+                    </div>
+                    <div className="text-xs text-slate-400 dark:text-slate-500 font-mono">
+                      {permission}
+                    </div>
+                  </div>
+                ))}
+                {permissions.length === 0 && (
+                  <p className="text-slate-500 dark:text-slate-400 text-sm">Aucune permission.</p>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </section>

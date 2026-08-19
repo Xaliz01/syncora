@@ -86,11 +86,26 @@ export const ASSISTANT_ROUTE_CATALOG: readonly AssistantRouteEntry[] = [
     href: "/settings/stock/articles",
     permissions: ["stock.articles.read"],
   },
+  {
+    label: "Nouvel article",
+    href: "/settings/stock/articles/new",
+    permissions: ["stock.articles.create"],
+  },
   { label: "Prestations", href: "/settings/prestations", permissions: ["prestations.read"] },
+  {
+    label: "Nouvelle prestation",
+    href: "/settings/prestations/new",
+    permissions: ["prestations.create"],
+  },
   {
     label: "Emplacements de stock",
     href: "/settings/stock/locations",
     permissions: ["stock.locations.read"],
+  },
+  {
+    label: "Nouvel emplacement",
+    href: "/settings/stock/locations/new",
+    permissions: ["stock.locations.create"],
   },
   {
     label: "Modèles de dossier",
@@ -101,6 +116,11 @@ export const ASSISTANT_ROUTE_CATALOG: readonly AssistantRouteEntry[] = [
     label: "Types d’intervention",
     href: "/settings/intervention-types",
     permissions: ["intervention_types.read"],
+  },
+  {
+    label: "Nouveau type d’intervention",
+    href: "/settings/intervention-types/new",
+    permissions: ["intervention_types.create"],
   },
   { label: "Profils", href: "/settings/profiles", permissions: ["profiles.read"] },
   {

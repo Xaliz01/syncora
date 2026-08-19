@@ -92,7 +92,12 @@ export function CustomersListPage() {
       ) : rows.length === 0 ? (
         <ListNoResults message="Aucun client ne correspond à ce filtre." />
       ) : (
-        <>
+        <ListPagination
+          offset={offset}
+          limit={LIST_PAGE_SIZE}
+          total={total}
+          onOffsetChange={setOffset}
+        >
           <ListTableShell
             gridTemplateClass={GRID}
             headerCells={
@@ -118,13 +123,7 @@ export function CustomersListPage() {
               </ListRowLink>
             ))}
           </ListTableShell>
-          <ListPagination
-            offset={offset}
-            limit={LIST_PAGE_SIZE}
-            total={total}
-            onOffsetChange={setOffset}
-          />
-        </>
+        </ListPagination>
       )}
     </ListPageRoot>
   );

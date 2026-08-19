@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { CustomerKind, OrderGiverResponse, SiretLookupResult } from "@planwise/shared";
 import * as orderGiversApi from "@/lib/order-givers.api";
 import { PostalAddressFields } from "@/components/address/PostalAddressFields";
 import { SiretLookupField } from "@/components/organization/SiretLookupField";
+import { formFieldInputClassName, formFieldLabelClassName } from "@/components/ui/FormDialog";
 import { CUSTOMER_KIND_LABELS } from "@/components/customers/customer-kind-labels";
 
 type Props = {
@@ -15,6 +16,11 @@ type Props = {
   submitLabel?: string;
   /** Intégré au menu du picker dossier (en-tête + champs compacts + scroll). */
   compact?: boolean;
+  /** Actions gérées par le parent (ex. footer du FormSidePanel). */
+  hideActions?: boolean;
+  /** `id` du <form> pour un bouton submit externe (`form="…"`). */
+  formId?: string;
+  onPendingChange?: (pending: boolean) => void;
 };
 
 export function OrderGiverCreateForm({
@@ -22,6 +28,9 @@ export function OrderGiverCreateForm({
   onCancel,
   submitLabel = "Créer le donneur d'ordre",
   compact = false,
+  hideActions = false,
+  formId,
+  onPendingChange,
 }: Props) {
   const queryClient = useQueryClient();
   const [createError, setCreateError] = useState("");
@@ -42,10 +51,10 @@ export function OrderGiverCreateForm({
 
   const labelCls = compact
     ? "mb-0.5 block text-xs font-medium text-slate-600 dark:text-slate-300"
-    : "mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200";
+    : formFieldLabelClassName;
   const inputCls = compact
     ? "w-full rounded-md border border-slate-200 dark:border-slate-700 px-2 py-1.5 text-sm"
-    : "w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500";
+    : formFieldInputClassName;
 
   const resetForm = () => {
     setNewKind("company");
@@ -89,6 +98,10 @@ export function OrderGiverCreateForm({
     onError: (err: Error) => setCreateError(err.message),
   });
 
+  useEffect(() => {
+    onPendingChange?.(createMutation.isPending);
+  }, [createMutation.isPending, onPendingChange]);
+
   const addressPayload = useMemo(() => {
     if (!addrLine1.trim() || !addrPostal.trim() || !addrCity.trim()) return undefined;
     return {
@@ -102,6 +115,7 @@ export function OrderGiverCreateForm({
 
   const submitCreate = (e?: React.FormEvent | React.MouseEvent) => {
     e?.preventDefault();
+    e?.stopPropagation();
     setCreateError("");
     const base = {
       kind: newKind,
@@ -288,38 +302,39 @@ export function OrderGiverCreateForm({
         </div>
       </details>
 
-      {compact ? (
-        <button
-          type="button"
-          onClick={() => submitCreate()}
-          disabled={createMutation.isPending}
-          className="w-full rounded-lg bg-brand-600 py-2 text-sm font-medium text-white transition hover:bg-brand-500 disabled:opacity-50"
-        >
-          {createMutation.isPending ? "Création…" : submitLabel}
-        </button>
-      ) : (
-        <div className="flex flex-wrap justify-end gap-3 pt-1">
-          {onCancel && (
-            <button
-              type="button"
-              onClick={() => {
-                resetForm();
-                onCancel();
-              }}
-              className="rounded-lg border border-slate-200 dark:border-slate-700 px-5 py-2 text-sm text-slate-600 dark:text-slate-300 transition hover:bg-slate-50 dark:hover:bg-slate-800"
-            >
-              Annuler
-            </button>
-          )}
+      {!hideActions &&
+        (compact ? (
           <button
-            type="submit"
+            type="button"
+            onClick={() => submitCreate()}
             disabled={createMutation.isPending}
-            className="rounded-lg bg-brand-600 px-5 py-2 text-sm font-medium text-white transition hover:bg-brand-500 disabled:opacity-50"
+            className="w-full rounded-lg bg-brand-600 py-2 text-sm font-medium text-white transition hover:bg-brand-500 disabled:opacity-50"
           >
             {createMutation.isPending ? "Création…" : submitLabel}
           </button>
-        </div>
-      )}
+        ) : (
+          <div className="flex flex-wrap justify-end gap-3 pt-1">
+            {onCancel && (
+              <button
+                type="button"
+                onClick={() => {
+                  resetForm();
+                  onCancel();
+                }}
+                className="rounded-lg border border-slate-200 dark:border-slate-700 px-5 py-2 text-sm text-slate-600 dark:text-slate-300 transition hover:bg-slate-50 dark:hover:bg-slate-800"
+              >
+                Annuler
+              </button>
+            )}
+            <button
+              type="submit"
+              disabled={createMutation.isPending}
+              className="rounded-lg bg-brand-600 px-5 py-2 text-sm font-medium text-white transition hover:bg-brand-500 disabled:opacity-50"
+            >
+              {createMutation.isPending ? "Création…" : submitLabel}
+            </button>
+          </div>
+        ))}
     </>
   );
 
@@ -344,7 +359,7 @@ export function OrderGiverCreateForm({
   }
 
   return (
-    <form onSubmit={submitCreate} className="space-y-5">
+    <form id={formId} onSubmit={submitCreate} className="space-y-5">
       {formInner}
     </form>
   );

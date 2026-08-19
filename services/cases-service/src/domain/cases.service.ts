@@ -3,6 +3,7 @@ import { InjectModel } from "@nestjs/mongoose";
 import { Model, Types } from "mongoose";
 import {
   activeDocumentFilter,
+  buildCaseDisplayTitle,
   clampPagination,
   type CaseResponse,
   type CasesListResponse,
@@ -24,6 +25,8 @@ import { AbstractCasesService } from "./ports/cases.service.port";
 import { AbstractInterventionsService } from "./ports/interventions.service.port";
 import { AbstractCaseTemplatesService } from "./ports/case-templates.service.port";
 import { toCaseResponse, toCaseSummary } from "./mappers/case.mapper";
+import { isDuplicateKeyError } from "./utils";
+import { generateCaseNumber } from "./utils/case-number.utils";
 
 @Injectable()
 export class CasesService extends AbstractCasesService {
@@ -76,24 +79,37 @@ export class CasesService extends AbstractCasesService {
       }));
     }
 
-    const doc = await this.caseModel.create({
-      organizationId: body.organizationId,
-      templateId: body.templateId,
-      customerId: body.customerId?.trim() || undefined,
-      orderGiverId: body.orderGiverId?.trim() || undefined,
-      interventionSiteId: body.interventionSiteId?.trim() || undefined,
-      title: body.title,
-      description: body.description,
-      priority: body.priority ?? "medium",
-      assignees: body.assignees ?? [],
-      dueDate: body.dueDate ? new Date(body.dueDate) : undefined,
-      tags: body.tags ?? [],
-      steps,
-      status: "draft",
-      isTestData: body.isTestData === true,
-    });
-
-    return toCaseResponse(doc);
+    const partyLabel = body.customerDisplayName?.trim() || body.title?.trim() || undefined;
+    let lastError: unknown;
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      try {
+        const caseNumber = await generateCaseNumber(this.caseModel, body.organizationId);
+        const doc = await this.caseModel.create({
+          organizationId: body.organizationId,
+          templateId: body.templateId,
+          customerId: body.customerId?.trim() || undefined,
+          orderGiverId: body.orderGiverId?.trim() || undefined,
+          interventionSiteId: body.interventionSiteId?.trim() || undefined,
+          caseNumber,
+          title: buildCaseDisplayTitle(caseNumber, partyLabel),
+          description: body.description,
+          priority: body.priority ?? "medium",
+          assignees: body.assignees ?? [],
+          dueDate: body.dueDate ? new Date(body.dueDate) : undefined,
+          tags: body.tags ?? [],
+          steps,
+          status: "draft",
+          isTestData: body.isTestData === true,
+        });
+        return toCaseResponse(doc);
+      } catch (err) {
+        if (!isDuplicateKeyError(err)) throw err;
+        lastError = err;
+        // Désynchronise les retries concurrents (injection démo en parallèle).
+        await new Promise((r) => setTimeout(r, 5 + attempt * 3));
+      }
+    }
+    throw lastError;
   }
 
   async listCases(
@@ -115,15 +131,30 @@ export class CasesService extends AbstractCasesService {
     if (filters?.orderGiverId) query.orderGiverId = filters.orderGiverId;
     if (filters?.status) query.status = filters.status;
     if (filters?.billingStatus) query.billingStatus = filters.billingStatus;
-    if (filters?.assigneeId) {
-      query.$or = [
-        { assignees: { $elemMatch: { userId: filters.assigneeId } } },
-        { assigneeId: filters.assigneeId },
-      ];
-    }
     if (filters?.priority) query.priority = filters.priority;
-    if (filters?.search) {
-      query.title = { $regex: filters.search, $options: "i" };
+
+    const andClauses: Record<string, unknown>[] = [];
+    if (filters?.assigneeId) {
+      andClauses.push({
+        $or: [
+          { assignees: { $elemMatch: { userId: filters.assigneeId } } },
+          { assigneeId: filters.assigneeId },
+        ],
+      });
+    }
+    const search = filters?.search?.trim();
+    if (search) {
+      andClauses.push({
+        $or: [
+          { title: { $regex: search, $options: "i" } },
+          { caseNumber: { $regex: search, $options: "i" } },
+        ],
+      });
+    }
+    if (andClauses.length === 1) {
+      Object.assign(query, andClauses[0]);
+    } else if (andClauses.length > 1) {
+      query.$and = andClauses;
     }
 
     const { limit, offset } = clampPagination({
@@ -164,8 +195,12 @@ export class CasesService extends AbstractCasesService {
   }
 
   async updateCase(id: string, body: UpdateCaseBody): Promise<CaseResponse> {
+    const existing = await this.caseModel
+      .findOne({ _id: id, organizationId: body.organizationId, ...activeDocumentFilter })
+      .exec();
+    if (!existing) throw new NotFoundException("Case not found");
+
     const setUpdate: Record<string, unknown> = {};
-    if (body.title !== undefined) setUpdate.title = body.title;
     if (body.description !== undefined) setUpdate.description = body.description;
     if (body.status !== undefined) setUpdate.status = body.status;
     if (body.billingStatus !== undefined) setUpdate.billingStatus = body.billingStatus;
@@ -184,6 +219,19 @@ export class CasesService extends AbstractCasesService {
     if (body.interventionSiteId !== undefined) {
       setUpdate.interventionSiteId =
         body.interventionSiteId === null ? null : body.interventionSiteId.trim() || undefined;
+    }
+
+    if (body.customerId !== undefined || body.customerDisplayName !== undefined) {
+      const partyLabel =
+        body.customerDisplayName === undefined
+          ? undefined
+          : body.customerDisplayName === null
+            ? undefined
+            : body.customerDisplayName.trim() || undefined;
+      // Recalcule uniquement quand le gateway envoie customerDisplayName (changement client).
+      if (body.customerDisplayName !== undefined) {
+        setUpdate.title = buildCaseDisplayTitle(existing.caseNumber, partyLabel);
+      }
     }
 
     const mongoUpdate: Record<string, unknown> = { $set: setUpdate };

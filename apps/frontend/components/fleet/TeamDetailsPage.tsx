@@ -8,10 +8,7 @@ import type {
   TechnicianResponse,
   AgenceResponse,
   VehicleResponse,
-  TeamStatus,
 } from "@planwise/shared";
-
-const TEAM_STATUSES: TeamStatus[] = ["active", "inactive"];
 import * as fleetApi from "@/lib/fleet.api";
 import { normalizeCalendarColorHex, teamLegendSwatchStyle } from "@/lib/team-calendar-colors";
 import { useIsDarkMode } from "@/lib/use-is-dark-mode";
@@ -20,6 +17,7 @@ import { usePermissions } from "@/lib/hooks/usePermissions";
 import { useRouter } from "next/navigation";
 import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
 import { AppErrorAlert, ResourceNotFoundPanel } from "@/components/ui/AppErrorAlert";
+import { PageBreadcrumb } from "@/components/ui/FormDialog";
 
 const STATUS_COLORS: Record<string, string> = {
   active: "bg-emerald-50 text-emerald-700 border-emerald-200",
@@ -43,16 +41,8 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
   const [agences, setAgences] = useState<AgenceResponse[]>([]);
   const [vehicles, setVehicles] = useState<VehicleResponse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<unknown>(null);
-
-  const [editName, setEditName] = useState("");
-  const [editAgenceId, setEditAgenceId] = useState("");
-  const [editStatus, setEditStatus] = useState<TeamStatus>("active");
-  /** Vide = couleur automatique sur le calendrier */
-  const [editCalendarColor, setEditCalendarColor] = useState("");
-
   const [addTechnicianId, setAddTechnicianId] = useState("");
 
   const refresh = useCallback(async () => {
@@ -69,11 +59,6 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
       setTechnicians(techList);
       setAgences(agenceList);
       setVehicles(vehicleList.filter((v) => v.assignedTeamId === teamId));
-
-      setEditName(teamData.name);
-      setEditAgenceId(teamData.agenceId ?? "");
-      setEditStatus(teamData.status);
-      setEditCalendarColor(teamData.calendarColor ?? "");
     } catch (err) {
       setError(err);
     } finally {
@@ -85,33 +70,12 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
     void refresh();
   }, [refresh]);
 
-  const handleSave = async () => {
-    if (!team) return;
-    setSaving(true);
-    setError(null);
-    try {
-      await fleetApi.updateTeam(team.id, {
-        name: editName.trim(),
-        agenceId: editAgenceId || null,
-        status: editStatus,
-        calendarColor: editCalendarColor.trim() ? editCalendarColor.trim() : null,
-      });
-      showToast("Équipe mise à jour.");
-      setIsEditing(false);
-      void queryClient.invalidateQueries({ queryKey: ["fleet-teams"] });
-      await refresh();
-    } catch (err) {
-      setError(err);
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const handleDelete = async () => {
     if (!team || !confirm("Supprimer cette équipe ?")) return;
     try {
       await fleetApi.deleteTeam(team.id);
       showToast("Équipe supprimée.");
+      void queryClient.invalidateQueries({ queryKey: ["fleet-teams"] });
       router.push("/fleet/teams");
     } catch (err) {
       setError(err);
@@ -175,23 +139,16 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-semibold mb-1">{team.name}</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Fiche équipe
-            {agence ? ` — ${agence.name}` : ""}
-          </p>
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <PageBreadcrumb href="/fleet/teams" label="Équipes" />
         <div className="flex items-center gap-2">
           {can("teams.update") && (
-            <button
-              type="button"
-              onClick={() => setIsEditing((p) => !p)}
+            <Link
+              href={`/fleet/teams/${team.id}/edit`}
               className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
             >
-              {isEditing ? "Annuler" : "Modifier"}
-            </button>
+              Modifier
+            </Link>
           )}
           {can("teams.delete") && (
             <button
@@ -202,160 +159,69 @@ export function TeamDetailsPage({ teamId }: { teamId: string }) {
               Supprimer
             </button>
           )}
-          <Link
-            href="/fleet/teams"
-            className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
-          >
-            Retour
-          </Link>
         </div>
+      </div>
+
+      <div>
+        <h1 className="text-xl sm:text-2xl font-semibold mb-1">{team.name}</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          Fiche équipe
+          {agence ? ` — ${agence.name}` : ""}
+        </p>
       </div>
 
       {error ? <AppErrorAlert error={error} onRetry={() => void refresh()} /> : null}
 
-      {!isEditing ? (
-        <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
-          <h2 className="font-semibold mb-3">Informations</h2>
-          <div className="grid gap-3 md:grid-cols-2 text-sm">
-            <div>
-              <span className="text-slate-400 dark:text-slate-500">Nom</span>
-              <p className="font-medium">{team.name}</p>
-            </div>
-            <div>
-              <span className="text-slate-400 dark:text-slate-500">Agence</span>
-              <p>{agence ? agence.name : "—"}</p>
-            </div>
-            <div>
-              <span className="text-slate-400 dark:text-slate-500">Statut</span>
-              <p>
-                <span
-                  className={`inline-flex rounded border px-2 py-0.5 text-xs ${STATUS_COLORS[team.status] ?? "bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700"}`}
-                >
-                  {STATUS_LABELS[team.status] ?? team.status}
-                </span>
-              </p>
-            </div>
-            <div>
-              <span className="text-slate-400 dark:text-slate-500">Nombre de membres</span>
-              <p>{team.technicianIds.length}</p>
-            </div>
-            <div className="md:col-span-2">
-              <span className="text-slate-400 dark:text-slate-500">Couleur au calendrier</span>
-              <div className="mt-1 flex items-center gap-2 flex-wrap">
-                {team.calendarColor && normalizeCalendarColorHex(team.calendarColor) ? (
-                  <>
-                    <span
-                      className="team-cal-legend-swatch h-6 w-10 rounded border shrink-0"
-                      style={teamLegendSwatchStyle(
-                        normalizeCalendarColorHex(team.calendarColor) ?? team.calendarColor,
-                        isDark,
-                      )}
-                    />
-                    <code className="text-xs text-slate-600 dark:text-slate-300">
-                      {normalizeCalendarColorHex(team.calendarColor)}
-                    </code>
-                  </>
-                ) : (
-                  <p className="text-sm text-slate-600 dark:text-slate-300">
-                    Automatique (couleur dérivée de l&apos;équipe sur le calendrier)
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        </section>
-      ) : (
-        <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 space-y-4">
-          <h2 className="font-semibold">Modifier l&apos;équipe</h2>
-          <div className="grid gap-3 md:grid-cols-2">
-            <div>
-              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Nom</label>
-              <input
-                type="text"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">
-                Statut
-              </label>
-              <select
-                value={editStatus}
-                onChange={(e) => setEditStatus(e.target.value as TeamStatus)}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
-              >
-                {TEAM_STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {s === "active" ? "Active" : "Inactive"}
-                  </option>
-                ))}
-              </select>
-            </div>
+      <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
+        <h2 className="font-semibold mb-3">Informations</h2>
+        <div className="grid gap-3 md:grid-cols-2 text-sm">
+          <div>
+            <span className="text-slate-400 dark:text-slate-500">Nom</span>
+            <p className="font-medium">{team.name}</p>
           </div>
           <div>
-            <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Agence</label>
-            <select
-              value={editAgenceId}
-              onChange={(e) => setEditAgenceId(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
-            >
-              <option value="">Aucune agence</option>
-              {agences.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
-                  {a.city ? ` — ${a.city}` : ""}
-                </option>
-              ))}
-            </select>
+            <span className="text-slate-400 dark:text-slate-500">Agence</span>
+            <p>{agence ? agence.name : "—"}</p>
           </div>
-
-          <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 p-3 space-y-2">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
-              Couleur au calendrier
-            </label>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Utilisée pour les interventions assignées à cette équipe. Laissez vide pour une
-              couleur automatique.
-            </p>
-            <div className="flex flex-wrap items-center gap-3">
-              <input
-                type="color"
-                aria-label="Choix de la couleur"
-                className="h-10 w-14 cursor-pointer rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900"
-                value={normalizeCalendarColorHex(editCalendarColor) ?? "#94a3b8"}
-                onChange={(e) => setEditCalendarColor(e.target.value)}
-              />
-              <input
-                type="text"
-                placeholder="#RRGGBB"
-                value={editCalendarColor}
-                onChange={(e) => setEditCalendarColor(e.target.value)}
-                className="flex-1 min-w-[120px] rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-mono text-slate-900 dark:text-slate-100"
-              />
-              <button
-                type="button"
-                onClick={() => setEditCalendarColor("")}
-                className="rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+          <div>
+            <span className="text-slate-400 dark:text-slate-500">Statut</span>
+            <p>
+              <span
+                className={`inline-flex rounded border px-2 py-0.5 text-xs ${STATUS_COLORS[team.status] ?? "bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700"}`}
               >
-                Automatique
-              </button>
+                {STATUS_LABELS[team.status] ?? team.status}
+              </span>
+            </p>
+          </div>
+          <div>
+            <span className="text-slate-400 dark:text-slate-500">Nombre de membres</span>
+            <p>{team.technicianIds.length}</p>
+          </div>
+          <div className="md:col-span-2">
+            <span className="text-slate-400 dark:text-slate-500">Couleur au calendrier</span>
+            <div className="mt-1 flex items-center gap-2 flex-wrap">
+              {team.calendarColor && normalizeCalendarColorHex(team.calendarColor) ? (
+                <>
+                  <span
+                    className="team-cal-legend-swatch h-6 w-10 rounded border shrink-0"
+                    style={teamLegendSwatchStyle(
+                      normalizeCalendarColorHex(team.calendarColor) ?? team.calendarColor,
+                      isDark,
+                    )}
+                  />
+                  <code className="text-xs text-slate-600 dark:text-slate-300">
+                    {normalizeCalendarColorHex(team.calendarColor)}
+                  </code>
+                </>
+              ) : (
+                <p className="text-sm text-slate-600 dark:text-slate-300">
+                  Automatique (couleur dérivée de l&apos;équipe sur le calendrier)
+                </p>
+              )}
             </div>
           </div>
-
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={() => void handleSave()}
-              disabled={saving}
-              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50"
-            >
-              {saving ? "Enregistrement..." : "Enregistrer"}
-            </button>
-          </div>
-        </section>
-      )}
+        </div>
+      </section>
 
       <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 space-y-4">
         <h2 className="font-semibold">Membres de l&apos;équipe</h2>

@@ -89,7 +89,7 @@ export function RegisterPage() {
   }, [step, adminEmail, onboardingUser?.email]);
 
   const handleSiretSelect = (result: SiretLookupResult) => {
-    if (result.nom && !organizationName.trim()) {
+    if (result.nom) {
       setOrganizationName(result.nom);
     }
     setOrganizationAddress(addressFromSiretLookup(result));
@@ -488,120 +488,122 @@ export function RegisterPage() {
           ) : (
             <form
               onSubmit={handleOrganizationSubmit}
-              className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-8 shadow-sm dark:shadow-slate-950/20 space-y-5"
+              className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm dark:shadow-slate-950/20"
             >
-              {error && (
-                <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm p-3">
-                  {error}
-                </div>
-              )}
-              <div className="grid gap-6 md:grid-cols-2 md:items-stretch">
-                <div className="flex flex-col gap-4">
-                  <div>
-                    <SiretLookupField
-                      value={organizationSiret}
-                      onChange={setOrganizationSiret}
-                      onSelect={handleSiretSelect}
-                      disabled={loading}
-                      autoFocus
+              <div className="space-y-5 px-8 py-8">
+                {error && (
+                  <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm p-3">
+                    {error}
+                  </div>
+                )}
+                <div className="grid gap-6 md:grid-cols-2 md:items-start">
+                  <div className="flex flex-col gap-4">
+                    <div>
+                      <SiretLookupField
+                        value={organizationSiret}
+                        onChange={setOrganizationSiret}
+                        onSelect={handleSiretSelect}
+                        disabled={loading}
+                        autoFocus
+                        labelCls="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1"
+                        inputCls="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                      />
+                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        Saisissez un SIRET, SIREN ou nom pour rechercher votre entreprise.
+                      </p>
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="organizationName"
+                        className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1"
+                      >
+                        Nom de l&apos;organisation
+                      </label>
+                      <input
+                        id="organizationName"
+                        type="text"
+                        value={organizationName}
+                        onChange={(e) => setOrganizationName(e.target.value)}
+                        required
+                        className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                        placeholder="Mon entreprise"
+                      />
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="organizationEmail"
+                        className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1"
+                      >
+                        E-mail de facturation
+                      </label>
+                      <input
+                        id="organizationEmail"
+                        type="email"
+                        value={organizationEmail}
+                        onChange={(e) => setOrganizationEmail(e.target.value)}
+                        required
+                        autoComplete="organization"
+                        className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                        placeholder="facturation@exemple.fr"
+                      />
+                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        Obligatoire pour la facturation. Aucun prélèvement pendant l&apos;essai.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <PostalAddressFields
+                      legend="Adresse postale"
+                      line1={organizationAddress.addressLine1}
+                      line2={organizationAddress.addressLine2}
+                      postalCode={organizationAddress.postalCode}
+                      city={organizationAddress.city}
+                      country={organizationAddress.country}
+                      onLine1Change={(v) =>
+                        setOrganizationAddress((prev) => ({ ...prev, addressLine1: v }))
+                      }
+                      onLine2Change={(v) =>
+                        setOrganizationAddress((prev) => ({ ...prev, addressLine2: v }))
+                      }
+                      onPostalChange={(v) =>
+                        setOrganizationAddress((prev) => ({ ...prev, postalCode: v }))
+                      }
+                      onCityChange={(v) => setOrganizationAddress((prev) => ({ ...prev, city: v }))}
+                      onCountryChange={(v) =>
+                        setOrganizationAddress((prev) => ({ ...prev, country: v }))
+                      }
                       labelCls="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1"
                       inputCls="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                     />
-                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                      Saisissez un SIRET, SIREN ou nom pour rechercher votre entreprise.
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      L&apos;adresse est préremplie lors de la sélection SIRET ; vous pouvez la
+                      corriger si besoin.
                     </p>
                   </div>
-                  <div>
-                    <label
-                      htmlFor="organizationName"
-                      className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1"
-                    >
-                      Nom de l&apos;organisation
-                    </label>
-                    <input
-                      id="organizationName"
-                      type="text"
-                      value={organizationName}
-                      onChange={(e) => setOrganizationName(e.target.value)}
-                      required
-                      className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-                      placeholder="Mon entreprise"
-                    />
-                  </div>
-                  <div>
-                    <label
-                      htmlFor="organizationEmail"
-                      className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1"
-                    >
-                      E-mail de facturation
-                    </label>
-                    <input
-                      id="organizationEmail"
-                      type="email"
-                      value={organizationEmail}
-                      onChange={(e) => setOrganizationEmail(e.target.value)}
-                      required
-                      autoComplete="organization"
-                      className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-                      placeholder="facturation@exemple.fr"
-                    />
-                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                      Obligatoire pour la facturation. Aucun prélèvement pendant l&apos;essai.
-                    </p>
-                  </div>
+                </div>
+              </div>
 
-                  <div className="mt-auto flex flex-col items-end gap-2 pt-2">
+              <div className="flex flex-wrap items-center justify-end gap-2 rounded-b-2xl border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/40 px-8 py-3">
+                {!isOnboarding && !isAuthenticated ? (
+                  <p className="mr-auto text-xs text-amber-600 dark:text-amber-400">
+                    Session expirée.{" "}
                     <button
-                      type="submit"
-                      disabled={loading || !canSubmitOrganization || !isOnboarding}
-                      className="inline-flex w-full sm:w-auto justify-center rounded-lg bg-brand-600 px-6 py-2.5 font-medium text-white hover:bg-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-50 transition"
+                      type="button"
+                      onClick={() => setStep("account")}
+                      className="underline font-medium"
                     >
-                      {loading ? "Création…" : "Créer l'organisation"}
+                      Recommencer à l&apos;étape 1
                     </button>
-                    {!isOnboarding && !isAuthenticated && (
-                      <p className="text-xs text-amber-600 dark:text-amber-400">
-                        Session expirée.{" "}
-                        <button
-                          type="button"
-                          onClick={() => setStep("account")}
-                          className="underline font-medium"
-                        >
-                          Recommencer à l&apos;étape 1
-                        </button>
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <PostalAddressFields
-                    legend="Adresse postale"
-                    line1={organizationAddress.addressLine1}
-                    line2={organizationAddress.addressLine2}
-                    postalCode={organizationAddress.postalCode}
-                    city={organizationAddress.city}
-                    country={organizationAddress.country}
-                    onLine1Change={(v) =>
-                      setOrganizationAddress((prev) => ({ ...prev, addressLine1: v }))
-                    }
-                    onLine2Change={(v) =>
-                      setOrganizationAddress((prev) => ({ ...prev, addressLine2: v }))
-                    }
-                    onPostalChange={(v) =>
-                      setOrganizationAddress((prev) => ({ ...prev, postalCode: v }))
-                    }
-                    onCityChange={(v) => setOrganizationAddress((prev) => ({ ...prev, city: v }))}
-                    onCountryChange={(v) =>
-                      setOrganizationAddress((prev) => ({ ...prev, country: v }))
-                    }
-                    labelCls="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1"
-                    inputCls="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-                  />
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    L&apos;adresse est préremplie lors de la sélection SIRET ; vous pouvez la
-                    corriger si besoin.
                   </p>
-                </div>
+                ) : null}
+                <button
+                  type="submit"
+                  disabled={loading || !canSubmitOrganization || !isOnboarding}
+                  className="inline-flex w-full sm:w-auto justify-center rounded-lg bg-brand-600 px-6 py-2.5 font-medium text-white hover:bg-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-50 transition"
+                >
+                  {loading ? "Création…" : "Créer l'organisation"}
+                </button>
               </div>
             </form>
           )}

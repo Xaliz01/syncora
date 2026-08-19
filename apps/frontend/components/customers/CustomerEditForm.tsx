@@ -13,9 +13,19 @@ type Props = {
   onCancel: () => void;
   isPending: boolean;
   error?: string;
+  hideActions?: boolean;
+  formId?: string;
 };
 
-export function CustomerEditForm({ customer, onSubmit, onCancel, isPending, error }: Props) {
+export function CustomerEditForm({
+  customer,
+  onSubmit,
+  onCancel,
+  isPending,
+  error,
+  hideActions = false,
+  formId,
+}: Props) {
   const [localError, setLocalError] = useState("");
   const [kind, setKind] = useState<CustomerKind>(customer.kind);
   const [firstName, setFirstName] = useState(customer.firstName ?? "");
@@ -119,12 +129,12 @@ export function CustomerEditForm({ customer, onSubmit, onCancel, isPending, erro
   const showError = localError || error;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      {showError && (
+    <form id={formId} onSubmit={handleSubmit} className="space-y-5">
+      {showError ? (
         <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
           {showError}
         </div>
-      )}
+      ) : null}
 
       <div>
         <span className={labelCls}>Type</span>
@@ -244,23 +254,25 @@ export function CustomerEditForm({ customer, onSubmit, onCancel, isPending, erro
         </div>
       </details>
 
-      <div className="flex flex-wrap justify-end gap-3 pt-1">
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={isPending}
-          className="rounded-lg border border-slate-200 dark:border-slate-700 px-5 py-2 text-sm text-slate-600 dark:text-slate-300 transition hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50"
-        >
-          Annuler
-        </button>
-        <button
-          type="submit"
-          disabled={isPending}
-          className="rounded-lg bg-brand-600 px-5 py-2 text-sm font-medium text-white transition hover:bg-brand-500 disabled:opacity-50"
-        >
-          {isPending ? "Enregistrement…" : "Enregistrer"}
-        </button>
-      </div>
+      {!hideActions ? (
+        <div className="flex flex-wrap justify-end gap-3 pt-1">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isPending}
+            className="rounded-lg border border-slate-200 dark:border-slate-700 px-5 py-2 text-sm text-slate-600 dark:text-slate-300 transition hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50"
+          >
+            Annuler
+          </button>
+          <button
+            type="submit"
+            disabled={isPending}
+            className="rounded-lg bg-brand-600 px-5 py-2 text-sm font-medium text-white transition hover:bg-brand-500 disabled:opacity-50"
+          >
+            {isPending ? "Enregistrement…" : "Enregistrer"}
+          </button>
+        </div>
+      ) : null}
     </form>
   );
 }

@@ -15,11 +15,9 @@ import { CommentsSection } from "@/components/comments/CommentsSection";
 import { CaseQuotesSection } from "@/components/cases/CaseQuotesSection";
 import { CaseBillingBanner } from "@/components/cases/CaseBillingBanner";
 import { CaseAssigneesTagsInput } from "@/components/cases/CaseAssigneesTagsInput";
-import { CaseCustomerPicker } from "@/components/cases/CaseCustomerPicker";
-import { CaseOrderGiverPicker } from "@/components/cases/CaseOrderGiverPicker";
-import { CaseInterventionSitePicker } from "@/components/cases/CaseInterventionSitePicker";
 import { TeamSuggestionAddonGate } from "@/components/cases/TeamSuggestionAddonGate";
 import { CaseProgressTimeline } from "@/components/cases/CaseProgressTimeline";
+import { TestDataBadgeIf } from "@/components/test-data/TestDataBadge";
 import {
   InterventionArticlesDialog,
   resolvePreferredStockLocationId,
@@ -38,6 +36,7 @@ import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/ToastProvider";
 import { ResourceNotFoundPanel } from "@/components/ui/AppErrorAlert";
 import { ExportButton } from "@/components/ui/ExportButton";
+import { PageBreadcrumb } from "@/components/ui/FormDialog";
 import { EntityRef } from "@/components/ui/EntityRef";
 import { PlanwiseLoader } from "@/components/ui/PlanwiseLoader";
 import { useRegisterQuickActionLabel } from "@/components/dashboard/QuickActionLabelContext";
@@ -54,7 +53,6 @@ import type {
   CaseCustomerRef,
   CasePriority,
   CaseStatus,
-  CustomerSiteResponse,
   SyncCaseInvoiceOptions,
   TeamResponse,
   TechnicianResponse,
@@ -539,16 +537,6 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
     queryFn: () => customersApi.getCustomer(plannerCustomerId!),
     enabled: !!plannerCustomerId && (showNewIntervention || !!editingInterventionId),
   });
-  const [isEditing, setIsEditing] = useState(false);
-  const [editTitle, setEditTitle] = useState("");
-  const [editDesc, setEditDesc] = useState("");
-  const [editPriority, setEditPriority] = useState<CasePriority>("medium");
-  const [editAssigneeIds, setEditAssigneeIds] = useState<string[]>([]);
-  const [editDueDate, setEditDueDate] = useState("");
-  const [editCustomerId, setEditCustomerId] = useState("");
-  const [editOrderGiverId, setEditOrderGiverId] = useState("");
-  const [editInterventionSiteId, setEditInterventionSiteId] = useState("");
-  const [editCustomerSites, setEditCustomerSites] = useState<CustomerSiteResponse[]>([]);
   const [editIntTeamId, setEditIntTeamId] = useState("");
   const [editIntAssignee, setEditIntAssignee] = useState("");
   const [editIntTitle, setEditIntTitle] = useState("");
@@ -709,7 +697,6 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
     mutationFn: (payload: api.UpdateCasePayload) => api.updateCase(caseId, payload),
     onSuccess: () => {
       invalidateAll();
-      setIsEditing(false);
     },
   });
 
@@ -1005,83 +992,19 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
     caseData.status !== "completed" &&
     caseData.status !== "cancelled";
 
-  const startEditing = () => {
-    setEditTitle(caseData.title);
-    setEditDesc(caseData.description ?? "");
-    setEditPriority(caseData.priority);
-    setEditAssigneeIds(caseData.assignees.map((a) => a.userId));
-    setEditDueDate(caseData.dueDate ? caseData.dueDate.split("T")[0] : "");
-    setEditCustomerId(caseData.customerId ?? "");
-    setEditOrderGiverId(caseData.orderGiverId ?? "");
-    setEditInterventionSiteId(caseData.interventionSiteId ?? "");
-    setEditCustomerSites(caseData.customer?.sites ?? []);
-    setIsEditing(true);
-  };
-
-  const handleEditCustomerChange = (newCustomerId: string) => {
-    setEditCustomerId(newCustomerId);
-    setEditInterventionSiteId("");
-    if (newCustomerId) {
-      void customersApi.getCustomer(newCustomerId).then((c) => {
-        setEditCustomerSites(c.sites ?? []);
-        const defaultSite = c.sites?.find((s) => s.isDefault);
-        if (defaultSite) setEditInterventionSiteId(defaultSite.id);
-      });
-    } else {
-      setEditCustomerSites([]);
-    }
-  };
-
-  const handleEditSubmit = () => {
-    updateMutation.mutate({
-      title: editTitle,
-      description: editDesc || undefined,
-      priority: editPriority,
-      assigneeIds: editAssigneeIds,
-      dueDate: editDueDate || null,
-      customerId: editCustomerId.trim() ? editCustomerId.trim() : null,
-      orderGiverId: editOrderGiverId.trim() ? editOrderGiverId.trim() : null,
-      interventionSiteId: editInterventionSiteId || null,
-    });
-  };
-
   return (
     <div className="space-y-6">
       <div className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <Link
-            href="/cases"
-            className="text-sm text-brand-600 dark:text-brand-400 hover:text-brand-500 font-medium"
-          >
-            &larr; Dossiers
-          </Link>
+          <PageBreadcrumb href="/cases" label="Dossiers" />
           <div className="flex flex-wrap items-center gap-2">
-            {isEditing ? (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setIsEditing(false)}
-                  className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="button"
-                  onClick={handleEditSubmit}
-                  disabled={updateMutation.isPending}
-                  className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
-                >
-                  {updateMutation.isPending ? "…" : "Enregistrer"}
-                </button>
-              </>
-            ) : can("cases.update") ? (
-              <button
-                type="button"
-                onClick={startEditing}
+            {can("cases.update") ? (
+              <Link
+                href={`/cases/${caseId}/edit`}
                 className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
               >
                 Modifier
-              </button>
+              </Link>
             ) : null}
             {can("exports.cases") && (
               <ExportButton
@@ -1112,309 +1035,134 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
         </div>
 
         <div className="min-w-0">
-          {isEditing ? (
-            <div className="space-y-4 w-full">
-              <div className="rounded-lg border border-amber-200 bg-amber-50/60 px-3 py-2.5 text-sm text-amber-950">
-                <div className="flex flex-wrap items-center gap-2 font-medium text-amber-900">
-                  <span className="rounded-md bg-amber-100 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide">
-                    Édition
-                  </span>
-                  <span>Modification des informations du dossier</span>
-                </div>
-                <p className="mt-1.5 text-xs text-amber-900/80 leading-relaxed">
-                  Le <strong>statut</strong> ne se modifie pas ici : une fois revenu sur la fiche
-                  (après enregistrement ou annulation), utilisez l&apos;en-tête{" "}
-                  <strong>Progression</strong> en haut de la fiche.
-                </p>
-              </div>
-
-              <p className="text-sm text-slate-600 dark:text-slate-300">
-                <span className="text-slate-500 dark:text-slate-400">Dossier concerné :</span>{" "}
-                <span className="font-medium text-slate-800 dark:text-slate-100">
-                  {caseData.title}
+          <CaseProgressTimeline
+            title={caseData.title}
+            description={caseData.description}
+            titleBadges={
+              <>
+                <TestDataBadgeIf isTestData={caseData.isTestData} />
+                <span
+                  className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[caseData.status]}`}
+                >
+                  {STATUS_LABELS[caseData.status]}
                 </span>
-              </p>
-
-              <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 sm:p-6 shadow-sm dark:shadow-slate-950/20 space-y-6">
-                <div>
-                  <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-                    Informations à mettre à jour
-                  </h2>
-                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                    Titre, description, priorité, échéance et personnes assignées. Pensez à
-                    enregistrer vos changements.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 xl:gap-10">
-                  <div className="space-y-5 min-w-0">
-                    <div>
-                      <label
-                        htmlFor="case-edit-title"
-                        className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1"
-                      >
-                        Titre du dossier
-                      </label>
-                      <input
-                        id="case-edit-title"
-                        type="text"
-                        value={editTitle}
-                        onChange={(e) => setEditTitle(e.target.value)}
-                        className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-                        placeholder="Ex. Rénovation immeuble rue des Lilas"
-                      />
-                    </div>
-
-                    <div className="flex flex-col flex-1 min-h-0">
-                      <label
-                        htmlFor="case-edit-desc"
-                        className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1"
-                      >
-                        Description
-                      </label>
-                      <textarea
-                        id="case-edit-desc"
-                        value={editDesc}
-                        onChange={(e) => setEditDesc(e.target.value)}
-                        rows={8}
-                        className="w-full min-h-[12rem] rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 xl:min-h-[14rem]"
-                        placeholder="Contexte, objectifs, contraintes…"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-5 min-w-0">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-4">
-                      <div>
-                        <label
-                          htmlFor="case-edit-priority"
-                          className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1"
-                        >
-                          Priorité
-                        </label>
-                        <select
-                          id="case-edit-priority"
-                          value={editPriority}
-                          onChange={(e) => setEditPriority(e.target.value as CasePriority)}
-                          className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-                        >
-                          <option value="low">Basse</option>
-                          <option value="medium">Moyenne</option>
-                          <option value="high">Haute</option>
-                          <option value="urgent">Urgente</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label
-                          htmlFor="case-edit-due"
-                          className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1"
-                        >
-                          Date d&apos;échéance
-                        </label>
-                        <input
-                          id="case-edit-due"
-                          type="date"
-                          value={editDueDate}
-                          onChange={(e) => setEditDueDate(e.target.value)}
-                          className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-                        />
-                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                          Laisser vide si aucune échéance fixée.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div>
-                      <span className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5">
-                        Personnes assignées
-                      </span>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
-                        Recherchez un membre de l&apos;organisation pour l&apos;ajouter ou retirez
-                        un tag.
+                <span
+                  className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                    caseData.priority === "urgent"
+                      ? "bg-red-50 text-red-600"
+                      : caseData.priority === "high"
+                        ? "bg-orange-50 text-orange-600"
+                        : caseData.priority === "medium"
+                          ? "bg-blue-50 text-blue-600"
+                          : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
+                  }`}
+                >
+                  {PRIORITY_LABELS[caseData.priority]}
+                </span>
+                {caseData.billingStatus && caseData.billingStatus !== "none" && (
+                  <span
+                    className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${BILLING_STATUS_COLORS[caseData.billingStatus]}`}
+                  >
+                    {BILLING_STATUS_LABELS[caseData.billingStatus]}
+                  </span>
+                )}
+                {isOverdue && (
+                  <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700">
+                    En retard
+                  </span>
+                )}
+              </>
+            }
+            details={
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="min-w-0 flex-1 space-y-3 lg:max-w-xl">
+                  {(caseData.customer || caseData.customerId) && (
+                    <CaseHeaderCustomerCard
+                      customer={caseData.customer}
+                      customerId={caseData.customerId}
+                      canViewCustomer={can("customers.read")}
+                    />
+                  )}
+                  {(caseData.orderGiver || caseData.orderGiverId) && (
+                    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-600 dark:text-brand-400">
+                        Donneur d&apos;ordre
                       </p>
-                      <CaseAssigneesTagsInput
-                        options={assigneePickerOptions}
-                        value={editAssigneeIds}
-                        onChange={setEditAssigneeIds}
-                        placeholder="Rechercher un membre à assigner…"
-                      />
+                      <p className="mt-1 text-base font-semibold text-slate-900 dark:text-white">
+                        {caseData.orderGiver?.displayName ?? "Référence enregistrée"}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        Facturé à la place du client
+                      </p>
+                      {caseData.orderGiver?.id && can("order_givers.read") ? (
+                        <Link
+                          href={`/order-givers/${caseData.orderGiver.id}`}
+                          className="mt-2 inline-block text-sm text-brand-600 hover:underline dark:text-brand-400"
+                        >
+                          Voir la fiche
+                        </Link>
+                      ) : null}
                     </div>
-
-                    <CaseCustomerPicker
-                      idPrefix="case-edit-customer"
-                      value={editCustomerId}
-                      initialDisplayName={caseData.customer?.displayName}
-                      onChange={handleEditCustomerChange}
-                      disabled={updateMutation.isPending}
-                    />
-
-                    <CaseOrderGiverPicker
-                      idPrefix="case-edit-order-giver"
-                      value={editOrderGiverId}
-                      initialDisplayName={caseData.orderGiver?.displayName}
-                      onChange={setEditOrderGiverId}
-                      disabled={updateMutation.isPending}
-                    />
-
-                    {editCustomerId && editCustomerSites.length > 0 && (
-                      <CaseInterventionSitePicker
-                        sites={editCustomerSites}
-                        value={editInterventionSiteId}
-                        onChange={setEditInterventionSiteId}
-                        disabled={updateMutation.isPending}
-                      />
-                    )}
-                  </div>
+                  )}
                 </div>
-
-                <div className="flex flex-wrap justify-end gap-2 border-t border-slate-100 dark:border-slate-800 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setIsEditing(false)}
-                    className="rounded-lg border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleEditSubmit}
-                    disabled={updateMutation.isPending}
-                    className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
-                  >
-                    {updateMutation.isPending ? "Enregistrement…" : "Enregistrer les modifications"}
-                  </button>
+                <div
+                  className={`w-full shrink-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20 ${
+                    caseData.customer ||
+                    caseData.customerId ||
+                    caseData.orderGiver ||
+                    caseData.orderGiverId
+                      ? "lg:w-[min(100%,20rem)] lg:ml-auto"
+                      : "lg:max-w-md lg:ml-auto"
+                  }`}
+                >
+                  <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    Assignés
+                  </h2>
+                  <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">
+                    Membres responsables de ce dossier
+                  </p>
+                  <div className="mt-3">
+                    <CaseAssigneesTagsInput
+                      options={assigneePickerOptions}
+                      value={caseData.assignees.map((a) => a.userId)}
+                      onChange={(ids) => updateMutation.mutate({ assigneeIds: ids })}
+                      disabled={!canAssignCase || updateMutation.isPending}
+                      placeholder="Rechercher un membre à assigner…"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-          ) : (
-            <CaseProgressTimeline
-              title={caseData.title}
-              description={caseData.description}
-              titleBadges={
-                <>
-                  <span
-                    className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[caseData.status]}`}
-                  >
-                    {STATUS_LABELS[caseData.status]}
+            }
+            meta={
+              <>
+                {caseData.dueDate && (
+                  <span>Échéance : {new Date(caseData.dueDate).toLocaleDateString("fr-FR")}</span>
+                )}
+                {caseData.tags.length > 0 && (
+                  <span className="flex flex-wrap gap-1">
+                    {caseData.tags.map((t) => (
+                      <span
+                        key={t}
+                        className="rounded bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-[10px]"
+                      >
+                        {t}
+                      </span>
+                    ))}
                   </span>
-                  <span
-                    className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                      caseData.priority === "urgent"
-                        ? "bg-red-50 text-red-600"
-                        : caseData.priority === "high"
-                          ? "bg-orange-50 text-orange-600"
-                          : caseData.priority === "medium"
-                            ? "bg-blue-50 text-blue-600"
-                            : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
-                    }`}
-                  >
-                    {PRIORITY_LABELS[caseData.priority]}
-                  </span>
-                  {caseData.billingStatus && caseData.billingStatus !== "none" && (
-                    <span
-                      className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${BILLING_STATUS_COLORS[caseData.billingStatus]}`}
-                    >
-                      {BILLING_STATUS_LABELS[caseData.billingStatus]}
-                    </span>
-                  )}
-                  {isOverdue && (
-                    <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700">
-                      En retard
-                    </span>
-                  )}
-                </>
-              }
-              details={
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="min-w-0 flex-1 space-y-3 lg:max-w-xl">
-                    {(caseData.customer || caseData.customerId) && (
-                      <CaseHeaderCustomerCard
-                        customer={caseData.customer}
-                        customerId={caseData.customerId}
-                        canViewCustomer={can("customers.read")}
-                      />
-                    )}
-                    {(caseData.orderGiver || caseData.orderGiverId) && (
-                      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20">
-                        <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-600 dark:text-brand-400">
-                          Donneur d&apos;ordre
-                        </p>
-                        <p className="mt-1 text-base font-semibold text-slate-900 dark:text-white">
-                          {caseData.orderGiver?.displayName ?? "Référence enregistrée"}
-                        </p>
-                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                          Facturé à la place du client
-                        </p>
-                        {caseData.orderGiver?.id && can("order_givers.read") ? (
-                          <Link
-                            href={`/order-givers/${caseData.orderGiver.id}`}
-                            className="mt-2 inline-block text-sm text-brand-600 hover:underline dark:text-brand-400"
-                          >
-                            Voir la fiche
-                          </Link>
-                        ) : null}
-                      </div>
-                    )}
-                  </div>
-                  <div
-                    className={`w-full shrink-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20 ${
-                      caseData.customer ||
-                      caseData.customerId ||
-                      caseData.orderGiver ||
-                      caseData.orderGiverId
-                        ? "lg:w-[min(100%,20rem)] lg:ml-auto"
-                        : "lg:max-w-md lg:ml-auto"
-                    }`}
-                  >
-                    <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                      Assignés
-                    </h2>
-                    <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">
-                      Membres responsables de ce dossier
-                    </p>
-                    <div className="mt-3">
-                      <CaseAssigneesTagsInput
-                        options={assigneePickerOptions}
-                        value={caseData.assignees.map((a) => a.userId)}
-                        onChange={(ids) => updateMutation.mutate({ assigneeIds: ids })}
-                        disabled={!canAssignCase || updateMutation.isPending}
-                        placeholder="Rechercher un membre à assigner…"
-                      />
-                    </div>
-                  </div>
-                </div>
-              }
-              meta={
-                <>
-                  {caseData.dueDate && (
-                    <span>Échéance : {new Date(caseData.dueDate).toLocaleDateString("fr-FR")}</span>
-                  )}
-                  {caseData.tags.length > 0 && (
-                    <span className="flex flex-wrap gap-1">
-                      {caseData.tags.map((t) => (
-                        <span
-                          key={t}
-                          className="rounded bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-[10px]"
-                        >
-                          {t}
-                        </span>
-                      ))}
-                    </span>
-                  )}
-                </>
-              }
-              progress={caseData.progress}
-              steps={caseData.steps}
-              canUpdateStatus={can("cases.update")}
-              allowedTransitions={allowedTransitions}
-              onStatusChange={(s) => statusMutation.mutate(s)}
-              statusChangePending={statusMutation.isPending}
-              canUpdateTodos={can("cases.update")}
-              onTodoStatusChange={(stepId, todoId, status) =>
-                todoMutation.mutate({ stepId, todoId, status })
-              }
-            />
-          )}
+                )}
+              </>
+            }
+            progress={caseData.progress}
+            steps={caseData.steps}
+            canUpdateStatus={can("cases.update")}
+            allowedTransitions={allowedTransitions}
+            onStatusChange={(s) => statusMutation.mutate(s)}
+            statusChangePending={statusMutation.isPending}
+            canUpdateTodos={can("cases.update")}
+            onTodoStatusChange={(stepId, todoId, status) =>
+              todoMutation.mutate({ stepId, todoId, status })
+            }
+          />
         </div>
       </div>
 
@@ -1518,659 +1266,645 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
         />
       )}
 
-      {!isEditing && (
-        <>
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
-                Interventions ({interventions?.length ?? 0})
-              </h2>
-              {can("interventions.create") && (
-                <button
-                  onClick={() => setShowNewIntervention(!showNewIntervention)}
-                  className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:bg-slate-800 transition self-start"
-                >
-                  {showNewIntervention ? "Annuler" : "+ Planifier une intervention"}
-                </button>
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
+            Interventions ({interventions?.length ?? 0})
+          </h2>
+          {can("interventions.create") && (
+            <button
+              onClick={() => setShowNewIntervention(!showNewIntervention)}
+              className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:bg-slate-800 transition self-start"
+            >
+              {showNewIntervention ? "Annuler" : "+ Planifier une intervention"}
+            </button>
+          )}
+        </div>
+
+        {interventionError && (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+            {interventionError}
+          </div>
+        )}
+
+        {showNewIntervention && (
+          <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20 space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <input
+                type="text"
+                value={newIntTitle}
+                onChange={(e) => setNewIntTitle(e.target.value)}
+                placeholder="Titre de l'intervention"
+                className="sm:col-span-2 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
+              />
+              <textarea
+                value={newIntDesc}
+                onChange={(e) => setNewIntDesc(e.target.value)}
+                placeholder="Description (optionnelle)"
+                rows={2}
+                className="sm:col-span-2 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
+              />
+              {canReadInterventionTypes ? (
+                <div className="sm:col-span-2">
+                  <label className="text-xs text-slate-500 dark:text-slate-400">
+                    Type d&apos;intervention
+                  </label>
+                  <select
+                    value={newIntTypeId}
+                    onChange={(e) => setNewIntTypeId(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
+                    aria-label="Type d'intervention"
+                  >
+                    <option value="">Aucun</option>
+                    {interventionTypes.map((type) => (
+                      <option key={type.id} value={type.id}>
+                        {type.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : null}
+              <p className="sm:col-span-2 text-xs text-slate-500 dark:text-slate-400 inline-flex items-start gap-1.5">
+                <InterventionAssigneeHint />
+                <span>
+                  Assignez soit une équipe, soit un technicien. Les techniciens sans compte
+                  utilisateur peuvent être affectés ; seules les notifications nécessitent un compte
+                  lié.
+                </span>
+              </p>
+              <select
+                value={newIntTeamId}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setNewIntTeamId(value);
+                  if (value) setNewIntAssignee("");
+                }}
+                className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
+              >
+                <option value="">Équipe (aucune)</option>
+                {teamsData?.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={newIntAssignee}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setNewIntAssignee(value);
+                  if (value) setNewIntTeamId("");
+                }}
+                className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
+                aria-label="Technicien assigné"
+              >
+                <option value="">Technicien (aucun)</option>
+                {interventionTechnicianOptions.map((person) => (
+                  <option key={person.id} value={person.id}>
+                    {person.label}
+                    {!person.hasUserAccount ? " (sans compte)" : ""}
+                  </option>
+                ))}
+              </select>
+              {plannerCustomerLoading && plannerCustomerId ? (
+                <div className="sm:col-span-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 p-4 animate-pulse">
+                  <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-48 mb-3" />
+                  <div className="h-24 bg-slate-100 dark:bg-slate-800 rounded-xl" />
+                </div>
+              ) : (
+                <div className="sm:col-span-2">
+                  <TeamSuggestionAddonGate
+                    teams={teamsData ?? []}
+                    agences={agencesData ?? []}
+                    agencesLoading={agencesRoutingLoading}
+                    agencesError={agencesRoutingError}
+                    customerLinked={Boolean(plannerCustomerId)}
+                    customerAddress={caseData.interventionAddress ?? plannerCustomer?.address}
+                    selectedTeamId={newIntTeamId}
+                    onSelectTeam={(id) => {
+                      setNewIntTeamId(id);
+                      if (id) setNewIntAssignee("");
+                    }}
+                  />
+                </div>
               )}
-            </div>
-
-            {interventionError && (
-              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-                {interventionError}
+              <div>
+                <label className="text-xs text-slate-500 dark:text-slate-400">Début</label>
+                <input
+                  type="datetime-local"
+                  value={newIntStart}
+                  onChange={(e) => setNewIntStart(e.target.value)}
+                  className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
+                />
               </div>
-            )}
+              <div>
+                <label className="text-xs text-slate-500 dark:text-slate-400">Fin</label>
+                <input
+                  type="datetime-local"
+                  value={newIntEnd}
+                  onChange={(e) => setNewIntEnd(e.target.value)}
+                  className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <button
+                onClick={() => {
+                  if (!newIntTitle.trim()) return;
+                  createInterventionMutation.mutate({
+                    caseId,
+                    title: newIntTitle.trim(),
+                    description: newIntDesc.trim() || undefined,
+                    ...(newIntTypeId ? { typeId: newIntTypeId } : {}),
+                    ...(newIntTeamId
+                      ? { assignedTeamId: newIntTeamId }
+                      : newIntAssignee
+                        ? { assigneeId: newIntAssignee }
+                        : {}),
+                    scheduledStart: newIntStart ? new Date(newIntStart).toISOString() : undefined,
+                    scheduledEnd: newIntEnd ? new Date(newIntEnd).toISOString() : undefined,
+                  });
+                }}
+                disabled={createInterventionMutation.isPending}
+                className="rounded-lg bg-brand-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
+              >
+                Créer l&apos;intervention
+              </button>
+            </div>
+          </div>
+        )}
 
-            {showNewIntervention && (
-              <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-slate-950/20 space-y-3">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <input
-                    type="text"
-                    value={newIntTitle}
-                    onChange={(e) => setNewIntTitle(e.target.value)}
-                    placeholder="Titre de l'intervention"
-                    className="sm:col-span-2 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
-                  />
-                  <textarea
-                    value={newIntDesc}
-                    onChange={(e) => setNewIntDesc(e.target.value)}
-                    placeholder="Description (optionnelle)"
-                    rows={2}
-                    className="sm:col-span-2 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
-                  />
-                  {canReadInterventionTypes ? (
-                    <div className="sm:col-span-2">
-                      <label className="text-xs text-slate-500 dark:text-slate-400">
-                        Type d&apos;intervention
-                      </label>
-                      <select
-                        value={newIntTypeId}
-                        onChange={(e) => setNewIntTypeId(e.target.value)}
-                        className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
-                        aria-label="Type d'intervention"
-                      >
-                        <option value="">Aucun</option>
-                        {interventionTypes.map((type) => (
-                          <option key={type.id} value={type.id}>
-                            {type.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  ) : null}
-                  <p className="sm:col-span-2 text-xs text-slate-500 dark:text-slate-400 inline-flex items-start gap-1.5">
-                    <InterventionAssigneeHint />
-                    <span>
-                      Assignez soit une équipe, soit un technicien. Les techniciens sans compte
-                      utilisateur peuvent être affectés ; seules les notifications nécessitent un
-                      compte lié.
-                    </span>
-                  </p>
-                  <select
-                    value={newIntTeamId}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setNewIntTeamId(value);
-                      if (value) setNewIntAssignee("");
-                    }}
-                    className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
-                  >
-                    <option value="">Équipe (aucune)</option>
-                    {teamsData?.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.name}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    value={newIntAssignee}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setNewIntAssignee(value);
-                      if (value) setNewIntTeamId("");
-                    }}
-                    className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
-                    aria-label="Technicien assigné"
-                  >
-                    <option value="">Technicien (aucun)</option>
-                    {interventionTechnicianOptions.map((person) => (
-                      <option key={person.id} value={person.id}>
-                        {person.label}
-                        {!person.hasUserAccount ? " (sans compte)" : ""}
-                      </option>
-                    ))}
-                  </select>
-                  {plannerCustomerLoading && plannerCustomerId ? (
-                    <div className="sm:col-span-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 p-4 animate-pulse">
-                      <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-48 mb-3" />
-                      <div className="h-24 bg-slate-100 dark:bg-slate-800 rounded-xl" />
+        {interventions && interventions.length > 0 ? (
+          <div className="space-y-2">
+            {interventions.map((intervention) => {
+              const usedArticles = (interventionUsageMap.get(intervention.id) ?? []).filter(
+                (item) => item.netQuantity > 0,
+              );
+              const isEditingThis = editingInterventionId === intervention.id;
+              const isCompleted = intervention.status === "completed";
+              const assignmentLocked = isCompleted;
+              const scheduleLocked = isCompleted;
+
+              const startEditingIntervention = () => {
+                setEditingInterventionId(intervention.id);
+                setEditIntTitle(intervention.title);
+                setEditIntDesc(intervention.description ?? "");
+                setEditIntTeamId(intervention.assignedTeamId ?? "");
+                setEditIntAssignee(resolveInterventionTechnicianId(intervention.assigneeId));
+                setEditIntStart(
+                  intervention.scheduledStart ? intervention.scheduledStart.slice(0, 16) : "",
+                );
+                setEditIntEnd(
+                  intervention.scheduledEnd ? intervention.scheduledEnd.slice(0, 16) : "",
+                );
+                setInterventionError("");
+              };
+
+              const cancelEditingIntervention = () => {
+                setEditingInterventionId(null);
+                setInterventionError("");
+              };
+
+              const submitEditIntervention = () => {
+                if (!editIntTitle.trim()) return;
+                updateInterventionMutation.mutate(
+                  {
+                    id: intervention.id,
+                    payload: {
+                      title: editIntTitle.trim(),
+                      description: editIntDesc.trim() || undefined,
+                      ...(assignmentLocked
+                        ? {}
+                        : editIntTeamId
+                          ? { assignedTeamId: editIntTeamId, assigneeId: null }
+                          : editIntAssignee
+                            ? { assigneeId: editIntAssignee, assignedTeamId: null }
+                            : { assigneeId: null, assignedTeamId: null }),
+                      ...(scheduleLocked
+                        ? {}
+                        : {
+                            scheduledStart: editIntStart
+                              ? new Date(editIntStart).toISOString()
+                              : null,
+                            scheduledEnd: editIntEnd ? new Date(editIntEnd).toISOString() : null,
+                          }),
+                    },
+                  },
+                  { onSuccess: () => setEditingInterventionId(null) },
+                );
+              };
+
+              return (
+                <div
+                  key={intervention.id}
+                  className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 shadow-sm dark:shadow-slate-950/20"
+                >
+                  {isEditingThis ? (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <input
+                          type="text"
+                          value={editIntTitle}
+                          onChange={(e) => setEditIntTitle(e.target.value)}
+                          placeholder="Titre de l'intervention"
+                          className="sm:col-span-2 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
+                        />
+                        <textarea
+                          value={editIntDesc}
+                          onChange={(e) => setEditIntDesc(e.target.value)}
+                          placeholder="Description (optionnelle)"
+                          rows={2}
+                          className="sm:col-span-2 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
+                        />
+                        <p className="sm:col-span-2 text-xs text-slate-500 dark:text-slate-400 inline-flex items-start gap-1.5">
+                          <InterventionAssigneeHint />
+                          <span>
+                            {assignmentLocked
+                              ? "L’assignation équipe / technicien ne peut plus être modifiée une fois l’intervention terminée."
+                              : "Assignez soit une équipe, soit un technicien. Les techniciens sans compte utilisateur peuvent être affectés ; seules les notifications nécessitent un compte lié."}
+                          </span>
+                        </p>
+                        <select
+                          value={editIntTeamId}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setEditIntTeamId(value);
+                            if (value) setEditIntAssignee("");
+                          }}
+                          disabled={assignmentLocked}
+                          className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          <option value="">Équipe (aucune)</option>
+                          {teamsData?.map((t) => (
+                            <option key={t.id} value={t.id}>
+                              {t.name}
+                            </option>
+                          ))}
+                        </select>
+                        <select
+                          value={editIntAssignee}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setEditIntAssignee(value);
+                            if (value) setEditIntTeamId("");
+                          }}
+                          disabled={assignmentLocked}
+                          className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60"
+                          aria-label="Technicien assigné"
+                        >
+                          <option value="">Technicien (aucun)</option>
+                          {interventionTechnicianOptions.map((person) => (
+                            <option key={person.id} value={person.id}>
+                              {person.label}
+                              {!person.hasUserAccount ? " (sans compte)" : ""}
+                            </option>
+                          ))}
+                        </select>
+                        {plannerCustomerLoading && plannerCustomerId ? (
+                          <div className="sm:col-span-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 p-4 animate-pulse">
+                            <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-48 mb-3" />
+                            <div className="h-24 bg-slate-100 dark:bg-slate-800 rounded-xl" />
+                          </div>
+                        ) : assignmentLocked ? null : (
+                          <div className="sm:col-span-2">
+                            <TeamSuggestionAddonGate
+                              teams={teamsData ?? []}
+                              agences={agencesData ?? []}
+                              agencesLoading={agencesRoutingLoading}
+                              agencesError={agencesRoutingError}
+                              customerLinked={Boolean(plannerCustomerId)}
+                              customerAddress={
+                                caseData.interventionAddress ?? plannerCustomer?.address
+                              }
+                              selectedTeamId={editIntTeamId}
+                              onSelectTeam={(id) => {
+                                setEditIntTeamId(id);
+                                if (id) setEditIntAssignee("");
+                              }}
+                            />
+                          </div>
+                        )}
+                        <div>
+                          <label className="text-xs text-slate-500 dark:text-slate-400">
+                            Début
+                          </label>
+                          <input
+                            type="datetime-local"
+                            value={editIntStart}
+                            onChange={(e) => setEditIntStart(e.target.value)}
+                            disabled={scheduleLocked}
+                            className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-slate-500 dark:text-slate-400">Fin</label>
+                          <input
+                            type="datetime-local"
+                            value={editIntEnd}
+                            onChange={(e) => setEditIntEnd(e.target.value)}
+                            disabled={scheduleLocked}
+                            className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60"
+                          />
+                        </div>
+                        {scheduleLocked ? (
+                          <p className="sm:col-span-2 text-xs text-slate-500 dark:text-slate-400">
+                            Les dates ne peuvent plus être modifiées une fois l&apos;intervention
+                            terminée.
+                          </p>
+                        ) : null}
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={cancelEditingIntervention}
+                          className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                        >
+                          Annuler
+                        </button>
+                        <button
+                          onClick={submitEditIntervention}
+                          disabled={updateInterventionMutation.isPending}
+                          className="rounded-lg bg-brand-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
+                        >
+                          {updateInterventionMutation.isPending ? "…" : "Enregistrer"}
+                        </button>
+                      </div>
                     </div>
                   ) : (
-                    <div className="sm:col-span-2">
-                      <TeamSuggestionAddonGate
-                        teams={teamsData ?? []}
-                        agences={agencesData ?? []}
-                        agencesLoading={agencesRoutingLoading}
-                        agencesError={agencesRoutingError}
-                        customerLinked={Boolean(plannerCustomerId)}
-                        customerAddress={caseData.interventionAddress ?? plannerCustomer?.address}
-                        selectedTeamId={newIntTeamId}
-                        onSelectTeam={(id) => {
-                          setNewIntTeamId(id);
-                          if (id) setNewIntAssignee("");
-                        }}
-                      />
-                    </div>
-                  )}
-                  <div>
-                    <label className="text-xs text-slate-500 dark:text-slate-400">Début</label>
-                    <input
-                      type="datetime-local"
-                      value={newIntStart}
-                      onChange={(e) => setNewIntStart(e.target.value)}
-                      className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-slate-500 dark:text-slate-400">Fin</label>
-                    <input
-                      type="datetime-local"
-                      value={newIntEnd}
-                      onChange={(e) => setNewIntEnd(e.target.value)}
-                      className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
-                    />
-                  </div>
-                </div>
-                <div className="flex justify-end">
-                  <button
-                    onClick={() => {
-                      if (!newIntTitle.trim()) return;
-                      createInterventionMutation.mutate({
-                        caseId,
-                        title: newIntTitle.trim(),
-                        description: newIntDesc.trim() || undefined,
-                        ...(newIntTypeId ? { typeId: newIntTypeId } : {}),
-                        ...(newIntTeamId
-                          ? { assignedTeamId: newIntTeamId }
-                          : newIntAssignee
-                            ? { assigneeId: newIntAssignee }
-                            : {}),
-                        scheduledStart: newIntStart
-                          ? new Date(newIntStart).toISOString()
-                          : undefined,
-                        scheduledEnd: newIntEnd ? new Date(newIntEnd).toISOString() : undefined,
-                      });
-                    }}
-                    disabled={createInterventionMutation.isPending}
-                    className="rounded-lg bg-brand-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
-                  >
-                    Créer l&apos;intervention
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {interventions && interventions.length > 0 ? (
-              <div className="space-y-2">
-                {interventions.map((intervention) => {
-                  const usedArticles = (interventionUsageMap.get(intervention.id) ?? []).filter(
-                    (item) => item.netQuantity > 0,
-                  );
-                  const isEditingThis = editingInterventionId === intervention.id;
-                  const isCompleted = intervention.status === "completed";
-                  const assignmentLocked = isCompleted;
-                  const scheduleLocked = isCompleted;
-
-                  const startEditingIntervention = () => {
-                    setEditingInterventionId(intervention.id);
-                    setEditIntTitle(intervention.title);
-                    setEditIntDesc(intervention.description ?? "");
-                    setEditIntTeamId(intervention.assignedTeamId ?? "");
-                    setEditIntAssignee(resolveInterventionTechnicianId(intervention.assigneeId));
-                    setEditIntStart(
-                      intervention.scheduledStart ? intervention.scheduledStart.slice(0, 16) : "",
-                    );
-                    setEditIntEnd(
-                      intervention.scheduledEnd ? intervention.scheduledEnd.slice(0, 16) : "",
-                    );
-                    setInterventionError("");
-                  };
-
-                  const cancelEditingIntervention = () => {
-                    setEditingInterventionId(null);
-                    setInterventionError("");
-                  };
-
-                  const submitEditIntervention = () => {
-                    if (!editIntTitle.trim()) return;
-                    updateInterventionMutation.mutate(
-                      {
-                        id: intervention.id,
-                        payload: {
-                          title: editIntTitle.trim(),
-                          description: editIntDesc.trim() || undefined,
-                          ...(assignmentLocked
-                            ? {}
-                            : editIntTeamId
-                              ? { assignedTeamId: editIntTeamId, assigneeId: null }
-                              : editIntAssignee
-                                ? { assigneeId: editIntAssignee, assignedTeamId: null }
-                                : { assigneeId: null, assignedTeamId: null }),
-                          ...(scheduleLocked
-                            ? {}
-                            : {
-                                scheduledStart: editIntStart
-                                  ? new Date(editIntStart).toISOString()
-                                  : null,
-                                scheduledEnd: editIntEnd
-                                  ? new Date(editIntEnd).toISOString()
-                                  : null,
-                              }),
-                        },
-                      },
-                      { onSuccess: () => setEditingInterventionId(null) },
-                    );
-                  };
-
-                  return (
-                    <div
-                      key={intervention.id}
-                      className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 shadow-sm dark:shadow-slate-950/20"
-                    >
-                      {isEditingThis ? (
-                        <div className="space-y-3">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <input
-                              type="text"
-                              value={editIntTitle}
-                              onChange={(e) => setEditIntTitle(e.target.value)}
-                              placeholder="Titre de l'intervention"
-                              className="sm:col-span-2 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
-                            />
-                            <textarea
-                              value={editIntDesc}
-                              onChange={(e) => setEditIntDesc(e.target.value)}
-                              placeholder="Description (optionnelle)"
-                              rows={2}
-                              className="sm:col-span-2 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
-                            />
-                            <p className="sm:col-span-2 text-xs text-slate-500 dark:text-slate-400 inline-flex items-start gap-1.5">
-                              <InterventionAssigneeHint />
-                              <span>
-                                {assignmentLocked
-                                  ? "L’assignation équipe / technicien ne peut plus être modifiée une fois l’intervention terminée."
-                                  : "Assignez soit une équipe, soit un technicien. Les techniciens sans compte utilisateur peuvent être affectés ; seules les notifications nécessitent un compte lié."}
-                              </span>
-                            </p>
-                            <select
-                              value={editIntTeamId}
-                              onChange={(e) => {
-                                const value = e.target.value;
-                                setEditIntTeamId(value);
-                                if (value) setEditIntAssignee("");
-                              }}
-                              disabled={assignmentLocked}
-                              className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              <option value="">Équipe (aucune)</option>
-                              {teamsData?.map((t) => (
-                                <option key={t.id} value={t.id}>
-                                  {t.name}
-                                </option>
-                              ))}
-                            </select>
-                            <select
-                              value={editIntAssignee}
-                              onChange={(e) => {
-                                const value = e.target.value;
-                                setEditIntAssignee(value);
-                                if (value) setEditIntTeamId("");
-                              }}
-                              disabled={assignmentLocked}
-                              className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60"
-                              aria-label="Technicien assigné"
-                            >
-                              <option value="">Technicien (aucun)</option>
-                              {interventionTechnicianOptions.map((person) => (
-                                <option key={person.id} value={person.id}>
-                                  {person.label}
-                                  {!person.hasUserAccount ? " (sans compte)" : ""}
-                                </option>
-                              ))}
-                            </select>
-                            {plannerCustomerLoading && plannerCustomerId ? (
-                              <div className="sm:col-span-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 p-4 animate-pulse">
-                                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-48 mb-3" />
-                                <div className="h-24 bg-slate-100 dark:bg-slate-800 rounded-xl" />
-                              </div>
-                            ) : assignmentLocked ? null : (
-                              <div className="sm:col-span-2">
-                                <TeamSuggestionAddonGate
-                                  teams={teamsData ?? []}
-                                  agences={agencesData ?? []}
-                                  agencesLoading={agencesRoutingLoading}
-                                  agencesError={agencesRoutingError}
-                                  customerLinked={Boolean(plannerCustomerId)}
-                                  customerAddress={
-                                    caseData.interventionAddress ?? plannerCustomer?.address
-                                  }
-                                  selectedTeamId={editIntTeamId}
-                                  onSelectTeam={(id) => {
-                                    setEditIntTeamId(id);
-                                    if (id) setEditIntAssignee("");
-                                  }}
+                    <>
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium text-sm text-slate-800 dark:text-slate-100">
+                            {intervention.title}
+                          </h4>
+                          <span
+                            className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${
+                              INTERVENTION_STATUS_COLORS[intervention.status] ?? ""
+                            }`}
+                          >
+                            {INTERVENTION_STATUS_LABELS[intervention.status] ?? intervention.status}
+                          </span>
+                          {intervention.typeName ? (
+                            <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 px-2 py-0.5 text-[10px] font-medium text-slate-700 dark:text-slate-200">
+                              {intervention.typeColor ? (
+                                <span
+                                  className="h-2 w-2 rounded-full border border-slate-200 dark:border-slate-600"
+                                  style={{ backgroundColor: intervention.typeColor }}
+                                  aria-hidden
                                 />
-                              </div>
-                            )}
-                            <div>
-                              <label className="text-xs text-slate-500 dark:text-slate-400">
-                                Début
-                              </label>
-                              <input
-                                type="datetime-local"
-                                value={editIntStart}
-                                onChange={(e) => setEditIntStart(e.target.value)}
-                                disabled={scheduleLocked}
-                                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60"
-                              />
-                            </div>
-                            <div>
-                              <label className="text-xs text-slate-500 dark:text-slate-400">
-                                Fin
-                              </label>
-                              <input
-                                type="datetime-local"
-                                value={editIntEnd}
-                                onChange={(e) => setEditIntEnd(e.target.value)}
-                                disabled={scheduleLocked}
-                                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60"
-                              />
-                            </div>
-                            {scheduleLocked ? (
-                              <p className="sm:col-span-2 text-xs text-slate-500 dark:text-slate-400">
-                                Les dates ne peuvent plus être modifiées une fois
-                                l&apos;intervention terminée.
-                              </p>
-                            ) : null}
-                          </div>
-                          <div className="flex justify-end gap-2">
-                            <button
-                              onClick={cancelEditingIntervention}
-                              className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                              ) : null}
+                              {intervention.typeName}
+                            </span>
+                          ) : null}
+                          {intervention.billingStatus && intervention.billingStatus !== "none" && (
+                            <span
+                              className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${BILLING_STATUS_COLORS[intervention.billingStatus]}`}
                             >
-                              Annuler
-                            </button>
-                            <button
-                              onClick={submitEditIntervention}
-                              disabled={updateInterventionMutation.isPending}
-                              className="rounded-lg bg-brand-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
-                            >
-                              {updateInterventionMutation.isPending ? "…" : "Enregistrer"}
-                            </button>
-                          </div>
+                              {BILLING_STATUS_LABELS[intervention.billingStatus]}
+                            </span>
+                          )}
                         </div>
-                      ) : (
-                        <>
-                          <div className="flex items-center justify-between flex-wrap gap-2">
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-medium text-sm text-slate-800 dark:text-slate-100">
-                                {intervention.title}
-                              </h4>
-                              <span
-                                className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${
-                                  INTERVENTION_STATUS_COLORS[intervention.status] ?? ""
-                                }`}
-                              >
-                                {INTERVENTION_STATUS_LABELS[intervention.status] ??
-                                  intervention.status}
-                              </span>
-                              {intervention.typeName ? (
-                                <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 px-2 py-0.5 text-[10px] font-medium text-slate-700 dark:text-slate-200">
-                                  {intervention.typeColor ? (
-                                    <span
-                                      className="h-2 w-2 rounded-full border border-slate-200 dark:border-slate-600"
-                                      style={{ backgroundColor: intervention.typeColor }}
-                                      aria-hidden
-                                    />
-                                  ) : null}
-                                  {intervention.typeName}
-                                </span>
-                              ) : null}
-                              {intervention.billingStatus &&
-                                intervention.billingStatus !== "none" && (
-                                  <span
-                                    className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${BILLING_STATUS_COLORS[intervention.billingStatus]}`}
-                                  >
-                                    {BILLING_STATUS_LABELS[intervention.billingStatus]}
-                                  </span>
-                                )}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              {can("interventions.update") && (
-                                <button
-                                  onClick={startEditingIntervention}
-                                  className="text-[10px] text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
-                                >
-                                  Modifier l&apos;intervention
-                                </button>
-                              )}
-                              {intervention.status === "planned" && (
-                                <button
-                                  onClick={() =>
-                                    api.startIntervention(intervention.id).then(() => {
-                                      void queryClient.invalidateQueries({
-                                        queryKey: ["interventions", caseId],
-                                      });
-                                    })
-                                  }
-                                  className="text-[10px] text-amber-600 hover:text-amber-700 px-1.5 py-0.5 rounded bg-amber-50"
-                                >
-                                  Démarrer
-                                </button>
-                              )}
-                              {intervention.status === "in_progress" && (
-                                <button
-                                  onClick={() =>
-                                    api.completeIntervention(intervention.id).then(() => {
-                                      void queryClient.invalidateQueries({
-                                        queryKey: ["interventions", caseId],
-                                      });
-                                    })
-                                  }
-                                  className="text-[10px] text-green-600 hover:text-green-700 px-1.5 py-0.5 rounded bg-green-50"
-                                >
-                                  Terminer
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                          <InterventionTeamHighlight
-                            teamId={intervention.assignedTeamId}
-                            teamName={intervention.assignedTeamName}
-                            teamsById={teamsById}
-                          />
-                          <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
-                            {intervention.assigneeName && (
-                              <span className="inline-flex items-center gap-1">
-                                <span className="text-slate-400 dark:text-slate-500">
-                                  Technicien :
-                                </span>
-                                <EntityRef
-                                  kind="technician"
-                                  id={
-                                    techniciansByAssigneeKey.get(intervention.assigneeId ?? "")
-                                      ?.id ?? intervention.assigneeId
-                                  }
-                                  label={intervention.assigneeName}
-                                  className="font-medium text-brand-600 dark:text-brand-400 hover:underline"
-                                />
-                              </span>
-                            )}
-                            {intervention.scheduledStart && (
-                              <span>
-                                {new Date(intervention.scheduledStart).toLocaleDateString("fr-FR")}{" "}
-                                {new Date(intervention.scheduledStart).toLocaleTimeString("fr-FR", {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })}
-                              </span>
-                            )}
-                            {intervention.scheduledEnd && (
-                              <span>
-                                &rarr;{" "}
-                                {new Date(intervention.scheduledEnd).toLocaleTimeString("fr-FR", {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })}
-                              </span>
-                            )}
-                          </div>
-                          {intervention.description && (
-                            <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
-                              {intervention.description}
+                        <div className="flex items-center gap-1">
+                          {can("interventions.update") && (
+                            <button
+                              onClick={startEditingIntervention}
+                              className="text-[10px] text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                            >
+                              Modifier l&apos;intervention
+                            </button>
+                          )}
+                          {intervention.status === "planned" && (
+                            <button
+                              onClick={() =>
+                                api.startIntervention(intervention.id).then(() => {
+                                  void queryClient.invalidateQueries({
+                                    queryKey: ["interventions", caseId],
+                                  });
+                                })
+                              }
+                              className="text-[10px] text-amber-600 hover:text-amber-700 px-1.5 py-0.5 rounded bg-amber-50"
+                            >
+                              Démarrer
+                            </button>
+                          )}
+                          {intervention.status === "in_progress" && (
+                            <button
+                              onClick={() =>
+                                api.completeIntervention(intervention.id).then(() => {
+                                  void queryClient.invalidateQueries({
+                                    queryKey: ["interventions", caseId],
+                                  });
+                                })
+                              }
+                              className="text-[10px] text-green-600 hover:text-green-700 px-1.5 py-0.5 rounded bg-green-50"
+                            >
+                              Terminer
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <InterventionTeamHighlight
+                        teamId={intervention.assignedTeamId}
+                        teamName={intervention.assignedTeamName}
+                        teamsById={teamsById}
+                      />
+                      <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+                        {intervention.assigneeName && (
+                          <span className="inline-flex items-center gap-1">
+                            <span className="text-slate-400 dark:text-slate-500">Technicien :</span>
+                            <EntityRef
+                              kind="technician"
+                              id={
+                                techniciansByAssigneeKey.get(intervention.assigneeId ?? "")?.id ??
+                                intervention.assigneeId
+                              }
+                              label={intervention.assigneeName}
+                              className="font-medium text-brand-600 dark:text-brand-400 hover:underline"
+                            />
+                          </span>
+                        )}
+                        {intervention.scheduledStart && (
+                          <span>
+                            {new Date(intervention.scheduledStart).toLocaleDateString("fr-FR")}{" "}
+                            {new Date(intervention.scheduledStart).toLocaleTimeString("fr-FR", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        )}
+                        {intervention.scheduledEnd && (
+                          <span>
+                            &rarr;{" "}
+                            {new Date(intervention.scheduledEnd).toLocaleTimeString("fr-FR", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        )}
+                      </div>
+                      {intervention.description && (
+                        <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+                          {intervention.description}
+                        </p>
+                      )}
+
+                      {showInterventionArticles && (
+                        <div className="mt-3">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+                              Articles utilisés
                             </p>
-                          )}
-
-                          {showInterventionArticles && (
-                            <div className="mt-3">
-                              <div className="flex flex-wrap items-center justify-between gap-2">
-                                <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">
-                                  Articles utilisés
-                                </p>
-                                {canAddInterventionArticles && (
-                                  <button
-                                    type="button"
-                                    onClick={() => setArticlesDialogInterventionId(intervention.id)}
-                                    className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
-                                  >
-                                    {usedArticles.length > 0
-                                      ? "Modifier les articles"
-                                      : "Ajouter des articles"}
-                                  </button>
-                                )}
-                              </div>
-                              {canViewInterventionArticles && usedArticles.length > 0 ? (
-                                <ul className="mt-2 space-y-1">
-                                  {usedArticles.map((item) => {
-                                    const unitPrice = articlePriceById.get(item.articleId);
-                                    const lineHt =
-                                      typeof unitPrice === "number" && Number.isFinite(unitPrice)
-                                        ? item.netQuantity * unitPrice
-                                        : null;
-                                    return (
-                                      <li
-                                        key={item.articleId}
-                                        className="flex flex-wrap items-baseline justify-between gap-2 text-xs text-slate-600 dark:text-slate-300"
-                                      >
-                                        <span>
-                                          {item.articleName}
-                                          {item.articleReference ? (
-                                            <span className="text-slate-400 dark:text-slate-500">
-                                              {" "}
-                                              · {item.articleReference}
-                                            </span>
-                                          ) : null}
-                                        </span>
-                                        <span className="tabular-nums font-medium text-slate-700 dark:text-slate-200 text-right">
-                                          {item.netQuantity} {item.unit}
-                                          {lineHt != null ? (
-                                            <span className="block text-[11px] font-normal text-slate-500 dark:text-slate-400">
-                                              ~ {lineHt.toFixed(2)} € HT
-                                              {typeof unitPrice === "number"
-                                                ? ` · ${unitPrice.toFixed(2)} € / ${item.unit}`
-                                                : ""}
-                                            </span>
-                                          ) : null}
-                                        </span>
-                                      </li>
-                                    );
-                                  })}
-                                </ul>
-                              ) : canViewInterventionArticles ? (
-                                <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
-                                  Aucun article déclaré.
-                                </p>
-                              ) : null}
-                            </div>
-                          )}
-
-                          <InterventionPhotos
-                            interventionId={intervention.id}
-                            readOnly={!can("interventions.update")}
-                          />
-
-                          {/* Signature & report */}
-                          {intervention.status === "completed" && (
-                            <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 dark:border-slate-800 pt-3">
-                              {can("interventions.sign") && !intervention.signedAt && (
-                                <button
-                                  type="button"
-                                  onClick={() => setSignDialogInterventionId(intervention.id)}
-                                  className="inline-flex items-center gap-1 rounded-md border border-brand-200 dark:border-brand-800 bg-brand-50 dark:bg-brand-950/30 px-2 py-1 text-[11px] font-medium text-brand-700 dark:text-brand-300 hover:bg-brand-100 dark:hover:bg-brand-950/50 transition"
-                                >
-                                  <svg
-                                    className="h-3.5 w-3.5"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    strokeWidth={2}
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
-                                    />
-                                  </svg>
-                                  Faire signer
-                                </button>
-                              )}
-                              {intervention.signedAt && (
-                                <span className="inline-flex items-center gap-1 text-[11px] text-green-600 dark:text-green-400 font-medium">
-                                  <svg
-                                    className="h-3.5 w-3.5"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    strokeWidth={2}
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                                    />
-                                  </svg>
-                                  Signé par {intervention.signatoryName}
-                                </span>
-                              )}
+                            {canAddInterventionArticles && (
                               <button
                                 type="button"
-                                onClick={() => handleDownloadReport(intervention.id)}
-                                disabled={downloadingReportId === intervention.id}
-                                className="inline-flex items-center gap-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition disabled:opacity-50"
+                                onClick={() => setArticlesDialogInterventionId(intervention.id)}
+                                className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
                               >
-                                <svg
-                                  className="h-3.5 w-3.5"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                  strokeWidth={2}
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
-                                  />
-                                </svg>
-                                {downloadingReportId === intervention.id
-                                  ? "Génération…"
-                                  : "Rapport PDF"}
+                                {usedArticles.length > 0
+                                  ? "Modifier les articles"
+                                  : "Ajouter des articles"}
                               </button>
-                            </div>
-                          )}
-
-                          <CommentsSection
-                            entityType="intervention"
-                            entityId={intervention.id}
-                            caseId={caseId}
-                            compact
-                            title="Commentaires"
-                          />
-                        </>
+                            )}
+                          </div>
+                          {canViewInterventionArticles && usedArticles.length > 0 ? (
+                            <ul className="mt-2 space-y-1">
+                              {usedArticles.map((item) => {
+                                const unitPrice = articlePriceById.get(item.articleId);
+                                const lineHt =
+                                  typeof unitPrice === "number" && Number.isFinite(unitPrice)
+                                    ? item.netQuantity * unitPrice
+                                    : null;
+                                return (
+                                  <li
+                                    key={item.articleId}
+                                    className="flex flex-wrap items-baseline justify-between gap-2 text-xs text-slate-600 dark:text-slate-300"
+                                  >
+                                    <span>
+                                      {item.articleName}
+                                      {item.articleReference ? (
+                                        <span className="text-slate-400 dark:text-slate-500">
+                                          {" "}
+                                          · {item.articleReference}
+                                        </span>
+                                      ) : null}
+                                    </span>
+                                    <span className="tabular-nums font-medium text-slate-700 dark:text-slate-200 text-right">
+                                      {item.netQuantity} {item.unit}
+                                      {lineHt != null ? (
+                                        <span className="block text-[11px] font-normal text-slate-500 dark:text-slate-400">
+                                          ~ {lineHt.toFixed(2)} € HT
+                                          {typeof unitPrice === "number"
+                                            ? ` · ${unitPrice.toFixed(2)} € / ${item.unit}`
+                                            : ""}
+                                        </span>
+                                      ) : null}
+                                    </span>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          ) : canViewInterventionArticles ? (
+                            <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+                              Aucun article déclaré.
+                            </p>
+                          ) : null}
+                        </div>
                       )}
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              !showNewIntervention && (
-                <div className="text-sm text-slate-500 dark:text-slate-400">
-                  Aucune intervention planifiée pour ce dossier.
+
+                      <InterventionPhotos
+                        interventionId={intervention.id}
+                        readOnly={!can("interventions.update")}
+                      />
+
+                      {/* Signature & report */}
+                      {intervention.status === "completed" && (
+                        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 dark:border-slate-800 pt-3">
+                          {can("interventions.sign") && !intervention.signedAt && (
+                            <button
+                              type="button"
+                              onClick={() => setSignDialogInterventionId(intervention.id)}
+                              className="inline-flex items-center gap-1 rounded-md border border-brand-200 dark:border-brand-800 bg-brand-50 dark:bg-brand-950/30 px-2 py-1 text-[11px] font-medium text-brand-700 dark:text-brand-300 hover:bg-brand-100 dark:hover:bg-brand-950/50 transition"
+                            >
+                              <svg
+                                className="h-3.5 w-3.5"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth={2}
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
+                                />
+                              </svg>
+                              Faire signer
+                            </button>
+                          )}
+                          {intervention.signedAt && (
+                            <span className="inline-flex items-center gap-1 text-[11px] text-green-600 dark:text-green-400 font-medium">
+                              <svg
+                                className="h-3.5 w-3.5"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth={2}
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                />
+                              </svg>
+                              Signé par {intervention.signatoryName}
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleDownloadReport(intervention.id)}
+                            disabled={downloadingReportId === intervention.id}
+                            className="inline-flex items-center gap-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition disabled:opacity-50"
+                          >
+                            <svg
+                              className="h-3.5 w-3.5"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              strokeWidth={2}
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+                              />
+                            </svg>
+                            {downloadingReportId === intervention.id
+                              ? "Génération…"
+                              : "Rapport PDF"}
+                          </button>
+                        </div>
+                      )}
+
+                      <CommentsSection
+                        entityType="intervention"
+                        entityId={intervention.id}
+                        caseId={caseId}
+                        compact
+                        title="Commentaires"
+                      />
+                    </>
+                  )}
                 </div>
-              )
-            )}
+              );
+            })}
           </div>
-        </>
-      )}
+        ) : (
+          !showNewIntervention && (
+            <div className="text-sm text-slate-500 dark:text-slate-400">
+              Aucune intervention planifiée pour ce dossier.
+            </div>
+          )
+        )}
+      </div>
 
       {articlesDialogIntervention && (
         <InterventionArticlesDialog

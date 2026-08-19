@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { TVA_RATES, type TvaRate } from "@planwise/shared";
 import * as api from "@/lib/stock.api";
 import { TestDataBadgeIf } from "@/components/test-data/TestDataBadge";
 import { usePermissions } from "@/lib/hooks/usePermissions";
@@ -21,6 +21,7 @@ import {
   ListPageRoot,
   ListPagination,
   LIST_PAGE_SIZE,
+  ListPrimaryAction,
   ListSearchField,
   ListTableShell,
   ListToolbar,
@@ -28,12 +29,6 @@ import {
 import { PermissionGate } from "@/components/auth/PermissionGate";
 
 const GRID = "md:grid-cols-[1.2fr_0.7fr_0.7fr_0.5fr_0.5fr_0.8fr]";
-
-const inputClass =
-  "w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-3 py-2 text-sm";
-
-const PRIMARY_BUTTON_CLASS =
-  "rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition";
 
 export function PrestationsPage() {
   const { can } = usePermissions();
@@ -45,16 +40,6 @@ export function PrestationsPage() {
   const [search, setSearch] = useState(initialSearch);
   const [offset, setOffset] = useState(0);
   const [showInactive, setShowInactive] = useState(false);
-  const [showCreate, setShowCreate] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-
-  const [name, setName] = useState("");
-  const [reference, setReference] = useState("");
-  const [unit, setUnit] = useState("unité");
-  const [defaultPrice, setDefaultPrice] = useState("");
-  const [defaultTvaRate, setDefaultTvaRate] = useState<TvaRate>(20);
-  const [description, setDescription] = useState("");
-  const [formError, setFormError] = useState("");
 
   useEffect(() => {
     setOffset(0);
@@ -76,58 +61,6 @@ export function PrestationsPage() {
       }),
   });
 
-  const resetForm = () => {
-    setName("");
-    setReference("");
-    setUnit("unité");
-    setDefaultPrice("");
-    setDefaultTvaRate(20);
-    setDescription("");
-    setFormError("");
-    setEditingId(null);
-    setShowCreate(false);
-  };
-
-  const createMutation = useMutation({
-    mutationFn: () =>
-      api.createPrestation({
-        name: name.trim(),
-        reference: reference.trim(),
-        unit: unit.trim() || "unité",
-        defaultPrice: Number(defaultPrice.replace(",", ".")),
-        defaultTvaRate,
-        description: description.trim() || undefined,
-      }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["prestations"] });
-      showToast("Prestation créée", "success");
-      resetForm();
-    },
-    onError: (err: unknown) => {
-      setFormError(err instanceof Error ? err.message : "Création impossible");
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: () =>
-      api.updatePrestation(editingId!, {
-        name: name.trim(),
-        reference: reference.trim(),
-        unit: unit.trim() || "unité",
-        defaultPrice: Number(defaultPrice.replace(",", ".")),
-        defaultTvaRate,
-        description: description.trim() || undefined,
-      }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["prestations"] });
-      showToast("Prestation mise à jour", "success");
-      resetForm();
-    },
-    onError: (err: unknown) => {
-      setFormError(err instanceof Error ? err.message : "Mise à jour impossible");
-    },
-  });
-
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.deletePrestation(id),
     onSuccess: () => {
@@ -143,31 +76,6 @@ export function PrestationsPage() {
   const total = data?.total ?? 0;
   const hasActiveSearch = Boolean(search.trim()) || showInactive;
 
-  const startEdit = (id: string) => {
-    const row = rows.find((r) => r.id === id);
-    if (!row) return;
-    setEditingId(id);
-    setShowCreate(true);
-    setName(row.name);
-    setReference(row.reference);
-    setUnit(row.unit);
-    setDefaultPrice(String(row.defaultPrice));
-    setDefaultTvaRate(row.defaultTvaRate);
-    setDescription(row.description ?? "");
-    setFormError("");
-  };
-
-  const submitForm = (e: React.FormEvent) => {
-    e.preventDefault();
-    const price = Number(defaultPrice.replace(",", "."));
-    if (!name.trim() || !reference.trim() || !Number.isFinite(price) || price < 0) {
-      setFormError("Nom, référence et tarif HT (≥ 0) sont requis.");
-      return;
-    }
-    if (editingId) updateMutation.mutate();
-    else createMutation.mutate();
-  };
-
   return (
     <ListPageRoot>
       <ListPageHeader
@@ -175,16 +83,9 @@ export function PrestationsPage() {
         description="Catalogue de services tarifés (main-d’œuvre, forfaits, déplacements…) réutilisables sur devis et factures."
         action={
           can("prestations.create") ? (
-            <button
-              type="button"
-              className={PRIMARY_BUTTON_CLASS}
-              onClick={() => {
-                resetForm();
-                setShowCreate(true);
-              }}
-            >
+            <ListPrimaryAction href="/settings/prestations/new">
               Nouvelle prestation
-            </button>
+            </ListPrimaryAction>
           ) : undefined
         }
       />
@@ -206,102 +107,6 @@ export function PrestationsPage() {
         </label>
       </ListToolbar>
 
-      {showCreate && (can("prestations.create") || (editingId && can("prestations.update"))) ? (
-        <form
-          onSubmit={submitForm}
-          className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 space-y-3"
-        >
-          <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-            {editingId ? "Modifier la prestation" : "Nouvelle prestation"}
-          </h3>
-          {formError ? <p className="text-sm text-red-600 dark:text-red-400">{formError}</p> : null}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <label className="block space-y-1">
-              <span className="text-xs font-medium text-slate-600 dark:text-slate-300">Nom</span>
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className={inputClass}
-                required
-              />
-            </label>
-            <label className="block space-y-1">
-              <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
-                Référence
-              </span>
-              <input
-                value={reference}
-                onChange={(e) => setReference(e.target.value)}
-                className={inputClass}
-                required
-              />
-            </label>
-            <label className="block space-y-1">
-              <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
-                Tarif HT (€)
-              </span>
-              <input
-                type="number"
-                min={0}
-                step={0.01}
-                value={defaultPrice}
-                onChange={(e) => setDefaultPrice(e.target.value)}
-                className={inputClass}
-                required
-              />
-            </label>
-            <label className="block space-y-1">
-              <span className="text-xs font-medium text-slate-600 dark:text-slate-300">TVA</span>
-              <select
-                value={defaultTvaRate}
-                onChange={(e) => setDefaultTvaRate(Number(e.target.value) as TvaRate)}
-                className={inputClass}
-              >
-                {TVA_RATES.map((r) => (
-                  <option key={r} value={r}>
-                    {r} %
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="block space-y-1">
-              <span className="text-xs font-medium text-slate-600 dark:text-slate-300">Unité</span>
-              <input
-                value={unit}
-                onChange={(e) => setUnit(e.target.value)}
-                className={inputClass}
-              />
-            </label>
-            <label className="block space-y-1 sm:col-span-2">
-              <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
-                Description
-              </span>
-              <input
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className={inputClass}
-              />
-            </label>
-          </div>
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={resetForm}
-              className="rounded-lg border border-slate-200 dark:border-slate-600 px-3 py-2 text-sm"
-            >
-              Annuler
-            </button>
-            <button
-              type="submit"
-              disabled={createMutation.isPending || updateMutation.isPending}
-              className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50"
-            >
-              {editingId ? "Enregistrer" : "Créer"}
-            </button>
-          </div>
-        </form>
-      ) : null}
-
       {isError ? (
         <ListPageError
           error={error}
@@ -313,11 +118,28 @@ export function PrestationsPage() {
       {isLoading ? (
         <ListLoadingState />
       ) : total === 0 && !hasActiveSearch ? (
-        <ListEmptyState message="Aucune prestation pour le moment." />
+        <ListEmptyState
+          message="Aucune prestation pour le moment."
+          action={
+            can("prestations.create") ? (
+              <Link
+                href="/settings/prestations/new"
+                className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium"
+              >
+                Créer votre première prestation
+              </Link>
+            ) : undefined
+          }
+        />
       ) : rows.length === 0 ? (
         <ListNoResults message="Aucune prestation ne correspond à ce filtre." />
       ) : (
-        <>
+        <ListPagination
+          offset={offset}
+          limit={LIST_PAGE_SIZE}
+          total={total}
+          onOffsetChange={setOffset}
+        >
           <ListTableShell
             gridTemplateClass={GRID}
             headerCells={
@@ -356,13 +178,12 @@ export function PrestationsPage() {
                 <ListCellMuted>{row.unit}</ListCellMuted>
                 <div className="flex flex-wrap gap-2 items-center">
                   <PermissionGate permission="prestations.update">
-                    <button
-                      type="button"
-                      onClick={() => startEdit(row.id)}
+                    <Link
+                      href={`/settings/prestations/${row.id}/edit`}
                       className="text-xs font-medium text-brand-600 hover:text-brand-500"
                     >
                       Modifier
-                    </button>
+                    </Link>
                   </PermissionGate>
                   {row.isActive ? (
                     <PermissionGate permission="prestations.delete">
@@ -388,13 +209,7 @@ export function PrestationsPage() {
               </div>
             ))}
           </ListTableShell>
-          <ListPagination
-            offset={offset}
-            limit={LIST_PAGE_SIZE}
-            total={total}
-            onOffsetChange={setOffset}
-          />
-        </>
+        </ListPagination>
       )}
     </ListPageRoot>
   );

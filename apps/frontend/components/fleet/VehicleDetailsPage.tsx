@@ -2,18 +2,7 @@
 
 import Link from "next/link";
 import React, { useCallback, useEffect, useState } from "react";
-import type { VehicleResponse, TeamResponse, VehicleType, VehicleStatus } from "@planwise/shared";
-
-const VEHICLE_TYPES: VehicleType[] = [
-  "camion",
-  "camionnette",
-  "voiture",
-  "utilitaire",
-  "fourgon",
-  "remorque",
-  "autre",
-];
-const VEHICLE_STATUSES: VehicleStatus[] = ["actif", "maintenance", "hors_service"];
+import type { VehicleResponse, TeamResponse } from "@planwise/shared";
 import * as fleetApi from "@/lib/fleet.api";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/ToastProvider";
@@ -21,6 +10,7 @@ import { usePermissions } from "@/lib/hooks/usePermissions";
 import { useRouter } from "next/navigation";
 import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
 import { AppErrorAlert, ResourceNotFoundPanel } from "@/components/ui/AppErrorAlert";
+import { PageBreadcrumb } from "@/components/ui/FormDialog";
 
 const TYPE_LABELS: Record<string, string> = {
   camion: "Camion",
@@ -53,20 +43,8 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
   const [teams, setTeams] = useState<TeamResponse[]>([]);
   const [assignedTeam, setAssignedTeam] = useState<TeamResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<unknown>(null);
-
-  const [editType, setEditType] = useState<VehicleType>("camion");
-  const [editReg, setEditReg] = useState("");
-  const [editBrand, setEditBrand] = useState("");
-  const [editModel, setEditModel] = useState("");
-  const [editYear, setEditYear] = useState("");
-  const [editColor, setEditColor] = useState("");
-  const [editVin, setEditVin] = useState("");
-  const [editMileage, setEditMileage] = useState("");
-  const [editStatus, setEditStatus] = useState<VehicleStatus>("actif");
-
   const [selectedTeamId, setSelectedTeamId] = useState("");
 
   const refresh = useCallback(async () => {
@@ -79,16 +57,6 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
       ]);
       setVehicle(vehicleData);
       setTeams(teamList);
-
-      setEditType(vehicleData.type);
-      setEditReg(vehicleData.registrationNumber);
-      setEditBrand(vehicleData.brand ?? "");
-      setEditModel(vehicleData.model ?? "");
-      setEditYear(vehicleData.year?.toString() ?? "");
-      setEditColor(vehicleData.color ?? "");
-      setEditVin(vehicleData.vin ?? "");
-      setEditMileage(vehicleData.mileage?.toString() ?? "");
-      setEditStatus(vehicleData.status);
 
       if (vehicleData.assignedTeamId) {
         const team = teamList.find((t) => t.id === vehicleData.assignedTeamId) ?? null;
@@ -108,32 +76,6 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
   useEffect(() => {
     void refresh();
   }, [refresh]);
-
-  const handleSave = async () => {
-    if (!vehicle) return;
-    setSaving(true);
-    setError(null);
-    try {
-      await fleetApi.updateVehicle(vehicle.id, {
-        type: editType,
-        registrationNumber: editReg.trim().toUpperCase(),
-        brand: editBrand.trim() || undefined,
-        model: editModel.trim() || undefined,
-        year: editYear ? parseInt(editYear, 10) : undefined,
-        color: editColor.trim() || undefined,
-        vin: editVin.trim() || undefined,
-        mileage: editMileage ? parseInt(editMileage, 10) : undefined,
-        status: editStatus,
-      });
-      showToast("Véhicule mis à jour.");
-      setIsEditing(false);
-      await refresh();
-    } catch (err) {
-      setError(err);
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const handleAssignTeam = async () => {
     if (!vehicle || !selectedTeamId) return;
@@ -205,24 +147,16 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-semibold mb-1">{vehicle.registrationNumber}</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            {TYPE_LABELS[vehicle.type] ?? vehicle.type}
-            {vehicle.brand ? ` — ${vehicle.brand}` : ""}
-            {vehicle.model ? ` ${vehicle.model}` : ""}
-          </p>
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <PageBreadcrumb href="/fleet/vehicles" label="Véhicules" />
         <div className="flex items-center gap-2">
           {can("fleet.vehicles.update") && (
-            <button
-              type="button"
-              onClick={() => setIsEditing((p) => !p)}
+            <Link
+              href={`/fleet/vehicles/${vehicle.id}/edit`}
               className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
             >
-              {isEditing ? "Annuler" : "Modifier"}
-            </button>
+              Modifier
+            </Link>
           )}
           {can("fleet.vehicles.delete") && (
             <button
@@ -233,193 +167,67 @@ export function VehicleDetailsPage({ vehicleId }: { vehicleId: string }) {
               Supprimer
             </button>
           )}
-          <Link
-            href="/fleet/vehicles"
-            className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
-          >
-            Retour
-          </Link>
         </div>
+      </div>
+
+      <div>
+        <h1 className="text-xl sm:text-2xl font-semibold mb-1">{vehicle.registrationNumber}</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          {TYPE_LABELS[vehicle.type] ?? vehicle.type}
+          {vehicle.brand ? ` — ${vehicle.brand}` : ""}
+          {vehicle.model ? ` ${vehicle.model}` : ""}
+        </p>
       </div>
 
       {error ? <AppErrorAlert error={error} onRetry={() => void refresh()} /> : null}
 
-      {!isEditing ? (
-        <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
-          <h2 className="font-semibold mb-3">Informations du véhicule</h2>
-          <div className="grid gap-3 md:grid-cols-2 text-sm">
-            <div>
-              <span className="text-slate-400 dark:text-slate-500">Immatriculation</span>
-              <p className="font-medium">{vehicle.registrationNumber}</p>
-            </div>
-            <div>
-              <span className="text-slate-400 dark:text-slate-500">Type</span>
-              <p>{TYPE_LABELS[vehicle.type] ?? vehicle.type}</p>
-            </div>
-            <div>
-              <span className="text-slate-400 dark:text-slate-500">Marque</span>
-              <p>{vehicle.brand || "—"}</p>
-            </div>
-            <div>
-              <span className="text-slate-400 dark:text-slate-500">Modèle</span>
-              <p>{vehicle.model || "—"}</p>
-            </div>
-            <div>
-              <span className="text-slate-400 dark:text-slate-500">Année</span>
-              <p>{vehicle.year ?? "—"}</p>
-            </div>
-            <div>
-              <span className="text-slate-400 dark:text-slate-500">Couleur</span>
-              <p>{vehicle.color || "—"}</p>
-            </div>
-            <div>
-              <span className="text-slate-400 dark:text-slate-500">VIN</span>
-              <p className="font-mono text-xs">{vehicle.vin || "—"}</p>
-            </div>
-            <div>
-              <span className="text-slate-400 dark:text-slate-500">Kilométrage</span>
-              <p>
-                {vehicle.mileage != null ? `${vehicle.mileage.toLocaleString("fr-FR")} km` : "—"}
-              </p>
-            </div>
-            <div>
-              <span className="text-slate-400 dark:text-slate-500">Statut</span>
-              <p>
-                <span
-                  className={`inline-flex rounded border px-2 py-0.5 text-xs ${STATUS_COLORS[vehicle.status] ?? "bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700"}`}
-                >
-                  {STATUS_LABELS[vehicle.status] ?? vehicle.status}
-                </span>
-              </p>
-            </div>
+      <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
+        <h2 className="font-semibold mb-3">Informations du véhicule</h2>
+        <div className="grid gap-3 md:grid-cols-2 text-sm">
+          <div>
+            <span className="text-slate-400 dark:text-slate-500">Immatriculation</span>
+            <p className="font-medium">{vehicle.registrationNumber}</p>
           </div>
-        </section>
-      ) : (
-        <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 space-y-4">
-          <h2 className="font-semibold">Modifier le véhicule</h2>
-          <div className="grid gap-3 md:grid-cols-2">
-            <div>
-              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">
-                Immatriculation
-              </label>
-              <input
-                type="text"
-                value={editReg}
-                onChange={(e) => setEditReg(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Type</label>
-              <select
-                value={editType}
-                onChange={(e) => setEditType(e.target.value as VehicleType)}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
+          <div>
+            <span className="text-slate-400 dark:text-slate-500">Type</span>
+            <p>{TYPE_LABELS[vehicle.type] ?? vehicle.type}</p>
+          </div>
+          <div>
+            <span className="text-slate-400 dark:text-slate-500">Marque</span>
+            <p>{vehicle.brand || "—"}</p>
+          </div>
+          <div>
+            <span className="text-slate-400 dark:text-slate-500">Modèle</span>
+            <p>{vehicle.model || "—"}</p>
+          </div>
+          <div>
+            <span className="text-slate-400 dark:text-slate-500">Année</span>
+            <p>{vehicle.year ?? "—"}</p>
+          </div>
+          <div>
+            <span className="text-slate-400 dark:text-slate-500">Couleur</span>
+            <p>{vehicle.color || "—"}</p>
+          </div>
+          <div>
+            <span className="text-slate-400 dark:text-slate-500">VIN</span>
+            <p className="font-mono text-xs">{vehicle.vin || "—"}</p>
+          </div>
+          <div>
+            <span className="text-slate-400 dark:text-slate-500">Kilométrage</span>
+            <p>{vehicle.mileage != null ? `${vehicle.mileage.toLocaleString("fr-FR")} km` : "—"}</p>
+          </div>
+          <div>
+            <span className="text-slate-400 dark:text-slate-500">Statut</span>
+            <p>
+              <span
+                className={`inline-flex rounded border px-2 py-0.5 text-xs ${STATUS_COLORS[vehicle.status] ?? "bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700"}`}
               >
-                {VEHICLE_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {TYPE_LABELS[t] ?? t}
-                  </option>
-                ))}
-              </select>
-            </div>
+                {STATUS_LABELS[vehicle.status] ?? vehicle.status}
+              </span>
+            </p>
           </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            <div>
-              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">
-                Marque
-              </label>
-              <input
-                type="text"
-                value={editBrand}
-                onChange={(e) => setEditBrand(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">
-                Modèle
-              </label>
-              <input
-                type="text"
-                value={editModel}
-                onChange={(e) => setEditModel(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
-              />
-            </div>
-          </div>
-          <div className="grid gap-3 md:grid-cols-3">
-            <div>
-              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Année</label>
-              <input
-                type="number"
-                value={editYear}
-                onChange={(e) => setEditYear(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">
-                Couleur
-              </label>
-              <input
-                type="text"
-                value={editColor}
-                onChange={(e) => setEditColor(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">
-                Kilométrage
-              </label>
-              <input
-                type="number"
-                value={editMileage}
-                onChange={(e) => setEditMileage(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
-              />
-            </div>
-          </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            <div>
-              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">VIN</label>
-              <input
-                type="text"
-                value={editVin}
-                onChange={(e) => setEditVin(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">
-                Statut
-              </label>
-              <select
-                value={editStatus}
-                onChange={(e) => setEditStatus(e.target.value as VehicleStatus)}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
-              >
-                {VEHICLE_STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {STATUS_LABELS[s] ?? s}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={() => void handleSave()}
-              disabled={saving}
-              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50"
-            >
-              {saving ? "Enregistrement..." : "Enregistrer"}
-            </button>
-          </div>
-        </section>
-      )}
+        </div>
+      </section>
 
       <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 space-y-4">
         <h2 className="font-semibold">Équipe affectée</h2>

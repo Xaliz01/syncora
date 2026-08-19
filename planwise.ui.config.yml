@@ -1,11 +1,13 @@
 ui:
   name: Planwise Front Design
   description: >
-    Design sombre moderne, avec accent violet, cartes bordées et mise en page
-    centrée sur les opérations terrain (clients, interventions, stocks, flotte).
+    App métier : fond clair slate + mode sombre, accent brand violet.
+    Cartes / panneaux bordés ; formulaires harmonisés (FormPage / FormDialog / FormSidePanel).
+    Les tokens « dark marketing » ci-dessous restent utiles pour landing ; le shell app
+    authentifié suit plutôt slate-50 / white + dark: variants (voir AppShell).
 
   layout:
-    background: "bg-slate-950 text-slate-100"
+    background: "bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100"
     max_width: "max-w-6xl mx-auto"
     horizontal_padding: "px-4"
     header_height: "py-4"
@@ -15,42 +17,66 @@ ui:
 
   colors:
     background:
-      base: "#020617" # slate-950
-      surface: "#020617" # utilisé avec opacité pour les cartes
+      base: "#f8fafc" # slate-50 (app clair)
+      surface: "#ffffff"
+      dark_base: "#020617" # slate-950
     border:
-      subtle: "#1e293b" # slate-800
+      subtle: "#e2e8f0" # slate-200
+      dark_subtle: "#1e293b" # slate-800
     text:
-      primary: "#e2e8f0" # slate-200
-      muted: "#94a3b8" # slate-400
+      primary: "#0f172a" # slate-900
+      muted: "#64748b" # slate-500
+      dark_primary: "#e2e8f0"
+      dark_muted: "#94a3b8"
     brand:
       500: "#4f46e5"
       600: "#4338ca"
 
+  # Harmonisation formulaires (source de vérité code : FormDialog.tsx / FormSidePanel.tsx)
+  forms:
+    shells:
+      page: FormPage # création / édition pleine page — footer obligatoire bas droite
+      dialog: FormDialog # modales
+      side_panel: FormSidePanel # création à la volée depuis un picker
+    routes:
+      create: "/…/new"
+      edit: "/…/[id]/edit"
+      detail: "fiche lecture + lien Modifier → /edit (pas d’édition inline des champs entité)"
+    footer:
+      placement: "bas du panneau, pleine largeur, justify-end"
+      classes: "flex flex-wrap items-center justify-end gap-2 border-t … bg-slate-50/80 …"
+      buttons: "FormDialogCancelButton + FormDialogPrimaryButton"
+    fields:
+      label: formFieldLabelClassName
+      input: formFieldInputClassName
+      hint: formFieldHintClassName
+    breadcrumb: PageBreadcrumb # ← Liste / ← Fiche
+    siret_select: "à chaque onSelect : maj nom + adresse (ne pas garder l’ancien nom si déjà rempli)"
+
   tailwind_tokens:
     brand_color: "bg-brand-600 text-white"
     header:
-      container: "border-b border-slate-800 bg-slate-900/60 backdrop-blur"
+      container: "border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900"
       inner: "max-w-6xl mx-auto px-4 py-4 flex items-center justify-between"
     page:
       root: "min-h-screen flex flex-col"
       main: "flex-1"
     card:
-      container: "rounded-xl border border-slate-800 bg-slate-900/40 p-4"
+      container: "rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm"
       title: "font-medium mb-1"
-      body: "text-sm text-slate-400"
+      body: "text-sm text-slate-500 dark:text-slate-400"
     typography:
       app_title: "font-semibold text-lg"
-      app_subtitle: "text-xs text-slate-400"
-      h1: "text-3xl font-semibold mb-2"
-      lead: "text-slate-400 mb-8 max-w-xl"
+      app_subtitle: "text-xs text-slate-500 dark:text-slate-400"
+      h1: "text-xl sm:text-2xl font-semibold text-slate-900 dark:text-slate-100"
+      lead: "text-sm text-slate-500 dark:text-slate-400"
 
   components:
     header:
       logo:
         shape: "rounded-lg"
-        size: "inline-flex h-8 w-8 items-center justify-center"
-        style: "bg-brand-600 text-white font-semibold"
-        content: "S"
+        size: "h-8 w-8"
+        style: "PLANWISE_LOGO_SRC (Image), pas un monogramme S"
       title: "Planwise"
       subtitle: "CRM accessible aux artisans et TPE"
     home_sections:

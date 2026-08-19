@@ -79,7 +79,7 @@ const BILLING_STATUS_COLORS: Record<BillingStatus, string> = {
   paid: "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
 };
 
-const GRID = "md:grid-cols-[1.2fr_1fr_0.7fr_0.65fr_0.65fr_0.4fr]";
+const GRID = "md:grid-cols-[minmax(0,2.4fr)_minmax(0,1fr)_0.7fr_0.7fr_0.65fr_0.45fr]";
 
 export function CasesListPage() {
   const { can } = usePermissions();
@@ -161,7 +161,7 @@ export function CasesListPage() {
         <ListSearchField
           value={search}
           onChange={setSearch}
-          placeholder="Rechercher un dossier (titre, client, tags…)…"
+          placeholder="Rechercher un dossier (n°, libellé, client…)…"
         />
         <select
           value={statusFilter}
@@ -236,7 +236,12 @@ export function CasesListPage() {
           }
         />
       ) : (
-        <>
+        <ListPagination
+          offset={offset}
+          limit={LIST_PAGE_SIZE}
+          total={total}
+          onOffsetChange={setOffset}
+        >
           <ListTableShell
             gridTemplateClass={GRID}
             headerCells={
@@ -253,14 +258,17 @@ export function CasesListPage() {
             {cases.map((c) => (
               <ListRow key={c.id} gridTemplateClass={GRID}>
                 <div className="min-w-0">
-                  <ListCellPrimary className="block">
-                    <Link
-                      href={`/cases/${c.id}`}
-                      className="inline-flex items-center gap-2 min-w-0 text-brand-600 dark:text-brand-400 hover:underline font-medium"
-                    >
-                      <span className="truncate">{c.title}</span>
+                  <ListCellPrimary>
+                    <span className="inline-flex w-full min-w-0 items-center gap-2">
+                      <Link
+                        href={`/cases/${c.id}`}
+                        className="min-w-0 truncate text-brand-600 dark:text-brand-400 hover:underline font-medium"
+                        title={c.title}
+                      >
+                        {c.title}
+                      </Link>
                       <TestDataBadgeIf isTestData={c.isTestData} />
-                    </Link>
+                    </span>
                   </ListCellPrimary>
                   {c.nextTodo ? (
                     <p className="text-[11px] text-amber-600 mt-0.5 truncate">
@@ -290,13 +298,7 @@ export function CasesListPage() {
               </ListRow>
             ))}
           </ListTableShell>
-          <ListPagination
-            offset={offset}
-            limit={LIST_PAGE_SIZE}
-            total={total}
-            onOffsetChange={setOffset}
-          />
-        </>
+        </ListPagination>
       )}
     </ListPageRoot>
   );

@@ -9,7 +9,6 @@ import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/ToastProvider";
 import { usePermissions } from "@/lib/hooks/usePermissions";
 import { CustomerCasesSection } from "./CustomerCasesSection";
-import { CustomerEditForm } from "./CustomerEditForm";
 import { CustomerContactsSection } from "./CustomerContactsSection";
 import { CustomerContractsSection } from "./CustomerContractsSection";
 import { CustomerSitesSection } from "./CustomerSitesSection";
@@ -20,6 +19,7 @@ import { ResourceNotFoundPanel } from "@/components/ui/AppErrorAlert";
 import { PlanwiseLoader } from "@/components/ui/PlanwiseLoader";
 import { TestDataBadgeIf } from "@/components/test-data/TestDataBadge";
 import { useRegisterQuickActionLabel } from "@/components/dashboard/QuickActionLabelContext";
+import { PageBreadcrumb } from "@/components/ui/FormDialog";
 
 function formatDate(iso?: string) {
   if (!iso) return null;
@@ -39,7 +39,6 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
   const { can } = usePermissions();
   const confirm = useConfirm();
   const { showToast } = useToast();
-  const [isEditing, setIsEditing] = useState(false);
   const [mutationError, setMutationError] = useState("");
 
   const canUpdate = can("customers.update");
@@ -54,20 +53,6 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
   } = useQuery({
     queryKey: ["customer", customerId],
     queryFn: () => customersApi.getCustomer(customerId),
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: (payload: customersApi.UpdateCustomerPayload) =>
-      customersApi.updateCustomer(customerId, payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["customer", customerId] });
-      queryClient.invalidateQueries({ queryKey: ["customers"] });
-      setIsEditing(false);
-      setMutationError("");
-      showToast("Client mis à jour.");
-      void refetch();
-    },
-    onError: (err: Error) => setMutationError(err.message),
   });
 
   const deleteMutation = useMutation({
@@ -121,26 +106,17 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link
-          href="/customers"
-          className="text-sm font-medium text-brand-600 dark:text-brand-400 hover:text-brand-500"
-        >
-          &larr; Clients
-        </Link>
+        <PageBreadcrumb href="/customers" label="Clients" />
         <div className="flex flex-wrap items-center gap-2">
-          {canUpdate && !isEditing && (
-            <button
-              type="button"
-              onClick={() => {
-                setMutationError("");
-                setIsEditing(true);
-              }}
+          {canUpdate && (
+            <Link
+              href={`/customers/${customerId}/edit`}
               className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 transition hover:bg-slate-50 dark:hover:bg-slate-800"
             >
               Modifier
-            </button>
+            </Link>
           )}
-          {canDelete && !isEditing && (
+          {canDelete && (
             <button
               type="button"
               onClick={() => void handleDelete()}
@@ -153,161 +129,136 @@ export function CustomerDetailPage({ customerId }: { customerId: string }) {
         </div>
       </div>
 
-      {mutationError && !isEditing && (
+      {mutationError ? (
         <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
           {mutationError}
         </div>
-      )}
+      ) : null}
 
-      {isEditing ? (
-        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/20 sm:p-6">
-          <h2 className="mb-4 text-lg font-semibold text-slate-900 dark:text-slate-100">
-            Modifier le client
-          </h2>
-          <CustomerEditForm
-            customer={c}
-            isPending={updateMutation.isPending}
-            error={mutationError}
-            onCancel={() => {
-              setMutationError("");
-              setIsEditing(false);
-            }}
-            onSubmit={(payload) => {
-              setMutationError("");
-              updateMutation.mutate(payload);
-            }}
-          />
+      <>
+        <div>
+          <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100 sm:text-2xl inline-flex items-center gap-2 flex-wrap">
+            {c.displayName}
+            <TestDataBadgeIf isTestData={c.isTestData} />
+          </h1>
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+            {CUSTOMER_KIND_LABELS[c.kind]}
+          </p>
         </div>
-      ) : (
-        <>
-          <div>
-            <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100 sm:text-2xl inline-flex items-center gap-2 flex-wrap">
-              {c.displayName}
-              <TestDataBadgeIf isTestData={c.isTestData} />
-            </h1>
-            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-              {CUSTOMER_KIND_LABELS[c.kind]}
-            </p>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/20 sm:col-span-2">
+            <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+              Coordonnées
+            </h2>
+            <dl className="mt-3 space-y-2 text-sm">
+              {c.email && (
+                <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
+                  <dt className="text-slate-500 dark:text-slate-400 sm:w-32">E-mail</dt>
+                  <dd>
+                    <a
+                      href={`mailto:${c.email}`}
+                      className="text-brand-600 dark:text-brand-400 hover:text-brand-500"
+                    >
+                      {c.email}
+                    </a>
+                  </dd>
+                </div>
+              )}
+              {c.phone && (
+                <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
+                  <dt className="text-slate-500 dark:text-slate-400 sm:w-32">Téléphone</dt>
+                  <dd>
+                    <a href={`tel:${c.phone}`} className="text-slate-800 dark:text-slate-100">
+                      {c.phone}
+                    </a>
+                  </dd>
+                </div>
+              )}
+              {c.mobile && (
+                <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
+                  <dt className="text-slate-500 dark:text-slate-400 sm:w-32">Mobile</dt>
+                  <dd>
+                    <a href={`tel:${c.mobile}`} className="text-slate-800 dark:text-slate-100">
+                      {c.mobile}
+                    </a>
+                  </dd>
+                </div>
+              )}
+              {c.address && (
+                <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
+                  <dt className="text-slate-500 dark:text-slate-400 sm:w-32">Adresse</dt>
+                  <dd>
+                    <address className="not-italic text-slate-800 dark:text-slate-100">
+                      {c.address.line1}
+                      <br />
+                      {c.address.line2 ? (
+                        <>
+                          {c.address.line2}
+                          <br />
+                        </>
+                      ) : null}
+                      {c.address.postalCode} {c.address.city}
+                      <br />
+                      {c.address.country}
+                    </address>
+                  </dd>
+                </div>
+              )}
+              {!c.email && !c.phone && !c.mobile && !c.address && (
+                <p className="text-slate-500 dark:text-slate-400">Aucune coordonnée renseignée.</p>
+              )}
+            </dl>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          {(c.kind === "individual" && (c.firstName || c.lastName)) ||
+          (c.kind === "company" && c.companyName) ||
+          c.legalIdentifier ? (
             <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/20 sm:col-span-2">
-              <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-                Coordonnées
-              </h2>
+              <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Identité</h2>
               <dl className="mt-3 space-y-2 text-sm">
-                {c.email && (
+                {c.kind === "individual" && (c.firstName || c.lastName) && (
                   <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
-                    <dt className="text-slate-500 dark:text-slate-400 sm:w-32">E-mail</dt>
-                    <dd>
-                      <a
-                        href={`mailto:${c.email}`}
-                        className="text-brand-600 dark:text-brand-400 hover:text-brand-500"
-                      >
-                        {c.email}
-                      </a>
+                    <dt className="text-slate-500 dark:text-slate-400 sm:w-32">Nom complet</dt>
+                    <dd className="text-slate-800 dark:text-slate-100">
+                      {[c.firstName, c.lastName].filter(Boolean).join(" ")}
                     </dd>
                   </div>
                 )}
-                {c.phone && (
+                {c.kind === "company" && c.companyName && (
                   <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
-                    <dt className="text-slate-500 dark:text-slate-400 sm:w-32">Téléphone</dt>
-                    <dd>
-                      <a href={`tel:${c.phone}`} className="text-slate-800 dark:text-slate-100">
-                        {c.phone}
-                      </a>
-                    </dd>
+                    <dt className="text-slate-500 dark:text-slate-400 sm:w-32">Raison sociale</dt>
+                    <dd className="text-slate-800 dark:text-slate-100">{c.companyName}</dd>
                   </div>
                 )}
-                {c.mobile && (
+                {c.legalIdentifier && (
                   <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
-                    <dt className="text-slate-500 dark:text-slate-400 sm:w-32">Mobile</dt>
-                    <dd>
-                      <a href={`tel:${c.mobile}`} className="text-slate-800 dark:text-slate-100">
-                        {c.mobile}
-                      </a>
-                    </dd>
+                    <dt className="text-slate-500 dark:text-slate-400 sm:w-32">Siret</dt>
+                    <dd className="text-slate-800 dark:text-slate-100">{c.legalIdentifier}</dd>
                   </div>
-                )}
-                {c.address && (
-                  <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
-                    <dt className="text-slate-500 dark:text-slate-400 sm:w-32">Adresse</dt>
-                    <dd>
-                      <address className="not-italic text-slate-800 dark:text-slate-100">
-                        {c.address.line1}
-                        <br />
-                        {c.address.line2 ? (
-                          <>
-                            {c.address.line2}
-                            <br />
-                          </>
-                        ) : null}
-                        {c.address.postalCode} {c.address.city}
-                        <br />
-                        {c.address.country}
-                      </address>
-                    </dd>
-                  </div>
-                )}
-                {!c.email && !c.phone && !c.mobile && !c.address && (
-                  <p className="text-slate-500 dark:text-slate-400">
-                    Aucune coordonnée renseignée.
-                  </p>
                 )}
               </dl>
             </div>
+          ) : null}
 
-            {(c.kind === "individual" && (c.firstName || c.lastName)) ||
-            (c.kind === "company" && c.companyName) ||
-            c.legalIdentifier ? (
-              <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/20 sm:col-span-2">
-                <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-                  Identité
-                </h2>
-                <dl className="mt-3 space-y-2 text-sm">
-                  {c.kind === "individual" && (c.firstName || c.lastName) && (
-                    <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
-                      <dt className="text-slate-500 dark:text-slate-400 sm:w-32">Nom complet</dt>
-                      <dd className="text-slate-800 dark:text-slate-100">
-                        {[c.firstName, c.lastName].filter(Boolean).join(" ")}
-                      </dd>
-                    </div>
-                  )}
-                  {c.kind === "company" && c.companyName && (
-                    <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
-                      <dt className="text-slate-500 dark:text-slate-400 sm:w-32">Raison sociale</dt>
-                      <dd className="text-slate-800 dark:text-slate-100">{c.companyName}</dd>
-                    </div>
-                  )}
-                  {c.legalIdentifier && (
-                    <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
-                      <dt className="text-slate-500 dark:text-slate-400 sm:w-32">Siret</dt>
-                      <dd className="text-slate-800 dark:text-slate-100">{c.legalIdentifier}</dd>
-                    </div>
-                  )}
-                </dl>
-              </div>
-            ) : null}
+          {c.notes && (
+            <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/20 sm:col-span-2">
+              <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Notes</h2>
+              <p className="mt-3 whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-200">
+                {c.notes}
+              </p>
+            </div>
+          )}
 
-            {c.notes && (
-              <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/20 sm:col-span-2">
-                <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Notes</h2>
-                <p className="mt-3 whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-200">
-                  {c.notes}
-                </p>
-              </div>
-            )}
-
-            {(created || updated) && (
-              <div className="text-xs text-slate-500 dark:text-slate-400 sm:col-span-2">
-                {created && <span>Créé le {created}</span>}
-                {created && updated && <span className="mx-2">·</span>}
-                {updated && <span>Mis à jour le {updated}</span>}
-              </div>
-            )}
-          </div>
-        </>
-      )}
+          {(created || updated) && (
+            <div className="text-xs text-slate-500 dark:text-slate-400 sm:col-span-2">
+              {created && <span>Créé le {created}</span>}
+              {created && updated && <span className="mx-2">·</span>}
+              {updated && <span>Mis à jour le {updated}</span>}
+            </div>
+          )}
+        </div>
+      </>
 
       <CustomerCasesSection customerId={customerId} />
 

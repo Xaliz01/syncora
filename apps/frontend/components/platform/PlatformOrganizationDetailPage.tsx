@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   BASE_SUBSCRIPTION_PLAN,
@@ -9,6 +8,7 @@ import {
 } from "@planwise/shared";
 import * as platformApi from "@/lib/platform.api";
 import { buildSupportSessionHandoffUrl } from "@/lib/support-session";
+import { PageBreadcrumb } from "@/components/ui/FormDialog";
 
 function formatDate(iso?: string) {
   if (!iso) return "—";
@@ -99,12 +99,7 @@ export function PlatformOrganizationDetailPage({ organizationId }: { organizatio
   return (
     <div className="space-y-6">
       <div>
-        <Link
-          href="/platform"
-          className="text-sm text-brand-600 hover:underline dark:text-brand-400"
-        >
-          ← Organisations
-        </Link>
+        <PageBreadcrumb href="/platform" label="Organisations" />
         <h1 className="mt-2 text-xl font-semibold text-slate-900 dark:text-slate-100">
           {org.name}
         </h1>

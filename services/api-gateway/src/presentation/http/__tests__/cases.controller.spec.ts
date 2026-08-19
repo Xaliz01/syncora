@@ -154,13 +154,21 @@ describe("CasesController", () => {
 
   describe("createCase", () => {
     it("should call casesService.createCase with user and body", async () => {
-      const body = { title: "Case A" };
-      mockCasesService.createCase.mockResolvedValue({ id: "case-1", title: "Case A" } as never);
+      const body = { customerId: "cust-1", description: "Note" };
+      mockCasesService.createCase.mockResolvedValue({
+        id: "case-1",
+        caseNumber: "2026-0001",
+        title: "2026-0001 - Client",
+      } as never);
 
       const result = await controller.createCase(mockUser, body);
 
       expect(mockCasesService.createCase).toHaveBeenCalledWith(mockUser, body);
-      expect(result).toEqual({ id: "case-1", title: "Case A" });
+      expect(result).toEqual({
+        id: "case-1",
+        caseNumber: "2026-0001",
+        title: "2026-0001 - Client",
+      });
     });
   });
 
@@ -231,16 +239,23 @@ describe("CasesController", () => {
 
   describe("updateCase", () => {
     it("should call casesService.updateCase with user, caseId and body", async () => {
-      const body = { title: "Updated Case" };
+      const body = { description: "Updated" };
       mockCasesService.updateCase.mockResolvedValue({
         id: "case-1",
-        title: "Updated Case",
+        caseNumber: "2026-0001",
+        title: "2026-0001 - Client",
+        description: "Updated",
       } as never);
 
       const result = await controller.updateCase(mockUser, "case-1", body);
 
       expect(mockCasesService.updateCase).toHaveBeenCalledWith(mockUser, "case-1", body);
-      expect(result).toEqual({ id: "case-1", title: "Updated Case" });
+      expect(result).toEqual({
+        id: "case-1",
+        caseNumber: "2026-0001",
+        title: "2026-0001 - Client",
+        description: "Updated",
+      });
     });
   });
 

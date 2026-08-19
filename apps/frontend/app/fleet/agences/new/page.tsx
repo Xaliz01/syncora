@@ -2,7 +2,7 @@
 
 import { RequireAuth } from "@/components/auth/RequireAuth";
 import { RequirePermission } from "@/components/auth/RequirePermission";
-import { AgenceCreatePage } from "@/components/fleet/AgenceCreatePage";
+import { AgenceFormPage } from "@/components/fleet/AgenceCreatePage";
 import { AppShell } from "@/components/layout/AppShell";
 
 export default function NewAgencePage() {
@@ -10,7 +10,7 @@ export default function NewAgencePage() {
     <RequireAuth>
       <RequirePermission permission="agences.create">
         <AppShell>
-          <AgenceCreatePage />
+          <AgenceFormPage />
         </AppShell>
       </RequirePermission>
     </RequireAuth>

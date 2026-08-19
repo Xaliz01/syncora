@@ -111,52 +111,52 @@ export function MaintenanceContractsListPage() {
       ) : contracts.length === 0 ? (
         <p className="text-sm text-slate-500">Aucun contrat pour le moment.</p>
       ) : (
-        <ul className="divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-900">
-          {contracts.map((c) => {
-            const overdue = c.status === "active" && c.nextDueDate < today;
-            const pending =
-              c.schedulingMode === "schedule_with_client" && (c.schedulingPending || overdue);
-            return (
-              <li key={c.id}>
-                <Link
-                  href={`/contracts/${c.id}`}
-                  className="flex flex-col gap-1 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/60 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div>
-                    <p className="font-medium text-slate-900 dark:text-slate-100">{c.title}</p>
-                    <p className="text-xs text-slate-500">
-                      Prochaine visite : {c.nextDueDate} · tous les {c.recurrenceMonths} mois ·{" "}
-                      {MAINTENANCE_SCHEDULING_MODE_LABELS[c.schedulingMode]}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    {pending ? (
-                      <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
-                        À programmer
+        <ListPagination
+          offset={offset}
+          limit={LIST_PAGE_SIZE}
+          total={total}
+          onOffsetChange={setOffset}
+        >
+          <ul className="divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-900">
+            {contracts.map((c) => {
+              const overdue = c.status === "active" && c.nextDueDate < today;
+              const pending =
+                c.schedulingMode === "schedule_with_client" && (c.schedulingPending || overdue);
+              return (
+                <li key={c.id}>
+                  <Link
+                    href={`/contracts/${c.id}`}
+                    className="flex flex-col gap-1 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/60 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div>
+                      <p className="font-medium text-slate-900 dark:text-slate-100">{c.title}</p>
+                      <p className="text-xs text-slate-500">
+                        Prochaine visite : {c.nextDueDate} · tous les {c.recurrenceMonths} mois ·{" "}
+                        {MAINTENANCE_SCHEDULING_MODE_LABELS[c.schedulingMode]}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {pending ? (
+                        <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                          À programmer
+                        </span>
+                      ) : null}
+                      {overdue ? (
+                        <span className="text-xs font-medium text-red-600 dark:text-red-400">
+                          En retard
+                        </span>
+                      ) : null}
+                      <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                        {STATUS_LABELS[c.status]}
                       </span>
-                    ) : null}
-                    {overdue ? (
-                      <span className="text-xs font-medium text-red-600 dark:text-red-400">
-                        En retard
-                      </span>
-                    ) : null}
-                    <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
-                      {STATUS_LABELS[c.status]}
-                    </span>
-                  </div>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+                    </div>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </ListPagination>
       )}
-
-      <ListPagination
-        offset={offset}
-        limit={LIST_PAGE_SIZE}
-        total={total}
-        onOffsetChange={setOffset}
-      />
     </div>
   );
 }

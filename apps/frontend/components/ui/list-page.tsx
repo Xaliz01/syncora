@@ -288,13 +288,21 @@ export function ListPagination({
   limit,
   total,
   onOffsetChange,
+  children,
+  placement = "bottom",
 }: {
   offset: number;
   limit: number;
   total: number;
   onOffsetChange: (offset: number) => void;
+  /** Si fourni, la pagination s’affiche au-dessus et en-dessous de la liste (total visible immédiatement). */
+  children?: React.ReactNode;
+  /** Emplacement d’une barre seule (sans `children`). Ignoré si `children` est fourni. */
+  placement?: "top" | "bottom";
 }) {
-  if (total === 0) return null;
+  if (total === 0) {
+    return children !== undefined ? <>{children}</> : null;
+  }
 
   const start = offset + 1;
   const end = Math.min(offset + limit, total);
@@ -302,10 +310,15 @@ export function ListPagination({
   const canNext = offset + limit < total;
   const showNav = canPrev || canNext;
 
-  return (
+  const bar = (edge: "top" | "bottom") => (
     <nav
-      className="flex items-center justify-between gap-2 pt-3 pr-16 sm:pr-20 border-t border-slate-100 dark:border-slate-800"
-      aria-label="Pagination"
+      className={cn(
+        "flex items-center justify-between gap-2 pr-16 sm:pr-20",
+        edge === "top"
+          ? "pb-3 border-b border-slate-100 dark:border-slate-800"
+          : "pt-3 border-t border-slate-100 dark:border-slate-800",
+      )}
+      aria-label={edge === "top" ? "Pagination (haut)" : "Pagination"}
     >
       {showNav ? (
         <button
@@ -336,4 +349,16 @@ export function ListPagination({
       )}
     </nav>
   );
+
+  if (children !== undefined) {
+    return (
+      <>
+        {bar("top")}
+        {children}
+        {bar("bottom")}
+      </>
+    );
+  }
+
+  return bar(placement);
 }

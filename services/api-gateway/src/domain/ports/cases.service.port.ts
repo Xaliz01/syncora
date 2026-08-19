@@ -24,7 +24,6 @@ import type {
 
 export interface CreateCaseForOrgBody {
   templateId?: string;
-  title: string;
   description?: string;
   priority?: string;
   assigneeIds?: string[];
@@ -36,7 +35,6 @@ export interface CreateCaseForOrgBody {
 }
 
 export interface UpdateCaseForOrgBody {
-  title?: string;
   description?: string;
   status?: string;
   billingStatus?: string;

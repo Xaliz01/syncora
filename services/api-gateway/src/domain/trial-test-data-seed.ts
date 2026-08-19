@@ -114,30 +114,6 @@ const COMPANY_SUFFIXES = [
   "Noir",
 ];
 
-const CASE_TITLE_VERBS = [
-  "Dépannage",
-  "Installation",
-  "Rénovation",
-  "Maintenance",
-  "Diagnostic",
-  "Mise aux normes",
-  "Contrôle",
-  "Remplacement",
-];
-
-const CASE_TITLE_OBJECTS = [
-  "chaudière",
-  "tableau électrique",
-  "fuite cuisine",
-  "VMC",
-  "radiateurs",
-  "compteur",
-  "réseau eau",
-  "porte de garage",
-  "climatisation",
-  "toiture",
-];
-
 const ARTICLE_CATALOG: { name: string; unit: string; baseRef: string }[] = [
   { name: "Disjoncteur 20A", unit: "unité", baseRef: "DJ20" },
   { name: "Disjoncteur 32A", unit: "unité", baseRef: "DJ32" },
@@ -164,6 +140,30 @@ const CASE_STATUSES: CaseStatus[] = [
 const CASE_PRIORITIES: CasePriority[] = ["medium", "high", "low", "urgent", "medium", "high"];
 
 const TEAM_COLORS = ["#7C3AED", "#0EA5E9", "#059669", "#D97706"];
+
+const DEMO_CASE_DESC_VERBS = [
+  "Dépannage",
+  "Installation",
+  "Rénovation",
+  "Maintenance",
+  "Diagnostic",
+  "Mise aux normes",
+  "Contrôle",
+  "Remplacement",
+];
+
+const DEMO_CASE_DESC_OBJECTS = [
+  "chaudière",
+  "tableau électrique",
+  "fuite cuisine",
+  "VMC",
+  "radiateurs",
+  "compteur",
+  "réseau eau",
+  "porte de garage",
+  "climatisation",
+  "toiture",
+];
 
 type DemoProfileSeed = {
   name: string;
@@ -211,6 +211,20 @@ function padIndex(index: number, width = 3): string {
 function pick<T>(items: readonly T[], index: number): T {
   return items[index % items.length]!;
 }
+
+/** Libellé d’affichage aligné sur le mapper clients (création démo). */
+export function demoCustomerDisplayName(body: CreateCustomerBody): string {
+  if (body.kind === "company") {
+    return body.companyName?.trim() || "Société";
+  }
+  const parts = [body.firstName, body.lastName].filter((p) => p?.trim()).map((p) => p!.trim());
+  return parts.length > 0 ? parts.join(" ") : "Client";
+}
+
+export type DemoCaseCustomerRef = {
+  id: string;
+  displayName: string;
+};
 
 export function buildDemoAgences(organizationId: string): CreateAgenceBody[] {
   return [
@@ -345,19 +359,20 @@ export interface DemoCaseSeed {
 function buildCaseBase(
   organizationId: string,
   i: number,
-  customerIds: string[],
+  customers: DemoCaseCustomerRef[],
   templateIds: string[],
   assignees?: CaseAssignee[],
 ): Omit<CreateCaseBody, "organizationId"> & { organizationId: string } {
-  const verb = pick(CASE_TITLE_VERBS, i);
-  const object = pick(CASE_TITLE_OBJECTS, i + 2);
+  const customer = pick(customers, i);
+  const verb = pick(DEMO_CASE_DESC_VERBS, i);
+  const object = pick(DEMO_CASE_DESC_OBJECTS, i + 2);
   const templateId = i % 4 === 0 && templateIds.length > 0 ? pick(templateIds, i / 4) : undefined;
   return {
     organizationId,
-    title: `Démo — ${verb} ${object} #${i + 1}`,
-    description: "Dossier généré pour la démonstration Planwise.",
+    customerId: customer.id,
+    customerDisplayName: customer.displayName,
+    description: `Dossier généré pour la démonstration Planwise (${verb} ${object}).`,
     priority: pick(CASE_PRIORITIES, i),
-    customerId: pick(customerIds, i),
     ...(templateId ? { templateId } : {}),
     ...(assignees?.length ? { assignees } : {}),
     isTestData: true,
@@ -368,13 +383,13 @@ function buildCaseBase(
 function buildUserAssignedCaseSeed(
   organizationId: string,
   i: number,
-  customerIds: string[],
+  customers: DemoCaseCustomerRef[],
   templateIds: string[],
   assignee: DemoCaseAssignee,
 ): DemoCaseSeed {
   const now = Date.now();
   const assignees: CaseAssignee[] = [{ userId: assignee.userId, name: assignee.name }];
-  const base = buildCaseBase(organizationId, i, customerIds, templateIds, assignees);
+  const base = buildCaseBase(organizationId, i, customers, templateIds, assignees);
   const templateId =
     templateIds.length > 0 && i < 20 ? pick(templateIds, i % templateIds.length) : undefined;
   const create = { ...base, ...(templateId ? { templateId } : {}) };
@@ -416,7 +431,7 @@ function buildUserAssignedCaseSeed(
 
 export function buildDemoCases(
   organizationId: string,
-  customerIds: string[],
+  customers: DemoCaseCustomerRef[],
   templateIds: string[],
   currentUser?: DemoCaseAssignee,
 ): DemoCaseSeed[] {
@@ -425,22 +440,27 @@ export function buildDemoCases(
     ? Math.min(TRIAL_DEMO_COUNTS.userAssignedCases, TRIAL_DEMO_COUNTS.cases)
     : 0;
 
+  if (customers.length === 0) {
+    return [];
+  }
+
   return Array.from({ length: TRIAL_DEMO_COUNTS.cases }, (_, i) => {
     if (currentUser && i < userAssignedCount) {
-      return buildUserAssignedCaseSeed(organizationId, i, customerIds, templateIds, currentUser);
+      return buildUserAssignedCaseSeed(organizationId, i, customers, templateIds, currentUser);
     }
-    const verb = pick(CASE_TITLE_VERBS, i);
-    const object = pick(CASE_TITLE_OBJECTS, i + 2);
+    const customer = pick(customers, i);
+    const verb = pick(DEMO_CASE_DESC_VERBS, i);
+    const object = pick(DEMO_CASE_DESC_OBJECTS, i + 2);
     const dueDate = new Date(now + ((i % 14) + 1) * 24 * 60 * 60 * 1000);
     const templateId = i % 4 === 0 && templateIds.length > 0 ? pick(templateIds, i / 4) : undefined;
     return {
       status: pick(CASE_STATUSES, i),
       create: {
         organizationId,
-        title: `Démo — ${verb} ${object} #${i + 1}`,
-        description: "Dossier généré pour la démonstration Planwise.",
+        customerId: customer.id,
+        customerDisplayName: customer.displayName,
+        description: `Dossier généré pour la démonstration Planwise (${verb} ${object}).`,
         priority: pick(CASE_PRIORITIES, i),
-        customerId: pick(customerIds, i),
         dueDate: dueDate.toISOString(),
         ...(templateId ? { templateId } : {}),
         isTestData: true,

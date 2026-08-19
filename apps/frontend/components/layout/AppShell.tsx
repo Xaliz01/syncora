@@ -233,7 +233,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setMobileSearchOpen(false);
+    setMobileMenuOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMobileMenuOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [mobileMenuOpen]);
 
   const submitSearch = useCallback(
     (e: React.FormEvent) => {
@@ -375,15 +390,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <QuickActionLabelProvider>
-      <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
-        <header className="sticky top-0 z-30 w-full border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur">
+      <div className="flex h-dvh flex-col overflow-hidden bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+        <header className="z-50 w-full shrink-0 border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur">
           <div className="flex items-center justify-between px-4 py-3 lg:px-6">
             <div className="flex items-center gap-3">
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen((prev) => !prev)}
                 className="lg:hidden -ml-1 rounded-md p-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200"
-                aria-label="Menu"
+                aria-label={mobileMenuOpen ? "Fermer le menu" : "Ouvrir le menu"}
+                aria-expanded={mobileMenuOpen}
+                aria-controls="app-mobile-nav"
               >
                 <svg
                   className="h-5 w-5"
@@ -543,10 +560,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           )}
         </header>
 
-        <div className="flex flex-1">
+        <div className="flex min-h-0 flex-1">
           {/* Desktop sidebar */}
           <aside
-            className={`hidden lg:flex lg:flex-col lg:flex-shrink-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-[57px] h-[calc(100vh-57px)] overflow-y-auto overflow-x-hidden transition-[width] duration-200 ${
+            className={`hidden lg:flex lg:flex-col lg:flex-shrink-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 h-full overflow-y-auto overflow-x-hidden transition-[width] duration-200 ${
               sidebarPrefReady && sidebarCollapsed ? "lg:w-[4.5rem]" : "lg:w-[260px]"
             }`}
           >
@@ -560,46 +577,67 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             />
           </aside>
 
-          {/* Mobile sidebar overlay */}
+          {/* Mobile sidebar overlay — sous le header pour garder le bouton fermer accessible */}
           {mobileMenuOpen && (
-            <div className="fixed inset-0 z-40 lg:hidden">
+            <div className="fixed inset-x-0 bottom-0 top-[57px] z-40 lg:hidden">
               <div
-                className="absolute inset-0 bg-slate-900/30 backdrop-blur-sm"
+                className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] animate-mobile-nav-backdrop"
                 onClick={() => setMobileMenuOpen(false)}
+                aria-hidden
               />
-              <aside className="absolute top-0 left-0 bottom-0 w-[280px] bg-white dark:bg-slate-900 shadow-xl overflow-y-auto border-r border-slate-200 dark:border-slate-800">
-                <div className="flex items-center gap-2.5 border-b border-slate-200 dark:border-slate-800 px-4 py-3">
-                  <Image
-                    src={PLANWISE_LOGO_SRC}
-                    alt=""
-                    width={32}
-                    height={32}
-                    className="h-8 w-8 rounded-lg shrink-0"
-                  />
-                  <div>
-                    <div className="font-semibold text-sm leading-tight">Planwise</div>
-                    <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+              <aside
+                id="app-mobile-nav"
+                role="dialog"
+                aria-modal="true"
+                aria-label="Menu de navigation"
+                className="absolute top-0 left-0 bottom-0 flex w-[min(20rem,88vw)] flex-col bg-white shadow-xl border-r border-slate-200 text-slate-900 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-100 animate-mobile-nav-panel pb-[env(safe-area-inset-bottom)]"
+              >
+                <div className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-200 px-3 py-2.5 dark:border-slate-800">
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
+                      Navigation
+                    </div>
+                    <div className="truncate text-[11px] text-slate-500 dark:text-slate-400">
                       Espace organisation
                     </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="shrink-0 rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                    aria-label="Fermer le menu"
+                  >
+                    <svg
+                      className="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      aria-hidden
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
                 </div>
-                <OrganizationSwitcher />
-                <SidebarContent
-                  menuSections={visibleSections}
-                  pathname={pathname}
-                  onNavigate={() => setMobileMenuOpen(false)}
-                />
+                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+                  <OrganizationSwitcher />
+                  <SidebarContent
+                    menuSections={visibleSections}
+                    pathname={pathname}
+                    onNavigate={() => setMobileMenuOpen(false)}
+                  />
+                </div>
               </aside>
             </div>
           )}
 
-          <div className="flex min-w-0 flex-1 flex-col">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
             {subscriptionOk ? (
-              <div className="sticky top-[57px] z-20">
+              <div className="z-20 shrink-0">
                 <QuickActionsBar menuLinks={menuLinks} />
               </div>
             ) : null}
-            <main className="flex-1 min-w-0 p-4 pb-20 sm:p-6 sm:pb-24 lg:p-8 lg:pb-24">
+            <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-y-contain p-4 pb-20 sm:p-6 sm:pb-24 lg:p-8 lg:pb-24">
               <div className="mx-auto w-full max-w-screen-2xl">{children}</div>
             </main>
           </div>

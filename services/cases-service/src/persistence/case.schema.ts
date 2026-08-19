@@ -76,6 +76,9 @@ export class CaseDocument extends Document {
   interventionSiteId?: string;
 
   @Prop({ required: true })
+  caseNumber!: string;
+
+  @Prop({ required: true })
   title!: string;
 
   @Prop()
@@ -128,6 +131,15 @@ CaseSchema.index({ organizationId: 1, assigneeId: 1 });
 CaseSchema.index({ organizationId: 1, "assignees.userId": 1 });
 CaseSchema.index({ organizationId: 1, dueDate: 1 });
 CaseSchema.index({ organizationId: 1, billingStatus: 1 });
+CaseSchema.index(
+  { organizationId: 1, caseNumber: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      caseNumber: { $type: "string" },
+    },
+  },
+);
 CaseSchema.index(
   { organizationId: 1, importExternalId: 1 },
   {

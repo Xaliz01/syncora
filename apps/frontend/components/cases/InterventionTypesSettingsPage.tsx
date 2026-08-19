@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { DEFAULT_INTERVENTION_TYPE_PRESETS, type InterventionTypeResponse } from "@planwise/shared";
+import { DEFAULT_INTERVENTION_TYPE_PRESETS } from "@planwise/shared";
 import * as api from "@/lib/cases.api";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { ImportDefaultsDialog } from "@/components/settings/ImportDefaultsDialog";
@@ -21,6 +22,7 @@ import {
   ListPageError,
   ListPageHeader,
   ListPageRoot,
+  ListPrimaryAction,
   ListRow,
   ListSearchField,
   ListTableShell,
@@ -28,81 +30,6 @@ import {
 } from "@/components/ui/list-page";
 
 const GRID = "md:grid-cols-[1.2fr_2fr_0.7fr_auto]";
-const DEFAULT_COLOR = "#64748b";
-
-const INPUT_CLASS =
-  "w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:outline-none";
-
-function ColorFields({ color, onChange }: { color: string; onChange: (value: string) => void }) {
-  return (
-    <div className="flex flex-wrap items-center gap-3">
-      <input
-        type="color"
-        aria-label="Couleur du type"
-        className="h-10 w-14 cursor-pointer rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900"
-        value={normalizeCalendarColorHex(color) ?? DEFAULT_COLOR}
-        onChange={(e) => onChange(e.target.value)}
-      />
-      <input
-        type="text"
-        placeholder="#RRGGBB"
-        value={color}
-        onChange={(e) => onChange(e.target.value)}
-        className="flex-1 min-w-[120px] rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-mono"
-      />
-    </div>
-  );
-}
-
-function TypeFormFields({
-  name,
-  description,
-  color,
-  onNameChange,
-  onDescriptionChange,
-  onColorChange,
-}: {
-  name: string;
-  description: string;
-  color: string;
-  onNameChange: (value: string) => void;
-  onDescriptionChange: (value: string) => void;
-  onColorChange: (value: string) => void;
-}) {
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      <div className="sm:col-span-2">
-        <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
-          Nom <span className="text-red-500">*</span>
-        </label>
-        <input
-          value={name}
-          onChange={(e) => onNameChange(e.target.value)}
-          placeholder="Ex. Pose, SAV…"
-          className={INPUT_CLASS}
-        />
-      </div>
-      <div className="sm:col-span-2">
-        <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
-          Description
-        </label>
-        <textarea
-          value={description}
-          onChange={(e) => onDescriptionChange(e.target.value)}
-          placeholder="Optionnel"
-          rows={2}
-          className={INPUT_CLASS}
-        />
-      </div>
-      <div className="sm:col-span-2">
-        <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
-          Couleur
-        </label>
-        <ColorFields color={color} onChange={onColorChange} />
-      </div>
-    </div>
-  );
-}
 
 export function InterventionTypesSettingsPage() {
   const queryClient = useQueryClient();
@@ -111,17 +38,7 @@ export function InterventionTypesSettingsPage() {
   const [search, setSearch] = useState("");
   const [importOpen, setImportOpen] = useState(false);
   const [importing, setImporting] = useState(false);
-  const [showCreateForm, setShowCreateForm] = useState(false);
   const [error, setError] = useState("");
-
-  const [createName, setCreateName] = useState("");
-  const [createDescription, setCreateDescription] = useState("");
-  const [createColor, setCreateColor] = useState(DEFAULT_COLOR);
-
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editDescription, setEditDescription] = useState("");
-  const [editColor, setEditColor] = useState(DEFAULT_COLOR);
 
   const { data, isLoading } = useQuery({
     queryKey: ["intervention-types"],
@@ -132,28 +49,6 @@ export function InterventionTypesSettingsPage() {
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ["intervention-types"] });
   };
-
-  const createMutation = useMutation({
-    mutationFn: (payload: api.CreateInterventionTypePayload) => api.createInterventionType(payload),
-    onSuccess: () => {
-      invalidate();
-      setShowCreateForm(false);
-      resetCreateForm();
-      setError("");
-    },
-    onError: (err: Error) => setError(err.message),
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: api.UpdateInterventionTypePayload }) =>
-      api.updateInterventionType(id, payload),
-    onSuccess: () => {
-      invalidate();
-      setEditingId(null);
-      setError("");
-    },
-    onError: (err: Error) => setError(err.message),
-  });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.deleteInterventionType(id),
@@ -183,51 +78,6 @@ export function InterventionTypesSettingsPage() {
     () => filterListItems(types, search, (t) => [t.name, t.description ?? "", t.color ?? ""]),
     [types, search],
   );
-
-  function resetCreateForm() {
-    setCreateName("");
-    setCreateDescription("");
-    setCreateColor(DEFAULT_COLOR);
-  }
-
-  function startEdit(type: InterventionTypeResponse) {
-    setEditingId(type.id);
-    setEditName(type.name);
-    setEditDescription(type.description ?? "");
-    setEditColor(normalizeCalendarColorHex(type.color) ?? DEFAULT_COLOR);
-    setShowCreateForm(false);
-    setError("");
-  }
-
-  function handleCreate() {
-    if (!createName.trim()) {
-      setError("Le nom est obligatoire");
-      return;
-    }
-    const color = normalizeCalendarColorHex(createColor) ?? undefined;
-    createMutation.mutate({
-      name: createName.trim(),
-      description: createDescription.trim() || undefined,
-      color,
-    });
-  }
-
-  function handleUpdate() {
-    if (!editingId) return;
-    if (!editName.trim()) {
-      setError("Le nom est obligatoire");
-      return;
-    }
-    const color = normalizeCalendarColorHex(editColor);
-    updateMutation.mutate({
-      id: editingId,
-      payload: {
-        name: editName.trim(),
-        description: editDescription.trim() || null,
-        color,
-      },
-    });
-  }
 
   const handleImport = async (ids: string[]) => {
     setImporting(true);
@@ -282,47 +132,15 @@ export function InterventionTypesSettingsPage() {
               </button>
             </PermissionGate>
             <PermissionGate permission="intervention_types.create">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowCreateForm((prev) => !prev);
-                  setEditingId(null);
-                  setError("");
-                }}
-                className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition"
-              >
-                {showCreateForm ? "Fermer" : "Nouveau type"}
-              </button>
+              <ListPrimaryAction href="/settings/intervention-types/new">
+                Nouveau type
+              </ListPrimaryAction>
             </PermissionGate>
           </div>
         }
       />
 
       {error ? <ListPageError message={error} fallbackMessage="Une erreur est survenue." /> : null}
-
-      {showCreateForm ? (
-        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 space-y-3">
-          <h2 className="font-semibold text-slate-900 dark:text-slate-100">Créer un type</h2>
-          <TypeFormFields
-            name={createName}
-            description={createDescription}
-            color={createColor}
-            onNameChange={setCreateName}
-            onDescriptionChange={setCreateDescription}
-            onColorChange={setCreateColor}
-          />
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={handleCreate}
-              disabled={createMutation.isPending}
-              className="rounded-lg bg-brand-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
-            >
-              Créer le type
-            </button>
-          </div>
-        </div>
-      ) : null}
 
       <ListToolbar>
         <ListSearchField
@@ -348,13 +166,12 @@ export function InterventionTypesSettingsPage() {
                   Importer des types métiers
                 </button>
                 <span className="text-slate-400 hidden sm:inline">ou</span>
-                <button
-                  type="button"
-                  onClick={() => setShowCreateForm(true)}
+                <Link
+                  href="/settings/intervention-types/new"
                   className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium"
                 >
                   Créer un type
-                </button>
+                </Link>
               </div>
             </PermissionGate>
           }
@@ -374,48 +191,7 @@ export function InterventionTypesSettingsPage() {
           }
         >
           {filtered.map((type) => {
-            const isEditing = editingId === type.id;
             const swatch = normalizeCalendarColorHex(type.color);
-            if (isEditing) {
-              return (
-                <div
-                  key={type.id}
-                  className="border-b border-slate-200 dark:border-slate-700 last:border-b-0 bg-brand-50/30 dark:bg-brand-950/20 p-4 space-y-3"
-                >
-                  <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                    Modifier le type
-                  </h3>
-                  <TypeFormFields
-                    name={editName}
-                    description={editDescription}
-                    color={editColor}
-                    onNameChange={setEditName}
-                    onDescriptionChange={setEditDescription}
-                    onColorChange={setEditColor}
-                  />
-                  <div className="flex flex-wrap justify-end gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingId(null);
-                        setError("");
-                      }}
-                      className="rounded-lg border border-slate-200 dark:border-slate-700 px-4 py-1.5 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
-                    >
-                      Annuler
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleUpdate}
-                      disabled={updateMutation.isPending}
-                      className="rounded-lg bg-brand-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
-                    >
-                      Enregistrer
-                    </button>
-                  </div>
-                </div>
-              );
-            }
             return (
               <ListRow key={type.id} gridTemplateClass={GRID}>
                 <ListCellPrimary>
@@ -441,13 +217,12 @@ export function InterventionTypesSettingsPage() {
                 </ListCellDefault>
                 <div className="flex flex-wrap gap-2 justify-end">
                   <PermissionGate permission="intervention_types.update">
-                    <button
-                      type="button"
-                      onClick={() => startEdit(type)}
+                    <Link
+                      href={`/settings/intervention-types/${type.id}/edit`}
                       className="text-xs text-brand-600 dark:text-brand-400 hover:text-brand-500 font-medium"
                     >
                       Modifier
-                    </button>
+                    </Link>
                   </PermissionGate>
                   <PermissionGate permission="intervention_types.delete">
                     <button

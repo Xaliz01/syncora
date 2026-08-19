@@ -19,6 +19,7 @@ import {
   ListPageRoot,
   ListPagination,
   LIST_PAGE_SIZE,
+  ListPrimaryAction,
   ListRowLink,
   ListSearchField,
   ListTableShell,
@@ -48,9 +49,6 @@ const STOCK_STATUS_LABELS: Record<string, string> = {
   ok: "OK",
 };
 
-const PRIMARY_BUTTON_CLASS =
-  "rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition self-start flex-shrink-0";
-
 export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
   const { can } = usePermissions();
   const showCatalogActions = mode !== "movements" && can("stock.articles.create");
@@ -60,16 +58,7 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
   const [lowStockOnly, setLowStockOnly] = useState(false);
   const [showInactive, setShowInactive] = useState(false);
   const [offset, setOffset] = useState(0);
-  const [showCreateForm, setShowCreateForm] = useState(false);
   const [error, setError] = useState("");
-
-  const [createName, setCreateName] = useState("");
-  const [createReference, setCreateReference] = useState("");
-  const [createUnit, setCreateUnit] = useState("unité");
-  const [createDefaultPrice, setCreateDefaultPrice] = useState("");
-  const [createInitialStock, setCreateInitialStock] = useState("0");
-  const [createReorderPoint, setCreateReorderPoint] = useState("0");
-  const [createTargetStock, setCreateTargetStock] = useState("0");
 
   const [movementArticleId, setMovementArticleId] = useState("");
   const [movementType, setMovementType] = useState<"in" | "out" | "adjustment">("out");
@@ -140,23 +129,6 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
     queryClient.invalidateQueries({ queryKey: ["stock-locations"] });
   };
 
-  const createArticleMutation = useMutation({
-    mutationFn: (payload: api.CreateArticlePayload) => api.createArticle(payload),
-    onSuccess: () => {
-      invalidateStockQueries();
-      setShowCreateForm(false);
-      setCreateName("");
-      setCreateReference("");
-      setCreateUnit("unité");
-      setCreateDefaultPrice("");
-      setCreateInitialStock("0");
-      setCreateReorderPoint("0");
-      setCreateTargetStock("0");
-      setError("");
-    },
-    onError: (err: Error) => setError(err.message),
-  });
-
   const movementMutation = useMutation({
     mutationFn: (payload: api.CreateArticleMovementPayload) => api.createArticleMovement(payload),
     onSuccess: () => {
@@ -217,13 +189,9 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
         description={pageDescription}
         action={
           showCatalogActions ? (
-            <button
-              type="button"
-              onClick={() => setShowCreateForm((prev) => !prev)}
-              className={PRIMARY_BUTTON_CLASS}
-            >
-              {showCreateForm ? "Fermer" : "Nouvel article"}
-            </button>
+            <ListPrimaryAction href="/settings/stock/articles/new">
+              Nouvel article
+            </ListPrimaryAction>
           ) : undefined
         }
       />
@@ -311,140 +279,6 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
                 )}
               </div>
             ))}
-          </div>
-        </div>
-      )}
-
-      {showCatalogActions && showCreateForm && (
-        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
-          <h2 className="mb-3 font-semibold text-slate-900 dark:text-slate-100">
-            Créer un article
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
-                Nom <span className="text-red-500">*</span>
-              </label>
-              <input
-                value={createName}
-                onChange={(e) => setCreateName(e.target.value)}
-                placeholder="Ex: Câble RJ45 Cat.6"
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
-                Référence (SKU) <span className="text-red-500">*</span>
-              </label>
-              <input
-                value={createReference}
-                onChange={(e) => setCreateReference(e.target.value)}
-                placeholder="Ex: CAB-RJ45-001"
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
-                Unité de mesure
-              </label>
-              <input
-                value={createUnit}
-                onChange={(e) => setCreateUnit(e.target.value)}
-                placeholder="Ex: mètre, unité, litre"
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
-                Prix par défaut (€ HT)
-              </label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={createDefaultPrice}
-                onChange={(e) => setCreateDefaultPrice(e.target.value)}
-                placeholder="Optionnel"
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
-              />
-              <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">
-                Pré-rempli automatiquement sur les devis
-              </p>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
-                Stock initial
-              </label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={createInitialStock}
-                onChange={(e) => setCreateInitialStock(e.target.value)}
-                placeholder="0"
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
-              />
-              <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">
-                Quantité en stock au démarrage
-              </p>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
-                Seuil d&apos;alerte
-              </label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={createReorderPoint}
-                onChange={(e) => setCreateReorderPoint(e.target.value)}
-                placeholder="0"
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
-              />
-              <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">
-                Alerte quand le stock passe en dessous
-              </p>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
-                Stock cible
-              </label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={createTargetStock}
-                onChange={(e) => setCreateTargetStock(e.target.value)}
-                placeholder="0"
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
-              />
-              <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">
-                Niveau de stock optimal visé
-              </p>
-            </div>
-          </div>
-          <div className="mt-3 flex justify-end">
-            <button
-              onClick={() => {
-                if (!createName.trim() || !createReference.trim()) {
-                  setError("Le nom et la référence sont obligatoires");
-                  return;
-                }
-                createArticleMutation.mutate({
-                  name: createName.trim(),
-                  reference: createReference.trim(),
-                  unit: createUnit.trim() || "unité",
-                  defaultPrice: createDefaultPrice ? Number(createDefaultPrice) : undefined,
-                  initialStock: Number(createInitialStock || 0),
-                  reorderPoint: Number(createReorderPoint || 0),
-                  targetStock: Number(createTargetStock || 0),
-                });
-              }}
-              disabled={createArticleMutation.isPending}
-              className="rounded-lg bg-brand-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
-            >
-              Créer l&apos;article
-            </button>
           </div>
         </div>
       )}
@@ -633,19 +467,23 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
             message="Aucun article."
             action={
               showCatalogActions ? (
-                <button
-                  type="button"
-                  onClick={() => setShowCreateForm(true)}
+                <Link
+                  href="/settings/stock/articles/new"
                   className="text-sm text-brand-600 dark:text-brand-400 hover:underline font-medium"
                 >
                   Créer votre premier article
-                </button>
+                </Link>
               ) : undefined
             }
           />
         )
       ) : (
-        <>
+        <ListPagination
+          offset={offset}
+          limit={LIST_PAGE_SIZE}
+          total={total}
+          onOffsetChange={setOffset}
+        >
           <ListTableShell
             gridTemplateClass={ARTICLES_GRID}
             headerCells={
@@ -699,13 +537,7 @@ export function StockArticlesPage({ mode = "full" }: { mode?: StockPageMode }) {
               </ListRowLink>
             ))}
           </ListTableShell>
-          <ListPagination
-            offset={offset}
-            limit={LIST_PAGE_SIZE}
-            total={total}
-            onOffsetChange={setOffset}
-          />
-        </>
+        </ListPagination>
       )}
 
       {showMovementActions && (

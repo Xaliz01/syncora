@@ -25,6 +25,11 @@ import {
   waitForSubscriptionAddonsSync,
 } from "@/lib/subscription-sync";
 import { useToast } from "@/components/ui/ToastProvider";
+import {
+  FormDialog,
+  FormDialogCancelButton,
+  FormDialogPrimaryButton,
+} from "@/components/ui/FormDialog";
 
 function quantityAddonHint(code: QuantityAddonCode, quantities: AddonQuantities): string {
   if (code === "extra_users") {
@@ -123,142 +128,28 @@ export function ModifySubscriptionAddonsDialog({
     },
   });
 
-  if (!open) {
-    return null;
-  }
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="modify-subscription-title"
-    >
-      <button
-        type="button"
-        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-        aria-label="Fermer"
-        onClick={onClose}
-        disabled={updateMutation.isPending}
-      />
-      <div className="relative w-full max-w-lg rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl p-5 sm:p-6 max-h-[min(90vh,40rem)] overflow-y-auto">
-        <h2
-          id="modify-subscription-title"
-          className="text-lg font-semibold text-slate-900 dark:text-slate-100"
-        >
-          Modifier l’abonnement
-        </h2>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+    <FormDialog
+      open={open}
+      onClose={onClose}
+      closeDisabled={updateMutation.isPending}
+      title="Modifier l’abonnement"
+      description={
+        <>
           Cochez les options à conserver sur votre offre {subscription.planName}. Pour les options à
           quantité, indiquez le nombre de packs souhaité.
-        </p>
-
-        {!canApplyChanges && (
-          <p className="mt-4 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
-            Activez d’abord l’abonnement {subscription.planName} sur cette page, puis enregistrez
-            vos options.
-          </p>
-        )}
-
-        <ul className="mt-5 space-y-3">
-          {BOOLEAN_CROSS_SELL_ADDON_CODES.map((code) => {
-            const addon = ADDON_CATALOG[code];
-            const checked = selectedBoolean.includes(code);
-            return (
-              <li key={code}>
-                <label className="flex cursor-pointer gap-3 rounded-xl border border-slate-200 dark:border-slate-700 p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand-500">
-                  <input
-                    type="checkbox"
-                    className="mt-1 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
-                    checked={checked}
-                    disabled={updateMutation.isPending}
-                    onChange={() => {
-                      setSelectedBoolean((prev) =>
-                        checked ? prev.filter((c) => c !== code) : [...prev, code],
-                      );
-                    }}
-                  />
-                  <span className="min-w-0">
-                    <span className="block text-sm font-medium text-slate-900 dark:text-slate-100">
-                      {addon.label}
-                    </span>
-                    <span className="block text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      {addon.priceLabel}
-                    </span>
-                    <span className="block text-xs text-slate-600 dark:text-slate-300 mt-1">
-                      {addon.pitch}
-                    </span>
-                  </span>
-                </label>
-              </li>
-            );
-          })}
-
-          {QUANTITY_CROSS_SELL_ADDON_CODES.map((code) => {
-            const addon = ADDON_CATALOG[code];
-            const qty = quantityAddons[code] ?? 0;
-            const hintQuantities = sanitizeAddonQuantities({ ...quantityAddons, [code]: qty });
-            return (
-              <li key={code}>
-                <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
-                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                    {addon.label}
-                  </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    {addon.priceLabel}
-                  </p>
-                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">{addon.pitch}</p>
-                  {code === "extra_users" && (
-                    <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                      {BASE_SUBSCRIPTION_INCLUDED_USERS} utilisateurs inclus dans l’offre{" "}
-                      {BASE_SUBSCRIPTION_PLAN.name}.
-                    </p>
-                  )}
-                  <label className="mt-3 flex items-center gap-3">
-                    <span className="text-sm text-slate-700 dark:text-slate-200 shrink-0">
-                      {code === "extra_storage" ? "Packs (+50 Go)" : "Supplémentaires"}
-                    </span>
-                    <input
-                      type="number"
-                      min={0}
-                      step={1}
-                      value={qty}
-                      disabled={updateMutation.isPending}
-                      onChange={(event) => {
-                        const parsed = Number.parseInt(event.target.value, 10);
-                        setQuantityAddons((prev) =>
-                          sanitizeAddonQuantities({
-                            ...prev,
-                            [code]: Number.isFinite(parsed) ? Math.max(0, parsed) : 0,
-                          }),
-                        );
-                      }}
-                      className="w-24 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-1.5 text-sm"
-                    />
-                  </label>
-                  <p className="mt-2 text-xs text-brand-600 dark:text-brand-400">
-                    {quantityAddonHint(code, hintQuantities)}
-                  </p>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-
-        <div className="mt-6 flex flex-wrap justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={updateMutation.isPending}
-            className="rounded-lg border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 transition"
-          >
-            Annuler
-          </button>
-          <button
-            type="button"
+        </>
+      }
+      titleId="modify-subscription-title"
+      size="md"
+      zClassName="z-50"
+      footer={
+        <>
+          <FormDialogCancelButton onClick={onClose} disabled={updateMutation.isPending} />
+          <FormDialogPrimaryButton
             onClick={() => updateMutation.mutate()}
             disabled={!canApplyChanges || !hasChanges || updateMutation.isPending}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
+            className="inline-flex items-center justify-center gap-2"
           >
             {updateMutation.isPending ? (
               <>
@@ -271,9 +162,101 @@ export function ModifySubscriptionAddonsDialog({
             ) : (
               "Enregistrer les options"
             )}
-          </button>
-        </div>
-      </div>
-    </div>
+          </FormDialogPrimaryButton>
+        </>
+      }
+    >
+      {!canApplyChanges && (
+        <p className="mb-4 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
+          Activez d’abord l’abonnement {subscription.planName} sur cette page, puis enregistrez vos
+          options.
+        </p>
+      )}
+
+      <ul className="space-y-3">
+        {BOOLEAN_CROSS_SELL_ADDON_CODES.map((code) => {
+          const addon = ADDON_CATALOG[code];
+          const checked = selectedBoolean.includes(code);
+          return (
+            <li key={code}>
+              <label className="flex cursor-pointer gap-3 rounded-xl border border-slate-200 dark:border-slate-700 p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand-500">
+                <input
+                  type="checkbox"
+                  className="mt-1 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                  checked={checked}
+                  disabled={updateMutation.isPending}
+                  onChange={() => {
+                    setSelectedBoolean((prev) =>
+                      checked ? prev.filter((c) => c !== code) : [...prev, code],
+                    );
+                  }}
+                />
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium text-slate-900 dark:text-slate-100">
+                    {addon.label}
+                  </span>
+                  <span className="block text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    {addon.priceLabel}
+                  </span>
+                  <span className="block text-xs text-slate-600 dark:text-slate-300 mt-1">
+                    {addon.pitch}
+                  </span>
+                </span>
+              </label>
+            </li>
+          );
+        })}
+
+        {QUANTITY_CROSS_SELL_ADDON_CODES.map((code) => {
+          const addon = ADDON_CATALOG[code];
+          const qty = quantityAddons[code] ?? 0;
+          const hintQuantities = sanitizeAddonQuantities({ ...quantityAddons, [code]: qty });
+          return (
+            <li key={code}>
+              <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
+                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                  {addon.label}
+                </p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  {addon.priceLabel}
+                </p>
+                <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">{addon.pitch}</p>
+                {code === "extra_users" && (
+                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                    {BASE_SUBSCRIPTION_INCLUDED_USERS} utilisateurs inclus dans l’offre{" "}
+                    {BASE_SUBSCRIPTION_PLAN.name}.
+                  </p>
+                )}
+                <label className="mt-3 flex items-center gap-3">
+                  <span className="text-sm text-slate-700 dark:text-slate-200 shrink-0">
+                    {code === "extra_storage" ? "Packs (+50 Go)" : "Supplémentaires"}
+                  </span>
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={qty}
+                    disabled={updateMutation.isPending}
+                    onChange={(event) => {
+                      const parsed = Number.parseInt(event.target.value, 10);
+                      setQuantityAddons((prev) =>
+                        sanitizeAddonQuantities({
+                          ...prev,
+                          [code]: Number.isFinite(parsed) ? Math.max(0, parsed) : 0,
+                        }),
+                      );
+                    }}
+                    className="w-24 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-1.5 text-sm"
+                  />
+                </label>
+                <p className="mt-2 text-xs text-brand-600 dark:text-brand-400">
+                  {quantityAddonHint(code, hintQuantities)}
+                </p>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </FormDialog>
   );
 }

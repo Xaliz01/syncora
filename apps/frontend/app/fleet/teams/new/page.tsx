@@ -2,7 +2,7 @@
 
 import { RequireAuth } from "@/components/auth/RequireAuth";
 import { RequirePermission } from "@/components/auth/RequirePermission";
-import { TeamCreatePage } from "@/components/fleet/TeamCreatePage";
+import { TeamFormPage } from "@/components/fleet/TeamCreatePage";
 import { AppShell } from "@/components/layout/AppShell";
 
 export default function NewTeamPage() {
@@ -10,7 +10,7 @@ export default function NewTeamPage() {
     <RequireAuth>
       <RequirePermission permission="teams.create">
         <AppShell>
-          <TeamCreatePage />
+          <TeamFormPage />
         </AppShell>
       </RequirePermission>
     </RequireAuth>

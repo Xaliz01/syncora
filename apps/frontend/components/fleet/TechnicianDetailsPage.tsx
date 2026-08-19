@@ -2,9 +2,7 @@
 
 import Link from "next/link";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import type { TechnicianResponse, TeamResponse, TechnicianStatus } from "@planwise/shared";
-
-const TECHNICIAN_STATUSES: TechnicianStatus[] = ["actif", "inactif"];
+import type { TechnicianResponse, TeamResponse } from "@planwise/shared";
 import * as fleetApi from "@/lib/fleet.api";
 import * as adminApi from "@/lib/admin.api";
 import type { ManagedOrganizationUser } from "@/lib/admin.api";
@@ -14,6 +12,7 @@ import { usePermissions } from "@/lib/hooks/usePermissions";
 import { useRouter } from "next/navigation";
 import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
 import { AppErrorAlert, ResourceNotFoundPanel } from "@/components/ui/AppErrorAlert";
+import { PageBreadcrumb } from "@/components/ui/FormDialog";
 import { normalizeCalendarColorHex } from "@/lib/team-calendar-colors";
 import { getOrganizationUserStatusLabel } from "@/lib/organization-user-status";
 
@@ -41,17 +40,7 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
   const [technician, setTechnician] = useState<TechnicianResponse | null>(null);
   const [memberTeams, setMemberTeams] = useState<TeamResponse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isEditing, setIsEditing] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<unknown>(null);
-
-  const [editFirstName, setEditFirstName] = useState("");
-  const [editLastName, setEditLastName] = useState("");
-  const [editEmail, setEditEmail] = useState("");
-  const [editPhone, setEditPhone] = useState("");
-  const [editSpeciality, setEditSpeciality] = useState("");
-  const [editStatus, setEditStatus] = useState<TechnicianStatus>("actif");
-  const [editCalendarColor, setEditCalendarColor] = useState("");
 
   const [accountAction, setAccountAction] = useState<"idle" | "invite" | "link">("idle");
   const [creatingAccount, setCreatingAccount] = useState(false);
@@ -70,14 +59,6 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
       ]);
       setTechnician(techData);
       setMemberTeams(allTeams.filter((t) => t.technicianIds.includes(technicianId)));
-
-      setEditFirstName(techData.firstName);
-      setEditLastName(techData.lastName);
-      setEditEmail(techData.email ?? "");
-      setEditPhone(techData.phone ?? "");
-      setEditSpeciality(techData.speciality ?? "");
-      setEditStatus(techData.status);
-      setEditCalendarColor(techData.calendarColor ?? "");
     } catch (err) {
       setError(err);
     } finally {
@@ -126,29 +107,6 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
       })),
     [linkableUsers],
   );
-  const handleSave = async () => {
-    if (!technician) return;
-    setSaving(true);
-    setError(null);
-    try {
-      await fleetApi.updateTechnician(technician.id, {
-        firstName: editFirstName.trim(),
-        lastName: editLastName.trim(),
-        email: editEmail.trim() || undefined,
-        phone: editPhone.trim() || undefined,
-        speciality: editSpeciality.trim() || undefined,
-        status: editStatus,
-        calendarColor: editCalendarColor.trim() ? editCalendarColor.trim() : null,
-      });
-      showToast("Technicien mis à jour.");
-      setIsEditing(false);
-      await refresh();
-    } catch (err) {
-      setError(err);
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const handleDelete = async () => {
     if (!technician) return;
@@ -256,25 +214,16 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-semibold mb-1">
-            {technician.firstName} {technician.lastName}
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Fiche technicien
-            {technician.speciality ? ` — ${technician.speciality}` : ""}
-          </p>
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <PageBreadcrumb href="/fleet/technicians" label="Techniciens" />
         <div className="flex items-center gap-2">
           {can("fleet.technicians.update") && (
-            <button
-              type="button"
-              onClick={() => setIsEditing((p) => !p)}
+            <Link
+              href={`/fleet/technicians/${technician.id}/edit`}
               className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
             >
-              {isEditing ? "Annuler" : "Modifier"}
-            </button>
+              Modifier
+            </Link>
           )}
           {can("fleet.technicians.delete") && (
             <button
@@ -285,196 +234,79 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
               Supprimer
             </button>
           )}
-          <Link
-            href="/fleet/technicians"
-            className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
-          >
-            Retour
-          </Link>
         </div>
+      </div>
+
+      <div>
+        <h1 className="text-xl sm:text-2xl font-semibold mb-1">
+          {technician.firstName} {technician.lastName}
+        </h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          Fiche technicien
+          {technician.speciality ? ` — ${technician.speciality}` : ""}
+        </p>
       </div>
 
       {error ? <AppErrorAlert error={error} onRetry={() => void refresh()} /> : null}
 
-      {!isEditing ? (
-        <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
-          <h2 className="font-semibold mb-3">Informations</h2>
-          <div className="grid gap-3 md:grid-cols-2 text-sm">
-            <div>
-              <span className="text-slate-400 dark:text-slate-500">Prénom</span>
-              <p>{technician.firstName}</p>
-            </div>
-            <div>
-              <span className="text-slate-400 dark:text-slate-500">Nom</span>
-              <p>{technician.lastName}</p>
-            </div>
-            <div>
-              <span className="text-slate-400 dark:text-slate-500">Email</span>
-              <p>{technician.email || "—"}</p>
-            </div>
-            <div>
-              <span className="text-slate-400 dark:text-slate-500">Téléphone</span>
-              <p>{technician.phone || "—"}</p>
-            </div>
-            <div>
-              <span className="text-slate-400 dark:text-slate-500">Spécialité</span>
-              <p>{technician.speciality || "—"}</p>
-            </div>
-            <div>
-              <span className="text-slate-400 dark:text-slate-500">Statut</span>
-              <p>
-                <span
-                  className={`inline-flex rounded border px-2 py-0.5 text-xs ${STATUS_COLORS[technician.status] ?? "bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700"}`}
-                >
-                  {STATUS_LABELS[technician.status] ?? technician.status}
-                </span>
-              </p>
-            </div>
-            <div className="md:col-span-2">
-              <span className="text-slate-400 dark:text-slate-500">Couleur au calendrier</span>
-              <div className="mt-1 flex items-center gap-2 flex-wrap">
-                {technician.calendarColor && normalizeCalendarColorHex(technician.calendarColor) ? (
-                  <>
-                    <span
-                      className="h-6 w-10 rounded border shrink-0"
-                      style={{
-                        backgroundColor:
-                          normalizeCalendarColorHex(technician.calendarColor) ?? undefined,
-                      }}
-                    />
-                    <code className="text-xs text-slate-600 dark:text-slate-300">
-                      {normalizeCalendarColorHex(technician.calendarColor)}
-                    </code>
-                  </>
-                ) : (
-                  <p className="text-sm text-slate-600 dark:text-slate-300">
-                    Automatique (couleur dérivée de la personne sur le calendrier)
-                  </p>
-                )}
-              </div>
-            </div>
+      <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
+        <h2 className="font-semibold mb-3">Informations</h2>
+        <div className="grid gap-3 md:grid-cols-2 text-sm">
+          <div>
+            <span className="text-slate-400 dark:text-slate-500">Prénom</span>
+            <p>{technician.firstName}</p>
           </div>
-        </section>
-      ) : (
-        <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 space-y-4">
-          <h2 className="font-semibold">Modifier le technicien</h2>
-          <div className="grid gap-3 md:grid-cols-2">
-            <div>
-              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">
-                Prénom
-              </label>
-              <input
-                type="text"
-                value={editFirstName}
-                onChange={(e) => setEditFirstName(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Nom</label>
-              <input
-                type="text"
-                value={editLastName}
-                onChange={(e) => setEditLastName(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
-              />
-            </div>
+          <div>
+            <span className="text-slate-400 dark:text-slate-500">Nom</span>
+            <p>{technician.lastName}</p>
           </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            <div>
-              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">Email</label>
-              <input
-                type="email"
-                value={editEmail}
-                onChange={(e) => setEditEmail(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">
-                Téléphone
-              </label>
-              <input
-                type="tel"
-                value={editPhone}
-                onChange={(e) => setEditPhone(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
-              />
-            </div>
+          <div>
+            <span className="text-slate-400 dark:text-slate-500">Email</span>
+            <p>{technician.email || "—"}</p>
           </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            <div>
-              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">
-                Spécialité
-              </label>
-              <input
-                type="text"
-                value={editSpeciality}
-                onChange={(e) => setEditSpeciality(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-slate-500 dark:text-slate-400 mb-1">
-                Statut
-              </label>
-              <select
-                value={editStatus}
-                onChange={(e) => setEditStatus(e.target.value as TechnicianStatus)}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100"
+          <div>
+            <span className="text-slate-400 dark:text-slate-500">Téléphone</span>
+            <p>{technician.phone || "—"}</p>
+          </div>
+          <div>
+            <span className="text-slate-400 dark:text-slate-500">Spécialité</span>
+            <p>{technician.speciality || "—"}</p>
+          </div>
+          <div>
+            <span className="text-slate-400 dark:text-slate-500">Statut</span>
+            <p>
+              <span
+                className={`inline-flex rounded border px-2 py-0.5 text-xs ${STATUS_COLORS[technician.status] ?? "bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700"}`}
               >
-                {TECHNICIAN_STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {s === "actif" ? "Actif" : "Inactif"}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 p-3 space-y-2">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
-              Couleur au calendrier
-            </label>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Utilisée pour les interventions assignées à cette personne. Laissez vide pour une
-              couleur automatique.
+                {STATUS_LABELS[technician.status] ?? technician.status}
+              </span>
             </p>
-            <div className="flex flex-wrap items-center gap-3">
-              <input
-                type="color"
-                aria-label="Choix de la couleur"
-                className="h-10 w-14 cursor-pointer rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900"
-                value={normalizeCalendarColorHex(editCalendarColor) ?? "#94a3b8"}
-                onChange={(e) => setEditCalendarColor(e.target.value)}
-              />
-              <input
-                type="text"
-                placeholder="#RRGGBB"
-                value={editCalendarColor}
-                onChange={(e) => setEditCalendarColor(e.target.value)}
-                className="flex-1 min-w-[120px] rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-mono text-slate-900 dark:text-slate-100"
-              />
-              <button
-                type="button"
-                onClick={() => setEditCalendarColor("")}
-                className="rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
-              >
-                Automatique
-              </button>
+          </div>
+          <div className="md:col-span-2">
+            <span className="text-slate-400 dark:text-slate-500">Couleur au calendrier</span>
+            <div className="mt-1 flex items-center gap-2 flex-wrap">
+              {technician.calendarColor && normalizeCalendarColorHex(technician.calendarColor) ? (
+                <>
+                  <span
+                    className="h-6 w-10 rounded border shrink-0"
+                    style={{
+                      backgroundColor:
+                        normalizeCalendarColorHex(technician.calendarColor) ?? undefined,
+                    }}
+                  />
+                  <code className="text-xs text-slate-600 dark:text-slate-300">
+                    {normalizeCalendarColorHex(technician.calendarColor)}
+                  </code>
+                </>
+              ) : (
+                <p className="text-sm text-slate-600 dark:text-slate-300">
+                  Automatique (couleur dérivée de la personne sur le calendrier)
+                </p>
+              )}
             </div>
           </div>
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={() => void handleSave()}
-              disabled={saving}
-              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50"
-            >
-              {saving ? "Enregistrement..." : "Enregistrer"}
-            </button>
-          </div>
-        </section>
-      )}
+        </div>
+      </section>
 
       <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 space-y-3">
         <h2 className="font-semibold">Équipes</h2>
@@ -551,7 +383,7 @@ export function TechnicianDetailsPage({ technicianId }: { technicianId: string }
             {technician.linkedUser?.email ? (
               <>
                 {" "}
-                (<span className="font-medium">{technician.linkedUser.email}</span>)
+                <span className="font-medium">{technician.linkedUser.email}</span>)
               </>
             ) : null}
             .

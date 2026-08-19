@@ -367,7 +367,7 @@ export const DATA_IMPORT_TARGET_FIELDS: Record<
   ],
   cases: [
     { key: "externalId", label: "Identifiant source", required: true },
-    { key: "title", label: "Titre", required: true },
+    { key: "title", label: "Libellé (souvent le client)", required: true },
     { key: "description", label: "Description" },
     { key: "status", label: "Statut" },
     { key: "priority", label: "Priorité" },

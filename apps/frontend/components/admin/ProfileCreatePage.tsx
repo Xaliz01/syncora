@@ -1,12 +1,19 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import type { PermissionCode } from "@planwise/shared";
 import * as adminApi from "@/lib/admin.api";
 import { getPermissionLabel } from "@/lib/permissions-catalog";
 import { useToast } from "@/components/ui/ToastProvider";
+import {
+  FormDialogCancelButton,
+  FormDialogPrimaryButton,
+  FormDialogSection,
+  FormPage,
+  formFieldInputClassName,
+  formFieldLabelClassName,
+} from "@/components/ui/FormDialog";
 
 function togglePermission(list: PermissionCode[], permission: PermissionCode): PermissionCode[] {
   if (list.includes(permission)) return list.filter((item) => item !== permission);
@@ -20,10 +27,11 @@ function safeInternalReturnPath(raw: string | null): string | null {
   return path;
 }
 
-export function ProfileCreatePage() {
+export function ProfileFormPage({ profileId }: { profileId?: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { showToast } = useToast();
+  const isEdit = Boolean(profileId);
   const [catalog, setCatalog] = useState<PermissionCode[]>([]);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -36,91 +44,123 @@ export function ProfileCreatePage() {
     () => safeInternalReturnPath(searchParams.get("returnTo")),
     [searchParams],
   );
-  const backHref = returnTo ?? "/settings/profiles";
-  const backLabel = returnTo === "/users/new" ? "Retour à l'invitation" : "Retour aux profils";
+  const detailHref = profileId ? `/settings/profiles/${profileId}` : "/settings/profiles";
+  const backHref = isEdit ? detailHref : (returnTo ?? "/settings/profiles");
+  const backLabel = isEdit
+    ? name.trim() || "Fiche profil"
+    : returnTo === "/users/new"
+      ? "Invitation"
+      : "Profils";
 
-  const loadCatalog = useCallback(async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const result = await adminApi.getPermissionsCatalog();
-      setCatalog(result.availablePermissions);
+      const catalogRes = await adminApi.getPermissionsCatalog();
+      setCatalog(catalogRes.availablePermissions);
+      if (profileId) {
+        const profileRes = await adminApi.getPermissionProfile(profileId);
+        setName(profileRes.name);
+        setDescription(profileRes.description ?? "");
+        setPermissions(profileRes.permissions);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur de chargement du catalogue");
+      setError(err instanceof Error ? err.message : "Erreur de chargement");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [profileId]);
 
   useEffect(() => {
-    void loadCatalog();
-  }, [loadCatalog]);
+    void load();
+  }, [load]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setSaving(true);
     setError(null);
     try {
-      await adminApi.createPermissionProfile({
-        name,
-        description: description.trim() || undefined,
-        permissions,
-      });
-      showToast("Profil créé.");
-      router.push(backHref);
+      if (isEdit && profileId) {
+        await adminApi.updatePermissionProfile(profileId, {
+          name,
+          description: description.trim() || undefined,
+          permissions,
+        });
+        showToast("Profil mis à jour.");
+        router.push(detailHref);
+      } else {
+        await adminApi.createPermissionProfile({
+          name,
+          description: description.trim() || undefined,
+          permissions,
+        });
+        showToast("Profil créé.");
+        router.push(backHref);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Impossible de créer le profil");
+      setError(
+        err instanceof Error
+          ? err.message
+          : isEdit
+            ? "Impossible de mettre à jour ce profil"
+            : "Impossible de créer le profil",
+      );
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-semibold">Créer un profil</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Définissez un nouveau profil de permissions pour l&apos;organisation.
-          </p>
-        </div>
-        <Link
-          href={backHref}
-          className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition self-start flex-shrink-0"
-        >
-          {backLabel}
-        </Link>
-      </div>
-
-      {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm p-3">
-          {error}
-        </div>
-      )}
-
-      <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 sm:p-5">
-        {loading ? (
-          <p className="text-sm text-slate-500 dark:text-slate-400">Chargement...</p>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
+    <FormPage
+      title={isEdit ? "Modifier le profil" : "Créer un profil"}
+      description={
+        isEdit
+          ? "Mettez à jour le nom, la description et les permissions."
+          : "Définissez un nouveau profil de permissions pour l'organisation."
+      }
+      breadcrumb={{ href: backHref, label: backLabel }}
+      error={error || undefined}
+      onSubmit={handleSubmit}
+      footer={
+        <>
+          <FormDialogCancelButton onClick={() => router.push(backHref)} disabled={saving} />
+          <FormDialogPrimaryButton type="submit" disabled={loading || saving}>
+            {saving ? "Enregistrement…" : isEdit ? "Enregistrer" : "Créer le profil"}
+          </FormDialogPrimaryButton>
+        </>
+      }
+    >
+      {loading ? (
+        <p className="text-sm text-slate-500 dark:text-slate-400">Chargement...</p>
+      ) : (
+        <>
+          <FormDialogSection title="Informations générales">
             <div className="grid gap-3 sm:grid-cols-2">
-              <input
-                type="text"
-                placeholder="Nom du profil"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-              />
-              <input
-                type="text"
-                placeholder="Description (optionnel)"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-              />
+              <div>
+                <label className={formFieldLabelClassName}>Nom du profil</label>
+                <input
+                  type="text"
+                  placeholder="Technicien"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  className={formFieldInputClassName}
+                />
+              </div>
+              <div>
+                <label className={formFieldLabelClassName}>Description (optionnel)</label>
+                <input
+                  type="text"
+                  placeholder="Droits accordés à ce profil"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className={formFieldInputClassName}
+                />
+              </div>
             </div>
+          </FormDialogSection>
 
+          <FormDialogSection title="Permissions">
             <div className="grid gap-2 sm:grid-cols-2">
               {catalog.map((permission) => (
                 <label key={permission} className="flex items-start gap-2 text-sm">
@@ -143,19 +183,12 @@ export function ProfileCreatePage() {
                 </label>
               ))}
             </div>
-
-            <div className="flex justify-end">
-              <button
-                type="submit"
-                disabled={saving}
-                className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
-              >
-                {saving ? "Création..." : "Créer le profil"}
-              </button>
-            </div>
-          </form>
-        )}
-      </section>
-    </div>
+          </FormDialogSection>
+        </>
+      )}
+    </FormPage>
   );
 }
+
+/** @deprecated use ProfileFormPage */
+export const ProfileCreatePage = ProfileFormPage;

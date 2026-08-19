@@ -14,6 +14,14 @@ import { useToast } from "@/components/ui/ToastProvider";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { ResourceNotFoundPanel } from "@/components/ui/AppErrorAlert";
 import { PlanwiseLoader } from "@/components/ui/PlanwiseLoader";
+import {
+  FormDialog,
+  FormDialogCancelButton,
+  FormDialogPrimaryButton,
+  PageBreadcrumb,
+  formFieldInputClassName,
+  formFieldLabelClassName,
+} from "@/components/ui/FormDialog";
 
 const STATUS_LABELS: Record<MaintenanceContractStatus, string> = {
   draft: "Brouillon",
@@ -153,9 +161,7 @@ export function MaintenanceContractDetailPage({ contractId }: { contractId: stri
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <Link href="/contracts" className="text-sm text-brand-600 hover:underline">
-            ← Contrats
-          </Link>
+          <PageBreadcrumb href="/contracts" label="Contrats" />
           <h1 className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">
             {contract.title}
           </h1>
@@ -326,68 +332,57 @@ export function MaintenanceContractDetailPage({ contractId }: { contractId: stri
         )}
       </section>
 
-      {scheduleOpen ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="schedule-visit-title"
-        >
-          <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-5 shadow-lg dark:border-slate-700 dark:bg-slate-900">
-            <h2
-              id="schedule-visit-title"
-              className="text-lg font-semibold text-slate-900 dark:text-slate-100"
+      <FormDialog
+        open={scheduleOpen}
+        onClose={() => setScheduleOpen(false)}
+        closeDisabled={scheduleMutation.isPending}
+        title="Programmer la visite"
+        description="Choisissez le créneau convenu avec le client. Un dossier et une intervention seront créés."
+        titleId="schedule-visit-title"
+        size="sm"
+        footer={
+          <>
+            <FormDialogCancelButton
+              onClick={() => setScheduleOpen(false)}
+              disabled={scheduleMutation.isPending}
+            />
+            <FormDialogPrimaryButton
+              type="button"
+              disabled={scheduleMutation.isPending || !scheduleStart || !scheduleEnd}
+              onClick={() => scheduleMutation.mutate()}
             >
-              Programmer la visite
-            </h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              Choisissez le créneau convenu avec le client. Un dossier et une intervention seront
-              créés.
-            </p>
-            <div className="mt-4 space-y-3">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">
-                  Début
-                </label>
-                <input
-                  type="datetime-local"
-                  value={scheduleStart}
-                  onChange={(e) => setScheduleStart(e.target.value)}
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">
-                  Fin
-                </label>
-                <input
-                  type="datetime-local"
-                  value={scheduleEnd}
-                  onChange={(e) => setScheduleEnd(e.target.value)}
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"
-                />
-              </div>
-            </div>
-            <div className="mt-5 flex flex-wrap justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setScheduleOpen(false)}
-                className="rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-700"
-              >
-                Annuler
-              </button>
-              <button
-                type="button"
-                disabled={scheduleMutation.isPending || !scheduleStart || !scheduleEnd}
-                onClick={() => scheduleMutation.mutate()}
-                className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50"
-              >
-                {scheduleMutation.isPending ? "Programmation…" : "Confirmer"}
-              </button>
-            </div>
+              {scheduleMutation.isPending ? "Programmation…" : "Confirmer"}
+            </FormDialogPrimaryButton>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="schedule-start" className={formFieldLabelClassName}>
+              Début
+            </label>
+            <input
+              id="schedule-start"
+              type="datetime-local"
+              value={scheduleStart}
+              onChange={(e) => setScheduleStart(e.target.value)}
+              className={formFieldInputClassName}
+            />
+          </div>
+          <div>
+            <label htmlFor="schedule-end" className={formFieldLabelClassName}>
+              Fin
+            </label>
+            <input
+              id="schedule-end"
+              type="datetime-local"
+              value={scheduleEnd}
+              onChange={(e) => setScheduleEnd(e.target.value)}
+              className={formFieldInputClassName}
+            />
           </div>
         </div>
-      ) : null}
+      </FormDialog>
     </div>
   );
 }

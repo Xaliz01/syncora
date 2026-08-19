@@ -360,7 +360,12 @@ export function BillingFollowUpPage() {
           ) : rows.length === 0 ? (
             <ListNoResults message="Aucune facture ne correspond à ces filtres." />
           ) : (
-            <>
+            <ListPagination
+              total={total}
+              limit={LIST_PAGE_SIZE}
+              offset={offset}
+              onOffsetChange={setOffset}
+            >
               <ListTableShell
                 gridTemplateClass={GRID}
                 headerCells={
@@ -421,13 +426,7 @@ export function BillingFollowUpPage() {
                   </div>
                 ))}
               </ListTableShell>
-              <ListPagination
-                total={total}
-                limit={LIST_PAGE_SIZE}
-                offset={offset}
-                onOffsetChange={setOffset}
-              />
-            </>
+            </ListPagination>
           )}
         </>
       ) : null}

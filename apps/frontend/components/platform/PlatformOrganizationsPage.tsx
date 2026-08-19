@@ -101,51 +101,50 @@ export function PlatformOrganizationsPage() {
         <p className="text-sm text-slate-500">Chargement…</p>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
-          <table className="min-w-[36rem] w-full text-left text-sm">
-            <thead className="border-b border-slate-100 bg-slate-50 text-xs uppercase text-slate-500 dark:border-slate-800 dark:bg-slate-950">
-              <tr>
-                <th className="px-4 py-3">Organisation</th>
-                <th className="px-4 py-3">Users</th>
-                <th className="px-4 py-3">Dernière connexion</th>
-                <th className="px-4 py-3">Créée</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {items.map((org) => (
-                <tr key={org.id} className="hover:bg-slate-50 dark:hover:bg-slate-950/50">
-                  <td className="px-4 py-3">
-                    <Link
-                      href={`/platform/organizations/${org.id}`}
-                      className="font-medium text-brand-600 hover:underline dark:text-brand-400"
-                    >
-                      {org.name}
-                    </Link>
-                    <p className="text-xs text-slate-500">
-                      {[org.siret, org.city].filter(Boolean).join(" · ") || org.id}
-                    </p>
-                  </td>
-                  <td className="px-4 py-3 tabular-nums">{org.userCount}</td>
-                  <td className="px-4 py-3 tabular-nums">{formatDate(org.lastUserLoginAt)}</td>
-                  <td className="px-4 py-3 tabular-nums">{formatDate(org.createdAt)}</td>
-                </tr>
-              ))}
-              {items.length === 0 ? (
+          <ListPagination
+            offset={offset}
+            limit={LIST_PAGE_SIZE}
+            total={total}
+            onOffsetChange={setOffset}
+          >
+            <table className="min-w-[36rem] w-full text-left text-sm">
+              <thead className="border-b border-slate-100 bg-slate-50 text-xs uppercase text-slate-500 dark:border-slate-800 dark:bg-slate-950">
                 <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-slate-500">
-                    Aucune organisation
-                  </td>
+                  <th className="px-4 py-3">Organisation</th>
+                  <th className="px-4 py-3">Users</th>
+                  <th className="px-4 py-3">Dernière connexion</th>
+                  <th className="px-4 py-3">Créée</th>
                 </tr>
-              ) : null}
-            </tbody>
-          </table>
-          <div className="px-4 pb-3">
-            <ListPagination
-              offset={offset}
-              limit={LIST_PAGE_SIZE}
-              total={total}
-              onOffsetChange={setOffset}
-            />
-          </div>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {items.map((org) => (
+                  <tr key={org.id} className="hover:bg-slate-50 dark:hover:bg-slate-950/50">
+                    <td className="px-4 py-3">
+                      <Link
+                        href={`/platform/organizations/${org.id}`}
+                        className="font-medium text-brand-600 hover:underline dark:text-brand-400"
+                      >
+                        {org.name}
+                      </Link>
+                      <p className="text-xs text-slate-500">
+                        {[org.siret, org.city].filter(Boolean).join(" · ") || org.id}
+                      </p>
+                    </td>
+                    <td className="px-4 py-3 tabular-nums">{org.userCount}</td>
+                    <td className="px-4 py-3 tabular-nums">{formatDate(org.lastUserLoginAt)}</td>
+                    <td className="px-4 py-3 tabular-nums">{formatDate(org.createdAt)}</td>
+                  </tr>
+                ))}
+                {items.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-4 py-8 text-center text-slate-500">
+                      Aucune organisation
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </ListPagination>
         </div>
       )}
     </div>

@@ -175,73 +175,72 @@ export function PlatformAudiencePage() {
                 <div className="border-b border-slate-100 px-4 py-3 text-sm font-medium dark:border-slate-800">
                   Visites landing (plus récentes d’abord)
                 </div>
-                <table className="min-w-full text-left text-sm">
-                  <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-950 dark:text-slate-400">
-                    <tr>
-                      <th className="px-4 py-2.5 font-medium">Date / heure</th>
-                      <th className="px-4 py-2.5 font-medium">Visiteur</th>
-                      <th className="px-4 py-2.5 font-medium">Type</th>
-                      <th className="px-4 py-2.5 font-medium">Session</th>
-                      <th className="px-4 py-2.5 font-medium">Pays</th>
-                      <th className="px-4 py-2.5 font-medium">Referrer</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {landing.items.length === 0 ? (
+                <ListPagination
+                  total={landing.total}
+                  limit={landing.limit}
+                  offset={landing.offset}
+                  onOffsetChange={setLandingOffset}
+                >
+                  <table className="min-w-full text-left text-sm">
+                    <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-950 dark:text-slate-400">
                       <tr>
-                        <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
-                          Aucune visite landing sur cette période.
-                        </td>
+                        <th className="px-4 py-2.5 font-medium">Date / heure</th>
+                        <th className="px-4 py-2.5 font-medium">Visiteur</th>
+                        <th className="px-4 py-2.5 font-medium">Type</th>
+                        <th className="px-4 py-2.5 font-medium">Session</th>
+                        <th className="px-4 py-2.5 font-medium">Pays</th>
+                        <th className="px-4 py-2.5 font-medium">Referrer</th>
                       </tr>
-                    ) : (
-                      landing.items.map((visit) => (
-                        <tr
-                          key={visit.id}
-                          className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40"
-                        >
-                          <td className="px-4 py-2.5 tabular-nums text-slate-800 dark:text-slate-100">
-                            {formatDateTime(visit.viewedAt)}
-                          </td>
-                          <td className="px-4 py-2.5">
-                            <code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs dark:bg-slate-800">
-                              {visit.visitorKey}
-                            </code>
-                          </td>
-                          <td className="px-4 py-2.5">
-                            {visit.isReturningVisitor ? (
-                              <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200">
-                                Retour
-                              </span>
-                            ) : (
-                              <span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
-                                Nouveau
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-4 py-2.5">
-                            <code className="font-mono text-xs text-slate-500">
-                              {visit.sessionKey}
-                            </code>
-                          </td>
-                          <td className="px-4 py-2.5 text-slate-700 dark:text-slate-200">
-                            {formatCountry(visit.country)}
-                          </td>
-                          <td className="px-4 py-2.5 text-slate-500">
-                            {visit.referrerHost ?? "—"}
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                      {landing.items.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
+                            Aucune visite landing sur cette période.
                           </td>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-                <div className="px-4 py-1">
-                  <ListPagination
-                    total={landing.total}
-                    limit={landing.limit}
-                    offset={landing.offset}
-                    onOffsetChange={setLandingOffset}
-                  />
-                </div>
+                      ) : (
+                        landing.items.map((visit) => (
+                          <tr
+                            key={visit.id}
+                            className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40"
+                          >
+                            <td className="px-4 py-2.5 tabular-nums text-slate-800 dark:text-slate-100">
+                              {formatDateTime(visit.viewedAt)}
+                            </td>
+                            <td className="px-4 py-2.5">
+                              <code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs dark:bg-slate-800">
+                                {visit.visitorKey}
+                              </code>
+                            </td>
+                            <td className="px-4 py-2.5">
+                              {visit.isReturningVisitor ? (
+                                <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                                  Retour
+                                </span>
+                              ) : (
+                                <span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
+                                  Nouveau
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-4 py-2.5">
+                              <code className="font-mono text-xs text-slate-500">
+                                {visit.sessionKey}
+                              </code>
+                            </td>
+                            <td className="px-4 py-2.5 text-slate-700 dark:text-slate-200">
+                              {formatCountry(visit.country)}
+                            </td>
+                            <td className="px-4 py-2.5 text-slate-500">
+                              {visit.referrerHost ?? "—"}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </ListPagination>
               </div>
             </>
           ) : null}
@@ -280,77 +279,76 @@ export function PlatformAudiencePage() {
                 <div className="border-b border-slate-100 px-4 py-3 text-sm font-medium dark:border-slate-800">
                   Arrivées depuis la landing (plus récentes d’abord)
                 </div>
-                <table className="min-w-full text-left text-sm">
-                  <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-950 dark:text-slate-400">
-                    <tr>
-                      <th className="px-4 py-2.5 font-medium">Date / heure</th>
-                      <th className="px-4 py-2.5 font-medium">Chemin app</th>
-                      <th className="px-4 py-2.5 font-medium">Visiteur</th>
-                      <th className="px-4 py-2.5 font-medium">Type</th>
-                      <th className="px-4 py-2.5 font-medium">Session</th>
-                      <th className="px-4 py-2.5 font-medium">Pays</th>
-                      <th className="px-4 py-2.5 font-medium">Referrer</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {landingToApp.items.length === 0 ? (
+                <ListPagination
+                  total={landingToApp.total}
+                  limit={landingToApp.limit}
+                  offset={landingToApp.offset}
+                  onOffsetChange={setLandingToAppOffset}
+                >
+                  <table className="min-w-full text-left text-sm">
+                    <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-950 dark:text-slate-400">
                       <tr>
-                        <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
-                          Aucun passage landing → app sur cette période.
-                        </td>
+                        <th className="px-4 py-2.5 font-medium">Date / heure</th>
+                        <th className="px-4 py-2.5 font-medium">Chemin app</th>
+                        <th className="px-4 py-2.5 font-medium">Visiteur</th>
+                        <th className="px-4 py-2.5 font-medium">Type</th>
+                        <th className="px-4 py-2.5 font-medium">Session</th>
+                        <th className="px-4 py-2.5 font-medium">Pays</th>
+                        <th className="px-4 py-2.5 font-medium">Referrer</th>
                       </tr>
-                    ) : (
-                      landingToApp.items.map((visit) => (
-                        <tr
-                          key={visit.id}
-                          className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40"
-                        >
-                          <td className="px-4 py-2.5 tabular-nums text-slate-800 dark:text-slate-100">
-                            {formatDateTime(visit.viewedAt)}
-                          </td>
-                          <td className="px-4 py-2.5 font-mono text-xs text-slate-700 dark:text-slate-200">
-                            {visit.path}
-                          </td>
-                          <td className="px-4 py-2.5">
-                            <code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs dark:bg-slate-800">
-                              {visit.visitorKey}
-                            </code>
-                          </td>
-                          <td className="px-4 py-2.5">
-                            {visit.isReturningVisitor ? (
-                              <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200">
-                                Retour
-                              </span>
-                            ) : (
-                              <span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
-                                Nouveau
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-4 py-2.5">
-                            <code className="font-mono text-xs text-slate-500">
-                              {visit.sessionKey}
-                            </code>
-                          </td>
-                          <td className="px-4 py-2.5 text-slate-700 dark:text-slate-200">
-                            {formatCountry(visit.country)}
-                          </td>
-                          <td className="px-4 py-2.5 text-slate-500">
-                            {visit.referrerHost ?? "—"}
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                      {landingToApp.items.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
+                            Aucun passage landing → app sur cette période.
                           </td>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-                <div className="px-4 py-1">
-                  <ListPagination
-                    total={landingToApp.total}
-                    limit={landingToApp.limit}
-                    offset={landingToApp.offset}
-                    onOffsetChange={setLandingToAppOffset}
-                  />
-                </div>
+                      ) : (
+                        landingToApp.items.map((visit) => (
+                          <tr
+                            key={visit.id}
+                            className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40"
+                          >
+                            <td className="px-4 py-2.5 tabular-nums text-slate-800 dark:text-slate-100">
+                              {formatDateTime(visit.viewedAt)}
+                            </td>
+                            <td className="px-4 py-2.5 font-mono text-xs text-slate-700 dark:text-slate-200">
+                              {visit.path}
+                            </td>
+                            <td className="px-4 py-2.5">
+                              <code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs dark:bg-slate-800">
+                                {visit.visitorKey}
+                              </code>
+                            </td>
+                            <td className="px-4 py-2.5">
+                              {visit.isReturningVisitor ? (
+                                <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                                  Retour
+                                </span>
+                              ) : (
+                                <span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
+                                  Nouveau
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-4 py-2.5">
+                              <code className="font-mono text-xs text-slate-500">
+                                {visit.sessionKey}
+                              </code>
+                            </td>
+                            <td className="px-4 py-2.5 text-slate-700 dark:text-slate-200">
+                              {formatCountry(visit.country)}
+                            </td>
+                            <td className="px-4 py-2.5 text-slate-500">
+                              {visit.referrerHost ?? "—"}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </ListPagination>
               </div>
             </>
           ) : null}

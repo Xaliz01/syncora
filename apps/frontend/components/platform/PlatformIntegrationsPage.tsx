@@ -81,52 +81,51 @@ export function PlatformIntegrationsPage() {
         <p className="text-sm text-slate-500">Chargement…</p>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
-          <table className="min-w-[40rem] w-full text-left text-sm">
-            <thead className="border-b border-slate-100 bg-slate-50 text-xs uppercase text-slate-500 dark:border-slate-800 dark:bg-slate-950">
-              <tr>
-                <th className="px-4 py-3">Organisation</th>
-                <th className="px-4 py-3">Provider</th>
-                <th className="px-4 py-3">Compte</th>
-                <th className="px-4 py-3">Connecté le</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {items.map((item) => (
-                <tr key={`${item.organizationId}-${item.provider}`}>
-                  <td className="px-4 py-3">
-                    <Link
-                      href={`/platform/organizations/${item.organizationId}`}
-                      className="font-medium text-brand-600 hover:underline dark:text-brand-400"
-                    >
-                      {item.organizationName ?? item.organizationId}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 capitalize">{item.provider}</td>
-                  <td className="px-4 py-3 text-slate-500">
-                    {[item.companyName, item.authMethod, item.tokenHint]
-                      .filter(Boolean)
-                      .join(" · ") || "—"}
-                  </td>
-                  <td className="px-4 py-3 tabular-nums">{formatDate(item.connectedAt)}</td>
-                </tr>
-              ))}
-              {items.length === 0 ? (
+          <ListPagination
+            offset={offset}
+            limit={LIST_PAGE_SIZE}
+            total={total}
+            onOffsetChange={setOffset}
+          >
+            <table className="min-w-[40rem] w-full text-left text-sm">
+              <thead className="border-b border-slate-100 bg-slate-50 text-xs uppercase text-slate-500 dark:border-slate-800 dark:bg-slate-950">
                 <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-slate-500">
-                    Aucune intégration
-                  </td>
+                  <th className="px-4 py-3">Organisation</th>
+                  <th className="px-4 py-3">Provider</th>
+                  <th className="px-4 py-3">Compte</th>
+                  <th className="px-4 py-3">Connecté le</th>
                 </tr>
-              ) : null}
-            </tbody>
-          </table>
-          <div className="px-4 pb-3">
-            <ListPagination
-              offset={offset}
-              limit={LIST_PAGE_SIZE}
-              total={total}
-              onOffsetChange={setOffset}
-            />
-          </div>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {items.map((item) => (
+                  <tr key={`${item.organizationId}-${item.provider}`}>
+                    <td className="px-4 py-3">
+                      <Link
+                        href={`/platform/organizations/${item.organizationId}`}
+                        className="font-medium text-brand-600 hover:underline dark:text-brand-400"
+                      >
+                        {item.organizationName ?? item.organizationId}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3 capitalize">{item.provider}</td>
+                    <td className="px-4 py-3 text-slate-500">
+                      {[item.companyName, item.authMethod, item.tokenHint]
+                        .filter(Boolean)
+                        .join(" · ") || "—"}
+                    </td>
+                    <td className="px-4 py-3 tabular-nums">{formatDate(item.connectedAt)}</td>
+                  </tr>
+                ))}
+                {items.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-4 py-8 text-center text-slate-500">
+                      Aucune intégration
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </ListPagination>
         </div>
       )}
     </div>

@@ -43,6 +43,7 @@ describe("CasesService", () => {
     updateOne: jest.Mock;
     countDocuments: jest.Mock;
     deleteMany: jest.Mock;
+    db: { collection: jest.Mock };
   };
   let mockInterventionModel: {
     create: jest.Mock;
@@ -88,7 +89,8 @@ describe("CasesService", () => {
   const mockCaseDoc = (overrides: Record<string, unknown> = {}) => ({
     _id: { toString: () => "case-123" },
     organizationId: "org-1",
-    title: "Case 1",
+    caseNumber: "2026-0001",
+    title: "2026-0001 - Case 1",
     description: "Desc",
     status: "draft",
     priority: "medium",
@@ -163,6 +165,12 @@ describe("CasesService", () => {
       updateOne: jest.fn().mockImplementation(() => updateChain()),
       countDocuments: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(0) }),
       deleteMany: jest.fn().mockResolvedValue({ deletedCount: 0 }),
+      db: {
+        collection: jest.fn().mockReturnValue({
+          updateOne: jest.fn().mockResolvedValue({ acknowledged: true }),
+          findOneAndUpdate: jest.fn().mockResolvedValue({ seq: 1 }),
+        }),
+      },
     };
 
     mockInterventionModel = {
@@ -365,19 +373,34 @@ describe("CasesService", () => {
   describe("createCase", () => {
     it("should create case without template", async () => {
       const doc = mockCaseDoc();
+      mockCaseModel.findOne.mockReturnValue({
+        sort: jest.fn().mockReturnValue({
+          select: jest.fn().mockReturnValue({
+            lean: jest.fn().mockReturnValue({
+              exec: jest.fn().mockResolvedValue(null),
+            }),
+          }),
+        }),
+      });
       mockCaseModel.create.mockResolvedValue(doc);
 
       const body = {
         organizationId: "org-1",
-        title: "Case 1",
+        customerDisplayName: "Case 1",
         description: "Desc",
       };
 
       const result = await service.createCase(body);
 
-      expect(mockCaseModel.create).toHaveBeenCalled();
+      expect(mockCaseModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          caseNumber: expect.stringMatching(/^\d{4}-\d{4}$/),
+          title: expect.stringMatching(/^\d{4}-\d{4} - Case 1$/),
+        }),
+      );
       expect(result.id).toBe("case-123");
-      expect(result.title).toBe("Case 1");
+      expect(result.caseNumber).toBe("2026-0001");
+      expect(result.title).toBe("2026-0001 - Case 1");
     });
 
     it("should create case with template and load steps", async () => {
@@ -394,13 +417,21 @@ describe("CasesService", () => {
       mockTemplateModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(template),
       });
+      mockCaseModel.findOne.mockReturnValue({
+        sort: jest.fn().mockReturnValue({
+          select: jest.fn().mockReturnValue({
+            lean: jest.fn().mockReturnValue({
+              exec: jest.fn().mockResolvedValue(null),
+            }),
+          }),
+        }),
+      });
       const doc = mockCaseDoc({ steps: [{ id: "s1", name: "Step 1", order: 0, todos: [] }] });
       mockCaseModel.create.mockResolvedValue(doc);
 
       const body = {
         organizationId: "org-1",
         templateId: "tpl-123",
-        title: "Case 1",
         description: "Desc",
       };
 

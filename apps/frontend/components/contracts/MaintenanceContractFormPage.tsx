@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -22,6 +21,15 @@ import { CaseCustomerPicker } from "@/components/cases/CaseCustomerPicker";
 import { CaseInterventionSitePicker } from "@/components/cases/CaseInterventionSitePicker";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { useToast } from "@/components/ui/ToastProvider";
+import {
+  FormDialogCancelButton,
+  FormDialogPrimaryButton,
+  FormDialogSection,
+  FormPage,
+  formFieldHintClassName,
+  formFieldInputClassName,
+  formFieldLabelClassName,
+} from "@/components/ui/FormDialog";
 
 const STATUS_OPTIONS: { value: MaintenanceContractStatus; label: string }[] = [
   { value: "draft", label: "Brouillon" },
@@ -86,8 +94,10 @@ export function MaintenanceContractFormPage({
     enabled: mode === "edit" && !!contractId,
   });
 
+  const [hydratedContractId, setHydratedContractId] = useState<string | null>(null);
+
   useEffect(() => {
-    if (!existing) return;
+    if (!existing || hydratedContractId === existing.id) return;
     setForm({
       customerId: existing.customerId,
       siteId: existing.siteId ?? "",
@@ -103,7 +113,8 @@ export function MaintenanceContractFormPage({
       remindBeforeDays: existing.remindBeforeDays,
       notes: existing.notes ?? "",
     });
-  }, [existing]);
+    setHydratedContractId(existing.id);
+  }, [existing, hydratedContractId]);
 
   const { data: templates } = useQuery({
     queryKey: ["case-templates"],
@@ -171,263 +182,223 @@ export function MaintenanceContractFormPage({
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <Link
-          href="/contracts"
-          className="text-sm font-medium text-brand-600 dark:text-brand-400 hover:text-brand-500"
-        >
-          &larr; Contrats
-        </Link>
-        <h1 className="mt-3 text-xl font-semibold sm:text-2xl">
-          {mode === "create" ? "Nouveau contrat de maintenance" : "Modifier le contrat"}
-        </h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          Définissez la périodicité, le mode de planification et le client pour les prochaines
-          visites.
-        </p>
-      </div>
-
-      {error ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-          {error}
-        </div>
-      ) : null}
-
-      <form
-        className="space-y-5"
-        onSubmit={(e) => {
-          e.preventDefault();
-          setError(null);
-          saveMutation.mutate();
-        }}
-      >
-        <div className="space-y-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/20 sm:p-6">
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">
-              Titre
-            </label>
-            <input
-              required
-              value={form.title}
-              onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-              placeholder="Entretien chaudière annuel"
-            />
-          </div>
-
-          <CaseCustomerPicker
-            idPrefix="contract-customer"
-            value={form.customerId}
-            initialDisplayName={customerDetail?.displayName}
-            onChange={handleCustomerChange}
+    <FormPage
+      title={mode === "create" ? "Nouveau contrat de maintenance" : "Modifier le contrat"}
+      description="Définissez la périodicité, le mode de planification et le client pour les prochaines visites."
+      breadcrumb={
+        mode === "edit" && contractId
+          ? { href: `/contracts/${contractId}`, label: form.title.trim() || "Fiche contrat" }
+          : { href: "/contracts", label: "Contrats" }
+      }
+      error={error || undefined}
+      onSubmit={(e) => {
+        e.preventDefault();
+        setError(null);
+        saveMutation.mutate();
+      }}
+      footer={
+        <>
+          <FormDialogCancelButton
+            onClick={() =>
+              router.push(mode === "edit" && contractId ? `/contracts/${contractId}` : "/contracts")
+            }
             disabled={saveMutation.isPending}
           />
+          <PermissionGate permission={mode === "create" ? "contracts.create" : "contracts.update"}>
+            <FormDialogPrimaryButton type="submit" disabled={saveMutation.isPending}>
+              {saveMutation.isPending ? "Enregistrement…" : "Enregistrer"}
+            </FormDialogPrimaryButton>
+          </PermissionGate>
+        </>
+      }
+    >
+      <FormDialogSection title="Contrat et client">
+        <div>
+          <label className={formFieldLabelClassName}>Titre</label>
+          <input
+            required
+            value={form.title}
+            onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+            className={formFieldInputClassName}
+            placeholder="Entretien chaudière annuel"
+          />
+        </div>
 
-          {form.customerId && sites.length > 0 ? (
-            <CaseInterventionSitePicker
-              sites={sites}
-              value={form.siteId}
-              onChange={(siteId) => setForm((f) => ({ ...f, siteId }))}
-              disabled={saveMutation.isPending}
-            />
-          ) : null}
+        <CaseCustomerPicker
+          idPrefix="contract-customer"
+          value={form.customerId}
+          initialDisplayName={customerDetail?.displayName}
+          onChange={handleCustomerChange}
+          disabled={saveMutation.isPending}
+        />
 
+        {form.customerId && sites.length > 0 ? (
+          <CaseInterventionSitePicker
+            sites={sites}
+            value={form.siteId}
+            onChange={(siteId) => setForm((f) => ({ ...f, siteId }))}
+            disabled={saveMutation.isPending}
+          />
+        ) : null}
+
+        <div>
+          <label className={formFieldLabelClassName}>Modèle de dossier (optionnel)</label>
+          <p className={formFieldHintClassName}>
+            Appliqué automatiquement à chaque visite générée (étapes et tâches).
+          </p>
+          <select
+            value={form.templateId}
+            onChange={(e) => setForm((f) => ({ ...f, templateId: e.target.value }))}
+            disabled={saveMutation.isPending}
+            className={formFieldInputClassName}
+          >
+            <option value="">Sans modèle (dossier vierge)</option>
+            {(templates ?? []).map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+                {t.steps.length > 0 ? ` (${t.steps.length} étapes)` : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+      </FormDialogSection>
+
+      <FormDialogSection title="Périodicité et planification">
+        <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">
-              Modèle de dossier (optionnel)
-            </label>
-            <p className="mb-2 text-xs text-slate-500 dark:text-slate-400">
-              Appliqué automatiquement à chaque visite générée (étapes et tâches).
-            </p>
+            <label className={formFieldLabelClassName}>Statut</label>
             <select
-              value={form.templateId}
-              onChange={(e) => setForm((f) => ({ ...f, templateId: e.target.value }))}
-              disabled={saveMutation.isPending}
-              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none disabled:opacity-50"
+              value={form.status}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, status: e.target.value as MaintenanceContractStatus }))
+              }
+              className={formFieldInputClassName}
             >
-              <option value="">Sans modèle (dossier vierge)</option>
-              {(templates ?? []).map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
-                  {t.steps.length > 0 ? ` (${t.steps.length} étapes)` : ""}
+              {STATUS_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
                 </option>
               ))}
             </select>
           </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">
-                Statut
-              </label>
-              <select
-                value={form.status}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, status: e.target.value as MaintenanceContractStatus }))
-                }
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
-              >
-                {STATUS_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">
-                Récurrence (mois)
-              </label>
-              <input
-                required
-                type="number"
-                min={1}
-                value={form.recurrenceMonths}
-                onChange={(e) => setForm((f) => ({ ...f, recurrenceMonths: e.target.value }))}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-              />
-            </div>
+          <div>
+            <label className={formFieldLabelClassName}>Récurrence (mois)</label>
+            <input
+              required
+              type="number"
+              min={1}
+              value={form.recurrenceMonths}
+              onChange={(e) => setForm((f) => ({ ...f, recurrenceMonths: e.target.value }))}
+              className={formFieldInputClassName}
+            />
           </div>
+        </div>
 
-          <fieldset className="space-y-3">
-            <legend className="text-sm font-medium text-slate-700 dark:text-slate-200">
-              Planification des visites
-            </legend>
-            <div className="space-y-2">
-              {(Object.keys(MAINTENANCE_SCHEDULING_MODE_LABELS) as MaintenanceSchedulingMode[]).map(
-                (modeValue) => (
-                  <label
-                    key={modeValue}
-                    className="flex cursor-pointer items-start gap-2 rounded-lg border border-slate-200 p-3 dark:border-slate-700"
-                  >
-                    <input
-                      type="radio"
-                      name="schedulingMode"
-                      className="mt-1"
-                      checked={form.schedulingMode === modeValue}
-                      onChange={() => setForm((f) => ({ ...f, schedulingMode: modeValue }))}
-                    />
-                    <span>
-                      <span className="block text-sm font-medium text-slate-800 dark:text-slate-100">
-                        {MAINTENANCE_SCHEDULING_MODE_LABELS[modeValue]}
-                      </span>
-                      <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">
-                        {modeValue === "schedule_with_client"
-                          ? "Rappel avant l’échéance ; vous programmez le créneau avec le client."
-                          : "À l’échéance, un dossier et une intervention sont créés automatiquement."}
-                      </span>
+        <fieldset className="space-y-3">
+          <legend className={formFieldLabelClassName}>Planification des visites</legend>
+          <div className="space-y-2">
+            {(Object.keys(MAINTENANCE_SCHEDULING_MODE_LABELS) as MaintenanceSchedulingMode[]).map(
+              (modeValue) => (
+                <label
+                  key={modeValue}
+                  className="flex cursor-pointer items-start gap-2 rounded-lg border border-slate-200 p-3 dark:border-slate-700"
+                >
+                  <input
+                    type="radio"
+                    name="schedulingMode"
+                    className="mt-1"
+                    checked={form.schedulingMode === modeValue}
+                    onChange={() => setForm((f) => ({ ...f, schedulingMode: modeValue }))}
+                  />
+                  <span>
+                    <span className="block text-sm font-medium text-slate-800 dark:text-slate-100">
+                      {MAINTENANCE_SCHEDULING_MODE_LABELS[modeValue]}
                     </span>
-                  </label>
-                ),
-              )}
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">
-                Rappel avant échéance
-              </label>
-              <select
-                value={form.remindBeforeDays}
-                onChange={(e) =>
-                  setForm((f) => ({
-                    ...f,
-                    remindBeforeDays: Number(e.target.value) as MaintenanceRemindBeforeDays,
-                  }))
-                }
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
-              >
-                {MAINTENANCE_REMIND_BEFORE_DAYS.map((days) => (
-                  <option key={days} value={days}>
-                    {days} jours avant
-                  </option>
-                ))}
-              </select>
-            </div>
-          </fieldset>
-
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">
-                Début
-              </label>
-              <input
-                required
-                type="date"
-                value={form.startDate}
-                onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">
-                Fin (optionnel)
-              </label>
-              <input
-                type="date"
-                value={form.endDate}
-                onChange={(e) => setForm((f) => ({ ...f, endDate: e.target.value }))}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">
-                Prochaine visite
-              </label>
-              <input
-                type="date"
-                value={form.nextDueDate}
-                onChange={(e) => setForm((f) => ({ ...f, nextDueDate: e.target.value }))}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-              />
-              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                Si vide, la date de début est utilisée.
-              </p>
-            </div>
+                    <span className={formFieldHintClassName}>
+                      {modeValue === "schedule_with_client"
+                        ? "Rappel avant l’échéance ; vous programmez le créneau avec le client."
+                        : "À l’échéance, un dossier et une intervention sont créés automatiquement."}
+                    </span>
+                  </span>
+                </label>
+              ),
+            )}
           </div>
-
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">
-              Description
-            </label>
-            <textarea
-              value={form.description}
-              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-              rows={3}
-              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">
-              Notes internes
-            </label>
-            <textarea
-              value={form.notes}
-              onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-              rows={2}
-              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-            />
-          </div>
-        </div>
-
-        <div className="flex flex-wrap justify-end gap-3">
-          <Link
-            href={mode === "edit" && contractId ? `/contracts/${contractId}` : "/contracts"}
-            className="rounded-lg border border-slate-200 dark:border-slate-700 px-5 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
-          >
-            Annuler
-          </Link>
-          <PermissionGate permission={mode === "create" ? "contracts.create" : "contracts.update"}>
-            <button
-              type="submit"
-              disabled={saveMutation.isPending}
-              className="rounded-lg bg-brand-600 px-5 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
+            <label className={formFieldLabelClassName}>Rappel avant échéance</label>
+            <select
+              value={form.remindBeforeDays}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  remindBeforeDays: Number(e.target.value) as MaintenanceRemindBeforeDays,
+                }))
+              }
+              className={formFieldInputClassName}
             >
-              {saveMutation.isPending ? "Enregistrement…" : "Enregistrer"}
-            </button>
-          </PermissionGate>
+              {MAINTENANCE_REMIND_BEFORE_DAYS.map((days) => (
+                <option key={days} value={days}>
+                  {days} jours avant
+                </option>
+              ))}
+            </select>
+          </div>
+        </fieldset>
+      </FormDialogSection>
+
+      <FormDialogSection title="Dates et informations complémentaires">
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div>
+            <label className={formFieldLabelClassName}>Début</label>
+            <input
+              required
+              type="date"
+              value={form.startDate}
+              onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))}
+              className={formFieldInputClassName}
+            />
+          </div>
+          <div>
+            <label className={formFieldLabelClassName}>Fin (optionnel)</label>
+            <input
+              type="date"
+              value={form.endDate}
+              onChange={(e) => setForm((f) => ({ ...f, endDate: e.target.value }))}
+              className={formFieldInputClassName}
+            />
+          </div>
+          <div>
+            <label className={formFieldLabelClassName}>Prochaine visite</label>
+            <input
+              type="date"
+              value={form.nextDueDate}
+              onChange={(e) => setForm((f) => ({ ...f, nextDueDate: e.target.value }))}
+              className={formFieldInputClassName}
+            />
+            <p className={formFieldHintClassName}>Si vide, la date de début est utilisée.</p>
+          </div>
         </div>
-      </form>
-    </div>
+
+        <div>
+          <label className={formFieldLabelClassName}>Description</label>
+          <textarea
+            value={form.description}
+            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+            rows={3}
+            className={formFieldInputClassName}
+          />
+        </div>
+
+        <div>
+          <label className={formFieldLabelClassName}>Notes internes</label>
+          <textarea
+            value={form.notes}
+            onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+            rows={2}
+            className={formFieldInputClassName}
+          />
+        </div>
+      </FormDialogSection>
+    </FormPage>
   );
 }

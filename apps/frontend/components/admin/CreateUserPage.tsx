@@ -15,6 +15,14 @@ import { countOrganizationUserSeats } from "@/lib/organization-user-status";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { ImportDefaultsDialog } from "@/components/settings/ImportDefaultsDialog";
 import { useToast } from "@/components/ui/ToastProvider";
+import {
+  FormDialogCancelButton,
+  FormDialogPrimaryButton,
+  FormDialogSection,
+  FormPage,
+  formFieldInputClassName,
+  formFieldLabelClassName,
+} from "@/components/ui/FormDialog";
 
 function togglePermission(list: PermissionCode[], permission: PermissionCode): PermissionCode[] {
   if (list.includes(permission)) return list.filter((item) => item !== permission);
@@ -185,162 +193,171 @@ export function CreateUserPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-xl sm:text-2xl font-semibold">Inviter un utilisateur</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Invitez un utilisateur : un e-mail avec le lien d&apos;activation lui sera envoyé.
-        </p>
-      </div>
+    <>
+      <FormPage
+        title="Inviter un utilisateur"
+        description="Invitez un utilisateur : un e-mail avec le lien d'activation lui sera envoyé."
+        breadcrumb={{ href: "/users", label: "Utilisateurs" }}
+        error={error || undefined}
+        onSubmit={handleSubmit}
+        footer={
+          <>
+            <FormDialogCancelButton onClick={() => router.push("/users")} disabled={saving} />
+            <FormDialogPrimaryButton type="submit" disabled={loading || saving || atSeatLimit}>
+              {saving ? "Invitation…" : "Inviter l'utilisateur"}
+            </FormDialogPrimaryButton>
+          </>
+        }
+      >
+        {atSeatLimit && (
+          <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-100 text-sm p-3">
+            Limite atteinte ({seatLimit?.current} / {seatLimit?.max} utilisateurs).{" "}
+            <Link href="/subscription" className="font-medium underline hover:no-underline">
+              Ajoutez des utilisateurs supplémentaires
+            </Link>{" "}
+            depuis la page Abonnement.
+          </div>
+        )}
 
-      {atSeatLimit && (
-        <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-100 text-sm p-3">
-          Limite atteinte ({seatLimit?.current} / {seatLimit?.max} utilisateurs).{" "}
-          <Link href="/subscription" className="font-medium underline hover:no-underline">
-            Ajoutez des utilisateurs supplémentaires
-          </Link>{" "}
-          depuis la page Abonnement.
-        </div>
-      )}
-
-      {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm p-3">
-          {error}
-        </div>
-      )}
-
-      <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 sm:p-5">
         {loading ? (
           <p className="text-sm text-slate-500 dark:text-slate-400">Chargement...</p>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-              />
-              <input
-                type="text"
-                placeholder="Nom (optionnel)"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-              />
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <select
-                value={role}
-                onChange={(e) => {
-                  const nextRole = e.target.value as "admin" | "member";
-                  setRole(nextRole);
-                  if (nextRole === "admin") {
-                    setProfileId("");
-                    setSelectedPermissions([]);
-                  }
-                }}
-                className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:outline-none"
-              >
-                <option value="member">Membre</option>
-                <option value="admin">Administrateur</option>
-              </select>
-              <select
-                value={profileId}
-                onChange={(e) => selectProfile(e.target.value, profiles)}
-                disabled={adminRoleSelected}
-                aria-label="Profil de permissions"
-                className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:border-brand-500 focus:outline-none"
-              >
-                <option value="">Aucun profil</option>
-                {profiles.map((profile) => (
-                  <option key={profile.id} value={profile.id}>
-                    {profile.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {!adminRoleSelected && noProfiles && (
-              <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 px-3 py-3 text-sm text-slate-600 dark:text-slate-300">
-                <p className="font-medium text-slate-800 dark:text-slate-100 mb-1">
-                  Aucun profil de permissions
-                </p>
-                <p className="mb-2 text-slate-500 dark:text-slate-400">
-                  Créez ou importez un profil pour assigner rapidement des droits au membre invité.
-                </p>
-                <PermissionGate permission="profiles.create">
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                    <button
-                      type="button"
-                      onClick={() => setImportOpen(true)}
-                      className="font-medium text-brand-600 dark:text-brand-400 hover:underline"
-                    >
-                      Importer depuis la librairie
-                    </button>
-                    <span className="text-slate-400" aria-hidden>
-                      ou
-                    </span>
-                    <Link
-                      href="/settings/profiles/new?returnTo=%2Fusers%2Fnew"
-                      className="font-medium text-brand-600 dark:text-brand-400 hover:underline"
-                    >
-                      Créer un profil
-                    </Link>
-                  </div>
-                </PermissionGate>
-              </div>
-            )}
-            {adminRoleSelected && (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-                Un administrateur d&apos;organisation possède automatiquement tous les droits. Aucun
-                profil ni permission personnalisée ne peut lui être affecté.
-              </div>
-            )}
-            <div className={`${adminRoleSelected ? "opacity-60" : ""}`}>
-              <div>
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
-                  Permissions
-                </p>
-                <div className="grid gap-1 sm:grid-cols-2">
-                  {catalog.map((permission) => (
-                    <label key={permission} className="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        disabled={adminRoleSelected}
-                        checked={selectedPermissions.includes(permission)}
-                        onChange={() =>
-                          setSelectedPermissions((previous) =>
-                            togglePermission(previous, permission),
-                          )
-                        }
-                      />
-                      <span>
-                        <span className="block text-slate-700 dark:text-slate-200">
-                          {getPermissionLabel(permission)}
-                        </span>
-                        <span className="block font-mono text-xs text-slate-400 dark:text-slate-500">
-                          {permission}
-                        </span>
-                      </span>
-                    </label>
-                  ))}
+          <>
+            <FormDialogSection title="Utilisateur">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className={formFieldLabelClassName}>Email</label>
+                  <input
+                    type="email"
+                    placeholder="utilisateur@exemple.fr"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className={formFieldInputClassName}
+                  />
+                </div>
+                <div>
+                  <label className={formFieldLabelClassName}>Nom (optionnel)</label>
+                  <input
+                    type="text"
+                    placeholder="Prénom Nom"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className={formFieldInputClassName}
+                  />
                 </div>
               </div>
-            </div>
-            <div className="flex justify-end">
-              <button
-                type="submit"
-                disabled={saving || atSeatLimit}
-                className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
-              >
-                {saving ? "Invitation..." : "Inviter l'utilisateur"}
-              </button>
-            </div>
-          </form>
+            </FormDialogSection>
+
+            <FormDialogSection title="Rôle et profil">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className={formFieldLabelClassName}>Rôle</label>
+                  <select
+                    value={role}
+                    onChange={(e) => {
+                      const nextRole = e.target.value as "admin" | "member";
+                      setRole(nextRole);
+                      if (nextRole === "admin") {
+                        setProfileId("");
+                        setSelectedPermissions([]);
+                      }
+                    }}
+                    className={formFieldInputClassName}
+                  >
+                    <option value="member">Membre</option>
+                    <option value="admin">Administrateur</option>
+                  </select>
+                </div>
+                <div>
+                  <label className={formFieldLabelClassName}>Profil de permissions</label>
+                  <select
+                    value={profileId}
+                    onChange={(e) => selectProfile(e.target.value, profiles)}
+                    disabled={adminRoleSelected}
+                    className={formFieldInputClassName}
+                  >
+                    <option value="">Aucun profil</option>
+                    {profiles.map((profile) => (
+                      <option key={profile.id} value={profile.id}>
+                        {profile.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              {!adminRoleSelected && noProfiles && (
+                <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 px-3 py-3 text-sm text-slate-600 dark:text-slate-300">
+                  <p className="font-medium text-slate-800 dark:text-slate-100 mb-1">
+                    Aucun profil de permissions
+                  </p>
+                  <p className="mb-2 text-slate-500 dark:text-slate-400">
+                    Créez ou importez un profil pour assigner rapidement des droits au membre
+                    invité.
+                  </p>
+                  <PermissionGate permission="profiles.create">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                      <button
+                        type="button"
+                        onClick={() => setImportOpen(true)}
+                        className="font-medium text-brand-600 dark:text-brand-400 hover:underline"
+                      >
+                        Importer depuis la librairie
+                      </button>
+                      <span className="text-slate-400" aria-hidden>
+                        ou
+                      </span>
+                      <Link
+                        href="/settings/profiles/new?returnTo=%2Fusers%2Fnew"
+                        className="font-medium text-brand-600 dark:text-brand-400 hover:underline"
+                      >
+                        Créer un profil
+                      </Link>
+                    </div>
+                  </PermissionGate>
+                </div>
+              )}
+              {adminRoleSelected && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                  Un administrateur d&apos;organisation possède automatiquement tous les droits.
+                  Aucun profil ni permission personnalisée ne peut lui être affecté.
+                </div>
+              )}
+            </FormDialogSection>
+
+            <FormDialogSection title="Permissions">
+              <div className={`${adminRoleSelected ? "opacity-60" : ""}`}>
+                <div>
+                  <div className="grid gap-1 sm:grid-cols-2">
+                    {catalog.map((permission) => (
+                      <label key={permission} className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          disabled={adminRoleSelected}
+                          checked={selectedPermissions.includes(permission)}
+                          onChange={() =>
+                            setSelectedPermissions((previous) =>
+                              togglePermission(previous, permission),
+                            )
+                          }
+                        />
+                        <span>
+                          <span className="block text-slate-700 dark:text-slate-200">
+                            {getPermissionLabel(permission)}
+                          </span>
+                          <span className="block font-mono text-xs text-slate-400 dark:text-slate-500">
+                            {permission}
+                          </span>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </FormDialogSection>
+          </>
         )}
-      </section>
+      </FormPage>
 
       <ImportDefaultsDialog
         open={importOpen}
@@ -351,6 +368,6 @@ export function CreateUserPage() {
         importing={importing}
         onImport={handleImport}
       />
-    </div>
+    </>
   );
 }

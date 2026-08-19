@@ -110,7 +110,6 @@ export function deleteTemplate(templateId: string) {
 
 export interface CreateCasePayload {
   templateId?: string;
-  title: string;
   description?: string;
   priority?: string;
   assigneeIds?: string[];
@@ -122,7 +121,6 @@ export interface CreateCasePayload {
 }
 
 export interface UpdateCasePayload {
-  title?: string;
   description?: string;
   status?: string;
   billingStatus?: string;
