@@ -167,7 +167,9 @@ export const DATA_IMPORT_ENTITY_META: Record<
     order: 6,
     hint: "Si le dossier est lié à un client, un site ou un donneur d’ordre, importez-les d’abord.",
     details: [
-      "externalId : identifiant unique du dossier dans votre ancien CRM (ex. DOS-001).",
+      "externalId : identifiant unique du dossier dans votre ancien CRM (clé de liaison, ex. DOS-001).",
+      "Le numéro Planwise (YYYY-0001) et le titre d’affichage « n° - client » sont générés automatiquement (pas de colonne titre).",
+      "reference : référence libre optionnelle sur le dossier.",
       "customerExternalId : externalId du client déjà importé (colonne externalId du fichier clients.csv).",
       "orderGiverExternalId : externalId du donneur d’ordre déjà importé (fichier donneurs_ordre.csv).",
       "siteExternalId : externalId du site client déjà importé (fichier sites_clients.csv).",

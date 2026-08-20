@@ -182,6 +182,8 @@ export function CaseProgressTimeline({
   onTodoStatusChange,
   title,
   titleBadges,
+  tags,
+  importExternalId,
   description,
   details,
   meta,
@@ -196,12 +198,22 @@ export function CaseProgressTimeline({
   onTodoStatusChange: (stepId: string, todoId: string, status: TodoItemStatus) => void;
   title: string;
   titleBadges?: React.ReactNode;
+  /** Tags métier du dossier, affichés sous le titre. */
+  tags?: string[];
+  /** Identifiant source (import CRM), chip dans la rangée de tags. */
+  importExternalId?: string;
   description?: string;
   details?: React.ReactNode;
   meta?: React.ReactNode;
 }) {
   const sortedSteps = useMemo(() => [...steps].sort((a, b) => a.order - b.order), [steps]);
   const [expandedStepId, setExpandedStepId] = useState<string | null>(null);
+  const tagList = (tags ?? [])
+    .map((t) => t.trim())
+    .filter(Boolean)
+    // Évite le doublon avec le chip « Import · {id} » si un tag littéral « import » existe.
+    .filter((t) => !(importExternalId && /^import$/i.test(t)));
+  const showTagRow = tagList.length > 0 || Boolean(importExternalId);
 
   useEffect(() => {
     if (sortedSteps.length === 0) {
@@ -226,6 +238,30 @@ export function CaseProgressTimeline({
               </h1>
               {titleBadges}
             </div>
+            {showTagRow ? (
+              <div className="flex flex-wrap items-center gap-1.5">
+                {importExternalId ? (
+                  <span
+                    className="rounded bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-[10px] font-medium text-slate-600 dark:text-slate-300"
+                    title="Identifiant provenant de l’import de données"
+                  >
+                    <span className="uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      Import
+                    </span>
+                    <span className="mx-1 text-slate-300 dark:text-slate-600">·</span>
+                    <span className="font-mono">{importExternalId}</span>
+                  </span>
+                ) : null}
+                {tagList.map((t) => (
+                  <span
+                    key={t}
+                    className="rounded bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-[10px] font-medium text-slate-600 dark:text-slate-300"
+                  >
+                    {t}
+                  </span>
+                ))}
+              </div>
+            ) : null}
             {description ? (
               <p className="text-sm text-slate-500 dark:text-slate-400 max-w-3xl">{description}</p>
             ) : null}

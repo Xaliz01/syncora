@@ -24,6 +24,8 @@ import type {
 
 export interface CreateCaseForOrgBody {
   templateId?: string;
+  /** Référence libre optionnelle. */
+  reference?: string;
   description?: string;
   priority?: string;
   assigneeIds?: string[];
@@ -35,6 +37,8 @@ export interface CreateCaseForOrgBody {
 }
 
 export interface UpdateCaseForOrgBody {
+  /** Référence libre optionnelle (null pour retirer). */
+  reference?: string | null;
   description?: string;
   status?: string;
   billingStatus?: string;

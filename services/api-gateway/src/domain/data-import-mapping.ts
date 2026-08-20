@@ -206,10 +206,15 @@ export function buildMappingSystemPrompt(entity: DataImportEntity): string {
   const fields = DATA_IMPORT_TARGET_FIELDS[entity]
     .map((f) => `- ${f.key}${f.required ? " (requis)" : ""} : ${f.label}`)
     .join("\n");
+  const casesNote =
+    entity === "cases"
+      ? `\nImportant dossiers : n'inclus JAMAIS de clé « title » dans le mapping JSON. Ne mappe PAS les colonnes source title/titre/objet/sujet — le titre d'affichage Planwise est généré automatiquement (numéro YYYY-0001 + nom du client). La clé de liaison va dans « externalId ». « reference » est un champ libre optionnel (pas le remplacement d'externalId, et pas un synonyme de title).`
+      : "";
   return `Tu aides à convertir un export CRM vers le format d'import Planwise.
 Entité cible : ${entity}
-Champs Planwise possibles :
+Champs Planwise possibles (uniquement ces clés) :
 ${fields}
+${casesNote}
 
 Réponds UNIQUEMENT avec un JSON :
 {
@@ -218,6 +223,7 @@ Réponds UNIQUEMENT avec un JSON :
   "notes": "conseil court en français (optionnel)"
 }
 Règles :
+- Utilise uniquement les clés listées ci-dessus (pas de title pour les dossiers).
 - Utilise uniquement les en-têtes fournis (orthographe exacte).
 - Un en-tête source ne peut mapper qu'un seul champ Planwise.
 - Si aucun match fiable : null.

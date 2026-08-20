@@ -218,12 +218,14 @@ export interface CreateCaseBody {
   organizationId: string;
   templateId?: string;
   /**
-   * Libellé libre optionnel (import, maintenance, démo) utilisé comme suffixe
+   * Libellé libre optionnel (maintenance, démo) utilisé comme suffixe
    * d’affichage si `customerDisplayName` est absent. Ignoré côté UI app.
    */
   title?: string;
   /** Nom d’affichage du client pour construire le titre (`YYYY-0001 - Client`). */
   customerDisplayName?: string;
+  /** Référence libre optionnelle. */
+  reference?: string;
   description?: string;
   priority?: CasePriority;
   /** Resolved by api-gateway from user ids */
@@ -244,6 +246,8 @@ export interface UpdateCaseBody {
   title?: string;
   /** Recalcule le titre d’affichage avec le `caseNumber` existant. */
   customerDisplayName?: string | null;
+  /** Référence libre optionnelle (null pour retirer). */
+  reference?: string | null;
   description?: string;
   status?: CaseStatus;
   billingStatus?: BillingStatus;
@@ -271,6 +275,10 @@ export interface CaseResponse {
   interventionAddress?: PostalAddress;
   /** Numéro métier immuable (`YYYY-0001`). */
   caseNumber: string;
+  /** Référence libre optionnelle. */
+  reference?: string;
+  /** Identifiant source (import CRM), optionnel. */
+  importExternalId?: string;
   /** Libellé d’affichage (`caseNumber - client`). */
   title: string;
   description?: string;
@@ -299,6 +307,10 @@ export interface CaseSummaryResponse {
   interventionAddress?: PostalAddress;
   /** Numéro métier immuable (`YYYY-0001`). */
   caseNumber: string;
+  /** Référence libre optionnelle. */
+  reference?: string;
+  /** Identifiant source (import CRM), optionnel. */
+  importExternalId?: string;
   title: string;
   status: CaseStatus;
   billingStatus: BillingStatus;

@@ -4,6 +4,7 @@ import type {
   DataImportBulkResult,
   DataImportDeleteCreatedResult,
   DataImportEntity,
+  DataImportResolvedCustomerRef,
   DataImportRollbackResponse,
   DataImportRowError,
   DataImportRunListResponse,
@@ -209,10 +210,8 @@ export class DataImportService extends AbstractDataImportService {
         const customerExternalIds = [
           ...new Set(rows.map((r) => r.customerExternalId).filter(Boolean)),
         ] as string[];
-        const customerIdByExternalId = await this.resolveIds(
+        const { idByExternalId: customerIdByExternalId } = await this.resolveCustomers(
           orgId,
-          SERVICE_URLS.customers,
-          "/import/resolve/customers",
           customerExternalIds,
         );
         result = await this.postImportBatched(
@@ -256,14 +255,9 @@ export class DataImportService extends AbstractDataImportService {
         const siteExternalIds = [
           ...new Set(rows.map((r) => r.siteExternalId).filter(Boolean)),
         ] as string[];
-        const [customerIdByExternalId, orderGiverIdByExternalId, siteIdByExternalId] =
-          await Promise.all([
-            this.resolveIds(
-              orgId,
-              SERVICE_URLS.customers,
-              "/import/resolve/customers",
-              customerExternalIds,
-            ),
+        const [customersResolved, orderGiverIdByExternalId, siteIdByExternalId] = await Promise.all(
+          [
+            this.resolveCustomers(orgId, customerExternalIds),
             this.resolveIds(
               orgId,
               SERVICE_URLS.customers,
@@ -276,10 +270,12 @@ export class DataImportService extends AbstractDataImportService {
               "/import/resolve/customer-sites",
               siteExternalIds,
             ),
-          ]);
+          ],
+        );
         result = await this.postImportBatched(orgId, SERVICE_URLS.cases, "/import/cases", {
           rows: mapCaseRows(rows),
-          customerIdByExternalId,
+          customerIdByExternalId: customersResolved.idByExternalId,
+          customerDisplayNameByExternalId: customersResolved.displayNameByExternalId,
           orderGiverIdByExternalId,
           siteIdByExternalId,
         });
@@ -524,6 +520,40 @@ export class DataImportService extends AbstractDataImportService {
       axiosConfig: { timeout: 120_000 },
       validateResponseScope: false,
     });
+  }
+
+  private async resolveCustomers(
+    organizationId: string,
+    externalIds: string[],
+  ): Promise<{
+    idByExternalId: Record<string, string>;
+    displayNameByExternalId: Record<string, string>;
+  }> {
+    if (externalIds.length === 0) {
+      return { idByExternalId: {}, displayNameByExternalId: {} };
+    }
+    const chunks = chunkArray(externalIds, 500);
+    const idByExternalId: Record<string, string> = {};
+    const displayNameByExternalId: Record<string, string> = {};
+    for (const chunk of chunks) {
+      const part = await this.scopedHttp.request<Record<string, DataImportResolvedCustomerRef>>({
+        baseUrl: SERVICE_URLS.customers,
+        organizationId,
+        method: "post",
+        path: "/import/resolve/customers",
+        body: { externalIds: chunk },
+        errorLabel: "Resolve customers error",
+        validateResponseScope: false,
+      });
+      for (const [externalId, ref] of Object.entries(part ?? {})) {
+        if (!ref?.id) continue;
+        idByExternalId[externalId] = ref.id;
+        if (ref.displayName?.trim()) {
+          displayNameByExternalId[externalId] = ref.displayName.trim();
+        }
+      }
+    }
+    return { idByExternalId, displayNameByExternalId };
   }
 
   private resolveIds(

@@ -80,7 +80,8 @@ La `reference` est normalisée en majuscules et unique dans l’org.
 
 | Colonne                | Notes                                                                                |
 | ---------------------- | ------------------------------------------------------------------------------------ |
-| `externalId`, `title`  | Requis                                                                               |
+| `externalId`           | Requis — clé de liaison (ré-import, liens interventions)                             |
+| `reference`            | Référence libre optionnelle                                                          |
 | `status`               | `draft`, `open`, `in_progress`, `waiting`, `completed`, `cancelled` (défaut `draft`) |
 | `priority`             | `low`, `medium`, `high`, `urgent`                                                    |
 | `dueDate`              | ISO `YYYY-MM-DD`                                                                     |
@@ -88,6 +89,8 @@ La `reference` est normalisée en majuscules et unique dans l’org.
 | `orderGiverExternalId` | = `externalId` du donneur d’ordre (`donneurs_ordre.csv`), déjà importé               |
 | `siteExternalId`       | = `externalId` du site (`sites_clients.csv`), déjà importé                           |
 | `tags`                 | Séparés par `\|`                                                                     |
+
+Pas de colonne `title` : le **numéro** Planwise (`YYYY-0001`) est attribué automatiquement, et le titre d’affichage est composé `n° - nom du client` (comme à la création manuelle).
 
 ### Interventions — `interventions.csv` (historique autorisé)
 

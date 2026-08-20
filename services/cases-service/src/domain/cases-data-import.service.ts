@@ -77,16 +77,6 @@ export class CasesDataImportService extends AbstractCasesDataImportService {
         });
         continue;
       }
-      if (!row.title?.trim()) {
-        result.skipped += 1;
-        result.errors.push({
-          row: rowNum,
-          field: "title",
-          message: "title requis",
-          severity: "error",
-        });
-        continue;
-      }
 
       const status = (row.status?.trim() || "draft") as CaseStatus;
       if (!CASE_STATUSES.includes(status)) {
@@ -174,13 +164,17 @@ export class CasesDataImportService extends AbstractCasesDataImportService {
         : [];
 
       const externalId = row.externalId.trim();
+      const reference = row.reference?.trim() || undefined;
+      const partyLabel = row.customerExternalId?.trim()
+        ? body.customerDisplayNameByExternalId?.[row.customerExternalId.trim()]
+        : undefined;
       try {
         const existing = await this.caseModel
           .findOne({ organizationId, importExternalId: externalId, ...activeDocumentFilter })
           .exec();
-        const label = row.title.trim();
         if (existing) {
-          existing.title = buildCaseDisplayTitle(existing.caseNumber, label);
+          existing.reference = reference;
+          existing.title = buildCaseDisplayTitle(existing.caseNumber, partyLabel);
           existing.description = row.description?.trim() || undefined;
           existing.status = status;
           existing.priority = priority;
@@ -201,7 +195,8 @@ export class CasesDataImportService extends AbstractCasesDataImportService {
               const doc = await this.caseModel.create({
                 organizationId,
                 caseNumber,
-                title: buildCaseDisplayTitle(caseNumber, label),
+                ...(reference ? { reference } : {}),
+                title: buildCaseDisplayTitle(caseNumber, partyLabel),
                 description: row.description?.trim() || undefined,
                 status,
                 priority,

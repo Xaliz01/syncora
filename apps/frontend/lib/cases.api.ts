@@ -110,6 +110,8 @@ export function deleteTemplate(templateId: string) {
 
 export interface CreateCasePayload {
   templateId?: string;
+  /** Référence libre optionnelle. */
+  reference?: string;
   description?: string;
   priority?: string;
   assigneeIds?: string[];
@@ -121,6 +123,8 @@ export interface CreateCasePayload {
 }
 
 export interface UpdateCasePayload {
+  /** Référence libre optionnelle (null pour retirer). */
+  reference?: string | null;
   description?: string;
   status?: string;
   billingStatus?: string;

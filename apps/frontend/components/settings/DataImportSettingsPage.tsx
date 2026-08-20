@@ -223,7 +223,10 @@ function ConvertExportOverlay({ open, onClose }: { open: boolean; onClose: () =>
   const [usedLlm, setUsedLlm] = useState(false);
   const [confidence, setConfidence] = useState<"high" | "medium" | "low" | null>(null);
 
-  const targets = DATA_IMPORT_TARGET_FIELDS[entity];
+  /** Dossiers : pas de champ title (titre auto n° + client) — filtre défensif si catalogue/cache obsolète. */
+  const targets = DATA_IMPORT_TARGET_FIELDS[entity].filter(
+    (field) => entity === "interventions" || field.key !== "title",
+  );
   const mappedRequired = targets.filter((t) => t.required && mapping[t.key]).length;
   const requiredCount = targets.filter((t) => t.required).length;
   const showMapping = !busy && sourceHeaders.length > 0;
@@ -260,7 +263,16 @@ function ConvertExportOverlay({ open, onClose }: { open: boolean; onClose: () =>
       headers,
       sampleRows: rows.slice(0, 5),
     });
-    setMapping(suggestion.mapping);
+    const allowedKeys = new Set(
+      DATA_IMPORT_TARGET_FIELDS[nextEntity]
+        .filter((f) => nextEntity === "interventions" || f.key !== "title")
+        .map((f) => f.key),
+    );
+    const cleaned: Record<string, string | null> = {};
+    for (const key of allowedKeys) {
+      cleaned[key] = suggestion.mapping[key] ?? null;
+    }
+    setMapping(cleaned);
     setNotes(suggestion.notes ?? null);
     setUsedLlm(suggestion.usedLlm);
     setConfidence(suggestion.confidence);
@@ -438,6 +450,13 @@ function ConvertExportOverlay({ open, onClose }: { open: boolean; onClose: () =>
               {notes && (
                 <p className="text-xs text-slate-500 dark:text-slate-400 italic">{notes}</p>
               )}
+              {entity === "cases" && (
+                <p className="text-xs text-slate-600 dark:text-slate-300">
+                  Pas de colonne titre à mapper : le numéro Planwise et le libellé « n° - client »
+                  sont générés automatiquement. Une colonne title/titre de votre export peut rester
+                  non mappée.
+                </p>
+              )}
 
               <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700 max-h-[min(50vh,28rem)]">
                 <table className="min-w-full text-left text-xs">
@@ -454,16 +473,14 @@ function ConvertExportOverlay({ open, onClose }: { open: boolean; onClose: () =>
                         className="border-t border-slate-100 dark:border-slate-800"
                       >
                         <td className="px-2 py-1.5">
-                          <span className="font-mono text-slate-800 dark:text-slate-100">
-                            {field.key}
-                          </span>
+                          <span className="text-slate-800 dark:text-slate-100">{field.label}</span>
                           {field.required && (
                             <span className="ml-1 text-red-500" title="requis">
                               *
                             </span>
                           )}
-                          <span className="block text-slate-500 dark:text-slate-400">
-                            {field.label}
+                          <span className="block font-mono text-slate-500 dark:text-slate-400">
+                            {field.key}
                           </span>
                         </td>
                         <td className="px-2 py-1.5">

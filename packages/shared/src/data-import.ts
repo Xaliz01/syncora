@@ -116,6 +116,12 @@ export interface DataImportDeleteCreatedResult {
   deleted: number;
 }
 
+/** Résolution clients à l’import (id + libellé d’affichage). */
+export interface DataImportResolvedCustomerRef {
+  id: string;
+  displayName: string;
+}
+
 export interface DataImportRollbackResponse {
   runId: string;
   entity: DataImportEntity;
@@ -200,7 +206,8 @@ export interface ImportPrestationRow {
 
 export interface ImportCaseRow {
   externalId: string;
-  title: string;
+  /** Référence libre optionnelle (affichage métier). */
+  reference?: string;
   description?: string;
   status?: CaseStatus;
   priority?: CasePriority;
@@ -260,6 +267,8 @@ export interface ImportCasesBody {
   organizationId: string;
   rows: ImportCaseRow[];
   customerIdByExternalId?: Record<string, string>;
+  /** Affichage client (companyName / prénom+nom) pour composer le titre `n° - client`. */
+  customerDisplayNameByExternalId?: Record<string, string>;
   orderGiverIdByExternalId?: Record<string, string>;
   siteIdByExternalId?: Record<string, string>;
 }
@@ -366,8 +375,8 @@ export const DATA_IMPORT_TARGET_FIELDS: Record<
     { key: "defaultTvaRate", label: "TVA (0|5.5|10|20)" },
   ],
   cases: [
-    { key: "externalId", label: "Identifiant source", required: true },
-    { key: "title", label: "Libellé (souvent le client)", required: true },
+    { key: "externalId", label: "Identifiant source (clé de liaison)", required: true },
+    { key: "reference", label: "Référence (optionnel)", required: false },
     { key: "description", label: "Description" },
     { key: "status", label: "Statut" },
     { key: "priority", label: "Priorité" },

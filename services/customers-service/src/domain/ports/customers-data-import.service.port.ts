@@ -2,6 +2,7 @@ import type {
   DataImportBulkResult,
   DataImportDeleteCreatedBody,
   DataImportDeleteCreatedResult,
+  DataImportResolvedCustomerRef,
   ImportCustomerRow,
   ImportCustomerSiteRow,
   ImportCustomersBody,
@@ -18,7 +19,7 @@ export abstract class AbstractCustomersDataImportService {
   abstract resolveCustomerIds(
     organizationId: string,
     externalIds: string[],
-  ): Promise<Record<string, string>>;
+  ): Promise<Record<string, DataImportResolvedCustomerRef>>;
   abstract resolveSiteIds(
     organizationId: string,
     externalIds: string[],

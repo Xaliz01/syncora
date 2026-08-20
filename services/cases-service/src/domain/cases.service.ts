@@ -91,6 +91,7 @@ export class CasesService extends AbstractCasesService {
           orderGiverId: body.orderGiverId?.trim() || undefined,
           interventionSiteId: body.interventionSiteId?.trim() || undefined,
           caseNumber,
+          reference: body.reference?.trim() || undefined,
           title: buildCaseDisplayTitle(caseNumber, partyLabel),
           description: body.description,
           priority: body.priority ?? "medium",
@@ -148,6 +149,8 @@ export class CasesService extends AbstractCasesService {
         $or: [
           { title: { $regex: search, $options: "i" } },
           { caseNumber: { $regex: search, $options: "i" } },
+          { reference: { $regex: search, $options: "i" } },
+          { importExternalId: { $regex: search, $options: "i" } },
         ],
       });
     }
@@ -219,6 +222,9 @@ export class CasesService extends AbstractCasesService {
     if (body.interventionSiteId !== undefined) {
       setUpdate.interventionSiteId =
         body.interventionSiteId === null ? null : body.interventionSiteId.trim() || undefined;
+    }
+    if (body.reference !== undefined) {
+      setUpdate.reference = body.reference === null ? null : body.reference.trim() || undefined;
     }
 
     if (body.customerId !== undefined || body.customerDisplayName !== undefined) {

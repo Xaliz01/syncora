@@ -48,6 +48,7 @@ export function CaseEditPage({ caseId }: { caseId: string }) {
   });
 
   const [description, setDescription] = useState("");
+  const [reference, setReference] = useState("");
   const [priority, setPriority] = useState<CasePriority>("medium");
   const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
   const [dueDate, setDueDate] = useState("");
@@ -65,6 +66,7 @@ export function CaseEditPage({ caseId }: { caseId: string }) {
   useEffect(() => {
     if (!caseData || hydratedCaseId === caseData.id) return;
     setDescription(caseData.description ?? "");
+    setReference(caseData.reference ?? "");
     setPriority(caseData.priority);
     setAssigneeIds(caseData.assignees.map((a) => a.userId));
     setDueDate(caseData.dueDate ? caseData.dueDate.split("T")[0] : "");
@@ -114,6 +116,7 @@ export function CaseEditPage({ caseId }: { caseId: string }) {
     e.preventDefault();
     setError("");
     updateMutation.mutate({
+      reference: reference.trim() ? reference.trim() : null,
       description: description.trim() || undefined,
       priority,
       assigneeIds,
@@ -174,6 +177,39 @@ export function CaseEditPage({ caseId }: { caseId: string }) {
             <p className="mt-1 inline-flex items-center gap-2 text-sm font-medium text-slate-900 dark:text-slate-100">
               {caseData.caseNumber}
               <TestDataBadgeIf isTestData={caseData.isTestData} />
+            </p>
+          </div>
+
+          {caseData.importExternalId ? (
+            <div>
+              <p className={formFieldLabelClassName}>Identifiant source</p>
+              <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+                <span
+                  className="inline-flex items-center shrink-0 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+                  title="Identifiant provenant de l’import de données"
+                >
+                  Import
+                </span>
+                <span className="font-mono">{caseData.importExternalId}</span>
+              </p>
+            </div>
+          ) : null}
+
+          <div>
+            <label htmlFor="case-edit-reference" className={formFieldLabelClassName}>
+              Référence (optionnel)
+            </label>
+            <input
+              id="case-edit-reference"
+              type="text"
+              value={reference}
+              onChange={(e) => setReference(e.target.value)}
+              className={formFieldInputClassName}
+              placeholder="Ex. AFF-2026-042, devis client…"
+              disabled={updateMutation.isPending}
+            />
+            <p className={formFieldHintClassName}>
+              Libre : n° d’affaire interne, référence client, etc. Distinct du numéro Planwise.
             </p>
           </div>
 

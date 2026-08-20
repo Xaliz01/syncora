@@ -9,7 +9,12 @@ import type {
   CustomerSiteSubDoc,
 } from "../../persistence/customer.schema";
 
-function customerDisplayName(doc: CustomerDocument): string {
+export function customerDisplayName(doc: {
+  kind: string;
+  companyName?: string;
+  firstName?: string;
+  lastName?: string;
+}): string {
   if (doc.kind === "company") {
     return doc.companyName?.trim() || "Société";
   }

@@ -1037,6 +1037,8 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
         <div className="min-w-0">
           <CaseProgressTimeline
             title={caseData.title}
+            tags={caseData.tags}
+            importExternalId={caseData.importExternalId}
             description={caseData.description}
             titleBadges={
               <>
@@ -1135,20 +1137,9 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
             }
             meta={
               <>
+                {caseData.reference ? <span>Réf. : {caseData.reference}</span> : null}
                 {caseData.dueDate && (
                   <span>Échéance : {new Date(caseData.dueDate).toLocaleDateString("fr-FR")}</span>
-                )}
-                {caseData.tags.length > 0 && (
-                  <span className="flex flex-wrap gap-1">
-                    {caseData.tags.map((t) => (
-                      <span
-                        key={t}
-                        className="rounded bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-[10px]"
-                      >
-                        {t}
-                      </span>
-                    ))}
-                  </span>
                 )}
               </>
             }

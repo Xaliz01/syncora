@@ -78,6 +78,10 @@ export class CaseDocument extends Document {
   @Prop({ required: true })
   caseNumber!: string;
 
+  /** Référence libre optionnelle. */
+  @Prop()
+  reference?: string;
+
   @Prop({ required: true })
   title!: string;
 

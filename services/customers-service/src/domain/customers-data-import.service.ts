@@ -7,6 +7,7 @@ import {
   type DataImportBulkResult,
   type DataImportDeleteCreatedBody,
   type DataImportDeleteCreatedResult,
+  type DataImportResolvedCustomerRef,
   type DataImportRowError,
   type ImportCustomerRow,
   type ImportCustomersBody,
@@ -17,6 +18,7 @@ import {
 import { parseOrganizationIdBody } from "@planwise/shared/nest";
 import type { CustomerDocument } from "../persistence/customer.schema";
 import type { OrderGiverDocument } from "../persistence/order-giver.schema";
+import { customerDisplayName } from "./mappers/customer.mapper";
 import { AbstractCustomersDataImportService } from "./ports/customers-data-import.service.port";
 
 function emptyResult(): DataImportBulkResult {
@@ -279,7 +281,7 @@ export class CustomersDataImportService extends AbstractCustomersDataImportServi
   async resolveCustomerIds(
     organizationId: string,
     externalIds: string[],
-  ): Promise<Record<string, string>> {
+  ): Promise<Record<string, DataImportResolvedCustomerRef>> {
     const orgId = parseOrganizationIdBody(organizationId);
     const ids = [...new Set(externalIds.map((id) => id.trim()).filter(Boolean))];
     if (ids.length === 0) return {};
@@ -289,11 +291,16 @@ export class CustomersDataImportService extends AbstractCustomersDataImportServi
         importExternalId: { $in: ids },
         ...activeDocumentFilter,
       })
-      .select("_id importExternalId")
+      .select("_id importExternalId kind companyName firstName lastName")
       .exec();
-    const map: Record<string, string> = {};
+    const map: Record<string, DataImportResolvedCustomerRef> = {};
     for (const doc of docs) {
-      if (doc.importExternalId) map[doc.importExternalId] = doc._id.toString();
+      if (doc.importExternalId) {
+        map[doc.importExternalId] = {
+          id: doc._id.toString(),
+          displayName: customerDisplayName(doc),
+        };
+      }
     }
     return map;
   }

@@ -36,6 +36,7 @@ export function CaseCreatePage() {
   });
 
   const [templateId, setTemplateId] = useState("");
+  const [reference, setReference] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<CasePriority>("medium");
   const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
@@ -86,6 +87,7 @@ export function CaseCreatePage() {
     setError("");
     createMutation.mutate({
       templateId: templateId || undefined,
+      reference: reference.trim() || undefined,
       description: description.trim() || undefined,
       priority,
       assigneeIds: assigneeIds.length > 0 ? assigneeIds : undefined,
@@ -152,6 +154,25 @@ export function CaseCreatePage() {
 
       <div className="grid gap-8 lg:grid-cols-2 lg:gap-10">
         <FormDialogSection title="Dossier" id="case-create-details">
+          <div>
+            <label htmlFor="case-create-reference" className={formFieldLabelClassName}>
+              Référence (optionnel)
+            </label>
+            <input
+              id="case-create-reference"
+              type="text"
+              value={reference}
+              onChange={(e) => setReference(e.target.value)}
+              className={formFieldInputClassName}
+              placeholder="Ex. AFF-2026-042, devis client…"
+              disabled={createMutation.isPending}
+            />
+            <p className={formFieldHintClassName}>
+              Libre : n° d’affaire interne, référence client, etc. Distinct du numéro Planwise
+              attribué automatiquement.
+            </p>
+          </div>
+
           <div>
             <label htmlFor="case-create-description" className={formFieldLabelClassName}>
               Description

@@ -7,6 +7,23 @@ import {
 } from "../data-import-mapping";
 
 describe("data-import-mapping", () => {
+  it("does not expose title as a target field for cases", () => {
+    const keys = DATA_IMPORT_TARGET_FIELDS.cases.map((f) => f.key);
+    expect(keys).not.toContain("title");
+    expect(keys).toContain("reference");
+    expect(keys).toContain("externalId");
+
+    const mapping = buildHeuristicMapping("cases", ["id", "title", "titre", "référence", "client"]);
+    expect(mapping).not.toHaveProperty("title");
+    expect(mapping.reference).toBe("référence");
+    expect(sanitizeMapping("cases", ["id", "title"], { title: "title", externalId: "id" })).toEqual(
+      expect.objectContaining({ externalId: "id" }),
+    );
+    expect(
+      sanitizeMapping("cases", ["id", "title"], { title: "title", externalId: "id" }),
+    ).not.toHaveProperty("title");
+  });
+
   it("maps French CRM headers heuristically for customers", () => {
     const mapping = buildHeuristicMapping("customers", [
       "Code client",

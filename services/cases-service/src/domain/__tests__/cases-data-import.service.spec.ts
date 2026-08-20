@@ -1,4 +1,9 @@
 import { CasesDataImportService } from "../cases-data-import.service";
+import { generateCaseNumber } from "../utils/case-number.utils";
+
+jest.mock("../utils/case-number.utils", () => ({
+  generateCaseNumber: jest.fn(),
+}));
 
 describe("CasesDataImportService — historique", () => {
   const caseModel = {
@@ -19,10 +24,60 @@ describe("CasesDataImportService — historique", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (generateCaseNumber as jest.Mock).mockResolvedValue("2026-0001");
     service = new CasesDataImportService(
       caseModel as never,
       interventionModel as never,
       interventionTypeModel as never,
+    );
+  });
+
+  it("imports a case with auto caseNumber and customer display name", async () => {
+    caseModel.findOne.mockReturnValue({ exec: async () => null });
+    caseModel.create.mockImplementation(async (payload: Record<string, unknown>) => ({
+      _id: { toString: () => "case-1" },
+      ...payload,
+    }));
+
+    const result = await service.importCases({
+      organizationId: "org-1",
+      customerIdByExternalId: { "CLI-1": "cust-1" },
+      customerDisplayNameByExternalId: { "CLI-1": "Acme SARL" },
+      rows: [{ externalId: "DOS-1", customerExternalId: "CLI-1", status: "open" }],
+    });
+
+    expect(result.created).toBe(1);
+    expect(caseModel.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        caseNumber: "2026-0001",
+        title: "2026-0001 - Acme SARL",
+        customerId: "cust-1",
+        importExternalId: "DOS-1",
+      }),
+    );
+    expect(caseModel.create.mock.calls[0][0].reference).toBeUndefined();
+  });
+
+  it("stores optional reference without using it as title", async () => {
+    caseModel.findOne.mockReturnValue({ exec: async () => null });
+    caseModel.create.mockImplementation(async (payload: Record<string, unknown>) => ({
+      _id: { toString: () => "case-2" },
+      ...payload,
+    }));
+
+    await service.importCases({
+      organizationId: "org-1",
+      customerIdByExternalId: { "CLI-1": "cust-1" },
+      customerDisplayNameByExternalId: { "CLI-1": "Dupont" },
+      rows: [{ externalId: "DOS-2", reference: "AFF-42", customerExternalId: "CLI-1" }],
+    });
+
+    expect(caseModel.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        reference: "AFF-42",
+        title: "2026-0001 - Dupont",
+        importExternalId: "DOS-2",
+      }),
     );
   });
 

@@ -89,7 +89,7 @@ export const ENTITY_REQUIRED_HEADERS: Record<DataImportEntity, string[]> = {
   order_givers: ["externalId", "kind"],
   articles: ["externalId", "name", "reference"],
   prestations: ["externalId", "name", "reference", "defaultPrice"],
-  cases: ["externalId", "title"],
+  cases: ["externalId"],
   interventions: ["externalId", "caseExternalId", "title"],
 };
 
@@ -207,7 +207,7 @@ export function mapPrestationRows(rows: Record<string, string>[]): ImportPrestat
 export function mapCaseRows(rows: Record<string, string>[]): ImportCaseRow[] {
   return rows.map((r) => ({
     externalId: r.externalId ?? "",
-    title: r.title ?? "",
+    reference: r.reference || undefined,
     description: r.description || undefined,
     status: r.status as ImportCaseRow["status"],
     priority: r.priority as ImportCaseRow["priority"],
