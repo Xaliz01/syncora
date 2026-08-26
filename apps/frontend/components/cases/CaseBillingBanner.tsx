@@ -55,7 +55,7 @@ const HINTS: Record<BillingStatus, string> = {
   to_invoice: "Prêt à facturer — devis accepté ou travaux terminés.",
   invoice_draft: "Un brouillon a été créé dans l’outil de facturation — à valider.",
   partially_invoiced: "Des situations ou acomptes ont été facturés — reste à facturer.",
-  invoiced: "Une facture a été émise (Pennylane, Qonto ou hors outil).",
+  invoiced: "Une facture a été émise (Outil de facturation connecté ou hors outil).",
   paid: "Paiement reçu pour ce dossier.",
 };
 
