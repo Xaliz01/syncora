@@ -102,7 +102,7 @@ export function CgvContent() {
             "Fournir des informations exactes lors de l'inscription (SIRET, coordonnées).",
             "Respecter les CGU et la réglementation applicable à ses propres clients finaux.",
             "S'assurer que les utilisateurs invités disposent des autorisations nécessaires.",
-            "Lors de l'activation d'une intégration (Pennylane, Qonto, etc.), disposer des droits nécessaires et accepter les conditions de l'éditeur tiers.",
+            "Lors de l'activation d'une intégration vers un outil de facturation, disposer des droits nécessaires et accepter les conditions de l'éditeur tiers.",
             "Ne pas présenter les documents de facturation démo comme des factures légales ou fiscales.",
             "Ne pas utiliser le service à des fins illicites ou contraires à l'ordre public.",
           ]}

@@ -27,8 +27,6 @@ export const SEO_KEYWORDS = [
   "contrats de maintenance",
   "suivi de dossiers",
   "facturation artisans",
-  "Pennylane",
-  "Qonto",
   "Planwise",
   "Planwise tarif",
 ] as const;

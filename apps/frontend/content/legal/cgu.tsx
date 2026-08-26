@@ -20,8 +20,8 @@ export function CguContent() {
         <LegalParagraph>
           {legal.publisherName} est un CRM orienté opérations terrain permettant notamment de gérer
           des clients, donneurs d&apos;ordre, dossiers, interventions, équipes, stocks et documents
-          associés. Des intégrations optionnelles avec des outils de facturation tiers (notamment
-          Pennylane ou Qonto) peuvent être activées par le Client pour créer et suivre des factures
+          associés. Des intégrations optionnelles avec un outil de facturation tiers
+          peuvent être activées par le Client pour créer et suivre des factures
           depuis le service. Pendant l&apos;essai gratuit, un mode de{" "}
           <strong>facturation démo</strong> peut être proposé : il simule le parcours de facturation
           sans transmission vers un outil tiers. Les fonctionnalités peuvent évoluer ; les CGU
@@ -67,8 +67,8 @@ export function CguContent() {
           RGPD.
         </LegalParagraph>
         <LegalParagraph>
-          Lorsqu&apos;il active une intégration de facturation (Pennylane, Qonto, etc.), le Client
-          autorise expressément {legal.publisherName} à transmettre aux outils concernés les données
+          Lorsqu&apos;il active une intégration vers un outil de facturation, le Client
+          autorise expressément {legal.publisherName} à transmettre à cet outil les données
           nécessaires à l&apos;émission et au suivi des factures (clients ou donneurs d&apos;ordre,
           lignes de devis, montants, TVA, statut), et à stocker les jetons d&apos;accès ainsi que
           les métadonnées de synchronisation. Le Client demeure seul responsable de son compte et de
@@ -79,7 +79,7 @@ export function CguContent() {
         <LegalParagraph>
           Le mode facturation démo, lorsqu&apos;il est disponible pendant l&apos;essai, crée des
           documents simulés locaux à {legal.publisherName} : aucune donnée n&apos;est transmise à
-          Pennylane, Qonto ou un autre éditeur de facturation. Ces documents n&apos;ont pas de
+          un outil de facturation tiers. Ces documents n&apos;ont pas de
           valeur comptable ni fiscale.
         </LegalParagraph>
         <LegalParagraph>
