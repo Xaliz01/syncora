@@ -41,9 +41,9 @@ export function PolitiqueConfidentialiteContent() {
         <LegalParagraph>
           Planwise ne réalise pas d&apos;import massif du grand livre ou de l&apos;historique
           comptable de l&apos;outil tiers. Les données échangées avec l&apos;outil de facturation
-          portent principalement sur les clients (ou donneurs d&apos;ordre) et factures que le Client
-          choisit de créer ou de suivre depuis Planwise, ainsi que sur le statut de ces factures. Le
-          mode facturation démo ne transmet aucune donnée à cet outil.
+          portent principalement sur les clients (ou donneurs d&apos;ordre) et factures que le
+          Client choisit de créer ou de suivre depuis Planwise, ainsi que sur le statut de ces
+          factures. Le mode facturation démo ne transmet aucune donnée à cet outil.
         </LegalParagraph>
       </LegalSection>
 
@@ -59,9 +59,10 @@ export function PolitiqueConfidentialiteContent() {
             </>,
             <>
               <strong>Intégrations de facturation</strong> — exécution du contrat lorsque le Client
-              active volontairement une connexion à un outil de facturation afin d&apos;émettre ou de
-              suivre des factures sans double saisie (art. 6.1.b). Le mode facturation démo (essai)
-              reste local à Planwise et n&apos;implique pas de destinataire tiers de facturation.
+              active volontairement une connexion à un outil de facturation afin d&apos;émettre ou
+              de suivre des factures sans double saisie (art. 6.1.b). Le mode facturation démo
+              (essai) reste local à Planwise et n&apos;implique pas de destinataire tiers de
+              facturation.
             </>,
             <>
               <strong>Support et sécurité</strong> — intérêt légitime (art. 6.1.f), sauf Crisp
@@ -127,11 +128,11 @@ export function PolitiqueConfidentialiteContent() {
           Lorsque le Client active une intégration vers un outil de facturation, des données
           nécessaires à l&apos;émission et au suivi des factures (identité / coordonnées du client
           ou du donneur d&apos;ordre, lignes de devis, montants, TVA, statut de facture) peuvent
-          être transmises à cet outil, <strong>sur instruction du Client</strong>. L&apos;éditeur
-          de l&apos;outil est un prestataire choisi et contracté par le Client ; ses traitements
-          sont régis par ses propres conditions et politiques de confidentialité.{" "}
-          {legal.companyName} n&apos;est pas responsable des traitements réalisés par cet outil
-          au-delà de la transmission technique opérée pour le compte du Client.
+          être transmises à cet outil, <strong>sur instruction du Client</strong>. L&apos;éditeur de
+          l&apos;outil est un prestataire choisi et contracté par le Client ; ses traitements sont
+          régis par ses propres conditions et politiques de confidentialité. {legal.companyName}{" "}
+          n&apos;est pas responsable des traitements réalisés par cet outil au-delà de la
+          transmission technique opérée pour le compte du Client.
         </LegalParagraph>
         <LegalParagraph>
           Le Client demeure responsable de traitement pour les données de ses propres clients finaux
