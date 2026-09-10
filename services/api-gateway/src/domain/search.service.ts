@@ -19,8 +19,14 @@ import type {
   PrestationsListResponse,
   TeamResponse,
   AgenceResponse,
+  LocalInvoiceResponse,
+  LocalInvoicesListResponse,
 } from "@planwise/shared";
-import { DEFAULT_PAGE_LIMIT } from "@planwise/shared";
+import {
+  DEFAULT_PAGE_LIMIT,
+  LOCAL_INVOICE_KIND_LABELS,
+  LOCAL_INVOICE_STATUS_LABELS,
+} from "@planwise/shared";
 import {
   AbstractSearchService,
   type GlobalSearchResponse,
@@ -52,6 +58,7 @@ export class SearchGatewayService extends AbstractSearchService {
       agences,
       articles,
       prestations,
+      invoices,
       users,
     ] = await Promise.allSettled([
       this.fetchCases(user, normalizedQuery),
@@ -64,6 +71,7 @@ export class SearchGatewayService extends AbstractSearchService {
       this.fetchAgences(user),
       this.fetchArticles(user, normalizedQuery),
       this.fetchPrestations(user, normalizedQuery),
+      this.fetchInvoices(user, normalizedQuery),
       user.role === "admin" ? this.fetchUsers(user) : Promise.resolve([]),
     ]);
 
@@ -270,6 +278,43 @@ export class SearchGatewayService extends AbstractSearchService {
           title: `${p.name} (${p.reference})`,
           subtitle,
           url: `/settings/prestations?q=${encodeURIComponent(p.reference || p.name)}`,
+        });
+      }
+    }
+
+    for (const invoice of this.settled(invoices)) {
+      const lineLabels = invoice.lines?.map((line) => line.label) ?? [];
+      if (
+        this.matches(
+          normalizedQuery,
+          invoice.number,
+          invoice.draftNumber,
+          invoice.caseTitle,
+          invoice.customer?.displayName,
+          invoice.customer?.email,
+          invoice.customer?.legalIdentifier,
+          LOCAL_INVOICE_KIND_LABELS[invoice.kind],
+          LOCAL_INVOICE_STATUS_LABELS[invoice.status],
+          ...lineLabels,
+        )
+      ) {
+        const amountLabel = Number.isFinite(Number.parseFloat(invoice.amountHt))
+          ? `${Number.parseFloat(invoice.amountHt).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT`
+          : undefined;
+        const subtitle = [
+          LOCAL_INVOICE_KIND_LABELS[invoice.kind],
+          LOCAL_INVOICE_STATUS_LABELS[invoice.status],
+          invoice.customer?.displayName,
+          amountLabel,
+        ]
+          .filter(Boolean)
+          .join(" · ");
+        results.push({
+          id: invoice.id,
+          type: "invoice",
+          title: invoice.number ?? invoice.draftNumber ?? "Facture",
+          subtitle,
+          url: `/cases/${invoice.caseId}`,
         });
       }
     }
@@ -498,6 +543,19 @@ export class SearchGatewayService extends AbstractSearchService {
         errorLabel: "Stock service error",
       })
       .then((response) => response.prestations);
+  }
+
+  private fetchInvoices(user: AuthUser, search: string): Promise<LocalInvoiceResponse[]> {
+    return this.scopedHttp
+      .request<LocalInvoicesListResponse>({
+        baseUrl: SERVICE_URLS.billing,
+        organizationId: user.organizationId,
+        method: "get",
+        path: "/invoices",
+        query: { search, limit: DEFAULT_PAGE_LIMIT, offset: 0 },
+        errorLabel: "Billing service error",
+      })
+      .then((response) => response.invoices ?? []);
   }
 
   private fetchUsers(user: AuthUser): Promise<UserResponse[]> {

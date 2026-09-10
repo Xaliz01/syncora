@@ -4,6 +4,7 @@ import type { Transporter } from "nodemailer";
 import type {
   PreviewTransactionalEmailResponse,
   SendEmailNotificationResponse,
+  TransactionalEmailSendOptions,
 } from "@planwise/shared";
 import { AbstractEmailService } from "./ports/email.service.port";
 
@@ -65,8 +66,9 @@ export class EmailService extends AbstractEmailService {
     url?: string,
     ctaLabel?: string,
     footer?: string,
+    options?: TransactionalEmailSendOptions,
   ): Promise<SendEmailNotificationResponse> {
-    return this.sendMail(to, subject, body, url, "transactional", ctaLabel, footer);
+    return this.sendMail(to, subject, body, url, "transactional", ctaLabel, footer, options);
   }
 
   previewTransactionalEmail(
@@ -91,6 +93,7 @@ export class EmailService extends AbstractEmailService {
     kind: "notification" | "transactional",
     ctaLabel?: string,
     footer?: string,
+    options?: TransactionalEmailSendOptions,
   ): Promise<SendEmailNotificationResponse> {
     if (!this.transporter) {
       return { sent: false, reason: "smtp_not_configured" };
@@ -108,10 +111,12 @@ export class EmailService extends AbstractEmailService {
       const mailOptions: {
         from: string;
         to: string;
+        cc?: string | string[];
         subject: string;
         text: string;
         html: string;
         bcc?: string;
+        attachments?: Array<{ filename: string; content: Buffer; contentType: string }>;
       } = {
         from: this.fromAddress,
         to,
@@ -119,6 +124,16 @@ export class EmailService extends AbstractEmailService {
         text: this.buildPlainText(body, url, ctaLabel),
         html,
       };
+      if (options?.cc) {
+        mailOptions.cc = options.cc;
+      }
+      if (options?.attachments?.length) {
+        mailOptions.attachments = options.attachments.map((attachment) => ({
+          filename: attachment.filename,
+          contentType: attachment.contentType,
+          content: Buffer.from(attachment.contentBase64, "base64"),
+        }));
+      }
       // SMTP n'écrit pas dans « Envoyés » : BCC optionnel pour archiver dans une boîte.
       if (this.bccAddress && normalizeEmailAddress(to) !== this.bccAddress) {
         mailOptions.bcc = this.bccAddress;

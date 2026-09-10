@@ -289,6 +289,8 @@ export interface SyncCaseInvoiceOptions {
   situationPercent?: number;
   /** Pour situation / acompte : montant HT fixe. */
   amountHt?: number;
+  /** Si false, finalise immédiatement. Défaut : brouillon. */
+  draft?: boolean;
 }
 
 /** Cycle de vie distant d’une facture (Pennylane / Qonto), normalisé pour le CRM. */

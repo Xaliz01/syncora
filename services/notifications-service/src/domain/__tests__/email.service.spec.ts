@@ -172,6 +172,39 @@ describe("EmailService (configured)", () => {
     expect(call.html).not.toContain("création ou de la sécurisation de votre compte");
   });
 
+  it("should attach a PDF on transactional emails", async () => {
+    const pdfBase64 = Buffer.from("%PDF-test").toString("base64");
+    await service.sendTransactionalEmail(
+      "client@example.com",
+      "Facture F-2026-00001",
+      "Veuillez trouver la facture ci-jointe.",
+      undefined,
+      undefined,
+      "Document envoyé depuis Planwise.",
+      {
+        cc: "copie@example.com",
+        attachments: [
+          {
+            filename: "F-2026-00001.pdf",
+            contentType: "application/pdf",
+            contentBase64: pdfBase64,
+          },
+        ],
+      },
+    );
+
+    const call = mockSendMail.mock.calls[0][0];
+    expect(call.cc).toBe("copie@example.com");
+    expect(call.attachments).toEqual([
+      expect.objectContaining({
+        filename: "F-2026-00001.pdf",
+        contentType: "application/pdf",
+      }),
+    ]);
+    expect(Buffer.isBuffer(call.attachments[0].content)).toBe(true);
+    expect(call.html).not.toContain("Voir dans Planwise");
+  });
+
   it("should include the Planwise logo in html", async () => {
     await service.sendNotificationEmail("user@example.com", "Subject", "Body");
 

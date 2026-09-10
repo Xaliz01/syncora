@@ -1,6 +1,7 @@
 import type {
   PreviewTransactionalEmailResponse,
   SendEmailNotificationResponse,
+  TransactionalEmailSendOptions,
 } from "@planwise/shared";
 
 export abstract class AbstractEmailService {
@@ -19,6 +20,7 @@ export abstract class AbstractEmailService {
     url?: string,
     ctaLabel?: string,
     footer?: string,
+    options?: TransactionalEmailSendOptions,
   ): Promise<SendEmailNotificationResponse>;
 
   abstract previewTransactionalEmail(

@@ -1,12 +1,15 @@
-import { BadRequestException, Injectable, ServiceUnavailableException } from "@nestjs/common";
+import {
+  BadRequestException,
+  GoneException,
+  Injectable,
+  ServiceUnavailableException,
+} from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
 import axios from "axios";
 import type {
   AuthUser,
   BillingIntegrationAvailability,
-  BillingStatus,
-  CaseInvoiceKind,
   CaseInvoiceSyncListResponse,
   CaseInvoiceSyncStatus,
   CaseResponse,
@@ -15,80 +18,22 @@ import type {
   OrganizationInvoiceSyncsListResponse,
   ConnectPennylaneBody,
   ConnectQontoBody,
-  CustomerResponse,
   DemoConnectionStatus,
-  OrderGiverResponse,
   PennylaneConnectionStatus,
   PennylaneOAuthStartResponse,
   QontoConnectionStatus,
   QontoOAuthStartResponse,
-  QuoteResponse,
   SyncCaseInvoiceOptions,
-  SyncCaseToDemoBody,
   SyncCaseToDemoResult,
-  SyncCaseToPennylaneBody,
   SyncCaseToPennylaneResult,
-  SyncCaseToQontoBody,
   SyncCaseToQontoResult,
-  TvaRate,
 } from "@planwise/shared";
-import {
-  aggregateCaseBillingStatus,
-  buildInvoiceLinesFromCustom,
-  buildInvoiceLinesFromQuote,
-  canCreateCaseInvoice,
-  nextSituationNumber,
-  shouldUpgradeBillingStatus,
-  sumInvoiceAmountsHt,
-} from "@planwise/shared";
+import { BILLING_CONNECTORS_UNAVAILABLE_MESSAGE } from "@planwise/shared";
 import { AbstractIntegrationsGatewayService } from "./ports/integrations.service.port";
 import { AbstractCasesGatewayService } from "./ports/cases.service.port";
 import { AbstractCustomersGatewayService } from "./ports/customers.service.port";
 import { AbstractOrderGiversGatewayService } from "./ports/order-givers.service.port";
-import { AbstractSubscriptionsGatewayService } from "./ports/subscriptions.service.port";
-import { assertAssignablePermission } from "../infrastructure/permission-checks";
 import { SERVICE_URLS } from "../infrastructure/service-urls.config";
-
-/** Tiers facturé : donneur d'ordre s'il est rattaché au dossier, sinon client. */
-type InvoiceBillingParty = Pick<
-  CustomerResponse,
-  "id" | "displayName" | "kind" | "firstName" | "lastName" | "email" | "legalIdentifier" | "address"
->;
-
-function toInvoiceBillingParty(party: CustomerResponse | OrderGiverResponse): InvoiceBillingParty {
-  return {
-    id: party.id,
-    displayName: party.displayName,
-    kind: party.kind,
-    firstName: party.firstName,
-    lastName: party.lastName,
-    email: party.email,
-    legalIdentifier: party.legalIdentifier,
-    address: party.address,
-  };
-}
-
-const TVA_TO_PENNYLANE: Record<TvaRate, string> = {
-  0: "FR_0",
-  5.5: "FR_55",
-  10: "FR_100",
-  20: "FR_200",
-};
-
-const TVA_TO_QONTO: Record<TvaRate, string> = {
-  0: "0",
-  5.5: "0.055",
-  10: "0.10",
-  20: "0.20",
-};
-
-function syncPermissionForProvider(
-  provider: string,
-): "integrations.pennylane.sync" | "integrations.qonto.sync" | "integrations.demo.sync" {
-  if (provider === "qonto") return "integrations.qonto.sync";
-  if (provider === "demo") return "integrations.demo.sync";
-  return "integrations.pennylane.sync";
-}
 
 @Injectable()
 export class IntegrationsGatewayService extends AbstractIntegrationsGatewayService {
@@ -97,332 +42,112 @@ export class IntegrationsGatewayService extends AbstractIntegrationsGatewayServi
     private readonly casesService: AbstractCasesGatewayService,
     private readonly customersService: AbstractCustomersGatewayService,
     private readonly orderGiversService: AbstractOrderGiversGatewayService,
-    private readonly subscriptionsGateway: AbstractSubscriptionsGatewayService,
   ) {
     super();
   }
 
-  async getPennylaneStatus(user: AuthUser): Promise<PennylaneConnectionStatus> {
-    return this.getJson("/integrations/pennylane", {
-      organizationId: user.organizationId,
-    });
+  private throwConnectorsUnavailable(): never {
+    throw new GoneException(BILLING_CONNECTORS_UNAVAILABLE_MESSAGE);
   }
 
-  async startPennylaneOAuth(user: AuthUser): Promise<PennylaneOAuthStartResponse> {
-    return this.postJson("/integrations/pennylane/oauth/start", {
-      organizationId: user.organizationId,
-    });
+  async getPennylaneStatus(_user: AuthUser): Promise<PennylaneConnectionStatus> {
+    this.throwConnectorsUnavailable();
+  }
+
+  async startPennylaneOAuth(_user: AuthUser): Promise<PennylaneOAuthStartResponse> {
+    this.throwConnectorsUnavailable();
   }
 
   async completePennylaneOAuth(
-    user: AuthUser,
-    body: { code: string; state: string },
+    _user: AuthUser,
+    _body: { code: string; state: string },
   ): Promise<PennylaneConnectionStatus> {
-    return this.postJson("/integrations/pennylane/oauth/complete", {
-      organizationId: user.organizationId,
-      code: body.code,
-      state: body.state,
-    });
+    this.throwConnectorsUnavailable();
   }
 
   async connectPennylane(
-    user: AuthUser,
-    body: Omit<ConnectPennylaneBody, "organizationId">,
+    _user: AuthUser,
+    _body: Omit<ConnectPennylaneBody, "organizationId">,
   ): Promise<PennylaneConnectionStatus> {
-    return this.postJson("/integrations/pennylane/connect", {
-      organizationId: user.organizationId,
-      apiToken: body.apiToken,
-    });
+    this.throwConnectorsUnavailable();
   }
 
-  async disconnectPennylane(user: AuthUser): Promise<PennylaneConnectionStatus> {
-    try {
-      const res = await firstValueFrom(
-        this.httpService.delete<PennylaneConnectionStatus>(
-          `${SERVICE_URLS.integrations}/integrations/pennylane`,
-          { params: { organizationId: user.organizationId } },
-        ),
-      );
-      return res.data;
-    } catch (err) {
-      this.rethrow(err);
-    }
+  async disconnectPennylane(_user: AuthUser): Promise<PennylaneConnectionStatus> {
+    this.throwConnectorsUnavailable();
   }
 
-  async getQontoStatus(user: AuthUser): Promise<QontoConnectionStatus> {
-    return this.getJson("/integrations/qonto", {
-      organizationId: user.organizationId,
-    });
+  async getQontoStatus(_user: AuthUser): Promise<QontoConnectionStatus> {
+    this.throwConnectorsUnavailable();
   }
 
-  async getBillingIntegrationAvailability(user: AuthUser): Promise<BillingIntegrationAvailability> {
-    const demoAvailable = await this.isDemoBillingAvailable(user);
-    const [pennylaneResult, qontoResult, demoResult] = await Promise.allSettled([
-      this.getPennylaneStatus(user),
-      this.getQontoStatus(user),
-      this.getDemoStatus(user),
-    ]);
-    const pennylane =
-      pennylaneResult.status === "fulfilled" && pennylaneResult.value.connected === true;
-    const qonto = qontoResult.status === "fulfilled" && qontoResult.value.connected === true;
-    const demo = demoResult.status === "fulfilled" && demoResult.value.connected === true;
+  async getBillingIntegrationAvailability(
+    _user: AuthUser,
+  ): Promise<BillingIntegrationAvailability> {
     return {
-      connected: pennylane || qonto || demo,
-      pennylane,
-      qonto,
-      demo,
-      demoAvailable,
+      connected: false,
+      pennylane: false,
+      qonto: false,
+      demo: false,
+      demoAvailable: false,
     };
   }
 
-  async getDemoStatus(user: AuthUser): Promise<DemoConnectionStatus> {
-    const available = await this.isDemoBillingAvailable(user);
-    const status = await this.getJson<DemoConnectionStatus>("/integrations/demo", {
-      organizationId: user.organizationId,
-    });
-    return { ...status, available };
+  async getDemoStatus(_user: AuthUser): Promise<DemoConnectionStatus> {
+    this.throwConnectorsUnavailable();
   }
 
-  async connectDemo(user: AuthUser): Promise<DemoConnectionStatus> {
-    await this.assertDemoBillingAllowed(user);
-    const status = await this.postJson<DemoConnectionStatus>("/integrations/demo/connect", {
-      organizationId: user.organizationId,
-    });
-    return { ...status, available: true };
+  async connectDemo(_user: AuthUser): Promise<DemoConnectionStatus> {
+    this.throwConnectorsUnavailable();
   }
 
-  async disconnectDemo(user: AuthUser): Promise<DemoConnectionStatus> {
-    try {
-      const res = await firstValueFrom(
-        this.httpService.delete<DemoConnectionStatus>(
-          `${SERVICE_URLS.integrations}/integrations/demo`,
-          {
-            params: { organizationId: user.organizationId },
-          },
-        ),
-      );
-      const available = await this.isDemoBillingAvailable(user);
-      return { ...res.data, available };
-    } catch (err) {
-      this.rethrow(err);
-    }
+  async disconnectDemo(_user: AuthUser): Promise<DemoConnectionStatus> {
+    this.throwConnectorsUnavailable();
   }
 
   async syncCaseToDemo(
-    user: AuthUser,
-    caseId: string,
-    options: SyncCaseInvoiceOptions,
+    _user: AuthUser,
+    _caseId: string,
+    _options: SyncCaseInvoiceOptions,
   ): Promise<SyncCaseToDemoResult> {
-    await this.assertDemoBillingAllowed(user);
-    const prepared = await this.prepareInvoiceSync(user, caseId, options, "Démo");
-
-    const today = new Date().toISOString().slice(0, 10);
-    const payload: SyncCaseToDemoBody = {
-      organizationId: user.organizationId,
-      caseId: prepared.caseData.id,
-      caseTitle: prepared.caseData.title,
-      externalReference: prepared.externalReference,
-      invoiceDate: today,
-      draft: true,
-      quoteId: prepared.quoteId,
-      invoiceKind: prepared.invoiceKind,
-      situationNumber: prepared.situationNumber,
-      situationPercent: prepared.situationPercent,
-      amountHt: prepared.amountHt,
-      customer: {
-        planwiseCustomerId: prepared.customer.id,
-        name: prepared.customer.displayName,
-        email: prepared.customer.email,
-        vatNumber: prepared.customer.legalIdentifier?.startsWith("FR")
-          ? prepared.customer.legalIdentifier
-          : undefined,
-        addressLine1: prepared.customer.address?.line1,
-        addressLine2: prepared.customer.address?.line2,
-        postalCode: prepared.customer.address?.postalCode,
-        city: prepared.customer.address?.city,
-        country: prepared.customer.address?.country || "FR",
-      },
-      lines: prepared.lines.map((line) => ({
-        label: line.label,
-        quantity: line.quantity,
-        unitPriceHt: line.unitPriceHt,
-        vatRate: TVA_TO_PENNYLANE[line.tvaRate] ?? "FR_200",
-        unit: line.unit,
-      })),
-    };
-
-    const result = await this.postJson<SyncCaseToDemoResult>(
-      "/integrations/demo/sync-case",
-      payload,
-    );
-
-    await this.recomputeCaseBillingStatus(user, caseId, prepared.quoteTotalHt);
-    return result;
+    this.throwConnectorsUnavailable();
   }
 
-  private async isDemoBillingAvailable(user: AuthUser): Promise<boolean> {
-    try {
-      const sub = await this.subscriptionsGateway.getCurrentSubscription(user);
-      return sub.hasAccess === true && sub.status === "trialing";
-    } catch {
-      return false;
-    }
-  }
-
-  private async assertDemoBillingAllowed(user: AuthUser): Promise<void> {
-    if (await this.isDemoBillingAvailable(user)) return;
-    throw new BadRequestException(
-      "La facturation démo n’est disponible que pendant l’essai gratuit.",
-    );
-  }
-
-  async startQontoOAuth(user: AuthUser): Promise<QontoOAuthStartResponse> {
-    return this.postJson("/integrations/qonto/oauth/start", {
-      organizationId: user.organizationId,
-    });
+  async startQontoOAuth(_user: AuthUser): Promise<QontoOAuthStartResponse> {
+    this.throwConnectorsUnavailable();
   }
 
   async completeQontoOAuth(
-    user: AuthUser,
-    body: { code: string; state: string },
+    _user: AuthUser,
+    _body: { code: string; state: string },
   ): Promise<QontoConnectionStatus> {
-    return this.postJson("/integrations/qonto/oauth/complete", {
-      organizationId: user.organizationId,
-      code: body.code,
-      state: body.state,
-    });
+    this.throwConnectorsUnavailable();
   }
 
   async connectQonto(
-    user: AuthUser,
-    body: Omit<ConnectQontoBody, "organizationId">,
+    _user: AuthUser,
+    _body: Omit<ConnectQontoBody, "organizationId">,
   ): Promise<QontoConnectionStatus> {
-    return this.postJson("/integrations/qonto/connect", {
-      organizationId: user.organizationId,
-      login: body.login,
-      secretKey: body.secretKey,
-    });
+    this.throwConnectorsUnavailable();
   }
 
-  async disconnectQonto(user: AuthUser): Promise<QontoConnectionStatus> {
-    try {
-      const res = await firstValueFrom(
-        this.httpService.delete<QontoConnectionStatus>(
-          `${SERVICE_URLS.integrations}/integrations/qonto`,
-          {
-            params: { organizationId: user.organizationId },
-          },
-        ),
-      );
-      return res.data;
-    } catch (err) {
-      this.rethrow(err);
-    }
+  async disconnectQonto(_user: AuthUser): Promise<QontoConnectionStatus> {
+    this.throwConnectorsUnavailable();
   }
 
   async syncCaseToPennylane(
-    user: AuthUser,
-    caseId: string,
-    options: SyncCaseInvoiceOptions,
+    _user: AuthUser,
+    _caseId: string,
+    _options: SyncCaseInvoiceOptions,
   ): Promise<SyncCaseToPennylaneResult> {
-    const prepared = await this.prepareInvoiceSync(user, caseId, options, "Pennylane");
-
-    const today = new Date().toISOString().slice(0, 10);
-    const payload: SyncCaseToPennylaneBody = {
-      organizationId: user.organizationId,
-      caseId: prepared.caseData.id,
-      caseTitle: prepared.caseData.title,
-      externalReference: prepared.externalReference,
-      invoiceDate: today,
-      draft: true,
-      quoteId: prepared.quoteId,
-      invoiceKind: prepared.invoiceKind,
-      situationNumber: prepared.situationNumber,
-      situationPercent: prepared.situationPercent,
-      amountHt: prepared.amountHt,
-      customer: {
-        planwiseCustomerId: prepared.customer.id,
-        name: prepared.customer.displayName,
-        email: prepared.customer.email,
-        vatNumber: prepared.customer.legalIdentifier?.startsWith("FR")
-          ? prepared.customer.legalIdentifier
-          : undefined,
-        addressLine1: prepared.customer.address?.line1,
-        addressLine2: prepared.customer.address?.line2,
-        postalCode: prepared.customer.address?.postalCode,
-        city: prepared.customer.address?.city,
-        country: prepared.customer.address?.country || "FR",
-      },
-      lines: prepared.lines.map((line) => ({
-        label: line.label,
-        quantity: line.quantity,
-        unitPriceHt: line.unitPriceHt,
-        vatRate: TVA_TO_PENNYLANE[line.tvaRate] ?? "FR_200",
-        unit: line.unit,
-      })),
-    };
-
-    const result = await this.postJson<SyncCaseToPennylaneResult>(
-      "/integrations/pennylane/sync-case",
-      payload,
-    );
-
-    await this.recomputeCaseBillingStatus(user, caseId, prepared.quoteTotalHt);
-    return result;
+    this.throwConnectorsUnavailable();
   }
 
   async syncCaseToQonto(
-    user: AuthUser,
-    caseId: string,
-    options: SyncCaseInvoiceOptions,
+    _user: AuthUser,
+    _caseId: string,
+    _options: SyncCaseInvoiceOptions,
   ): Promise<SyncCaseToQontoResult> {
-    const prepared = await this.prepareInvoiceSync(user, caseId, options, "Qonto");
-    const today = new Date().toISOString().slice(0, 10);
-    const invoiceNumber = options?.invoiceNumber?.trim();
-
-    const payload: SyncCaseToQontoBody = {
-      organizationId: user.organizationId,
-      caseId: prepared.caseData.id,
-      caseTitle: prepared.caseData.title,
-      externalReference: prepared.externalReference,
-      invoiceDate: today,
-      draft: true,
-      ...(invoiceNumber ? { invoiceNumber } : {}),
-      quoteId: prepared.quoteId,
-      invoiceKind: prepared.invoiceKind,
-      situationNumber: prepared.situationNumber,
-      situationPercent: prepared.situationPercent,
-      amountHt: prepared.amountHt,
-      customer: {
-        planwiseCustomerId: prepared.customer.id,
-        kind: prepared.customer.kind,
-        name: prepared.customer.displayName,
-        firstName: prepared.customer.firstName,
-        lastName: prepared.customer.lastName,
-        email: prepared.customer.email,
-        legalIdentifier: prepared.customer.legalIdentifier,
-        addressLine1: prepared.customer.address?.line1,
-        addressLine2: prepared.customer.address?.line2,
-        postalCode: prepared.customer.address?.postalCode,
-        city: prepared.customer.address?.city,
-        country: prepared.customer.address?.country || "FR",
-      },
-      lines: prepared.lines.map((line) => ({
-        label: line.label,
-        quantity: line.quantity,
-        unitPriceHt: line.unitPriceHt,
-        vatRate: TVA_TO_QONTO[line.tvaRate] ?? "0.20",
-        unit: line.unit,
-      })),
-    };
-
-    const result = await this.postJson<SyncCaseToQontoResult>(
-      "/integrations/qonto/sync-case",
-      payload,
-    );
-
-    await this.recomputeCaseBillingStatus(user, caseId, prepared.quoteTotalHt);
-    return result;
+    this.throwConnectorsUnavailable();
   }
 
   async listOrganizationInvoiceSyncs(
@@ -530,295 +255,40 @@ export class IntegrationsGatewayService extends AbstractIntegrationsGatewayServi
   }
 
   async finalizeCaseInvoice(
-    user: AuthUser,
-    caseId: string,
-    syncId: string,
+    _user: AuthUser,
+    _caseId: string,
+    _syncId: string,
   ): Promise<CaseInvoiceSyncStatus> {
-    const existing = await this.requireSync(user, caseId, syncId);
-    assertAssignablePermission(user, syncPermissionForProvider(existing.provider));
-    const status = await this.postJson<CaseInvoiceSyncStatus>(
-      `/integrations/cases/${caseId}/invoice-sync/${syncId}/finalize`,
-      { organizationId: user.organizationId },
-    );
-    await this.recomputeCaseBillingStatus(user, caseId);
-    return status;
+    this.throwConnectorsUnavailable();
   }
 
   async refreshCaseInvoiceSync(
-    user: AuthUser,
-    caseId: string,
-    syncId: string,
+    _user: AuthUser,
+    _caseId: string,
+    _syncId: string,
   ): Promise<CaseInvoiceSyncStatus> {
-    const existing = await this.requireSync(user, caseId, syncId);
-    assertAssignablePermission(user, syncPermissionForProvider(existing.provider));
-    const status = await this.postJson<CaseInvoiceSyncStatus>(
-      `/integrations/cases/${caseId}/invoice-sync/${syncId}/refresh`,
-      { organizationId: user.organizationId },
-    );
-    await this.recomputeCaseBillingStatus(user, caseId);
-    return status;
+    this.throwConnectorsUnavailable();
   }
 
   async refreshAllCaseInvoiceSyncs(
-    user: AuthUser,
-    caseId: string,
+    _user: AuthUser,
+    _caseId: string,
   ): Promise<CaseInvoiceSyncListResponse> {
-    const list = await this.getCaseInvoiceSync(user, caseId);
-    if (list.invoices.length === 0) {
-      throw new BadRequestException(
-        "Aucune facture d’intégration trouvée pour ce dossier. Envoyez d’abord le dossier vers Pennylane ou Qonto.",
-      );
-    }
-    const providers = new Set(list.invoices.map((i) => i.provider));
-    for (const provider of providers) {
-      assertAssignablePermission(user, syncPermissionForProvider(provider));
-    }
-    const refreshed = await this.postJson<CaseInvoiceSyncListResponse>(
-      `/integrations/cases/${caseId}/invoice-sync/refresh`,
-      { organizationId: user.organizationId },
-    );
-    await this.recomputeCaseBillingStatus(user, caseId);
-    return refreshed;
+    this.throwConnectorsUnavailable();
   }
 
   async deleteCaseInvoiceSync(
-    user: AuthUser,
-    caseId: string,
-    syncId: string,
+    _user: AuthUser,
+    _caseId: string,
+    _syncId: string,
   ): Promise<CaseInvoiceSyncListResponse> {
-    const existing = await this.requireSync(user, caseId, syncId);
-    assertAssignablePermission(user, syncPermissionForProvider(existing.provider));
-    try {
-      const res = await firstValueFrom(
-        this.httpService.delete<CaseInvoiceSyncListResponse>(
-          `${SERVICE_URLS.integrations}/integrations/cases/${caseId}/invoice-sync/${syncId}`,
-          { params: { organizationId: user.organizationId } },
-        ),
-      );
-      await this.recomputeCaseBillingStatus(user, caseId);
-      return res.data;
-    } catch (err) {
-      this.rethrow(err);
-    }
-  }
-
-  private async requireSync(
-    user: AuthUser,
-    caseId: string,
-    syncId: string,
-  ): Promise<CaseInvoiceSyncStatus> {
-    const list = await this.getCaseInvoiceSync(user, caseId);
-    const existing = list.invoices.find((i) => i.id === syncId);
-    if (!existing) {
-      throw new BadRequestException(
-        "Facture d’intégration introuvable pour ce dossier. Actualisez la liste puis réessayez.",
-      );
-    }
-    return existing;
-  }
-
-  private async prepareInvoiceSync(
-    user: AuthUser,
-    caseId: string,
-    options: SyncCaseInvoiceOptions,
-    providerLabel: string,
-  ): Promise<{
-    caseData: CaseResponse;
-    customer: InvoiceBillingParty;
-    lines: Array<{
-      label: string;
-      quantity: number;
-      unitPriceHt: string;
-      tvaRate: TvaRate;
-      unit?: string;
-    }>;
-    externalReference: string;
-    quoteId?: string;
-    invoiceKind: CaseInvoiceKind;
-    situationNumber?: number;
-    situationPercent?: number;
-    amountHt: string;
-    quoteTotalHt: number;
-  }> {
-    const caseData = await this.casesService.getCase(user, caseId);
-    if (!canCreateCaseInvoice(caseData.billingStatus)) {
-      throw new BadRequestException(
-        "Le dossier doit être « À facturer », « Brouillon facture » ou « Partiellement facturé » pour créer une facture.",
-      );
-    }
-
-    if (!caseData.customerId && !caseData.orderGiverId) {
-      throw new BadRequestException(
-        `Le dossier n’a pas de client ni de donneur d’ordre. Assignez un destinataire avant l’envoi vers ${providerLabel}.`,
-      );
-    }
-
-    const customer = caseData.orderGiverId
-      ? toInvoiceBillingParty(
-          await this.orderGiversService.getOrderGiver(user, caseData.orderGiverId),
-        )
-      : toInvoiceBillingParty(await this.customersService.getCustomer(user, caseData.customerId!));
-
-    const customLines = options.lines?.filter((l) => l.label?.trim()) ?? [];
-    const hasCustomLines = customLines.length > 0;
-    const quoteIdOpt = options.quoteId?.trim();
-
-    if (!hasCustomLines && !quoteIdOpt) {
-      throw new BadRequestException(
-        "Indiquez un devis ou au moins une ligne de facture (articles / saisie libre).",
-      );
-    }
-
-    if (hasCustomLines) {
-      let built: ReturnType<typeof buildInvoiceLinesFromCustom>;
-      try {
-        built = buildInvoiceLinesFromCustom({ lines: customLines });
-      } catch (err) {
-        throw new BadRequestException(err instanceof Error ? err.message : "Facture invalide.");
-      }
-      const suffix = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-      return {
-        caseData,
-        customer,
-        lines: built.lines,
-        externalReference: `planwise-case-${caseData.id}-${suffix}`,
-        invoiceKind: "full",
-        amountHt: built.amountHt,
-        // Pas de devis de référence → pas de reste « partiel » artificiel.
-        quoteTotalHt: 0,
-      };
-    }
-
-    const invoiceKind: CaseInvoiceKind = options.invoiceKind ?? "full";
-    const existing = await this.getCaseInvoiceSync(user, caseId);
-    const quote = await this.requireQuoteForInvoice(user, caseData, quoteIdOpt);
-
-    const quoteLines = quote.lines.map((line) => ({
-      label: line.description || caseData.title,
-      quantity: line.quantity,
-      unitPriceHt: line.unitPrice.toFixed(2),
-      tvaRate: line.tvaRate,
-      unit: line.unit,
-    }));
-
-    if (quoteLines.length === 0) {
-      throw new BadRequestException(
-        "Le devis sélectionné n’a aucune ligne. Complétez le devis avant de créer une facture.",
-      );
-    }
-
-    const quoteTotalHt = quote.totalHt;
-    const quoteId = quote.id;
-    const alreadyInvoicedHt = sumInvoiceAmountsHt(
-      existing.invoices.filter(
-        (i) =>
-          i.quoteId === quoteId &&
-          (i.remoteStatus === "finalized" ||
-            i.remoteStatus === "paid" ||
-            i.remoteStatus === "draft"),
-      ),
-    );
-
-    const situationNumber =
-      invoiceKind === "situation" ? nextSituationNumber(existing.invoices, quoteId) : undefined;
-
-    let built: ReturnType<typeof buildInvoiceLinesFromQuote>;
-    try {
-      built = buildInvoiceLinesFromQuote({
-        caseTitle: caseData.title,
-        quoteSubject: quote.subject || quote.quoteNumber,
-        quoteTotalHt,
-        quoteLines,
-        invoiceKind,
-        situationPercent: options.situationPercent,
-        amountHt: options.amountHt,
-        alreadyInvoicedHt,
-        situationNumber,
-      });
-    } catch (err) {
-      throw new BadRequestException(err instanceof Error ? err.message : "Facture invalide.");
-    }
-
-    const suffix = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-    return {
-      caseData,
-      customer,
-      lines: built.lines,
-      externalReference: `planwise-case-${caseData.id}-${suffix}`,
-      quoteId,
-      invoiceKind,
-      situationNumber,
-      situationPercent: built.situationPercent,
-      amountHt: built.amountHt,
-      quoteTotalHt,
-    };
-  }
-
-  private async requireQuoteForInvoice(
-    user: AuthUser,
-    caseData: CaseResponse,
-    quoteId?: string,
-  ): Promise<QuoteResponse> {
-    if (quoteId?.trim()) {
-      const quote = await this.casesService.getQuote(user, quoteId.trim());
-      if (quote.caseId !== caseData.id) {
-        throw new BadRequestException("Le devis ne correspond pas à ce dossier.");
-      }
-      return quote;
-    }
-
-    const quotes = await this.casesService.listQuotes(user, { caseId: caseData.id });
-    if (quotes.length === 0) {
-      throw new BadRequestException(
-        "Un devis est obligatoire pour créer une facture. Créez un devis sur ce dossier, puis réessayez.",
-      );
-    }
-    const accepted = quotes.find((q) => q.status === "accepted");
-    const preferred = accepted ?? quotes[0]!;
-    return this.casesService.getQuote(user, preferred.id);
-  }
-
-  private async recomputeCaseBillingStatus(
-    user: AuthUser,
-    caseId: string,
-    quoteTotalHtHint?: number,
-  ): Promise<void> {
-    const caseData = await this.casesService.getCase(user, caseId);
-    const list = await this.getCaseInvoiceSync(user, caseId);
-    let quoteTotalHt = quoteTotalHtHint ?? 0;
-    if (quoteTotalHtHint == null) {
-      const quotes = await this.casesService.listQuotes(user, { caseId });
-      const accepted = quotes.filter((q) => q.status === "accepted");
-      const pool = accepted.length > 0 ? accepted : quotes;
-      quoteTotalHt = pool.reduce((s, q) => s + (q.totalHt ?? 0), 0);
-    }
-    const next = aggregateCaseBillingStatus(list.invoices, quoteTotalHt);
-    if (!next || next === caseData.billingStatus) return;
-
-    const mayApply =
-      shouldUpgradeBillingStatus(caseData.billingStatus, next) ||
-      caseData.billingStatus === "to_invoice" ||
-      (caseData.billingStatus === "invoice_draft" && next === "partially_invoiced");
-    if (!mayApply) return;
-
-    await this.casesService.updateCase(user, caseId, { billingStatus: next as BillingStatus });
+    this.throwConnectorsUnavailable();
   }
 
   private async getJson<T>(path: string, params: Record<string, string>): Promise<T> {
     try {
       const res = await firstValueFrom(
         this.httpService.get<T>(`${SERVICE_URLS.integrations}${path}`, { params }),
-      );
-      return res.data;
-    } catch (err) {
-      this.rethrow(err);
-    }
-  }
-
-  private async postJson<T>(path: string, body: unknown): Promise<T> {
-    try {
-      const res = await firstValueFrom(
-        this.httpService.post<T>(`${SERVICE_URLS.integrations}${path}`, body),
       );
       return res.data;
     } catch (err) {

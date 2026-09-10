@@ -113,7 +113,7 @@ function DemoInvoicePreviewContent() {
         </div>
 
         <p className="mt-8 text-xs text-slate-400">
-          Document simulé pour l’essai Planwise — non transmis à un outil de facturation externe.
+          Document d’essai Planwise — sans valeur comptable.
         </p>
       </div>
     </div>

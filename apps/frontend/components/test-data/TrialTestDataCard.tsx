@@ -131,14 +131,14 @@ export function TrialTestDataCard() {
           )}
           {hasReadyData && isTrialing ? (
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Pour tester la facturation sans Pennylane ni Qonto, activez la{" "}
+              Pour tester la facturation, créez une facture depuis un dossier, puis suivez-la dans{" "}
               <Link
-                href="/settings/integrations"
+                href="/billing"
                 className="font-medium text-violet-700 dark:text-violet-300 underline underline-offset-2 hover:no-underline"
               >
-                facturation démo
-              </Link>{" "}
-              pendant l’essai.
+                Facturation
+              </Link>
+              .
             </p>
           ) : null}
           {actionError && <p className="text-xs text-red-600 dark:text-red-400">{actionError}</p>}

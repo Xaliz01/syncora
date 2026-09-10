@@ -523,8 +523,27 @@ export const PERMISSION_METADATA: Record<PermissionCode, PermissionMetadata> = {
   "exports.billing": {
     code: "exports.billing",
     label: "Suivi facturation",
-    description:
-      "Consulter le suivi des factures synchronisées (Pennylane, Qonto) et exporter la liste.",
+    description: "Consulter le suivi des factures et exporter la liste.",
+  },
+  "billing.invoices.read": {
+    code: "billing.invoices.read",
+    label: "Voir les factures",
+    description: "Consulter les factures clients émises dans Planwise.",
+  },
+  "billing.invoices.create": {
+    code: "billing.invoices.create",
+    label: "Créer des factures",
+    description: "Créer un brouillon ou un avoir depuis un devis ou un dossier.",
+  },
+  "billing.invoices.finalize": {
+    code: "billing.invoices.finalize",
+    label: "Valider les factures",
+    description: "Finaliser, marquer payée ou annuler une facture.",
+  },
+  "billing.invoices.send": {
+    code: "billing.invoices.send",
+    label: "Envoyer les factures",
+    description: "Envoyer une facture ou un avoir par e-mail au client.",
   },
   "exports.reporting": {
     code: "exports.reporting",
@@ -592,4 +611,9 @@ export const PERMISSION_METADATA: Record<PermissionCode, PermissionMetadata> = {
 
 export function getPermissionLabel(permissionCode: PermissionCode): string {
   return PERMISSION_METADATA[permissionCode]?.label ?? permissionCode;
+}
+
+/** Anciens droits de connecteurs : plus proposés à l’assignation. */
+export function isAssignablePermissionVisible(code: PermissionCode): boolean {
+  return !String(code).startsWith("integrations.");
 }

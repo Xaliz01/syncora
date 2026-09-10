@@ -1,27 +1,24 @@
-# Parcours — Connecter une intégration de facturation
+# Parcours — Facturation électronique
 
 ## Objectif
 
-Lier Planwise à Pennylane, Qonto, ou au mode démo (essai).
+Savoir où facturer aujourd’hui, et ce qui arrivera avec l’émission électronique.
 
 ## Prérequis
 
-- Droits d’intégration (ex. `integrations.pennylane.read` / `integrations.qonto.read`, configure selon le cas)
-- Admin / fondateur souvent requis pour OAuth
+- Facturation clients : `billing.invoices.read` / `billing.invoices.create`
 
 ## Étapes
 
-1. Menu **Paramètres** → **Intégrations** (`/settings/integrations`).
-2. Choisir le provider (ou **démo** pendant l’essai).
-3. Suivre OAuth / saisie de clé selon l’écran.
-4. Vérifier le statut « connecté ».
-5. Créer ou synchroniser une facture depuis un dossier / l’écran Facturation.
+1. Ouvrir un **dossier** ou l’écran **Facturation** (`/billing`).
+2. Créer un brouillon, relire l’aperçu PDF, valider pour numéroter.
+3. L’émission via la facturation électronique arrivera prochainement.
 
 ## Liens utiles
 
-- Intégrations : `/settings/integrations`
 - Facturation : `/billing`
+- Parcours devis : `05-devis-facturation.md`
 
 ## Escalade support
 
-- Erreur OAuth, outil absent de la liste, doute sur le mapping clients → **chat support (Crisp)**.
+- Question sur la facturation électronique à venir → **chat support (Crisp)**.

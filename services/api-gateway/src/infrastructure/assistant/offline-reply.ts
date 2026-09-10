@@ -36,8 +36,7 @@ const ROUTE_KEYWORDS: Readonly<Record<string, readonly string[]>> = {
   "/cases": ["dossier", "dossiers", "affaire", "affaires"],
   "/cases/calendar": ["planning", "calendrier", "agenda", "assigner", "intervention"],
   "/my-day": ["ma journee", "terrain", "intervention du jour", "technicien"],
-  "/billing": ["facture", "factures", "facturation"],
-  "/settings/integrations": ["integration", "integrations", "pennylane", "qonto", "connecter"],
+  "/billing": ["facture", "factures", "facturation", "avoir"],
   "/settings/case-templates": ["modele", "modeles", "template", "metier"],
   "/settings/prestations": ["prestation", "prestations", "catalogue"],
   "/settings/profiles": ["profil", "profils", "permissions", "droits"],
@@ -266,9 +265,8 @@ export function matchOfflineFaq(
   if (billingHit) {
     return {
       reply:
-        "Oui, mais Planwise **ne facture pas tout seul** : les devis se créent dans Planwise (sur un dossier), et les factures passent par un **outil de facturation connecté** (Pennylane, Qonto) ou le **mode démo** pendant l’essai.\n\n1. Paramètres → Intégrations : connectez votre outil (ou activez la facturation démo).\n2. Sur un dossier : créez le devis, puis lancez la facture via l’intégration.\n3. Suivez l’avancement dans Facturation.",
+        "Oui : les factures clients s’émettent **dans Planwise**.\n\n1. Sur un dossier : créez le devis, puis **Créer une facture** (brouillon).\n2. Validez pour numéroter la facture et télécharger le PDF.\n3. Envoyez-la par e-mail (confirmation, PDF joint) : l’historique des envois reste sur le dossier et dans Facturation.\n4. Suivez l’avancement dans Facturation.\n\nL’émission via la facturation électronique arrivera prochainement.",
       suggestions: [
-        { label: "Intégrations", href: "/settings/integrations" },
         { label: "Facturation", href: "/billing" },
         { label: "Dossiers", href: "/cases" },
       ],
@@ -375,10 +373,10 @@ export function matchOfflineFaq(
   if (subscriptionHit && !/facturer (un |le |mon )?client|facture client/.test(normalized)) {
     return {
       reply:
-        "L’accès Planwise se gère dans **Mon abonnement** : plan Essentiel (~9,99 €/mois), 2 utilisateurs et 10 Go inclus, essai ~15 jours.\n\nDes **addons** existent (suggestion d’équipe, utilisateurs, stockage). L’assistant et le chat support sont inclus.\n\nAttention : ce n’est **pas** la facturation de vos clients (Pennylane / Qonto / démo → Intégrations + Facturation).",
+        "L’accès Planwise se gère dans **Mon abonnement** : plan Essentiel (~9,99 €/mois), 2 utilisateurs et 10 Go inclus, essai ~15 jours.\n\nDes **addons** existent (suggestion d’équipe, utilisateurs, stockage). L’assistant et le chat support sont inclus.\n\nAttention : ce n’est **pas** la facturation de vos clients (écran Facturation).",
       suggestions: [
         { label: "Mon abonnement", href: "/subscription" },
-        { label: "Intégrations", href: "/settings/integrations" },
+        { label: "Facturation", href: "/billing" },
       ],
       escalateToSupport: false,
     };
@@ -439,9 +437,7 @@ function buildStepsForRoute(href: string, label: string): string {
     "/fleet/technicians":
       "1. Flotte → Techniciens.\n2. Créez un technicien ou ouvrez une fiche, puis liez un compte utilisateur si besoin.\n3. L’assignation d’intervention se fait ensuite sur ce technicien (dossier ou planning).",
     "/billing":
-      "1. Planwise ne facture pas seul : connectez d’abord un outil (Paramètres → Intégrations) ou le mode démo essai.\n2. Créez le devis sur un dossier, puis émettez/synchronisez la facture via l’intégration.\n3. Suivez le résultat dans Facturation.",
-    "/settings/integrations":
-      "1. Paramètres → Intégrations.\n2. Choisissez Pennylane, Qonto ou le mode démo (essai), puis suivez la connexion — requis pour facturer.",
+      "1. Créez un devis sur le dossier, puis **Créer une facture**.\n2. Relisez l’aperçu PDF, validez le brouillon pour numéroter et télécharger le PDF.\n3. Envoyez la facture par e-mail (confirmation, PDF joint) ; l’historique reste sur le dossier et dans Facturation.\n4. Suivez les factures dans Facturation. L’émission électronique arrivera prochainement.",
     "/contracts":
       "1. Suivi → Contrats.\n2. Créez un contrat avec le mode « avec le client » ou « auto-planifier ».\n3. Activez-le pour générer / programmer les visites.",
     "/contracts/new":
@@ -453,7 +449,7 @@ function buildStepsForRoute(href: string, label: string): string {
     "/settings/notifications":
       "1. Paramètres → Notifications.\n2. Choisissez canaux (in-app, e-mail, push) et types d’événements.\n3. Pour le push, autorisez le navigateur si demandé.",
     "/subscription":
-      "1. Ouvrez Mon abonnement.\n2. Consultez l’essai / le plan Essentiel et les addons.\n3. Pour facturer vos clients, ce n’est pas ici : utilisez Intégrations.",
+      "1. Ouvrez Mon abonnement.\n2. Consultez l’essai / le plan Essentiel et les addons.\n3. Pour facturer vos clients, ce n’est pas ici : ouvrez un dossier ou l’écran Facturation.",
     "/organization":
       "1. Ouvrez Mon organisation.\n2. Mettez à jour nom, contacts, adresse, logo.\n3. Pour changer d’entreprise : utilisez le sélecteur d’organisation dans la barre latérale.",
     "/account":

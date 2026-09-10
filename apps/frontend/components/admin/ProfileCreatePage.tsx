@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import type { PermissionCode } from "@planwise/shared";
 import * as adminApi from "@/lib/admin.api";
-import { getPermissionLabel } from "@/lib/permissions-catalog";
+import { getPermissionLabel, isAssignablePermissionVisible } from "@/lib/permissions-catalog";
 import { useToast } from "@/components/ui/ToastProvider";
 import {
   FormDialogCancelButton,
@@ -57,7 +57,7 @@ export function ProfileFormPage({ profileId }: { profileId?: string }) {
     setError(null);
     try {
       const catalogRes = await adminApi.getPermissionsCatalog();
-      setCatalog(catalogRes.availablePermissions);
+      setCatalog(catalogRes.availablePermissions.filter(isAssignablePermissionVisible));
       if (profileId) {
         const profileRes = await adminApi.getPermissionProfile(profileId);
         setName(profileRes.name);

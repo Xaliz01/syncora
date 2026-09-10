@@ -10,6 +10,7 @@ import { PlanwiseLoader } from "@/components/ui/PlanwiseLoader";
 const TYPE_LABELS: Record<string, string> = {
   case: "Dossiers",
   intervention: "Interventions",
+  invoice: "Factures",
   customer: "Clients",
   order_giver: "Donneurs d'ordre",
   vehicle: "Véhicules",
@@ -49,6 +50,21 @@ const TYPE_ICONS: Record<string, JSX.Element> = {
         strokeLinecap="round"
         strokeLinejoin="round"
         d="M11.42 15.17l-5.2-5.2m0 0l5.2-5.2m-5.2 5.2H21.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"
+      />
+    </svg>
+  ),
+  invoice: (
+    <svg
+      className="h-5 w-5"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.5}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
       />
     </svg>
   ),
@@ -192,6 +208,7 @@ const TYPE_ICONS: Record<string, JSX.Element> = {
 const TYPE_COLORS: Record<string, string> = {
   case: "bg-blue-50 text-blue-600",
   intervention: "bg-violet-50 text-violet-600",
+  invoice: "bg-green-50 text-green-700",
   customer: "bg-sky-50 text-sky-700",
   order_giver: "bg-cyan-50 text-cyan-700",
   vehicle: "bg-emerald-50 text-emerald-600",
@@ -206,6 +223,7 @@ const TYPE_COLORS: Record<string, string> = {
 const TYPE_ORDER = [
   "case",
   "intervention",
+  "invoice",
   "customer",
   "order_giver",
   "vehicle",
@@ -403,8 +421,9 @@ export function SearchResultsPage() {
             Saisissez un mot-clé pour lancer une recherche
           </p>
           <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
-            La recherche couvre les dossiers, interventions, clients, donneurs d&apos;ordre,
-            véhicules, techniciens, équipes, agences, articles, prestations et utilisateurs.
+            La recherche couvre les dossiers, interventions, factures, clients, donneurs
+            d&apos;ordre, véhicules, techniciens, équipes, agences, articles, prestations et
+            utilisateurs.
           </p>
         </div>
       )}

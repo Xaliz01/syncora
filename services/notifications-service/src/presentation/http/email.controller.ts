@@ -56,6 +56,7 @@ export class EmailController {
       body.url,
       body.ctaLabel,
       body.footer,
+      { cc: body.cc, attachments: body.attachments },
     );
   }
 

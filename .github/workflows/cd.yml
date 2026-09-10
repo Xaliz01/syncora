@@ -84,6 +84,7 @@ jobs:
           - documents-service
           - exports-service
           - integrations-service
+          - billing-service
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
@@ -203,7 +204,7 @@ jobs:
               organizations-service users-service permissions-service \
               cases-service fleet-service technicians-service stock-service \
               subscriptions-service customers-service notifications-service \
-              documents-service exports-service integrations-service \
+              documents-service exports-service integrations-service billing-service \
               prometheus tempo otel-collector grafana loki alloy node-exporter cadvisor blackbox-exporter mongodb-exporter
 
             # Recharge la config Prometheus (bind-mount) sans recréer le volume TSDB.
@@ -234,7 +235,7 @@ jobs:
               organizations-service users-service permissions-service \
               cases-service fleet-service technicians-service stock-service \
               subscriptions-service customers-service notifications-service \
-              documents-service exports-service integrations-service \
+              documents-service exports-service integrations-service billing-service \
               prometheus tempo otel-collector grafana loki alloy node-exporter cadvisor blackbox-exporter mongodb-exporter
 
             # Smoke : au moins un slot frontend / gateway doit répondre en local.

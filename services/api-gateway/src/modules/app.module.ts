@@ -24,6 +24,7 @@ import { NotificationsModule } from "./notifications.module";
 import { DocumentsModule } from "./documents.module";
 import { ExportsModule } from "./exports.module";
 import { IntegrationsModule } from "./integrations.module";
+import { BillingModule } from "./billing.module";
 import { GatewayHttpModule } from "./gateway-http.module";
 import { TrialTestDataModule } from "./trial-test-data.module";
 import { DataImportModule } from "./data-import.module";
@@ -53,6 +54,7 @@ import { AssistantModule } from "./assistant.module";
     DocumentsModule,
     ExportsModule,
     IntegrationsModule,
+    BillingModule,
     TrialTestDataModule,
     DataImportModule,
   ],

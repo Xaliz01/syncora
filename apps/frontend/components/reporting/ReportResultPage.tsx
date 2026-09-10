@@ -33,11 +33,9 @@ import * as customersApi from "@/lib/customers.api";
 import * as orderGiversApi from "@/lib/order-givers.api";
 import { EntityRef } from "@/components/ui/EntityRef";
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
-import { BillingIntegrationConnectBanner } from "@/components/billing/BillingIntegrationConnectBanner";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useAuth } from "@/components/auth/AuthContext";
 import { hasPermission } from "@/lib/auth-permissions";
-import { useBillingIntegrationAvailability } from "@/lib/hooks/useBillingIntegrationAvailability";
 
 const REPORT_META: Record<
   ReportPreviewType,
@@ -364,13 +362,6 @@ export function ReportResultPage() {
 
   const canAccess = meta ? hasPermission(user, meta.permission) : false;
 
-  const { data: billingAvailability, isLoading: billingAvailabilityLoading } =
-    useBillingIntegrationAvailability();
-  const showBillingConnectBanner =
-    validType === "invoices_list" &&
-    !billingAvailabilityLoading &&
-    billingAvailability?.connected !== true;
-
   const needsTeams =
     validType === "interventions_list" ||
     (validType === "mileage_report" && filtersState.groupBy === "team");
@@ -577,8 +568,6 @@ export function ReportResultPage() {
           onExport={(f) => void runExport(f)}
         />
       </div>
-
-      {showBillingConnectBanner ? <BillingIntegrationConnectBanner /> : null}
 
       {showFilterBar && (
         <div className="flex flex-wrap gap-2 items-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 shadow-sm">
@@ -816,16 +805,6 @@ export function ReportResultPage() {
                     </option>
                   ),
                 )}
-              </select>
-              <select
-                value={filtersState.provider}
-                onChange={(e) => patchFilters({ provider: e.target.value })}
-                className={FILTER_INPUT_CLASS}
-                aria-label="Fournisseur"
-              >
-                <option value="">Tous fournisseurs</option>
-                <option value="pennylane">Pennylane</option>
-                <option value="qonto">Qonto</option>
               </select>
               <select
                 value={filtersState.invoiceKind}

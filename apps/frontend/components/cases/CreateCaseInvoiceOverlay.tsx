@@ -5,29 +5,29 @@ import { createPortal } from "react-dom";
 import type {
   ArticleResponse,
   CaseInvoiceKind,
-  CaseInvoiceSyncStatus,
+  LocalInvoiceResponse,
   PrestationResponse,
   QuoteSummaryResponse,
   SyncCaseInvoiceLineInput,
   SyncCaseInvoiceOptions,
-  SyncCaseToDemoResult,
-  SyncCaseToPennylaneResult,
-  SyncCaseToQontoResult,
 } from "@planwise/shared";
 import {
   CASE_INVOICE_KIND_LABELS,
   CASE_INVOICE_KINDS,
   invoiceLinesFromArticleUsages,
+  localInvoiceStatusToRemote,
   quoteInvoicedHt,
   remainingQuoteHt,
   remainingQuotePercent,
 } from "@planwise/shared";
+import { ElectronicInvoicingNotice } from "@/components/billing/ElectronicInvoicingNotice";
 import {
   CommercialLinesEditor,
   EMPTY_COMMERCIAL_LINE,
   type CatalogPickItem,
   type CommercialLineDraft,
 } from "@/components/billing/CommercialLinesEditor";
+import * as billingApi from "@/lib/billing.api";
 
 export type InterventionArticleUsageForInvoice = {
   articleId: string;
@@ -36,29 +36,26 @@ export type InterventionArticleUsageForInvoice = {
   netQuantity: number;
 };
 
-export type CreatedCaseInvoiceResult =
-  | SyncCaseToPennylaneResult
-  | SyncCaseToQontoResult
-  | SyncCaseToDemoResult;
+export type CreatedCaseInvoiceResult = LocalInvoiceResponse;
 
 type InvoiceSource = "quote" | "lines";
 
 type Props = {
   open: boolean;
+  caseId: string;
   pending?: boolean;
   finalizePending?: boolean;
-  providerLabel: "Pennylane" | "Qonto" | "Démo";
+  providerLabel?: string;
   quotes: QuoteSummaryResponse[];
-  invoices?: CaseInvoiceSyncStatus[];
+  invoices?: LocalInvoiceResponse[];
   initialQuoteId?: string | null;
   articleUsages?: InterventionArticleUsageForInvoice[];
   articles?: ArticleResponse[];
   prestations?: PrestationResponse[];
-  /** Résultat de sync : bascule l’overlay en mode relecture. */
   createdResult?: CreatedCaseInvoiceResult | null;
   onClose: () => void;
   onSubmit: (options: SyncCaseInvoiceOptions) => void;
-  onFinalizeNow: (syncId: string) => void;
+  onFinalizeNow: (invoiceId: string) => void;
   onValidateLater: () => void;
 };
 
@@ -159,62 +156,96 @@ function InvoiceEditorOverlay({
   );
 }
 
-function InvoiceProviderPreview({
-  providerLabel,
-  invoiceUrl,
+/** iOS / iPadOS ne rendent pas les PDF dans un iframe (blob URL). */
+function useInlinePdfPreviewSupported(): boolean {
+  const [supported, setSupported] = useState(true);
+  useEffect(() => {
+    const ua = navigator.userAgent;
+    const iOS =
+      /iPad|iPhone|iPod/.test(ua) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    setSupported(!iOS);
+  }, []);
+  return supported;
+}
+
+function InvoicePdfPreview({
+  previewUrl,
+  loading,
+  error,
   emptyHint,
 }: {
-  providerLabel: string;
-  invoiceUrl?: string;
+  previewUrl: string | null;
+  loading: boolean;
+  error: string | null;
   emptyHint: string;
 }) {
-  if (!invoiceUrl) {
-    return (
-      <div className="hidden xl:flex h-full min-h-0 flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-6 text-center">
-        <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
-          Aperçu {providerLabel}
-        </p>
-        <p className="mt-2 max-w-sm text-xs text-slate-500 dark:text-slate-400">{emptyHint}</p>
-      </div>
-    );
-  }
+  const inlinePdfSupported = useInlinePdfPreviewSupported();
 
   return (
-    <div className="flex h-full min-h-[40vh] sm:min-h-[45vh] xl:min-h-0 flex-col rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden">
-      <div className="shrink-0 flex items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-700 px-3 py-2">
+    <div
+      className={`h-full min-h-0 flex flex-col ${
+        previewUrl ? "min-h-[40vh] sm:min-h-[45vh]" : "hidden xl:flex"
+      }`}
+    >
+      <div className="shrink-0 flex items-center justify-between gap-2 mb-2">
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-          Aperçu {providerLabel}
+          Aperçu PDF
         </p>
-        <a
-          href={invoiceUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="text-[11px] font-medium text-brand-600 dark:text-brand-400 hover:underline"
-        >
-          Ouvrir dans un nouvel onglet
-        </a>
+        <div className="flex items-center gap-2">
+          {loading ? <span className="text-[11px] text-slate-400">Mise à jour…</span> : null}
+          {previewUrl ? (
+            <a
+              href={previewUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 px-2.5 py-1 text-[11px] font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+            >
+              Ouvrir
+            </a>
+          ) : null}
+        </div>
       </div>
-      <iframe
-        title={`Aperçu facture ${providerLabel}`}
-        src={invoiceUrl}
-        className="flex-1 w-full min-h-[40vh] sm:min-h-[45vh] xl:min-h-0 bg-white"
-        // Certains providers bloquent l’iframe (X-Frame-Options) — le lien ci-dessus reste la fallback.
-        sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
-        referrerPolicy="no-referrer"
-      />
-      <p className="shrink-0 border-t border-slate-100 dark:border-slate-800 px-3 py-2 text-[11px] text-slate-400 dark:text-slate-500">
-        Si l&apos;aperçu reste vide, le provider bloque l&apos;intégration — utilisez le lien
-        ci-dessus.
-      </p>
+      <div className="flex-1 min-h-[40vh] xl:min-h-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-950 overflow-hidden">
+        {previewUrl && inlinePdfSupported ? (
+          <iframe
+            title="Aperçu de la facture"
+            src={previewUrl}
+            className="h-full w-full bg-white"
+          />
+        ) : previewUrl ? (
+          <div className="flex h-full min-h-[40vh] flex-col items-center justify-center gap-3 px-6 text-center">
+            <p className="text-sm text-slate-600 dark:text-slate-300">
+              L&apos;aperçu intégré n&apos;est pas disponible sur cet appareil.
+            </p>
+            <a
+              href={previewUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-500"
+            >
+              Ouvrir le PDF
+            </a>
+          </div>
+        ) : (
+          <div className="flex h-full min-h-0 flex-col items-center justify-center px-6 text-center">
+            <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Aperçu PDF</p>
+            <p className="mt-2 max-w-sm text-xs text-slate-500 dark:text-slate-400">
+              {error ?? emptyHint}
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
 export function CreateCaseInvoiceOverlay({
   open,
+  caseId,
   pending,
   finalizePending,
-  providerLabel,
+  providerLabel = "Planwise",
   quotes,
   invoices = [],
   initialQuoteId,
@@ -227,13 +258,14 @@ export function CreateCaseInvoiceOverlay({
   onFinalizeNow,
   onValidateLater,
 }: Props) {
+  const acceptedQuotes = useMemo(() => quotes.filter((q) => q.status === "accepted"), [quotes]);
+
   const preferredQuoteId = useMemo(() => {
-    if (initialQuoteId && quotes.some((q) => q.id === initialQuoteId)) {
+    if (initialQuoteId && acceptedQuotes.some((q) => q.id === initialQuoteId)) {
       return initialQuoteId;
     }
-    const accepted = quotes.find((q) => q.status === "accepted");
-    return accepted?.id ?? quotes[0]?.id ?? "";
-  }, [quotes, initialQuoteId]);
+    return acceptedQuotes[0]?.id ?? "";
+  }, [acceptedQuotes, initialQuoteId]);
 
   const articlesById = useMemo(() => {
     const map = new Map<
@@ -278,7 +310,7 @@ export function CreateCaseInvoiceOverlay({
     return [...fromPrestations, ...fromArticles];
   }, [articles, prestations]);
 
-  const hasQuotes = quotes.length > 0;
+  const hasQuotes = acceptedQuotes.length > 0;
   const hasArticleLines = prefilledArticleLines.length > 0;
 
   const defaultSource = useMemo((): InvoiceSource => {
@@ -297,6 +329,10 @@ export function CreateCaseInvoiceOverlay({
     initialLinesDraft(prefilledArticleLines),
   );
   const wasOpenRef = useRef(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const previewUrlRef = useRef<string | null>(null);
 
   // Réinit uniquement à l’ouverture — pas quand le catalogue articles se rafraîchit
   // (sinon la création rapide d’article efface la ligne sélectionnée).
@@ -321,11 +357,17 @@ export function CreateCaseInvoiceOverlay({
     }
   }, [open, preferredQuoteId, defaultSource, prefilledArticleLines, createdResult]);
 
-  if (!open) return null;
-
-  const reviewMode = Boolean(createdResult);
   const selectedQuote = quotes.find((q) => q.id === quoteId);
-  const alreadyInvoicedHt = quoteId ? quoteInvoicedHt(invoices, quoteId) : 0;
+  const alreadyInvoicedHt = quoteId
+    ? quoteInvoicedHt(
+        invoices.map((i) => ({
+          quoteId: i.quoteId,
+          amountHt: i.amountHt,
+          remoteStatus: localInvoiceStatusToRemote(i.status),
+        })),
+        quoteId,
+      )
+    : 0;
   const remainingHt = selectedQuote
     ? remainingQuoteHt(selectedQuote.totalHt, alreadyInvoicedHt)
     : 0;
@@ -334,15 +376,143 @@ export function CreateCaseInvoiceOverlay({
     : 0;
 
   const isLinesSource = source === "lines";
-  const parsedLines = isLinesSource ? toSyncLines(lineDrafts) : null;
+  const parsedLines = useMemo(
+    () => (isLinesSource ? toSyncLines(lineDrafts) : null),
+    [isLinesSource, lineDrafts],
+  );
   const linesTotalHt = parsedLines
     ? parsedLines.reduce((s, l) => s + l.quantity * l.unitPriceHt, 0)
     : 0;
 
-  const canSubmit =
-    source === "quote"
-      ? Boolean(quoteId)
-      : parsedLines != null && parsedLines.length > 0 && linesTotalHt > 0;
+  const previewOptions = useMemo((): SyncCaseInvoiceOptions | null => {
+    if (isLinesSource) {
+      if (!parsedLines || parsedLines.length === 0 || linesTotalHt <= 0) return null;
+      return { lines: parsedLines, invoiceKind: "full" };
+    }
+    if (!quoteId) return null;
+    const options: SyncCaseInvoiceOptions = { quoteId, invoiceKind };
+    if (invoiceKind === "situation") {
+      if (mode === "percent") {
+        const pct = Number.parseFloat(situationPercent.replace(",", "."));
+        if (!Number.isFinite(pct) || pct <= 0 || pct > 100) return null;
+        options.situationPercent = pct;
+      } else {
+        const amt = Number.parseFloat(amountHt.replace(",", "."));
+        if (!Number.isFinite(amt) || amt <= 0) return null;
+        options.amountHt = amt;
+      }
+    }
+    if (invoiceKind === "deposit") {
+      const amt = Number.parseFloat(amountHt.replace(",", "."));
+      if (!Number.isFinite(amt) || amt <= 0) return null;
+      options.amountHt = amt;
+    }
+    return options;
+  }, [
+    isLinesSource,
+    parsedLines,
+    linesTotalHt,
+    quoteId,
+    invoiceKind,
+    mode,
+    situationPercent,
+    amountHt,
+  ]);
+
+  const canSubmit = previewOptions != null;
+
+  useEffect(() => {
+    if (!open || !caseId) {
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current);
+        previewUrlRef.current = null;
+      }
+      setPreviewUrl(null);
+      setPreviewError(null);
+      setPreviewLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    const revokeCurrent = () => {
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current);
+        previewUrlRef.current = null;
+      }
+    };
+
+    if (createdResult) {
+      setPreviewLoading(true);
+      void billingApi
+        .previewInvoicePdf(createdResult.id)
+        .then((url) => {
+          if (cancelled) {
+            URL.revokeObjectURL(url);
+            return;
+          }
+          revokeCurrent();
+          previewUrlRef.current = url;
+          setPreviewUrl(url);
+          setPreviewError(null);
+        })
+        .catch((err: unknown) => {
+          if (cancelled) return;
+          setPreviewError(err instanceof Error ? err.message : "Aperçu indisponible");
+        })
+        .finally(() => {
+          if (!cancelled) setPreviewLoading(false);
+        });
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (!previewOptions) {
+      revokeCurrent();
+      setPreviewUrl(null);
+      setPreviewError(null);
+      setPreviewLoading(false);
+      return;
+    }
+
+    setPreviewLoading(true);
+    const timer = window.setTimeout(() => {
+      void billingApi
+        .previewCaseInvoicePdf(caseId, previewOptions)
+        .then((url) => {
+          if (cancelled) {
+            URL.revokeObjectURL(url);
+            return;
+          }
+          revokeCurrent();
+          previewUrlRef.current = url;
+          setPreviewUrl(url);
+          setPreviewError(null);
+        })
+        .catch((err: unknown) => {
+          if (cancelled) return;
+          setPreviewError(err instanceof Error ? err.message : "Aperçu indisponible");
+        })
+        .finally(() => {
+          if (!cancelled) setPreviewLoading(false);
+        });
+    }, 450);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [open, caseId, createdResult, previewOptions]);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    };
+  }, []);
+
+  if (!open) return null;
+
+  const reviewMode = Boolean(createdResult);
 
   const applySource = (next: InvoiceSource) => {
     setSource(next);
@@ -362,34 +532,8 @@ export function CreateCaseInvoiceOverlay({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isLinesSource) {
-      const lines = toSyncLines(lineDrafts);
-      if (!lines || lines.length === 0) return;
-      onSubmit({ lines, invoiceKind: "full" });
-      return;
-    }
-    if (!quoteId) return;
-    const options: SyncCaseInvoiceOptions = {
-      quoteId,
-      invoiceKind,
-    };
-    if (invoiceKind === "situation") {
-      if (mode === "percent") {
-        const pct = Number.parseFloat(situationPercent.replace(",", "."));
-        if (!Number.isFinite(pct) || pct <= 0 || pct > 100) return;
-        options.situationPercent = pct;
-      } else {
-        const amt = Number.parseFloat(amountHt.replace(",", "."));
-        if (!Number.isFinite(amt) || amt <= 0) return;
-        options.amountHt = amt;
-      }
-    }
-    if (invoiceKind === "deposit") {
-      const amt = Number.parseFloat(amountHt.replace(",", "."));
-      if (!Number.isFinite(amt) || amt <= 0) return;
-      options.amountHt = amt;
-    }
-    onSubmit(options);
+    if (!previewOptions) return;
+    onSubmit(previewOptions);
   };
 
   return (
@@ -406,22 +550,22 @@ export function CreateCaseInvoiceOverlay({
             <div className="space-y-5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5">
               <div>
                 <p className="text-sm font-medium text-slate-800 dark:text-slate-100">
-                  Relisez le brouillon dans {providerLabel}
+                  Relisez le brouillon
                 </p>
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  {createdResult.draft
-                    ? "Validez maintenant pour émettre la facture, ou plus tard depuis le suivi facturation."
-                    : "La facture a déjà été émise côté provider."}
+                  {createdResult.status === "draft"
+                    ? "Validez maintenant pour numéroter la facture, ou plus tard depuis le suivi facturation."
+                    : "La facture a été émise."}
                 </p>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-2">
-                {createdResult.draft ? (
+                {createdResult.status === "draft" ? (
                   <>
                     <button
                       type="button"
                       disabled={finalizePending}
-                      onClick={() => onFinalizeNow(createdResult.syncId)}
+                      onClick={() => onFinalizeNow(createdResult.id)}
                       className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50"
                     >
                       {finalizePending ? "Validation…" : "Valider maintenant"}
@@ -446,30 +590,20 @@ export function CreateCaseInvoiceOverlay({
                 )}
               </div>
 
-              {createdResult.invoiceUrl ? (
-                <a
-                  href={createdResult.invoiceUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex text-sm font-medium text-brand-600 dark:text-brand-400 hover:underline"
-                >
-                  Ouvrir dans {providerLabel}
-                </a>
-              ) : (
-                <p className="text-xs text-amber-700 dark:text-amber-300">
-                  Aucune URL de prévisualisation n&apos;a été renvoyée par {providerLabel}.
-                </p>
-              )}
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {createdResult.number ?? createdResult.draftNumber ?? "Brouillon"} ·{" "}
+                {createdResult.amountHt} € HT
+              </p>
             </div>
           ) : (
             <form
               onSubmit={handleSubmit}
               className="space-y-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 sm:p-5"
             >
+              <ElectronicInvoicingNotice />
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Planwise prépare les lignes ; {providerLabel} crée la facture brouillon.
-                L&apos;aperçu s&apos;affichera après l&apos;envoi
-                <span className="hidden xl:inline"> (à droite)</span>.
+                Relisez l’aperçu PDF, puis créez le brouillon. Validez ensuite pour attribuer un
+                numéro définitif.
               </p>
 
               <fieldset className="space-y-2">
@@ -520,13 +654,19 @@ export function CreateCaseInvoiceOverlay({
                       className={inputClassName}
                       required
                     >
-                      {quotes.map((q) => (
+                      {acceptedQuotes.map((q) => (
                         <option key={q.id} value={q.id}>
                           {q.quoteNumber}
                           {q.subject ? ` — ${q.subject}` : ""} ({q.totalHt.toFixed(2)} € HT)
                         </option>
                       ))}
                     </select>
+                    {acceptedQuotes.length === 0 ? (
+                      <span className="text-xs text-amber-700 dark:text-amber-300 block">
+                        Aucun devis accepté sur ce dossier. Acceptez un devis ou saisissez des
+                        lignes libres.
+                      </span>
+                    ) : null}
                     {selectedQuote ? (
                       <span className="text-xs text-slate-500 dark:text-slate-400 block">
                         Total devis : {selectedQuote.totalHt.toFixed(2)} € HT
@@ -685,7 +825,7 @@ export function CreateCaseInvoiceOverlay({
                   disabled={pending || !canSubmit}
                   className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50"
                 >
-                  {pending ? "Création…" : `Créer le brouillon ${providerLabel}`}
+                  {pending ? "Création…" : "Créer le brouillon"}
                 </button>
               </div>
             </form>
@@ -693,10 +833,11 @@ export function CreateCaseInvoiceOverlay({
         </div>
 
         <div className="min-w-0 min-h-0 xl:h-full">
-          <InvoiceProviderPreview
-            providerLabel={providerLabel}
-            invoiceUrl={createdResult?.invoiceUrl}
-            emptyHint="Après création du brouillon, l’aperçu provider s’affichera ici pour relecture avant validation."
+          <InvoicePdfPreview
+            previewUrl={previewUrl}
+            loading={previewLoading}
+            error={previewError}
+            emptyHint="Complétez les lignes ou le devis pour générer l’aperçu PDF."
           />
         </div>
       </div>

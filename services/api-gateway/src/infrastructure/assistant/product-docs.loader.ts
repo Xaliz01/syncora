@@ -12,20 +12,20 @@ export const PRODUCT_DOC_CHUNKS: readonly ProductDocChunk[] = [
   {
     id: "about",
     title: "À propos / éditeur",
-    text: `Qui a développé Planwise ? Planwise est développé et édité par Benoist Babin, entrepreneur individuel (SIREN 979 102 803), à Landerneau (Finistère, France). Nom commercial Planwise. Contact : contact@planwise.fr. Site : https://planwise.fr. Créateur, fondateur, éditeur, développeur = Benoist Babin. Planwise est un CRM terrain pour artisans, indépendants et TPE (clients, dossiers, planning, interventions, devis, facturation connectée). Mentions légales sur le site marketing. Pendant la beta, Planwise reste gratuit ; essai sans carte bancaire.`,
+    text: `Qui a développé Planwise ? Planwise est développé et édité par Benoist Babin, entrepreneur individuel (SIREN 979 102 803), à Landerneau (Finistère, France). Nom commercial Planwise. Contact : contact@planwise.fr. Site : https://planwise.fr. Créateur, fondateur, éditeur, développeur = Benoist Babin. Planwise est un CRM terrain pour artisans, indépendants et TPE (clients, dossiers, planning, interventions, devis, facturation dans Planwise). Mentions légales sur le site marketing. Pendant la beta, Planwise reste gratuit ; essai sans carte bancaire.`,
   },
   {
     id: "routes",
     title: "Catalogue des menus",
     text: `Menus principaux Planwise (ne jamais inventer d'écran) :
-Tableau de bord (/) ; Ma journée (/my-day) ; Dossiers (/cases) ; Nouveau dossier (/cases/new) ; Planning (/cases/calendar) ; Contrats (/contracts) ; Nouveau contrat (/contracts/new) ; Mouvements de stock (/stock) ; Reporting (/reporting) ; Facturation (/billing) ; Clients (/customers) ; Nouveau client (/customers/new) ; Donneurs d'ordre (/order-givers) ; Utilisateurs (/users) ; Inviter (/users/new) ; Équipes (/fleet/teams) ; Techniciens (/fleet/technicians) ; Véhicules (/fleet/vehicles) ; Agences (/fleet/agences) ; Catalogue articles (/settings/stock/articles) ; Nouvel article (/settings/stock/articles/new) ; Prestations (/settings/prestations) ; Nouvelle prestation (/settings/prestations/new) ; Emplacements stock (/settings/stock/locations) ; Nouvel emplacement (/settings/stock/locations/new) ; Modèles de dossier (/settings/case-templates) ; Types d'intervention (/settings/intervention-types) ; Nouveau type d'intervention (/settings/intervention-types/new) ; Profils (/settings/profiles) ; Notifications (/settings/notifications) ; Intégrations (/settings/integrations) ; Import de données (/settings/data-import) ; Recherche (/search) ; Mon organisation (/organization) ; Mon abonnement (/subscription) ; Mon compte (/account).
+Tableau de bord (/) ; Ma journée (/my-day) ; Dossiers (/cases) ; Nouveau dossier (/cases/new) ; Planning (/cases/calendar) ; Contrats (/contracts) ; Nouveau contrat (/contracts/new) ; Mouvements de stock (/stock) ; Reporting (/reporting) ; Facturation (/billing) ; Clients (/customers) ; Nouveau client (/customers/new) ; Donneurs d'ordre (/order-givers) ; Utilisateurs (/users) ; Inviter (/users/new) ; Équipes (/fleet/teams) ; Techniciens (/fleet/technicians) ; Véhicules (/fleet/vehicles) ; Agences (/fleet/agences) ; Catalogue articles (/settings/stock/articles) ; Nouvel article (/settings/stock/articles/new) ; Prestations (/settings/prestations) ; Nouvelle prestation (/settings/prestations/new) ; Emplacements stock (/settings/stock/locations) ; Nouvel emplacement (/settings/stock/locations/new) ; Modèles de dossier (/settings/case-templates) ; Types d'intervention (/settings/intervention-types) ; Nouveau type d'intervention (/settings/intervention-types/new) ; Profils (/settings/profiles) ; Notifications (/settings/notifications) ; Import de données (/settings/data-import) ; Recherche (/search) ; Mon organisation (/organization) ; Mon abonnement (/subscription) ; Mon compte (/account).
 Fiches détail dynamiques (/cases/:id, /customers/:id…) : ne pas inventer d'ID — guider vers la liste puis ouvrir depuis la liste. Modification dossier : depuis la fiche, bouton Modifier → /cases/:id/edit (permission cases.update).
 Sans abonnement actif, le menu est réduit (org / abonnement / compte). Favoris = barre sous le header (étoile ★ ou glisser un lien du menu). Historique de navigation = icône horloge près des favoris (pages récentes). Cloche = inbox notifications. Reporting détail : passer par le hub /reporting.`,
   },
   {
     id: "glossary",
     title: "Glossaire",
-    text: `Organisation = locataire / entreprise (isolation des données). SIRET/SIREN = identifiants FR à l'inscription / création d'org. Dossier = affaire / chantier (n° auto YYYY-0001, libellé « n° - client »). Modèle de dossier = template (import métiers). Intervention = créneau terrain. Technicien = ressource assignable ; peut être liée à un utilisateur. Équipe = groupe de techniciens assignable. Agence = base / site. Véhicule = flotte (immat, km). Ma journée = interventions du jour du technicien lié. Planning = calendrier. Client = bénéficiaire chantier. Donneur d'ordre = tiers facturé si ≠ client. Contrat maintenance = récurrent ; modes « à programmer avec le client » ou « auto-planifier ». Article = stock ; prestation = ligne devis (≠ stock). Emplacement / mouvement de stock. Import de données = charger d'anciennes données via CSV (/settings/data-import) ; externalId = clé de l'ancien outil pour lier les fichiers. Facturation = sync outil connecté — Planwise ne facture pas seul. Intégration = OAuth (une active). Profil = droits non-admin. Favoris = barre ★. Historique navigation = horloge (pages récentes). Essai/démo = ~15 j, données injectables. Abonnement Essentiel = accès produit Stripe ≠ facturation clients. Quota stockage documents = limite d'espace (10 Go inclus, +50 Go/addon), pas un nombre max de fichiers. Addon = suggestion d'équipe, users, stockage. Reporting = exports. PWA = app installable + hors-ligne. Assistant IA inclus au socle.`,
+    text: `Organisation = locataire / entreprise (isolation des données). SIRET/SIREN = identifiants FR à l'inscription / création d'org. Dossier = affaire / chantier (n° auto YYYY-0001, libellé « n° - client »). Modèle de dossier = template (import métiers). Intervention = créneau terrain. Technicien = ressource assignable ; peut être liée à un utilisateur. Équipe = groupe de techniciens assignable. Agence = base / site. Véhicule = flotte (immat, km). Ma journée = interventions du jour du technicien lié. Planning = calendrier. Client = bénéficiaire chantier. Donneur d'ordre = tiers facturé si ≠ client. Contrat maintenance = récurrent ; modes « à programmer avec le client » ou « auto-planifier ». Article = stock ; prestation = ligne devis (≠ stock). Emplacement / mouvement de stock. Import de données = charger d'anciennes données via CSV (/settings/data-import) ; externalId = clé de l'ancien outil pour lier les fichiers. Facturation = factures clients émises dans Planwise (PDF, numérotation, envoi e-mail, avoirs). L'émission électronique arrivera plus tard. Envoi de facture = e-mail d'une facture/avoir validé (PDF joint, confirmation, historique sur dossier et /billing) ; droit billing.invoices.send. Profil = droits non-admin. Favoris = barre ★. Historique navigation = horloge (pages récentes). Essai/démo = ~15 j, données injectables. Abonnement Essentiel = accès produit Stripe ≠ facturation clients. Quota stockage documents = limite d'espace (10 Go inclus, +50 Go/addon), pas un nombre max de fichiers. Addon = suggestion d'équipe, users, stockage. Reporting = exports. PWA = app installable + hors-ligne. Assistant IA inclus au socle.`,
   },
   {
     id: "journey-import-crm",
@@ -76,7 +76,7 @@ Facturer un autre tiers → donneur d'ordre (/order-givers/new).`,
     id: "journey-order-givers",
     title: "Donneurs d'ordre",
     pathPrefixes: ["/order-givers"],
-    text: `Donneur d'ordre = tiers facturé quand ce n'est pas le client chantier. Menu Gestion → Donneurs d'ordre (/order-givers), création /order-givers/new. Sur un dossier, sélectionner le donneur d'ordre pour la facturation / sync Pennylane-Qonto-démo. Ne pas confondre avec le client (bénéficiaire / site).`,
+    text: `Donneur d'ordre = tiers facturé quand ce n'est pas le client chantier. Menu Gestion → Donneurs d'ordre (/order-givers), création /order-givers/new. Sur un dossier, sélectionner le donneur d'ordre : la facture Planwise lui est adressée. Ne pas confondre avec le client (bénéficiaire / site).`,
   },
   {
     id: "journey-case",
@@ -84,7 +84,7 @@ Facturer un autre tiers → donneur d'ordre (/order-givers/new).`,
     pathPrefixes: ["/cases"],
     text: `Objectif : ouvrir un dossier (affaire) avec éventuellement un modèle. Prérequis : cases.create ; idéalement un client.
 Étapes : 1) Suivi → Dossiers (/cases) puis Nouveau, ou /cases/new. 2) Client, donneur d'ordre si besoin (pas de titre libre : n° auto YYYY-0001 + libellé « n° - client »). 3) Modèle de dossier (/settings/case-templates, import métiers possible). 4) Fiche : étapes, tâches, interventions, documents, devis, stock consommé. 5) Modifier le dossier : bouton Modifier sur la fiche → /cases/:id/edit.
-Suite : planifier une intervention, devis, facturer via intégration.`,
+Suite : planifier une intervention, devis, facturer depuis le dossier.`,
   },
   {
     id: "journey-my-day",
@@ -107,15 +107,15 @@ Assignation : technicien ou équipe (pas utilisateur). Terrain du jour : /my-day
     id: "journey-billing",
     title: "Devis et facturation",
     pathPrefixes: ["/billing", "/settings/prestations"],
-    text: `Règle : Planwise NE FACTURE PAS tout seul. Devis (PDF, lignes, TVA) dans Planwise sur un dossier. Factures via outil CONNECTÉ : Pennylane, Qonto, ou mode démo essai. Sans intégration : devis OK, pas de vraie facture.
-Étapes : 1) /settings/integrations (une seule intégration facturation active). 2) Dossier → devis. 3) Facturer via l'outil. 4) Suivi /billing.
+    text: `Règle : les factures clients s'émettent dans Planwise. Devis (PDF, lignes, TVA) sur un dossier, puis Créer une facture (complète, situation, acompte, solde) et avoir si besoin. L'émission via la facturation électronique arrivera prochainement.
+Étapes : 1) Dossier → devis. 2) Créer une facture (brouillon). 3) Valider pour numéroter et PDF. 4) Envoyer par e-mail (popup de confirmation, PDF joint) ; historique des envois sur le dossier et /billing. 5) Suivi /billing.
 Prestations catalogue : /settings/prestations. Abonnement Planwise (/subscription) ≠ facturation clients.`,
   },
   {
     id: "journey-integrations",
-    title: "Connecter une intégration",
-    pathPrefixes: ["/settings/integrations"],
-    text: `Lier Planwise à Pennylane, Qonto ou mode démo (essai) — requis pour facturer. Paramètres → Intégrations (/settings/integrations). OAuth ou clé selon l'écran. Une seule facturation active à la fois. Escalade Crisp si erreur OAuth ou outil absent.`,
+    title: "Facturation électronique",
+    pathPrefixes: ["/billing"],
+    text: `La facturation clients se fait dans Planwise (dossier ou /billing). L'émission via la facturation électronique arrivera prochainement. Pas de menu Intégrations. Escalade Crisp si question sur la facturation électronique.`,
   },
   {
     id: "journey-contracts",
@@ -138,7 +138,7 @@ Prestations (/settings/prestations) = lignes devis/facture, pas le stock. Flotte
     id: "journey-onboarding-demo",
     title: "Onboarding et données de démo",
     pathPrefixes: ["/onboarding", "/"],
-    text: `Après inscription, le fondateur admin peut passer par /onboarding : profil « je vais sur le terrain » (peut créer/lier un technicien), puis injecter ou ignorer les données de démo. Ensuite modal guide de démarrage (créer client, dossier, inviter, démo, connecter facturation) — skippable.
+    text: `Après inscription, le fondateur admin peut passer par /onboarding : profil « je vais sur le terrain » (peut créer/lier un technicien), puis injecter ou ignorer les données de démo. Ensuite modal guide de démarrage (créer client, dossier, inviter, démo, créer une facture) — skippable.
 Essai ~15 jours sans CB. Injection démo aussi depuis le tableau de bord (carte Trial, admins, status trialing) : clients/dossiers « Démo », articles, techniciens, équipes… Statut injecting → ready ; purge manuelle ou auto fin d'essai. Pas une entrée menu. /onboarding déjà fait → renvoi vers /.`,
   },
   {
@@ -171,7 +171,7 @@ Push : Service Worker + autorisation navigateur. Si refusé : réactiver manuell
     title: "Abonnement, essai et addons",
     pathPrefixes: ["/subscription"],
     text: `Mon abonnement /subscription : plan Essentiel 9,99 €/mois, 2 users inclus, 10 Go docs, essai ~15 j. Addons : suggestion intelligente d'équipe (~4,99 €, inclus en essai), utilisateurs (+2,99 €), stockage +50 Go (4,99 €). Assistant IA + Crisp inclus au socle.
-Sans accès actif : menu réduit org/abonnement/compte. Abonnement Stripe Planwise ≠ facturation clients (Pennylane/Qonto/démo). Tunnel Stripe complexe → Crisp.`,
+Sans accès actif : menu réduit org/abonnement/compte. Abonnement Stripe Planwise ≠ facturation clients (/billing). Tunnel Stripe complexe → Crisp.`,
   },
   {
     id: "journey-document-storage",
@@ -193,7 +193,7 @@ Documents déposés sur les fiches dossier. Ne jamais dire « aucune limite » n
     id: "journey-search",
     title: "Recherche",
     pathPrefixes: ["/search"],
-    text: `Champ recherche header → /search?q=… Types : dossiers, interventions, clients, donneurs d'ordre, véhicules, techniciens, équipes, agences, articles, prestations, utilisateurs (filtrés par droits). Pas d'entrée sidebar. Résultats vides = query courte, permissions, ou org vide (proposer démo en essai).`,
+    text: `Champ recherche header → /search?q=… Types : dossiers, interventions, factures, clients, donneurs d'ordre, véhicules, techniciens, équipes, agences, articles, prestations, utilisateurs (filtrés par droits). Une facture ouvre le dossier associé. Pas d'entrée sidebar. Résultats vides = query courte, permissions, ou org vide (proposer démo en essai).`,
   },
   {
     id: "journey-organization",
@@ -218,7 +218,7 @@ PWA : installable (standalone) ; Service Worker ; page hors connexion /~offline.
   {
     id: "rules",
     title: "Règles assistant",
-    text: `Répondre en français, vouvoiement. « Comment faire » : intro courte puis étapes numérotées CHACUNE SUR SA LIGNE (1. / 2. / 3. avec retours à la ligne — jamais « 1) … 2) … » collés). Menus exacts, puis 1–3 liens whitelist. Notifications = Paramètres → Notifications (/settings/notifications), pas Mon compte. Documents : pas de limite en nombre de fichiers ; quota d'espace 10 Go inclus (+50 Go addon), voir /subscription — ne jamais dire « aucune limite ». Facturation clients : outil connecté (Pennylane, Qonto, démo). Abonnement /subscription ≠ facturation /billing. Favoris = ★ ; historique = horloge. Assignation = technicien/équipe. Éditeur/contact = À propos. Hors périmètre → escalateToSupport. Pas d'invention d'URLs ni lecture des données org.`,
+    text: `Répondre en français, vouvoiement. « Comment faire » : intro courte puis étapes numérotées CHACUNE SUR SA LIGNE (1. / 2. / 3. avec retours à la ligne — jamais « 1) … 2) … » collés). Menus exacts, puis 1–3 liens whitelist. Notifications = Paramètres → Notifications (/settings/notifications), pas Mon compte. Documents : pas de limite en nombre de fichiers ; quota d'espace 10 Go inclus (+50 Go addon), voir /subscription — ne jamais dire « aucune limite ». Facturation clients : dans Planwise (/billing, depuis un dossier). L'émission électronique arrivera plus tard. Abonnement /subscription ≠ facturation /billing. Favoris = ★ ; historique = horloge. Assignation = technicien/équipe. Éditeur/contact = À propos. Hors périmètre → escalateToSupport. Pas d'invention d'URLs ni lecture des données org.`,
   },
 ] as const;
 

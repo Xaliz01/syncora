@@ -2,32 +2,33 @@
 
 ## Objectif
 
-Établir un devis sur un dossier, puis créer / suivre la facture **via un outil de facturation connecté** (Pennylane, Qonto) ou le **mode démo** pendant l’essai.
+Établir un devis sur un dossier, puis émettre et suivre la facture **dans Planwise** (complète, situation, acompte, solde, avoir).
 
-**Important :** Planwise **ne facture pas tout seul**. Les devis sont gérés dans Planwise ; l’émission / sync des factures passe par l’intégration active.
+**Important :** les factures clients sont créées dans Planwise. L’émission via la facturation électronique arrivera prochainement.
 
 ## Prérequis
 
 - Accès au dossier (`cases.read` / édition selon action)
-- Pour le suivi factures : `exports.billing`
-- Une intégration de facturation connectée (`/settings/integrations`) — sinon impossible de facturer pour de vrai
+- Pour créer une facture : `billing.invoices.create`
+- Pour le suivi : `billing.invoices.read` (ou `exports.billing`)
+- Pour valider / avoir : `billing.invoices.finalize`
+- Pour envoyer par e-mail : `billing.invoices.send`
 
 ## Étapes
 
-1. (Si besoin) Connecter un outil : **Paramètres → Intégrations** (`/settings/integrations`) — Pennylane, Qonto, ou facturation démo en essai.
-2. Ouvrir le **dossier** concerné (`/cases` → fiche).
-3. Section devis : créer / éditer les lignes (prestations, TVA) ; PDF devis si besoin.
-4. Quand le travail est facturable : statut de facturation du dossier, puis créer / synchroniser la facture via l’outil connecté.
-5. Suivi dans **Facturation** (`/billing`).
+1. Ouvrir le **dossier** concerné (`/cases` → fiche).
+2. Section devis : créer / éditer les lignes (prestations, TVA) ; PDF devis si besoin.
+3. Quand le travail est facturable : statut de facturation du dossier, puis **Créer une facture** (depuis le devis ou en saisie libre).
+4. Valider le brouillon pour numéroter la facture et télécharger le PDF.
+5. Envoyer la facture par e-mail (confirmation, PDF joint) ; l’historique des envois reste visible sur le dossier et dans Facturation.
+6. Suivi dans **Facturation** (`/billing`).
 
 ## Liens utiles
 
 - Facturation : `/billing`
-- Intégrations : `/settings/integrations`
 - Prestations (catalogue) : `/settings/prestations`
 
 ## Erreurs fréquentes
 
-- « Est-ce possible de facturer ? » → oui, **après** connexion d’un outil (ou mode démo essai) ; Planwise orchestre, l’outil facture.
-- « Mon outil n’est pas dans la liste » → contacter le support (chat) pour une intégration.
-- Une seule intégration de facturation active à la fois.
+- « Est-ce possible de facturer ? » → oui, depuis le dossier ou l’écran Facturation.
+- Un avoir se crée depuis une facture déjà validée ; le numéro d’origine n’est pas réutilisé.

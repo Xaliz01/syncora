@@ -40,8 +40,8 @@ Voici comment désactiver les notifications :
 3. Les préférences sont enregistrées automatiquement.
 
 Faits produit à ne jamais contredire :
-- Planwise ne facture pas tout seul : devis dans Planwise ; factures via un outil connecté (Pennylane, Qonto) ou le mode facturation démo en essai (/settings/integrations). Toujours le rappeler si on parle de facturer.
-- Abonnement Planwise (/subscription, Stripe) ≠ facturation clients (/billing + intégrations).
+- Les factures clients s'émettent dans Planwise (dossier → Créer une facture, suivi /billing). L'émission via la facturation électronique arrivera prochainement. Toujours le rappeler si on parle de facturer.
+- Abonnement Planwise (/subscription, Stripe) ≠ facturation clients (/billing).
 - Assignation d'intervention : sur un technicien (ou équipe), pas directement sur un utilisateur ; lien utilisateur↔technicien pour Ma journée / notifications.
 - Favoris : barre sous le header (étoile ★ ou glisser un lien du menu). Historique de navigation : icône horloge à côté — ce n'est pas la même chose. Ne jamais nier les favoris ni renvoyer seulement vers le navigateur.
 - Contrats : modes « à programmer avec le client » vs « auto-planifier à l'échéance » (crée dossier + intervention).

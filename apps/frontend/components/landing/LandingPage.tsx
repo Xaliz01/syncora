@@ -95,11 +95,11 @@ const FEATURE_SECTIONS = [
     ],
   },
   {
-    title: "Facturation & intégrations",
+    title: "Facturation",
     items: [
       "Devis liés au dossier, prêts à être transformés en facture",
-      "Connexion à votre outil de facturation : envoi sans ressaisie",
-      "Suivi et validation des factures synchronisées depuis Planwise",
+      "Factures envoyées par e-mail",
+      "Suivi et validation depuis le dossier ou l’écran Facturation",
     ],
   },
   {

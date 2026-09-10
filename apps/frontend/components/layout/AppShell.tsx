@@ -13,7 +13,7 @@ import { QUICK_ACTION_DND_MIME } from "@planwise/shared";
 import { useAuth } from "@/components/auth/AuthContext";
 import { hasActiveSubscriptionAccess } from "@/lib/subscription-access";
 import { OrganizationSwitcher } from "@/components/organization/OrganizationSwitcher";
-import { hasAnyPermission, hasPermission } from "@/lib/auth-permissions";
+import { hasPermission } from "@/lib/auth-permissions";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { LANDING_TAGLINE } from "@/lib/landing-copy";
 import { PLANWISE_LOGO_SRC } from "@/lib/brand-assets";
@@ -307,7 +307,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             ...(hasPermission(user, "exports.reporting")
               ? [{ label: "Reporting", href: "/reporting" }]
               : []),
-            ...(hasPermission(user, "exports.billing")
+            ...(hasPermission(user, "billing.invoices.read") ||
+            hasPermission(user, "exports.billing")
               ? [{ label: "Facturation", href: "/billing" }]
               : []),
           ],
@@ -373,9 +374,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
     if (hasPermission(user, "notifications.manage_preferences")) {
       settingsLinks.push({ label: "Notifications", href: "/settings/notifications" });
-    }
-    if (hasAnyPermission(user, ["integrations.pennylane.read", "integrations.qonto.read"])) {
-      settingsLinks.push({ label: "Intégrations", href: "/settings/integrations" });
     }
     if (hasPermission(user, "data_import.read")) {
       settingsLinks.push({ label: "Import de données", href: "/settings/data-import" });

@@ -26,10 +26,10 @@ export const PLATFORM_CRON_JOBS: PlatformCronJobDefinition[] = [
   {
     jobKey: "integrations.invoice-sync",
     service: "integrations-service",
-    label: "Sync factures (Pennylane / Qonto)",
-    schedule: "Toutes les 10 minutes",
+    label: "Sync factures (connecteurs) — désactivé",
+    schedule: "Désactivé",
     description:
-      "Rafraîchit le statut distant des factures liées et aligne le billingStatus des dossiers.",
+      "Ancienne synchro des factures distantes. Désactivée : les factures clients sont émises dans Planwise.",
   },
   {
     jobKey: "notifications.intervention-reminders",

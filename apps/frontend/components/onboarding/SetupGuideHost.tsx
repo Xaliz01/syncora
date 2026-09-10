@@ -128,7 +128,7 @@ export function SetupGuideHost() {
     if (id === "customer") router.push("/customers/new");
     else if (id === "invite") router.push("/users/new");
     else if (id === "case") router.push("/cases/new");
-    else if (id === "billing") router.push("/settings/integrations");
+    else if (id === "billing") router.push("/billing");
   };
 
   if (!open) return null;
@@ -165,15 +165,12 @@ export function SetupGuideHost() {
     },
     {
       id: "billing",
-      title: "Connecter son outil de facturation",
-      description: "Pennylane, Qonto, ou facturation démo pendant l’essai.",
+      title: "Créer une première facture",
+      description: "Émettez vos factures clients dans Planwise, depuis un dossier.",
       visible:
-        hasPermission(user, "integrations.pennylane.read") ||
-        hasPermission(user, "integrations.qonto.read") ||
-        hasPermission(user, "integrations.demo.read") ||
-        hasPermission(user, "integrations.pennylane.configure") ||
-        hasPermission(user, "integrations.qonto.configure") ||
-        hasPermission(user, "integrations.demo.configure"),
+        hasPermission(user, "billing.invoices.create") ||
+        hasPermission(user, "billing.invoices.read") ||
+        hasPermission(user, "exports.billing"),
     },
   ];
 

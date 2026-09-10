@@ -14,7 +14,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const SERVICE_PORTS = [3001, 3002, 3003, 3004, 3005, 3006, 3007, 3008, 3009, 3010, 3011, 3012, 3013];
+const SERVICE_PORTS = [3001, 3002, 3003, 3004, 3005, 3006, 3007, 3008, 3009, 3010, 3011, 3012, 3013, 3014];
 const PORT_LABELS = {
   3001: "organizations",
   3002: "users",
@@ -29,6 +29,7 @@ const PORT_LABELS = {
   3011: "documents",
   3012: "exports",
   3013: "integrations",
+  3014: "billing",
 };
 const WAIT_TIMEOUT_MS = 180_000;
 const PROGRESS_INTERVAL_MS = 3_000;
@@ -120,7 +121,7 @@ function formatMissingPorts(ports) {
 
 async function waitForAllMicroservices() {
   log(
-    `Attente des 11 microservices (ports ${SERVICE_PORTS.join(", ")}, max ${WAIT_TIMEOUT_MS / 1000}s)…`,
+    `Attente des microservices (ports ${SERVICE_PORTS.join(", ")}, max ${WAIT_TIMEOUT_MS / 1000}s)…`,
   );
 
   const deadline = Date.now() + WAIT_TIMEOUT_MS;

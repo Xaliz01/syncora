@@ -10,7 +10,7 @@ import {
 } from "@planwise/shared";
 import * as adminApi from "@/lib/admin.api";
 import * as subscriptionsApi from "@/lib/subscriptions.api";
-import { getPermissionLabel } from "@/lib/permissions-catalog";
+import { getPermissionLabel, isAssignablePermissionVisible } from "@/lib/permissions-catalog";
 import { countOrganizationUserSeats } from "@/lib/organization-user-status";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { ImportDefaultsDialog } from "@/components/settings/ImportDefaultsDialog";
@@ -59,7 +59,7 @@ export function CreateUserPage() {
         adminApi.listOrganizationUsers(),
         subscriptionsApi.getSubscriptionCurrent().catch(() => null),
       ]);
-      setCatalog(catalogRes.availablePermissions);
+      setCatalog(catalogRes.availablePermissions.filter(isAssignablePermissionVisible));
       setProfiles(profilesRes);
       if (subscriptionRes?.hasAccess) {
         setSeatLimit({

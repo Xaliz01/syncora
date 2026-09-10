@@ -34,7 +34,7 @@ au démarrage via `runPendingMigrations` (`@planwise/shared/nest`) :
 - Échec d’une migration → le process refuse de démarrer
 - En local / ops : `npm run migrate:status|up|down -w @planwise/<service>`
 
-Services déjà équipés : `integrations-service`, `cases-service`.
+Services déjà équipés : `integrations-service`, `cases-service`, `billing-service`.
 Les autres services doivent adopter le même schéma pour toute évolution d’index / schéma Mongo.
 
 ## 1. Pré-requis sur la VM
@@ -215,7 +215,7 @@ docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml \
   mongodb organizations-service users-service permissions-service \
   cases-service fleet-service technicians-service stock-service \
   subscriptions-service customers-service notifications-service \
-  documents-service exports-service integrations-service \
+  documents-service exports-service integrations-service billing-service \
   prometheus tempo otel-collector grafana loki alloy node-exporter cadvisor blackbox-exporter mongodb-exporter
 ./rolling-edge.sh
 # Caddy + purge des anciens conteneurs api-gateway / frontend

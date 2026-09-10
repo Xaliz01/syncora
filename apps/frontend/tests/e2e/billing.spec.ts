@@ -14,11 +14,7 @@ test.describe("Parcours suivi facturation", () => {
   });
 });
 
-/**
- * Boucle essai : guide bienvenue → intégrations → activer démo → dossier → facture démo → suivi.
- * Mocks API : on valide le parcours UI, pas le microservice.
- */
-test.describe("Boucle essai facturation démo", () => {
+test.describe("Boucle facturation locale", () => {
   const foundingAdmin = {
     id: "user-e2e-trial",
     email: "trial@example.com",
@@ -33,10 +29,12 @@ test.describe("Boucle essai facturation démo", () => {
       "organizations.read",
       "cases.read",
       "cases.create",
+      "quotes.read",
       "exports.billing",
-      "integrations.demo.read",
-      "integrations.demo.configure",
-      "integrations.demo.sync",
+      "billing.invoices.read",
+      "billing.invoices.create",
+      "billing.invoices.finalize",
+      "billing.invoices.send",
     ],
     isFoundingAdmin: true,
   };
@@ -76,7 +74,7 @@ test.describe("Boucle essai facturation démo", () => {
   const demoCase = {
     id: "case-demo-invoice",
     organizationId: "org-e2e",
-    title: "Dossier démo à facturer",
+    title: "Dossier à facturer",
     status: "completed",
     billingStatus: "to_invoice",
     priority: "medium",
@@ -85,15 +83,55 @@ test.describe("Boucle essai facturation démo", () => {
     steps: [],
     progress: 100,
     interventionCount: 0,
+    customerId: "cust-1",
+    customer: { id: "cust-1", displayName: "Client SA" },
   };
 
-  test("guide → activer démo → créer facture sur dossier → suivi facturation", async ({ page }) => {
+  const quote = {
+    id: "quote-1",
+    organizationId: "org-e2e",
+    caseId: demoCase.id,
+    quoteNumber: "D-001",
+    status: "accepted",
+    totalHt: 120,
+    totalTva: 24,
+    totalTtc: 144,
+    lines: [
+      {
+        id: "line-1",
+        description: "Prestation",
+        quantity: 1,
+        unitPrice: 120,
+        tvaRate: 20,
+        totalHt: 120,
+        totalTtc: 144,
+      },
+    ],
+  };
+
+  test("dossier → créer une facture → suivi facturation", async ({ page }) => {
     await page.addInitScript(() => {
       localStorage.setItem("planwise_access_token", "e2e-trial-billing-token");
     });
 
     let setupGuideDismissed = false;
-    let demoConnected = false;
+    let createdInvoice = false;
+
+    const localInvoice = {
+      id: "inv-1",
+      organizationId: "org-e2e",
+      caseId: demoCase.id,
+      caseTitle: demoCase.title,
+      quoteId: quote.id,
+      kind: "full",
+      status: "draft",
+      draftNumber: "BROUILLON-X",
+      invoiceDate: "2026-09-01T00:00:00.000Z",
+      amountHt: "120.00",
+      amountTtc: "144.00",
+      lines: [{ label: "Prestation", quantity: 1, unitPriceHt: "120.00", tvaRate: 20 }],
+      customer: { partyId: "cust-1", partyType: "customer", displayName: "Client SA" },
+    };
 
     await page.route("**/api/**", async (route) => {
       const req = route.request();
@@ -136,52 +174,7 @@ test.describe("Boucle essai facturation démo", () => {
         return;
       }
       if (method === "GET" && path.includes("/trial-test-data/status")) {
-        await route.fulfill({
-          json: { status: "idle", hasTestData: false },
-        });
-        return;
-      }
-      if (method === "GET" && path.includes("/integrations/billing-availability")) {
-        await route.fulfill({
-          json: {
-            connected: demoConnected,
-            pennylane: false,
-            qonto: false,
-            demo: demoConnected,
-            demoAvailable: true,
-          },
-        });
-        return;
-      }
-      if (method === "GET" && path.endsWith("/integrations/demo")) {
-        await route.fulfill({
-          json: {
-            provider: "demo",
-            connected: demoConnected,
-            companyName: demoConnected ? "Démo Planwise" : undefined,
-            available: true,
-          },
-        });
-        return;
-      }
-      if (method === "POST" && path.includes("/integrations/demo/connect")) {
-        demoConnected = true;
-        await route.fulfill({
-          json: {
-            provider: "demo",
-            connected: true,
-            companyName: "Démo Planwise",
-            available: true,
-          },
-        });
-        return;
-      }
-      if (method === "GET" && path.includes("/integrations/pennylane")) {
-        await route.fulfill({ json: { provider: "pennylane", connected: false } });
-        return;
-      }
-      if (method === "GET" && path.includes("/integrations/qonto")) {
-        await route.fulfill({ json: { provider: "qonto", connected: false } });
+        await route.fulfill({ json: { status: "idle", hasTestData: false } });
         return;
       }
       if (method === "GET" && path.includes("/cases/items/") && path.includes("/history")) {
@@ -205,53 +198,36 @@ test.describe("Boucle essai facturation démo", () => {
         return;
       }
       if (method === "GET" && path.includes("/cases/quotes")) {
-        await route.fulfill({ json: [] });
+        await route.fulfill({ json: [quote] });
         return;
       }
-      if (method === "GET" && path.includes("/invoice-sync") && path.includes("/cases/")) {
-        await route.fulfill({ json: { invoices: [] } });
+      if (method === "POST" && path.includes(`/billing/cases/${demoCase.id}/invoices`)) {
+        createdInvoice = true;
+        await route.fulfill({ json: localInvoice });
         return;
       }
-      if (method === "GET" && path.includes("/integrations/invoice-syncs/stats")) {
+      if (method === "GET" && path.includes("/billing/invoices/stats")) {
         await route.fulfill({
           json: {
-            total: demoConnected ? 1 : 0,
-            draftCount: demoConnected ? 1 : 0,
+            total: createdInvoice ? 1 : 0,
+            draftCount: createdInvoice ? 1 : 0,
             finalizedCount: 0,
             paidCount: 0,
             cancelledCount: 0,
-            unknownCount: 0,
-            amountHtDraft: demoConnected ? "120.00" : "0",
+            amountHtDraft: createdInvoice ? "120.00" : "0",
             amountHtFinalized: "0",
             amountHtPaid: "0",
-            amountHtTotal: demoConnected ? "120.00" : "0",
-            byKind: demoConnected ? { invoice: 1 } : {},
+            amountHtTotal: createdInvoice ? "120.00" : "0",
+            byKind: createdInvoice ? { full: 1 } : {},
           },
         });
         return;
       }
-      if (method === "GET" && path.includes("/integrations/invoice-syncs")) {
+      if (method === "GET" && path.includes("/billing/invoices")) {
         await route.fulfill({
           json: {
-            invoices: demoConnected
-              ? [
-                  {
-                    id: "inv-demo-1",
-                    organizationId: "org-e2e",
-                    caseId: demoCase.id,
-                    caseTitle: demoCase.title,
-                    provider: "demo",
-                    invoiceKind: "invoice",
-                    remoteStatus: "draft",
-                    remoteInvoiceId: "demo-1",
-                    remoteCustomerId: "demo-customer",
-                    draft: true,
-                    amountHt: "120.00",
-                    lastSyncedAt: "2026-08-01T10:00:00.000Z",
-                  },
-                ]
-              : [],
-            total: demoConnected ? 1 : 0,
+            invoices: createdInvoice ? [localInvoice] : [],
+            total: createdInvoice ? 1 : 0,
           },
         });
         return;
@@ -260,32 +236,20 @@ test.describe("Boucle essai facturation démo", () => {
         await route.fulfill({ json: { users: [] } });
         return;
       }
-      if (method === "GET" && path.includes("/fleet/teams")) {
+      if (method === "GET" && path.includes("/fleet/")) {
         await route.fulfill({ json: [] });
         return;
       }
-      if (method === "GET" && path.includes("/fleet/vehicles")) {
+      if (method === "GET" && path.includes("/stock/movements")) {
         await route.fulfill({ json: [] });
-        return;
-      }
-      if (method === "GET" && path.includes("/fleet/technicians")) {
-        await route.fulfill({ json: [] });
-        return;
-      }
-      if (method === "GET" && path.includes("/stock/articles")) {
-        await route.fulfill({ json: { articles: [], total: 0 } });
-        return;
-      }
-      if (method === "GET" && path.includes("/stock/prestations")) {
-        await route.fulfill({ json: { prestations: [], total: 0 } });
         return;
       }
       if (method === "GET" && path.includes("/stock/locations")) {
         await route.fulfill({ json: [] });
         return;
       }
-      if (method === "GET" && path.includes("/stock/movements")) {
-        await route.fulfill({ json: [] });
+      if (method === "GET" && path.includes("/stock/")) {
+        await route.fulfill({ json: { articles: [], prestations: [], total: 0 } });
         return;
       }
       if (method === "GET" && path.includes("/customers")) {
@@ -301,27 +265,247 @@ test.describe("Boucle essai facturation démo", () => {
 
     await page.goto("/");
     await expect(page.getByRole("heading", { name: "Bienvenue dans Planwise" })).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: /Connecter son outil de facturation/i }),
-    ).toBeVisible();
-
-    await page.getByRole("button", { name: /Connecter son outil de facturation/i }).click();
-    await expect(page).toHaveURL(/\/settings\/integrations/, { timeout: 15_000 });
-    await expect(page.getByRole("heading", { name: "Facturation démo" })).toBeVisible();
-    await expect(page.getByRole("button", { name: /Activer la facturation démo/i })).toBeVisible();
-
-    await page.getByRole("button", { name: /Activer la facturation démo/i }).click();
-    await expect(page.getByText(/^Activée/)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole("button", { name: /Créer une première facture/i })).toBeVisible();
+    await page.getByRole("button", { name: /Passer pour l’instant/i }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
 
     await page.goto(`/cases/${demoCase.id}`);
     await expect(page.getByText(demoCase.title).first()).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByRole("button", { name: /Créer une facture démo/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Créer une facture/i }).first()).toBeVisible();
+    await page
+      .getByRole("button", { name: /Créer une facture/i })
+      .first()
+      .click();
+    await expect(page.getByRole("heading", { name: /Brouillon de facture/i })).toBeVisible();
+    await expect(
+      page.getByText(
+        "L’émission de factures via la facturation électronique arrivera prochainement.",
+      ),
+    ).toBeVisible();
+    await page.getByRole("button", { name: /Créer le brouillon/i }).click();
+    await expect(page.getByText(/Facture brouillon créée/i)).toBeVisible({ timeout: 10_000 });
 
     await page.goto("/billing");
     await expect(page.getByRole("heading", { name: "Facturation" })).toBeVisible({
       timeout: 15_000,
     });
-    await expect(page.getByText("Connectez votre outil de facturation")).toHaveCount(0);
+    await expect(
+      page.getByText(
+        "L’émission de factures via la facturation électronique arrivera prochainement.",
+      ),
+    ).toBeVisible();
     await expect(page.getByText(demoCase.title)).toBeVisible();
+  });
+
+  test("envoyer une facture : annuler puis confirmer avec destinataire modifié", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem("planwise_access_token", "e2e-trial-billing-token");
+    });
+
+    const issuedInvoice = {
+      id: "inv-sent",
+      organizationId: "org-e2e",
+      caseId: demoCase.id,
+      caseTitle: demoCase.title,
+      kind: "full",
+      status: "finalized",
+      number: "F-2026-00001",
+      invoiceDate: "2026-09-01T00:00:00.000Z",
+      amountHt: "120.00",
+      amountTtc: "144.00",
+      lines: [{ label: "Prestation", quantity: 1, unitPriceHt: "120.00", tvaRate: 20 }],
+      customer: {
+        partyId: "cust-1",
+        partyType: "customer",
+        displayName: "Client SA",
+        email: "client@example.com",
+      },
+      emailSends: [] as unknown[],
+    };
+    let sendCalls = 0;
+    let lastSendTo: string | undefined;
+
+    await page.route("**/api/**", async (route) => {
+      const req = route.request();
+      const url = new URL(req.url());
+      const path = url.pathname.replace(/^\/api/, "") || url.pathname;
+      const method = req.method();
+
+      if (method === "GET" && path.endsWith("/auth/me")) {
+        await route.fulfill({ json: foundingAdmin });
+        return;
+      }
+      if (method === "GET" && path.includes("/account/preferences")) {
+        await route.fulfill({ json: dismissedGuidePrefs });
+        return;
+      }
+      if (method === "POST" && path.includes("/billing/invoices/inv-sent/send")) {
+        sendCalls += 1;
+        const body = req.postDataJSON() as { to?: string };
+        lastSendTo = body.to;
+        await route.fulfill({
+          json: {
+            ...issuedInvoice,
+            emailSends: [
+              {
+                sentAt: "2026-09-10T12:00:00.000Z",
+                to: body.to ?? "client@example.com",
+                sentByUserId: foundingAdmin.id,
+                sentByName: foundingAdmin.name,
+                status: "sent",
+              },
+            ],
+          },
+        });
+        return;
+      }
+      if (method === "GET" && path.includes("/billing/invoices/stats")) {
+        await route.fulfill({
+          json: {
+            total: 1,
+            draftCount: 0,
+            finalizedCount: 1,
+            paidCount: 0,
+            cancelledCount: 0,
+            amountHtDraft: "0",
+            amountHtFinalized: "120.00",
+            amountHtPaid: "0",
+            amountHtTotal: "120.00",
+            byKind: { full: 1 },
+          },
+        });
+        return;
+      }
+      if (method === "GET" && path.includes("/billing/invoices")) {
+        await route.fulfill({ json: { invoices: [issuedInvoice], total: 1 } });
+        return;
+      }
+      if (method === "GET" && path.includes("/customers")) {
+        await route.fulfill({ json: { customers: [], total: 0 } });
+        return;
+      }
+      if (method === "GET" && path.includes("/order-givers")) {
+        await route.fulfill({ json: { orderGivers: [], total: 0 } });
+        return;
+      }
+      await route.fulfill({ status: 200, json: {} });
+    });
+
+    await page.goto("/billing");
+    await expect(page.getByRole("heading", { name: "Facturation" })).toBeVisible({
+      timeout: 15_000,
+    });
+    await page.getByRole("button", { name: "Envoyer" }).click();
+    await expect(page.getByRole("heading", { name: "Envoyer la facture" })).toBeVisible();
+    await expect(page.getByText("Le PDF de la facture sera joint.")).toBeVisible();
+    await page.getByRole("button", { name: "Annuler" }).click();
+    await expect(page.getByRole("heading", { name: "Envoyer la facture" })).toHaveCount(0);
+    expect(sendCalls).toBe(0);
+
+    await page.getByRole("button", { name: "Envoyer" }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByLabel("Destinataire")).toHaveValue("client@example.com");
+    await dialog.getByLabel("Destinataire").fill("autre-client@example.com");
+    await dialog.getByRole("button", { name: "Envoyer" }).click();
+    await expect(page.getByText(/Facture envoyée/i)).toBeVisible({ timeout: 10_000 });
+    expect(sendCalls).toBe(1);
+    expect(lastSendTo).toBe("autre-client@example.com");
+  });
+
+  test("sans billing.invoices.send : historique visible, Envoyer masqué", async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem("planwise_access_token", "e2e-trial-billing-token");
+    });
+
+    const readOnlyUser = {
+      ...foundingAdmin,
+      role: "member" as const,
+      isFoundingAdmin: false,
+      permissions: foundingAdmin.permissions.filter((code) => code !== "billing.invoices.send"),
+    };
+
+    const issuedInvoice = {
+      id: "inv-sent-readonly",
+      organizationId: "org-e2e",
+      caseId: demoCase.id,
+      caseTitle: demoCase.title,
+      kind: "full",
+      status: "finalized",
+      number: "F-2026-00002",
+      invoiceDate: "2026-09-01T00:00:00.000Z",
+      amountHt: "120.00",
+      amountTtc: "144.00",
+      lines: [{ label: "Prestation", quantity: 1, unitPriceHt: "120.00", tvaRate: 20 }],
+      customer: {
+        partyId: "cust-1",
+        partyType: "customer",
+        displayName: "Client SA",
+        email: "client@example.com",
+      },
+      emailSends: [
+        {
+          sentAt: "2026-09-10T12:00:00.000Z",
+          to: "client@example.com",
+          sentByUserId: foundingAdmin.id,
+          sentByName: foundingAdmin.name,
+          status: "sent",
+        },
+      ],
+    };
+
+    await page.route("**/api/**", async (route) => {
+      const req = route.request();
+      const url = new URL(req.url());
+      const path = url.pathname.replace(/^\/api/, "") || url.pathname;
+      const method = req.method();
+
+      if (method === "GET" && path.endsWith("/auth/me")) {
+        await route.fulfill({ json: readOnlyUser });
+        return;
+      }
+      if (method === "GET" && path.includes("/account/preferences")) {
+        await route.fulfill({ json: dismissedGuidePrefs });
+        return;
+      }
+      if (method === "GET" && path.includes("/billing/invoices/stats")) {
+        await route.fulfill({
+          json: {
+            total: 1,
+            draftCount: 0,
+            finalizedCount: 1,
+            paidCount: 0,
+            cancelledCount: 0,
+            amountHtDraft: "0",
+            amountHtFinalized: "120.00",
+            amountHtPaid: "0",
+            amountHtTotal: "120.00",
+            byKind: { full: 1 },
+          },
+        });
+        return;
+      }
+      if (method === "GET" && path.includes("/billing/invoices")) {
+        await route.fulfill({ json: { invoices: [issuedInvoice], total: 1 } });
+        return;
+      }
+      if (method === "GET" && path.includes("/customers")) {
+        await route.fulfill({ json: { customers: [], total: 0 } });
+        return;
+      }
+      if (method === "GET" && path.includes("/order-givers")) {
+        await route.fulfill({ json: { orderGivers: [], total: 0 } });
+        return;
+      }
+      await route.fulfill({ status: 200, json: {} });
+    });
+
+    await page.goto("/billing");
+    await expect(page.getByRole("heading", { name: "Facturation" })).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(page.getByText(/Envoyée le .* à client@example.com/)).toBeVisible();
+    await expect(page.getByRole("button", { name: "Envoyer" })).toHaveCount(0);
   });
 });

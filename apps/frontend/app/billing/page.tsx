@@ -8,7 +8,7 @@ import { BillingFollowUpPage } from "@/components/billing/BillingFollowUpPage";
 export default function BillingRoute() {
   return (
     <RequireAuth>
-      <RequirePermission permission="exports.billing">
+      <RequirePermission anyOf={["billing.invoices.read", "exports.billing"]}>
         <AppShell>
           <BillingFollowUpPage />
         </AppShell>

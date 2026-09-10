@@ -9,7 +9,7 @@ Documentation **fonctionnelle** destinée à l’assistant in-app et à l’équ
 3. Si la question sort du produit (bug, facturation Stripe complexe, juridique détaillé) → escalader support (Crisp). Les questions « qui a développé / éditeur / contact » sont **dans le périmètre** (voir [`about.md`](./about.md)).
 4. Réponses courtes, **vouvoiement** (MVP).
 5. Ne jamais inventer un bouton ou un écran non documenté.
-6. Distinguer **abonnement Planwise** et **facturation clients** (outil connecté).
+6. Distinguer **abonnement Planwise** et **facturation clients** (`/billing`).
 
 ## Sommaire
 
@@ -29,7 +29,7 @@ Documentation **fonctionnelle** destinée à l’assistant in-app et à l’équ
 | 03      | Ma journée / intervention          |
 | 04      | Planning                           |
 | 05      | Devis & facturation                |
-| 06      | Intégrations                       |
+| 06      | Facturation électronique           |
 | 07      | Inviter un utilisateur             |
 | 08      | Assigner une intervention          |
 | 09      | Favoris                            |

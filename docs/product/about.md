@@ -10,7 +10,7 @@ Planwise est développé et édité par **Benoist Babin**, entrepreneur individu
 
 ## Produit
 
-Planwise est un CRM terrain pour artisans, indépendants et TPE : clients, dossiers, planning, interventions, devis, documents, stock, et connexion à un outil de facturation (Pennylane, Qonto, ou mode démo en essai).
+Planwise est un CRM terrain pour artisans, indépendants et TPE : clients, dossiers, planning, interventions, devis, documents, stock, et facturation clients dans l’application.
 
 ## Mentions légales
 

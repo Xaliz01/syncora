@@ -18,7 +18,7 @@ Configurer le premier compte fondateur et, si besoin, charger un jeu de données
 
 ## Guide de démarrage (modal)
 
-Après l’onboarding, une modal **guide de démarrage** (fondateur admin) propose des actions : créer un client, un dossier, inviter un utilisateur, charger la démo, connecter la facturation. Elle est **skippable** ; une fois fermée (`setupGuideDismissed`), elle ne revient pas.
+Après l’onboarding, une modal **guide de démarrage** (fondateur admin) propose des actions : créer un client, un dossier, inviter un utilisateur, charger la démo, créer une facture. Elle est **skippable** ; une fois fermée (`setupGuideDismissed`), elle ne revient pas.
 
 ## Données de démo (essai)
 
@@ -36,5 +36,5 @@ Après l’onboarding, une modal **guide de démarrage** (fondateur admin) propo
 ## Liens utiles
 
 - Tableau de bord : `/`
-- Intégrations (facturation démo) : `/settings/integrations`
+- Facturation : `/billing`
 - Abonnement : `/subscription`

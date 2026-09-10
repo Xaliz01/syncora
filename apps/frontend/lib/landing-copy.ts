@@ -5,7 +5,7 @@ export const LANDING_TAGLINE = "CRM accessible aux artisans et TPE";
 export const LANDING_HERO_HEADING = "Le CRM terrain accessible pour indépendants, artisans et TPE";
 
 export const LANDING_HERO_SUPPORT =
-  "Solo, duo ou petite équipe : centralisez clients, dossiers, planning, interventions, devis, documents et contrats de maintenance, et connectez votre outil de facturation — sans complexité enterprise, à un prix clair dès le départ.";
+  "Solo, duo ou petite équipe : centralisez clients, dossiers, planning, interventions, devis, documents, contrats de maintenance et factures — sans complexité enterprise, à un prix clair dès le départ.";
 
 /** Accroche prix (hero landing + SEO). */
 export const LANDING_PRICE_LINE =
@@ -107,6 +107,6 @@ export const LANDING_PILLARS = [
   {
     title: "Facturation sans double saisie",
     description:
-      "Connectez votre outil de facturation, ou activez la facturation démo pendant l’essai : créez, suivez et validez vos factures depuis Planwise.",
+      "Créez, numérotez et suivez vos factures dans Planwise, à partir d’un devis ou d’une saisie libre — PDF et avoirs inclus.",
   },
 ] as const;

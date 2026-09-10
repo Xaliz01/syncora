@@ -276,18 +276,17 @@ test.describe("Parcours landing publique", () => {
     ]);
   });
 
-  test("mentionne la facturation et les intégrations disponibles", async ({ page }) => {
+  test("mentionne la facturation dans Planwise", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByText(/jours d'essai gratuit/i).first()).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Facturation sans double saisie" }),
     ).toBeVisible();
-    await expect(page.getByText("Facturation & intégrations")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Facturation", exact: true })).toBeVisible();
     await expect(
-      page.getByText(/Suivi et validation des factures synchronisées depuis Planwise/i),
+      page.getByText(/Suivi et validation depuis le dossier ou l’écran Facturation/i),
     ).toBeVisible();
-    await expect(page.getByText(/sans ressaisie/i)).toBeVisible();
-    await expect(page.getByText(/Facturation démo pendant l’essai/i).first()).toBeVisible();
+    await expect(page.getByText(/PDF et avoirs/i).first()).toBeVisible();
     await expect(page.getByText(/Donneurs d’ordre/i).first()).toBeVisible();
   });
 
@@ -335,8 +334,8 @@ test.describe("Parcours onboarding sans données de démo", () => {
       "organizations.read",
       "users.invite",
       "cases.create",
-      "integrations.demo.read",
-      "integrations.demo.configure",
+      "billing.invoices.read",
+      "billing.invoices.create",
     ],
     isFoundingAdmin: true,
   };
@@ -452,9 +451,7 @@ test.describe("Parcours onboarding sans données de démo", () => {
     await page.getByRole("button", { name: /Continuer sans données de démo/i }).click();
     await expect(page).toHaveURL(/\/$/, { timeout: 15_000 });
     await expect(page.getByRole("heading", { name: "Bienvenue dans Planwise" })).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: /Connecter son outil de facturation/i }),
-    ).toBeVisible();
+    await expect(page.getByRole("button", { name: /Créer une première facture/i })).toBeVisible();
 
     await page.getByRole("button", { name: /Créer un premier client/i }).click();
     await expect(page).toHaveURL(/\/customers\/new/, { timeout: 15_000 });

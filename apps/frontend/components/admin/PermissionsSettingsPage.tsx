@@ -4,7 +4,7 @@ import Link from "next/link";
 import React, { useCallback, useEffect, useState } from "react";
 import type { PermissionCode } from "@planwise/shared";
 import * as adminApi from "@/lib/admin.api";
-import { getPermissionLabel } from "@/lib/permissions-catalog";
+import { getPermissionLabel, isAssignablePermissionVisible } from "@/lib/permissions-catalog";
 import {
   ListLoadingState,
   ListPageError,
@@ -22,7 +22,7 @@ export function PermissionsSettingsPage() {
     setError(null);
     try {
       const catalogRes = await adminApi.getPermissionsCatalog();
-      setCatalog(catalogRes.availablePermissions);
+      setCatalog(catalogRes.availablePermissions.filter(isAssignablePermissionVisible));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur de chargement des permissions");
     } finally {

@@ -132,6 +132,39 @@ describe("SearchGatewayService", () => {
             total: 1,
           };
         }
+        if (options.path === "/invoices") {
+          return {
+            invoices: [
+              {
+                id: "inv-1",
+                organizationId: "org-1",
+                caseId: "case-99",
+                kind: "full",
+                status: "finalized",
+                number: "F-2026-00001",
+                invoiceDate: "2026-09-01T00:00:00.000Z",
+                amountHt: "150.00",
+                amountTtc: "180.00",
+                lines: [
+                  {
+                    label: "Main d'œuvre toiture",
+                    quantity: 1,
+                    unitPriceHt: "150.00",
+                    tvaRate: 20,
+                  },
+                ],
+                customer: {
+                  partyId: "cust-inv",
+                  partyType: "customer",
+                  displayName: "Toiture Dupont",
+                  email: "dupont@example.fr",
+                },
+                caseTitle: "Réfection toiture",
+              },
+            ],
+            total: 1,
+          };
+        }
         if (options.path === "/users") return [];
         return [];
       },
@@ -289,6 +322,48 @@ describe("SearchGatewayService", () => {
         path: "/prestations",
         query: expect.objectContaining({ search: "cable", limit: 50, offset: 0 }),
       }),
+    );
+    expect(scopedRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: "/invoices",
+        query: expect.objectContaining({ search: "cable", limit: 50, offset: 0 }),
+      }),
+    );
+  });
+
+  it("should include invoices in global search and link to the case", async () => {
+    const result = await service.search(user, "F-2026-00001");
+
+    expect(result.results).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "inv-1",
+          type: "invoice",
+          title: "F-2026-00001",
+          subtitle: expect.stringContaining("Toiture Dupont"),
+          url: "/cases/case-99",
+        }),
+      ]),
+    );
+    expect(scopedRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: "/invoices",
+        query: expect.objectContaining({ search: "f-2026-00001", limit: 50, offset: 0 }),
+      }),
+    );
+  });
+
+  it("should match invoices by customer name", async () => {
+    const result = await service.search(user, "Dupont");
+
+    expect(result.results).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "inv-1",
+          type: "invoice",
+          title: "F-2026-00001",
+        }),
+      ]),
     );
   });
 

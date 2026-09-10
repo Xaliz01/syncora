@@ -7,7 +7,7 @@ Retrouver rapidement une fiche ou une page déjà visitée.
 ## Recherche
 
 1. Champ **recherche** dans l’en-tête (desktop ou mobile) → `/search?q=…`
-2. Types recherchés (filtrés par droits) : dossiers, interventions, clients, donneurs d’ordre, véhicules, techniciens, équipes, agences, articles, prestations, utilisateurs.
+2. Types recherchés (filtrés par droits) : dossiers, interventions, factures, clients, donneurs d’ordre, véhicules, techniciens, équipes, agences, articles, prestations, utilisateurs.
 3. Pas d’entrée sidebar dédiée ; route catalogue `/search`.
 
 ## Favoris

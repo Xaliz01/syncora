@@ -12,6 +12,7 @@ export const SERVICE_URLS = {
   documents: process.env.DOCUMENTS_SERVICE_URL ?? "http://localhost:3011",
   exports: process.env.EXPORTS_SERVICE_URL ?? "http://localhost:3012",
   integrations: process.env.INTEGRATIONS_SERVICE_URL ?? "http://localhost:3013",
+  billing: process.env.BILLING_SERVICE_URL ?? "http://localhost:3014",
 } as const;
 
 export type ServiceName = keyof typeof SERVICE_URLS;

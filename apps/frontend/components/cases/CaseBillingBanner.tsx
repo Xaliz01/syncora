@@ -53,9 +53,9 @@ const CHIP_ACTIVE: Record<BillingStatus, string> = {
 const HINTS: Record<BillingStatus, string> = {
   none: "Ce dossier n’entre pas dans le circuit de facturation.",
   to_invoice: "Prêt à facturer — devis accepté ou travaux terminés.",
-  invoice_draft: "Un brouillon a été créé dans l’outil de facturation — à valider.",
+  invoice_draft: "Un brouillon de facture a été créé — à valider.",
   partially_invoiced: "Des situations ou acomptes ont été facturés — reste à facturer.",
-  invoiced: "Une facture a été émise (Outil de facturation connecté ou hors outil).",
+  invoiced: "Une facture a été émise.",
   paid: "Paiement reçu pour ce dossier.",
 };
 
@@ -73,9 +73,9 @@ export function CaseBillingBanner({
   canEdit: boolean;
   pending?: boolean;
   onChange: (status: BillingStatus) => void;
-  /** Boutons d’envoi vers un outil de facturation (Pennylane, Qonto, …). */
+  /** Actions de création / suivi des factures Planwise. */
   actions?: ReactNode;
-  /** Détail du pont d’intégration (brouillon, lien, valider, actualiser). */
+  /** Panneau des factures Planwise du dossier. */
   syncPanel?: ReactNode;
   /** Synthèse reste à facturer (devis acceptés). */
   quoteProgress?: ReactNode;

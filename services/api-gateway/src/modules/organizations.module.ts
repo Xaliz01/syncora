@@ -14,5 +14,6 @@ import { AuthOrOnboardingGuard } from "../infrastructure/auth-or-onboarding.guar
     RequirePermissionGuard,
     AuthOrOnboardingGuard,
   ],
+  exports: [AbstractOrganizationsGatewayService],
 })
 export class OrganizationsModule {}

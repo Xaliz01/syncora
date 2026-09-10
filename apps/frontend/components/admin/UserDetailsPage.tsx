@@ -6,7 +6,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { PermissionCode, PermissionProfileResponse } from "@planwise/shared";
 import * as adminApi from "@/lib/admin.api";
 import * as fleetApi from "@/lib/fleet.api";
-import { getPermissionLabel } from "@/lib/permissions-catalog";
+import { getPermissionLabel, isAssignablePermissionVisible } from "@/lib/permissions-catalog";
 import type { ManagedOrganizationUser } from "@/lib/admin.api";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
@@ -96,7 +96,7 @@ export function UserDetailsPage({ userId }: { userId: string }) {
         adminApi.getOrganizationUser(userId),
       ]);
       const currentUser = userRes.user;
-      setCatalog(catalogRes.availablePermissions);
+      setCatalog(catalogRes.availablePermissions.filter(isAssignablePermissionVisible));
       setProfiles(profilesRes);
       setUser(currentUser);
       setProfileId(currentUser.permissionAssignment.profileId ?? "");

@@ -111,7 +111,7 @@ export function OrganizationLogoSection() {
       <div>
         <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">Logo</h2>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          PDF. PNG, JPEG ou WebP — 2 Mo max.
+          Affiché sur les devis et factures PDF. PNG, JPEG ou WebP — 2 Mo max.
         </p>
       </div>
 
@@ -163,7 +163,7 @@ export function OrganizationLogoSection() {
                 onClick={async () => {
                   const ok = await confirm({
                     title: "Retirer le logo ?",
-                    description: "Les devis générés n’afficheront plus ce logo.",
+                    description: "Les devis et factures générés n’afficheront plus ce logo.",
                     confirmLabel: "Retirer",
                     variant: "danger",
                   });

@@ -13,6 +13,7 @@ export interface SearchResultItem {
     | "agence"
     | "article"
     | "prestation"
+    | "invoice"
     | "user";
   title: string;
   subtitle?: string;

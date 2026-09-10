@@ -23,6 +23,7 @@ x-service-urls: &service-urls
   DOCUMENTS_SERVICE_URL: http://documents-service:3011
   EXPORTS_SERVICE_URL: http://exports-service:3012
   INTEGRATIONS_SERVICE_URL: http://integrations-service:3013
+  BILLING_SERVICE_URL: http://billing-service:3014
 
 x-healthcheck: &tcp-healthcheck
   test:
@@ -85,6 +86,7 @@ x-api-gateway: &api-gateway
     - documents-service
     - exports-service
     - integrations-service
+    - billing-service
   healthcheck: *tcp-healthcheck
 
 x-frontend: &frontend
@@ -314,6 +316,18 @@ services:
       QONTO_OAUTH_TOKEN_URL: ${QONTO_OAUTH_TOKEN_URL:-}
       INVOICE_SYNC_BATCH_SIZE: ${INVOICE_SYNC_BATCH_SIZE:-200}
       APP_URL: ${APP_URL:-https://app.planwise.fr}
+    healthcheck: *tcp-healthcheck
+
+  billing-service:
+    <<: *backend
+    image: ${REGISTRY}/planwise-billing-service:${IMAGE_TAG:-latest}
+    environment:
+      <<: *service-urls
+      OTEL_TRACES_ENABLED: ${OTEL_TRACES_ENABLED:-false}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
+      NODE_ENV: production
+      PORT: "3014"
+      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-billing
     healthcheck: *tcp-healthcheck
 
   # ── API Gateway — slots blue/green (bascule sans downtime via Caddy) ──

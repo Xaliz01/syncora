@@ -143,7 +143,7 @@ export const DEFAULT_PERMISSION_PROFILE_PRESETS: readonly DefaultPermissionProfi
   {
     id: "billing-clerk",
     name: "Facturation & devis",
-    description: "Devis, statut de facturation et exports vers la compta.",
+    description: "Devis, factures clients dans Planwise et suivi facturation.",
     category: "Revenus",
     permissions: [
       "customers.read",
@@ -160,6 +160,10 @@ export const DEFAULT_PERMISSION_PROFILE_PRESETS: readonly DefaultPermissionProfi
       "prestations.delete",
       "exports.billing",
       "exports.cases",
+      "billing.invoices.read",
+      "billing.invoices.create",
+      "billing.invoices.finalize",
+      "billing.invoices.send",
       "integrations.pennylane.read",
       "integrations.pennylane.sync",
       "integrations.qonto.read",
@@ -207,6 +211,7 @@ export const DEFAULT_PERMISSION_PROFILE_PRESETS: readonly DefaultPermissionProfi
       "exports.customers",
       "exports.interventions",
       "exports.billing",
+      "billing.invoices.read",
     ],
   },
 ];

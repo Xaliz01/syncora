@@ -58,7 +58,11 @@ export const ASSISTANT_ROUTE_CATALOG: readonly AssistantRouteEntry[] = [
     permissions: ["stock.movements.read"],
   },
   { label: "Reporting", href: "/reporting", permissions: ["exports.reporting"] },
-  { label: "Facturation", href: "/billing", permissions: ["exports.billing"] },
+  {
+    label: "Facturation",
+    href: "/billing",
+    permissions: ["billing.invoices.read", "exports.billing"],
+  },
   { label: "Clients", href: "/customers", permissions: ["customers.read"] },
   { label: "Nouveau client", href: "/customers/new", permissions: ["customers.create"] },
   {
@@ -127,15 +131,6 @@ export const ASSISTANT_ROUTE_CATALOG: readonly AssistantRouteEntry[] = [
     label: "Notifications",
     href: "/settings/notifications",
     permissions: ["notifications.manage_preferences"],
-  },
-  {
-    label: "Intégrations",
-    href: "/settings/integrations",
-    permissions: [
-      "integrations.pennylane.read",
-      "integrations.qonto.read",
-      "integrations.demo.read",
-    ],
   },
   {
     label: "Import de données",

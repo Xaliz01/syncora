@@ -71,11 +71,11 @@ describe("assistant", () => {
       expect(canAccessAssistantRoute(route!, () => false)).toBe(true);
     });
 
-    it("exige au moins une permission pour Intégrations", () => {
-      const route = getAssistantRouteByHref("/settings/integrations");
+    it("exige une permission pour Facturation", () => {
+      const route = getAssistantRouteByHref("/billing");
       expect(route).toBeDefined();
       expect(canAccessAssistantRoute(route!, allow("cases.read"))).toBe(false);
-      expect(canAccessAssistantRoute(route!, allow("integrations.qonto.read"))).toBe(true);
+      expect(canAccessAssistantRoute(route!, allow("billing.invoices.read"))).toBe(true);
     });
   });
 

@@ -269,6 +269,17 @@ export interface SendEmailNotificationBody {
   url?: string;
 }
 
+export interface TransactionalEmailAttachment {
+  filename: string;
+  contentType: string;
+  contentBase64: string;
+}
+
+export interface TransactionalEmailSendOptions {
+  cc?: string | string[];
+  attachments?: TransactionalEmailAttachment[];
+}
+
 /** E-mail transactionnel (auth OTP, invitation, etc.) — destinataire explicite, hors préférences notif. */
 export interface SendTransactionalEmailBody {
   to: string;
@@ -283,6 +294,8 @@ export interface SendTransactionalEmailBody {
    * Utile pour les envois hors compte (ex. prospection).
    */
   footer?: string;
+  cc?: string | string[];
+  attachments?: TransactionalEmailAttachment[];
 }
 
 export interface PreviewTransactionalEmailBody {

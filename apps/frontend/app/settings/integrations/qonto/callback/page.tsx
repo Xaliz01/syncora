@@ -35,7 +35,7 @@ function QontoCallbackInner() {
     void completeQontoOAuth(code, state)
       .then(() => {
         showToast("Qonto connecté.");
-        router.replace("/settings/integrations");
+        router.replace("/billing");
       })
       .catch((err: unknown) => {
         setError(err instanceof Error ? err.message : "Connexion Qonto impossible.");
@@ -52,7 +52,7 @@ function QontoCallbackInner() {
           <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
           <button
             type="button"
-            onClick={() => router.replace("/settings/integrations")}
+            onClick={() => router.replace("/billing")}
             className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500"
           >
             Retour aux intégrations

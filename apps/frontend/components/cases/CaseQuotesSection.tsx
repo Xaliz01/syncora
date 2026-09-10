@@ -14,7 +14,7 @@ import {
   type CatalogPickItem,
   type CommercialLineDraft,
 } from "@/components/billing/CommercialLinesEditor";
-import type { CaseInvoiceSyncStatus, QuoteStatus, TvaRate } from "@planwise/shared";
+import type { QuoteStatus, RemoteInvoiceLifecycle, TvaRate } from "@planwise/shared";
 import {
   QUOTE_STATUS_LABELS,
   MAX_PAGE_LIMIT,
@@ -441,14 +441,12 @@ export function CaseQuotesSection({
   invoiceCreate,
 }: {
   caseId: string;
-  invoices?: CaseInvoiceSyncStatus[];
-  /** Boutons « Créer facture » (mêmes conditions que la card Facturation). */
+  invoices?: Array<{ quoteId?: string; amountHt?: string; remoteStatus?: RemoteInvoiceLifecycle }>;
+  /** Bouton « Créer une facture » (mêmes conditions que la card Facturation). */
   invoiceCreate?: {
-    showPennylane: boolean;
-    showQonto: boolean;
-    showDemo?: boolean;
+    show: boolean;
     pending: boolean;
-    onCreate: (provider: "pennylane" | "qonto" | "demo", quoteId: string) => void;
+    onCreate: (quoteId: string) => void;
   };
 }) {
   const queryClient = useQueryClient();
@@ -641,37 +639,15 @@ export function CaseQuotesSection({
                         </button>
                       </>
                     )}
-                    {invoiceCreate?.showPennylane ? (
+                    {invoiceCreate?.show && quote.status === "accepted" ? (
                       <button
                         type="button"
                         disabled={invoiceCreate.pending}
-                        onClick={() => invoiceCreate.onCreate("pennylane", quote.id)}
+                        onClick={() => invoiceCreate.onCreate(quote.id)}
                         className="text-[10px] text-brand-700 hover:text-brand-800 dark:text-brand-300 dark:hover:text-brand-200 px-1.5 py-0.5 rounded border border-brand-200 dark:border-brand-800 bg-brand-50 dark:bg-brand-950/40 hover:bg-brand-100 dark:hover:bg-brand-950/60 transition disabled:opacity-50"
-                        title="Créer une facture Pennylane à partir de ce devis"
+                        title="Créer une facture à partir de ce devis"
                       >
-                        Facture Pennylane
-                      </button>
-                    ) : null}
-                    {invoiceCreate?.showQonto ? (
-                      <button
-                        type="button"
-                        disabled={invoiceCreate.pending}
-                        onClick={() => invoiceCreate.onCreate("qonto", quote.id)}
-                        className="text-[10px] text-slate-700 hover:text-slate-900 dark:text-slate-200 dark:hover:text-white px-1.5 py-0.5 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 transition disabled:opacity-50"
-                        title="Créer une facture Qonto à partir de ce devis"
-                      >
-                        Facture Qonto
-                      </button>
-                    ) : null}
-                    {invoiceCreate?.showDemo ? (
-                      <button
-                        type="button"
-                        disabled={invoiceCreate.pending}
-                        onClick={() => invoiceCreate.onCreate("demo", quote.id)}
-                        className="text-[10px] text-slate-700 hover:text-slate-900 dark:text-slate-200 dark:hover:text-white px-1.5 py-0.5 rounded border border-dashed border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 transition disabled:opacity-50"
-                        title="Créer une facture démo à partir de ce devis"
-                      >
-                        Facture démo
+                        Créer une facture
                       </button>
                     ) : null}
                     {can("quotes.delete") && quote.status === "draft" && (

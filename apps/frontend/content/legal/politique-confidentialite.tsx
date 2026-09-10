@@ -28,23 +28,16 @@ export function PolitiqueConfidentialiteContent() {
             "Identité et contact : nom, email, mot de passe (stocké de manière sécurisée), rôle.",
             "Organisation : raison sociale, SIRET, adresse postale.",
             "Facturation de l'abonnement Planwise : identifiants Stripe, historique d'abonnement (via Stripe).",
-            "Intégrations de facturation (optionnelles, activées par le Client) : jetons d'accès OAuth ou clés API (stockés chiffrés), identifiants techniques de connexion (ex. nom / identifiant d'entreprise côté outil), métadonnées de synchronisation des factures créées depuis Planwise (statut distant, numéro, lien, montants associés).",
+            "Factures clients émises dans Planwise : destinataire, lignes, montants, numéros, dates, statut.",
             "Usage : journaux techniques, préférences compte (thème, sidebar, favoris / raccourcis par organisation, activation des commandes vocales terrain), historique de navigation stocké uniquement dans le navigateur (localStorage), notifications.",
             "Assistant produit in-app (optionnel) : questions posées à l'assistant et contexte de page courant, transmis à un prestataire d'IA générative pour produire une réponse d'aide à la navigation ; pas de données métier (clients, dossiers) dans le prompt MVP.",
             "Commandes vocales terrain (optionnelles, opt-in sur Mon compte, Ma journée) : le micro du terminal est utilisé localement via l'API de reconnaissance vocale du navigateur pour convertir la parole en texte et déclencher des actions déjà disponibles à l'écran (démarrer / terminer une intervention, commentaire, navigation). Planwise ne reçoit ni n'enregistre l'audio ; seuls le transcript utile à l'action et la préférence d'activation peuvent être traités. Le prestataire de reconnaissance du navigateur (selon le navigateur et l'appareil) peut traiter l'audio selon ses propres conditions.",
             "Mesure d'audience first-party : pages vues (chemin, surface landing/app, referrer hôte, pays/région approximatifs dérivés de l'IP sans conservation de l'IP, identifiants aléatoires navigateur), sans publicité ni revente.",
             "Support : échanges via Crisp (si consentement cookies).",
             "Données saisies par le Client : clients, donneurs d’ordre, interventions, géolocalisation optionnelle, photos, signatures, devis et éléments nécessaires à la facturation.",
-            "Essai : jeu de données de démonstration injectable, et factures simulées du mode facturation démo (stockées uniquement dans Planwise, sans envoi à un outil de facturation tiers).",
+            "Essai : jeu de données de démonstration injectable.",
           ]}
         />
-        <LegalParagraph>
-          Planwise ne réalise pas d&apos;import massif du grand livre ou de l&apos;historique
-          comptable de l&apos;outil tiers. Les données échangées avec l&apos;outil de facturation
-          portent principalement sur les clients (ou donneurs d&apos;ordre) et factures que le
-          Client choisit de créer ou de suivre depuis Planwise, ainsi que sur le statut de ces
-          factures. Le mode facturation démo ne transmet aucune donnée à cet outil.
-        </LegalParagraph>
       </LegalSection>
 
       <LegalSection title="3. Finalités et bases légales">
@@ -58,11 +51,8 @@ export function PolitiqueConfidentialiteContent() {
               et contrat (art. 6.1.b et 6.1.c).
             </>,
             <>
-              <strong>Intégrations de facturation</strong> — exécution du contrat lorsque le Client
-              active volontairement une connexion à un outil de facturation afin d&apos;émettre ou
-              de suivre des factures sans double saisie (art. 6.1.b). Le mode facturation démo
-              (essai) reste local à Planwise et n&apos;implique pas de destinataire tiers de
-              facturation.
+              <strong>Facturation clients</strong> — exécution du contrat lorsque le Client émet des
+              factures dans Planwise (art. 6.1.b).
             </>,
             <>
               <strong>Support et sécurité</strong> — intérêt légitime (art. 6.1.f), sauf Crisp
@@ -125,19 +115,8 @@ export function PolitiqueConfidentialiteContent() {
           conditions du navigateur / de l&apos;appareil choisis par l&apos;utilisateur.
         </LegalParagraph>
         <LegalParagraph>
-          Lorsque le Client active une intégration vers un outil de facturation, des données
-          nécessaires à l&apos;émission et au suivi des factures (identité / coordonnées du client
-          ou du donneur d&apos;ordre, lignes de devis, montants, TVA, statut de facture) peuvent
-          être transmises à cet outil, <strong>sur instruction du Client</strong>. L&apos;éditeur de
-          l&apos;outil est un prestataire choisi et contracté par le Client ; ses traitements sont
-          régis par ses propres conditions et politiques de confidentialité. {legal.companyName}{" "}
-          n&apos;est pas responsable des traitements réalisés par cet outil au-delà de la
-          transmission technique opérée pour le compte du Client.
-        </LegalParagraph>
-        <LegalParagraph>
           Le Client demeure responsable de traitement pour les données de ses propres clients finaux
-          saisies dans Planwise ou synchronisées via une intégration. {legal.companyName} agit alors
-          en sous-traitant (art. 28 RGPD).
+          saisies dans Planwise. {legal.companyName} agit alors en sous-traitant (art. 28 RGPD).
         </LegalParagraph>
       </LegalSection>
 
@@ -147,9 +126,8 @@ export function PolitiqueConfidentialiteContent() {
             "Compte actif : durée de la relation contractuelle.",
             "Compte fermé : suppression ou anonymisation sous 3 ans sauf obligation légale contraire.",
             "Factures de l'abonnement Planwise : 10 ans (obligations comptables).",
-            "Connexion d'intégration : jusqu'à déconnexion par le Client ou suppression du compte ; les jetons d'accès sont alors supprimés.",
-            "Métadonnées de synchronisation de factures : durée de la relation contractuelle ou jusqu'à détachement / suppression demandée par l'organisation.",
-            "Données de démonstration et factures démo d'essai : jusqu'à purge manuelle, fin d'essai, ou suppression du compte.",
+            "Factures clients émises dans Planwise : durée de la relation contractuelle, puis selon les obligations légales du Client.",
+            "Données de démonstration d'essai : jusqu'à purge manuelle, fin d'essai, ou suppression du compte.",
             "Journaux techniques : jusqu'à 12 mois.",
             "Requêtes assistant produit : durée du traitement de la requête ; pas d'historique conversationnel serveur durable en MVP (historique affiché uniquement dans la session navigateur).",
             "Commandes vocales terrain : pas de conservation de l'audio par Planwise ; préférence d'activation conservée avec le compte ; actions métier (commentaires, statuts d'intervention, etc.) selon les durées applicables aux données saisies par le Client.",

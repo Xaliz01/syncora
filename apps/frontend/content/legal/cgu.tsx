@@ -19,13 +19,10 @@ export function CguContent() {
       <LegalSection title="2. Description du service">
         <LegalParagraph>
           {legal.publisherName} est un CRM orienté opérations terrain permettant notamment de gérer
-          des clients, donneurs d&apos;ordre, dossiers, interventions, équipes, stocks et documents
-          associés. Des intégrations optionnelles avec un outil de facturation tiers peuvent être
-          activées par le Client pour créer et suivre des factures depuis le service. Pendant
-          l&apos;essai gratuit, un mode de <strong>facturation démo</strong> peut être proposé : il
-          simule le parcours de facturation sans transmission vers un outil tiers. Les
-          fonctionnalités peuvent évoluer ; les CGU applicables sont celles en vigueur à la date
-          d&apos;utilisation.
+          des clients, donneurs d&apos;ordre, dossiers, interventions, équipes, stocks, documents
+          associés, devis et factures clients. L&apos;émission via la facturation électronique
+          arrivera prochainement. Les fonctionnalités peuvent évoluer ; les CGU applicables sont
+          celles en vigueur à la date d&apos;utilisation.
         </LegalParagraph>
         <LegalParagraph>
           Des <strong>commandes vocales terrain</strong> peuvent être proposées sur Ma journée,
@@ -64,22 +61,8 @@ export function CguContent() {
           Le Client reste propriétaire des données qu&apos;il saisit dans le service. Il garantit
           disposer des bases légales nécessaires pour traiter les données de ses propres clients
           (clients finaux, donneurs d&apos;ordre, signataires, techniciens, etc.), conformément au
-          RGPD.
-        </LegalParagraph>
-        <LegalParagraph>
-          Lorsqu&apos;il active une intégration vers un outil de facturation, le Client autorise
-          expressément {legal.publisherName} à transmettre à cet outil les données nécessaires à
-          l&apos;émission et au suivi des factures (clients ou donneurs d&apos;ordre, lignes de
-          devis, montants, TVA, statut), et à stocker les jetons d&apos;accès ainsi que les
-          métadonnées de synchronisation. Le Client demeure seul responsable de son compte et de sa
-          relation contractuelle avec l&apos;éditeur tiers, ainsi que de la conformité de ses
-          propres traitements. {legal.companyName} n&apos;est pas responsable des indisponibilités,
-          erreurs ou traitements réalisés par ces outils tiers.
-        </LegalParagraph>
-        <LegalParagraph>
-          Le mode facturation démo, lorsqu&apos;il est disponible pendant l&apos;essai, crée des
-          documents simulés locaux à {legal.publisherName} : aucune donnée n&apos;est transmise à un
-          outil de facturation tiers. Ces documents n&apos;ont pas de valeur comptable ni fiscale.
+          RGPD. Il demeure seul responsable de la conformité comptable et fiscale des factures
+          qu&apos;il émet dans {legal.publisherName}.
         </LegalParagraph>
         <LegalParagraph>
           {legal.companyName} accorde au Client une licence d&apos;utilisation non exclusive, non

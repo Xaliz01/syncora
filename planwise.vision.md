@@ -91,14 +91,14 @@ Référence technique : landing `apps/frontend/components/landing/LandingPage.ts
 - **Pilotage** : tableau de bord (stats cliquables, tâches à faire), recherche globale, notifications in-app.
 - **Abonnement** : Stripe (essai 15 j, 2 users inclus, addons users / suggestion équipe / stockage).
 - **Statut de facturation** : « À facturer » / « Facturé » / « Payé » sur dossiers et interventions, historique, filtre liste et dashboard.
-- **Facturation / intégrations** : devis PDF, export, pont **Pennylane** et **Qonto**, **facturation démo** pendant l’essai (sans OAuth), suivi org des factures sync, guide bienvenue (CTA données démo + outil de facturation).
+- **Facturation** : devis et factures PDF dans Planwise (numérotation, avoirs, suivi `/billing`), guide bienvenue (CTA données démo + première facture).
 - **Addon** : suggestion intelligente d’équipe (distance, trajet, carburant, CO₂ — géocodage adresses).
 - **Support** : Crisp (chat).
 
 ### Limites connues (à assumer dans la com’)
 
 - Application **web PWA** (installable, cache offline des listes du jour) ; pas d’app native.
-- Pas de **facturation légale native** Planwise (devis + ponts compta / démo essai uniquement).
+- **Facturation clients** dans Planwise (devis → facture, PDF, avoirs) ; émission électronique à venir.
 - Pas de **portail client** ni SMS automatiques métier (email et push PWA opérationnels).
 - Pas de listes de **pièces fréquentes** par type d’intervention (phase 4.2) ni scan code-barres.
 - Clôture intervention depuis le bureau ou le mobile (photos terrain OK) ; **signature client** et **rapport PDF** disponibles sur intervention terminée.
@@ -114,7 +114,7 @@ Ces principes guident toute évolution ; en cas de doute, ils priment sur « fai
 2. **Mobile terrain prioritaire** — Toute feature « intervention » doit être utilisable au chantier (responsive minimum, PWA / app ensuite).
 3. **Valeur jour 1** — Le socle doit rester utile sans addons ni intégrations.
 4. **Addons = levier clair** — Routing intelligent, users, stockage : optionnels, bénéfice explicite sur la landing.
-5. **Ne pas réinventer la compta** — Export / lien vers Pennylane, Sage, Excel plutôt qu’un module compta complet (phase tardive).
+5. **Ne pas réinventer la compta** — Facturation clients dans Planwise ; pas un module compta complet (grand livre, lettrage, etc.).
 6. **Évolutivité technique** — Contrats `@planwise/shared`, permissions, isolation `organizationId` : ne pas casser pour aller vite sur l’UI.
 7. **Tests sur les parcours** — Nouveau parcours utilisateur → test E2E Playwright (voir `.cursor/rules/planwise.mdc`).
 

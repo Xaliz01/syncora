@@ -55,14 +55,12 @@ export function CgvContent() {
         <LegalParagraph>
           Un essai gratuit de {plan.trialDays} jours peut être proposé sans obligation de paiement
           immédiat. Pendant l&apos;essai, le Client peut notamment injecter un jeu de données de
-          démonstration et activer un mode de facturation démo (simulation locale, sans connexion à
-          un outil de facturation tiers). Tant que les abonnements payants ne sont pas ouverts au
-          public, le Client peut prolonger l&apos;essai un nombre limité de fois (deux prolongations
-          self-service au maximum) ; au-delà, une prolongation peut être accordée via le support. À
-          l&apos;issue de l&apos;essai, la souscription est convertie en abonnement payant
-          uniquement si le Client valide un moyen de paiement via Stripe Checkout ou le portail
-          client Stripe. Les données de démonstration peuvent être purgées automatiquement à la fin
-          de la période d&apos;essai.
+          démonstration. Tant que les abonnements payants ne sont pas ouverts au public, le Client
+          peut prolonger l&apos;essai un nombre limité de fois (deux prolongations self-service au
+          maximum) ; au-delà, une prolongation peut être accordée via le support. À l&apos;issue de
+          l&apos;essai, la souscription est convertie en abonnement payant uniquement si le Client
+          valide un moyen de paiement via Stripe Checkout ou le portail client Stripe. Les données
+          de démonstration peuvent être purgées automatiquement à la fin de la période d&apos;essai.
         </LegalParagraph>
       </LegalSection>
 
@@ -102,8 +100,7 @@ export function CgvContent() {
             "Fournir des informations exactes lors de l'inscription (SIRET, coordonnées).",
             "Respecter les CGU et la réglementation applicable à ses propres clients finaux.",
             "S'assurer que les utilisateurs invités disposent des autorisations nécessaires.",
-            "Lors de l'activation d'une intégration vers un outil de facturation, disposer des droits nécessaires et accepter les conditions de l'éditeur tiers.",
-            "Ne pas présenter les documents de facturation démo comme des factures légales ou fiscales.",
+            "Assurer la conformité comptable et fiscale des factures émises dans le service.",
             "Ne pas utiliser le service à des fins illicites ou contraires à l'ordre public.",
           ]}
         />
@@ -135,8 +132,7 @@ export function CgvContent() {
         <LegalParagraph>
           {legal.companyName} agit en qualité de responsable de traitement pour les données des
           comptes utilisateurs et de sous-traitant pour les données que le Client saisit concernant
-          ses propres clients, y compris lorsqu&apos;elles sont transmises à un outil de facturation
-          tiers sur instruction du Client (intégration activée). Voir la{" "}
+          ses propres clients. Voir la{" "}
           <Link href="/politique-confidentialite" className="text-brand-600 underline">
             Politique de confidentialité
           </Link>

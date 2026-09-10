@@ -2,7 +2,7 @@
 
 ## Objectif
 
-Comprendre l’offre Planwise (accès produit) — **distinct** de la facturation clients (Pennylane / Qonto / démo).
+Comprendre l’offre Planwise (accès produit) — **distinct** de la facturation de vos clients (écran Facturation).
 
 ## Offre Essentiel
 
@@ -37,7 +37,7 @@ Sans accès actif (essai expiré, impayé…), le menu se limite à organisation
 | Sujet                           | Où                                             |
 | ------------------------------- | ---------------------------------------------- |
 | Payer / gérer Planwise (Stripe) | `/subscription` (+ support si tunnel complexe) |
-| Facturer un client chantier     | Intégration + `/billing` (voir parcours devis) |
+| Facturer un client chantier     | `/billing` (voir parcours devis)               |
 
 Ne jamais confondre abonnement Stripe et facturation métier.
 
@@ -45,4 +45,4 @@ Ne jamais confondre abonnement Stripe et facturation métier.
 
 - Mon abonnement : `/subscription`
 - Mon organisation : `/organization`
-- Intégrations : `/settings/integrations`
+- Facturation clients : `/billing`
