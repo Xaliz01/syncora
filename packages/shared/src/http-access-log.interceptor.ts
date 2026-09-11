@@ -27,7 +27,12 @@ type AccessResponse = {
 /** Chemins exclus (probes, bruit). */
 export function shouldSkipHttpAccessLogPath(path: string): boolean {
   const normalized = path.split("?")[0] || "/";
-  return normalized === "/health" || normalized.endsWith("/health");
+  return (
+    normalized === "/health" ||
+    normalized.endsWith("/health") ||
+    normalized === "/metrics" ||
+    normalized.endsWith("/metrics")
+  );
 }
 
 export function sanitizeHttpAccessLogPath(raw: string): string {
@@ -52,12 +57,12 @@ export function resolveHttpAccessOrganizationId(req: AccessRequest): string | un
 }
 
 /**
- * Access log HTTP pour Grafana/Loki : une ligne par requête (hors /health).
- * Format : `http_access method=GET path=/cases status=200 durationMs=12 …`
+ * Access log HTTP pour Grafana/Loki : une ligne par requête (hors /health et /metrics).
+ * Format Huby-like : `GET /cases 200 12ms` + champs JSON `context=HTTP`, `organizationId`.
  */
 @Injectable()
 export class HttpAccessLogInterceptor implements NestInterceptor {
-  private readonly logger = new Logger("HttpAccessLog");
+  private readonly logger = new Logger("HTTP");
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     if (context.getType() !== "http") {
@@ -80,23 +85,18 @@ export class HttpAccessLogInterceptor implements NestInterceptor {
 
     const writeLog = (statusCode: number) => {
       const durationMs = Date.now() - started;
-      const parts = [
-        "http_access",
-        `method=${method}`,
-        `path=${path}`,
-        `status=${statusCode}`,
-        `durationMs=${durationMs}`,
-      ];
-      if (organizationId) parts.push(`organizationId=${organizationId}`);
-      if (userId) parts.push(`userId=${userId}`);
-      const message = parts.join(" ");
+      const payload: { message: string; organizationId?: string; userId?: string } = {
+        message: `${method} ${path} ${statusCode} ${durationMs}ms`,
+      };
+      if (organizationId) payload.organizationId = organizationId;
+      if (userId) payload.userId = userId;
 
       if (statusCode >= 500) {
-        this.logger.error(message);
+        this.logger.error(payload);
       } else if (statusCode >= 400) {
-        this.logger.warn(message);
+        this.logger.warn(payload);
       } else {
-        this.logger.log(message);
+        this.logger.log(payload);
       }
     };
 

@@ -23,8 +23,18 @@ function getConsoleFormat(serviceName: string): winston.Logform.Format {
       return info;
     })(),
     winston.format.colorize({ all: true }),
-    winston.format.printf(({ level, message, timestamp, service }) => {
-      return `${timestamp} [${service ?? serviceName}] ${level}: ${message}`;
+    winston.format.printf((info) => {
+      const { level, message, timestamp, service, context, organizationId } = info as {
+        level: string;
+        message: unknown;
+        timestamp?: string;
+        service?: string;
+        context?: string;
+        organizationId?: string;
+      };
+      const ctx = context ? `[${context}] ` : "";
+      const org = organizationId ? ` organizationId=${organizationId}` : "";
+      return `${timestamp} [${service ?? serviceName}] ${level}: ${ctx}${message}${org}`;
     }),
   );
 }

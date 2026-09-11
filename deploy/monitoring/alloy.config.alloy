@@ -39,6 +39,14 @@ discovery.relabel "containers" {
 		regex         = "planwise-(loki|alloy)(-local)?"
 		action        = "drop"
 	}
+
+	// Infra trop bavarde (Mongo connexions, probes Blackbox, cAdvisor…).
+	// Les métriques restent dans Prometheus ; Loki = logs applicatifs.
+	rule {
+		source_labels = ["compose_service"]
+		regex         = "mongodb|mongodb-exporter|blackbox-exporter|cadvisor|node-exporter|prometheus|tempo|otel-collector|grafana"
+		action        = "drop"
+	}
 }
 
 loki.source.docker "containers" {
@@ -48,7 +56,30 @@ loki.source.docker "containers" {
 		"job" = "docker",
 	}
 	relabel_rules = discovery.relabel.containers.rules
-	forward_to    = [loki.write.default.receiver]
+	forward_to    = [loki.process.app.receiver]
+}
+
+// Promouvoir level/context des lignes JSON Nest (comme Huby job=nest).
+loki.process "app" {
+	stage.match {
+		selector = "{job=\"docker\"} |~ \"^\\\\{\""
+
+		stage.json {
+			expressions = {
+				level   = "level",
+				context = "context",
+			}
+		}
+
+		stage.labels {
+			values = {
+				level   = "",
+				context = "",
+			}
+		}
+	}
+
+	forward_to = [loki.write.default.receiver]
 }
 
 loki.write "default" {

@@ -14,9 +14,10 @@ describe("http-access-log helpers", () => {
     expect(sanitizeHttpAccessLogPath("cases")).toBe("/cases");
   });
 
-  it("shouldSkipHttpAccessLogPath ignore /health", () => {
+  it("shouldSkipHttpAccessLogPath ignore /health et /metrics", () => {
     expect(shouldSkipHttpAccessLogPath("/health")).toBe(true);
     expect(shouldSkipHttpAccessLogPath("/health?ready=1")).toBe(true);
+    expect(shouldSkipHttpAccessLogPath("/metrics")).toBe(true);
     expect(shouldSkipHttpAccessLogPath("/cases")).toBe(false);
   });
 
@@ -83,9 +84,11 @@ describe("HttpAccessLogInterceptor", () => {
     );
     cases$.subscribe();
     expect(logSpy).toHaveBeenCalledWith(
-      expect.stringMatching(
-        /^http_access method=GET path=\/cases status=200 durationMs=\d+ organizationId=org-1 userId=user-1$/,
-      ),
+      expect.objectContaining({
+        message: expect.stringMatching(/^GET \/cases 200 \d+ms$/),
+        organizationId: "org-1",
+        userId: "user-1",
+      }),
     );
   });
 
@@ -106,7 +109,9 @@ describe("HttpAccessLogInterceptor", () => {
     });
 
     expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringMatching(/^http_access method=POST path=\/cases status=400 durationMs=\d+$/),
+      expect.objectContaining({
+        message: expect.stringMatching(/^POST \/cases 400 \d+ms$/),
+      }),
     );
   });
 });

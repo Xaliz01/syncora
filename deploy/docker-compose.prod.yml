@@ -107,6 +107,12 @@ services:
     container_name: planwise-mongodb
     restart: unless-stopped
     networks: [planwise]
+    command:
+      - mongod
+      - --bind_ip_all
+      - --quiet
+      - --setParameter
+      - logComponentVerbosity={network:{verbosity:-1},accessControl:{verbosity:-1}}
     volumes:
       - mongodb-data:/data/db
     healthcheck:

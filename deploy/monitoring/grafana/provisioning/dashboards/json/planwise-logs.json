@@ -29,17 +29,17 @@
       },
       "targets": [
         {
-          "expr": "sum by (compose_service) (count_over_time({job=\"docker\"} [1m]))",
-          "legendFormat": "{{compose_service}}",
+          "expr": "sum by (level) (count_over_time({job=\"docker\", compose_service=~\"$service\"} [1m]))",
+          "legendFormat": "{{level}}",
           "refId": "A"
         }
       ],
-      "title": "Volume de logs / min (par service Compose)",
+      "title": "Volume de logs / min (par niveau)",
       "type": "timeseries"
     },
     {
       "datasource": { "type": "loki", "uid": "loki" },
-      "gridPos": { "h": 14, "w": 24, "x": 0, "y": 8 },
+      "gridPos": { "h": 16, "w": 24, "x": 0, "y": 8 },
       "id": 2,
       "options": {
         "dedupStrategy": "none",
@@ -53,30 +53,46 @@
       },
       "targets": [
         {
-          "expr": "{job=\"docker\", compose_service=~\"$service\"} |= `$search`",
+          "expr": "{job=\"docker\", compose_service=~\"$service\", context=~\"$context\"} |= `$search`",
           "refId": "A"
         }
       ],
-      "title": "Logs applicatifs",
+      "title": "Logs applicatifs Nest",
       "type": "logs"
     }
   ],
-  "refresh": "30s",
+  "refresh": "10s",
   "schemaVersion": 39,
   "tags": ["planwise", "logs", "loki"],
   "templating": {
     "list": [
       {
-        "current": { "selected": true, "text": "All", "value": ".+" },
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "api-gateway.*|frontend.*|.*-service|caddy"
+        },
         "datasource": { "type": "loki", "uid": "loki" },
-        "definition": "label_values(compose_service)",
+        "definition": "label_values({job=\"docker\"}, compose_service)",
         "includeAll": true,
-        "allValue": ".+",
+        "allValue": "api-gateway.*|frontend.*|.*-service|caddy",
         "label": "Service",
         "name": "service",
-        "query": "label_values(compose_service)",
+        "query": "label_values({job=\"docker\"}, compose_service)",
         "refresh": 2,
-        "regex": "",
+        "regex": "/^(api-gateway.*|frontend.*|.*-service|caddy)$/",
+        "type": "query"
+      },
+      {
+        "current": { "selected": true, "text": "All", "value": ".+" },
+        "datasource": { "type": "loki", "uid": "loki" },
+        "definition": "label_values({job=\"docker\"}, context)",
+        "includeAll": true,
+        "allValue": ".+",
+        "label": "Contexte",
+        "name": "context",
+        "query": "label_values({job=\"docker\"}, context)",
+        "refresh": 2,
         "type": "query"
       },
       {
@@ -93,5 +109,5 @@
   "timezone": "browser",
   "title": "Planwise — Logs",
   "uid": "planwise-logs",
-  "version": 1
+  "version": 2
 }

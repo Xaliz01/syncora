@@ -210,6 +210,7 @@ services:
     networks: [planwise]
     command:
       - --config.file=/etc/blackbox/blackbox.yml
+      - --log.level=warn
     volumes:
       - ./monitoring/blackbox.yml:/etc/blackbox/blackbox.yml:ro
 

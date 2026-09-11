@@ -458,19 +458,20 @@ Exemples LogQL :
 {container=~".*(cases-service|api-gateway).*"} |~ "(?i)exception|fatal"
 ```
 
-Les labels utiles : `compose_service`, `container`, `stream` (stdout/stderr), `job=docker`.
-Seuls les conteneurs du réseau Docker **`planwise`** sont collectés (Loki/Alloy exclus).
-Les microservices n’ont souvent pas de `container_name` fixe : Alloy les reconnaît via
-ce réseau (et le label Compose `compose_service`), pas via le préfixe `planwise-`.
+Les labels utiles : `compose_service`, `container`, `stream` (stdout/stderr), `job=docker`,
+`context` (Nest, ex. `HTTP`), `level`. Mongo, Blackbox, cAdvisor et le reste du monitoring
+ne sont **pas** envoyés dans Loki (bruit de connexions / probes) — leurs métriques restent
+dans Prometheus.
 
-Chaque service Nest émet un access log HTTP (hors `/health`) au format :
-`http_access method=GET path=/cases status=200 durationMs=12 organizationId=…`
+Chaque service Nest émet un access log HTTP (hors `/health` et `/metrics`) au format :
+`GET /cases 200 12ms` (JSON : `message`, `context=HTTP`, `organizationId`).
 
 Exemples :
 
 ```logql
-{compose_service="cases-service"} |= "http_access"
-{compose_service=~".+-service|api-gateway.*"} |= "http_access" |= "status=5"
+{compose_service="api-gateway-blue", context="HTTP"}
+{job="docker", context="HTTP"} |~ " 5[0-9]{2} "
+{job="docker"} | json | organizationId="…"
 ```
 
 Si Grafana n’affiche que monitoring/Mongo (pas les API) : Alloy filtrait autrefois sur

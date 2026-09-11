@@ -18,6 +18,12 @@ services:
     container_name: planwise-mongodb
     ports:
       - "27017:27017"
+    command:
+      - mongod
+      - --bind_ip_all
+      - --quiet
+      - --setParameter
+      - logComponentVerbosity={network:{verbosity:-1},accessControl:{verbosity:-1}}
     # volumes:
     #   - planwise-mongodb-data:/data/db
     healthcheck:
