@@ -46,6 +46,7 @@ import type {
   OrganizationResponse,
   QuoteResponse,
   QuoteSummaryResponse,
+  QuoteEmailSendEntry,
 } from "@planwise/shared";
 import type {
   CommentEntityType,
@@ -53,7 +54,17 @@ import type {
   CreateCommentBody,
   UpdateCommentBody,
 } from "@planwise/shared";
-import { sanitizePdfText, shouldSetToInvoiceOnQuoteAccepted } from "@planwise/shared";
+import {
+  sanitizePdfText,
+  shouldSetToInvoiceOnQuoteAccepted,
+  canSendQuoteByEmail,
+  defaultQuoteEmailBody,
+  defaultQuoteEmailSubject,
+  isValidEmailAddress,
+  invoiceEmailFailureMessage,
+  INVOICE_EMAIL_COMMERCIAL_FOOTER,
+} from "@planwise/shared";
+import type { SendTransactionalEmailBody, SendEmailNotificationResponse } from "@planwise/shared";
 import PDFDocument from "pdfkit";
 import { assertAnyAssignablePermission } from "../infrastructure/permission-checks";
 import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
@@ -73,6 +84,7 @@ import {
   type UpdateTodoForOrgBody,
   type CreateQuoteForOrgBody,
   type UpdateQuoteForOrgBody,
+  type SendQuoteEmailForOrgBody,
   type CreateCommentForOrgBody,
   type UpdateCommentForOrgBody,
 } from "./ports/cases.service.port";
@@ -901,6 +913,102 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       : null;
 
     return this.buildQuotePdf(quote, caseData, { logo, organizationName: org?.name });
+  }
+
+  async sendQuote(
+    user: AuthUser,
+    quoteId: string,
+    body: SendQuoteEmailForOrgBody,
+  ): Promise<QuoteResponse> {
+    const quote = await this.getQuote(user, quoteId);
+    if (!canSendQuoteByEmail(quote.status)) {
+      throw new BadRequestException("Ce devis ne peut pas être envoyé.");
+    }
+
+    const to = body.to?.trim() ?? "";
+    if (!isValidEmailAddress(to)) {
+      throw new BadRequestException("Indiquez une adresse e-mail valide.");
+    }
+    const cc = (body.cc ?? []).map((value) => value.trim()).filter(Boolean);
+    if (cc.some((value) => !isValidEmailAddress(value))) {
+      throw new BadRequestException("Une adresse en copie n’est pas valide.");
+    }
+
+    const org = await this.fetchOrganization(user.organizationId);
+    const subject = body.subject?.trim() || defaultQuoteEmailSubject(quote);
+    const message = body.body?.trim() || defaultQuoteEmailBody(quote, org?.name);
+    const pdf = await this.generateQuotePdf(user, quoteId);
+    const filename = `${quote.quoteNumber || "devis"}.pdf`;
+    const footer = org?.name
+      ? `${INVOICE_EMAIL_COMMERCIAL_FOOTER} Document de ${org.name}.`
+      : INVOICE_EMAIL_COMMERCIAL_FOOTER;
+
+    let sent = false;
+    let reason: string | undefined;
+    try {
+      const payload: SendTransactionalEmailBody = {
+        to,
+        subject,
+        body: message,
+        footer,
+        cc: cc.length > 0 ? cc : undefined,
+        attachments: [
+          {
+            filename,
+            contentType: "application/pdf",
+            contentBase64: pdf.toString("base64"),
+          },
+        ],
+      };
+      const response = await firstValueFrom(
+        this.httpService.post<SendEmailNotificationResponse>(
+          `${SERVICE_URLS.notifications}/email/transactional`,
+          payload,
+          { timeout: 60_000 },
+        ),
+      );
+      sent = response.data.sent === true;
+      reason = response.data.reason;
+    } catch {
+      sent = false;
+      reason = "send_failed";
+    }
+
+    const entry: QuoteEmailSendEntry = {
+      sentAt: new Date().toISOString(),
+      to,
+      cc: cc.length > 0 ? cc : undefined,
+      sentByUserId: user.id,
+      sentByName: user.name?.trim() || undefined,
+      status: sent ? "sent" : "failed",
+      reason: sent ? undefined : reason,
+    };
+    const markSent = sent && quote.status === "draft";
+    const result = await this.callCasesService<QuoteResponse>(user.organizationId, {
+      method: "post",
+      path: `/quotes/${quoteId}/email-sends`,
+      body: {
+        organizationId: user.organizationId,
+        entry,
+        markSent,
+      },
+    });
+
+    if (!sent) {
+      throw new BadRequestException(invoiceEmailFailureMessage(reason));
+    }
+
+    if (markSent) {
+      this.recordHistory(
+        user.organizationId,
+        result.caseId,
+        user.id,
+        user.name ?? user.email,
+        "quote_updated",
+        result.quoteNumber,
+      );
+    }
+    return result;
   }
 
   private buildPreviewQuote(organizationId: string, body: CreateQuoteForOrgBody): QuoteResponse {

@@ -53,6 +53,7 @@ describe("CasesController", () => {
       listQuotes: jest.fn(),
       getQuote: jest.fn(),
       updateQuote: jest.fn(),
+      appendQuoteEmailSend: jest.fn(),
       deleteQuote: jest.fn(),
     } as unknown as jest.Mocked<AbstractQuotesService>;
 

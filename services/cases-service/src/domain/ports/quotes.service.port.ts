@@ -1,5 +1,6 @@
 import type {
   CreateQuoteBody,
+  QuoteEmailSendEntry,
   QuoteResponse,
   QuoteSummaryResponse,
   UpdateQuoteBody,
@@ -13,5 +14,11 @@ export abstract class AbstractQuotesService {
   ): Promise<QuoteSummaryResponse[]>;
   abstract getQuote(id: string, organizationId: string): Promise<QuoteResponse>;
   abstract updateQuote(id: string, body: UpdateQuoteBody): Promise<QuoteResponse>;
+  abstract appendQuoteEmailSend(
+    id: string,
+    organizationId: string,
+    entry: QuoteEmailSendEntry,
+    options?: { markSent?: boolean },
+  ): Promise<QuoteResponse>;
   abstract deleteQuote(id: string, organizationId: string): Promise<{ deleted: true }>;
 }

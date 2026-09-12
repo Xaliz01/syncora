@@ -4,6 +4,7 @@ import { Model } from "mongoose";
 import {
   activeDocumentFilter,
   type CreateQuoteBody,
+  type QuoteEmailSendEntry,
   type QuoteResponse,
   type QuoteSummaryResponse,
   type UpdateQuoteBody,
@@ -125,6 +126,28 @@ export class QuotesService extends AbstractQuotesService {
       )
       .exec();
     if (!doc) throw new NotFoundException("Quote not found");
+    const caseDoc = await this.caseModel
+      .findOne({ _id: doc.caseId, ...activeDocumentFilter })
+      .select("title")
+      .exec();
+    return toQuoteResponse(doc, caseDoc?.title);
+  }
+
+  async appendQuoteEmailSend(
+    id: string,
+    organizationId: string,
+    entry: QuoteEmailSendEntry,
+    options?: { markSent?: boolean },
+  ): Promise<QuoteResponse> {
+    const doc = await this.quoteModel
+      .findOne({ _id: id, organizationId, ...activeDocumentFilter })
+      .exec();
+    if (!doc) throw new NotFoundException("Quote not found");
+    doc.emailSends = [...(doc.emailSends ?? []), entry];
+    if (options?.markSent && doc.status === "draft") {
+      doc.status = "sent";
+    }
+    await doc.save();
     const caseDoc = await this.caseModel
       .findOne({ _id: doc.caseId, ...activeDocumentFilter })
       .select("title")

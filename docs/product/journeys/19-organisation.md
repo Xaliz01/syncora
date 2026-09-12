@@ -7,8 +7,8 @@ Gérer la fiche entreprise et basculer / créer une organisation.
 ## Mon organisation (`/organization`)
 
 1. Menu **Général → Mon organisation**.
-2. Nom, e-mail, téléphone, adresse, logo.
-3. Édition selon `organizations.update` (souvent admin).
+2. Nom, e-mail, téléphone, adresse, logo (fiche en lecture).
+3. **Modifier** ouvre `/organization/edit` (droit `organizations.update`, souvent admin) : formulaire pleine page, puis retour à la fiche. Le logo se change sur la fiche.
 
 ## Multi-org
 
@@ -25,5 +25,6 @@ Gérer la fiche entreprise et basculer / créer une organisation.
 ## Liens utiles
 
 - Mon organisation : `/organization`
+- Modifier l’organisation : `/organization/edit`
 - Mon abonnement : `/subscription`
 - Mon compte : `/account`

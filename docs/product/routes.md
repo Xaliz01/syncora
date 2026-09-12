@@ -46,17 +46,19 @@ Source alignée sur le menu [`AppShell.tsx`](../../apps/frontend/components/layo
 
 Ne pas inventer d’IDs. Guider vers la **liste** puis « ouvrir la fiche depuis la liste ».
 
-| Contexte                 | Pattern                  | permission            |
-| ------------------------ | ------------------------ | --------------------- |
-| Fiche dossier            | `/cases/:id`             | `cases.read`          |
-| Modifier dossier         | `/cases/:id/edit`        | `cases.update`        |
-| Fiche client             | `/customers/:id`         | `customers.read`      |
-| Modifier client          | `/customers/:id/edit`    | `customers.update`    |
-| Fiche donneur d'ordre    | `/order-givers/:id`      | `order_givers.read`   |
-| Modifier donneur d'ordre | `/order-givers/:id/edit` | `order_givers.update` |
-| Fiche contrat            | `/contracts/:id`         | `contracts.read`      |
-| Modifier contrat         | `/contracts/:id/edit`    | `contracts.update`    |
-| Article / emplacement    | `…/edit` après la fiche  | `*.update`            |
+| Contexte                 | Pattern                  | permission             |
+| ------------------------ | ------------------------ | ---------------------- |
+| Fiche dossier            | `/cases/:id`             | `cases.read`           |
+| Modifier dossier         | `/cases/:id/edit`        | `cases.update`         |
+| Fiche client             | `/customers/:id`         | `customers.read`       |
+| Modifier client          | `/customers/:id/edit`    | `customers.update`     |
+| Fiche donneur d'ordre    | `/order-givers/:id`      | `order_givers.read`    |
+| Modifier donneur d'ordre | `/order-givers/:id/edit` | `order_givers.update`  |
+| Fiche contrat            | `/contracts/:id`         | `contracts.read`       |
+| Modifier contrat         | `/contracts/:id/edit`    | `contracts.update`     |
+| Article / emplacement    | `…/edit` après la fiche  | `*.update`             |
+| Modifier organisation    | `/organization/edit`     | `organizations.update` |
+| Modifier compte          | `/account/edit`          | (soi-même)             |
 
 ## Hors catalogue (UI header / spéciales)
 

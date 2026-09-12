@@ -33,7 +33,7 @@ const ROUTE_KEYWORDS: Readonly<Record<string, readonly string[]>> = {
   "/customers/new": ["creer client", "nouveau client", "ajouter client"],
   "/customers": ["client", "clients"],
   "/cases/new": ["creer dossier", "nouveau dossier", "ouvrir dossier"],
-  "/cases": ["dossier", "dossiers", "affaire", "affaires"],
+  "/cases": ["dossier", "dossiers", "affaire", "affaires", "devis"],
   "/cases/calendar": ["planning", "calendrier", "agenda", "assigner", "intervention"],
   "/my-day": ["ma journee", "terrain", "intervention du jour", "technicien"],
   "/billing": ["facture", "factures", "facturation", "avoir"],
@@ -42,7 +42,7 @@ const ROUTE_KEYWORDS: Readonly<Record<string, readonly string[]>> = {
   "/settings/profiles": ["profil", "profils", "permissions", "droits"],
   "/organization": ["organisation", "entreprise", "siret"],
   "/subscription": ["abonnement", "essai", "stripe"],
-  "/account": ["compte", "mot de passe", "profil perso"],
+  "/account": ["compte", "mot de passe", "profil perso", "theme", "preferences"],
   "/fleet/technicians": [
     "technicien",
     "techniciens",
@@ -258,6 +258,22 @@ export function matchOfflineFaq(
     };
   }
 
+  const quoteEmailHit =
+    /devis/.test(normalized) &&
+    (/envoyer|envoi|mail|e-mail|email/.test(normalized) || tokens.has("pdf"));
+
+  if (quoteEmailHit) {
+    return {
+      reply:
+        "Oui : un devis s’envoie **par e-mail depuis le dossier**, avec le PDF joint.\n\n1. Ouvrez le dossier, section Devis.\n2. Cliquez sur **Envoyer** (droit « Envoyer un devis »).\n3. Vérifiez le destinataire et le message, puis confirmez : le PDF est joint, l’historique des envois reste sur le devis.\n4. Un brouillon passe alors au statut Envoyé ; vous pouvez renvoyer un devis déjà envoyé ou accepté.",
+      suggestions: [
+        { label: "Dossiers", href: "/cases" },
+        { label: "Facturation", href: "/billing" },
+      ],
+      escalateToSupport: false,
+    };
+  }
+
   const billingHit =
     /facturer|facture|facturation|factures/.test(normalized) &&
     !/stripe|abonnement|carte bancaire|essai gratuit/.test(normalized);
@@ -451,9 +467,9 @@ function buildStepsForRoute(href: string, label: string): string {
     "/subscription":
       "1. Ouvrez Mon abonnement.\n2. Consultez l’essai / le plan Essentiel et les addons.\n3. Pour facturer vos clients, ce n’est pas ici : ouvrez un dossier ou l’écran Facturation.",
     "/organization":
-      "1. Ouvrez Mon organisation.\n2. Mettez à jour nom, contacts, adresse, logo.\n3. Pour changer d’entreprise : utilisez le sélecteur d’organisation dans la barre latérale.",
+      "1. Ouvrez Mon organisation.\n2. Cliquez sur Modifier pour mettre à jour nom, contacts et adresse (le logo se change sur la fiche).\n3. Pour changer d’entreprise : utilisez le sélecteur d’organisation dans la barre latérale.",
     "/account":
-      "1. Ouvrez Mon compte.\n2. Identité, mot de passe, thème, sessions.\n3. Le thème est aussi accessible via le toggle de l’en-tête.",
+      "1. Ouvrez Mon compte.\n2. Consultez identité, mot de passe, préférences et sessions.\n3. Cliquez sur Modifier pour changer le nom ou l’affichage (thème, sidebar, commandes vocales).\n4. Le thème est aussi accessible via le toggle de l’en-tête.",
     "/search":
       "1. Utilisez le champ recherche de l’en-tête (ou ouvrez Recherche).\n2. Saisissez un nom / mot-clé.\n3. Ouvrez le résultat selon vos droits.",
   };

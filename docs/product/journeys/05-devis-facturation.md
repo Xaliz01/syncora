@@ -9,19 +9,21 @@
 ## Prérequis
 
 - Accès au dossier (`cases.read` / édition selon action)
+- Pour envoyer un devis par e-mail : `quotes.send`
 - Pour créer une facture : `billing.invoices.create`
 - Pour le suivi : `billing.invoices.read` (ou `exports.billing`)
 - Pour valider / avoir : `billing.invoices.finalize`
-- Pour envoyer par e-mail : `billing.invoices.send`
+- Pour envoyer une facture par e-mail : `billing.invoices.send`
 
 ## Étapes
 
 1. Ouvrir le **dossier** concerné (`/cases` → fiche).
 2. Section devis : créer / éditer les lignes (prestations, TVA) ; PDF devis si besoin.
-3. Quand le travail est facturable : statut de facturation du dossier, puis **Créer une facture** (depuis le devis ou en saisie libre).
-4. Valider le brouillon pour numéroter la facture et télécharger le PDF.
-5. Envoyer la facture par e-mail (confirmation, PDF joint) ; l’historique des envois reste visible sur le dossier et dans Facturation.
-6. Suivi dans **Facturation** (`/billing`).
+3. Envoyer le devis par e-mail (confirmation, PDF joint) ; l’historique des envois reste sur le devis. Un brouillon passe au statut Envoyé.
+4. Quand le travail est facturable : statut de facturation du dossier, puis **Créer une facture** (depuis le devis ou en saisie libre).
+5. Valider le brouillon pour numéroter la facture et télécharger le PDF.
+6. Envoyer la facture par e-mail (confirmation, PDF joint) ; l’historique des envois reste visible sur le dossier et dans Facturation.
+7. Suivi dans **Facturation** (`/billing`).
 
 ## Liens utiles
 

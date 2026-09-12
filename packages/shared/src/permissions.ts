@@ -23,6 +23,7 @@ export const ASSIGNABLE_PERMISSION_CODES = [
   "quotes.read",
   "quotes.create",
   "quotes.update",
+  "quotes.send",
   "quotes.delete",
   "customers.read",
   "customers.create",

@@ -38,10 +38,11 @@ import {
   type UpdateQuoteBody,
   type UpdateTodoBody,
   type CreateCommentBody,
+  type QuoteEmailSendEntry,
   type UpdateCommentBody,
   type CommentEntityType,
 } from "@planwise/shared";
-import { parseOrganizationIdQuery } from "@planwise/shared/nest";
+import { parseOrganizationIdBody, parseOrganizationIdQuery } from "@planwise/shared/nest";
 
 @Controller()
 export class CasesController {
@@ -338,6 +339,22 @@ export class CasesController {
   @Patch("quotes/:id")
   async updateQuote(@Param("id") id: string, @Body() body: UpdateQuoteBody) {
     return this.quotesService.updateQuote(id, body);
+  }
+
+  @Post("quotes/:id/email-sends")
+  async appendQuoteEmailSend(
+    @Param("id") id: string,
+    @Body()
+    body: {
+      organizationId: string;
+      entry: QuoteEmailSendEntry;
+      markSent?: boolean;
+    },
+  ) {
+    const organizationId = parseOrganizationIdBody(body.organizationId);
+    return this.quotesService.appendQuoteEmailSend(id, organizationId, body.entry, {
+      markSent: body.markSent,
+    });
   }
 
   @Delete("quotes/:id")

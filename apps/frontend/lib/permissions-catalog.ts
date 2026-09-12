@@ -120,6 +120,11 @@ export const PERMISSION_METADATA: Record<PermissionCode, PermissionMetadata> = {
     label: "Modifier les devis",
     description: "Mettre à jour le contenu, le statut et les conditions d'un devis.",
   },
+  "quotes.send": {
+    code: "quotes.send",
+    label: "Envoyer un devis",
+    description: "Envoyer un devis par e-mail (PDF joint) et consulter l’historique des envois.",
+  },
   "quotes.delete": {
     code: "quotes.delete",
     label: "Supprimer des devis",

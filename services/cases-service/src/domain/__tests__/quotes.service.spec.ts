@@ -22,11 +22,13 @@ describe("QuotesService", () => {
     status: "draft",
     validUntil: undefined,
     lines: [],
+    emailSends: [] as unknown[],
     deletedAt: null,
     isTestData: false,
     get: jest.fn((key: string) =>
       key === "createdAt" || key === "updatedAt" ? new Date("2026-01-01T10:00:00.000Z") : undefined,
     ),
+    save: jest.fn().mockResolvedValue(undefined),
     ...overrides,
   });
 
@@ -150,6 +152,49 @@ describe("QuotesService", () => {
 
     expect(mockQuoteModel.create).toHaveBeenCalledTimes(2);
     expect(result.quoteNumber).toBe(`DEV-${year}-0002`);
+  });
+
+  it("appends an email send and marks a draft as sent", async () => {
+    const doc = mockQuoteDoc({
+      emailSends: [],
+      save: jest.fn().mockResolvedValue(undefined),
+    });
+    mockQuoteModel.findOne.mockReturnValue({
+      exec: jest.fn().mockResolvedValue(doc),
+    });
+
+    const result = await service.appendQuoteEmailSend(
+      "quote-1",
+      "org-1",
+      {
+        sentAt: "2026-09-12T10:00:00.000Z",
+        to: "client@example.com",
+        sentByUserId: "user-1",
+        status: "sent",
+      },
+      { markSent: true },
+    );
+
+    expect(doc.status).toBe("sent");
+    expect(doc.emailSends).toHaveLength(1);
+    expect(doc.save).toHaveBeenCalled();
+    expect(result.emailSends).toHaveLength(1);
+    expect(result.status).toBe("sent");
+  });
+
+  it("throws NotFoundException when appending an email send to a missing quote", async () => {
+    mockQuoteModel.findOne.mockReturnValue({
+      exec: jest.fn().mockResolvedValue(null),
+    });
+
+    await expect(
+      service.appendQuoteEmailSend("missing", "org-1", {
+        sentAt: "2026-09-12T10:00:00.000Z",
+        to: "client@example.com",
+        sentByUserId: "user-1",
+        status: "sent",
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it("throws NotFoundException when case is missing", async () => {

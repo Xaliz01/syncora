@@ -1,7 +1,8 @@
+import { BadRequestException } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { HttpService } from "@nestjs/axios";
 import { of } from "rxjs";
-import type { AuthUser, CaseResponse, CustomerResponse } from "@planwise/shared";
+import type { AuthUser, CaseResponse, CustomerResponse, QuoteResponse } from "@planwise/shared";
 import { CasesGatewayService } from "../cases.service";
 import { OrganizationScopedHttpClient } from "../../infrastructure/organization-scoped-http.client";
 import { AbstractCustomersGatewayService } from "../ports/customers.service.port";
@@ -11,7 +12,7 @@ describe("CasesGatewayService", () => {
   let service: CasesGatewayService;
   let scopedHttp: { request: jest.Mock };
   let customersGateway: { getCustomer: jest.Mock; listCustomersByIds: jest.Mock };
-  let httpService: { get: jest.Mock };
+  let httpService: { get: jest.Mock; post: jest.Mock };
 
   const user: AuthUser = {
     id: "user-1",
@@ -77,6 +78,7 @@ describe("CasesGatewayService", () => {
           },
         }),
       ),
+      post: jest.fn().mockReturnValue(of({ data: { sent: true } })),
     };
 
     const module = await Test.createTestingModule({
@@ -244,6 +246,105 @@ describe("CasesGatewayService", () => {
         }),
       );
       expect(result.endLocation).toEqual(location);
+    });
+  });
+
+  describe("sendQuote", () => {
+    const quote: QuoteResponse = {
+      id: "quote-1",
+      organizationId: "org-1",
+      caseId: "case-1",
+      quoteNumber: "DEV-2026-0001",
+      status: "draft",
+      lines: [],
+      totalHt: 100,
+      totalTva: 20,
+      totalTtc: 120,
+    };
+
+    it("sends the PDF, persists the log and marks a draft as sent", async () => {
+      const sentQuote: QuoteResponse = {
+        ...quote,
+        status: "sent",
+        emailSends: [
+          {
+            sentAt: "2026-09-12T10:00:00.000Z",
+            to: "client@example.com",
+            sentByUserId: user.id,
+            status: "sent",
+          },
+        ],
+      };
+      scopedHttp.request.mockImplementation(async (opts: { method: string; path: string }) => {
+        if (opts.method === "get" && opts.path === "/quotes/quote-1") return quote;
+        if (opts.method === "post" && opts.path === "/quotes/quote-1/email-sends") return sentQuote;
+        return {};
+      });
+      jest.spyOn(service, "generateQuotePdf").mockResolvedValue(Buffer.from("%PDF"));
+      httpService.get.mockReturnValue(of({ data: { name: "Atelier Test" } }));
+
+      const result = await service.sendQuote(user, "quote-1", { to: "client@example.com" });
+
+      expect(result.status).toBe("sent");
+      expect(httpService.post).toHaveBeenCalledWith(
+        expect.stringContaining("/email/transactional"),
+        expect.objectContaining({
+          to: "client@example.com",
+          attachments: expect.arrayContaining([
+            expect.objectContaining({
+              contentType: "application/pdf",
+              filename: "DEV-2026-0001.pdf",
+            }),
+          ]),
+        }),
+        expect.objectContaining({ timeout: 60_000 }),
+      );
+      expect(scopedHttp.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: "post",
+          path: "/quotes/quote-1/email-sends",
+          body: expect.objectContaining({
+            markSent: true,
+            entry: expect.objectContaining({ to: "client@example.com", status: "sent" }),
+          }),
+        }),
+      );
+    });
+
+    it("rejects a cancelled quote", async () => {
+      scopedHttp.request.mockResolvedValue({ ...quote, status: "cancelled" });
+      await expect(
+        service.sendQuote(user, "quote-1", { to: "client@example.com" }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(httpService.post).not.toHaveBeenCalled();
+    });
+
+    it("persists a failed send then throws a generic error", async () => {
+      scopedHttp.request.mockImplementation(async (opts: { method: string; path: string }) => {
+        if (opts.method === "get" && opts.path === "/quotes/quote-1") return quote;
+        if (opts.method === "post" && opts.path === "/quotes/quote-1/email-sends") {
+          return { ...quote, emailSends: [{ status: "failed", to: "client@example.com" }] };
+        }
+        return {};
+      });
+      jest.spyOn(service, "generateQuotePdf").mockResolvedValue(Buffer.from("%PDF"));
+      httpService.post.mockReturnValue(
+        of({ data: { sent: false, reason: "smtp_not_configured" } }),
+      );
+
+      await expect(
+        service.sendQuote(user, "quote-1", { to: "client@example.com" }),
+      ).rejects.toThrow(/pas disponible/);
+      expect(scopedHttp.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: "post",
+          path: "/quotes/quote-1/email-sends",
+          body: expect.objectContaining({
+            markSent: false,
+            entry: expect.objectContaining({ status: "failed" }),
+          }),
+        }),
+      );
     });
   });
 });

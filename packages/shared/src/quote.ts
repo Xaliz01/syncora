@@ -56,6 +56,46 @@ export interface UpdateQuoteBody {
   lines?: QuoteLineBody[];
 }
 
+export const QUOTE_EMAIL_SEND_STATUSES = ["sent", "failed"] as const;
+export type QuoteEmailSendStatus = (typeof QUOTE_EMAIL_SEND_STATUSES)[number];
+
+export interface QuoteEmailSendEntry {
+  sentAt: string;
+  to: string;
+  cc?: string[];
+  sentByUserId: string;
+  sentByName?: string;
+  status: QuoteEmailSendStatus;
+  reason?: string;
+}
+
+export interface SendQuoteEmailBody {
+  organizationId: string;
+  to: string;
+  cc?: string[];
+  subject?: string;
+  body?: string;
+  sentByUserId: string;
+  sentByName?: string;
+}
+
+export function canSendQuoteByEmail(status: QuoteStatus): boolean {
+  return status === "draft" || status === "sent" || status === "accepted";
+}
+
+export function defaultQuoteEmailSubject(quote: Pick<QuoteResponse, "quoteNumber">): string {
+  return `Devis ${quote.quoteNumber}`;
+}
+
+export function defaultQuoteEmailBody(
+  quote: Pick<QuoteResponse, "quoteNumber" | "totalHt">,
+  organizationName?: string,
+): string {
+  const who = organizationName?.trim();
+  const closing = who ? `\n\nCordialement\n${who}` : "\n\nCordialement";
+  return `Bonjour,\n\nVeuillez trouver ci-joint le devis ${quote.quoteNumber} d’un montant de ${quote.totalHt} € HT.${closing}`;
+}
+
 export interface QuoteResponse {
   id: string;
   organizationId: string;
@@ -70,6 +110,7 @@ export interface QuoteResponse {
   totalHt: number;
   totalTva: number;
   totalTtc: number;
+  emailSends?: QuoteEmailSendEntry[];
   createdAt?: string;
   updatedAt?: string;
   isTestData?: boolean;
@@ -86,6 +127,7 @@ export interface QuoteSummaryResponse {
   totalHt: number;
   totalTtc: number;
   validUntil?: string;
+  emailSends?: QuoteEmailSendEntry[];
   createdAt?: string;
   updatedAt?: string;
   isTestData?: boolean;

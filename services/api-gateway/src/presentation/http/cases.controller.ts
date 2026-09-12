@@ -28,6 +28,7 @@ import type {
   SignInterventionForOrgBody,
   UpdateCaseForOrgBody,
   UpdateQuoteForOrgBody,
+  SendQuoteEmailForOrgBody,
   StartInterventionForOrgBody,
   UpdateInterventionForOrgBody,
   UpdateTemplateForOrgBody,
@@ -466,6 +467,16 @@ export class CasesController {
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="devis-${quoteId}.pdf"`);
     res.send(pdfBuffer);
+  }
+
+  @Post("quotes/:quoteId/send")
+  @RequirePermissions("quotes.send")
+  sendQuote(
+    @CurrentUser() user: AuthUser,
+    @Param("quoteId") quoteId: string,
+    @Body() body: SendQuoteEmailForOrgBody,
+  ) {
+    return this.casesService.sendQuote(user, quoteId, body);
   }
 
   @Get("dashboard")

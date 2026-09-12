@@ -66,6 +66,13 @@ export function deleteQuote(quoteId: string) {
   return quotesRequest<{ deleted: true }>("DELETE", `/cases/quotes/${quoteId}`);
 }
 
+export function sendQuote(
+  quoteId: string,
+  body: { to: string; cc?: string[]; subject?: string; body?: string },
+) {
+  return quotesRequest<QuoteResponse>("POST", `/cases/quotes/${quoteId}/send`, body);
+}
+
 export async function downloadQuotePdf(quoteId: string, quoteNumber: string): Promise<void> {
   const token = getAccessToken();
   if (!token) throw new Error("Session expirée");

@@ -1,8 +1,12 @@
+import { Reflector } from "@nestjs/core";
 import { Test, TestingModule } from "@nestjs/testing";
 import { CasesController } from "../cases.controller";
 import { AbstractCasesGatewayService } from "../../../domain/ports/cases.service.port";
 import { JwtAuthGuard } from "../../../infrastructure/jwt-auth.guard";
-import { RequirePermissionGuard } from "../../../infrastructure/require-permission.guard";
+import {
+  REQUIRED_PERMISSIONS_KEY,
+  RequirePermissionGuard,
+} from "../../../infrastructure/require-permission.guard";
 import { SubscriptionAccessGuard } from "../../../infrastructure/subscription-access.guard";
 import type { AuthUser } from "@planwise/shared";
 
@@ -59,6 +63,7 @@ describe("CasesController", () => {
       deleteQuote: jest.fn(),
       generateQuotePdf: jest.fn(),
       previewQuotePdf: jest.fn(),
+      sendQuote: jest.fn(),
       createComment: jest.fn(),
       listComments: jest.fn(),
       updateComment: jest.fn(),
@@ -510,6 +515,28 @@ describe("CasesController", () => {
         'inline; filename="devis-apercu.pdf"',
       );
       expect(mockRes.send).toHaveBeenCalledWith(pdfBuffer);
+    });
+  });
+
+  describe("sendQuote", () => {
+    it("should call casesService.sendQuote with user, id and body", async () => {
+      const sent = { id: "quote-1", status: "sent" };
+      mockCasesService.sendQuote.mockResolvedValue(sent as never);
+      const body = { to: "client@example.com", subject: "Devis", body: "Ci-joint" };
+
+      const result = await controller.sendQuote(mockUser, "quote-1", body);
+
+      expect(mockCasesService.sendQuote).toHaveBeenCalledWith(mockUser, "quote-1", body);
+      expect(result).toEqual(sent);
+    });
+
+    it("requires quotes.send to send a quote", () => {
+      const reflector = new Reflector();
+      const required = reflector.get<string[] | undefined>(
+        REQUIRED_PERMISSIONS_KEY,
+        CasesController.prototype.sendQuote,
+      );
+      expect(required).toEqual(["quotes.send"]);
     });
   });
 

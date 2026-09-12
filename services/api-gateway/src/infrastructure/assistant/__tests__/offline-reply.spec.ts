@@ -75,6 +75,16 @@ describe("offline-reply", () => {
     expect(result.reply).toMatch(/horloge/i);
   });
 
+  it("répond comment envoyer un devis par e-mail", () => {
+    const result = buildOfflineAssistantReply({
+      message: "Comment envoyer un devis par mail ?",
+      hasPermission: allowAll(),
+    });
+    expect(result.reply).toMatch(/PDF/i);
+    expect(result.reply).toMatch(/Envoyer/i);
+    expect(result.suggestions.some((s) => s.href === "/cases")).toBe(true);
+  });
+
   it("répond sur la limite de documents / quota", () => {
     const result = buildOfflineAssistantReply({
       message: "Ai-je un nombre limité de documents que je peux déposer ?",

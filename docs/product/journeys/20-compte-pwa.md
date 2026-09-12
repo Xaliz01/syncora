@@ -7,10 +7,9 @@ Gérer le compte personnel, le confort d’usage, et l’installation mobile.
 ## Mon compte (`/account`)
 
 1. Menu **Général → Mon compte** (pas de permission métier spéciale).
-2. Identité, mot de passe, **thème** clair / sombre, sidebar repliée / dépliée, **commandes vocales** (Ma journée, mobile).
-3. **Sessions** actives (déconnexion à distance si proposé).
-4. Liens vers les pages légales.
-5. Préférences synchronisées (serveur + local pour thème / sidebar). Le thème est aussi accessible via le toggle de l’en-tête.
+2. Fiche lecture : identité, mot de passe, **thème**, sidebar, **commandes vocales**, **sessions**, liens légaux.
+3. **Modifier** → `/account/edit` : nom et préférences d’affichage (formulaire pleine page, Enregistrer en bas à droite).
+4. Préférences synchronisées (serveur + local pour thème / sidebar). Le thème est aussi accessible via le toggle de l’en-tête.
 
 ## Mot de passe oublié
 
@@ -30,4 +29,5 @@ Gérer le compte personnel, le confort d’usage, et l’installation mobile.
 ## Liens utiles
 
 - Mon compte : `/account`
+- Modifier le compte : `/account/edit`
 - Notifications (push) : `/settings/notifications`

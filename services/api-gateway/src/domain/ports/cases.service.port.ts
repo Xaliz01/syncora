@@ -164,6 +164,13 @@ export interface UpdateQuoteForOrgBody {
   }[];
 }
 
+export interface SendQuoteEmailForOrgBody {
+  to: string;
+  cc?: string[];
+  subject?: string;
+  body?: string;
+}
+
 export interface CreateCommentForOrgBody {
   entityType: CommentEntityType;
   entityId: string;
@@ -300,6 +307,12 @@ export abstract class AbstractCasesGatewayService {
   abstract generateQuotePdf(user: AuthUser, quoteId: string): Promise<Buffer>;
 
   abstract previewQuotePdf(user: AuthUser, body: CreateQuoteForOrgBody): Promise<Buffer>;
+
+  abstract sendQuote(
+    user: AuthUser,
+    quoteId: string,
+    body: SendQuoteEmailForOrgBody,
+  ): Promise<QuoteResponse>;
 
   abstract createComment(user: AuthUser, body: CreateCommentForOrgBody): Promise<CommentResponse>;
   abstract listComments(

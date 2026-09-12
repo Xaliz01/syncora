@@ -14,14 +14,21 @@ import {
   type CatalogPickItem,
   type CommercialLineDraft,
 } from "@/components/billing/CommercialLinesEditor";
-import type { QuoteStatus, RemoteInvoiceLifecycle, TvaRate } from "@planwise/shared";
+import type {
+  QuoteStatus,
+  QuoteSummaryResponse,
+  RemoteInvoiceLifecycle,
+  TvaRate,
+} from "@planwise/shared";
 import {
   QUOTE_STATUS_LABELS,
   MAX_PAGE_LIMIT,
+  canSendQuoteByEmail,
   quoteInvoicedHt,
   remainingQuoteHt,
   remainingQuotePercent,
 } from "@planwise/shared";
+import { lastQuoteEmailHint, SendQuoteDialog } from "@/components/cases/SendQuoteDialog";
 
 const STATUS_COLORS: Record<QuoteStatus, string> = {
   draft:
@@ -437,10 +444,14 @@ function QuoteEditorOverlay({
 
 export function CaseQuotesSection({
   caseId,
+  customerEmail,
+  organizationName,
   invoices = [],
   invoiceCreate,
 }: {
   caseId: string;
+  customerEmail?: string;
+  organizationName?: string;
   invoices?: Array<{ quoteId?: string; amountHt?: string; remoteStatus?: RemoteInvoiceLifecycle }>;
   /** Bouton « Créer une facture » (mêmes conditions que la card Facturation). */
   invoiceCreate?: {
@@ -454,6 +465,7 @@ export function CaseQuotesSection({
   const { can } = usePermissions();
   const [showCreate, setShowCreate] = useState(false);
   const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
+  const [quoteToSend, setQuoteToSend] = useState<QuoteSummaryResponse | null>(null);
 
   const { data: quotes = [] } = useQuery({
     queryKey: ["quotes", caseId],
@@ -574,6 +586,7 @@ export function CaseQuotesSection({
             const invoicedHt = quoteInvoicedHt(invoices, quote.id);
             const remainingHt = remainingQuoteHt(quote.totalHt, invoicedHt);
             const remainingPct = remainingQuotePercent(quote.totalHt, remainingHt);
+            const emailHint = lastQuoteEmailHint(quote);
             return (
               <div
                 key={quote.id}
@@ -608,10 +621,9 @@ export function CaseQuotesSection({
                         Modifier
                       </button>
                     )}
-                    {can("quotes.update") && quote.status === "draft" && (
+                    {can("quotes.send") && canSendQuoteByEmail(quote.status) && (
                       <button
-                        onClick={() => statusMutation.mutate({ id: quote.id, status: "sent" })}
-                        disabled={statusMutation.isPending}
+                        onClick={() => setQuoteToSend(quote)}
                         className="text-[10px] text-blue-600 hover:text-blue-700 px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/30"
                       >
                         Envoyer
@@ -707,6 +719,9 @@ export function CaseQuotesSection({
                     <span>Créé le {new Date(quote.createdAt).toLocaleDateString("fr-FR")}</span>
                   )}
                 </div>
+                {emailHint ? (
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{emailHint}</p>
+                ) : null}
               </div>
             );
           })}
@@ -718,6 +733,15 @@ export function CaseQuotesSection({
           </div>
         )
       )}
+
+      <SendQuoteDialog
+        quote={quoteToSend}
+        customerEmail={customerEmail}
+        organizationName={organizationName}
+        open={quoteToSend != null}
+        onClose={() => setQuoteToSend(null)}
+        onSent={invalidate}
+      />
     </div>
   );
 }

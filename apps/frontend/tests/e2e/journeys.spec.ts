@@ -84,8 +84,10 @@ test.describe("Parcours navigation auth", () => {
 
 const ALL_PROTECTED_PATHS = [
   "/organization",
+  "/organization/edit",
   "/subscription",
   "/account",
+  "/account/edit",
   "/onboarding",
   "/search",
   "/stock",

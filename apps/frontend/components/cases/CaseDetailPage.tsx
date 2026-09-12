@@ -1819,6 +1819,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
 
       <CaseQuotesSection
         caseId={caseId}
+        customerEmail={caseData.customer?.email}
         invoices={invoiceProgress}
         invoiceCreate={
           canCreateCaseInvoice(caseData.billingStatus) && canCreateLocalInvoice

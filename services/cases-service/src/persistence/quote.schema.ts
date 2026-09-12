@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document, Types } from "mongoose";
-import type { QuoteStatus, TvaRate } from "@planwise/shared";
+import type { QuoteEmailSendEntry, QuoteStatus, TvaRate } from "@planwise/shared";
 
 @Schema({ _id: false })
 export class QuoteLineSubDoc {
@@ -58,6 +58,9 @@ export class QuoteDocument extends Document {
 
   @Prop({ type: [QuoteLineSubDocSchema], default: [] })
   lines!: QuoteLineSubDoc[];
+
+  @Prop({ type: Array, default: [] })
+  emailSends?: QuoteEmailSendEntry[];
 
   @Prop({ type: Date })
   deletedAt?: Date | null;
