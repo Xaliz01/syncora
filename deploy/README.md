@@ -459,9 +459,22 @@ Exemples LogQL :
 ```
 
 Les labels utiles : `compose_service`, `container`, `stream` (stdout/stderr), `job=docker`,
-`context` (Nest, ex. `HTTP`), `level`. Mongo, Blackbox, cAdvisor et le reste du monitoring
-ne sont **pas** envoyés dans Loki (bruit de connexions / probes) — leurs métriques restent
-dans Prometheus.
+`context` (Nest, ex. `HTTP`, s’il a été extrait du JSON), `level`. Mongo, Blackbox, cAdvisor
+et le reste du monitoring ne sont **pas** envoyés dans Loki (bruit de connexions / probes) —
+leurs métriques restent dans Prometheus.
+
+Si le panneau **Logs applicatifs Nest** affiche **No data** alors qu’Explore → Loki →
+`{job="docker"}` renvoie des lignes : l’ancienne requête exigeait le label stream
+`context` (absent tant qu’Alloy n’a pas parsé le JSON). Le dashboard filtre désormais
+`context` **dans le texte** de la ligne (`|~`), donc « All » affiche aussi Caddy / Next /
+les logs Nest sans ce label. Après déploiement :
+
+```bash
+docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml \
+  --env-file .env.production --profile monitoring up -d --force-recreate alloy grafana
+```
+
+Les dashboards provisionnés écrasent les copies éditées dans l’UI (`allowUiUpdates: false`).
 
 Chaque service Nest émet un access log HTTP (hors `/health` et `/metrics`) au format :
 `GET /cases 200 12ms` (JSON : `message`, `context=HTTP`, `organizationId`).
@@ -474,8 +487,8 @@ Exemples :
 {job="docker"} | json | organizationId="…"
 ```
 
-Si Grafana n’affiche que monitoring/Mongo (pas les API) : Alloy filtrait autrefois sur
-`planwise-*` uniquement — redéployer la config Alloy puis :
+Si Grafana n’affiche que monitoring/Mongo (pas les API), ou aucun log applicatif :
+Alloy filtrait autrefois sur `planwise-*` uniquement — redéployer la config Alloy puis :
 
 ```bash
 docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml \

@@ -53,7 +53,7 @@
       },
       "targets": [
         {
-          "expr": "{job=\"docker\", compose_service=~\"$service\", context=~\"$context\"} |= `$search`",
+          "expr": "{job=\"docker\", compose_service=~\"$service\"} |~ `(?i).*${search:regex}.*` |~ `$context`",
           "refId": "A"
         }
       ],
@@ -84,11 +84,11 @@
         "type": "query"
       },
       {
-        "current": { "selected": true, "text": "All", "value": ".+" },
+        "current": { "selected": true, "text": "All", "value": ".*" },
         "datasource": { "type": "loki", "uid": "loki" },
         "definition": "label_values({job=\"docker\"}, context)",
         "includeAll": true,
-        "allValue": ".+",
+        "allValue": ".*",
         "label": "Contexte",
         "name": "context",
         "query": "label_values({job=\"docker\"}, context)",
@@ -109,5 +109,5 @@
   "timezone": "browser",
   "title": "Planwise — Logs",
   "uid": "planwise-logs",
-  "version": 2
+  "version": 3
 }
