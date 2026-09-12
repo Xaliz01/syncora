@@ -193,7 +193,7 @@ export function PlatformProspectionPage() {
         setEmails((prev) => {
           const next = { ...prev };
           for (const r of res.results) {
-            if (next[r.siren] === undefined) next[r.siren] = "";
+            if (next[r.siren] === undefined) next[r.siren] = r.contactEmail ?? "";
           }
           return next;
         });
@@ -270,7 +270,7 @@ export function PlatformProspectionPage() {
         setEmails((prev) => {
           const next = { ...prev };
           for (const r of res.results) {
-            if (next[r.siren] === undefined) next[r.siren] = "";
+            if (next[r.siren] === undefined) next[r.siren] = r.contactEmail ?? "";
           }
           return next;
         });
@@ -295,6 +295,7 @@ export function PlatformProspectionPage() {
     name: string;
     contactName?: string;
     postalCode?: string;
+    resend?: boolean;
   }) => {
     const toEmail = (emails[prospect.siren] ?? "").trim();
     if (!toEmail.includes("@")) {
@@ -307,9 +308,11 @@ export function PlatformProspectionPage() {
     }
     const selectedTemplate = emailTemplates.find((t) => t.id === selectedTemplateId);
     const ok = await confirm({
-      title: "Envoyer l’invitation ?",
-      description: `Un e-mail « ${selectedTemplate?.name ?? "contenu"} » sera envoyé à ${toEmail} pour « ${prospect.name} » (${prospect.siren}).`,
-      confirmLabel: "Envoyer",
+      title: prospect.resend ? "Renvoyer l’invitation ?" : "Envoyer l’invitation ?",
+      description: prospect.resend
+        ? `Un nouvel e-mail « ${selectedTemplate?.name ?? "contenu"} » sera envoyé à ${toEmail} pour « ${prospect.name} » (${prospect.siren}), déjà contacté.`
+        : `Un e-mail « ${selectedTemplate?.name ?? "contenu"} » sera envoyé à ${toEmail} pour « ${prospect.name} » (${prospect.siren}).`,
+      confirmLabel: prospect.resend ? "Renvoyer" : "Envoyer",
     });
     if (!ok) return;
 
@@ -325,7 +328,7 @@ export function PlatformProspectionPage() {
         force: true,
       });
       if (res.sent) {
-        showToast("Invitation envoyée.", "success");
+        showToast(prospect.resend ? "Invitation renvoyée." : "Invitation envoyée.", "success");
         setResults((rows) =>
           rows.map((r) =>
             r.siren === prospect.siren
@@ -334,6 +337,7 @@ export function PlatformProspectionPage() {
                   alreadyContacted: true,
                   emailNotFound: false,
                   lastContactedAt: new Date().toISOString(),
+                  contactEmail: toEmail,
                 }
               : r,
           ),
@@ -714,21 +718,15 @@ export function PlatformProspectionPage() {
                         {formatDateTime(o.sentAt)}
                       </td>
                       <td className="px-3 py-2 align-middle">
-                        {o.status === "sent" ? (
-                          <span className="text-xs text-slate-600 dark:text-slate-300">
-                            {o.email || "—"}
-                          </span>
-                        ) : (
-                          <input
-                            type="email"
-                            value={emails[o.siren] ?? ""}
-                            onChange={(e) =>
-                              setEmails((prev) => ({ ...prev, [o.siren]: e.target.value }))
-                            }
-                            placeholder="contact@…"
-                            className="w-full min-w-[10rem] rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-2 py-1.5 text-xs"
-                          />
-                        )}
+                        <input
+                          type="email"
+                          value={emails[o.siren] ?? ""}
+                          onChange={(e) =>
+                            setEmails((prev) => ({ ...prev, [o.siren]: e.target.value }))
+                          }
+                          placeholder="contact@…"
+                          className="w-full min-w-[10rem] rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-2 py-1.5 text-xs"
+                        />
                       </td>
                       <td className="px-3 py-2 align-middle">
                         <div className="flex flex-col gap-1 min-w-[11rem]">
@@ -762,23 +760,24 @@ export function PlatformProspectionPage() {
                         </div>
                       </td>
                       <td className="px-3 py-2 align-middle">
-                        {o.status === "sent" ? (
-                          <span className="text-xs text-slate-400">—</span>
-                        ) : (
-                          <button
-                            type="button"
-                            disabled={sendingSiren === o.siren || savingCommentSiren === o.siren}
-                            onClick={() =>
-                              void sendOutreach({
-                                siren: o.siren,
-                                name: o.companyName,
-                              })
-                            }
-                            className="rounded-md bg-brand-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-brand-500 disabled:opacity-50"
-                          >
-                            {sendingSiren === o.siren ? "Envoi…" : "Inviter"}
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          disabled={sendingSiren === o.siren || savingCommentSiren === o.siren}
+                          onClick={() =>
+                            void sendOutreach({
+                              siren: o.siren,
+                              name: o.companyName,
+                              resend: o.status === "sent",
+                            })
+                          }
+                          className="rounded-md bg-brand-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-brand-500 disabled:opacity-50"
+                        >
+                          {sendingSiren === o.siren
+                            ? "Envoi…"
+                            : o.status === "sent"
+                              ? "Renvoyer"
+                              : "Inviter"}
+                        </button>
                       </td>
                     </tr>
                   ))
@@ -1044,10 +1043,21 @@ export function PlatformProspectionPage() {
                         </td>
                         <td className="px-3 py-2 align-middle">
                           {p.alreadyContacted ? (
-                            <span className="text-xs text-emerald-700 dark:text-emerald-300">
-                              Déjà contacté
-                              {p.lastContactedAt ? ` · ${formatDate(p.lastContactedAt)}` : ""}
-                            </span>
+                            <div className="space-y-1.5">
+                              <span className="block text-xs text-emerald-700 dark:text-emerald-300">
+                                Déjà contacté
+                                {p.lastContactedAt ? ` · ${formatDate(p.lastContactedAt)}` : ""}
+                              </span>
+                              <input
+                                type="email"
+                                value={emails[p.siren] ?? ""}
+                                onChange={(e) =>
+                                  setEmails((prev) => ({ ...prev, [p.siren]: e.target.value }))
+                                }
+                                placeholder="contact@…"
+                                className="w-full min-w-[10rem] rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-2 py-1.5 text-xs"
+                              />
+                            </div>
                           ) : p.emailNotFound ? (
                             <div className="space-y-1.5">
                               <span className="block text-xs text-amber-700 dark:text-amber-300">
@@ -1102,10 +1112,32 @@ export function PlatformProspectionPage() {
                           </div>
                         </td>
                         <td className="px-3 py-2 align-middle">
-                          {p.alreadyContacted ? (
-                            <span className="text-xs text-slate-400">—</span>
-                          ) : (
-                            <div className="flex flex-col gap-1.5 items-stretch min-w-[7.5rem]">
+                          <div className="flex flex-col gap-1.5 items-stretch min-w-[7.5rem]">
+                            <button
+                              type="button"
+                              disabled={
+                                sendingSiren === p.siren ||
+                                markingSiren === p.siren ||
+                                savingCommentSiren === p.siren
+                              }
+                              onClick={() =>
+                                void sendOutreach({
+                                  siren: p.siren,
+                                  name: p.name,
+                                  contactName: p.dirigeants?.[0],
+                                  postalCode: p.postalCode,
+                                  resend: p.alreadyContacted,
+                                })
+                              }
+                              className="rounded-md bg-brand-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-brand-500 disabled:opacity-50"
+                            >
+                              {sendingSiren === p.siren
+                                ? "Envoi…"
+                                : p.alreadyContacted
+                                  ? "Renvoyer"
+                                  : "Inviter"}
+                            </button>
+                            {!p.alreadyContacted && !p.emailNotFound && (
                               <button
                                 type="button"
                                 disabled={
@@ -1113,34 +1145,13 @@ export function PlatformProspectionPage() {
                                   markingSiren === p.siren ||
                                   savingCommentSiren === p.siren
                                 }
-                                onClick={() =>
-                                  void sendOutreach({
-                                    siren: p.siren,
-                                    name: p.name,
-                                    contactName: p.dirigeants?.[0],
-                                    postalCode: p.postalCode,
-                                  })
-                                }
-                                className="rounded-md bg-brand-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-brand-500 disabled:opacity-50"
+                                onClick={() => void markEmailNotFound(p)}
+                                className="rounded-md border border-slate-200 dark:border-slate-600 px-2.5 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50"
                               >
-                                {sendingSiren === p.siren ? "Envoi…" : "Inviter"}
+                                {markingSiren === p.siren ? "…" : "Email non trouvé"}
                               </button>
-                              {!p.emailNotFound && (
-                                <button
-                                  type="button"
-                                  disabled={
-                                    sendingSiren === p.siren ||
-                                    markingSiren === p.siren ||
-                                    savingCommentSiren === p.siren
-                                  }
-                                  onClick={() => void markEmailNotFound(p)}
-                                  className="rounded-md border border-slate-200 dark:border-slate-600 px-2.5 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50"
-                                >
-                                  {markingSiren === p.siren ? "…" : "Email non trouvé"}
-                                </button>
-                              )}
-                            </div>
-                          )}
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))

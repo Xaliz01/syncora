@@ -312,6 +312,8 @@ export interface PlatformProspectSummary {
   /** Recherche d’e-mail déjà tentée sans succès (staff). */
   emailNotFound: boolean;
   lastContactedAt?: string;
+  /** Dernier e-mail utilisé pour un envoi (préremplissage d’un renvoi). */
+  contactEmail?: string;
   /** Note libre staff (recherche e-mail, contexte…). */
   comment?: string;
 }

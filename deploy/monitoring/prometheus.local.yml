@@ -85,6 +85,10 @@ scrape_configs:
         labels: { service: documents }
       - targets: [http://host.docker.internal:3012/health]
         labels: { service: exports }
+      - targets: [http://host.docker.internal:3013/health]
+        labels: { service: integrations }
+      - targets: [http://host.docker.internal:3014/health]
+        labels: { service: billing }
       - targets: [http://host.docker.internal:5173/]
         labels: { service: frontend }
     relabel_configs:

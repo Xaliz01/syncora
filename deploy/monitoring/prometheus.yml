@@ -84,6 +84,10 @@ scrape_configs:
         labels: { service: documents }
       - targets: [http://exports-service:3012/health]
         labels: { service: exports }
+      - targets: [http://integrations-service:3013/health]
+        labels: { service: integrations }
+      - targets: [http://billing-service:3014/health]
+        labels: { service: billing }
       - targets: [http://frontend-blue:5173/]
         labels: { service: frontend, slot: blue }
       - targets: [http://frontend-green:5173/]

@@ -40,6 +40,7 @@ describe("PrometheusOpsHealthService", () => {
                 },
                 { metric: { service: "cases" }, value: [1, "1"] },
                 { metric: { service: "users" }, value: [1, "0"] },
+                { metric: { service: "billing" }, value: [1, "1"] },
               ],
             },
           },
@@ -270,6 +271,14 @@ describe("PrometheusOpsHealthService", () => {
 
     const users = result.services.find((s) => s.service === "users");
     expect(users?.status).toBe("down");
+
+    const billing = result.services.find((s) => s.service === "billing");
+    expect(billing?.label).toBe("Billing");
+    expect(billing?.status).toBe("up");
+
+    const integrations = result.services.find((s) => s.service === "integrations");
+    expect(integrations?.label).toBe("Integrations");
+    expect(integrations?.status).toBe("unknown");
 
     expect(result.summary.downCount).toBeGreaterThanOrEqual(1);
     expect(result.summary.upCount).toBeGreaterThanOrEqual(2);

@@ -27,6 +27,7 @@ const SERVICE_LABELS: Record<string, string> = {
   documents: "Documents",
   exports: "Exports",
   integrations: "Integrations",
+  billing: "Billing",
   mongodb: "MongoDB",
 };
 
@@ -45,6 +46,8 @@ const KNOWN_ORDER = [
   "notifications",
   "documents",
   "exports",
+  "integrations",
+  "billing",
 ];
 
 type PromSample = {

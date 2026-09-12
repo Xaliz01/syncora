@@ -331,6 +331,7 @@ describe("PlatformService", () => {
         alreadyContacted: true,
         emailNotFound: false,
         city: "Lyon",
+        contactEmail: "jean@example.fr",
       });
       expect(result.creditsRemaining).toBe(87.5);
     });
@@ -715,6 +716,58 @@ describe("PlatformService", () => {
           },
         ),
       ).rejects.toBeInstanceOf(ConflictException);
+    });
+
+    it("resends outreach when already contacted if force is true", async () => {
+      httpService.get.mockImplementation((url: string) => {
+        if (String(url).includes("email-templates/")) {
+          return of({
+            data: {
+              id: "tpl-1",
+              name: "Relance",
+              purpose: "prospect_outreach",
+              subject: "Suite",
+              body: "Bonjour",
+              footer: "Planwise",
+              ctaLabel: "Découvrir Planwise",
+              ctaUrl: "/",
+              isDefault: true,
+              createdAt: "2026-08-01T00:00:00.000Z",
+              updatedAt: "2026-08-01T00:00:00.000Z",
+            },
+          });
+        }
+        return of({
+          data: {
+            outreaches: [
+              {
+                id: "o1",
+                siren: "123456789",
+                status: "sent",
+                sentAt: "2026-07-01T00:00:00.000Z",
+              },
+            ],
+          },
+        });
+      });
+      httpService.post.mockReturnValue(of({ data: { sent: true } }));
+
+      const result = await service.sendProspectOutreach(
+        { id: "staff-1", email: "staff@planwise.fr" },
+        {
+          siren: "123456789",
+          companyName: "X",
+          toEmail: "a@b.fr",
+          templateId: "tpl-1",
+          force: true,
+        },
+      );
+
+      expect(result.sent).toBe(true);
+      expect(httpService.post).toHaveBeenCalledWith(
+        expect.stringContaining("/email/transactional"),
+        expect.objectContaining({ to: "a@b.fr" }),
+      );
     });
 
     it("sends transactional email and logs outreach", async () => {

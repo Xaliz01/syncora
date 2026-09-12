@@ -146,6 +146,7 @@ export class PlatformProspectsService extends AbstractPlatformProspectsService {
         alreadyContacted: Boolean(prior && prior.status === "sent"),
         emailNotFound: Boolean(prior && prior.status === "email_not_found"),
         lastContactedAt: prior?.sentAt,
+        ...(prior?.email ? { contactEmail: prior.email } : {}),
         ...(prior?.comment ? { comment: prior.comment } : {}),
       };
     });
@@ -232,6 +233,7 @@ export class PlatformProspectsService extends AbstractPlatformProspectsService {
       alreadyContacted: Boolean(prior && prior.status === "sent"),
       emailNotFound: Boolean(prior && prior.status === "email_not_found"),
       lastContactedAt: prior?.sentAt,
+      ...(prior?.email ? { contactEmail: prior.email } : {}),
       ...(prior?.comment ? { comment: prior.comment } : {}),
     };
 
@@ -577,8 +579,11 @@ export class PlatformProspectsService extends AbstractPlatformProspectsService {
 
   async loadOutreachBySirens(
     sirens: string[],
-  ): Promise<Map<string, { status: string; sentAt: string; comment?: string }>> {
-    const map = new Map<string, { status: string; sentAt: string; comment?: string }>();
+  ): Promise<Map<string, { status: string; sentAt: string; comment?: string; email?: string }>> {
+    const map = new Map<
+      string,
+      { status: string; sentAt: string; comment?: string; email?: string }
+    >();
     if (sirens.length === 0) return map;
     try {
       const res = await firstValueFrom(
@@ -592,6 +597,7 @@ export class PlatformProspectsService extends AbstractPlatformProspectsService {
           status: o.status,
           sentAt: o.sentAt,
           ...(o.comment ? { comment: o.comment } : {}),
+          ...(o.email ? { email: o.email } : {}),
         });
       }
     } catch {
