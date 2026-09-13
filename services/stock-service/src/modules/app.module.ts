@@ -12,14 +12,17 @@ import { AbstractArticleStockService } from "../domain/ports/article-stock.servi
 import { AbstractPrestationService } from "../domain/ports/prestation.service.port";
 import { AbstractStockLocationService } from "../domain/ports/stock-location.service.port";
 import { AbstractStockDataImportService } from "../domain/ports/stock-data-import.service.port";
+import { AbstractInterventionPrestationUsageService } from "../domain/ports/intervention-prestation-usage.service.port";
 import { ArticleStockService } from "../domain/article-stock.service";
 import { PrestationService } from "../domain/prestation.service";
 import { StockLocationService } from "../domain/stock-location.service";
 import { StockDataImportService } from "../domain/stock-data-import.service";
+import { InterventionPrestationUsageService } from "../domain/intervention-prestation-usage.service";
 import { ArticleSchema } from "../persistence/article.schema";
 import { PrestationSchema } from "../persistence/prestation.schema";
 import { StockMovementSchema } from "../persistence/stock-movement.schema";
 import { StockLocationSchema } from "../persistence/stock-location.schema";
+import { InterventionPrestationUsageSchema } from "../persistence/intervention-prestation-usage.schema";
 
 @Module({
   imports: [
@@ -29,6 +32,7 @@ import { StockLocationSchema } from "../persistence/stock-location.schema";
       { name: "Prestation", schema: PrestationSchema },
       { name: "StockMovement", schema: StockMovementSchema },
       { name: "StockLocation", schema: StockLocationSchema },
+      { name: "InterventionPrestationUsage", schema: InterventionPrestationUsageSchema },
     ]),
   ],
   controllers: [StockController, StockDataImportController, TestDataController, HealthController],
@@ -39,6 +43,10 @@ import { StockLocationSchema } from "../persistence/stock-location.schema";
     { provide: AbstractPrestationService, useClass: PrestationService },
     { provide: AbstractStockLocationService, useClass: StockLocationService },
     { provide: AbstractStockDataImportService, useClass: StockDataImportService },
+    {
+      provide: AbstractInterventionPrestationUsageService,
+      useClass: InterventionPrestationUsageService,
+    },
   ],
 })
 export class AppModule {}

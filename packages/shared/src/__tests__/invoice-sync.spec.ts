@@ -3,13 +3,15 @@ import {
   buildInvoiceLinesFromCustom,
   buildInvoiceLinesFromQuote,
   invoiceLinesFromArticleUsages,
+  invoiceLinesFromPrestationUsages,
   nextSituationNumber,
   quoteInvoicedHt,
   remainingQuoteHt,
   remainingQuotePercent,
   sumInvoiceAmountsHt,
 } from "../integrations";
-import { shouldSetToInvoiceOnQuoteAccepted } from "../case";
+import { shouldSetToInvoiceOnQuoteAccepted, canCreateInvoiceFromCustomLines } from "../case";
+import { normalizeInvoiceInterventionIds, interventionBillingStatusFromInvoice } from "../billing";
 
 describe("invoice sync helpers", () => {
   it("sums active invoice amounts", () => {
@@ -187,5 +189,58 @@ describe("invoice sync helpers", () => {
       quantity: 1,
       unitPriceHt: 0,
     });
+  });
+
+  it("prefills invoice lines from prestation usages and catalog price/TVA", () => {
+    const prestationsById = new Map([
+      [
+        "p1",
+        {
+          defaultPrice: 55,
+          defaultTvaRate: 10 as const,
+          name: "Main d'œuvre",
+          unit: "h",
+          reference: "MO-H",
+        },
+      ],
+      ["p2", { defaultPrice: 30, name: "Déplacement", unit: "u" }],
+    ]);
+    const lines = invoiceLinesFromPrestationUsages(
+      [
+        { prestationId: "p1", prestationName: "Main d'œuvre", unit: "h", quantity: 2 },
+        { prestationId: "p1", prestationName: "Main d'œuvre", unit: "h", quantity: 1 },
+        { prestationId: "p2", prestationName: "Déplacement", unit: "u", quantity: 1 },
+        { prestationId: "p3", prestationName: "Ignoré", unit: "u", quantity: 0 },
+      ],
+      prestationsById,
+    );
+    expect(lines).toHaveLength(2);
+    expect(lines[0]).toMatchObject({
+      prestationId: "p1",
+      quantity: 3,
+      unitPriceHt: 55,
+      tvaRate: 10,
+      label: "Main d'œuvre (MO-H)",
+    });
+    expect(lines[1]).toMatchObject({
+      prestationId: "p2",
+      quantity: 1,
+      unitPriceHt: 30,
+      tvaRate: 20,
+    });
+  });
+
+  it("allows custom-line invoices when the case is still none", () => {
+    expect(canCreateInvoiceFromCustomLines("none")).toBe(true);
+    expect(canCreateInvoiceFromCustomLines("to_invoice")).toBe(true);
+    expect(canCreateInvoiceFromCustomLines("invoiced")).toBe(false);
+  });
+
+  it("normalizes intervention ids and maps invoice status to intervention billing", () => {
+    expect(normalizeInvoiceInterventionIds([" a ", "a", "", "b"])).toEqual(["a", "b"]);
+    expect(interventionBillingStatusFromInvoice("draft")).toBe("invoice_draft");
+    expect(interventionBillingStatusFromInvoice("finalized")).toBe("invoiced");
+    expect(interventionBillingStatusFromInvoice("paid")).toBe("paid");
+    expect(interventionBillingStatusFromInvoice("cancelled")).toBe("to_invoice");
   });
 });

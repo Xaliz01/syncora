@@ -25,8 +25,11 @@ import {
   buildInvoiceLinesFromCustom,
   buildInvoiceLinesFromQuote,
   canCreateCaseInvoice,
+  canCreateInvoiceFromCustomLines,
   invoiceTotalsFromLines,
+  interventionBillingStatusFromInvoice,
   nextSituationNumber,
+  normalizeInvoiceInterventionIds,
   shouldUpgradeBillingStatus,
   sumInvoiceAmountsHt,
 } from "@planwise/shared";
@@ -141,10 +144,17 @@ export class BillingGatewayService extends AbstractBillingGatewayService {
         customer: this.toCustomerSnapshot(prepared),
         seller: this.toSellerSnapshot(org),
         draft: options.draft !== false,
+        interventionIds: prepared.interventionIds,
       } satisfies Omit<CreateLocalInvoiceBody, "organizationId">,
       errorLabel: "Billing service error",
     });
     await this.recomputeCaseBillingStatus(user, caseId, prepared.quoteTotalHt);
+    await this.syncInterventionBillingStatuses(user, {
+      ...invoice,
+      interventionIds: invoice.interventionIds?.length
+        ? invoice.interventionIds
+        : prepared.interventionIds,
+    });
     return invoice;
   }
 
@@ -158,6 +168,7 @@ export class BillingGatewayService extends AbstractBillingGatewayService {
       errorLabel: "Billing service error",
     });
     await this.recomputeCaseBillingStatus(user, invoice.caseId);
+    await this.syncInterventionBillingStatuses(user, invoice);
     return invoice;
   }
 
@@ -171,6 +182,7 @@ export class BillingGatewayService extends AbstractBillingGatewayService {
       errorLabel: "Billing service error",
     });
     await this.recomputeCaseBillingStatus(user, invoice.caseId);
+    await this.syncInterventionBillingStatuses(user, invoice);
     return invoice;
   }
 
@@ -184,6 +196,7 @@ export class BillingGatewayService extends AbstractBillingGatewayService {
       errorLabel: "Billing service error",
     });
     await this.recomputeCaseBillingStatus(user, invoice.caseId);
+    await this.syncInterventionBillingStatuses(user, invoice);
     return invoice;
   }
 
@@ -357,13 +370,9 @@ export class BillingGatewayService extends AbstractBillingGatewayService {
     situationPercent?: number;
     amountHt: string;
     quoteTotalHt: number;
+    interventionIds?: string[];
   }> {
     const caseData = await this.casesService.getCase(user, caseId);
-    if (!canCreateCaseInvoice(caseData.billingStatus)) {
-      throw new BadRequestException(
-        "Le dossier doit être « À facturer », « Brouillon facture » ou « Partiellement facturé » pour créer une facture.",
-      );
-    }
     if (!caseData.customerId && !caseData.orderGiverId) {
       throw new BadRequestException(
         "Le dossier n’a pas de client ni de donneur d’ordre. Assignez un destinataire avant de facturer.",
@@ -378,8 +387,18 @@ export class BillingGatewayService extends AbstractBillingGatewayService {
     const customLines = options.lines?.filter((l) => l.label?.trim()) ?? [];
     const hasCustomLines = customLines.length > 0;
     const quoteIdOpt = options.quoteId?.trim();
+    const interventionIds = await this.requireInterventionsForInvoice(
+      user,
+      caseId,
+      options.interventionIds,
+    );
 
     if (hasCustomLines) {
+      if (!canCreateInvoiceFromCustomLines(caseData.billingStatus)) {
+        throw new BadRequestException(
+          "Ce dossier ne peut plus recevoir de facture en saisie libre.",
+        );
+      }
       let built: ReturnType<typeof buildInvoiceLinesFromCustom>;
       try {
         built = buildInvoiceLinesFromCustom({ lines: customLines });
@@ -393,9 +412,15 @@ export class BillingGatewayService extends AbstractBillingGatewayService {
         invoiceKind: "full",
         amountHt: built.amountHt,
         quoteTotalHt: 0,
+        interventionIds,
       };
     }
 
+    if (!canCreateCaseInvoice(caseData.billingStatus)) {
+      throw new BadRequestException(
+        "Le dossier doit être « À facturer », « Brouillon facture » ou « Partiellement facturé » pour créer une facture.",
+      );
+    }
     const invoiceKind: LocalInvoiceKind = options.invoiceKind ?? "full";
     const existing = await this.listInvoices(user, { caseId, limit: 200, offset: 0 });
     const quote = await this.requireQuoteForInvoice(user, caseData, quoteIdOpt);
@@ -509,5 +534,62 @@ export class BillingGatewayService extends AbstractBillingGatewayService {
       (caseData.billingStatus === "invoice_draft" && next === "partially_invoiced");
     if (!mayApply) return;
     await this.casesService.updateCase(user, caseId, { billingStatus: next as BillingStatus });
+  }
+
+  private async requireInterventionsForInvoice(
+    user: AuthUser,
+    caseId: string,
+    ids?: string[],
+  ): Promise<string[] | undefined> {
+    const unique = normalizeInvoiceInterventionIds(ids);
+    if (unique.length === 0) return undefined;
+    for (const id of unique) {
+      let intervention;
+      try {
+        intervention = await this.casesService.getIntervention(user, id);
+      } catch {
+        throw new BadRequestException(
+          "Une des interventions est introuvable. Vérifiez la sélection, puis réessayez.",
+        );
+      }
+      if (intervention.caseId !== caseId) {
+        throw new BadRequestException("Les interventions doivent appartenir au dossier facturé.");
+      }
+    }
+    return unique;
+  }
+
+  private async syncInterventionBillingStatuses(
+    user: AuthUser,
+    invoice: LocalInvoiceResponse,
+  ): Promise<void> {
+    const ids = normalizeInvoiceInterventionIds(invoice.interventionIds);
+    if (ids.length === 0) return;
+    const target = interventionBillingStatusFromInvoice(invoice.status);
+    if (!target) return;
+
+    if (invoice.status === "cancelled") {
+      const list = await this.listInvoices(user, { caseId: invoice.caseId, limit: 200, offset: 0 });
+      for (const id of ids) {
+        const other = list.invoices.find(
+          (item) =>
+            item.id !== invoice.id &&
+            item.status !== "cancelled" &&
+            normalizeInvoiceInterventionIds(item.interventionIds).includes(id),
+        );
+        const next = other
+          ? (interventionBillingStatusFromInvoice(other.status) ?? "to_invoice")
+          : "to_invoice";
+        await this.casesService.setInterventionBillingStatus(user, id, next);
+      }
+      return;
+    }
+
+    for (const id of ids) {
+      const current = await this.casesService.getIntervention(user, id);
+      if (shouldUpgradeBillingStatus(current.billingStatus, target)) {
+        await this.casesService.setInterventionBillingStatus(user, id, target);
+      }
+    }
   }
 }

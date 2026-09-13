@@ -36,6 +36,9 @@ describe("StockController", () => {
       listArticleMovements: jest.fn(),
       addInterventionArticleUsage: jest.fn(),
       getInterventionUsage: jest.fn(),
+      listInterventionPrestationUsages: jest.fn(),
+      setInterventionPrestationUsages: jest.fn(),
+      listCaseInterventionPrestationUsages: jest.fn(),
       createStockLocation: jest.fn(),
       listStockLocations: jest.fn(),
       getStockLocation: jest.fn(),
@@ -311,6 +314,54 @@ describe("StockController", () => {
       );
       expect(result).toHaveLength(1);
       expect(result[0].articleId).toBe("article-1");
+    });
+  });
+
+  describe("setInterventionPrestationUsages", () => {
+    it("should call stockService.setInterventionPrestationUsages with user, id and body", async () => {
+      const body = {
+        caseId: "case-1",
+        usages: [{ prestationId: "presta-1", quantity: 2 }],
+      };
+      mockStockService.setInterventionPrestationUsages.mockResolvedValue([
+        {
+          id: "u1",
+          organizationId: "org-123",
+          interventionId: "intervention-1",
+          prestationId: "presta-1",
+          prestationName: "Main d'œuvre",
+          unit: "h",
+          quantity: 2,
+        },
+      ] as never);
+
+      const result = await controller.setInterventionPrestationUsages(
+        mockUser,
+        "intervention-1",
+        body,
+      );
+
+      expect(mockStockService.setInterventionPrestationUsages).toHaveBeenCalledWith(
+        mockUser,
+        "intervention-1",
+        body,
+      );
+      expect(result[0].prestationId).toBe("presta-1");
+    });
+  });
+
+  describe("listCaseInterventionPrestationUsages", () => {
+    it("should call stockService.listCaseInterventionPrestationUsages", async () => {
+      mockStockService.listCaseInterventionPrestationUsages.mockResolvedValue({
+        usages: [],
+      } as never);
+
+      await controller.listCaseInterventionPrestationUsages(mockUser, "case-1");
+
+      expect(mockStockService.listCaseInterventionPrestationUsages).toHaveBeenCalledWith(
+        mockUser,
+        "case-1",
+      );
     });
   });
 });

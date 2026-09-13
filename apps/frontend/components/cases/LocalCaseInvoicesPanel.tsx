@@ -38,7 +38,7 @@ export function LocalCaseInvoicesPanel({
   return (
     <div className="mt-4 space-y-3">
       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-        Factures Planwise ({invoices.length})
+        Factures ({invoices.length})
       </p>
       {invoices.map((invoice) => {
         const kindLabel = LOCAL_INVOICE_KIND_LABELS[invoice.kind];

@@ -15,6 +15,7 @@ import {
   CASE_INVOICE_KIND_LABELS,
   CASE_INVOICE_KINDS,
   invoiceLinesFromArticleUsages,
+  invoiceLinesFromPrestationUsages,
   localInvoiceStatusToRemote,
   quoteInvoicedHt,
   remainingQuoteHt,
@@ -36,6 +37,13 @@ export type InterventionArticleUsageForInvoice = {
   netQuantity: number;
 };
 
+export type InterventionPrestationUsageForInvoice = {
+  prestationId: string;
+  prestationName: string;
+  unit?: string;
+  quantity: number;
+};
+
 export type CreatedCaseInvoiceResult = LocalInvoiceResponse;
 
 type InvoiceSource = "quote" | "lines";
@@ -49,7 +57,11 @@ type Props = {
   quotes: QuoteSummaryResponse[];
   invoices?: LocalInvoiceResponse[];
   initialQuoteId?: string | null;
+  /** Force « saisie libre » (facture depuis intervention(s)). */
+  initialSource?: InvoiceSource;
+  interventionIds?: string[];
   articleUsages?: InterventionArticleUsageForInvoice[];
+  prestationUsages?: InterventionPrestationUsageForInvoice[];
   articles?: ArticleResponse[];
   prestations?: PrestationResponse[];
   createdResult?: CreatedCaseInvoiceResult | null;
@@ -249,7 +261,10 @@ export function CreateCaseInvoiceOverlay({
   quotes,
   invoices = [],
   initialQuoteId,
+  initialSource,
+  interventionIds,
   articleUsages = [],
+  prestationUsages = [],
   articles = [],
   prestations = [],
   createdResult = null,
@@ -283,10 +298,34 @@ export function CreateCaseInvoiceOverlay({
     return map;
   }, [articles]);
 
-  const prefilledArticleLines = useMemo(
-    () => invoiceLinesFromArticleUsages(articleUsages, articlesById),
-    [articleUsages, articlesById],
-  );
+  const prestationsById = useMemo(() => {
+    const map = new Map<
+      string,
+      {
+        defaultPrice?: number | null;
+        defaultTvaRate?: PrestationResponse["defaultTvaRate"] | null;
+        name?: string;
+        unit?: string;
+        reference?: string;
+      }
+    >();
+    for (const p of prestations) {
+      map.set(p.id, {
+        defaultPrice: p.defaultPrice,
+        defaultTvaRate: p.defaultTvaRate,
+        name: p.name,
+        unit: p.unit,
+        reference: p.reference,
+      });
+    }
+    return map;
+  }, [prestations]);
+
+  const prefilledArticleLines = useMemo(() => {
+    const fromArticles = invoiceLinesFromArticleUsages(articleUsages, articlesById);
+    const fromPrestations = invoiceLinesFromPrestationUsages(prestationUsages, prestationsById);
+    return [...fromArticles, ...fromPrestations];
+  }, [articleUsages, articlesById, prestationUsages, prestationsById]);
 
   const catalogItems = useMemo((): CatalogPickItem[] => {
     const fromArticles: CatalogPickItem[] = articles.map((a) => ({
@@ -314,10 +353,11 @@ export function CreateCaseInvoiceOverlay({
   const hasArticleLines = prefilledArticleLines.length > 0;
 
   const defaultSource = useMemo((): InvoiceSource => {
+    if (initialSource === "lines") return "lines";
     if (initialQuoteId && hasQuotes) return "quote";
     if (hasQuotes) return "quote";
     return "lines";
-  }, [initialQuoteId, hasQuotes]);
+  }, [initialSource, initialQuoteId, hasQuotes]);
 
   const [source, setSource] = useState<InvoiceSource>(defaultSource);
   const [quoteId, setQuoteId] = useState(preferredQuoteId);
@@ -387,7 +427,11 @@ export function CreateCaseInvoiceOverlay({
   const previewOptions = useMemo((): SyncCaseInvoiceOptions | null => {
     if (isLinesSource) {
       if (!parsedLines || parsedLines.length === 0 || linesTotalHt <= 0) return null;
-      return { lines: parsedLines, invoiceKind: "full" };
+      return {
+        lines: parsedLines,
+        invoiceKind: "full",
+        ...(interventionIds && interventionIds.length > 0 ? { interventionIds } : {}),
+      };
     }
     if (!quoteId) return null;
     const options: SyncCaseInvoiceOptions = { quoteId, invoiceKind };
@@ -417,6 +461,7 @@ export function CreateCaseInvoiceOverlay({
     mode,
     situationPercent,
     amountHt,
+    interventionIds,
   ]);
 
   const canSubmit = previewOptions != null;

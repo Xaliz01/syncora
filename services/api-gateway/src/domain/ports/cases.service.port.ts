@@ -20,6 +20,7 @@ import type {
   TodoDashboardVisibility,
   CommentResponse,
   CommentEntityType,
+  BillingStatus,
 } from "@planwise/shared";
 
 export interface CreateCaseForOrgBody {
@@ -263,6 +264,11 @@ export abstract class AbstractCasesGatewayService {
     user: AuthUser,
     interventionId: string,
     body: UpdateInterventionForOrgBody,
+  ): Promise<InterventionResponse>;
+  abstract setInterventionBillingStatus(
+    user: AuthUser,
+    interventionId: string,
+    billingStatus: BillingStatus,
   ): Promise<InterventionResponse>;
   abstract deleteIntervention(user: AuthUser, interventionId: string): Promise<{ deleted: true }>;
   abstract startIntervention(

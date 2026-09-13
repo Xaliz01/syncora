@@ -10,8 +10,11 @@ import type {
   CreateStockLocationBody,
   CreateStockTransferBody,
   InterventionArticleUsageResponse,
+  InterventionPrestationUsageResponse,
+  InterventionPrestationUsagesListResponse,
   PrestationResponse,
   PrestationsListResponse,
+  SetInterventionPrestationUsagesBody,
   StockLocationResponse,
   StockMovementResponse,
   UpdateArticleBody,
@@ -27,6 +30,7 @@ import {
   type CreatePrestationForOrgBody,
   type CreateStockLocationForOrgBody,
   type CreateStockTransferForOrgBody,
+  type SetInterventionPrestationUsagesForOrgBody,
   type UpdateArticleForOrgBody,
   type UpdatePrestationForOrgBody,
   type UpdateStockLocationForOrgBody,
@@ -199,6 +203,33 @@ export class StockGatewayService extends AbstractStockGatewayService {
     return this.request<InterventionArticleUsageResponse[]>(user, {
       method: "get",
       path: `/interventions/${interventionId}/usage`,
+    });
+  }
+
+  async listInterventionPrestationUsages(user: AuthUser, interventionId: string) {
+    return this.request<InterventionPrestationUsagesListResponse>(user, {
+      method: "get",
+      path: `/interventions/${interventionId}/prestations`,
+    });
+  }
+
+  async setInterventionPrestationUsages(
+    user: AuthUser,
+    interventionId: string,
+    body: SetInterventionPrestationUsagesForOrgBody,
+  ) {
+    return this.request<InterventionPrestationUsageResponse[]>(user, {
+      method: "put",
+      path: `/interventions/${interventionId}/prestations`,
+      body: { ...body } as SetInterventionPrestationUsagesBody,
+    });
+  }
+
+  async listCaseInterventionPrestationUsages(user: AuthUser, caseId: string) {
+    return this.request<InterventionPrestationUsagesListResponse>(user, {
+      method: "get",
+      path: "/intervention-prestation-usages",
+      query: { caseId },
     });
   }
 

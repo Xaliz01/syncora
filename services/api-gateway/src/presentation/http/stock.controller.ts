@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   UseGuards,
 } from "@nestjs/common";
@@ -28,6 +29,7 @@ import type {
   CreatePrestationForOrgBody,
   CreateStockLocationForOrgBody,
   CreateStockTransferForOrgBody,
+  SetInterventionPrestationUsagesForOrgBody,
   UpdateArticleForOrgBody,
   UpdatePrestationForOrgBody,
   UpdateStockLocationForOrgBody,
@@ -193,6 +195,34 @@ export class StockController {
     @Param("interventionId") interventionId: string,
   ) {
     return this.stockService.getInterventionUsage(user, interventionId);
+  }
+
+  @Get("interventions/:interventionId/prestations")
+  @RequirePermissions("stock.interventions.read")
+  async listInterventionPrestationUsages(
+    @CurrentUser() user: AuthUser,
+    @Param("interventionId") interventionId: string,
+  ) {
+    return this.stockService.listInterventionPrestationUsages(user, interventionId);
+  }
+
+  @Put("interventions/:interventionId/prestations")
+  @RequirePermissions("stock.interventions.create")
+  async setInterventionPrestationUsages(
+    @CurrentUser() user: AuthUser,
+    @Param("interventionId") interventionId: string,
+    @Body() body: SetInterventionPrestationUsagesForOrgBody,
+  ) {
+    return this.stockService.setInterventionPrestationUsages(user, interventionId, body);
+  }
+
+  @Get("intervention-prestation-usages")
+  @RequirePermissions("stock.interventions.read")
+  async listCaseInterventionPrestationUsages(
+    @CurrentUser() user: AuthUser,
+    @Query("caseId") caseId: string,
+  ) {
+    return this.stockService.listCaseInterventionPrestationUsages(user, caseId);
   }
 
   // ── Stock locations ──

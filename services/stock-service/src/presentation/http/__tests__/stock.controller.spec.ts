@@ -4,12 +4,14 @@ import { StockController } from "../stock.controller";
 import { AbstractArticleStockService } from "../../../domain/ports/article-stock.service.port";
 import { AbstractPrestationService } from "../../../domain/ports/prestation.service.port";
 import { AbstractStockLocationService } from "../../../domain/ports/stock-location.service.port";
+import { AbstractInterventionPrestationUsageService } from "../../../domain/ports/intervention-prestation-usage.service.port";
 
 describe("StockController", () => {
   let controller: StockController;
   let mockArticleStockService: jest.Mocked<AbstractArticleStockService>;
   let mockPrestationService: jest.Mocked<AbstractPrestationService>;
   let mockStockLocationService: jest.Mocked<AbstractStockLocationService>;
+  let mockInterventionPrestationUsageService: jest.Mocked<AbstractInterventionPrestationUsageService>;
 
   beforeEach(async () => {
     mockArticleStockService = {
@@ -47,6 +49,12 @@ describe("StockController", () => {
       purgeTestData: jest.fn(),
     };
 
+    mockInterventionPrestationUsageService = {
+      listByIntervention: jest.fn(),
+      listByCase: jest.fn(),
+      replaceUsages: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [StockController],
       providers: [
@@ -61,6 +69,10 @@ describe("StockController", () => {
         {
           provide: AbstractStockLocationService,
           useValue: mockStockLocationService,
+        },
+        {
+          provide: AbstractInterventionPrestationUsageService,
+          useValue: mockInterventionPrestationUsageService,
         },
       ],
     }).compile();
@@ -363,6 +375,74 @@ describe("StockController", () => {
         controller.getInterventionUsage("intervention-1", undefined as never),
       ).rejects.toThrow(BadRequestException);
       expect(mockArticleStockService.getInterventionUsage).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("listInterventionPrestationUsages", () => {
+    it("should call interventionPrestationUsageService.listByIntervention", async () => {
+      mockInterventionPrestationUsageService.listByIntervention.mockResolvedValue({
+        usages: [
+          {
+            id: "u1",
+            organizationId: "org-1",
+            interventionId: "intervention-1",
+            prestationId: "presta-1",
+            prestationName: "Main d'œuvre",
+            unit: "h",
+            quantity: 2,
+          },
+        ],
+      });
+
+      const result = await controller.listInterventionPrestationUsages("intervention-1", "org-1");
+
+      expect(mockInterventionPrestationUsageService.listByIntervention).toHaveBeenCalledWith(
+        "org-1",
+        "intervention-1",
+      );
+      expect(result.usages).toHaveLength(1);
+    });
+  });
+
+  describe("setInterventionPrestationUsages", () => {
+    it("should call replaceUsages with interventionId and body", async () => {
+      const body = {
+        organizationId: "org-1",
+        caseId: "case-1",
+        usages: [{ prestationId: "presta-1", quantity: 2 }],
+      };
+      mockInterventionPrestationUsageService.replaceUsages.mockResolvedValue([
+        {
+          id: "u1",
+          organizationId: "org-1",
+          interventionId: "intervention-1",
+          prestationId: "presta-1",
+          prestationName: "Main d'œuvre",
+          unit: "h",
+          quantity: 2,
+        },
+      ]);
+
+      const result = await controller.setInterventionPrestationUsages("intervention-1", body);
+
+      expect(mockInterventionPrestationUsageService.replaceUsages).toHaveBeenCalledWith(
+        "intervention-1",
+        body,
+      );
+      expect(result[0]?.prestationId).toBe("presta-1");
+    });
+  });
+
+  describe("listCaseInterventionPrestationUsages", () => {
+    it("should call listByCase with organizationId and caseId", async () => {
+      mockInterventionPrestationUsageService.listByCase.mockResolvedValue({ usages: [] });
+
+      await controller.listCaseInterventionPrestationUsages("org-1", "case-1");
+
+      expect(mockInterventionPrestationUsageService.listByCase).toHaveBeenCalledWith(
+        "org-1",
+        "case-1",
+      );
     });
   });
 });

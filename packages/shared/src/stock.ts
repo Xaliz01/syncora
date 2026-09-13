@@ -75,6 +75,38 @@ export interface AddInterventionArticleUsageBody {
   actorUserName?: string;
 }
 
+/** Consommation de prestation sur une intervention (hors stock). */
+export interface InterventionPrestationUsageResponse {
+  id: string;
+  organizationId: string;
+  interventionId: string;
+  caseId?: string;
+  prestationId: string;
+  prestationName: string;
+  prestationReference?: string;
+  unit: string;
+  quantity: number;
+  defaultPrice?: number;
+  defaultTvaRate?: number;
+  updatedAt?: string;
+}
+
+export interface SetInterventionPrestationUsageItem {
+  prestationId: string;
+  /** Quantité nette ; 0 retire la ligne active. */
+  quantity: number;
+}
+
+export interface SetInterventionPrestationUsagesBody {
+  organizationId: string;
+  caseId?: string;
+  usages: SetInterventionPrestationUsageItem[];
+}
+
+export interface InterventionPrestationUsagesListResponse {
+  usages: InterventionPrestationUsageResponse[];
+}
+
 export interface CreateArticleBody {
   organizationId: string;
   name: string;

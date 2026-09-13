@@ -22,6 +22,7 @@ export function toInvoiceResponse(doc: InvoiceDocument): LocalInvoiceResponse {
     creditedInvoiceId: doc.creditedInvoiceId,
     caseTitle: doc.caseTitle,
     emailSends: doc.emailSends ?? [],
+    interventionIds: doc.interventionIds ?? [],
     createdAt: doc.get("createdAt")?.toISOString(),
     updatedAt: doc.get("updatedAt")?.toISOString(),
     finalizedAt: doc.finalizedAt?.toISOString(),

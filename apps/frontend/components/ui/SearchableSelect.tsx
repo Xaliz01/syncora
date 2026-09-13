@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useId, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 export type SearchableSelectOption = {
   value: string;
@@ -17,6 +18,8 @@ type SearchableSelectProps = {
   "aria-label"?: string;
   className?: string;
   disabled?: boolean;
+  /** When false, the empty « Tous » option is hidden (required pick). Default true. */
+  allowEmpty?: boolean;
 };
 
 export function SearchableSelect({
@@ -28,11 +31,14 @@ export function SearchableSelect({
   "aria-label": ariaLabel,
   className = "",
   disabled = false,
+  allowEmpty = true,
 }: SearchableSelectProps) {
   const listboxId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number; width: number } | null>(null);
 
   const selectedLabel = useMemo(() => {
     if (!value) return emptyLabel;
@@ -45,13 +51,36 @@ export function SearchableSelect({
     return options.filter((o) => o.label.toLowerCase().includes(q));
   }, [options, search]);
 
+  const updateMenuPos = () => {
+    const el = rootRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    setMenuPos({
+      top: r.bottom + 4,
+      left: r.left,
+      width: Math.max(r.width, 224),
+    });
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    updateMenuPos();
+    const onWin = () => updateMenuPos();
+    window.addEventListener("scroll", onWin, true);
+    window.addEventListener("resize", onWin);
+    return () => {
+      window.removeEventListener("scroll", onWin, true);
+      window.removeEventListener("resize", onWin);
+    };
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
     const onPointerDown = (e: MouseEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) {
-        setOpen(false);
-        setSearch("");
-      }
+      const target = e.target as Node;
+      if (rootRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      setOpen(false);
+      setSearch("");
     };
     document.addEventListener("mousedown", onPointerDown);
     return () => document.removeEventListener("mousedown", onPointerDown);
@@ -62,6 +91,75 @@ export function SearchableSelect({
     setOpen(false);
     setSearch("");
   };
+
+  const menu =
+    open && !disabled && menuPos
+      ? createPortal(
+          <div
+            ref={menuRef}
+            id={listboxId}
+            role="listbox"
+            style={{
+              position: "fixed",
+              top: menuPos.top,
+              left: menuPos.left,
+              width: menuPos.width,
+            }}
+            className="z-[110] rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg"
+          >
+            <div className="border-b border-slate-100 dark:border-slate-800 p-1.5">
+              <input
+                type="search"
+                autoFocus
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={placeholder}
+                aria-label={ariaLabel ? `Rechercher — ${ariaLabel}` : "Rechercher"}
+                className="w-full rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1 text-xs text-slate-700 dark:text-slate-200 focus:border-brand-500 focus:outline-none"
+              />
+            </div>
+            <div className="max-h-48 overflow-y-auto py-1">
+              {allowEmpty ? (
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={!value}
+                  onClick={() => select("")}
+                  className={`flex w-full px-2.5 py-1.5 text-left text-xs hover:bg-slate-50 dark:hover:bg-slate-800 ${
+                    !value
+                      ? "font-medium text-brand-700 dark:text-brand-300"
+                      : "text-slate-600 dark:text-slate-300"
+                  }`}
+                >
+                  {emptyLabel}
+                </button>
+              ) : null}
+              {filtered.map((o) => (
+                <button
+                  key={o.value}
+                  type="button"
+                  role="option"
+                  aria-selected={value === o.value}
+                  onClick={() => select(o.value)}
+                  className={`flex w-full px-2.5 py-1.5 text-left text-xs hover:bg-slate-50 dark:hover:bg-slate-800 ${
+                    value === o.value
+                      ? "font-medium text-brand-700 dark:text-brand-300"
+                      : "text-slate-700 dark:text-slate-200"
+                  }`}
+                >
+                  <span className="truncate">{o.label}</span>
+                </button>
+              ))}
+              {filtered.length === 0 ? (
+                <p className="px-2.5 py-2 text-xs text-slate-500 dark:text-slate-400">
+                  Aucun résultat.
+                </p>
+              ) : null}
+            </div>
+          </div>,
+          document.body,
+        )
+      : null;
 
   return (
     <div ref={rootRef} className={`relative min-w-[10rem] ${className}`}>
@@ -86,62 +184,7 @@ export function SearchableSelect({
           {open ? "▲" : "▼"}
         </span>
       </button>
-
-      {open && !disabled ? (
-        <div
-          id={listboxId}
-          role="listbox"
-          className="absolute z-40 mt-1 w-full min-w-[14rem] rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg"
-        >
-          <div className="border-b border-slate-100 dark:border-slate-800 p-1.5">
-            <input
-              type="search"
-              autoFocus
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={placeholder}
-              aria-label={ariaLabel ? `Rechercher — ${ariaLabel}` : "Rechercher"}
-              className="w-full rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1 text-xs text-slate-700 dark:text-slate-200 focus:border-brand-500 focus:outline-none"
-            />
-          </div>
-          <div className="max-h-48 overflow-y-auto py-1">
-            <button
-              type="button"
-              role="option"
-              aria-selected={!value}
-              onClick={() => select("")}
-              className={`flex w-full px-2.5 py-1.5 text-left text-xs hover:bg-slate-50 dark:hover:bg-slate-800 ${
-                !value
-                  ? "font-medium text-brand-700 dark:text-brand-300"
-                  : "text-slate-600 dark:text-slate-300"
-              }`}
-            >
-              {emptyLabel}
-            </button>
-            {filtered.map((o) => (
-              <button
-                key={o.value}
-                type="button"
-                role="option"
-                aria-selected={value === o.value}
-                onClick={() => select(o.value)}
-                className={`flex w-full px-2.5 py-1.5 text-left text-xs hover:bg-slate-50 dark:hover:bg-slate-800 ${
-                  value === o.value
-                    ? "font-medium text-brand-700 dark:text-brand-300"
-                    : "text-slate-700 dark:text-slate-200"
-                }`}
-              >
-                <span className="truncate">{o.label}</span>
-              </button>
-            ))}
-            {filtered.length === 0 ? (
-              <p className="px-2.5 py-2 text-xs text-slate-500 dark:text-slate-400">
-                Aucun résultat.
-              </p>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
+      {menu}
     </div>
   );
 }

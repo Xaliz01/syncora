@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -22,12 +22,15 @@ import {
   InterventionArticlesDialog,
   resolvePreferredStockLocationId,
   type InterventionArticleUsageItem,
+  type InterventionPrestationUsageItem,
 } from "@/components/cases/InterventionArticlesDialog";
 import { InterventionPhotos } from "@/components/interventions/InterventionPhotos";
 import { InterventionSignatureDialog } from "@/components/interventions/InterventionSignatureDialog";
 import {
   CreateCaseInvoiceOverlay,
   type CreatedCaseInvoiceResult,
+  type InterventionArticleUsageForInvoice,
+  type InterventionPrestationUsageForInvoice,
 } from "@/components/cases/CreateCaseInvoiceOverlay";
 import { LocalCaseInvoicesPanel } from "@/components/cases/LocalCaseInvoicesPanel";
 import { SendInvoiceDialog } from "@/components/billing/SendInvoiceDialog";
@@ -62,6 +65,8 @@ import type {
 import {
   BILLING_STATUS_LABELS,
   canCreateCaseInvoice,
+  canCreateInvoiceFromCustomLines,
+  isDefaultInterventionInvoiceSelection,
   localInvoiceStatusToRemote,
   MAX_PAGE_LIMIT,
   quoteInvoicedHt,
@@ -100,6 +105,64 @@ const BILLING_STATUS_COLORS: Record<BillingStatus, string> = {
     "bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800",
   paid: "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
 };
+
+function collectArticleUsagesForInvoice(
+  usageMap: Map<string, InterventionArticleUsageItem[]>,
+  interventionIds?: string[],
+): InterventionArticleUsageForInvoice[] {
+  const ids = interventionIds ? new Set(interventionIds) : null;
+  const byArticle = new Map<
+    string,
+    { articleId: string; articleName: string; unit?: string; netQuantity: number }
+  >();
+  for (const [interventionId, items] of usageMap) {
+    if (ids && !ids.has(interventionId)) continue;
+    for (const item of items) {
+      if (!(item.netQuantity > 0)) continue;
+      const existing = byArticle.get(item.articleId);
+      if (existing) {
+        existing.netQuantity += item.netQuantity;
+      } else {
+        byArticle.set(item.articleId, {
+          articleId: item.articleId,
+          articleName: item.articleName,
+          unit: item.unit,
+          netQuantity: item.netQuantity,
+        });
+      }
+    }
+  }
+  return [...byArticle.values()];
+}
+
+function collectPrestationUsagesForInvoice(
+  usageMap: Map<string, InterventionPrestationUsageItem[]>,
+  interventionIds?: string[],
+): InterventionPrestationUsageForInvoice[] {
+  const ids = interventionIds ? new Set(interventionIds) : null;
+  const byPrestation = new Map<
+    string,
+    { prestationId: string; prestationName: string; unit?: string; quantity: number }
+  >();
+  for (const [interventionId, items] of usageMap) {
+    if (ids && !ids.has(interventionId)) continue;
+    for (const item of items) {
+      if (!(item.quantity > 0)) continue;
+      const existing = byPrestation.get(item.prestationId);
+      if (existing) {
+        existing.quantity += item.quantity;
+      } else {
+        byPrestation.set(item.prestationId, {
+          prestationId: item.prestationId,
+          prestationName: item.prestationName,
+          unit: item.unit,
+          quantity: item.quantity,
+        });
+      }
+    }
+  }
+  return [...byPrestation.values()];
+}
 
 const PRIORITY_LABELS: Record<CasePriority, string> = {
   low: "Basse",
@@ -468,7 +531,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   const { data: prestationsData } = useQuery({
     queryKey: ["prestations", "invoice-catalog"],
     queryFn: () => stockApi.listPrestations({ activeOnly: true, limit: MAX_PAGE_LIMIT }),
-    enabled: can("prestations.read") && needArticlesForInvoice,
+    enabled: can("prestations.read") && (needArticlesForInvoice || showInterventionArticles),
   });
   const prestations = prestationsData?.prestations;
 
@@ -501,6 +564,12 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
     enabled: loadStockForCase,
   });
 
+  const { data: casePrestationUsagesData } = useQuery({
+    queryKey: ["intervention-prestation-usages", caseId],
+    queryFn: () => stockApi.listCaseInterventionPrestationUsages(caseId),
+    enabled: loadStockForCase && can("stock.interventions.read"),
+  });
+
   const [newIntTitle, setNewIntTitle] = useState("");
   const [newIntDesc, setNewIntDesc] = useState("");
   const [newIntTypeId, setNewIntTypeId] = useState("");
@@ -527,6 +596,25 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   const [signDialogInterventionId, setSignDialogInterventionId] = useState<string | null>(null);
   const [createInvoiceOpen, setCreateInvoiceOpen] = useState(false);
   const [createInvoiceQuoteId, setCreateInvoiceQuoteId] = useState<string | null>(null);
+  const [createInvoiceSource, setCreateInvoiceSource] = useState<"quote" | "lines" | null>(null);
+  const [invoiceInterventionIds, setInvoiceInterventionIds] = useState<string[]>([]);
+  const [selectedInterventionIds, setSelectedInterventionIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [invoiceSelectionTouched, setInvoiceSelectionTouched] = useState(false);
+
+  useEffect(() => {
+    if (!interventions || invoiceSelectionTouched) return;
+    setSelectedInterventionIds(
+      new Set(
+        interventions
+          .filter((intervention) =>
+            isDefaultInterventionInvoiceSelection(intervention.billingStatus),
+          )
+          .map((intervention) => intervention.id),
+      ),
+    );
+  }, [interventions, invoiceSelectionTouched]);
   const [invoiceToSend, setInvoiceToSend] = useState<LocalInvoiceResponse | null>(null);
   const [createdInvoiceResult, setCreatedInvoiceResult] = useState<CreatedCaseInvoiceResult | null>(
     null,
@@ -536,6 +624,8 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
   const closeInvoiceOverlay = () => {
     setCreateInvoiceOpen(false);
     setCreateInvoiceQuoteId(null);
+    setCreateInvoiceSource(null);
+    setInvoiceInterventionIds([]);
     setCreatedInvoiceResult(null);
   };
 
@@ -544,6 +634,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
     queryClient.invalidateQueries({ queryKey: ["interventions", caseId] });
     queryClient.invalidateQueries({ queryKey: ["cases"] });
     queryClient.invalidateQueries({ queryKey: ["stock-movements", caseId] });
+    queryClient.invalidateQueries({ queryKey: ["intervention-prestation-usages", caseId] });
     queryClient.invalidateQueries({ queryKey: ["articles"] });
     queryClient.invalidateQueries({ queryKey: ["case-history", caseId] });
     queryClient.invalidateQueries({ queryKey: ["billing", "invoices", caseId] });
@@ -720,29 +811,48 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
     return map;
   }, [articles, stockMovements]);
 
-  const caseArticleUsagesForInvoice = useMemo(() => {
-    const byArticle = new Map<
-      string,
-      { articleId: string; articleName: string; unit?: string; netQuantity: number }
-    >();
-    for (const items of interventionUsageMap.values()) {
-      for (const item of items) {
-        if (!(item.netQuantity > 0)) continue;
-        const existing = byArticle.get(item.articleId);
-        if (existing) {
-          existing.netQuantity += item.netQuantity;
-        } else {
-          byArticle.set(item.articleId, {
-            articleId: item.articleId,
-            articleName: item.articleName,
-            unit: item.unit,
-            netQuantity: item.netQuantity,
-          });
-        }
-      }
+  const interventionPrestationUsageMap = useMemo(() => {
+    const map = new Map<string, InterventionPrestationUsageItem[]>();
+    for (const usage of casePrestationUsagesData?.usages ?? []) {
+      if (!(usage.quantity > 0)) continue;
+      const existing = map.get(usage.interventionId) ?? [];
+      existing.push({
+        prestationId: usage.prestationId,
+        prestationName: usage.prestationName,
+        prestationReference: usage.prestationReference,
+        unit: usage.unit,
+        quantity: usage.quantity,
+      });
+      map.set(usage.interventionId, existing);
     }
-    return [...byArticle.values()];
-  }, [interventionUsageMap]);
+    return map;
+  }, [casePrestationUsagesData]);
+
+  const caseArticleUsagesForInvoice = useMemo(
+    () => collectArticleUsagesForInvoice(interventionUsageMap),
+    [interventionUsageMap],
+  );
+
+  const casePrestationUsagesForInvoice = useMemo(
+    () => collectPrestationUsagesForInvoice(interventionPrestationUsageMap),
+    [interventionPrestationUsageMap],
+  );
+
+  const invoiceOverlayUsages = useMemo(
+    () =>
+      invoiceInterventionIds.length > 0
+        ? collectArticleUsagesForInvoice(interventionUsageMap, invoiceInterventionIds)
+        : caseArticleUsagesForInvoice,
+    [invoiceInterventionIds, interventionUsageMap, caseArticleUsagesForInvoice],
+  );
+
+  const invoiceOverlayPrestationUsages = useMemo(
+    () =>
+      invoiceInterventionIds.length > 0
+        ? collectPrestationUsagesForInvoice(interventionPrestationUsageMap, invoiceInterventionIds)
+        : casePrestationUsagesForInvoice,
+    [invoiceInterventionIds, interventionPrestationUsageMap, casePrestationUsagesForInvoice],
+  );
 
   const articlePriceById = useMemo(() => {
     const map = new Map<string, number | undefined>();
@@ -751,6 +861,14 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
     }
     return map;
   }, [articles]);
+
+  const prestationPriceById = useMemo(() => {
+    const map = new Map<string, number | undefined>();
+    for (const prestation of prestations ?? []) {
+      map.set(prestation.id, prestation.defaultPrice);
+    }
+    return map;
+  }, [prestations]);
 
   const teamsById = useMemo(() => {
     const map = new Map<string, TeamResponse>();
@@ -837,6 +955,8 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
         onClick={() => {
           setCreatedInvoiceResult(null);
           setCreateInvoiceQuoteId(null);
+          setCreateInvoiceSource(null);
+          setInvoiceInterventionIds([]);
           setCreateInvoiceOpen(true);
         }}
         className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 shadow-sm"
@@ -844,6 +964,30 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
         {createInvoiceMutation.isPending ? "Création…" : "Créer une facture"}
       </button>
     ) : undefined;
+
+  const canInvoiceFromInterventions =
+    canCreateLocalInvoice &&
+    canCreateInvoiceFromCustomLines(caseData.billingStatus) &&
+    Boolean(caseData.customerId || caseData.orderGiverId);
+
+  const openInvoiceFromInterventions = (ids: string[]) => {
+    if (ids.length === 0) return;
+    setCreatedInvoiceResult(null);
+    setCreateInvoiceQuoteId(null);
+    setCreateInvoiceSource("lines");
+    setInvoiceInterventionIds(ids);
+    setCreateInvoiceOpen(true);
+  };
+
+  const toggleInterventionInvoiceSelection = (interventionId: string, selected: boolean) => {
+    setInvoiceSelectionTouched(true);
+    setSelectedInterventionIds((prev) => {
+      const next = new Set(prev);
+      if (selected) next.add(interventionId);
+      else next.delete(interventionId);
+      return next;
+    });
+  };
 
   const allowedTransitions = STATUS_TRANSITIONS[caseData.status] ?? [];
   const isOverdue =
@@ -1114,14 +1258,26 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
           <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
             Interventions ({interventions?.length ?? 0})
           </h2>
-          {can("interventions.create") && (
-            <button
-              onClick={() => setShowNewIntervention(!showNewIntervention)}
-              className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:bg-slate-800 transition self-start"
-            >
-              {showNewIntervention ? "Annuler" : "+ Planifier une intervention"}
-            </button>
-          )}
+          <div className="flex flex-wrap items-center gap-2 self-start">
+            {canInvoiceFromInterventions && selectedInterventionIds.size > 0 ? (
+              <button
+                type="button"
+                disabled={anyInvoicePending}
+                onClick={() => openInvoiceFromInterventions([...selectedInterventionIds])}
+                className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition"
+              >
+                Créer une facture
+              </button>
+            ) : null}
+            {can("interventions.create") && (
+              <button
+                onClick={() => setShowNewIntervention(!showNewIntervention)}
+                className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:bg-slate-800 transition"
+              >
+                {showNewIntervention ? "Annuler" : "+ Planifier une intervention"}
+              </button>
+            )}
+          </div>
         </div>
 
         {interventionError && (
@@ -1283,6 +1439,10 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
               const usedArticles = (interventionUsageMap.get(intervention.id) ?? []).filter(
                 (item) => item.netQuantity > 0,
               );
+              const usedPrestations = (
+                interventionPrestationUsageMap.get(intervention.id) ?? []
+              ).filter((item) => item.quantity > 0);
+              const usedCount = usedArticles.length + usedPrestations.length;
               const isEditingThis = editingInterventionId === intervention.id;
               const isCompleted = intervention.status === "completed";
               const assignmentLocked = isCompleted;
@@ -1476,6 +1636,20 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                     <>
                       <div className="flex items-center justify-between flex-wrap gap-2">
                         <div className="flex items-center gap-2">
+                          {canInvoiceFromInterventions ? (
+                            <input
+                              type="checkbox"
+                              checked={selectedInterventionIds.has(intervention.id)}
+                              onChange={(e) =>
+                                toggleInterventionInvoiceSelection(
+                                  intervention.id,
+                                  e.target.checked,
+                                )
+                              }
+                              aria-label={`Sélectionner ${intervention.title} pour facturer`}
+                              className="h-3.5 w-3.5 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                            />
+                          ) : null}
                           <h4 className="font-medium text-sm text-slate-800 dark:text-slate-100">
                             {intervention.title}
                           </h4>
@@ -1507,6 +1681,16 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                           )}
                         </div>
                         <div className="flex items-center gap-1">
+                          {canInvoiceFromInterventions ? (
+                            <button
+                              type="button"
+                              disabled={anyInvoicePending}
+                              onClick={() => openInvoiceFromInterventions([intervention.id])}
+                              className="text-[10px] text-brand-700 hover:text-brand-800 dark:text-brand-300 px-1.5 py-0.5 rounded border border-brand-200 dark:border-brand-800 bg-brand-50 dark:bg-brand-950/40 hover:bg-brand-100 dark:hover:bg-brand-950/70 disabled:opacity-50 transition"
+                            >
+                              Facturer
+                            </button>
+                          ) : null}
                           {can("interventions.update") && (
                             <button
                               onClick={startEditingIntervention}
@@ -1594,7 +1778,7 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                         <div className="mt-3">
                           <div className="flex flex-wrap items-center justify-between gap-2">
                             <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">
-                              Articles utilisés
+                              Consommations
                             </p>
                             {canAddInterventionArticles && (
                               <button
@@ -1602,13 +1786,11 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                                 onClick={() => setArticlesDialogInterventionId(intervention.id)}
                                 className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
                               >
-                                {usedArticles.length > 0
-                                  ? "Modifier les articles"
-                                  : "Ajouter des articles"}
+                                {usedCount > 0 ? "Modifier" : "Ajouter articles / prestations"}
                               </button>
                             )}
                           </div>
-                          {canViewInterventionArticles && usedArticles.length > 0 ? (
+                          {canViewInterventionArticles && usedCount > 0 ? (
                             <ul className="mt-2 space-y-1">
                               {usedArticles.map((item) => {
                                 const unitPrice = articlePriceById.get(item.articleId);
@@ -1618,10 +1800,13 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                                     : null;
                                 return (
                                   <li
-                                    key={item.articleId}
+                                    key={`a-${item.articleId}`}
                                     className="flex flex-wrap items-baseline justify-between gap-2 text-xs text-slate-600 dark:text-slate-300"
                                   >
                                     <span>
+                                      <span className="mr-1 text-[10px] uppercase text-slate-400">
+                                        Article
+                                      </span>
                                       {item.articleName}
                                       {item.articleReference ? (
                                         <span className="text-slate-400 dark:text-slate-500">
@@ -1644,10 +1829,47 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                                   </li>
                                 );
                               })}
+                              {usedPrestations.map((item) => {
+                                const unitPrice = prestationPriceById.get(item.prestationId);
+                                const lineHt =
+                                  typeof unitPrice === "number" && Number.isFinite(unitPrice)
+                                    ? item.quantity * unitPrice
+                                    : null;
+                                return (
+                                  <li
+                                    key={`p-${item.prestationId}`}
+                                    className="flex flex-wrap items-baseline justify-between gap-2 text-xs text-slate-600 dark:text-slate-300"
+                                  >
+                                    <span>
+                                      <span className="mr-1 text-[10px] uppercase text-slate-400">
+                                        Prestation
+                                      </span>
+                                      {item.prestationName}
+                                      {item.prestationReference ? (
+                                        <span className="text-slate-400 dark:text-slate-500">
+                                          {" "}
+                                          · {item.prestationReference}
+                                        </span>
+                                      ) : null}
+                                    </span>
+                                    <span className="tabular-nums font-medium text-slate-700 dark:text-slate-200 text-right">
+                                      {item.quantity} {item.unit}
+                                      {lineHt != null ? (
+                                        <span className="block text-[11px] font-normal text-slate-500 dark:text-slate-400">
+                                          ~ {lineHt.toFixed(2)} € HT
+                                          {typeof unitPrice === "number"
+                                            ? ` · ${unitPrice.toFixed(2)} € / ${item.unit}`
+                                            : ""}
+                                        </span>
+                                      ) : null}
+                                    </span>
+                                  </li>
+                                );
+                              })}
                             </ul>
                           ) : canViewInterventionArticles ? (
                             <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
-                              Aucun article déclaré.
+                              Aucune consommation déclarée.
                             </p>
                           ) : null}
                         </div>
@@ -1760,7 +1982,11 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
             (interventionUsageMap.get(articlesDialogIntervention.id) ??
               []) as InterventionArticleUsageItem[]
           }
+          currentPrestationUsage={
+            interventionPrestationUsageMap.get(articlesDialogIntervention.id) ?? []
+          }
           articles={articles ?? []}
+          prestations={can("prestations.read") ? (prestations ?? []) : []}
           locations={stockLocations}
           preferredLocationId={resolvePreferredStockLocationId(stockLocations, {
             assignedTeamId: articlesDialogIntervention.assignedTeamId,
@@ -1791,7 +2017,10 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
         quotes={caseQuotes}
         invoices={localInvoices}
         initialQuoteId={createInvoiceQuoteId}
-        articleUsages={caseArticleUsagesForInvoice}
+        initialSource={createInvoiceSource ?? undefined}
+        interventionIds={invoiceInterventionIds.length > 0 ? invoiceInterventionIds : undefined}
+        articleUsages={invoiceOverlayUsages}
+        prestationUsages={invoiceOverlayPrestationUsages}
         articles={articles ?? []}
         prestations={prestations ?? []}
         createdResult={createdInvoiceResult}
@@ -1829,6 +2058,8 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                 onCreate: (quoteId) => {
                   setCreatedInvoiceResult(null);
                   setCreateInvoiceQuoteId(quoteId);
+                  setCreateInvoiceSource("quote");
+                  setInvoiceInterventionIds([]);
                   setCreateInvoiceOpen(true);
                 },
               }

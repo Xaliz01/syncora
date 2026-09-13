@@ -20,6 +20,44 @@ The system SHALL allow an authorized user to create a customer invoice from an a
 - **WHEN** the case has no accepted quote (or the requested quote is not accepted) and the user requests an invoice from quote
 - **THEN** the system MUST reject the request with a user-facing error and MUST NOT create an invoice
 
+### Requirement: Invoice issuance from selected interventions
+
+The system SHALL allow an authorized user (`billing.invoices.create`) to create a customer invoice of kind `full` from one intervention or from several interventions that belong to the **same case**. The invoice MUST remain linked to that case and to the billing party (order giver if set, otherwise customer). Prefill MUST use net article usage (qty > 0) of the selected interventions, with catalog unit prices when available; the user MUST be able to edit, add, or remove lines before submit. The persisted invoice MUST store the selected intervention ids. Creating this invoice MUST NOT require an accepted quote. If the case `billingStatus` is `none`, the system MUST still allow the create (provided a billing party exists) and MUST advance the case status with the existing invoice lifecycle. Selected interventions MUST have their `billingStatus` advanced consistently with the invoice (draft → `invoice_draft`, finalized → `invoiced`, paid → `paid`; cancelling a draft returns them to `to_invoice` when no other active invoice still references them).
+
+#### Scenario: Create invoice from one intervention
+
+- **WHEN** a user with invoice create permission chooses Facturer on an intervention of a case that has a billing party
+- **THEN** the invoice editor opens on custom lines prefilled from that intervention’s net article usage (or empty editable lines if none) and submit creates a draft `full` invoice linked to the case and that intervention id
+
+#### Scenario: Create invoice from several interventions of the same case
+
+- **WHEN** the user selects several interventions of the same case and confirms creating an invoice
+- **THEN** the editor prefills lines aggregated from those interventions’ net usages and submit stores all selected intervention ids on the invoice
+
+#### Scenario: Reject interventions from another case
+
+- **WHEN** the client sends intervention ids that do not all belong to the invoiced case (or to the organization)
+- **THEN** the system MUST reject the request and MUST NOT create an invoice
+
+#### Scenario: Quote still required for quote-sourced invoices
+
+- **WHEN** the user requests an invoice from a quote (no custom lines)
+- **THEN** the existing accepted-quote rules still apply unchanged
+
+### Requirement: Invoice prefill includes intervention prestation usages
+
+When an authorized user creates a customer invoice of kind `full` from one or more interventions of the same case, the prefill MUST include not only net article usages (qty > 0) but also **prestation usages** with quantity greater than zero for those interventions. Prefill lines for prestations MUST carry the catalog `prestationId`, label, unit, default unit price HT, and default TVA when available. The user MUST still be able to edit, add, or remove lines before submit. Creating the invoice MUST remain possible without an accepted quote when custom lines (including those from prestations) are provided, subject to existing billing-party rules.
+
+#### Scenario: Prefill prestations from one intervention
+
+- **WHEN** a user with invoice create permission chooses Facturer on an intervention that has prestation usages with quantity greater than zero
+- **THEN** the invoice editor opens with custom lines that include those prestations (and any article usages) and submit creates a draft `full` invoice linked to the case
+
+#### Scenario: Prefill aggregates articles and prestations across selection
+
+- **WHEN** the user selects several interventions of the same case that together have article and prestation usages and creates an invoice
+- **THEN** the editor prefills lines aggregated from both kinds of usages for the selected interventions
+
 ### Requirement: Invoice kinds
 
 The system SHALL support invoice kinds `full` (facture complète), `situation` (with sequence number and percent), `deposit` (acompte), `balance` (solde), and `credit_note` (avoir). A credit note MUST reference the original invoice and reverse its amounts (or a documented partial amount). Situation invoices MUST increment situation numbering per case (or per quote — one consistent rule per organization).

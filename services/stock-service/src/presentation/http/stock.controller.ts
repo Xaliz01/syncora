@@ -1,9 +1,10 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from "@nestjs/common";
 import { parsePaginationQueryParams } from "@planwise/shared";
 import { parseOrganizationIdQuery } from "@planwise/shared/nest";
 import { AbstractArticleStockService } from "../../domain/ports/article-stock.service.port";
 import { AbstractPrestationService } from "../../domain/ports/prestation.service.port";
 import { AbstractStockLocationService } from "../../domain/ports/stock-location.service.port";
+import { AbstractInterventionPrestationUsageService } from "../../domain/ports/intervention-prestation-usage.service.port";
 import type {
   AddInterventionArticleUsageBody,
   CreateArticleBody,
@@ -11,6 +12,7 @@ import type {
   CreatePrestationBody,
   CreateStockLocationBody,
   CreateStockTransferBody,
+  SetInterventionPrestationUsagesBody,
   UpdateArticleBody,
   UpdatePrestationBody,
   UpdateStockLocationBody,
@@ -22,6 +24,7 @@ export class StockController {
     private readonly articleStockService: AbstractArticleStockService,
     private readonly prestationService: AbstractPrestationService,
     private readonly stockLocationService: AbstractStockLocationService,
+    private readonly interventionPrestationUsageService: AbstractInterventionPrestationUsageService,
   ) {}
 
   // ── Articles ──
@@ -153,6 +156,38 @@ export class StockController {
   ) {
     organizationId = parseOrganizationIdQuery(organizationId);
     return this.articleStockService.getInterventionUsage(organizationId, interventionId);
+  }
+
+  @Get("interventions/:interventionId/prestations")
+  async listInterventionPrestationUsages(
+    @Param("interventionId") interventionId: string,
+    @Query("organizationId") organizationId: string,
+  ) {
+    organizationId = parseOrganizationIdQuery(organizationId);
+    return this.interventionPrestationUsageService.listByIntervention(
+      organizationId,
+      interventionId,
+    );
+  }
+
+  @Put("interventions/:interventionId/prestations")
+  async setInterventionPrestationUsages(
+    @Param("interventionId") interventionId: string,
+    @Body() body: SetInterventionPrestationUsagesBody,
+  ) {
+    return this.interventionPrestationUsageService.replaceUsages(interventionId, body);
+  }
+
+  @Get("intervention-prestation-usages")
+  async listCaseInterventionPrestationUsages(
+    @Query("organizationId") organizationId: string,
+    @Query("caseId") caseId: string,
+  ) {
+    organizationId = parseOrganizationIdQuery(organizationId);
+    if (!caseId?.trim()) {
+      return { usages: [] };
+    }
+    return this.interventionPrestationUsageService.listByCase(organizationId, caseId.trim());
   }
 
   // ── Stock locations ──

@@ -110,6 +110,25 @@ describe("InvoicesService", () => {
     expect(result.situationNumber).toBe(2);
   });
 
+  it("persists intervention ids on create", async () => {
+    invoiceModel.create.mockImplementation(async (payload: Record<string, unknown>) =>
+      mockDoc({ interventionIds: payload.interventionIds }),
+    );
+    const result = await service.createInvoice({
+      organizationId: "org-1",
+      caseId: "case-1",
+      kind: "full",
+      amountHt: "100.00",
+      lines: [{ label: "Pièce", quantity: 1, unitPriceHt: "100.00", tvaRate: 20 }],
+      customer: { partyId: "c1", partyType: "customer", displayName: "Client" },
+      interventionIds: [" int-1 ", "int-1", "int-2"],
+    });
+    expect(invoiceModel.create).toHaveBeenCalledWith(
+      expect.objectContaining({ interventionIds: ["int-1", "int-2"] }),
+    );
+    expect(result.interventionIds).toEqual(["int-1", "int-2"]);
+  });
+
   it("rejects a credit note without original invoice id", async () => {
     await expect(
       service.createInvoice({

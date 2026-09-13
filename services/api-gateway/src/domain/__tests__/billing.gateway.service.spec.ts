@@ -23,6 +23,8 @@ describe("BillingGatewayService prepareInvoice billing party", () => {
     listQuotes: jest.Mock;
     getQuote: jest.Mock;
     updateCase: jest.Mock;
+    getIntervention: jest.Mock;
+    setInterventionBillingStatus: jest.Mock;
   };
   let customersService: { getCustomer: jest.Mock };
   let orderGiversService: { getOrderGiver: jest.Mock };
@@ -114,6 +116,8 @@ describe("BillingGatewayService prepareInvoice billing party", () => {
       listQuotes: jest.fn().mockResolvedValue([quote]),
       getQuote: jest.fn().mockResolvedValue(quote),
       updateCase: jest.fn(),
+      getIntervention: jest.fn(),
+      setInterventionBillingStatus: jest.fn().mockResolvedValue({}),
     };
     customersService = { getCustomer: jest.fn().mockResolvedValue(customer) };
     orderGiversService = { getOrderGiver: jest.fn().mockResolvedValue(orderGiver) };
@@ -202,6 +206,130 @@ describe("BillingGatewayService prepareInvoice billing party", () => {
     expect(payload.body.quoteId).toBeUndefined();
     expect(payload.body.kind).toBe("full");
     expect(payload.body.amountHt).toBe("100.00");
+  });
+
+  it("creates a custom-line invoice when the case billing status is none", async () => {
+    casesService.getCase.mockResolvedValue({ ...baseCase, billingStatus: "none" });
+    scopedHttp.request.mockImplementation(async (opts: { method: string; path: string }) => {
+      if (opts.method === "get" && opts.path === "/invoices") {
+        return { invoices: [{ ...createdInvoice, quoteId: undefined }], total: 1 };
+      }
+      if (opts.method === "post" && opts.path === "/invoices") {
+        return { ...createdInvoice, quoteId: undefined };
+      }
+      return {};
+    });
+    await service.createInvoice(user, "case-1", {
+      lines: [{ label: "Pièce", quantity: 1, unitPriceHt: 80, tvaRate: 20 }],
+    });
+    expect(casesService.getQuote).not.toHaveBeenCalled();
+    expect(casesService.updateCase).toHaveBeenCalledWith(
+      user,
+      "case-1",
+      expect.objectContaining({ billingStatus: "invoice_draft" }),
+    );
+  });
+
+  it("still requires an accepted quote when creating without custom lines", async () => {
+    casesService.getCase.mockResolvedValue({ ...baseCase, billingStatus: "none" });
+    await expect(service.createInvoice(user, "case-1", { quoteId: quote.id })).rejects.toThrow(
+      /À facturer/,
+    );
+  });
+
+  it("creates a custom-line invoice linked to same-case interventions", async () => {
+    casesService.getCase.mockResolvedValue(baseCase);
+    casesService.getIntervention
+      .mockResolvedValueOnce({
+        id: "int-1",
+        organizationId: "org-1",
+        caseId: "case-1",
+        billingStatus: "none",
+      })
+      .mockResolvedValueOnce({
+        id: "int-2",
+        organizationId: "org-1",
+        caseId: "case-1",
+        billingStatus: "to_invoice",
+      })
+      .mockResolvedValue({
+        id: "int-1",
+        organizationId: "org-1",
+        caseId: "case-1",
+        billingStatus: "none",
+      });
+    scopedHttp.request.mockImplementation(
+      async (opts: { method: string; path: string; body?: { interventionIds?: string[] } }) => {
+        if (opts.method === "get" && opts.path === "/invoices") {
+          return { invoices: [], total: 0 };
+        }
+        if (opts.method === "post" && opts.path === "/invoices") {
+          return { ...createdInvoice, interventionIds: opts.body?.interventionIds ?? [] };
+        }
+        return {};
+      },
+    );
+    await service.createInvoice(user, "case-1", {
+      lines: [{ label: "Pièce", quantity: 1, unitPriceHt: 40, tvaRate: 20 }],
+      interventionIds: ["int-1", "int-2"],
+    });
+    const payload = scopedHttp.request.mock.calls.find(
+      (call: [{ method: string; path: string }]) =>
+        call[0].method === "post" && call[0].path === "/invoices",
+    )?.[0];
+    expect(payload.body.interventionIds).toEqual(["int-1", "int-2"]);
+    expect(casesService.setInterventionBillingStatus).toHaveBeenCalledWith(
+      user,
+      "int-1",
+      "invoice_draft",
+    );
+    expect(casesService.setInterventionBillingStatus).toHaveBeenCalledWith(
+      user,
+      "int-2",
+      "invoice_draft",
+    );
+  });
+
+  it("rejects intervention ids that belong to another case", async () => {
+    casesService.getCase.mockResolvedValue(baseCase);
+    casesService.getIntervention.mockResolvedValue({
+      id: "int-x",
+      organizationId: "org-1",
+      caseId: "other-case",
+      billingStatus: "none",
+    });
+    await expect(
+      service.createInvoice(user, "case-1", {
+        lines: [{ label: "Pièce", quantity: 1, unitPriceHt: 40, tvaRate: 20 }],
+        interventionIds: ["int-x"],
+      }),
+    ).rejects.toThrow(/dossier facturé/);
+    expect(scopedHttp.request).not.toHaveBeenCalledWith(
+      expect.objectContaining({ method: "post", path: "/invoices" }),
+    );
+  });
+
+  it("reverts intervention billing status when a draft is cancelled and no other invoice remains", async () => {
+    const cancelled = {
+      ...createdInvoice,
+      status: "cancelled" as const,
+      interventionIds: ["int-1"],
+    };
+    scopedHttp.request.mockImplementation(async (opts: { method: string; path: string }) => {
+      if (opts.method === "get" && opts.path === "/invoices") {
+        return { invoices: [cancelled], total: 1 };
+      }
+      if (opts.method === "post" && opts.path === "/invoices/inv-1/cancel") {
+        return cancelled;
+      }
+      return {};
+    });
+    await service.cancelInvoice(user, "inv-1");
+    expect(casesService.setInterventionBillingStatus).toHaveBeenCalledWith(
+      user,
+      "int-1",
+      "to_invoice",
+    );
   });
 
   it("rejects create without quote and without lines", async () => {

@@ -2,8 +2,11 @@ import type {
   ArticleResponse,
   ArticlesListResponse,
   InterventionArticleUsageResponse,
+  InterventionPrestationUsageResponse,
+  InterventionPrestationUsagesListResponse,
   PrestationResponse,
   PrestationsListResponse,
+  SetInterventionPrestationUsageItem,
   StockLocationResponse,
   StockLocationType,
   StockMovementResponse,
@@ -223,6 +226,32 @@ export function getInterventionUsage(interventionId: string) {
   return stockRequest<InterventionArticleUsageResponse[]>(
     "GET",
     `/stock/interventions/${interventionId}/usage`,
+  );
+}
+
+export function listInterventionPrestationUsages(interventionId: string) {
+  return stockRequest<InterventionPrestationUsagesListResponse>(
+    "GET",
+    `/stock/interventions/${interventionId}/prestations`,
+  );
+}
+
+export function setInterventionPrestationUsages(
+  interventionId: string,
+  payload: { caseId?: string; usages: SetInterventionPrestationUsageItem[] },
+) {
+  return stockRequest<InterventionPrestationUsageResponse[]>(
+    "PUT",
+    `/stock/interventions/${interventionId}/prestations`,
+    payload,
+  );
+}
+
+export function listCaseInterventionPrestationUsages(caseId: string) {
+  const params = new URLSearchParams({ caseId });
+  return stockRequest<InterventionPrestationUsagesListResponse>(
+    "GET",
+    `/stock/intervention-prestation-usages?${params.toString()}`,
   );
 }
 

@@ -3,6 +3,7 @@ import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
 import type {
   AuthUser,
+  BillingStatus,
   CaseAssignee,
   CaseCustomerRef,
   CaseOrderGiverRef,
@@ -653,6 +654,18 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       result.title,
     );
     return result;
+  }
+
+  async setInterventionBillingStatus(
+    user: AuthUser,
+    interventionId: string,
+    billingStatus: BillingStatus,
+  ) {
+    return this.callCasesService<InterventionResponse>(user.organizationId, {
+      method: "patch",
+      path: `/interventions/${interventionId}`,
+      body: { organizationId: user.organizationId, billingStatus },
+    });
   }
 
   async deleteIntervention(user: AuthUser, interventionId: string) {

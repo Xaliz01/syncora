@@ -291,6 +291,8 @@ export interface SyncCaseInvoiceOptions {
   amountHt?: number;
   /** Si false, finalise immédiatement. Défaut : brouillon. */
   draft?: boolean;
+  /** Interventions du dossier auxquelles rattacher la facture (saisie libre). */
+  interventionIds?: string[];
 }
 
 /** Cycle de vie distant d’une facture (Pennylane / Qonto), normalisé pour le CRM. */
@@ -734,6 +736,65 @@ export function invoiceLinesFromArticleUsages(
       quantity: row.quantity,
       unitPriceHt: typeof price === "number" && Number.isFinite(price) ? round2(price) : 0,
       tvaRate: defaultTva,
+      unit: row.unit,
+    };
+  });
+}
+
+/**
+ * Préremplit des lignes de facture à partir des consommations de prestations (qty > 0).
+ * Prix / TVA = catalogue prestation ; TVA fallback 20 % si absente.
+ */
+export function invoiceLinesFromPrestationUsages(
+  usages: Array<{
+    prestationId: string;
+    prestationName: string;
+    unit?: string;
+    quantity: number;
+  }>,
+  prestationsById: Map<
+    string,
+    {
+      defaultPrice?: number | null;
+      defaultTvaRate?: TvaRate | null;
+      name?: string;
+      unit?: string;
+      reference?: string;
+    }
+  >,
+  defaultTva: TvaRate = 20,
+): SyncCaseInvoiceLineInput[] {
+  const byPrestation = new Map<
+    string,
+    { prestationId: string; label: string; unit?: string; quantity: number }
+  >();
+  for (const u of usages) {
+    if (!(u.quantity > 0.000_001)) continue;
+    const prestation = prestationsById.get(u.prestationId);
+    const existing = byPrestation.get(u.prestationId);
+    if (existing) {
+      existing.quantity = round2(existing.quantity + u.quantity);
+      continue;
+    }
+    const ref = prestation?.reference?.trim();
+    const name = (prestation?.name || u.prestationName || "Prestation").trim();
+    byPrestation.set(u.prestationId, {
+      prestationId: u.prestationId,
+      label: ref ? `${name} (${ref})` : name,
+      unit: prestation?.unit || u.unit || undefined,
+      quantity: round2(u.quantity),
+    });
+  }
+  return [...byPrestation.values()].map((row) => {
+    const prestation = prestationsById.get(row.prestationId);
+    const price = prestation?.defaultPrice;
+    const tva = prestation?.defaultTvaRate;
+    return {
+      prestationId: row.prestationId,
+      label: row.label,
+      quantity: row.quantity,
+      unitPriceHt: typeof price === "number" && Number.isFinite(price) ? round2(price) : 0,
+      tvaRate: (typeof tva === "number" ? tva : defaultTva) as TvaRate,
       unit: row.unit,
     };
   });

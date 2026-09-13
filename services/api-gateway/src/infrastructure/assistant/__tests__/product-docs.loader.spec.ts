@@ -50,6 +50,16 @@ describe("retrieveProductChunks", () => {
     expect(chunks.some((c) => c.id === "journey-billing")).toBe(true);
   });
 
+  it("remonte la facturation pour facturer une intervention", () => {
+    const chunks = retrieveProductChunks("Comment facturer une intervention ?");
+    expect(chunks.some((c) => c.id === "journey-billing")).toBe(true);
+  });
+
+  it("remonte la facturation pour une prestation sur une intervention", () => {
+    const chunks = retrieveProductChunks("Comment ajouter une prestation sur une intervention ?");
+    expect(chunks.some((c) => c.id === "journey-billing")).toBe(true);
+  });
+
   it("remonte les favoris Planwise pour une question sur les favoris", () => {
     const chunks = retrieveProductChunks("Est-ce possible de mettre une page en favori ?");
     expect(chunks.some((c) => c.id === "journey-favorites")).toBe(true);

@@ -20,7 +20,7 @@
 1. Ouvrir le **dossier** concerné (`/cases` → fiche).
 2. Section devis : créer / éditer les lignes (prestations, TVA) ; PDF devis si besoin.
 3. Envoyer le devis par e-mail (confirmation, PDF joint) ; l’historique des envois reste sur le devis. Un brouillon passe au statut Envoyé.
-4. Quand le travail est facturable : statut de facturation du dossier, puis **Créer une facture** (depuis le devis ou en saisie libre).
+4. Quand le travail est facturable : **Créer une facture** depuis le devis, en saisie libre, ou **depuis une ou plusieurs interventions** du dossier (bouton **Facturer** sur une carte, ou cases à cocher + **Créer une facture** dans la section Interventions). Sur une intervention, vous enregistrez les **articles et prestations** consommés ; les lignes de facture sont préremplies avec ces consommations (qty > 0) ; vous pouvez les ajuster avant le brouillon.
 5. Valider le brouillon pour numéroter la facture et télécharger le PDF.
 6. Envoyer la facture par e-mail (confirmation, PDF joint) ; l’historique des envois reste visible sur le dossier et dans Facturation.
 7. Suivi dans **Facturation** (`/billing`).
@@ -32,5 +32,7 @@
 
 ## Erreurs fréquentes
 
-- « Est-ce possible de facturer ? » → oui, depuis le dossier ou l’écran Facturation.
+- « Est-ce possible de facturer ? » → oui, depuis le dossier (devis, saisie libre, ou interventions) ou l’écran Facturation.
+- « Comment facturer une intervention ? » → fiche dossier → **Facturer** sur l’intervention, ou sélectionnez plusieurs interventions puis **Créer une facture**.
+- « Comment ajouter une prestation sur une intervention ? » → fiche dossier → **Ajouter articles / prestations** (ou **Modifier**) sur l’intervention → choisir une prestation dans le sélecteur (sans emplacement stock).
 - Un avoir se crée depuis une facture déjà validée ; le numéro d’origine n’est pas réutilisé.

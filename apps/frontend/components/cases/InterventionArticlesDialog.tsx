@@ -1,7 +1,12 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import type { ArticleResponse, StockLocationResponse, StockLocationType } from "@planwise/shared";
+import type {
+  ArticleResponse,
+  PrestationResponse,
+  StockLocationResponse,
+  StockLocationType,
+} from "@planwise/shared";
 import * as stockApi from "@/lib/stock.api";
 import { useToast } from "@/components/ui/ToastProvider";
 import {
@@ -9,6 +14,7 @@ import {
   FormDialogCancelButton,
   FormDialogPrimaryButton,
 } from "@/components/ui/FormDialog";
+import { SearchableSelect } from "@/components/ui/SearchableSelect";
 
 export type InterventionArticleUsageItem = {
   articleId: string;
@@ -20,11 +26,22 @@ export type InterventionArticleUsageItem = {
   returnedQuantity: number;
 };
 
-type ArticleLineDraft = {
+export type InterventionPrestationUsageItem = {
+  prestationId: string;
+  prestationName: string;
+  prestationReference?: string;
+  unit: string;
+  quantity: number;
+};
+
+type CatalogKind = "article" | "prestation";
+
+type UsageLineDraft = {
   key: string;
-  articleId: string;
-  articleName: string;
-  articleReference?: string;
+  kind: CatalogKind | "";
+  catalogId: string;
+  name: string;
+  reference?: string;
   unit: string;
   quantity: string;
   locationId: string;
@@ -48,19 +65,19 @@ const inputClassName =
 
 function buildUsageAdjustments(
   current: InterventionArticleUsageItem[],
-  lines: ArticleLineDraft[],
+  lines: UsageLineDraft[],
   fallbackLocationId: string,
 ): UsageAdjustment[] {
   const currentById = new Map(current.map((item) => [item.articleId, item.netQuantity]));
   const targetById = new Map<string, { quantity: number; locationId: string }>();
 
   for (const line of lines) {
-    if (!line.articleId) continue;
+    if (line.kind !== "article" || !line.catalogId) continue;
     const qty = Number(line.quantity);
     if (!Number.isFinite(qty) || qty < 0) {
-      throw new Error(`Quantité invalide pour ${line.articleName || "l'article sélectionné"}`);
+      throw new Error(`Quantité invalide pour ${line.name || "l'article sélectionné"}`);
     }
-    targetById.set(line.articleId, {
+    targetById.set(line.catalogId, {
       quantity: qty,
       locationId: line.locationId || fallbackLocationId,
     });
@@ -85,21 +102,36 @@ function buildUsageAdjustments(
   return adjustments;
 }
 
-function linesFromUsage(
-  usage: InterventionArticleUsageItem[],
+function linesFromUsages(
+  articleUsage: InterventionArticleUsageItem[],
+  prestationUsage: InterventionPrestationUsageItem[],
   defaultLocationId: string,
-): ArticleLineDraft[] {
-  return usage
+): UsageLineDraft[] {
+  const articleLines = articleUsage
     .filter((item) => item.netQuantity > 0)
     .map((item) => ({
-      key: item.articleId,
-      articleId: item.articleId,
-      articleName: item.articleName,
-      articleReference: item.articleReference,
+      key: `article-${item.articleId}`,
+      kind: "article" as const,
+      catalogId: item.articleId,
+      name: item.articleName,
+      reference: item.articleReference,
       unit: item.unit,
       quantity: String(item.netQuantity),
       locationId: defaultLocationId,
     }));
+  const prestationLines = prestationUsage
+    .filter((item) => item.quantity > 0)
+    .map((item) => ({
+      key: `prestation-${item.prestationId}`,
+      kind: "prestation" as const,
+      catalogId: item.prestationId,
+      name: item.prestationName,
+      reference: item.prestationReference,
+      unit: item.unit,
+      quantity: String(item.quantity),
+      locationId: "",
+    }));
+  return [...articleLines, ...prestationLines];
 }
 
 function stockAtLocation(article: ArticleResponse | undefined, locationId: string): number | null {
@@ -149,7 +181,9 @@ export function InterventionArticlesDialog({
   interventionTitle,
   caseId,
   currentUsage,
+  currentPrestationUsage = [],
   articles,
+  prestations = [],
   locations = [],
   preferredLocationId,
   canEdit,
@@ -161,14 +195,16 @@ export function InterventionArticlesDialog({
   interventionTitle: string;
   caseId: string;
   currentUsage: InterventionArticleUsageItem[];
+  currentPrestationUsage?: InterventionPrestationUsageItem[];
   articles: ArticleResponse[];
+  prestations?: PrestationResponse[];
   locations?: StockLocationResponse[];
   preferredLocationId?: string | null;
   canEdit: boolean;
   onSaved: () => void;
 }) {
   const { showToast } = useToast();
-  const [lines, setLines] = useState<ArticleLineDraft[]>([]);
+  const [lines, setLines] = useState<UsageLineDraft[]>([]);
   const [saving, setSaving] = useState(false);
 
   const defaultLocationId = useMemo(
@@ -178,15 +214,16 @@ export function InterventionArticlesDialog({
 
   useEffect(() => {
     if (!open) return;
-    const initial = linesFromUsage(currentUsage, defaultLocationId);
+    const initial = linesFromUsages(currentUsage, currentPrestationUsage, defaultLocationId);
     if (initial.length > 0) {
       setLines(initial);
     } else if (canEdit) {
       setLines([
         {
           key: `new-${Date.now()}`,
-          articleId: "",
-          articleName: "",
+          kind: "",
+          catalogId: "",
+          name: "",
           unit: "unité",
           quantity: "1",
           locationId: defaultLocationId,
@@ -195,17 +232,46 @@ export function InterventionArticlesDialog({
     } else {
       setLines([]);
     }
-  }, [open, currentUsage, canEdit, defaultLocationId]);
+  }, [open, currentUsage, currentPrestationUsage, canEdit, defaultLocationId]);
 
   const usedArticleIds = useMemo(
-    () => new Set(lines.map((line) => line.articleId).filter(Boolean)),
+    () =>
+      new Set(
+        lines
+          .filter((line) => line.kind === "article" && line.catalogId)
+          .map((line) => line.catalogId),
+      ),
+    [lines],
+  );
+  const usedPrestationIds = useMemo(
+    () =>
+      new Set(
+        lines
+          .filter((line) => line.kind === "prestation" && line.catalogId)
+          .map((line) => line.catalogId),
+      ),
     [lines],
   );
 
-  const availableArticles = useMemo(
-    () => articles.filter((article) => !usedArticleIds.has(article.id)),
-    [articles, usedArticleIds],
-  );
+  const catalogOptions = useMemo(() => {
+    const articleOptions = articles
+      .filter((article) => !usedArticleIds.has(article.id))
+      .map((article) => ({
+        value: `article:${article.id}`,
+        label: article.reference
+          ? `Article · ${article.reference} — ${article.name}`
+          : `Article · ${article.name}`,
+      }));
+    const prestationOptions = prestations
+      .filter((prestation) => !usedPrestationIds.has(prestation.id))
+      .map((prestation) => ({
+        value: `prestation:${prestation.id}`,
+        label: prestation.reference
+          ? `Prestation · ${prestation.reference} — ${prestation.name}`
+          : `Prestation · ${prestation.name}`,
+      }));
+    return [...prestationOptions, ...articleOptions];
+  }, [articles, prestations, usedArticleIds, usedPrestationIds]);
 
   const handleClose = useCallback(() => {
     if (saving) return;
@@ -217,8 +283,9 @@ export function InterventionArticlesDialog({
       ...prev,
       {
         key: `new-${Date.now()}-${prev.length}`,
-        articleId: "",
-        articleName: "",
+        kind: "",
+        catalogId: "",
+        name: "",
         unit: "unité",
         quantity: "1",
         locationId: defaultLocationId,
@@ -226,7 +293,7 @@ export function InterventionArticlesDialog({
     ]);
   }, [defaultLocationId]);
 
-  const updateLine = useCallback((key: string, patch: Partial<ArticleLineDraft>) => {
+  const updateLine = useCallback((key: string, patch: Partial<UsageLineDraft>) => {
     setLines((prev) => prev.map((line) => (line.key === key ? { ...line, ...patch } : line)));
   }, []);
 
@@ -234,31 +301,60 @@ export function InterventionArticlesDialog({
     setLines((prev) => prev.filter((line) => line.key !== key));
   }, []);
 
-  const selectArticle = useCallback(
-    (key: string, articleId: string) => {
-      const article = articles.find((a) => a.id === articleId);
-      if (!article) return;
-      updateLine(key, {
-        articleId: article.id,
-        articleName: article.name,
-        articleReference: article.reference,
-        unit: article.unit,
-        quantity: "1",
-      });
+  const selectCatalogItem = useCallback(
+    (key: string, value: string) => {
+      const [kind, id] = value.split(":") as [CatalogKind, string];
+      if (kind === "article") {
+        const article = articles.find((a) => a.id === id);
+        if (!article) return;
+        updateLine(key, {
+          kind: "article",
+          catalogId: article.id,
+          name: article.name,
+          reference: article.reference,
+          unit: article.unit,
+          quantity: "1",
+          locationId: defaultLocationId,
+        });
+        return;
+      }
+      if (kind === "prestation") {
+        const prestation = prestations.find((p) => p.id === id);
+        if (!prestation) return;
+        updateLine(key, {
+          kind: "prestation",
+          catalogId: prestation.id,
+          name: prestation.name,
+          reference: prestation.reference,
+          unit: prestation.unit,
+          quantity: "1",
+          locationId: "",
+        });
+      }
     },
-    [articles, updateLine],
+    [articles, prestations, defaultLocationId, updateLine],
   );
 
   const handleSave = useCallback(async () => {
     if (!canEdit) return;
-    const incomplete = lines.some((line) => !line.articleId);
+    const incomplete = lines.some((line) => !line.kind || !line.catalogId);
     if (incomplete) {
-      showToast("Choisissez un article pour chaque ligne ou supprimez les lignes vides", "error");
+      showToast(
+        "Choisissez un article ou une prestation pour chaque ligne, ou supprimez les lignes vides",
+        "error",
+      );
       return;
     }
-    if (locations.length > 0 && lines.some((line) => !line.locationId)) {
+    if (locations.length > 0 && lines.some((line) => line.kind === "article" && !line.locationId)) {
       showToast("Choisissez un emplacement pour chaque article", "error");
       return;
+    }
+    for (const line of lines) {
+      const qty = Number(line.quantity);
+      if (!Number.isFinite(qty) || qty < 0) {
+        showToast(`Quantité invalide pour ${line.name}`, "error");
+        return;
+      }
     }
     setSaving(true);
     try {
@@ -272,9 +368,37 @@ export function InterventionArticlesDialog({
           ...(adjustment.locationId ? { locationId: adjustment.locationId } : {}),
         });
       }
-      showToast(
-        adjustments.length > 0 ? "Articles de l'intervention mis à jour" : "Aucune modification",
-      );
+
+      const prestationUsages = lines
+        .filter((line) => line.kind === "prestation" && line.catalogId)
+        .map((line) => ({
+          prestationId: line.catalogId,
+          quantity: Number(line.quantity),
+        }));
+      const previousPrestationIds = new Set(currentPrestationUsage.map((u) => u.prestationId));
+      const nextPrestationIds = new Set(prestationUsages.map((u) => u.prestationId));
+      for (const previous of currentPrestationUsage) {
+        if (!nextPrestationIds.has(previous.prestationId)) {
+          prestationUsages.push({ prestationId: previous.prestationId, quantity: 0 });
+        }
+      }
+      const prestationChanged =
+        prestationUsages.length !== currentPrestationUsage.length ||
+        prestationUsages.some((u) => {
+          const prev = currentPrestationUsage.find((p) => p.prestationId === u.prestationId);
+          return !prev || Math.abs(prev.quantity - u.quantity) > 0.000_001;
+        }) ||
+        [...previousPrestationIds].some((id) => !nextPrestationIds.has(id));
+
+      if (prestationChanged || prestationUsages.length > 0 || currentPrestationUsage.length > 0) {
+        await stockApi.setInterventionPrestationUsages(interventionId, {
+          caseId,
+          usages: prestationUsages,
+        });
+      }
+
+      const changed = adjustments.length > 0 || prestationChanged;
+      showToast(changed ? "Consommations de l'intervention mises à jour" : "Aucune modification");
       onSaved();
       onClose();
     } catch (err) {
@@ -286,6 +410,7 @@ export function InterventionArticlesDialog({
     canEdit,
     lines,
     currentUsage,
+    currentPrestationUsage,
     interventionId,
     caseId,
     defaultLocationId,
@@ -300,7 +425,8 @@ export function InterventionArticlesDialog({
       <span className="block truncate">{interventionTitle}</span>
       {locations.length > 1 ? (
         <span className="mt-1 block text-[11px] text-slate-400 dark:text-slate-500">
-          Chaque article peut être prélevé depuis un emplacement différent.
+          Chaque article peut être prélevé depuis un emplacement différent. Les prestations n’ont
+          pas d’emplacement stock.
         </span>
       ) : null}
     </>
@@ -311,7 +437,7 @@ export function InterventionArticlesDialog({
       open={open}
       onClose={handleClose}
       closeDisabled={saving}
-      title="Articles utilisés"
+      title="Articles et prestations"
       description={description}
       titleId="intervention-articles-title"
       size="md"
@@ -336,16 +462,17 @@ export function InterventionArticlesDialog({
       <div className="space-y-4">
         {lines.length === 0 ? (
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Aucun article pour le moment. Ajoutez les pièces ou consommables utilisés sur
+            Aucune consommation pour le moment. Ajoutez les articles ou prestations utilisés sur
             l&apos;intervention.
           </p>
         ) : (
           <ul className="space-y-2">
             {lines.map((line) => {
-              const articleMeta = articles.find((a) => a.id === line.articleId);
+              const articleMeta =
+                line.kind === "article" ? articles.find((a) => a.id === line.catalogId) : undefined;
               const lineLocation = locations.find((l) => l.id === line.locationId);
               const atLocation =
-                line.locationId && articleMeta
+                line.kind === "article" && line.locationId && articleMeta
                   ? stockAtLocation(articleMeta, line.locationId)
                   : articleMeta?.stockQuantity;
               return (
@@ -355,18 +482,21 @@ export function InterventionArticlesDialog({
                 >
                   <div className="flex gap-2">
                     <div className="min-w-0 flex-1 space-y-2">
-                      {line.articleId ? (
+                      {line.catalogId ? (
                         <div>
                           <p className="text-sm font-medium text-slate-800 dark:text-slate-100">
-                            {line.articleName}
-                            {line.articleReference ? (
+                            <span className="mr-1.5 text-[11px] font-normal uppercase tracking-wide text-slate-400">
+                              {line.kind === "prestation" ? "Prestation" : "Article"}
+                            </span>
+                            {line.name}
+                            {line.reference ? (
                               <span className="font-normal text-slate-500 dark:text-slate-400">
                                 {" "}
-                                · {line.articleReference}
+                                · {line.reference}
                               </span>
                             ) : null}
                           </p>
-                          {articleMeta && atLocation != null && (
+                          {line.kind === "article" && articleMeta && atLocation != null && (
                             <p className="text-[11px] text-slate-400 dark:text-slate-500">
                               {line.locationId && lineLocation
                                 ? `Stock à « ${lineLocation.name} »`
@@ -377,22 +507,20 @@ export function InterventionArticlesDialog({
                           )}
                         </div>
                       ) : (
-                        <select
+                        <SearchableSelect
                           value=""
-                          onChange={(e) => selectArticle(line.key, e.target.value)}
+                          onChange={(value) => selectCatalogItem(line.key, value)}
+                          options={catalogOptions}
+                          emptyLabel="Choisir un article ou une prestation…"
+                          placeholder="Rechercher…"
+                          aria-label="Article ou prestation"
+                          allowEmpty={false}
                           disabled={!canEdit || saving}
-                          className={inputClassName}
-                        >
-                          <option value="">Choisir un article…</option>
-                          {availableArticles.map((article) => (
-                            <option key={article.id} value={article.id}>
-                              {article.reference} — {article.name}
-                            </option>
-                          ))}
-                        </select>
+                          className="min-w-0 w-full"
+                        />
                       )}
 
-                      {locations.length > 0 && (
+                      {line.kind === "article" && locations.length > 0 && (
                         <label className="block">
                           <span className="mb-1 block text-[11px] font-medium text-slate-500 dark:text-slate-400">
                             Emplacement
@@ -422,7 +550,7 @@ export function InterventionArticlesDialog({
                           step="0.01"
                           value={line.quantity}
                           onChange={(e) => updateLine(line.key, { quantity: e.target.value })}
-                          disabled={!canEdit || saving || !line.articleId}
+                          disabled={!canEdit || saving || !line.catalogId}
                           className={inputClassName}
                         />
                       </label>
@@ -433,7 +561,7 @@ export function InterventionArticlesDialog({
                         onClick={() => removeLine(line.key)}
                         disabled={saving}
                         className="shrink-0 self-start rounded-md p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40 disabled:opacity-50"
-                        aria-label="Retirer cet article"
+                        aria-label="Retirer cette ligne"
                       >
                         <svg
                           className="h-4 w-4"
@@ -458,14 +586,14 @@ export function InterventionArticlesDialog({
           </ul>
         )}
 
-        {canEdit && availableArticles.length > 0 && (
+        {canEdit && catalogOptions.length > 0 && (
           <button
             type="button"
             onClick={addLine}
             disabled={saving}
             className="mt-1 w-full rounded-lg border border-dashed border-slate-300 dark:border-slate-600 px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:border-brand-400 hover:text-brand-600 dark:hover:text-brand-400 disabled:opacity-50 transition"
           >
-            + Ajouter un article
+            + Ajouter une ligne
           </button>
         )}
       </div>

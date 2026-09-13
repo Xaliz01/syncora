@@ -67,6 +67,9 @@ export class InvoiceDocument extends Document {
   @Prop({ type: Array, default: [] })
   emailSends?: InvoiceEmailSendEntry[];
 
+  @Prop({ type: [String], default: [] })
+  interventionIds?: string[];
+
   @Prop()
   finalizedAt?: Date;
 

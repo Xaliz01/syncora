@@ -146,6 +146,8 @@ export interface LocalInvoiceResponse {
   creditedInvoiceId?: string;
   caseTitle?: string;
   emailSends?: InvoiceEmailSendEntry[];
+  /** Interventions du dossier rattachées à cette facture (saisie libre). */
+  interventionIds?: string[];
   createdAt?: string;
   updatedAt?: string;
   finalizedAt?: string;
@@ -184,6 +186,7 @@ export interface CreateLocalInvoiceBody {
   customer: InvoicePartySnapshot;
   seller?: InvoiceSellerSnapshot;
   draft?: boolean;
+  interventionIds?: string[];
 }
 
 export interface CreditLocalInvoiceBody {
@@ -263,4 +266,18 @@ export function billingStatusFromLocalInvoices(
   quoteTotalHt = 0,
 ): BillingStatus | null {
   return aggregateCaseBillingStatus(localInvoicesToBillingAggregation(invoices), quoteTotalHt);
+}
+
+export function normalizeInvoiceInterventionIds(ids?: string[]): string[] {
+  return [...new Set((ids ?? []).map((id) => id.trim()).filter(Boolean))];
+}
+
+export function interventionBillingStatusFromInvoice(
+  status: LocalInvoiceStatus,
+): BillingStatus | null {
+  if (status === "draft") return "invoice_draft";
+  if (status === "finalized") return "invoiced";
+  if (status === "paid") return "paid";
+  if (status === "cancelled") return "to_invoice";
+  return null;
 }

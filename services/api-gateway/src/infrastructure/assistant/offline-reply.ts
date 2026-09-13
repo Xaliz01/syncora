@@ -274,6 +274,34 @@ export function matchOfflineFaq(
     };
   }
 
+  const interventionInvoiceHit = /factur/.test(normalized) && /intervention/.test(normalized);
+  const interventionPrestationHit =
+    /prestation/.test(normalized) && /intervention/.test(normalized);
+
+  if (interventionPrestationHit && !interventionInvoiceHit) {
+    return {
+      reply:
+        "Oui : sur une intervention vous pouvez enregistrer des **prestations** comme consommation (en plus des articles).\n\n1. Ouvrez le dossier, section Interventions.\n2. Cliquez **Ajouter articles / prestations** (ou **Modifier**).\n3. Choisissez une prestation dans le sélecteur (recherche par nom ou référence) — pas d’emplacement stock.\n4. Indiquez la quantité, enregistrez. À la facturation, ces lignes sont préremplies.",
+      suggestions: [
+        { label: "Dossiers", href: "/cases" },
+        { label: "Prestations", href: "/settings/prestations" },
+      ],
+      escalateToSupport: false,
+    };
+  }
+
+  if (interventionInvoiceHit) {
+    return {
+      reply:
+        "Oui : vous pouvez **facturer une ou plusieurs interventions** depuis le dossier.\n\n1. Ouvrez le dossier, section Interventions.\n2. Enregistrez les **articles et prestations** consommés (Ajouter articles / prestations).\n3. Sur une intervention, cliquez **Facturer** — ou cochez plusieurs interventions puis **Créer une facture**.\n4. Les lignes reprennent articles et prestations ; ajustez-les si besoin, puis créez le brouillon.\n5. Validez ensuite pour numéroter la facture et télécharger le PDF.\n\nVous pouvez aussi facturer depuis un devis accepté, toujours sur le dossier.",
+      suggestions: [
+        { label: "Dossiers", href: "/cases" },
+        { label: "Facturation", href: "/billing" },
+      ],
+      escalateToSupport: false,
+    };
+  }
+
   const billingHit =
     /facturer|facture|facturation|factures/.test(normalized) &&
     !/stripe|abonnement|carte bancaire|essai gratuit/.test(normalized);
@@ -281,7 +309,7 @@ export function matchOfflineFaq(
   if (billingHit) {
     return {
       reply:
-        "Oui : les factures clients s’émettent **dans Planwise**.\n\n1. Sur un dossier : créez le devis, puis **Créer une facture** (brouillon).\n2. Validez pour numéroter la facture et télécharger le PDF.\n3. Envoyez-la par e-mail (confirmation, PDF joint) : l’historique des envois reste sur le dossier et dans Facturation.\n4. Suivez l’avancement dans Facturation.\n\nL’émission via la facturation électronique arrivera prochainement.",
+        "Oui : les factures clients s’émettent **dans Planwise**.\n\n1. Sur un dossier : créez le devis, **Facturer** une intervention, ou **Créer une facture** (brouillon, y compris plusieurs interventions cochées).\n2. Validez pour numéroter la facture et télécharger le PDF.\n3. Envoyez-la par e-mail (confirmation, PDF joint) : l’historique des envois reste sur le dossier et dans Facturation.\n4. Suivez l’avancement dans Facturation.\n\nL’émission via la facturation électronique arrivera prochainement.",
       suggestions: [
         { label: "Facturation", href: "/billing" },
         { label: "Dossiers", href: "/cases" },
@@ -453,7 +481,7 @@ function buildStepsForRoute(href: string, label: string): string {
     "/fleet/technicians":
       "1. Flotte → Techniciens.\n2. Créez un technicien ou ouvrez une fiche, puis liez un compte utilisateur si besoin.\n3. L’assignation d’intervention se fait ensuite sur ce technicien (dossier ou planning).",
     "/billing":
-      "1. Créez un devis sur le dossier, puis **Créer une facture**.\n2. Relisez l’aperçu PDF, validez le brouillon pour numéroter et télécharger le PDF.\n3. Envoyez la facture par e-mail (confirmation, PDF joint) ; l’historique reste sur le dossier et dans Facturation.\n4. Suivez les factures dans Facturation. L’émission électronique arrivera prochainement.",
+      "1. Créez un devis, ou facturez une / plusieurs interventions du dossier, puis **Créer une facture**.\n2. Relisez l’aperçu PDF, validez le brouillon pour numéroter et télécharger le PDF.\n3. Envoyez la facture par e-mail (confirmation, PDF joint) ; l’historique reste sur le dossier et dans Facturation.\n4. Suivez les factures dans Facturation. L’émission électronique arrivera prochainement.",
     "/contracts":
       "1. Suivi → Contrats.\n2. Créez un contrat avec le mode « avec le client » ou « auto-planifier ».\n3. Activez-le pour générer / programmer les visites.",
     "/contracts/new":

@@ -107,8 +107,8 @@ Assignation : technicien ou équipe (pas utilisateur). Terrain du jour : /my-day
     id: "journey-billing",
     title: "Devis et facturation",
     pathPrefixes: ["/billing", "/settings/prestations"],
-    text: `Règle : les factures clients s'émettent dans Planwise. Devis (PDF, lignes, TVA) sur un dossier, puis Créer une facture (complète, situation, acompte, solde) et avoir si besoin. L'émission via la facturation électronique arrivera prochainement.
-Étapes : 1) Dossier → devis. 2) Envoyer le devis par e-mail (popup de confirmation, PDF joint, droit quotes.send) ; l'historique reste sur le devis ; un brouillon passe au statut Envoyé. 3) Créer une facture (brouillon). 4) Valider pour numéroter et PDF. 5) Envoyer la facture par e-mail (popup de confirmation, PDF joint) ; historique des envois sur le dossier et /billing. 6) Suivi /billing.
+    text: `Règle : les factures clients s'émettent dans Planwise. Devis (PDF, lignes, TVA) sur un dossier, puis Créer une facture (complète, situation, acompte, solde) et avoir si besoin. On peut aussi facturer une intervention ou plusieurs interventions du même dossier : bouton Facturer sur la carte, ou cases à cocher puis Créer une facture ; les lignes reprennent les articles et prestations consommés (quantité nette / quantité), encore modifiables. Sur l'intervention, Ajouter articles / prestations enregistre aussi les prestations (sans emplacement stock). L'émission via la facturation électronique arrivera prochainement.
+Étapes : 1) Dossier → devis. 2) Envoyer le devis par e-mail (popup de confirmation, PDF joint, droit quotes.send) ; l'historique reste sur le devis ; un brouillon passe au statut Envoyé. 3) Créer une facture (brouillon) depuis le devis, la saisie libre, ou les interventions. 4) Valider pour numéroter et PDF. 5) Envoyer la facture par e-mail (popup de confirmation, PDF joint) ; historique des envois sur le dossier et /billing. 6) Suivi /billing.
 Prestations catalogue : /settings/prestations. Abonnement Planwise (/subscription) ≠ facturation clients.`,
   },
   {
@@ -131,7 +131,7 @@ Contrat brouillon / suspendu / terminé ne génère pas. Fiche /contracts/:id : 
     title: "Stock et prestations",
     pathPrefixes: ["/stock", "/settings/stock", "/settings/prestations"],
     text: `Stock physique ≠ prestations devis.
-Mouvements : /stock (entrées, sorties, ajustements, transferts ; stock.movements.read). Catalogue articles : /settings/stock/articles. Emplacements : /settings/stock/locations (souvent véhicule/agence). Sur dossier/intervention : articles consommés.
+Mouvements : /stock (entrées, sorties, ajustements, transferts ; stock.movements.read). Catalogue articles : /settings/stock/articles. Emplacements : /settings/stock/locations (souvent véhicule/agence). Sur dossier/intervention : articles et prestations consommés.
 Prestations (/settings/prestations) = lignes devis/facture, pas le stock. Flotte liée : /fleet/vehicles, /fleet/agences.`,
   },
   {
@@ -239,7 +239,17 @@ const ABOUT_STRONG_TOKENS = new Set([
 const QUERY_EXPANSIONS: Record<string, readonly string[]> = {
   devis: ["devis", "quote", "facturation", "prestation", "tva", "pdf"],
   facture: ["facturation", "billing", "pennylane", "qonto", "demo", "devis"],
-  facturer: ["facturation", "billing", "pennylane", "qonto", "demo", "devis", "facture"],
+  facturer: [
+    "facturation",
+    "billing",
+    "pennylane",
+    "qonto",
+    "demo",
+    "devis",
+    "facture",
+    "intervention",
+    "interventions",
+  ],
   facturation: ["facturation", "billing", "devis", "pennylane", "qonto", "integration"],
   planning: ["planning", "calendrier", "intervention", "calendar"],
   calendrier: ["planning", "calendrier", "intervention"],
@@ -252,6 +262,9 @@ const QUERY_EXPANSIONS: Record<string, readonly string[]> = {
     "planning",
     "assigner",
     "technicien",
+    "prestation",
+    "article",
+    "consommation",
   ],
   journee: ["journee", "my-day", "intervention", "technicien"],
   client: ["client", "customers", "particulier", "entreprise", "donneur"],
@@ -279,7 +292,8 @@ const QUERY_EXPANSIONS: Record<string, readonly string[]> = {
   stock: ["stock", "article", "mouvement", "emplacement"],
   article: ["article", "stock", "catalogue"],
   emplacement: ["emplacement", "stock", "vehicule", "agence"],
-  prestation: ["prestation", "devis", "catalogue"],
+  prestation: ["prestation", "devis", "catalogue", "intervention", "consommation"],
+  prestations: ["prestations", "prestation", "catalogue", "intervention"],
   modele: ["modele", "template", "dossier", "case-templates", "metier"],
   metier: ["metier", "modele", "template", "import"],
   permission: ["permission", "profil", "droit", "users"],

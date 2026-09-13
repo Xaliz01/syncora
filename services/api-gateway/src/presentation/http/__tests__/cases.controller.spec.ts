@@ -47,6 +47,7 @@ describe("CasesController", () => {
       listInterventions: jest.fn(),
       getIntervention: jest.fn(),
       updateIntervention: jest.fn(),
+      setInterventionBillingStatus: jest.fn(),
       deleteIntervention: jest.fn(),
       startIntervention: jest.fn(),
       completeIntervention: jest.fn(),

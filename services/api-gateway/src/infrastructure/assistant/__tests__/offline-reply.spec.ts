@@ -85,13 +85,23 @@ describe("offline-reply", () => {
     expect(result.suggestions.some((s) => s.href === "/cases")).toBe(true);
   });
 
-  it("répond sur la limite de documents / quota", () => {
+  it("répond comment facturer une intervention", () => {
     const result = buildOfflineAssistantReply({
-      message: "Ai-je un nombre limité de documents que je peux déposer ?",
+      message: "Comment facturer une intervention ?",
       hasPermission: allowAll(),
     });
-    expect(result.reply).toMatch(/10 Go/i);
-    expect(result.reply).toMatch(/nombre/i);
-    expect(result.suggestions.some((s) => s.href === "/subscription")).toBe(true);
+    expect(result.reply).toMatch(/Facturer/i);
+    expect(result.reply).toMatch(/intervention/i);
+    expect(result.suggestions.some((s) => s.href === "/cases")).toBe(true);
+  });
+
+  it("répond comment ajouter une prestation sur une intervention", () => {
+    const result = buildOfflineAssistantReply({
+      message: "Comment ajouter une prestation sur une intervention ?",
+      hasPermission: allowAll(),
+    });
+    expect(result.reply).toMatch(/prestation/i);
+    expect(result.reply).toMatch(/intervention/i);
+    expect(result.suggestions.some((s) => s.href === "/cases")).toBe(true);
   });
 });

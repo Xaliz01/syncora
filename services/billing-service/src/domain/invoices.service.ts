@@ -16,6 +16,7 @@ import {
   invoiceEmailFailureMessage,
   isIssuedInvoiceStatus,
   isValidEmailAddress,
+  normalizeInvoiceInterventionIds,
   type CreateLocalInvoiceBody,
   type CreditLocalInvoiceBody,
   type InvoiceEmailSendEntry,
@@ -112,6 +113,7 @@ export class InvoicesService extends AbstractInvoicesService {
       seller: body.seller,
       creditedInvoiceId: body.creditedInvoiceId?.trim() || undefined,
       caseTitle: body.caseTitle?.trim() || undefined,
+      interventionIds: normalizeInvoiceInterventionIds(body.interventionIds),
       finalizedAt: asDraft ? undefined : new Date(),
     });
 

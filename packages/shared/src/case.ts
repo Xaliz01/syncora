@@ -51,6 +51,16 @@ export function canCreateCaseInvoice(status: BillingStatus): boolean {
   return (BILLING_STATUSES_ALLOWING_INVOICE_CREATE as readonly string[]).includes(status);
 }
 
+/** Lignes libres / consommations d’intervention : autorisé aussi tant que le dossier est « Non applicable ». */
+export function canCreateInvoiceFromCustomLines(status: BillingStatus): boolean {
+  return status === "none" || canCreateCaseInvoice(status);
+}
+
+/** Interventions pré-cochées pour une facture groupée (les autres restent sélectionnables à la main). */
+export function isDefaultInterventionInvoiceSelection(status: BillingStatus): boolean {
+  return status === "none" || status === "to_invoice";
+}
+
 /**
  * Libellé d’affichage d’un dossier : numéro + client (ou autre libellé de partie).
  * Ex. `2026-0001 - Dupont SARL` ou `2026-0001` s’il n’y a pas de client.

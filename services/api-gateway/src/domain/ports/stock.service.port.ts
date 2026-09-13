@@ -3,8 +3,11 @@ import type {
   ArticlesListResponse,
   AuthUser,
   InterventionArticleUsageResponse,
+  InterventionPrestationUsageResponse,
+  InterventionPrestationUsagesListResponse,
   PrestationResponse,
   PrestationsListResponse,
+  SetInterventionPrestationUsageItem,
   StockLocationResponse,
   StockLocationType,
   StockMovementResponse,
@@ -73,6 +76,11 @@ export interface AddInterventionArticleUsageForOrgBody {
   movementType?: "in" | "out";
   locationId?: string;
   note?: string;
+}
+
+export interface SetInterventionPrestationUsagesForOrgBody {
+  caseId?: string;
+  usages: SetInterventionPrestationUsageItem[];
 }
 
 export interface CreateStockLocationForOrgBody {
@@ -160,6 +168,19 @@ export abstract class AbstractStockGatewayService {
     user: AuthUser,
     interventionId: string,
   ): Promise<InterventionArticleUsageResponse[]>;
+  abstract listInterventionPrestationUsages(
+    user: AuthUser,
+    interventionId: string,
+  ): Promise<InterventionPrestationUsagesListResponse>;
+  abstract setInterventionPrestationUsages(
+    user: AuthUser,
+    interventionId: string,
+    body: SetInterventionPrestationUsagesForOrgBody,
+  ): Promise<InterventionPrestationUsageResponse[]>;
+  abstract listCaseInterventionPrestationUsages(
+    user: AuthUser,
+    caseId: string,
+  ): Promise<InterventionPrestationUsagesListResponse>;
   abstract createStockLocation(
     user: AuthUser,
     body: CreateStockLocationForOrgBody,
