@@ -360,11 +360,16 @@ test.describe("Articles intervention et facture", () => {
     await expect(page.getByRole("heading", { name: /Brouillon de facture/i })).toBeVisible();
     await expect(page.getByText(/Vis inox/)).toBeVisible();
     await expect(page.getByText(/Main d'œuvre/)).toBeVisible();
+    const draftCreatedToast = page
+      .getByRole("status")
+      .filter({ hasText: "Facture brouillon créée." });
+
     await page.getByRole("button", { name: /Créer le brouillon/i }).click();
-    await expect(page.getByText("Facture brouillon créée.")).toBeVisible({ timeout: 10_000 });
+    await expect(draftCreatedToast.last()).toBeVisible({ timeout: 10_000 });
     expect(createdBodies[0]?.interventionIds).toEqual(["int-1"]);
     expect(createdBodies[0]?.lines?.some((l) => l.prestationId === "presta-mo")).toBe(true);
     await page.getByRole("button", { name: "Valider plus tard" }).click();
+    await expect(draftCreatedToast).toHaveCount(0);
 
     await page
       .getByRole("heading", { name: /Interventions/ })
@@ -373,7 +378,7 @@ test.describe("Articles intervention et facture", () => {
       .click();
     await expect(page.getByRole("heading", { name: /Brouillon de facture/i })).toBeVisible();
     await page.getByRole("button", { name: /Créer le brouillon/i }).click();
-    await expect(page.getByText("Facture brouillon créée.")).toBeVisible({ timeout: 10_000 });
+    await expect(draftCreatedToast.last()).toBeVisible({ timeout: 10_000 });
     expect(createdBodies[1]?.interventionIds).toEqual(["int-1", "int-2"]);
   });
 });
