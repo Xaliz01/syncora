@@ -90,6 +90,23 @@ const prestations = [
   },
 ];
 
+const stockLocations = [
+  {
+    id: "loc-depot",
+    organizationId: "org-e2e",
+    name: "Dépôt",
+    type: "warehouse",
+    isDefault: true,
+  },
+  {
+    id: "loc-camion",
+    organizationId: "org-e2e",
+    name: "Camion 1",
+    type: "vehicle",
+    isDefault: false,
+  },
+];
+
 function intervention(id: string, title: string) {
   return {
     id,
@@ -280,7 +297,7 @@ test.describe("Articles intervention et facture", () => {
         return;
       }
       if (method === "GET" && path.includes("/stock/locations")) {
-        await route.fulfill({ json: [] });
+        await route.fulfill({ json: stockLocations });
         return;
       }
       if (method === "GET" && path.includes("/stock/articles")) {
@@ -329,7 +346,12 @@ test.describe("Articles intervention et facture", () => {
     await page.getByRole("button", { name: "Article ou prestation", exact: true }).click();
     await page.getByRole("searchbox", { name: /Rechercher — Article ou prestation/ }).fill("main");
     await page.getByRole("option", { name: /MO-H — Main d'œuvre/ }).click();
-    await expect(page.getByText("Emplacement")).toHaveCount(0);
+
+    const usageDialog = page.getByRole("dialog");
+    const articleLine = usageDialog.locator("li").filter({ hasText: /Vis inox/ });
+    const prestationLine = usageDialog.locator("li").filter({ hasText: /Main d'œuvre/ });
+    await expect(articleLine.getByText("Emplacement", { exact: true })).toHaveCount(1);
+    await expect(prestationLine.getByText("Emplacement", { exact: true })).toHaveCount(0);
 
     await page.getByRole("button", { name: "Enregistrer" }).click();
     await expect(page.getByText("Consommations de l'intervention mises à jour")).toBeVisible();
