@@ -1,8 +1,11 @@
 import PDFDocument from "pdfkit";
 import {
+  INVOICE_MENTION_LABELS_FR,
   LOCAL_INVOICE_KIND_LABELS,
   invoiceTotalsFromLines,
+  resolveInvoiceMentions,
   sanitizePdfText,
+  type InvoiceMentionKey,
   type LocalInvoiceResponse,
 } from "@planwise/shared";
 
@@ -186,6 +189,8 @@ export async function renderInvoicePdf(
       doc.y += 12;
     }
 
+    renderLegalMentionsBlock(doc, invoice);
+
     if (invoice.status === "draft") {
       stampDraftWatermarkOnPages(doc);
     }
@@ -198,13 +203,48 @@ function partyLines(seller?: LocalInvoiceResponse["seller"]): string[] {
   if (!seller) return ["—"];
   return [
     seller.name,
+    seller.legalForm
+      ? `${seller.legalForm}${seller.shareCapital ? ` au capital de ${seller.shareCapital}` : ""}`
+      : null,
     seller.siret ? `SIRET ${seller.siret}` : null,
+    seller.rcsLabel || null,
+    seller.vatNumber ? `N° TVA ${seller.vatNumber}` : null,
     seller.email,
     seller.addressLine1,
     seller.addressLine2,
     [seller.postalCode, seller.city].filter(Boolean).join(" ") || null,
     seller.country,
   ].filter((line): line is string => Boolean(line?.trim()));
+}
+
+function renderLegalMentionsBlock(doc: PDFKit.PDFDocument, invoice: LocalInvoiceResponse): void {
+  const mentions = resolveInvoiceMentions(invoice.seller?.mentions);
+  const keys: InvoiceMentionKey[] = [
+    "paymentTerms",
+    "latePenalties",
+    "recoveryIndemnity",
+    "discount",
+    ...(mentions.vatFranchise ? (["vatFranchise"] as const) : []),
+  ];
+  if (doc.y + 70 > doc.page.height - 80) {
+    doc.addPage();
+    doc.y = 50;
+  }
+  pdfSection(doc, "Mentions légales");
+  doc.fontSize(8).fillColor(MUTED);
+  for (const key of keys) {
+    const text = mentions[key];
+    if (!text) continue;
+    const line = `${INVOICE_MENTION_LABELS_FR[key]} : ${text}`;
+    const height = doc.heightOfString(sanitizePdfText(line), { width: 495 });
+    if (doc.y + height > doc.page.height - 80) {
+      doc.addPage();
+      doc.y = 50;
+      doc.fontSize(8).fillColor(MUTED);
+    }
+    pdfText(doc, line, 50, doc.y, { width: 495 });
+    doc.y += height + 4;
+  }
 }
 
 function pdfText(

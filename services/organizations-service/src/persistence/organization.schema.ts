@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document } from "mongoose";
-import type { TrialTestDataStatus } from "@planwise/shared";
+import type { InvoiceMentions, TrialTestDataStatus } from "@planwise/shared";
 
 @Schema({ _id: false })
 export class OrganizationTrialTestDataSubDoc {
@@ -50,6 +50,21 @@ export class OrganizationDocument extends Document {
   /** ID document (image) utilisé comme logo sur les devis. */
   @Prop()
   logoDocumentId?: string;
+
+  @Prop()
+  legalForm?: string;
+
+  @Prop()
+  shareCapital?: string;
+
+  @Prop()
+  rcsLabel?: string;
+
+  @Prop()
+  vatNumber?: string;
+
+  @Prop({ type: Object })
+  invoiceMentions?: InvoiceMentions;
 
   @Prop({ type: Date })
   deletedAt?: Date | null;

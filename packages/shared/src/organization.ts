@@ -1,5 +1,6 @@
 /** Contrat API organizations-service */
 
+import type { InvoiceMentions } from "./invoice-mentions";
 import type { TrialTestDataStatus } from "./test-data";
 
 export interface OrganizationTrialTestData {
@@ -32,6 +33,12 @@ export interface UpdateOrganizationBody {
   country?: string | null;
   /** Document image (documents-service) servant de logo — null pour retirer. */
   logoDocumentId?: string | null;
+  legalForm?: string | null;
+  shareCapital?: string | null;
+  rcsLabel?: string | null;
+  vatNumber?: string | null;
+  /** Mentions de facture personnalisées (null / objet vide = retomber sur les défauts). */
+  invoiceMentions?: InvoiceMentions | null;
 }
 
 export interface OrganizationResponse {
@@ -46,6 +53,11 @@ export interface OrganizationResponse {
   city?: string;
   country?: string;
   logoDocumentId?: string;
+  legalForm?: string;
+  shareCapital?: string;
+  rcsLabel?: string;
+  vatNumber?: string;
+  invoiceMentions?: InvoiceMentions;
   createdAt?: string;
   updatedAt?: string;
   trialTestData?: OrganizationTrialTestData;

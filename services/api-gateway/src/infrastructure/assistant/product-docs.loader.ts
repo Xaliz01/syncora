@@ -199,7 +199,7 @@ Documents déposés sur les fiches dossier. Ne jamais dire « aucune limite » n
     id: "journey-organization",
     title: "Organisation",
     pathPrefixes: ["/organization"],
-    text: `Mon organisation /organization : fiche lecture (nom, e-mail, téléphone, adresse, logo). Modifier → /organization/edit (organizations.update) : formulaire pleine page, retour à la fiche. Logo depuis la fiche. Switcher sidebar pour multi-org ; création via recherche SIRET/SIREN/nom. Isolation stricte organizationId — changer d'org « vide » les listes de l'autre (attendu). Assistant ne lit pas les données org.`,
+    text: `Mon organisation /organization : fiche lecture (nom, e-mail, téléphone, adresse, logo, mentions légales de facture). Mentions de facture (paiement, pénalités de retard L441-10, indemnité 40 €, escompte, éventuellement franchise TVA 293 B) : défauts droit français, personnalisables. Les factures déjà émises gardent les mentions de l'époque. Modifier → /organization/edit (organizations.update) : formulaire pleine page (identité juridique + mentions), retour à la fiche. Logo depuis la fiche. Switcher sidebar pour multi-org ; création via recherche SIRET/SIREN/nom. Isolation stricte organizationId — changer d'org « vide » les listes de l'autre (attendu). Assistant ne lit pas les données org.`,
   },
   {
     id: "journey-account-pwa",

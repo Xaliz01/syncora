@@ -1,6 +1,7 @@
 /** Contrats API facturation locale (billing-service) — factures clients dans Planwise. */
 
 import type { BillingStatus } from "./case";
+import type { InvoiceMentions } from "./invoice-mentions";
 import {
   aggregateCaseBillingStatus,
   CASE_INVOICE_KIND_LABELS,
@@ -59,6 +60,12 @@ export interface InvoiceSellerSnapshot {
   postalCode?: string;
   city?: string;
   country?: string;
+  legalForm?: string;
+  shareCapital?: string;
+  rcsLabel?: string;
+  vatNumber?: string;
+  /** Mentions déjà résolues (défauts FR + personnalisations) au moment du snapshot. */
+  mentions?: InvoiceMentions;
 }
 
 export interface LocalInvoiceLine {

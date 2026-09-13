@@ -14,6 +14,11 @@ export function toOrganizationResponse(doc: OrganizationDocument): OrganizationR
     city: doc.city,
     country: doc.country,
     logoDocumentId: doc.logoDocumentId || undefined,
+    legalForm: doc.legalForm || undefined,
+    shareCapital: doc.shareCapital || undefined,
+    rcsLabel: doc.rcsLabel || undefined,
+    vatNumber: doc.vatNumber || undefined,
+    invoiceMentions: doc.invoiceMentions,
     createdAt: doc.get("createdAt")?.toISOString(),
     updatedAt: doc.get("updatedAt")?.toISOString(),
     trialTestData: doc.trialTestData

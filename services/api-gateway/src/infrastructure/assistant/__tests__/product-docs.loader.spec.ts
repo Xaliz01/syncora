@@ -101,6 +101,11 @@ describe("retrieveProductChunks", () => {
     );
   });
 
+  it("remonte l'organisation pour les mentions légales de facture", () => {
+    const chunks = retrieveProductChunks("Où modifier les mentions légales des factures ?");
+    expect(chunks.some((c) => c.id === "journey-organization")).toBe(true);
+  });
+
   it("remonte le quota documents pour une limite de fichiers", () => {
     const chunks = retrieveProductChunks(
       "Ai-je un nombre limité de documents que je peux déposer ?",

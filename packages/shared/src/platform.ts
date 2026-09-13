@@ -4,6 +4,7 @@ import type { AuthResponse, AuthUser, LoginBody } from "./auth";
 import type { OrganizationResponse } from "./organization";
 import type { UserResponse, UserStatus } from "./user";
 import type { UserRole } from "./auth";
+import { MAX_PAGE_LIMIT } from "./pagination";
 
 /** JWT staff plateforme (sous-domaine backoffice). */
 export interface PlatformJwtPayload {
@@ -356,6 +357,39 @@ export interface PlatformProspectOutreachResponse {
   reason?: string;
 }
 
+/** Plafond d’un envoi groupé (aligné sur la pagination liste). */
+export const PLATFORM_PROSPECT_BULK_MAX_RECIPIENTS = MAX_PAGE_LIMIT;
+
+/** Timeout HTTP (gateway + client) pour un envoi groupé séquentiel SMTP. */
+export const PLATFORM_PROSPECT_BULK_REQUEST_TIMEOUT_MS = 60_000;
+
+export interface PlatformProspectBulkOutreachRecipient {
+  siren: string;
+  companyName: string;
+  toEmail: string;
+  contactName?: string;
+}
+
+export interface PlatformProspectBulkOutreachBody {
+  templateId: string;
+  recipients: PlatformProspectBulkOutreachRecipient[];
+}
+
+export type PlatformProspectBulkOutreachItemStatus = "sent" | "failed" | "skipped";
+
+export interface PlatformProspectBulkOutreachItemResult {
+  siren: string;
+  status: PlatformProspectBulkOutreachItemStatus;
+  reason?: string;
+}
+
+export interface PlatformProspectBulkOutreachResponse {
+  sent: number;
+  failed: number;
+  skipped: number;
+  results: PlatformProspectBulkOutreachItemResult[];
+}
+
 /* ── Contenus e-mail backoffice ─────────────────────────────── */
 
 export const PLATFORM_EMAIL_TEMPLATE_PURPOSES = ["prospect_outreach", "user_support"] as const;
@@ -482,6 +516,19 @@ export type ProspectOutreachStatus = "sent" | "failed" | "email_not_found" | "no
 
 export const PROSPECT_OUTREACH_COMMENT_MAX_LENGTH = 2000;
 
+export type ProspectOutreachEmailSendStatus = "sent" | "failed";
+
+export interface ProspectOutreachEmailSend {
+  sentAt: string;
+  subject: string;
+  templateId?: string;
+  templateName?: string;
+  toEmail: string;
+  sentByUserId: string;
+  sentByEmail: string;
+  status: ProspectOutreachEmailSendStatus;
+}
+
 export interface CreateProspectOutreachBody {
   siren: string;
   companyName: string;
@@ -491,6 +538,8 @@ export interface CreateProspectOutreachBody {
   subject: string;
   status?: ProspectOutreachStatus;
   comment?: string;
+  templateId?: string;
+  templateName?: string;
 }
 
 export interface UpsertProspectCommentBody {
@@ -512,6 +561,7 @@ export interface ProspectOutreachResponse {
   status: ProspectOutreachStatus;
   sentAt: string;
   comment?: string;
+  emailSends?: ProspectOutreachEmailSend[];
 }
 
 export interface ProspectOutreachesBySirensResponse {

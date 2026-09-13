@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document } from "mongoose";
+import type { ProspectOutreachEmailSend } from "@planwise/shared";
 
 @Schema({ timestamps: true, _id: true, collection: "prospect_outreaches" })
 export class ProspectOutreachDocument extends Document {
@@ -29,6 +30,9 @@ export class ProspectOutreachDocument extends Document {
 
   @Prop({ required: false, default: "" })
   comment?: string;
+
+  @Prop({ type: Array, default: [] })
+  emailSends?: ProspectOutreachEmailSend[];
 }
 
 export const ProspectOutreachSchema = SchemaFactory.createForClass(ProspectOutreachDocument);

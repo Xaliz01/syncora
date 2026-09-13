@@ -122,7 +122,13 @@ describe("BillingGatewayService prepareInvoice billing party", () => {
     customersService = { getCustomer: jest.fn().mockResolvedValue(customer) };
     orderGiversService = { getOrderGiver: jest.fn().mockResolvedValue(orderGiver) };
     organizationsService = {
-      getMine: jest.fn().mockResolvedValue({ id: "org-1", name: "SARL Demo", siret: "123" }),
+      getMine: jest.fn().mockResolvedValue({
+        id: "org-1",
+        name: "SARL Demo",
+        siret: "123",
+        legalForm: "SARL",
+        invoiceMentions: { paymentTerms: "Paiement à 15 jours" },
+      }),
     };
     scopedHttp = {
       request: jest.fn().mockImplementation(async (opts: { method: string; path: string }) => {
@@ -175,6 +181,9 @@ describe("BillingGatewayService prepareInvoice billing party", () => {
     )?.[0];
     expect(payload.body.customer.displayName).toBe("Client SA");
     expect(payload.body.customer.partyId).toBe("cust-1");
+    expect(payload.body.seller.legalForm).toBe("SARL");
+    expect(payload.body.seller.mentions.paymentTerms).toBe("Paiement à 15 jours");
+    expect(payload.body.seller.mentions.latePenalties).toMatch(/L441-10/);
   });
 
   it("bills the order giver when set on the case", async () => {

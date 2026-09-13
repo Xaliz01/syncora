@@ -64,6 +64,14 @@ export function isNetworkErrorMessage(message: string): boolean {
 
 /** Traduit les erreurs réseau navigateur (ex. « Failed to fetch ») en message FR. */
 export function normalizeThrownFetchError(error: unknown): Error {
+  if (
+    (typeof DOMException !== "undefined" &&
+      error instanceof DOMException &&
+      error.name === "AbortError") ||
+    (error instanceof Error && error.name === "AbortError")
+  ) {
+    return new Error("La requête a pris trop de temps. Réessayez avec moins de destinataires.");
+  }
   if (error instanceof Error && isNetworkErrorMessage(error.message)) {
     return new Error(NETWORK_UNAVAILABLE_MESSAGE);
   }

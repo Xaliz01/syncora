@@ -33,6 +33,7 @@ export * from "./reporting-period";
 export * from "./quote";
 export * from "./prestation";
 export * from "./integrations";
+export * from "./invoice-mentions";
 export * from "./billing";
 export * from "./support";
 export * from "./test-data";

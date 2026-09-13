@@ -125,7 +125,61 @@ describe("OrganizationsService", () => {
         createdAt: new Date("2025-01-01").toISOString(),
       });
     });
+  });
 
+  describe("update", () => {
+    it("should persist legal identity and invoice mentions on update", async () => {
+      const doc = mockDoc({
+        name: "Acme",
+        legalForm: "SAS",
+        rcsLabel: "RCS Brest 123 456 789",
+        vatNumber: "FR123",
+        invoiceMentions: { paymentTerms: "Paiement à 15 jours" },
+      });
+      mockOrganizationModel.findOneAndUpdate.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+
+      const result = await service.update("org-123", {
+        legalForm: "SAS",
+        rcsLabel: "RCS Brest 123 456 789",
+        vatNumber: "FR123",
+        invoiceMentions: { paymentTerms: "Paiement à 15 jours", latePenalties: "  " },
+      });
+
+      expect(mockOrganizationModel.findOneAndUpdate).toHaveBeenCalledWith(
+        { _id: "org-123", ...activeDocumentFilter },
+        {
+          $set: expect.objectContaining({
+            legalForm: "SAS",
+            rcsLabel: "RCS Brest 123 456 789",
+            vatNumber: "FR123",
+            invoiceMentions: { paymentTerms: "Paiement à 15 jours" },
+          }),
+        },
+        { new: true },
+      );
+      expect(result?.legalForm).toBe("SAS");
+      expect(result?.invoiceMentions).toEqual({ paymentTerms: "Paiement à 15 jours" });
+    });
+
+    it("stores empty invoice mentions as null so resolve falls back later", async () => {
+      const doc = mockDoc({ name: "Acme" });
+      mockOrganizationModel.findOneAndUpdate.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+
+      await service.update("org-123", { invoiceMentions: { paymentTerms: "" } });
+
+      expect(mockOrganizationModel.findOneAndUpdate).toHaveBeenCalledWith(
+        { _id: "org-123", ...activeDocumentFilter },
+        { $set: { invoiceMentions: null } },
+        { new: true },
+      );
+    });
+  });
+
+  describe("findById not found", () => {
     it("should return null when organization is not found", async () => {
       mockOrganizationModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(null),

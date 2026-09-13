@@ -4,6 +4,8 @@ import { Model } from "mongoose";
 import type { OrganizationDocument } from "../persistence/organization.schema";
 import {
   activeDocumentFilter,
+  clipLegalIdentityField,
+  sanitizeInvoiceMentions,
   type CreateOrganizationBody,
   type OrganizationResponse,
   type TrialTestDataStatus,
@@ -65,6 +67,21 @@ export class OrganizationsService extends AbstractOrganizationsService {
     if (body.country !== undefined) update.country = body.country || null;
     if (body.logoDocumentId !== undefined) {
       update.logoDocumentId = body.logoDocumentId?.trim() || null;
+    }
+    if (body.legalForm !== undefined) {
+      update.legalForm = clipLegalIdentityField(body.legalForm) ?? null;
+    }
+    if (body.shareCapital !== undefined) {
+      update.shareCapital = clipLegalIdentityField(body.shareCapital) ?? null;
+    }
+    if (body.rcsLabel !== undefined) {
+      update.rcsLabel = clipLegalIdentityField(body.rcsLabel) ?? null;
+    }
+    if (body.vatNumber !== undefined) {
+      update.vatNumber = clipLegalIdentityField(body.vatNumber) ?? null;
+    }
+    if (body.invoiceMentions !== undefined) {
+      update.invoiceMentions = sanitizeInvoiceMentions(body.invoiceMentions) ?? null;
     }
 
     const doc = await this.organizationModel

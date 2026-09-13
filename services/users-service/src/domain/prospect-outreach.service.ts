@@ -64,8 +64,25 @@ export class ProspectOutreachService extends AbstractProspectOutreachService {
       $set.comment = this.normalizeProspectComment(body.comment);
     }
 
+    const update: Record<string, unknown> = { $set };
+    if (status === "sent" || status === "failed") {
+      const sentByEmail = body.sentByEmail.trim().toLowerCase();
+      update.$push = {
+        emailSends: {
+          sentAt,
+          subject: body.subject.trim(),
+          toEmail: email,
+          sentByUserId: body.sentByUserId,
+          sentByEmail,
+          status,
+          ...(body.templateId?.trim() ? { templateId: body.templateId.trim() } : {}),
+          ...(body.templateName?.trim() ? { templateName: body.templateName.trim() } : {}),
+        },
+      };
+    }
+
     const doc = await this.prospectOutreachModel
-      .findOneAndUpdate({ siren }, { $set }, { upsert: true, new: true })
+      .findOneAndUpdate({ siren }, update, { upsert: true, new: true })
       .exec();
     if (!doc) throw new BadRequestException("Impossible d'enregistrer le contact");
     return toProspectOutreachResponse(doc);

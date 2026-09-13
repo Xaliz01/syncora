@@ -24,6 +24,8 @@ import type {
   PlatformProspectEmailNotFoundBody,
   PlatformProspectManualCreateBody,
   PlatformProspectNoteBody,
+  PlatformProspectBulkOutreachBody,
+  PlatformProspectBulkOutreachResponse,
   PlatformProspectOutreachBody,
   PlatformProspectOutreachResponse,
   PlatformProspectSearchSort,
@@ -194,6 +196,13 @@ export class PlatformService extends AbstractPlatformService {
     body: PlatformProspectOutreachBody,
   ): Promise<PlatformProspectOutreachResponse> {
     return this.prospects.sendProspectOutreach(staff, body);
+  }
+
+  sendProspectOutreachBulk(
+    staff: PlatformAuthUser,
+    body: PlatformProspectBulkOutreachBody,
+  ): Promise<PlatformProspectBulkOutreachResponse> {
+    return this.prospects.sendProspectOutreachBulk(staff, body);
   }
 
   markProspectEmailNotFound(

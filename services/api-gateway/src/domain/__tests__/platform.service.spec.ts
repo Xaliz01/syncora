@@ -824,8 +824,105 @@ describe("PlatformService", () => {
           status: "sent",
           sentByUserId: "staff-1",
           subject: "Planwise — démarrer",
+          templateId: "tpl-1",
+          templateName: "Prospection beta",
         }),
       );
+    });
+
+    it("rejects a bulk send over the recipient cap", async () => {
+      await expect(
+        service.sendProspectOutreachBulk(
+          { id: "staff-1", email: "staff@planwise.fr" },
+          {
+            templateId: "tpl-1",
+            recipients: Array.from({ length: 201 }, (_, i) => ({
+              siren: String(100000000 + i),
+              companyName: `Co ${i}`,
+              toEmail: `a${i}@b.fr`,
+            })),
+          },
+        ),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(httpService.post).not.toHaveBeenCalled();
+    });
+
+    it("rejects a bulk send with duplicate SIRENs", async () => {
+      await expect(
+        service.sendProspectOutreachBulk(
+          { id: "staff-1", email: "staff@planwise.fr" },
+          {
+            templateId: "tpl-1",
+            recipients: [
+              { siren: "123456789", companyName: "A", toEmail: "a@b.fr" },
+              { siren: "123456789", companyName: "B", toEmail: "b@b.fr" },
+            ],
+          },
+        ),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(httpService.post).not.toHaveBeenCalled();
+    });
+
+    it("rejects a bulk send when every recipient is skipped", async () => {
+      await expect(
+        service.sendProspectOutreachBulk(
+          { id: "staff-1", email: "staff@planwise.fr" },
+          {
+            templateId: "tpl-1",
+            recipients: [{ siren: "123456789", companyName: "A", toEmail: "" }],
+          },
+        ),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(httpService.post).not.toHaveBeenCalled();
+    });
+
+    it("sends valid bulk recipients, skips invalid e-mails, and continues after a failure", async () => {
+      httpService.get.mockImplementation((url: string) => {
+        if (String(url).includes("email-templates/")) {
+          return of({
+            data: {
+              id: "tpl-1",
+              name: "Relance",
+              purpose: "prospect_outreach",
+              subject: "Suite",
+              body: "Bonjour",
+              footer: "Planwise",
+              ctaLabel: "Découvrir Planwise",
+              ctaUrl: "/",
+              isDefault: true,
+              createdAt: "2026-08-01T00:00:00.000Z",
+              updatedAt: "2026-08-01T00:00:00.000Z",
+            },
+          });
+        }
+        return of({ data: { outreaches: [] } });
+      });
+      httpService.post.mockImplementation((url: string, payload: { to?: string }) => {
+        if (String(url).includes("/email/transactional") && payload.to === "fail@b.fr") {
+          return of({ data: { sent: false, reason: "Erreur d’envoi e-mail" } });
+        }
+        return of({ data: { sent: true } });
+      });
+
+      const result = await service.sendProspectOutreachBulk(
+        { id: "staff-1", email: "staff@planwise.fr" },
+        {
+          templateId: "tpl-1",
+          recipients: [
+            { siren: "123456789", companyName: "Ok", toEmail: "ok@b.fr" },
+            { siren: "987654321", companyName: "Skip", toEmail: "" },
+            { siren: "111222333", companyName: "Fail", toEmail: "fail@b.fr" },
+          ],
+        },
+      );
+
+      expect(result.sent).toBe(1);
+      expect(result.failed).toBe(1);
+      expect(result.skipped).toBe(1);
+      expect(result.results.map((r) => r.status)).toEqual(["skipped", "sent", "failed"]);
+      expect(
+        httpService.post.mock.calls.filter((c) => String(c[0]).includes("/email/transactional")),
+      ).toHaveLength(2);
     });
 
     it("returns configured false when PAPPERS_API_KEY is missing", async () => {

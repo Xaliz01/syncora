@@ -48,6 +48,8 @@ export interface ApiRequestOptions {
   noTokenMessage?: string;
   /** When response is not OK and body has no usable message */
   fallbackError?: string;
+  /** Abort the fetch after this many milliseconds (e.g. long bulk SMTP). */
+  timeoutMs?: number;
 }
 
 function clearAccessTokenOnly() {
@@ -95,6 +97,7 @@ export async function apiRequestJson<T>(
     platformBearer = false,
     noTokenMessage = "Session expirée",
     fallbackError = "Erreur API",
+    timeoutMs,
   } = options;
 
   const headers: Record<string, string> = {};
@@ -113,13 +116,26 @@ export async function apiRequestJson<T>(
     headers["Content-Type"] = "application/json";
   }
 
-  const response = await fetchWithUserFacingErrors(`${API_BASE}${path}`, {
-    method,
-    headers,
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
+  let signal: AbortSignal | undefined;
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  if (timeoutMs != null && timeoutMs > 0) {
+    const controller = new AbortController();
+    signal = controller.signal;
+    timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  }
 
-  await throwIfNotOk(response, fallbackError, path);
-  if (response.status === 204) return undefined as T;
-  return response.json() as Promise<T>;
+  try {
+    const response = await fetchWithUserFacingErrors(`${API_BASE}${path}`, {
+      method,
+      headers,
+      body: body === undefined ? undefined : JSON.stringify(body),
+      signal,
+    });
+
+    await throwIfNotOk(response, fallbackError, path);
+    if (response.status === 204) return undefined as T;
+    return response.json() as Promise<T>;
+  } finally {
+    if (timeoutId != null) clearTimeout(timeoutId);
+  }
 }

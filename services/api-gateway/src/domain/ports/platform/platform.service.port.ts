@@ -12,6 +12,8 @@ import type {
   PlatformProspectEmailNotFoundBody,
   PlatformProspectNoteBody,
   PlatformProspectManualCreateBody,
+  PlatformProspectBulkOutreachBody,
+  PlatformProspectBulkOutreachResponse,
   PlatformProspectOutreachBody,
   PlatformProspectOutreachResponse,
   PlatformProspectsSearchResponse,
@@ -115,6 +117,10 @@ export abstract class AbstractPlatformService {
     staff: PlatformAuthUser,
     body: PlatformProspectOutreachBody,
   ): Promise<PlatformProspectOutreachResponse>;
+  abstract sendProspectOutreachBulk(
+    staff: PlatformAuthUser,
+    body: PlatformProspectBulkOutreachBody,
+  ): Promise<PlatformProspectBulkOutreachResponse>;
   abstract listEmailTemplates(
     purpose?: PlatformEmailTemplatePurpose,
   ): Promise<PlatformEmailTemplatesListResponse>;

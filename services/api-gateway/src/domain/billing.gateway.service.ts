@@ -30,6 +30,7 @@ import {
   interventionBillingStatusFromInvoice,
   nextSituationNumber,
   normalizeInvoiceInterventionIds,
+  resolveInvoiceMentions,
   shouldUpgradeBillingStatus,
   sumInvoiceAmountsHt,
 } from "@planwise/shared";
@@ -302,6 +303,11 @@ export class BillingGatewayService extends AbstractBillingGatewayService {
       postalCode: org.postalCode,
       city: org.city,
       country: org.country,
+      legalForm: org.legalForm,
+      shareCapital: org.shareCapital,
+      rcsLabel: org.rcsLabel,
+      vatNumber: org.vatNumber,
+      mentions: resolveInvoiceMentions(org.invoiceMentions),
     };
   }
 

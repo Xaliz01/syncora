@@ -264,6 +264,8 @@ export class UsersController {
       subject: string;
       status?: "sent" | "failed" | "email_not_found" | "noted";
       comment?: string;
+      templateId?: string;
+      templateName?: string;
     },
   ) {
     return this.prospectOutreachService.createProspectOutreach(body);

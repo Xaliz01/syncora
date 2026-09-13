@@ -1,12 +1,14 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  PLATFORM_PROSPECT_BULK_MAX_RECIPIENTS,
   PLATFORM_PROSPECT_NAF_PRESETS,
   PROSPECT_OUTREACH_COMMENT_MAX_LENGTH,
   type PlatformEmailTemplate,
   type PlatformProspectSearchSort,
   type PlatformProspectSummary,
+  type ProspectOutreachEmailSend,
   type ProspectOutreachResponse,
   type ProspectOutreachStatus,
 } from "@planwise/shared";
@@ -14,6 +16,11 @@ import * as platformApi from "@/lib/platform.api";
 import { ListPagination } from "@/components/ui/list-page";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import {
+  FormDialog,
+  FormDialogCancelButton,
+  FormDialogPrimaryButton,
+} from "@/components/ui/FormDialog";
 
 const PER_PAGE = 20;
 const TRACKED_PAGE_LIMIT = 50;
@@ -52,6 +59,20 @@ function formatDateTime(iso?: string) {
   } catch {
     return iso;
   }
+}
+
+function hasValidEmail(value: string | undefined): boolean {
+  return (value ?? "").trim().includes("@");
+}
+
+function lastEmailSend(prospect: ProspectOutreachResponse): ProspectOutreachEmailSend | undefined {
+  const history = prospect.emailSends ?? [];
+  if (history.length === 0) return undefined;
+  return [...history].sort((a, b) => b.sentAt.localeCompare(a.sentAt))[0];
+}
+
+function sendContentLabel(entry: ProspectOutreachEmailSend): string {
+  return entry.templateName?.trim() || entry.subject || "E-mail";
 }
 
 export function PlatformProspectionPage() {
@@ -104,6 +125,12 @@ export function PlatformProspectionPage() {
   const [addingManual, setAddingManual] = useState(false);
   const [emailTemplates, setEmailTemplates] = useState<PlatformEmailTemplate[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
+  const [selectedSirens, setSelectedSirens] = useState<string[]>([]);
+  const [loadedExtras, setLoadedExtras] = useState<ProspectOutreachResponse[]>([]);
+  const [selectingFiltered, setSelectingFiltered] = useState(false);
+  const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
+  const [bulkSending, setBulkSending] = useState(false);
+  const [historyProspect, setHistoryProspect] = useState<ProspectOutreachResponse | null>(null);
 
   const loadCredits = useCallback(() => {
     platformApi
@@ -167,7 +194,103 @@ export function PlatformProspectionPage() {
 
   useEffect(() => {
     setTrackedOffset(0);
+    setSelectedSirens([]);
+    setLoadedExtras([]);
   }, [trackedSearch, trackedStatus]);
+
+  const loadedProspects = useMemo(() => {
+    const bySiren = new Map<string, ProspectOutreachResponse>();
+    for (const row of loadedExtras) bySiren.set(row.siren, row);
+    for (const row of tracked) bySiren.set(row.siren, row);
+    return [...bySiren.values()];
+  }, [loadedExtras, tracked]);
+
+  const selectedProspects = useMemo(
+    () => loadedProspects.filter((row) => selectedSirens.includes(row.siren)),
+    [loadedProspects, selectedSirens],
+  );
+  const selectedWithEmail = selectedProspects.filter((row) =>
+    hasValidEmail(emails[row.siren] ?? row.email),
+  );
+  const selectedWithoutEmailCount = selectedProspects.length - selectedWithEmail.length;
+  const allPageSelected =
+    tracked.length > 0 && tracked.every((row) => selectedSirens.includes(row.siren));
+  const selectedTemplate = emailTemplates.find((t) => t.id === selectedTemplateId);
+
+  const toggleSiren = (siren: string, checked: boolean) => {
+    setSelectedSirens((prev) => {
+      if (checked) return prev.includes(siren) ? prev : [...prev, siren];
+      return prev.filter((id) => id !== siren);
+    });
+  };
+
+  const togglePageSelection = (checked: boolean) => {
+    const pageSirens = tracked.map((row) => row.siren);
+    setSelectedSirens((prev) => {
+      if (checked) return [...new Set([...prev, ...pageSirens])];
+      return prev.filter((id) => !pageSirens.includes(id));
+    });
+  };
+
+  const selectAllFiltered = async () => {
+    if (trackedTotal > PLATFORM_PROSPECT_BULK_MAX_RECIPIENTS) return;
+    setSelectingFiltered(true);
+    try {
+      const res = await platformApi.listPlatformTrackedProspects({
+        limit: PLATFORM_PROSPECT_BULK_MAX_RECIPIENTS,
+        offset: 0,
+        search: trackedSearch || undefined,
+        status: trackedStatus || undefined,
+      });
+      setLoadedExtras(res.outreaches);
+      setEmails((prev) => {
+        const next = { ...prev };
+        for (const o of res.outreaches) {
+          if (next[o.siren] === undefined) next[o.siren] = o.email ?? "";
+        }
+        return next;
+      });
+      setSelectedSirens(res.outreaches.map((o) => o.siren));
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Erreur", "error");
+    } finally {
+      setSelectingFiltered(false);
+    }
+  };
+
+  const confirmBulkSend = async () => {
+    if (!selectedTemplateId || selectedWithEmail.length === 0) {
+      showToast("Choisissez un contenu et au moins un destinataire avec e-mail.", "error");
+      return;
+    }
+    const skippedBeforeSend = selectedWithoutEmailCount;
+    setBulkSending(true);
+    try {
+      const res = await platformApi.sendPlatformProspectOutreachBulk({
+        templateId: selectedTemplateId,
+        recipients: selectedWithEmail.map((row) => ({
+          siren: row.siren,
+          companyName: row.companyName,
+          toEmail: (emails[row.siren] ?? row.email ?? "").trim(),
+        })),
+      });
+      const skippedTotal = res.skipped + skippedBeforeSend;
+      const parts = [
+        `${res.sent} envoyé${res.sent === 1 ? "" : "s"}`,
+        `${res.failed} échec${res.failed === 1 ? "" : "s"}`,
+        `${skippedTotal} ignoré${skippedTotal === 1 ? "" : "s"}`,
+      ];
+      showToast(`Envoi groupé : ${parts.join(" · ")}.`, res.failed > 0 ? "info" : "success");
+      setBulkConfirmOpen(false);
+      setSelectedSirens([]);
+      setLoadedExtras([]);
+      loadTracked();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Erreur", "error");
+    } finally {
+      setBulkSending(false);
+    }
+  };
 
   const loadProspects = useCallback(() => {
     if (!activeQuery) return;
@@ -646,7 +769,58 @@ export function PlatformProspectionPage() {
             {trackedTotal} prospect{trackedTotal === 1 ? "" : "s"}
             {trackedSearch || trackedStatus ? " (filtrés)" : ""}
           </p>
+          {trackedTotal > tracked.length &&
+          trackedTotal <= PLATFORM_PROSPECT_BULK_MAX_RECIPIENTS ? (
+            <button
+              type="button"
+              onClick={() => void selectAllFiltered()}
+              disabled={selectingFiltered || trackedLoading}
+              className="rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-950 px-4 py-2 text-sm font-medium text-slate-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50"
+            >
+              {selectingFiltered ? "Sélection…" : `Sélectionner les ${trackedTotal} (filtrés)`}
+            </button>
+          ) : null}
+          {trackedTotal > PLATFORM_PROSPECT_BULK_MAX_RECIPIENTS ? (
+            <p className="w-full text-xs text-amber-700 dark:text-amber-300">
+              Plus de {PLATFORM_PROSPECT_BULK_MAX_RECIPIENTS} résultats : affinez les filtres pour
+              tout sélectionner.
+            </p>
+          ) : null}
         </form>
+
+        {selectedSirens.length > 0 ? (
+          <div className="flex flex-wrap items-end gap-3 rounded-xl border border-brand-200 dark:border-brand-800 bg-brand-50/60 dark:bg-brand-950/30 px-4 py-3">
+            <p className="text-sm text-slate-700 dark:text-slate-200">
+              {selectedSirens.length} sélectionné{selectedSirens.length === 1 ? "" : "s"}
+            </p>
+            <div className="min-w-[14rem] flex-1">
+              <label className="mb-1 block text-xs text-slate-500 dark:text-slate-400">
+                Contenu e-mail
+              </label>
+              <select
+                value={selectedTemplateId}
+                onChange={(e) => setSelectedTemplateId(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-950"
+                disabled={emailTemplates.length === 0 || bulkSending}
+              >
+                {emailTemplates.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                    {t.isDefault ? " (défaut)" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button
+              type="button"
+              onClick={() => setBulkConfirmOpen(true)}
+              disabled={bulkSending || !selectedTemplateId}
+              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50"
+            >
+              Envoyer la sélection
+            </button>
+          </div>
+        ) : null}
 
         {trackedError ? <p className="text-sm text-red-600">{trackedError}</p> : null}
 
@@ -660,10 +834,20 @@ export function PlatformProspectionPage() {
             <table className="min-w-full text-left text-sm">
               <thead className="bg-slate-50 dark:bg-slate-800/80 text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
                 <tr>
+                  <th className="px-3 py-2.5 font-medium w-10">
+                    <input
+                      type="checkbox"
+                      checked={allPageSelected}
+                      onChange={(e) => togglePageSelection(e.target.checked)}
+                      aria-label="Sélectionner la page courante"
+                      className="rounded border-slate-300"
+                      disabled={tracked.length === 0 || bulkSending}
+                    />
+                  </th>
                   <th className="px-3 py-2.5 font-medium">Entreprise</th>
                   <th className="px-3 py-2.5 font-medium">SIREN</th>
                   <th className="px-3 py-2.5 font-medium">Statut</th>
-                  <th className="px-3 py-2.5 font-medium">Mis à jour</th>
+                  <th className="px-3 py-2.5 font-medium">Dernier envoi</th>
                   <th className="px-3 py-2.5 font-medium min-w-[12rem]">E-mail</th>
                   <th className="px-3 py-2.5 font-medium min-w-[12rem]">Commentaire</th>
                   <th className="px-3 py-2.5 font-medium">Action</th>
@@ -672,13 +856,13 @@ export function PlatformProspectionPage() {
               <tbody>
                 {trackedLoading ? (
                   <tr>
-                    <td colSpan={7} className="px-3 py-8 text-center text-slate-500">
+                    <td colSpan={8} className="px-3 py-8 text-center text-slate-500">
                       Chargement…
                     </td>
                   </tr>
                 ) : tracked.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-3 py-8 text-center text-slate-500">
+                    <td colSpan={8} className="px-3 py-8 text-center text-slate-500">
                       {trackedSearch || trackedStatus
                         ? "Aucun prospect ne correspond à ces filtres."
                         : "Aucun prospect suivi. Ajoutez-en un ci-dessus ou lancez une recherche Pappers."}
@@ -690,6 +874,16 @@ export function PlatformProspectionPage() {
                       key={o.id}
                       className="border-t border-slate-100 dark:border-slate-800 hover:bg-slate-50/80 dark:hover:bg-slate-800/40"
                     >
+                      <td className="px-3 py-2 align-middle">
+                        <input
+                          type="checkbox"
+                          checked={selectedSirens.includes(o.siren)}
+                          onChange={(e) => toggleSiren(o.siren, e.target.checked)}
+                          aria-label={`Sélectionner ${o.companyName}`}
+                          className="rounded border-slate-300"
+                          disabled={bulkSending}
+                        />
+                      </td>
                       <td className="px-3 py-2 align-middle max-w-[14rem]">
                         <div className="font-medium text-slate-800 dark:text-slate-100 truncate">
                           {o.companyName}
@@ -714,8 +908,23 @@ export function PlatformProspectionPage() {
                           {STATUS_LABELS[o.status]}
                         </span>
                       </td>
-                      <td className="px-3 py-2 align-middle tabular-nums text-slate-600 dark:text-slate-300">
-                        {formatDateTime(o.sentAt)}
+                      <td className="px-3 py-2 align-middle text-slate-600 dark:text-slate-300">
+                        {(() => {
+                          const last = lastEmailSend(o);
+                          if (!last) {
+                            return <span className="text-slate-400">Aucun envoi</span>;
+                          }
+                          return (
+                            <div className="min-w-[9rem]">
+                              <div className="truncate text-xs font-medium text-slate-800 dark:text-slate-100">
+                                {sendContentLabel(last)}
+                              </div>
+                              <div className="text-[11px] text-slate-400">
+                                {formatDateTime(last.sentAt)}
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </td>
                       <td className="px-3 py-2 align-middle">
                         <input
@@ -760,24 +969,37 @@ export function PlatformProspectionPage() {
                         </div>
                       </td>
                       <td className="px-3 py-2 align-middle">
-                        <button
-                          type="button"
-                          disabled={sendingSiren === o.siren || savingCommentSiren === o.siren}
-                          onClick={() =>
-                            void sendOutreach({
-                              siren: o.siren,
-                              name: o.companyName,
-                              resend: o.status === "sent",
-                            })
-                          }
-                          className="rounded-md bg-brand-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-brand-500 disabled:opacity-50"
-                        >
-                          {sendingSiren === o.siren
-                            ? "Envoi…"
-                            : o.status === "sent"
-                              ? "Renvoyer"
-                              : "Inviter"}
-                        </button>
+                        <div className="flex flex-col items-start gap-1">
+                          <button
+                            type="button"
+                            disabled={
+                              sendingSiren === o.siren ||
+                              savingCommentSiren === o.siren ||
+                              bulkSending
+                            }
+                            onClick={() =>
+                              void sendOutreach({
+                                siren: o.siren,
+                                name: o.companyName,
+                                resend: o.status === "sent",
+                              })
+                            }
+                            className="rounded-md bg-brand-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-brand-500 disabled:opacity-50"
+                          >
+                            {sendingSiren === o.siren
+                              ? "Envoi…"
+                              : o.status === "sent"
+                                ? "Renvoyer"
+                                : "Inviter"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setHistoryProspect(o)}
+                            className="rounded-md px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                          >
+                            Historique
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -786,6 +1008,104 @@ export function PlatformProspectionPage() {
             </table>
           </ListPagination>
         </div>
+
+        <FormDialog
+          open={bulkConfirmOpen}
+          onClose={() => {
+            if (!bulkSending) setBulkConfirmOpen(false);
+          }}
+          closeDisabled={bulkSending}
+          title="Envoyer la sélection"
+          titleId="bulk-outreach-title"
+          size="md"
+          footer={
+            <>
+              <FormDialogCancelButton
+                onClick={() => setBulkConfirmOpen(false)}
+                disabled={bulkSending}
+              >
+                Annuler
+              </FormDialogCancelButton>
+              <FormDialogPrimaryButton
+                type="button"
+                onClick={() => void confirmBulkSend()}
+                disabled={bulkSending || selectedWithEmail.length === 0}
+              >
+                {bulkSending ? "Envoi en cours…" : "Envoyer"}
+              </FormDialogPrimaryButton>
+            </>
+          }
+        >
+          <div className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
+            <p>
+              Contenu :{" "}
+              <strong className="text-slate-800 dark:text-slate-100">
+                {selectedTemplate?.name ?? "aucun"}
+              </strong>
+            </p>
+            <p>
+              {selectedWithEmail.length} destinataire
+              {selectedWithEmail.length === 1 ? "" : "s"} recevront cet e-mail.
+            </p>
+            {selectedWithoutEmailCount > 0 ? (
+              <p>
+                {selectedWithoutEmailCount} ligne
+                {selectedWithoutEmailCount === 1 ? "" : "s"} sans e-mail valide seront ignorées.
+              </p>
+            ) : null}
+            {selectedProspects.some((row) => row.status === "sent") ? (
+              <p>Les prospects déjà contactés recevront un nouvel envoi.</p>
+            ) : null}
+          </div>
+        </FormDialog>
+
+        <FormDialog
+          open={historyProspect != null}
+          onClose={() => setHistoryProspect(null)}
+          title={
+            historyProspect
+              ? `Historique — ${historyProspect.companyName}`
+              : "Historique des envois"
+          }
+          titleId="prospect-history-title"
+          size="md"
+          footer={
+            <FormDialogPrimaryButton type="button" onClick={() => setHistoryProspect(null)}>
+              Fermer
+            </FormDialogPrimaryButton>
+          }
+        >
+          {(() => {
+            const history = [...(historyProspect?.emailSends ?? [])].sort((a, b) =>
+              b.sentAt.localeCompare(a.sentAt),
+            );
+            if (history.length === 0) {
+              return (
+                <p className="text-sm text-slate-500">Aucun e-mail envoyé pour ce prospect.</p>
+              );
+            }
+            return (
+              <ul className="space-y-3">
+                {history.map((entry, index) => (
+                  <li
+                    key={`${entry.sentAt}-${entry.subject}-${index}`}
+                    className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm"
+                  >
+                    <p className="font-medium text-slate-800 dark:text-slate-100">
+                      {sendContentLabel(entry)}
+                    </p>
+                    <p className="text-xs text-slate-500">{formatDateTime(entry.sentAt)}</p>
+                    <p className="text-xs text-slate-500">{entry.toEmail || "—"}</p>
+                    <p className="text-xs text-slate-500">
+                      {entry.status === "sent" ? "Envoyé" : "Échec"}
+                      {entry.subject && entry.templateName ? ` · ${entry.subject}` : ""}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            );
+          })()}
+        </FormDialog>
       </section>
 
       <section className="space-y-3">

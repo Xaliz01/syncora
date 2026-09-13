@@ -14,6 +14,8 @@ import type {
   PlatformProspectEmailNotFoundBody,
   PlatformProspectManualCreateBody,
   PlatformProspectNoteBody,
+  PlatformProspectBulkOutreachBody,
+  PlatformProspectBulkOutreachResponse,
   PlatformProspectOutreachBody,
   PlatformProspectOutreachResponse,
   PlatformProspectsSearchResponse,
@@ -32,6 +34,7 @@ import type {
   PlatformDashboardResponse,
   PlatformOpsHealthResponse,
   StartImpersonationBody,
+  PLATFORM_PROSPECT_BULK_REQUEST_TIMEOUT_MS,
 } from "@planwise/shared";
 import { apiRequestJson, getPlatformToken } from "./api-client";
 
@@ -347,6 +350,19 @@ export async function sendPlatformProspectOutreach(body: PlatformProspectOutreac
     platformBearer: true,
     fallbackError: "Envoi de l’invitation impossible",
   });
+}
+
+export async function sendPlatformProspectOutreachBulk(body: PlatformProspectBulkOutreachBody) {
+  return apiRequestJson<PlatformProspectBulkOutreachResponse>(
+    "POST",
+    "/platform/prospects/outreach/bulk",
+    {
+      body,
+      platformBearer: true,
+      fallbackError: "Envoi groupé impossible",
+      timeoutMs: PLATFORM_PROSPECT_BULK_REQUEST_TIMEOUT_MS,
+    },
+  );
 }
 
 export async function listPlatformEmailTemplates(purpose?: PlatformEmailTemplatePurpose) {

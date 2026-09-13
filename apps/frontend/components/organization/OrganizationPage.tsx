@@ -1,6 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import {
+  INVOICE_MENTION_KEYS,
+  INVOICE_MENTION_LABELS_FR,
+  resolveInvoiceMentions,
+} from "@planwise/shared";
 import { useAuth } from "@/components/auth/AuthContext";
 import { useOrganization } from "@/lib/organization";
 import { hasPermission } from "@/lib/auth-permissions";
@@ -17,6 +22,7 @@ export function OrganizationPage() {
   const canUpdateOrganization = hasPermission(user, "organizations.update");
 
   const displayName = activeOrganization?.name?.trim() || "Organisation";
+  const mentions = resolveInvoiceMentions(activeOrganization?.invoiceMentions);
 
   return (
     <div className="space-y-8 w-full">
@@ -115,6 +121,52 @@ export function OrganizationPage() {
                 : "—"}
             </dd>
           </div>
+        </dl>
+      </section>
+
+      <section className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/20">
+        <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+          Facturation et mentions légales
+        </h2>
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          Ces mentions apparaissent sur les prochaines factures. Les factures déjà émises conservent
+          le texte de l’époque.
+        </p>
+        <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+          <div>
+            <dt className="text-slate-500 dark:text-slate-400">Forme juridique</dt>
+            <dd className="mt-0.5 text-slate-800 dark:text-slate-100">
+              {formatValue(activeOrganization?.legalForm)}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-slate-500 dark:text-slate-400">Capital social</dt>
+            <dd className="mt-0.5 text-slate-800 dark:text-slate-100">
+              {formatValue(activeOrganization?.shareCapital)}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-slate-500 dark:text-slate-400">RCS</dt>
+            <dd className="mt-0.5 text-slate-800 dark:text-slate-100">
+              {formatValue(activeOrganization?.rcsLabel)}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-slate-500 dark:text-slate-400">N° TVA</dt>
+            <dd className="mt-0.5 text-slate-800 dark:text-slate-100">
+              {formatValue(activeOrganization?.vatNumber)}
+            </dd>
+          </div>
+          {INVOICE_MENTION_KEYS.filter(
+            (key) => key !== "vatFranchise" || mentions.vatFranchise,
+          ).map((key) => (
+            <div key={key} className="sm:col-span-2">
+              <dt className="text-slate-500 dark:text-slate-400">
+                {INVOICE_MENTION_LABELS_FR[key]}
+              </dt>
+              <dd className="mt-0.5 text-slate-800 dark:text-slate-100">{mentions[key]}</dd>
+            </div>
+          ))}
         </dl>
       </section>
 

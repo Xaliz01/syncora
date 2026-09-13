@@ -4,6 +4,8 @@ import type {
   PlatformProspectEmailNotFoundBody,
   PlatformProspectManualCreateBody,
   PlatformProspectNoteBody,
+  PlatformProspectBulkOutreachBody,
+  PlatformProspectBulkOutreachResponse,
   PlatformProspectOutreachBody,
   PlatformProspectOutreachResponse,
   PlatformProspectSearchSort,
@@ -35,6 +37,10 @@ export abstract class AbstractPlatformProspectsService {
     staff: PlatformAuthUser,
     body: PlatformProspectOutreachBody,
   ): Promise<PlatformProspectOutreachResponse>;
+  abstract sendProspectOutreachBulk(
+    staff: PlatformAuthUser,
+    body: PlatformProspectBulkOutreachBody,
+  ): Promise<PlatformProspectBulkOutreachResponse>;
   abstract markProspectEmailNotFound(
     staff: PlatformAuthUser,
     body: PlatformProspectEmailNotFoundBody,

@@ -7,8 +7,10 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UseGuards,
 } from "@nestjs/common";
+import type { Request } from "express";
 import { AbstractPlatformService } from "../../domain/ports/platform/platform.service.port";
 import {
   CurrentPlatformUser,
@@ -22,12 +24,16 @@ import type {
   PlatformProspectEmailNotFoundBody,
   PlatformProspectManualCreateBody,
   PlatformProspectNoteBody,
+  PlatformProspectBulkOutreachBody,
   PlatformProspectOutreachBody,
   PlatformSendUserEmailBody,
   StartImpersonationBody,
   UpdatePlatformEmailTemplateBody,
 } from "@planwise/shared";
-import { isPlatformEmailTemplatePurpose } from "@planwise/shared";
+import {
+  isPlatformEmailTemplatePurpose,
+  PLATFORM_PROSPECT_BULK_REQUEST_TIMEOUT_MS,
+} from "@planwise/shared";
 
 @Controller("platform")
 export class PlatformController {
@@ -244,6 +250,18 @@ export class PlatformController {
       status: normalizedStatus,
       search: search?.trim() || undefined,
     });
+  }
+
+  @Post("prospects/outreach/bulk")
+  @UseGuards(PlatformJwtAuthGuard)
+  sendProspectOutreachBulk(
+    @CurrentPlatformUser() user: PlatformAuthUser,
+    @Body() body: PlatformProspectBulkOutreachBody,
+    @Req() req: Request,
+  ) {
+    // Sequential SMTP can take ~1 min; unit-send route keeps the default socket timeout.
+    req.setTimeout(PLATFORM_PROSPECT_BULK_REQUEST_TIMEOUT_MS);
+    return this.platformService.sendProspectOutreachBulk(user, body);
   }
 
   @Post("prospects/outreach")

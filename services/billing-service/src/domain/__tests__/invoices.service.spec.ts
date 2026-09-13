@@ -94,6 +94,19 @@ describe("InvoicesService", () => {
     expect(second.number).toBe(`F-${year}-00002`);
   });
 
+  it("keeps snapshotted seller mentions when finalizing", async () => {
+    const seller = {
+      name: "SARL Demo",
+      mentions: { paymentTerms: "Paiement à 15 jours" },
+    };
+    const draft = mockDoc({ seller });
+    invoiceModel.findOne.mockReturnValue({ exec: jest.fn().mockResolvedValue(draft) });
+    sequenceModel.findOneAndUpdate.mockResolvedValueOnce({ lastNumber: 1 });
+    const result = await service.finalizeInvoice("inv-1", "org-1");
+    expect(result.seller).toEqual(seller);
+    expect((draft as { seller?: unknown }).seller).toEqual(seller);
+  });
+
   it("stores situation number on create", async () => {
     invoiceModel.create.mockResolvedValue(mockDoc({ kind: "situation", situationNumber: 2 }));
     const result = await service.createInvoice({

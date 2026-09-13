@@ -15,6 +15,9 @@ import type {
   PlatformProspectEmailNotFoundBody,
   PlatformProspectManualCreateBody,
   PlatformProspectNoteBody,
+  PlatformProspectBulkOutreachBody,
+  PlatformProspectBulkOutreachItemResult,
+  PlatformProspectBulkOutreachResponse,
   PlatformProspectOutreachBody,
   PlatformProspectOutreachResponse,
   PlatformProspectSearchSort,
@@ -28,6 +31,7 @@ import type {
 import {
   getPlatformProspectNafCodes,
   interpolateEmailTemplatePlaceholders,
+  PLATFORM_PROSPECT_BULK_MAX_RECIPIENTS,
 } from "@planwise/shared";
 import { buildPappersSearchCacheKey, PappersSearchCache } from "../pappers-search-cache";
 import { AbstractPlatformEmailTemplatesService } from "../ports/platform/platform-email-templates.service.port";
@@ -369,6 +373,8 @@ export class PlatformProspectsService extends AbstractPlatformProspectsService {
           sentByEmail: staff.email,
           subject,
           status: sent ? "sent" : "failed",
+          templateId: template.id,
+          templateName: template.name,
         }),
       );
     } catch (err: unknown) {
@@ -376,6 +382,90 @@ export class PlatformProspectsService extends AbstractPlatformProspectsService {
     }
 
     return { sent, ...(reason ? { reason } : {}) };
+  }
+
+  async sendProspectOutreachBulk(
+    staff: PlatformAuthUser,
+    body: PlatformProspectBulkOutreachBody,
+  ): Promise<PlatformProspectBulkOutreachResponse> {
+    // Sequential SMTP: controller raises the socket timeout for this route only
+    // (PLATFORM_PROSPECT_BULK_REQUEST_TIMEOUT_MS). Unit-send timeouts stay unchanged.
+    const templateId = body.templateId?.trim() ?? "";
+    if (!templateId) {
+      throw new BadRequestException("Contenu e-mail requis");
+    }
+    const recipients = Array.isArray(body.recipients) ? body.recipients : [];
+    if (recipients.length === 0) {
+      throw new BadRequestException("Aucun destinataire");
+    }
+    if (recipients.length > PLATFORM_PROSPECT_BULK_MAX_RECIPIENTS) {
+      throw new BadRequestException(
+        `Maximum ${PLATFORM_PROSPECT_BULK_MAX_RECIPIENTS} destinataires par envoi`,
+      );
+    }
+
+    const normalizedSirens = recipients.map((r) => (r.siren ?? "").trim().replace(/\s/g, ""));
+    if (new Set(normalizedSirens).size !== normalizedSirens.length) {
+      throw new BadRequestException("Un même SIREN ne peut apparaître qu’une fois");
+    }
+
+    const results: PlatformProspectBulkOutreachItemResult[] = [];
+    const eligible: Array<{
+      siren: string;
+      companyName: string;
+      toEmail: string;
+      contactName?: string;
+    }> = [];
+
+    for (const raw of recipients) {
+      const siren = (raw.siren ?? "").trim().replace(/\s/g, "");
+      const toEmail = (raw.toEmail ?? "").trim().toLowerCase();
+      if (!/^\d{9}$/.test(siren) || !toEmail.includes("@")) {
+        results.push({
+          siren: siren || raw.siren || "",
+          status: "skipped",
+          reason: "E-mail ou SIREN invalide",
+        });
+        continue;
+      }
+      eligible.push({
+        siren,
+        companyName: raw.companyName,
+        toEmail,
+        ...(raw.contactName?.trim() ? { contactName: raw.contactName.trim() } : {}),
+      });
+    }
+
+    if (eligible.length === 0) {
+      throw new BadRequestException("Aucun destinataire avec un e-mail valide");
+    }
+
+    for (const recipient of eligible) {
+      const outcome = await this.sendProspectOutreach(staff, {
+        siren: recipient.siren,
+        companyName: recipient.companyName,
+        toEmail: recipient.toEmail,
+        contactName: recipient.contactName,
+        templateId,
+        force: true,
+      });
+      if (outcome.sent) {
+        results.push({ siren: recipient.siren, status: "sent" });
+      } else {
+        results.push({
+          siren: recipient.siren,
+          status: "failed",
+          ...(outcome.reason ? { reason: outcome.reason } : {}),
+        });
+      }
+    }
+
+    return {
+      sent: results.filter((r) => r.status === "sent").length,
+      failed: results.filter((r) => r.status === "failed").length,
+      skipped: results.filter((r) => r.status === "skipped").length,
+      results,
+    };
   }
 
   async markProspectEmailNotFound(
