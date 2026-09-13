@@ -164,7 +164,11 @@ test.describe("Prospection backoffice — envoi groupé", () => {
     expect(bulkBodies).toHaveLength(0);
 
     await page.getByRole("checkbox", { name: "Sélectionner Élec Martin" }).check();
-    await page.getByPlaceholder("contact@…").nth(1).fill("");
+    await page
+      .getByRole("row")
+      .filter({ hasText: "Élec Martin" })
+      .getByPlaceholder("contact@…")
+      .fill("");
     await page.getByRole("button", { name: "Envoyer la sélection" }).click();
     await expect(page.getByText(/1 ligne sans e-mail valide/)).toBeVisible();
     await page.getByRole("dialog").getByRole("button", { name: "Envoyer" }).click();
