@@ -1,14 +1,24 @@
 ---
-description: Exécuter npm run format après chaque développement
+description: Format, typecheck, tests unitaires et E2E après chaque développement
 alwaysApply: true
 ---
 
-# Format après chaque développement
+# Vérifications après chaque développement
 
-Après **toute** modification de fichiers (code, tests, docs, specs), exécuter `npm run format` à la racine du repo **avant de déclarer le travail terminé**.
-
-Ne pas attendre le commit, le push, ou husky. La CI (`npm run format:check:changed` puis `npm run lint`) échoue si Prettier n’a pas été passé sur les fichiers touchés.
+Après **toute** modification de fichiers (code, tests, docs, specs), exécuter **à la racine** ces commandes **avant de déclarer le travail terminé**. Ne pas attendre le commit, le push, ou husky. La CI exécute les mêmes checks.
 
 ```bash
 npm run format
+npm run typecheck
+npm run test
+npm run test:e2e
 ```
+
+| Commande | Rôle |
+|---|---|
+| `npm run format` | Prettier sur tout le repo (`format:check:changed` en CI) |
+| `npm run typecheck` | `tsc` de tous les workspaces (après `build:shared`) |
+| `npm run test` | Tests unitaires de tous les workspaces |
+| `npm run test:e2e` | Playwright (`apps/frontend/tests/e2e/`) |
+
+Corriger tout échec avant de s’arrêter. Un `import type` ne peut pas servir de valeur runtime (constante, fonction).

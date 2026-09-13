@@ -279,7 +279,7 @@ test.describe("Boucle facturation locale", () => {
     await expect(page.getByRole("heading", { name: /Brouillon de facture/i })).toBeVisible();
     await expect(
       page.getByText(
-        "L’émission de factures via la facturation électronique arrivera prochainement.",
+        "L’émission via la facturation électronique arrivera dans Planwise bien avant l’obligation prévue le 1er septembre 2027 pour les artisans, TPE et PME.",
       ),
     ).toBeVisible();
     await page.getByText("Situation", { exact: true }).click();
@@ -295,7 +295,7 @@ test.describe("Boucle facturation locale", () => {
     });
     await expect(
       page.getByText(
-        "L’émission de factures via la facturation électronique arrivera prochainement.",
+        "L’émission via la facturation électronique arrivera dans Planwise bien avant l’obligation prévue le 1er septembre 2027 pour les artisans, TPE et PME.",
       ),
     ).toBeVisible();
     await expect(page.getByText(demoCase.title)).toBeVisible();

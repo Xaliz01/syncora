@@ -12,7 +12,7 @@ Savoir où facturer aujourd’hui, et ce qui arrivera avec l’émission électr
 
 1. Ouvrir un **dossier** ou l’écran **Facturation** (`/billing`).
 2. Créer un brouillon, relire l’aperçu PDF, valider pour numéroter.
-3. L’émission via la facturation électronique arrivera prochainement.
+3. L’émission via la facturation électronique arrivera dans Planwise bien avant l’obligation prévue le **1er septembre 2027** pour les artisans, TPE et PME.
 
 ## Liens utiles
 

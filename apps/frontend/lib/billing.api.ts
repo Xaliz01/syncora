@@ -136,7 +136,10 @@ export async function previewCaseInvoicePdf(
     body: JSON.stringify(options),
   });
   if (!response.ok) {
-    throw new Error("Impossible de prévisualiser le PDF de la facture");
+    const err = await response.json().catch(() => ({}));
+    const raw = (err as { message?: string | string[] }).message;
+    const message = Array.isArray(raw) ? raw.join(", ") : raw;
+    throw new Error(message?.trim() || "Impossible de prévisualiser le PDF de la facture");
   }
   const blob = await response.blob();
   return URL.createObjectURL(new Blob([blob], { type: "application/pdf" }));

@@ -98,7 +98,7 @@ Référence technique : landing `apps/frontend/components/landing/LandingPage.ts
 ### Limites connues (à assumer dans la com’)
 
 - Application **web PWA** (installable, cache offline des listes du jour) ; pas d’app native.
-- **Facturation clients** dans Planwise (devis → facture, PDF, avoirs) ; émission électronique à venir.
+- **Facturation clients** dans Planwise (devis → facture, PDF, avoirs) ; émission électronique prévue bien avant l’obligation du 1er septembre 2027 (TPE / PME).
 - Pas de **portail client** ni SMS automatiques métier (email et push PWA opérationnels).
 - Pas de listes de **pièces fréquentes** par type d’intervention (phase 4.2) ni scan code-barres.
 - Clôture intervention depuis le bureau ou le mobile (photos terrain OK) ; **signature client** et **rapport PDF** disponibles sur intervention terminée.

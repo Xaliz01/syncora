@@ -202,17 +202,17 @@ Les textes visibles dans l’app (libellés, aides sous un champ, toasts, empty 
 ✅ Disponibles sur mobile. Sur Ma journée, dites « Planwise » ou utilisez le micro.
 ```
 
-## Format après chaque développement (obligatoire)
+## Vérifications après chaque développement (obligatoires)
 
-Après **toute** modification de fichiers, exécuter `npm run format` à la racine **avant de considérer le travail terminé** — pas seulement avant un commit ou un push. La CI (`format:check:changed`) échoue sinon.
+Après **toute** modification de fichiers, exécuter à la racine **avant de considérer le travail terminé** — pas seulement avant un commit ou un push :
+
+1. `npm run format` — Prettier sur tout le repo.
+2. `npm run typecheck` — compilation TypeScript de tous les workspaces.
+3. `npm run test` — tests unitaires de tous les workspaces.
+4. `npm run test:e2e` — tests Playwright (`apps/frontend/tests/e2e/`).
+
+La CI exécute ces mêmes checks (format des fichiers changés, lint, typecheck, unitaires, e2e) et bloquera le merge.
 
 ## Vérifications avant commit (obligatoires)
 
-Un hook **husky + lint-staged** pré-commit est configuré et formate/lint automatiquement les fichiers stagés. En complément, **avant chaque push**, exécuter manuellement :
-
-1. `npm run format` — formate tout le code avec Prettier (déjà exigé en fin de dev).
-2. `npm run lint` — vérifie ESLint sur tous les workspaces.
-3. `npm run typecheck` — vérifie la compilation TypeScript de tous les services.
-4. `npm run test` — lance les tests unitaires de tous les workspaces.
-
-Ne jamais pousser du code qui échoue à l'une de ces étapes. La CI exécute ces mêmes checks et bloquera le merge.
+Un hook **husky + lint-staged** pré-commit est configuré et formate/lint automatiquement les fichiers stagés. En complément, **avant chaque push**, relancer la même suite si le travail a encore changé.

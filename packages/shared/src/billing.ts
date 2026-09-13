@@ -15,8 +15,11 @@ import {
 export const BILLING_CONNECTORS_UNAVAILABLE_MESSAGE =
   "Les factures clients s’émettent dans Planwise, depuis un dossier ou l’écran Facturation.";
 
+/** Obligation d’émission e-invoicing pour TPE / PME / micro (calendrier officiel). */
+export const ELECTRONIC_INVOICING_EMISSION_DEADLINE_FR = "1er septembre 2027";
+
 export const ELECTRONIC_INVOICING_NOTICE =
-  "L’émission de factures via la facturation électronique arrivera prochainement.";
+  "L’émission via la facturation électronique arrivera dans Planwise bien avant l’obligation prévue le 1er septembre 2027 pour les artisans, TPE et PME.";
 
 export const LOCAL_INVOICE_KINDS = [...CASE_INVOICE_KINDS, "credit_note"] as const;
 export type LocalInvoiceKind = (typeof LOCAL_INVOICE_KINDS)[number];

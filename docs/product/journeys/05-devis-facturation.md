@@ -4,7 +4,7 @@
 
 Établir un devis sur un dossier, puis émettre et suivre la facture **dans Planwise** (complète, situation, acompte, solde, avoir).
 
-**Important :** les factures clients sont créées dans Planwise. L’émission via la facturation électronique arrivera prochainement.
+**Important :** les factures clients sont créées dans Planwise. L’émission via la facturation électronique arrivera bien avant l’obligation prévue le **1er septembre 2027** pour les artisans, TPE et PME.
 
 ## Prérequis
 

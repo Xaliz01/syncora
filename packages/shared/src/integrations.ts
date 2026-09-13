@@ -469,6 +469,11 @@ export function defaultSituationPercentInput(alreadyInvoicedHt: number): string 
   return alreadyInvoicedHt <= 0.009 ? "30" : "";
 }
 
+/** Une facture complète n’est plus possible dès qu’un montant est déjà engagé sur le devis. */
+export function defaultInvoiceKindForQuote(alreadyInvoicedHt: number): CaseInvoiceKind {
+  return alreadyInvoicedHt > 0.009 ? "situation" : "full";
+}
+
 /**
  * Convertit un avancement cumulé en montant de *cette* situation
  * (`cible − déjà facturé`, les acomptes comptent dans le déjà facturé).

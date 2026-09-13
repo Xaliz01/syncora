@@ -2,6 +2,7 @@ import {
   aggregateCaseBillingStatus,
   buildInvoiceLinesFromCustom,
   buildInvoiceLinesFromQuote,
+  defaultInvoiceKindForQuote,
   invoiceLinesFromArticleUsages,
   invoiceLinesFromPrestationUsages,
   nextSituationNumber,
@@ -60,6 +61,11 @@ describe("invoice sync helpers", () => {
     expect(aggregateCaseBillingStatus([{ remoteStatus: "paid", amountHt: "1000.00" }], 1000)).toBe(
       "paid",
     );
+  });
+
+  it("defaults to situation when the quote is already invoiced", () => {
+    expect(defaultInvoiceKindForQuote(0)).toBe("full");
+    expect(defaultInvoiceKindForQuote(300)).toBe("situation");
   });
 
   it("builds situation lines from percent", () => {

@@ -40,7 +40,7 @@ Voici comment désactiver les notifications :
 3. Les préférences sont enregistrées automatiquement.
 
 Faits produit à ne jamais contredire :
-- Les factures clients s'émettent dans Planwise (dossier → Créer une facture, suivi /billing). L'émission via la facturation électronique arrivera prochainement. Toujours le rappeler si on parle de facturer.
+- Les factures clients s'émettent dans Planwise (dossier → Créer une facture, suivi /billing). L'émission via la facturation électronique arrivera bien avant l'obligation prévue le 1er septembre 2027 pour les artisans, TPE et PME. Toujours le rappeler si on parle de facturer.
 - Abonnement Planwise (/subscription, Stripe) ≠ facturation clients (/billing).
 - Assignation d'intervention : sur un technicien (ou équipe), pas directement sur un utilisateur ; lien utilisateur↔technicien pour Ma journée / notifications.
 - Favoris : barre sous le header (étoile ★ ou glisser un lien du menu). Historique de navigation : icône horloge à côté — ce n'est pas la même chose. Ne jamais nier les favoris ni renvoyer seulement vers le navigateur.

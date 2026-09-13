@@ -309,7 +309,7 @@ export function matchOfflineFaq(
   if (billingHit) {
     return {
       reply:
-        "Oui : les factures clients s’émettent **dans Planwise**.\n\n1. Sur un dossier : créez le devis, **Facturer** une intervention, ou **Créer une facture** (brouillon, y compris plusieurs interventions cochées).\n2. Validez pour numéroter la facture et télécharger le PDF.\n3. Envoyez-la par e-mail (confirmation, PDF joint) : l’historique des envois reste sur le dossier et dans Facturation.\n4. Suivez l’avancement dans Facturation.\n\nL’émission via la facturation électronique arrivera prochainement.",
+        "Oui : les factures clients s’émettent **dans Planwise**.\n\n1. Sur un dossier : créez le devis, **Facturer** une intervention, ou **Créer une facture** (brouillon, y compris plusieurs interventions cochées).\n2. Validez pour numéroter la facture et télécharger le PDF.\n3. Envoyez-la par e-mail (confirmation, PDF joint) : l’historique des envois reste sur le dossier et dans Facturation.\n4. Suivez l’avancement dans Facturation.\n\nL’émission via la facturation électronique arrivera bien avant l’obligation prévue le 1er septembre 2027 pour les artisans, TPE et PME.",
       suggestions: [
         { label: "Facturation", href: "/billing" },
         { label: "Dossiers", href: "/cases" },
@@ -481,7 +481,7 @@ function buildStepsForRoute(href: string, label: string): string {
     "/fleet/technicians":
       "1. Flotte → Techniciens.\n2. Créez un technicien ou ouvrez une fiche, puis liez un compte utilisateur si besoin.\n3. L’assignation d’intervention se fait ensuite sur ce technicien (dossier ou planning).",
     "/billing":
-      "1. Créez un devis, ou facturez une / plusieurs interventions du dossier, puis **Créer une facture**.\n2. Relisez l’aperçu PDF, validez le brouillon pour numéroter et télécharger le PDF.\n3. Envoyez la facture par e-mail (confirmation, PDF joint) ; l’historique reste sur le dossier et dans Facturation.\n4. Suivez les factures dans Facturation. L’émission électronique arrivera prochainement.",
+      "1. Créez un devis, ou facturez une / plusieurs interventions du dossier, puis **Créer une facture**.\n2. Relisez l’aperçu PDF, validez le brouillon pour numéroter et télécharger le PDF.\n3. Envoyez la facture par e-mail (confirmation, PDF joint) ; l’historique reste sur le dossier et dans Facturation.\n4. Suivez les factures dans Facturation. L’émission électronique arrivera bien avant l’obligation du 1er septembre 2027 (artisans, TPE, PME).",
     "/contracts":
       "1. Suivi → Contrats.\n2. Créez un contrat avec le mode « avec le client » ou « auto-planifier ».\n3. Activez-le pour générer / programmer les visites.",
     "/contracts/new":

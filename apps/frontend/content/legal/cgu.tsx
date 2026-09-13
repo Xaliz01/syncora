@@ -21,7 +21,8 @@ export function CguContent() {
           {legal.publisherName} est un CRM orienté opérations terrain permettant notamment de gérer
           des clients, donneurs d&apos;ordre, dossiers, interventions, équipes, stocks, documents
           associés, devis et factures clients. L&apos;émission via la facturation électronique
-          arrivera prochainement. Les fonctionnalités peuvent évoluer ; les CGU applicables sont
+          arrivera dans Planwise bien avant l&apos;obligation prévue le 1er septembre 2027 pour les
+          artisans, TPE et PME. Les fonctionnalités peuvent évoluer ; les CGU applicables sont
           celles en vigueur à la date d&apos;utilisation.
         </LegalParagraph>
         <LegalParagraph>

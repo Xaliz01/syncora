@@ -14,6 +14,7 @@ import type {
 import {
   CASE_INVOICE_KIND_LABELS,
   CASE_INVOICE_KINDS,
+  defaultInvoiceKindForQuote,
   defaultSituationPercentInput,
   impliedSituationPercent,
   invoiceLinesFromArticleUsages,
@@ -392,7 +393,6 @@ export function CreateCaseInvoiceOverlay({
 
     setSource(defaultSource);
     setQuoteId(preferredQuoteId);
-    setInvoiceKind("full");
     const openedInvoiced = preferredQuoteId
       ? quoteInvoicedHt(
           invoices.map((i) => ({
@@ -403,6 +403,7 @@ export function CreateCaseInvoiceOverlay({
           preferredQuoteId,
         )
       : 0;
+    setInvoiceKind(defaultInvoiceKindForQuote(openedInvoiced));
     setSituationPercent(defaultSituationPercentInput(openedInvoiced));
     setAmountHt("");
     setMode("percent");
@@ -472,6 +473,7 @@ export function CreateCaseInvoiceOverlay({
       };
     }
     if (!quoteId) return null;
+    if (invoiceKind === "full" && alreadyInvoicedHt > 0.009) return null;
     const options: SyncCaseInvoiceOptions = { quoteId, invoiceKind };
     if (invoiceKind === "situation") {
       if (mode === "percent") {
@@ -502,6 +504,7 @@ export function CreateCaseInvoiceOverlay({
     interventionIds,
     situationPeriodPreview,
     remainingHt,
+    alreadyInvoicedHt,
   ]);
 
   const canSubmit = previewOptions != null;
@@ -738,9 +741,9 @@ export function CreateCaseInvoiceOverlay({
                       onChange={(e) => {
                         const nextId = e.target.value;
                         setQuoteId(nextId);
-                        setSituationPercent(
-                          defaultSituationPercentInput(quoteInvoicedHt(invoiceAmounts, nextId)),
-                        );
+                        const nextInvoiced = quoteInvoicedHt(invoiceAmounts, nextId);
+                        setInvoiceKind(defaultInvoiceKindForQuote(nextInvoiced));
+                        setSituationPercent(defaultSituationPercentInput(nextInvoiced));
                       }}
                       className={inputClassName}
                       required
@@ -775,27 +778,40 @@ export function CreateCaseInvoiceOverlay({
                       Type
                     </legend>
                     <div className="grid grid-cols-2 gap-2">
-                      {CASE_INVOICE_KINDS.map((kind) => (
-                        <label
-                          key={kind}
-                          className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm cursor-pointer ${
-                            invoiceKind === kind
-                              ? "border-brand-500 bg-brand-50 dark:bg-brand-950/40"
-                              : "border-slate-200 dark:border-slate-600"
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name="invoiceKind"
-                            value={kind}
-                            checked={invoiceKind === kind}
-                            onChange={() => setInvoiceKind(kind)}
-                            className="accent-brand-600"
-                          />
-                          {CASE_INVOICE_KIND_LABELS[kind]}
-                        </label>
-                      ))}
+                      {CASE_INVOICE_KINDS.map((kind) => {
+                        const disabled = kind === "full" && alreadyInvoicedHt > 0.009;
+                        return (
+                          <label
+                            key={kind}
+                            className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
+                              disabled
+                                ? "opacity-50 cursor-not-allowed border-slate-200 dark:border-slate-700"
+                                : invoiceKind === kind
+                                  ? "border-brand-500 bg-brand-50 dark:bg-brand-950/40 cursor-pointer"
+                                  : "border-slate-200 dark:border-slate-600 cursor-pointer"
+                            }`}
+                          >
+                            <input
+                              type="radio"
+                              name="invoiceKind"
+                              value={kind}
+                              checked={invoiceKind === kind}
+                              disabled={disabled}
+                              onChange={() => setInvoiceKind(kind)}
+                              className="accent-brand-600"
+                            />
+                            {CASE_INVOICE_KIND_LABELS[kind]}
+                          </label>
+                        );
+                      })}
                     </div>
+                    {alreadyInvoicedHt > 0.009 ? (
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        La facture complète n’est plus possible. Choisissez une situation, un
+                        acompte ou un solde. Pour une situation, indiquez l’avancement cumulé (plus
+                        que {invoicedPct} %), pas le reste à facturer.
+                      </p>
+                    ) : null}
                   </fieldset>
 
                   {invoiceKind === "situation" ? (
