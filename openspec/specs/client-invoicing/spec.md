@@ -60,12 +60,12 @@ When an authorized user creates a customer invoice of kind `full` from one or mo
 
 ### Requirement: Invoice kinds
 
-The system SHALL support invoice kinds `full` (facture complète), `situation` (with sequence number and percent), `deposit` (acompte), `balance` (solde), and `credit_note` (avoir). A credit note MUST reference the original invoice and reverse its amounts (or a documented partial amount). Situation invoices MUST increment situation numbering per case (or per quote — one consistent rule per organization).
+The system SHALL support invoice kinds `full` (facture complète), `situation` (with sequence number and percent), `deposit` (acompte), `balance` (solde), and `credit_note` (avoir). A credit note MUST reference the original invoice and reverse its amounts (or a documented partial amount). Situation invoices MUST increment situation numbering per quote. The situation percent is cumulative progress on the quote; the invoiced amount MUST be the delta since already invoiced (deposits and previous situations included). A 100 % situation MUST invoice the remaining quote amount.
 
 #### Scenario: Situation invoice
 
-- **WHEN** a user creates a situation invoice at 40 % on a quote already situation-invoiced at 20 %
-- **THEN** the system records kind `situation`, the next situation number, 40 %, and lines/amounts consistent with that share
+- **WHEN** a user creates a situation invoice at 40 % cumulative progress on a quote already situation-invoiced at 20 %
+- **THEN** the system records kind `situation`, the next situation number, cumulative progress 40 %, and this invoice amount equal to 20 % of the quote (40 % minus already invoiced)
 
 #### Scenario: Credit note
 

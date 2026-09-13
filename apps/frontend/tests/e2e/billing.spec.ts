@@ -282,6 +282,10 @@ test.describe("Boucle facturation locale", () => {
         "L’émission de factures via la facturation électronique arrivera prochainement.",
       ),
     ).toBeVisible();
+    await page.getByText("Situation", { exact: true }).click();
+    await expect(page.getByText("Avancement cumulé (%)")).toBeVisible();
+    await expect(page.getByText(/avancement total du chantier/i)).toBeVisible();
+    await page.getByText("Facture complète", { exact: true }).click();
     await page.getByRole("button", { name: /Créer le brouillon/i }).click();
     await expect(page.getByText(/Facture brouillon créée/i)).toBeVisible({ timeout: 10_000 });
 

@@ -285,9 +285,9 @@ export interface SyncCaseInvoiceOptions {
   lines?: SyncCaseInvoiceLineInput[];
   invoiceNumber?: string;
   invoiceKind?: CaseInvoiceKind;
-  /** Pour une situation : pourcentage du devis (1–100). */
+  /** Pour une situation : avancement cumulé du devis (1–100), pas la part de cette facture. */
   situationPercent?: number;
-  /** Pour situation / acompte : montant HT fixe. */
+  /** Pour situation / acompte : montant HT fixe de cette facture. */
   amountHt?: number;
   /** Si false, finalise immédiatement. Défaut : brouillon. */
   draft?: boolean;
@@ -458,6 +458,73 @@ export function remainingQuotePercent(quoteTotalHt: number, remainingHt: number)
   return round2((remainingHt / quoteTotalHt) * 100);
 }
 
+/** Part déjà facturée (brouillons inclus) en % du devis. */
+export function invoicedQuotePercent(quoteTotalHt: number, alreadyInvoicedHt: number): number {
+  if (quoteTotalHt <= 0) return 0;
+  return round2((alreadyInvoicedHt / quoteTotalHt) * 100);
+}
+
+/** Valeur initiale du champ avancement : 30 % au premier passage, vide ensuite. */
+export function defaultSituationPercentInput(alreadyInvoicedHt: number): string {
+  return alreadyInvoicedHt <= 0.009 ? "30" : "";
+}
+
+/**
+ * Convertit un avancement cumulé en montant de *cette* situation
+ * (`cible − déjà facturé`, les acomptes comptent dans le déjà facturé).
+ */
+export function resolveSituationPeriod(input: {
+  quoteTotalHt: number;
+  alreadyInvoicedHt: number;
+  cumulativePercent: number;
+}): { amountHt: number; situationPercent: number; periodPercent: number } {
+  const { quoteTotalHt, alreadyInvoicedHt, cumulativePercent } = input;
+  if (!Number.isFinite(cumulativePercent) || cumulativePercent <= 0 || cumulativePercent > 100) {
+    throw new Error("Le pourcentage d’avancement doit être compris entre 1 et 100.");
+  }
+  if (quoteTotalHt <= 0) {
+    throw new Error("Le devis n’a pas de montant HT : impossible de calculer l’avancement.");
+  }
+  const invoicedPct = invoicedQuotePercent(quoteTotalHt, alreadyInvoicedHt);
+  if (cumulativePercent <= invoicedPct + 0.009) {
+    throw new Error(
+      invoicedPct > 0
+        ? `Indiquez un avancement supérieur à ${invoicedPct} % (déjà facturé).`
+        : "Le pourcentage d’avancement doit être positif.",
+    );
+  }
+  const targetHt = round2((quoteTotalHt * cumulativePercent) / 100);
+  const amount = round2(Math.max(0, targetHt - alreadyInvoicedHt));
+  if (amount <= 0.009) {
+    throw new Error(
+      invoicedPct > 0
+        ? `Indiquez un avancement supérieur à ${invoicedPct} % (déjà facturé).`
+        : "Le montant de la situation doit être positif.",
+    );
+  }
+  const remaining = remainingQuoteHt(quoteTotalHt, alreadyInvoicedHt);
+  if (amount > remaining + 0.009) {
+    throw new Error(
+      `La situation dépasse le reste à facturer (${remainingQuotePercent(quoteTotalHt, remaining)} % · ${remaining.toFixed(2)} € HT).`,
+    );
+  }
+  return {
+    amountHt: amount,
+    situationPercent: cumulativePercent,
+    periodPercent: invoicedQuotePercent(quoteTotalHt, amount),
+  };
+}
+
+/** Avancement cumulé implicite après une situation saisie en montant HT. */
+export function impliedSituationPercent(
+  quoteTotalHt: number,
+  alreadyInvoicedHt: number,
+  periodAmountHt: number,
+): number {
+  if (quoteTotalHt <= 0) return 0;
+  return Math.min(100, invoicedQuotePercent(quoteTotalHt, alreadyInvoicedHt + periodAmountHt));
+}
+
 export function round2(value: number): number {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
@@ -494,6 +561,8 @@ export interface QuoteLineForInvoice {
 
 /**
  * Construit les lignes + montant HT selon le type de facture (complète / situation / acompte / solde).
+ * Pour une situation, `situationPercent` est l’avancement cumulé ; le montant facturé est l’écart
+ * depuis `alreadyInvoicedHt`.
  */
 export function buildInvoiceLinesFromQuote(input: {
   caseTitle: string;
@@ -563,32 +632,38 @@ export function buildInvoiceLinesFromQuote(input: {
     };
   }
 
-  // situation
+  // situation : le % est un avancement cumulé ; cette facture = cible − déjà facturé
   const percent = input.situationPercent;
   const fixedAmount = input.amountHt;
   let amount: number;
   let situationPercent: number | undefined;
+  let prorateQuoteLines = false;
 
   if (percent != null && Number.isFinite(percent)) {
-    if (percent <= 0 || percent > 100) {
-      throw new Error("Le pourcentage de situation doit être compris entre 1 et 100.");
-    }
-    amount = round2((quoteTotalHt * percent) / 100);
-    situationPercent = percent;
+    const period = resolveSituationPeriod({
+      quoteTotalHt,
+      alreadyInvoicedHt,
+      cumulativePercent: percent,
+    });
+    amount = period.amountHt;
+    situationPercent = period.situationPercent;
+    prorateQuoteLines = quoteLines.length > 0 && quoteTotalHt > 0;
   } else if (fixedAmount != null && Number.isFinite(fixedAmount)) {
     amount = round2(fixedAmount);
+    if (amount <= 0) {
+      throw new Error("Le montant de la situation doit être positif.");
+    }
+    assertAmountWithinRemaining(amount, remaining, quoteTotalHt, "La situation");
+    situationPercent =
+      impliedSituationPercent(quoteTotalHt, alreadyInvoicedHt, amount) || undefined;
   } else {
-    throw new Error("Indiquez un pourcentage ou un montant HT pour la situation.");
+    throw new Error("Indiquez un avancement cumulé ou un montant HT pour la situation.");
   }
-
-  if (amount <= 0) {
-    throw new Error("Le montant de la situation doit être positif.");
-  }
-  assertAmountWithinRemaining(amount, remaining, quoteTotalHt, "La situation");
 
   const n = input.situationNumber ?? 1;
-  if (situationPercent != null && quoteLines.length > 0) {
-    const factor = situationPercent / 100;
+  const subject = input.quoteSubject || caseTitle;
+  if (prorateQuoteLines) {
+    const factor = amount / quoteTotalHt;
     return {
       lines: quoteLines.map((l) => ({
         ...l,
@@ -602,7 +677,10 @@ export function buildInvoiceLinesFromQuote(input: {
   return {
     lines: [
       {
-        label: `Situation ${n} — ${input.quoteSubject || caseTitle}`.slice(0, 200),
+        label: `Situation ${n} — avancement ${situationPercent ?? "?"} % — ${subject}`.slice(
+          0,
+          200,
+        ),
         quantity: 1,
         unitPriceHt: amount.toFixed(2),
         tvaRate: dominantTva(quoteLines),

@@ -75,7 +75,11 @@ export async function renderInvoicePdf(
       pdfFieldInline(
         doc,
         "Situation",
-        `n°${invoice.situationNumber}${invoice.situationPercent != null ? ` · ${invoice.situationPercent} %` : ""}`,
+        `n°${invoice.situationNumber}${
+          invoice.situationPercent != null
+            ? ` · avancement cumulé ${invoice.situationPercent} %`
+            : ""
+        }`,
       );
     }
 

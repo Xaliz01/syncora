@@ -202,11 +202,15 @@ Les textes visibles dans l’app (libellés, aides sous un champ, toasts, empty 
 ✅ Disponibles sur mobile. Sur Ma journée, dites « Planwise » ou utilisez le micro.
 ```
 
+## Format après chaque développement (obligatoire)
+
+Après **toute** modification de fichiers, exécuter `npm run format` à la racine **avant de considérer le travail terminé** — pas seulement avant un commit ou un push. La CI (`format:check:changed`) échoue sinon.
+
 ## Vérifications avant commit (obligatoires)
 
 Un hook **husky + lint-staged** pré-commit est configuré et formate/lint automatiquement les fichiers stagés. En complément, **avant chaque push**, exécuter manuellement :
 
-1. `npm run format` — formate tout le code avec Prettier.
+1. `npm run format` — formate tout le code avec Prettier (déjà exigé en fin de dev).
 2. `npm run lint` — vérifie ESLint sur tous les workspaces.
 3. `npm run typecheck` — vérifie la compilation TypeScript de tous les services.
 4. `npm run test` — lance les tests unitaires de tous les workspaces.

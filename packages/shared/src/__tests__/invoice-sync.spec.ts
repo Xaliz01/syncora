@@ -77,21 +77,21 @@ describe("invoice sync helpers", () => {
     expect(result.situationPercent).toBe(30);
   });
 
-  it("rejects a situation percent that exceeds the remaining quote", () => {
+  it("rejects a cumulative situation that is not above already invoiced", () => {
     expect(() =>
       buildInvoiceLinesFromQuote({
         caseTitle: "Chantier",
         quoteTotalHt: 1000,
         quoteLines: [{ label: "Travaux", quantity: 10, unitPriceHt: "100.00", tvaRate: 20 }],
         invoiceKind: "situation",
-        situationPercent: 80,
+        situationPercent: 30,
         alreadyInvoicedHt: 300,
         situationNumber: 2,
       }),
-    ).toThrow(/reste à facturer/);
+    ).toThrow(/supérieur à 30 %/);
   });
 
-  it("allows a situation within the remaining quote", () => {
+  it("invoices only the delta for a cumulative situation", () => {
     const result = buildInvoiceLinesFromQuote({
       caseTitle: "Chantier",
       quoteTotalHt: 1000,
@@ -101,7 +101,53 @@ describe("invoice sync helpers", () => {
       alreadyInvoicedHt: 300,
       situationNumber: 2,
     });
+    expect(result.amountHt).toBe("400.00");
+    expect(result.situationPercent).toBe(70);
+    expect(result.lines[0]?.quantity).toBe(4);
+  });
+
+  it("closes the quote when cumulative situation reaches 100 %", () => {
+    const result = buildInvoiceLinesFromQuote({
+      caseTitle: "Chantier",
+      quoteTotalHt: 1000,
+      quoteLines: [{ label: "Travaux", quantity: 10, unitPriceHt: "100.00", tvaRate: 20 }],
+      invoiceKind: "situation",
+      situationPercent: 100,
+      alreadyInvoicedHt: 300,
+      situationNumber: 3,
+    });
     expect(result.amountHt).toBe("700.00");
+    expect(result.situationPercent).toBe(100);
+  });
+
+  it("counts a deposit in already invoiced for a later situation", () => {
+    const result = buildInvoiceLinesFromQuote({
+      caseTitle: "Chantier",
+      quoteTotalHt: 1000,
+      quoteLines: [{ label: "Travaux", quantity: 10, unitPriceHt: "100.00", tvaRate: 20 }],
+      invoiceKind: "situation",
+      situationPercent: 30,
+      alreadyInvoicedHt: 200,
+      situationNumber: 1,
+    });
+    expect(result.amountHt).toBe("100.00");
+    expect(result.situationPercent).toBe(30);
+  });
+
+  it("stores implied cumulative percent when situation is entered as an amount", () => {
+    const result = buildInvoiceLinesFromQuote({
+      caseTitle: "Chantier",
+      quoteSubject: "Devis A",
+      quoteTotalHt: 1000,
+      quoteLines: [{ label: "Travaux", quantity: 1, unitPriceHt: "1000.00", tvaRate: 20 }],
+      invoiceKind: "situation",
+      amountHt: 400,
+      alreadyInvoicedHt: 300,
+      situationNumber: 2,
+    });
+    expect(result.amountHt).toBe("400.00");
+    expect(result.situationPercent).toBe(70);
+    expect(result.lines[0]?.label).toContain("avancement 70 %");
   });
 
   it("rejects a full invoice when the quote is already partially invoiced", () => {

@@ -1,0 +1,14 @@
+---
+description: Exécuter npm run format après chaque développement
+alwaysApply: true
+---
+
+# Format après chaque développement
+
+Après **toute** modification de fichiers (code, tests, docs, specs), exécuter `npm run format` à la racine du repo **avant de déclarer le travail terminé**.
+
+Ne pas attendre le commit, le push, ou husky. La CI (`npm run format:check:changed` puis `npm run lint`) échoue si Prettier n’a pas été passé sur les fichiers touchés.
+
+```bash
+npm run format
+```

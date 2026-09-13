@@ -14,12 +14,16 @@ import type {
 import {
   CASE_INVOICE_KIND_LABELS,
   CASE_INVOICE_KINDS,
+  defaultSituationPercentInput,
+  impliedSituationPercent,
   invoiceLinesFromArticleUsages,
   invoiceLinesFromPrestationUsages,
+  invoicedQuotePercent,
   localInvoiceStatusToRemote,
   quoteInvoicedHt,
   remainingQuoteHt,
   remainingQuotePercent,
+  resolveSituationPeriod,
 } from "@planwise/shared";
 import { ElectronicInvoicingNotice } from "@/components/billing/ElectronicInvoicingNotice";
 import {
@@ -389,31 +393,65 @@ export function CreateCaseInvoiceOverlay({
     setSource(defaultSource);
     setQuoteId(preferredQuoteId);
     setInvoiceKind("full");
-    setSituationPercent("30");
+    const openedInvoiced = preferredQuoteId
+      ? quoteInvoicedHt(
+          invoices.map((i) => ({
+            quoteId: i.quoteId,
+            amountHt: i.amountHt,
+            remoteStatus: localInvoiceStatusToRemote(i.status),
+          })),
+          preferredQuoteId,
+        )
+      : 0;
+    setSituationPercent(defaultSituationPercentInput(openedInvoiced));
     setAmountHt("");
     setMode("percent");
     if (defaultSource === "lines") {
       setLineDrafts(initialLinesDraft(prefilledArticleLines));
     }
-  }, [open, preferredQuoteId, defaultSource, prefilledArticleLines, createdResult]);
+  }, [open, preferredQuoteId, defaultSource, prefilledArticleLines, createdResult, invoices]);
 
   const selectedQuote = quotes.find((q) => q.id === quoteId);
-  const alreadyInvoicedHt = quoteId
-    ? quoteInvoicedHt(
-        invoices.map((i) => ({
-          quoteId: i.quoteId,
-          amountHt: i.amountHt,
-          remoteStatus: localInvoiceStatusToRemote(i.status),
-        })),
-        quoteId,
-      )
-    : 0;
+  const invoiceAmounts = invoices.map((i) => ({
+    quoteId: i.quoteId,
+    amountHt: i.amountHt,
+    remoteStatus: localInvoiceStatusToRemote(i.status),
+  }));
+  const alreadyInvoicedHt = quoteId ? quoteInvoicedHt(invoiceAmounts, quoteId) : 0;
   const remainingHt = selectedQuote
     ? remainingQuoteHt(selectedQuote.totalHt, alreadyInvoicedHt)
     : 0;
   const remainingPct = selectedQuote
     ? remainingQuotePercent(selectedQuote.totalHt, remainingHt)
     : 0;
+  const invoicedPct = selectedQuote
+    ? invoicedQuotePercent(selectedQuote.totalHt, alreadyInvoicedHt)
+    : 0;
+
+  const situationPeriodPreview = useMemo(() => {
+    if (!selectedQuote || invoiceKind !== "situation") return null;
+    if (mode === "percent") {
+      const pct = Number.parseFloat(situationPercent.replace(",", "."));
+      if (!Number.isFinite(pct)) return null;
+      try {
+        return resolveSituationPeriod({
+          quoteTotalHt: selectedQuote.totalHt,
+          alreadyInvoicedHt,
+          cumulativePercent: pct,
+        });
+      } catch {
+        return null;
+      }
+    }
+    const amt = Number.parseFloat(amountHt.replace(",", "."));
+    if (!Number.isFinite(amt) || amt <= 0) return null;
+    const implied = impliedSituationPercent(selectedQuote.totalHt, alreadyInvoicedHt, amt);
+    return {
+      amountHt: amt,
+      situationPercent: implied,
+      periodPercent: invoicedQuotePercent(selectedQuote.totalHt, amt),
+    };
+  }, [selectedQuote, invoiceKind, mode, situationPercent, amountHt, alreadyInvoicedHt]);
 
   const isLinesSource = source === "lines";
   const parsedLines = useMemo(
@@ -437,12 +475,12 @@ export function CreateCaseInvoiceOverlay({
     const options: SyncCaseInvoiceOptions = { quoteId, invoiceKind };
     if (invoiceKind === "situation") {
       if (mode === "percent") {
-        const pct = Number.parseFloat(situationPercent.replace(",", "."));
-        if (!Number.isFinite(pct) || pct <= 0 || pct > 100) return null;
-        options.situationPercent = pct;
+        if (!situationPeriodPreview) return null;
+        options.situationPercent = situationPeriodPreview.situationPercent;
       } else {
         const amt = Number.parseFloat(amountHt.replace(",", "."));
         if (!Number.isFinite(amt) || amt <= 0) return null;
+        if (amt > remainingHt + 0.009) return null;
         options.amountHt = amt;
       }
     }
@@ -462,6 +500,8 @@ export function CreateCaseInvoiceOverlay({
     situationPercent,
     amountHt,
     interventionIds,
+    situationPeriodPreview,
+    remainingHt,
   ]);
 
   const canSubmit = previewOptions != null;
@@ -695,7 +735,13 @@ export function CreateCaseInvoiceOverlay({
                     </span>
                     <select
                       value={quoteId}
-                      onChange={(e) => setQuoteId(e.target.value)}
+                      onChange={(e) => {
+                        const nextId = e.target.value;
+                        setQuoteId(nextId);
+                        setSituationPercent(
+                          defaultSituationPercentInput(quoteInvoicedHt(invoiceAmounts, nextId)),
+                        );
+                      }}
                       className={inputClassName}
                       required
                     >
@@ -754,6 +800,14 @@ export function CreateCaseInvoiceOverlay({
 
                   {invoiceKind === "situation" ? (
                     <div className="space-y-3">
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Indiquez l’avancement <span className="font-medium">total</span> du
+                        chantier. Cette facture ne portera que l’écart depuis le déjà facturé
+                        {invoicedPct > 0 ? ` (${invoicedPct} %)` : ""}
+                        {invoicedPct >= 99.99
+                          ? ""
+                          : ". Un avancement à 100 % clôture le devis, comme un solde."}
+                      </p>
                       <div className="flex gap-2 text-sm">
                         <button
                           type="button"
@@ -764,7 +818,7 @@ export function CreateCaseInvoiceOverlay({
                               : "border-slate-200 dark:border-slate-600"
                           }`}
                         >
-                          Pourcentage
+                          Avancement
                         </button>
                         <button
                           type="button"
@@ -781,23 +835,26 @@ export function CreateCaseInvoiceOverlay({
                       {mode === "percent" ? (
                         <label className="block space-y-1.5">
                           <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                            Avancement (%)
+                            Avancement cumulé (%)
                           </span>
                           <input
                             type="number"
-                            min={1}
+                            min={invoicedPct > 0 ? Number((invoicedPct + 0.01).toFixed(2)) : 1}
                             max={100}
                             step={0.01}
                             value={situationPercent}
                             onChange={(e) => setSituationPercent(e.target.value)}
                             className={inputClassName}
                             required
+                            placeholder={
+                              invoicedPct > 0 ? String(Math.min(100, invoicedPct + 20)) : "30"
+                            }
                           />
                         </label>
                       ) : (
                         <label className="block space-y-1.5">
                           <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                            Montant HT (€)
+                            Montant HT de cette situation (€)
                           </span>
                           <input
                             type="number"
@@ -810,6 +867,16 @@ export function CreateCaseInvoiceOverlay({
                           />
                         </label>
                       )}
+                      {situationPeriodPreview ? (
+                        <p className="text-xs text-slate-600 dark:text-slate-300">
+                          Déjà facturé {invoicedPct} % · cette facture{" "}
+                          {situationPeriodPreview.periodPercent} % ·{" "}
+                          {situationPeriodPreview.amountHt.toFixed(2)} € HT
+                          {situationPeriodPreview.situationPercent >= 99.99
+                            ? " · clôture le devis (équivalent au solde)"
+                            : ""}
+                        </p>
+                      ) : null}
                     </div>
                   ) : null}
 

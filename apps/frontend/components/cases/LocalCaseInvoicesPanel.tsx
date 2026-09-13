@@ -53,7 +53,7 @@ export function LocalCaseInvoicesPanel({
           invoice.kind === "situation" && invoice.situationNumber
             ? `n°${invoice.situationNumber}`
             : null,
-          invoice.situationPercent != null ? `${invoice.situationPercent} %` : null,
+          invoice.situationPercent != null ? `avancement ${invoice.situationPercent} %` : null,
         ].filter(Boolean);
 
         return (

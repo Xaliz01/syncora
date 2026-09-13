@@ -77,7 +77,7 @@ export function CaseInvoiceSyncPanel({
           sync.invoiceKind === "situation" && sync.situationNumber
             ? `n°${sync.situationNumber}`
             : null,
-          sync.situationPercent != null ? `${sync.situationPercent} %` : null,
+          sync.situationPercent != null ? `avancement ${sync.situationPercent} %` : null,
           sync.amountHt ? `${sync.amountHt} € HT` : null,
           sync.invoiceNumber ? sync.invoiceNumber : null,
         ].filter(Boolean);

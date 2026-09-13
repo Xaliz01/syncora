@@ -225,8 +225,8 @@ test.describe("Prospection backoffice — envoi groupé", () => {
       timeout: 15_000,
     });
     await expect(page.getByText(/Plus de 200 résultats/)).toBeVisible();
-    await expect(page.getByRole("button", { name: /Sélectionner les \d+ \(filtrés\)/ })).toHaveCount(
-      0,
-    );
+    await expect(
+      page.getByRole("button", { name: /Sélectionner les \d+ \(filtrés\)/ }),
+    ).toHaveCount(0);
   });
 });
