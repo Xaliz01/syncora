@@ -400,6 +400,9 @@ export interface InterventionResponse {
   notes?: string;
   signatoryName?: string;
   signedAt?: string;
+  /** Compte-rendu confirmé (généré par IA ou saisi manuellement). */
+  fieldReport?: string;
+  fieldReportConfirmedAt?: string;
   createdAt?: string;
   updatedAt?: string;
   isTestData?: boolean;

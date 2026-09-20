@@ -612,6 +612,12 @@ export const PERMISSION_METADATA: Record<PermissionCode, PermissionMetadata> = {
     description:
       "Valider et importer des fichiers CSV (clients, catalogues, dossiers, interventions).",
   },
+  "ai.field_report": {
+    code: "ai.field_report",
+    label: "Générer un compte-rendu IA",
+    description:
+      "Demander à l'assistant IA de préremplir un compte-rendu d'intervention à partir des notes et photos.",
+  },
 };
 
 export function getPermissionLabel(permissionCode: PermissionCode): string {

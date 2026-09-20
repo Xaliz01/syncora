@@ -120,6 +120,7 @@ export const ASSIGNABLE_PERMISSION_CODES = [
   "integrations.demo.sync",
   "data_import.read",
   "data_import.run",
+  "ai.field_report",
 ] as const;
 
 export type AssignablePermissionCode = (typeof ASSIGNABLE_PERMISSION_CODES)[number];

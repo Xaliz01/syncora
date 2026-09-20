@@ -442,6 +442,16 @@ export class CasesController {
     return this.interventionsService.signIntervention(id, body);
   }
 
+  @Post("interventions/:id/field-report")
+  async confirmFieldReport(
+    @Param("id") id: string,
+    @Body() body: { organizationId: string; report: string },
+  ) {
+    const organizationId = parseOrganizationIdBody(body.organizationId);
+    if (!body.report?.trim()) throw new BadRequestException("report is required");
+    return this.interventionsService.confirmFieldReport(id, organizationId, body.report.trim());
+  }
+
   @Get("interventions/:id/signature-image")
   async getSignatureImage(
     @Param("id") id: string,

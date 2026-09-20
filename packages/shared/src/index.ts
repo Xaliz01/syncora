@@ -47,3 +47,4 @@ export * from "./maintenance-contract";
 export * from "./default-permission-profiles";
 export * from "./default-case-templates";
 export * from "./default-intervention-types";
+export * from "./ai-quota";
