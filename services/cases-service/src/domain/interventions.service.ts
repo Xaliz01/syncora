@@ -10,6 +10,7 @@ import {
   activeDocumentFilter,
   clampPagination,
   MAX_PAGE_LIMIT_WIDE,
+  normalizeFieldReportText,
   type CompleteInterventionBody,
   type CompleteInterventionResponse,
   type CreateInterventionBody,
@@ -457,5 +458,26 @@ export class InterventionsService extends AbstractInterventionsService {
     const caseMap = new Map(cases.map((c) => [c._id.toString(), c.title]));
 
     return docs.map((d) => toInterventionResponse(d, caseMap.get(d.caseId)));
+  }
+
+  async confirmFieldReport(
+    id: string,
+    organizationId: string,
+    report: string,
+  ): Promise<InterventionResponse> {
+    const now = new Date();
+    const doc = await this.interventionModel
+      .findOneAndUpdate(
+        { _id: id, organizationId, ...activeDocumentFilter },
+        { $set: { fieldReport: normalizeFieldReportText(report), fieldReportConfirmedAt: now } },
+        { new: true },
+      )
+      .exec();
+    if (!doc) throw new NotFoundException("Intervention not found");
+    const caseDoc = await this.caseModel
+      .findOne({ _id: doc.caseId, ...activeDocumentFilter })
+      .select("title")
+      .exec();
+    return toInterventionResponse(doc, caseDoc?.title);
   }
 }

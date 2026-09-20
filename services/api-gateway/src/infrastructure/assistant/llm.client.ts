@@ -20,11 +20,23 @@ export class AssistantLlmClient {
   async complete(
     system: string,
     userMessage: string,
-    options?: { /** Si true, n’ajoute pas le wrapping assistant chat. */ rawUserMessage?: boolean },
+    options?: {
+      /** Si true, n’ajoute pas le wrapping assistant chat. */
+      rawUserMessage?: boolean;
+      /** Défaut true (assistant / import). false = texte libre (compte-rendu). */
+      jsonObject?: boolean;
+    },
   ): Promise<LlmCompletionResult> {
+    const jsonObject = options?.jsonObject !== false;
     const openaiKey = process.env.OPENAI_API_KEY?.trim();
     if (openaiKey) {
-      return this.completeOpenAi(openaiKey, system, userMessage, options?.rawUserMessage === true);
+      return this.completeOpenAi(
+        openaiKey,
+        system,
+        userMessage,
+        options?.rawUserMessage === true,
+        jsonObject,
+      );
     }
     const anthropicKey = process.env.ANTHROPIC_API_KEY?.trim();
     if (anthropicKey) {
@@ -43,6 +55,7 @@ export class AssistantLlmClient {
     system: string,
     userMessage: string,
     rawUserMessage: boolean,
+    jsonObject: boolean,
   ): Promise<LlmCompletionResult> {
     const model = process.env.OPENAI_MODEL?.trim() || "gpt-4o-mini";
     const base = (process.env.OPENAI_API_BASE?.trim() || "https://api.openai.com/v1").replace(
@@ -62,7 +75,7 @@ export class AssistantLlmClient {
             model,
             temperature: 0.2,
             max_tokens: 1200,
-            response_format: { type: "json_object" },
+            ...(jsonObject ? { response_format: { type: "json_object" as const } } : {}),
             messages: [
               { role: "system", content: system },
               { role: "user", content: userContent },

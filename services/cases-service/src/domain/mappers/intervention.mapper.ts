@@ -1,4 +1,4 @@
-import type { InterventionResponse } from "@planwise/shared";
+import { normalizeFieldReportText, type InterventionResponse } from "@planwise/shared";
 import type { InterventionDocument } from "../../persistence/intervention.schema";
 
 export function toInterventionResponse(
@@ -30,6 +30,8 @@ export function toInterventionResponse(
     notes: doc.notes,
     signatoryName: doc.signatoryName,
     signedAt: doc.signedAt?.toISOString(),
+    fieldReport: doc.fieldReport ? normalizeFieldReportText(doc.fieldReport) : undefined,
+    fieldReportConfirmedAt: doc.fieldReportConfirmedAt?.toISOString(),
     createdAt: doc.get("createdAt")?.toISOString(),
     updatedAt: doc.get("updatedAt")?.toISOString(),
     isTestData: doc.isTestData === true,

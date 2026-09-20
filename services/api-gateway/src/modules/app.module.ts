@@ -30,6 +30,7 @@ import { TrialTestDataModule } from "./trial-test-data.module";
 import { DataImportModule } from "./data-import.module";
 import { PlatformModule } from "./platform.module";
 import { AssistantModule } from "./assistant.module";
+import { AiFieldReportModule } from "./ai-field-report.module";
 
 @Module({
   imports: [
@@ -57,6 +58,7 @@ import { AssistantModule } from "./assistant.module";
     BillingModule,
     TrialTestDataModule,
     DataImportModule,
+    AiFieldReportModule,
   ],
   controllers: [AppController],
   providers: [

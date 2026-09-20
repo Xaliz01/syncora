@@ -88,6 +88,13 @@ export class InterventionDocument extends Document {
   @Prop({ type: Date })
   signedAt?: Date;
 
+  /** Compte-rendu confirmé (IA ou manuel). */
+  @Prop()
+  fieldReport?: string;
+
+  @Prop({ type: Date })
+  fieldReportConfirmedAt?: Date | null;
+
   @Prop({ type: Date })
   deletedAt?: Date | null;
 

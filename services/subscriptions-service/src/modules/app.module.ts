@@ -10,6 +10,9 @@ import { SubscriptionsController } from "../presentation/http/subscriptions.cont
 import { StripeWebhookController } from "../presentation/http/stripe-webhook.controller";
 import { OrganizationSubscriptionSchema } from "../persistence/organization-subscription.schema";
 import { ProcessedStripeEventSchema } from "../persistence/processed-stripe-event.schema";
+import { AiQuotaCounterSchema } from "../persistence/ai-quota-counter.schema";
+import { AiQuotaService } from "../domain/ai-quota.service";
+import { AiQuotaController } from "../presentation/http/ai-quota.controller";
 
 @Module({
   imports: [
@@ -19,13 +22,20 @@ import { ProcessedStripeEventSchema } from "../persistence/processed-stripe-even
     MongooseModule.forFeature([
       { name: "OrganizationSubscription", schema: OrganizationSubscriptionSchema },
       { name: "ProcessedStripeEvent", schema: ProcessedStripeEventSchema },
+      { name: "AiQuotaCounter", schema: AiQuotaCounterSchema },
     ]),
   ],
-  controllers: [SubscriptionsController, StripeWebhookController, HealthController],
+  controllers: [
+    SubscriptionsController,
+    StripeWebhookController,
+    AiQuotaController,
+    HealthController,
+  ],
   providers: [
     provideHealthServiceName("planwise-subscriptions-service"),
     provideHttpAccessLogInterceptor(),
     SubscriptionsService,
+    AiQuotaService,
   ],
 })
 export class AppModule {}
