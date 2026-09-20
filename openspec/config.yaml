@@ -1,13 +1,34 @@
 schema: spec-driven
 
-# Project context (optional)
-# This is shown to AI when creating artifacts.
-# Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+# Injected into /opsx-propose (and related OpenSpec commands).
+context: |
+  Planwise is a field-ops CRM for French artisans / TPE (cases, interventions,
+  quotes, invoices, stock, fleet). Not a marketing CRM.
+
+  AI program (one OpenSpec change per slice, never bundle two slices):
+  docs/assistant/ROADMAP.md
+  Current assistant capability: openspec/specs/assistant/spec.md (guide only).
+  Slice change names and capability paths are defined in that roadmap
+  (ai-field-report, ai-follow-ups, assistant-org-read, …).
+
+  When proposing an AI slice: copy the tranche Requirements/Scenarios into the
+  delta spec; keep human confirmation on anything sent to a customer or issued
+  as an invoice/quote; scope every tool by organizationId + permissions;
+  mock LLMs in unit/e2e tests; do not document unshipped AI screens in
+  docs/product or PRODUCT_DOC_CHUNKS.
+
+  AI pricing (do not invent another model): guide stays in Essentiel 9.99;
+  copilote is addon ai_copilot at 7.99€/org (not unlimited in 9.99). Trial
+  (15d, hasAccess) MUST unlock shipped copilote features with the trial
+  quota column (conversion lever), not addon-unlimited and not a credit-card
+  wall. Paid Essentiel keeps taste quotas. First LLM-gated change (A1) adds
+  ai_copilot to ADDON_CODES and TRIAL_INCLUDED_ADDON_CODES like
+  team_suggestion. Quotas are per org per month; user-facing copy, no token
+  jargon.
+
+  Stack: Nest hexagonal microservices, Mongo per service, api-gateway,
+  @planwise/shared, frontend Next. After code changes: format, typecheck,
+  unit tests, Playwright e2e.
 
 # Per-artifact rules (optional)
 # Add custom rules for specific artifacts.

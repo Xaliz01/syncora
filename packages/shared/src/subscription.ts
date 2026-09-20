@@ -121,6 +121,8 @@ export function addonAllowsStandaloneCheckout(code: AddonCode): boolean {
 /**
  * Addons utilisables pendant l’essai (sans achat Stripe), pour découvrir la valeur.
  * Non persistés dans `activeAddons` — retirés automatiquement à la fin de l’essai.
+ * Copilote IA (`ai_copilot`) : à ajouter ici au premier change A1 — voir
+ * docs/assistant/ROADMAP.md (essai plafonné ≠ quotas addon).
  */
 export const TRIAL_INCLUDED_ADDON_CODES: readonly AddonCode[] = ["team_suggestion"];
 

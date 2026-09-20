@@ -2,7 +2,7 @@
 
 > Document de référence pour l’équipe et les assistants de développement.  
 > Complète `planwise.product.config.yml` (entités, auth) par le **pourquoi**, la **cible** et le **cap** des évolutions.  
-> Dernière mise à jour : août 2026.
+> Dernière mise à jour : septembre 2026.
 
 ---
 
@@ -212,19 +212,51 @@ Objectif : monter en gamme sans perdre la simplicité TPE.
 | 5.6 | Offre **Pro** (voir cible ci-dessous)                                              | Alignement valeur / prix             | ⬜     |
 | 5.7 | **Assistant in-app** (guide produit, liens contextualisés)                         | MVP livré — `docs/assistant/MVP.md`  | ✅     |
 
+### Phase 6 — IA métier (copilote terrain) `⬜`
+
+Objectif : différencier Planwise par **le travail administratif fait à la place de l’artisan** (chantier → preuve → devis / relance), pas par un chatbot générique.
+
+Source opérationnelle pour OpenSpec (une tranche = un change) : [`docs/assistant/ROADMAP.md`](docs/assistant/ROADMAP.md).  
+Spec actuelle du guide : [`openspec/specs/assistant/spec.md`](openspec/specs/assistant/spec.md).
+
+| #   | Évolution                      | Change OpenSpec      | Pourquoi (TPE)                           | Statut |
+| --- | ------------------------------ | -------------------- | ---------------------------------------- | ------ |
+| 6.1 | Compte-rendu voix / photos     | `ai-field-report`    | Sortie de chantier déjà rédigée          | ⬜     |
+| 6.2 | Filet anti-oubli « À traiter » | `ai-follow-ups`      | Devis, contrats, à facturer              | ⬜     |
+| 6.3 | Assistant lecture org          | `assistant-org-read` | Questions sur _leurs_ dossiers           | ⬜     |
+| 6.4 | Devis assisté (catalogue)      | `ai-assisted-quote`  | Chiffrage rapide sans prix inventés      | ⬜     |
+| 6.5 | Brief du matin                 | `ai-day-brief`       | Charge + alertes du jour                 | ⬜     |
+| 6.6 | Brouillons SMS / mail          | `ai-message-drafts`  | Relance, l’humain envoie                 | ⬜     |
+| 6.7 | Inbox métier (mail / WhatsApp) | `ai-inbox-intake`    | Message client → brouillon dossier       | ⬜     |
+| 6.8 | Tournée expliquée              | `ai-tour-explain`    | Après 5.3 ; l’algo décide, l’IA explique | ⬜     |
+
+**Garde-fous** : proposition + validation humaine ; pas d’émission / envoi autonome ; quota LLM par org ; ne pas retarder 4.2 / 5.1 pour autant.
+
+**Monétisation (figée)** — détail et quotas : [`docs/assistant/ROADMAP.md`](docs/assistant/ROADMAP.md) § modèle économique.
+
+| Offre              | Prix cible              | Copilote                                                                        |
+| ------------------ | ----------------------- | ------------------------------------------------------------------------------- |
+| **Essai 15 j**     | 0 €                     | Features **débloquées**, quotas **plafonnés** (conversion, pas farm)            |
+| **Essentiel**      | 9,99 € / org            | Guide + A2 + goût A1/A3/B1 (15 / 30 / 5 par mois)                               |
+| **Addon Copilote** | **7,99 € / mois / org** | Usage quotidien (code prévu `ai_copilot`, inclus essai comme `team_suggestion`) |
+| **Pro**            | 29–39 € / org           | Addon inclus                                                                    |
+
+L’IA métier **n’est pas** illimitée dans les 9,99 €. L’essai **doit** permettre de tester (compte-rendu, etc.) : c’est un levier de conversion, pas un paywall CB.
+
 #### Offre Pro — cible produit (pas encore commercialisée)
 
 **Acheteur** : TPE multi-équipes (~5–15 personnes), pas le duo artisan.  
 **Principe** : Pro ≠ « Essentiel plus cher » ; pack + features de pilotage / croissance que le solo n’utilise pas.
 
-|                     | **Essentiel** (actuel)               | **Pro** (cible)                                                                                     |
-| ------------------- | ------------------------------------ | --------------------------------------------------------------------------------------------------- |
-| Prix indicatif      | 9,99 € / mois / org                  | **29–39 € / mois / org** (à figer à la sortie)                                                      |
-| Users inclus        | 2                                    | **8–10**                                                                                            |
-| Stockage inclus     | 10 Go                                | **50–100 Go**                                                                                       |
-| Suggestion d’équipe | Addon 4,99 €                         | **Incluse**                                                                                         |
-| Différenciateurs    | Cœur métier (terrain, devis, compta) | Au moins **2** parmi : contrats maintenance (5.1), SMS (5.2), tournée journée (5.3), rapports (5.5) |
-| Addons restants     | Users, stockage, suggestion          | Users au-delà du pack, volumes SMS, etc.                                                            |
+|                     | **Essentiel** (actuel)                | **Pro** (cible)                                                                                 |
+| ------------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Prix indicatif      | 9,99 € / mois / org                   | **29–39 € / mois / org** (à figer à la sortie)                                                  |
+| Users inclus        | 2                                     | **8–10**                                                                                        |
+| Stockage inclus     | 10 Go                                 | **50–100 Go**                                                                                   |
+| Suggestion d’équipe | Addon 4,99 €                          | **Incluse**                                                                                     |
+| Copilote IA         | Goût Essentiel + addon **7,99 €**     | **Inclus** (quotas copilote)                                                                    |
+| Différenciateurs    | Cœur métier (terrain, devis, compta)  | Au moins **2** parmi : 5.1, 5.2, 5.3, 5.5 — le copilote **renforce** Pro, il ne le remplace pas |
+| Addons restants     | Users, stockage, suggestion, copilote | Users au-delà du pack, volumes SMS, inbox C1, etc.                                              |
 
 **Prérequis avant lancement Pro** : livrer au moins deux items 5.1–5.5 ; sinon le palier n’a pas de justification crédible.  
 **À ne pas faire** : réserver terrain / Pennylane à Pro (contredit « valeur jour 1 ») ; monter Essentiel brutalement sans porte d’entrée.
@@ -243,20 +275,22 @@ Objectif : monter en gamme sans perdre la simplicité TPE.
 
 Aligné sur `packages/shared/src/subscription.ts` (prix **en production**) :
 
-| Élément                          | Valeur                                                              |
-| -------------------------------- | ------------------------------------------------------------------- |
-| **Essentiel**                    | 9,99 € / mois / organisation, **2 utilisateurs** inclus, essai 15 j |
-| Utilisateur supplémentaire       | 2,99 € / mois / user                                                |
-| Suggestion intelligente d’équipe | 4,99 € / mois                                                       |
-| Stockage supplémentaire          | 4,99 € / mois / +50 Go                                              |
-| Stockage inclus                  | 10 Go, limite 10 Mo / fichier                                       |
-| **Pro**                          | Cible documentée en §5.6 — **pas encore au catalogue**              |
+| Élément                          | Valeur                                                                    |
+| -------------------------------- | ------------------------------------------------------------------------- |
+| **Essentiel**                    | 9,99 € / mois / organisation, **2 utilisateurs** inclus, essai 15 j       |
+| Utilisateur supplémentaire       | 2,99 € / mois / user                                                      |
+| Suggestion intelligente d’équipe | 4,99 € / mois                                                             |
+| **Copilote IA** (cible)          | **7,99 € / mois / org** — pas encore au catalogue Stripe ; essai plafonné |
+| Stockage supplémentaire          | 4,99 € / mois / +50 Go                                                    |
+| Stockage inclus                  | 10 Go, limite 10 Mo / fichier                                             |
+| **Pro**                          | Cible documentée en §5.6 — **pas encore au catalogue**                    |
 
 **Stratégie prix (TPE)** :
 
 - Boucle terrain + revenus légers désormais largement livrées : le prix d’entrée peut évoluer **modérément**, mais l’essentiel de la monétisation « croissance » passe par **Pro + addons**, pas par un Essentiel cher.
 - **Hausse Essentiel à 14,99 €** : envisageable pour les _nouveaux_ clients si traction OK, en grand-fathering les abonnés à 9,99 €. Ce n’est **pas** un substitut à Pro ; à 14,99 € Essentiel reste une porte d’entrée, Pro reste le palier multi-équipes.
 - Révision majeure (offre Pro live) quand 5.1–5.5 apportent des différenciateurs packagés.
+- **Copilote IA** : pas d’illimité à 9,99 € ; **essai 15 j obligatoire** sur les features livrées (quotas inférieurs à l’addon) pour convertir, puis addon 7,99 € ou Pro.
 
 ---
 
@@ -283,14 +317,15 @@ Aligné sur `packages/shared/src/subscription.ts` (prix **en production**) :
 
 ## 9. Fichiers liés
 
-| Fichier                                            | Rôle                          |
-| -------------------------------------------------- | ----------------------------- |
-| `planwise.product.config.yml`                      | Entités cœur, auth, capacités |
-| `planwise.tech.config.yml`                         | Stack, microservices, CI      |
-| `planwise.ui.config.yml`                           | UI slate + brand              |
-| `packages/shared/src/subscription.ts`              | Catalogue offre & addons      |
-| `apps/frontend/components/landing/LandingPage.tsx` | Message marché public         |
-| `.cursor/rules/planwise.mdc`                       | Règles dev & tests            |
+| Fichier                                            | Rôle                             |
+| -------------------------------------------------- | -------------------------------- |
+| `planwise.product.config.yml`                      | Entités cœur, auth, capacités    |
+| `planwise.tech.config.yml`                         | Stack, microservices, CI         |
+| `planwise.ui.config.yml`                           | UI slate + brand                 |
+| `packages/shared/src/subscription.ts`              | Catalogue offre & addons         |
+| `apps/frontend/components/landing/LandingPage.tsx` | Message marché public            |
+| `.cursor/rules/planwise.mdc`                       | Règles dev & tests               |
+| `docs/assistant/ROADMAP.md`                        | Programme IA (tranches OpenSpec) |
 
 ---
 

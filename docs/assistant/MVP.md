@@ -2,7 +2,8 @@
 
 > Guide in-app **conseiller** (explique + propose des liens), pas d’agent qui écrit en base.  
 > Crisp reste le canal humain.  
-> Dernière mise à jour : août 2026.
+> Suite du programme (copilote métier, OpenSpec) : [`ROADMAP.md`](./ROADMAP.md).  
+> Dernière mise à jour : septembre 2026.
 
 ## Objectif MVP
 

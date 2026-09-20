@@ -11,6 +11,7 @@ Avant toute feature, lire (ou se réaligner sur) :
 - `planwise.product.config.yml` — métier, entités, auth/permissions
 - `planwise.tech.config.yml` — stack (Nest hexagonal, Mongo, gateway, `@planwise/shared`, CI)
 - `planwise.ui.config.yml` — design (slate + brand violet) **et conventions formulaires / pages**
+- `docs/assistant/ROADMAP.md` — **si la demande touche l’IA / l’assistant / un copilote métier** : une tranche = un change OpenSpec (`/opsx-propose` avec le nom de change de la tranche)
 
 
 ## Tests obligatoires
@@ -42,8 +43,8 @@ Pour **tout nouveau développement** qui touche l’UX métier (écran, menu, pa
 4. **Offline** — `offline-reply.ts` / FAQ si la question doit marcher sans clé LLM.
 5. **Tests** — retrieval / filtre suggestions si nouveau comportement.
 
-Références : `docs/assistant/MVP.md`, `docs/product/README.md`, prompt `assistant.prompt.ts`.  
-L’assistant **guide** (explique + liens) ; il ne lit pas les données org et n’écrit pas en base. Crisp = support humain.
+Références : `docs/assistant/MVP.md`, `docs/assistant/ROADMAP.md` (tranches OpenSpec), `docs/product/README.md`, prompt `assistant.prompt.ts`.  
+L’assistant **guide** (explique + liens) ; il ne lit pas les données org et n’écrit pas en base. Crisp = support humain. Ne documenter une tranche IA dans `docs/product/` qu’**après** livraison.
 
 ## Isolation organisation (multi-tenant)
 

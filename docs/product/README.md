@@ -50,6 +50,8 @@ Documentation **fonctionnelle** destinée à l’assistant in-app et à l’équ
 
 ## Maintenance
 
+Programme IA **futur** (interne, pas à citer comme livré) : [`docs/assistant/ROADMAP.md`](../assistant/ROADMAP.md).
+
 À chaque nouvelle page menu / permission / parcours utilisateur :
 
 1. Mettre à jour `routes.md` / `glossary.md` / `journeys/*.md` **dans la même PR**.
