@@ -19,7 +19,7 @@ import { MyDayVoiceField } from "@/components/my-day/MyDayVoiceField";
 import { MyDayVoiceFieldCta } from "@/components/my-day/MyDayVoiceFieldCta";
 import * as api from "@/lib/cases.api";
 import type { GeoLocation, InterventionResponse, InterventionStatus } from "@planwise/shared";
-import { MAX_PAGE_LIMIT_WIDE } from "@planwise/shared";
+import { MAX_PAGE_LIMIT_WIDE, normalizeFieldReportText } from "@planwise/shared";
 import {
   getInterventionTypeAccentStyle,
   normalizeCalendarColorHex,
@@ -293,7 +293,7 @@ function InterventionCard({
             Compte-rendu
           </p>
           <p className="text-xs text-slate-700 dark:text-slate-200 whitespace-pre-line line-clamp-4">
-            {intervention.fieldReport}
+            {normalizeFieldReportText(intervention.fieldReport)}
           </p>
         </div>
       )}

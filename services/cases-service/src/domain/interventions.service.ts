@@ -10,6 +10,7 @@ import {
   activeDocumentFilter,
   clampPagination,
   MAX_PAGE_LIMIT_WIDE,
+  normalizeFieldReportText,
   type CompleteInterventionBody,
   type CompleteInterventionResponse,
   type CreateInterventionBody,
@@ -468,7 +469,7 @@ export class InterventionsService extends AbstractInterventionsService {
     const doc = await this.interventionModel
       .findOneAndUpdate(
         { _id: id, organizationId, ...activeDocumentFilter },
-        { $set: { fieldReport: report, fieldReportConfirmedAt: now } },
+        { $set: { fieldReport: normalizeFieldReportText(report), fieldReportConfirmedAt: now } },
         { new: true },
       )
       .exec();

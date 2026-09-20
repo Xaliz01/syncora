@@ -15,7 +15,7 @@ import type {
   InterventionResponse,
   OrganizationSubscriptionResponse,
 } from "@planwise/shared";
-import { organizationHasAddon } from "@planwise/shared";
+import { normalizeFieldReportText, organizationHasAddon } from "@planwise/shared";
 import { AbstractAiFieldReportService } from "./ports/ai-field-report.service.port";
 import { AssistantLlmClient } from "../infrastructure/assistant/llm.client";
 import { hasAssignablePermission } from "../infrastructure/permission-checks";
@@ -44,7 +44,7 @@ Règles :
 - Pas de formule de politesse ni de signature.
 - Utilise un ton professionnel adapté à un rapport d'intervention.
 
-Réponds uniquement avec le texte du compte-rendu, sans JSON ni balisage.`;
+Réponds UNIQUEMENT avec le texte du compte-rendu (phrases), jamais de JSON, jamais d'accolades ni de clés.`;
 
 @Injectable()
 export class AiFieldReportService extends AbstractAiFieldReportService {
@@ -93,7 +93,7 @@ export class AiFieldReportService extends AbstractAiFieldReportService {
       organizationId: user.organizationId,
       method: "post",
       path: `/interventions/${interventionId}/field-report`,
-      body: { organizationId: user.organizationId, report },
+      body: { organizationId: user.organizationId, report: normalizeFieldReportText(report) },
       errorLabel: "Cases service error",
     });
 
@@ -187,9 +187,10 @@ export class AiFieldReportService extends AbstractAiFieldReportService {
 
     const { content } = await this.llm.complete(FIELD_REPORT_SYSTEM_PROMPT, userMessage, {
       rawUserMessage: true,
+      jsonObject: false,
     });
 
-    return content.trim();
+    return normalizeFieldReportText(content);
   }
 
   private async incrementQuota(

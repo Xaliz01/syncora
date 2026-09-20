@@ -11,6 +11,7 @@ import {
   formFieldLabelClassName,
 } from "@/components/ui/FormDialog";
 import * as fieldReportApi from "@/lib/ai-field-report.api";
+import { normalizeFieldReportText } from "@planwise/shared";
 
 interface Props {
   interventionId: string;
@@ -31,7 +32,7 @@ export function FieldReportDialog({ interventionId, open, onClose }: Props) {
   const generateMutation = useMutation({
     mutationFn: () => fieldReportApi.generateFieldReport(interventionId),
     onSuccess: (data) => {
-      setDraft(data.draft);
+      setDraft(normalizeFieldReportText(data.draft));
       setQuotaRemaining(data.quotaRemaining);
       setStep("edit");
     },
@@ -42,7 +43,8 @@ export function FieldReportDialog({ interventionId, open, onClose }: Props) {
   });
 
   const confirmMutation = useMutation({
-    mutationFn: () => fieldReportApi.confirmFieldReport(interventionId, draft),
+    mutationFn: () =>
+      fieldReportApi.confirmFieldReport(interventionId, normalizeFieldReportText(draft)),
     onSuccess: () => {
       showToast("Compte-rendu enregistré", "success");
       void queryClient.invalidateQueries({ queryKey: ["my-day-interventions"] });
