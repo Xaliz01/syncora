@@ -1518,6 +1518,11 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
         this.pdfField(doc, "Notes", intervention.notes);
       }
 
+      if (intervention.fieldReport) {
+        this.pdfSection(doc, "Compte-rendu");
+        this.pdfField(doc, "", intervention.fieldReport);
+      }
+
       // Photos
       if (photos.length > 0) {
         this.pdfSection(doc, "Photos terrain");
