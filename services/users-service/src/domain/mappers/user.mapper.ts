@@ -5,6 +5,17 @@ export function isEmailVerified(doc: UserDocument): boolean {
   return doc.emailVerified !== false;
 }
 
+export function hasValidEmailVerificationOtp(
+  doc: UserDocument,
+  nowMs: number = Date.now(),
+): boolean {
+  return Boolean(
+    doc.emailVerificationCodeHash &&
+    doc.emailVerificationExpiresAt &&
+    doc.emailVerificationExpiresAt.getTime() > nowMs,
+  );
+}
+
 export function toUserBaseResponse(doc: UserDocument): Omit<UserResponse, "role"> {
   return {
     id: doc._id.toString(),

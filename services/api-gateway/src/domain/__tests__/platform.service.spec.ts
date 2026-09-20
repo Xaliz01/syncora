@@ -995,6 +995,9 @@ describe("PlatformService", () => {
       });
 
       expect(result).toEqual({ sent: true, to: "client@acme.fr" });
+      expect(httpService.get).toHaveBeenCalledWith(
+        expect.stringContaining("/users/accounts/user-1"),
+      );
       expect(httpService.post).toHaveBeenCalledWith(
         expect.stringContaining("/email/transactional"),
         expect.objectContaining({
@@ -1002,6 +1005,31 @@ describe("PlatformService", () => {
           subject: "Suite à votre essai",
           body: "Bonjour, on peut en discuter demain ?",
         }),
+      );
+    });
+
+    it("sends email to an account that has not created an organization yet", async () => {
+      httpService.get.mockReturnValue(
+        of({
+          data: {
+            id: "user-onboarding",
+            email: "pending@acme.fr",
+            status: "active",
+            emailVerified: false,
+          },
+        }),
+      );
+      httpService.post.mockReturnValue(of({ data: { sent: true } }));
+
+      const result = await service.sendUserEmail(staff, "user-onboarding", {
+        subject: "Besoin d’un coup de main ?",
+        body: "Votre code de vérification est dans votre boîte mail.",
+        reason: "Relance onboarding e-mail non validé",
+      });
+
+      expect(result).toEqual({ sent: true, to: "pending@acme.fr" });
+      expect(httpService.get).toHaveBeenCalledWith(
+        expect.stringContaining("/users/accounts/user-onboarding"),
       );
     });
 

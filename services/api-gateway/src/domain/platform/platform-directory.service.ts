@@ -16,6 +16,7 @@ import type {
   PlatformOrganizationsListResponse,
   PlatformUserSummary,
   PlatformUsersListResponse,
+  AccountUserResponse,
   PlatformSendUserEmailBody,
   PlatformSendUserEmailResponse,
   SendEmailNotificationResponse,
@@ -242,10 +243,10 @@ export class PlatformDirectoryService extends AbstractPlatformDirectoryService {
       throw new BadRequestException("Le message doit contenir au moins 10 caractères");
     }
 
-    let target: UserResponse;
+    let target: AccountUserResponse;
     try {
       const res = await firstValueFrom(
-        this.httpService.get<UserResponse>(`${SERVICE_URLS.users}/users/${userId}`),
+        this.httpService.get<AccountUserResponse>(`${SERVICE_URLS.users}/users/accounts/${userId}`),
       );
       target = res.data;
     } catch (err: unknown) {

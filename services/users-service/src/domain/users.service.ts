@@ -43,7 +43,12 @@ import {
   type PlatformUsersDirectoryResult,
 } from "./ports/users.service.port";
 import { AbstractUserSessionsService } from "./ports/user-sessions.service.port";
-import { toUserBaseResponse, toAccountUserResponse, isEmailVerified } from "./mappers/user.mapper";
+import {
+  toUserBaseResponse,
+  toAccountUserResponse,
+  isEmailVerified,
+  hasValidEmailVerificationOtp,
+} from "./mappers/user.mapper";
 import { toOrganizationMembershipResponse } from "./mappers/membership.mapper";
 
 const SALT_ROUNDS = 12;
@@ -121,6 +126,10 @@ export class UsersService extends AbstractUsersService {
         const passwordHash = await bcrypt.hash(body.password, SALT_ROUNDS);
         existing.passwordHash = passwordHash;
         if (body.name) existing.name = body.name;
+        if (hasValidEmailVerificationOtp(existing)) {
+          await existing.save();
+          return { user: toAccountUserResponse(existing) };
+        }
         const emailVerificationCode = await this.storeEmailVerificationOtp(existing);
         return {
           user: toAccountUserResponse(existing),

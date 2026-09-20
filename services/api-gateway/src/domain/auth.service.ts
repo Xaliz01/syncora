@@ -226,7 +226,9 @@ export class AuthService extends AbstractAuthService {
       throw err;
     }
 
-    await this.sendEmailVerificationCode(created.user.email, created.emailVerificationCode);
+    if (created.emailVerificationCode) {
+      await this.sendEmailVerificationCode(created.user.email, created.emailVerificationCode);
+    }
 
     const registered: AccountRegisteredEvent = {
       userId: created.user.id,
@@ -239,7 +241,7 @@ export class AuthService extends AbstractAuthService {
       status: "email_verification_required",
       email: created.user.email,
     };
-    if (isNonProduction()) {
+    if (isNonProduction() && created.emailVerificationCode) {
       response.debugVerificationCode = created.emailVerificationCode;
     }
     return response;
@@ -422,7 +424,7 @@ export class AuthService extends AbstractAuthService {
           {
             to: email,
             subject: "Vérifiez votre adresse e-mail",
-            body: `Bonjour,\n\nVotre code de vérification Planwise est : ${code}\n\nIl expire dans 15 minutes. Si vous n'avez pas créé de compte, ignorez cet e-mail.`,
+            body: `Bonjour,\n\nVotre code de vérification Planwise est : ${code}\n\nIl expire dans 15 minutes. Si vous recevez plusieurs e-mails, seul le dernier code est valable.\n\nSi vous n'avez pas créé de compte, ignorez cet e-mail.`,
           },
         ),
       );

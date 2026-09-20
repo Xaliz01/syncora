@@ -199,6 +199,49 @@ describe("AuthService", () => {
         email: "new@example.com",
         name: "New Admin",
       });
+      expect(httpService.post).toHaveBeenCalledWith(
+        expect.stringContaining("/email/transactional"),
+        expect.objectContaining({
+          to: "new@example.com",
+          subject: "Vérifiez votre adresse e-mail",
+          body: expect.stringContaining("seul le dernier code est valable"),
+        }),
+      );
+    });
+
+    it("should not send another OTP email when the account already has a valid code", async () => {
+      jest.spyOn(httpService, "post").mockImplementation((url: string) => {
+        if (url.includes("/users/accounts") && !url.includes("verify")) {
+          return of({
+            data: {
+              user: {
+                id: "user-new",
+                email: "new@example.com",
+                name: "New Admin",
+                status: "active",
+                emailVerified: false,
+              },
+            },
+            status: 201,
+          } as AxiosResponse);
+        }
+        return of({ data: {}, status: 200 } as AxiosResponse);
+      });
+
+      const result = await service.registerAccount({
+        email: "new@example.com",
+        password: "secret123",
+        name: "New Admin",
+      });
+
+      expect(result).toMatchObject({
+        status: "email_verification_required",
+        email: "new@example.com",
+      });
+      expect(httpService.post).not.toHaveBeenCalledWith(
+        expect.stringContaining("/email/transactional"),
+        expect.anything(),
+      );
     });
 
     it("should verify email and return onboarding JWT", async () => {

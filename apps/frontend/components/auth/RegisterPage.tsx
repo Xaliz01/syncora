@@ -396,12 +396,12 @@ export function RegisterPage() {
                   <span className="font-medium text-slate-800 dark:text-slate-100">
                     {adminEmail}
                   </span>
-                  . Il expire rapidement : saisissez-le pour continuer.
+                  . Il expire dans 15 minutes : saisissez-le pour continuer.
                 </p>
                 <ul className="space-y-2.5 text-sm text-slate-600 dark:text-slate-300">
                   {[
                     "Vérifiez aussi vos spams / courrier indésirable",
-                    "Vous pourrez renvoyer un code si besoin",
+                    "Si plusieurs e-mails arrivent, utilisez uniquement le dernier code",
                     "Ensuite : création de votre organisation",
                   ].map((item) => (
                     <li key={item} className="flex gap-2.5 leading-snug">

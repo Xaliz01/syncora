@@ -37,7 +37,8 @@ export interface AccountUserResponse {
  */
 export interface CreateAccountResult {
   user: AccountUserResponse;
-  emailVerificationCode: string;
+  /** Absent si un OTP encore valide existe déjà (pas de nouvel e-mail). */
+  emailVerificationCode?: string;
 }
 
 export interface IssueEmailVerificationResult {

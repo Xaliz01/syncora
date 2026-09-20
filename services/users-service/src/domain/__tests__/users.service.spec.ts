@@ -37,6 +37,10 @@ const mockDoc = (overrides: Record<string, unknown> = {}) => ({
   passwordHash: "hashed",
   name: "Test User",
   status: "active",
+  emailVerified: true as boolean | undefined,
+  emailVerificationCodeHash: undefined as string | undefined,
+  emailVerificationExpiresAt: null as Date | null,
+  emailVerificationSentAt: null as Date | null,
   passwordResetTokenHash: undefined as string | undefined,
   passwordResetExpiresAt: null as Date | null,
   passwordResetSentAt: null as Date | null,
@@ -244,6 +248,48 @@ describe("UsersService", () => {
           password: "short",
         }),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it("should reuse an existing unverified account without rotating a still-valid OTP", async () => {
+      const existing = mockDoc({
+        email: "solo@example.com",
+        organizationId: undefined,
+        emailVerified: false,
+        emailVerificationCodeHash: "hashed-otp",
+        emailVerificationExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      });
+      mockUserModel.findOne.mockReturnValue({ exec: jest.fn().mockResolvedValue(existing) });
+
+      const result = await service.createAccount({
+        email: "solo@example.com",
+        password: "secret123",
+        name: "Solo",
+      });
+
+      expect(result.emailVerificationCode).toBeUndefined();
+      expect(existing.emailVerificationCodeHash).toBe("hashed-otp");
+      expect(existing.save).toHaveBeenCalled();
+      expect(mockUserModel.create).not.toHaveBeenCalled();
+    });
+
+    it("should issue a new OTP when the previous one has expired", async () => {
+      const existing = mockDoc({
+        email: "solo@example.com",
+        organizationId: undefined,
+        emailVerified: false,
+        emailVerificationCodeHash: "hashed-otp",
+        emailVerificationExpiresAt: new Date(Date.now() - 1000),
+      });
+      mockUserModel.findOne.mockReturnValue({ exec: jest.fn().mockResolvedValue(existing) });
+
+      const result = await service.createAccount({
+        email: "solo@example.com",
+        password: "secret123",
+      });
+
+      expect(result.emailVerificationCode).toMatch(/^\d{6}$/);
+      expect(existing.emailVerificationCodeHash).toBe("hashed");
+      expect(existing.save).toHaveBeenCalled();
     });
   });
 
@@ -703,6 +749,39 @@ describe("UsersService", () => {
       const result = await service.findById("non-existent");
 
       expect(result).toBeNull();
+    });
+
+    it("should return null when the account has no organization yet", async () => {
+      const doc = mockDoc({ organizationId: undefined });
+      mockUserModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+
+      const result = await service.findById("user-123");
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe("findAccountById", () => {
+    it("should return the account even without an organization", async () => {
+      const doc = mockDoc({
+        organizationId: undefined,
+        emailVerified: false,
+      });
+      mockUserModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(doc),
+      });
+
+      const result = await service.findAccountById("user-123");
+
+      expect(result).toEqual({
+        id: "user-123",
+        email: "user@example.com",
+        name: "Test User",
+        status: "active",
+        emailVerified: false,
+      });
     });
   });
 
