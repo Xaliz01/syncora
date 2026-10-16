@@ -1,7 +1,6 @@
 import { Module } from "@nestjs/common";
 import { HttpModule } from "@nestjs/axios";
 import { MongooseModule } from "@nestjs/mongoose";
-import { ScheduleModule } from "@nestjs/schedule";
 import { CasesController } from "../presentation/http/cases.controller";
 import { MaintenanceContractsController } from "../presentation/http/maintenance-contracts.controller";
 import { AbstractCasesGatewayService } from "../domain/ports/cases.service.port";
@@ -49,7 +48,6 @@ import { CronRunSchema } from "../persistence/cases/cron-run.schema";
 @Module({
   imports: [
     HttpModule.register({ timeout: 5000, maxRedirects: 0 }),
-    ScheduleModule.forRoot(),
     MongooseModule.forFeature(
       [
         { name: "CaseTemplate", schema: CaseTemplateSchema },

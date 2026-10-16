@@ -13,6 +13,10 @@ import type {
   CaseDashboardResponse,
   CaseResponse,
   CasesListResponse,
+  CreateCaseBody,
+  CreateQuoteBody,
+  UpdateQuoteBody,
+  UpdateTodoBody,
   CaseSummaryResponse,
   CustomerResponse,
   OrderGiverResponse,
@@ -184,7 +188,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       ...(orderGiverId?.trim() ? { orderGiverId: orderGiverId.trim() } : {}),
       ...(customerDisplayName ? { customerDisplayName } : {}),
       ...(assignees !== undefined ? { assignees } : {}),
-    });
+    } as CreateCaseBody);
     this.recordHistory(
       user.organizationId,
       created.id,
@@ -266,7 +270,10 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       );
     }
 
-    const updated = await this.casesService.updateCase(caseId, casesBody as UpdateCaseBody);
+    const updated = await this.casesService.updateCase(
+      caseId,
+      casesBody as unknown as UpdateCaseBody,
+    );
 
     this.emitCaseUpdateHistory(user, caseId, body, previousCase, updated);
 
@@ -289,7 +296,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     const row = await this.casesService.updateTodo(caseId, {
       organizationId: user.organizationId,
       ...body,
-    });
+    } as UpdateTodoBody);
     const todoLabel = row.steps.flatMap((s) => s.todos).find((t) => t.id === body.todoId)?.label;
     this.recordHistory(
       user.organizationId,
@@ -676,7 +683,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     const result = await this.quotesService.createQuote({
       organizationId: user.organizationId,
       ...body,
-    });
+    } as CreateQuoteBody);
     this.recordHistory(
       user.organizationId,
       body.caseId,
@@ -700,7 +707,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     const result = await this.quotesService.updateQuote(quoteId, {
       organizationId: user.organizationId,
       ...body,
-    });
+    } as UpdateQuoteBody);
     this.recordHistory(
       user.organizationId,
       result.caseId,

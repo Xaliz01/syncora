@@ -7,29 +7,13 @@ import type {
   VehicleStatus,
   VehicleType,
 } from "@planwise/shared";
-import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
 import { AbstractFleetGatewayService } from "./ports/fleet.service.port";
-import { SERVICE_URLS } from "../infrastructure/service-urls.config";
+import { AbstractFleetService } from "./fleet/ports/fleet.service.port";
 
 @Injectable()
 export class FleetGatewayService extends AbstractFleetGatewayService {
-  constructor(private readonly scopedHttp: OrganizationScopedHttpClient) {
+  constructor(private readonly fleetService: AbstractFleetService) {
     super();
-  }
-
-  private request<T>(
-    user: AuthUser,
-    params: Omit<
-      Parameters<OrganizationScopedHttpClient["request"]>[0],
-      "baseUrl" | "organizationId" | "errorLabel"
-    >,
-  ) {
-    return this.scopedHttp.request<T>({
-      ...params,
-      baseUrl: SERVICE_URLS.fleet,
-      organizationId: user.organizationId,
-      errorLabel: "Downstream service error",
-    });
   }
 
   async createVehicle(
@@ -46,25 +30,18 @@ export class FleetGatewayService extends AbstractFleetGatewayService {
       status?: VehicleStatus;
     },
   ): Promise<VehicleResponse> {
-    return this.request<VehicleResponse>(currentUser, {
-      method: "post",
-      path: "/vehicles",
-      body: { ...body },
+    return this.fleetService.createVehicle({
+      ...body,
+      organizationId: currentUser.organizationId,
     });
   }
 
   async listVehicles(currentUser: AuthUser): Promise<VehicleResponse[]> {
-    return this.request<VehicleResponse[]>(currentUser, {
-      method: "get",
-      path: "/vehicles",
-    });
+    return this.fleetService.listVehicles(currentUser.organizationId);
   }
 
   async getVehicle(currentUser: AuthUser, vehicleId: string): Promise<VehicleResponse> {
-    return this.request<VehicleResponse>(currentUser, {
-      method: "get",
-      path: `/vehicles/${vehicleId}`,
-    });
+    return this.fleetService.getVehicle(currentUser.organizationId, vehicleId);
   }
 
   async updateVehicle(
@@ -72,19 +49,11 @@ export class FleetGatewayService extends AbstractFleetGatewayService {
     vehicleId: string,
     body: UpdateVehicleBody,
   ): Promise<VehicleResponse> {
-    return this.request<VehicleResponse>(currentUser, {
-      method: "patch",
-      path: `/vehicles/${vehicleId}`,
-      body,
-    });
+    return this.fleetService.updateVehicle(currentUser.organizationId, vehicleId, body);
   }
 
   async deleteVehicle(currentUser: AuthUser, vehicleId: string): Promise<{ deleted: true }> {
-    return this.request<{ deleted: true }>(currentUser, {
-      method: "delete",
-      path: `/vehicles/${vehicleId}`,
-      validateResponseScope: false,
-    });
+    return this.fleetService.deleteVehicle(currentUser.organizationId, vehicleId);
   }
 
   async assignTeamToVehicle(
@@ -92,20 +61,13 @@ export class FleetGatewayService extends AbstractFleetGatewayService {
     vehicleId: string,
     body: AssignTeamToVehicleBody,
   ): Promise<VehicleResponse> {
-    return this.request<VehicleResponse>(currentUser, {
-      method: "put",
-      path: `/vehicles/${vehicleId}/assign-team`,
-      body,
-    });
+    return this.fleetService.assignTeam(currentUser.organizationId, vehicleId, body.teamId);
   }
 
   async unassignTeamFromVehicle(
     currentUser: AuthUser,
     vehicleId: string,
   ): Promise<VehicleResponse> {
-    return this.request<VehicleResponse>(currentUser, {
-      method: "delete",
-      path: `/vehicles/${vehicleId}/assign-team`,
-    });
+    return this.fleetService.unassignTeam(currentUser.organizationId, vehicleId);
   }
 }

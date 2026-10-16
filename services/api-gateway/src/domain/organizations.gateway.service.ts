@@ -1,10 +1,5 @@
-import {
-  Injectable,
-  InternalServerErrorException,
-  ServiceUnavailableException,
-} from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
-import axios from "axios";
 import { firstValueFrom } from "rxjs";
 import type {
   AuthUser,
@@ -16,11 +11,15 @@ import type {
   UserOrganizationsListResponse,
 } from "@planwise/shared";
 import { AbstractOrganizationsGatewayService } from "./ports/organizations.service.port";
+import { AbstractOrganizationsService } from "./organizations/ports/organizations.service.port";
 import { SERVICE_URLS } from "../infrastructure/service-urls.config";
 
 @Injectable()
 export class OrganizationsGatewayService extends AbstractOrganizationsGatewayService {
-  constructor(private readonly httpService: HttpService) {
+  constructor(
+    private readonly httpService: HttpService,
+    private readonly organizationsService: AbstractOrganizationsService,
+  ) {
     super();
   }
 
@@ -33,54 +32,28 @@ export class OrganizationsGatewayService extends AbstractOrganizationsGatewaySer
       );
       const ids = [...new Set(res.data.map((m) => m.organizationId))];
       if (ids.length === 0 && user.organizationId) {
-        const org = await this.fetchOrganization(user.organizationId);
+        const org = await this.organizationsService.findById(user.organizationId);
         return { organizations: org ? [org] : [] };
       }
-      const orgs = await Promise.all(ids.map((id) => this.fetchOrganization(id)));
+      const orgs = await Promise.all(ids.map((id) => this.organizationsService.findById(id)));
       return {
         organizations: orgs.filter((o): o is OrganizationResponse => o !== null),
       };
     } catch {
-      const org = await this.fetchOrganization(user.organizationId);
+      const org = await this.organizationsService.findById(user.organizationId);
       return { organizations: org ? [org] : [] };
     }
   }
 
   async getMine(user: AuthUser): Promise<OrganizationResponse | null> {
-    return this.fetchOrganization(user.organizationId);
+    return this.organizationsService.findById(user.organizationId);
   }
 
   async updateMine(
     user: AuthUser,
     body: UpdateOrganizationBody,
   ): Promise<OrganizationResponse | null> {
-    try {
-      const res = await firstValueFrom(
-        this.httpService.patch<OrganizationResponse>(
-          `${SERVICE_URLS.organizations}/organizations/${user.organizationId}`,
-          body,
-        ),
-      );
-      return res.data;
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        const status = err.response?.status;
-        if (status === 404) return null;
-        const netCode = err.code;
-        if (
-          !err.response &&
-          (netCode === "ECONNREFUSED" ||
-            netCode === "ECONNRESET" ||
-            netCode === "ETIMEDOUT" ||
-            netCode === "ENOTFOUND")
-        ) {
-          throw new ServiceUnavailableException(
-            `Service organizations injoignable (${SERVICE_URLS.organizations}).`,
-          );
-        }
-      }
-      throw new InternalServerErrorException("Impossible de mettre a jour l'organisation");
-    }
+    return this.organizationsService.update(user.organizationId, body);
   }
 
   async lookupSiret(query: string): Promise<SiretLookupResponse> {
@@ -114,35 +87,6 @@ export class OrganizationsGatewayService extends AbstractOrganizationsGatewaySer
       return { results };
     } catch {
       return { results: [] };
-    }
-  }
-
-  private async fetchOrganization(organizationId: string): Promise<OrganizationResponse | null> {
-    try {
-      const res = await firstValueFrom(
-        this.httpService.get<OrganizationResponse>(
-          `${SERVICE_URLS.organizations}/organizations/${organizationId}`,
-        ),
-      );
-      return res.data;
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        const status = err.response?.status;
-        if (status === 404) return null;
-        const netCode = err.code;
-        if (
-          !err.response &&
-          (netCode === "ECONNREFUSED" ||
-            netCode === "ECONNRESET" ||
-            netCode === "ETIMEDOUT" ||
-            netCode === "ENOTFOUND")
-        ) {
-          throw new ServiceUnavailableException(
-            `Service organizations injoignable (${SERVICE_URLS.organizations}).`,
-          );
-        }
-      }
-      throw new InternalServerErrorException("Impossible de charger l'organisation");
     }
   }
 }

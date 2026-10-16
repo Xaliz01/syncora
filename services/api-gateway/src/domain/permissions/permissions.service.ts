@@ -1,0 +1,397 @@
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
+import { InjectModel } from "@nestjs/mongoose";
+import { Model } from "mongoose";
+import { randomUUID } from "crypto";
+import {
+  ASSIGNABLE_PERMISSION_CODES,
+  activeDocumentFilter,
+  type AssignUserPermissionsBody,
+  type CreateInvitationBody,
+  type CreatePermissionProfileBody,
+  type EffectivePermissionsResponse,
+  type InvitationResponse,
+  type PermissionCode,
+  type PermissionProfileResponse,
+  type ResolveEffectivePermissionsBody,
+  type UpdatePermissionProfileBody,
+  type UserPermissionAssignmentResponse,
+  type UserRole,
+} from "@planwise/shared";
+import type { PermissionProfileDocument } from "../../persistence/permissions/permission-profile.schema";
+import type { UserPermissionAssignmentDocument } from "../../persistence/permissions/user-permission-assignment.schema";
+import type { InvitationDocument } from "../../persistence/permissions/invitation.schema";
+import {
+  toAssignmentResponse,
+  toInvitationResponse,
+  toProfileResponse,
+} from "./mappers/permission.mapper";
+import { AbstractPermissionsService } from "./ports/permissions.service.port";
+
+const ROLE_DEFAULT_PERMISSIONS: Record<UserRole, PermissionCode[]> = {
+  admin: [...ASSIGNABLE_PERMISSION_CODES],
+  member: [],
+};
+
+@Injectable()
+export class PermissionsService extends AbstractPermissionsService {
+  constructor(
+    @InjectModel("PermissionProfile", "permissions")
+    private readonly permissionProfileModel: Model<PermissionProfileDocument>,
+    @InjectModel("UserPermissionAssignment", "permissions")
+    private readonly userAssignmentModel: Model<UserPermissionAssignmentDocument>,
+    @InjectModel("Invitation", "permissions")
+    private readonly invitationModel: Model<InvitationDocument>,
+  ) {
+    super();
+  }
+
+  async createProfile(body: CreatePermissionProfileBody): Promise<PermissionProfileResponse> {
+    const permissions = this.normalizePermissions(body.permissions);
+    try {
+      const doc = await this.permissionProfileModel.create({
+        organizationId: body.organizationId,
+        name: body.name,
+        description: body.description,
+        permissions,
+        isTestData: body.isTestData === true,
+      });
+      return toProfileResponse(doc, this.normalizePermissions);
+    } catch (err: unknown) {
+      if (this.isDuplicateKeyError(err)) {
+        throw new ConflictException("Profile name already exists in organization");
+      }
+      throw err;
+    }
+  }
+
+  async listProfiles(organizationId: string): Promise<PermissionProfileResponse[]> {
+    const docs = await this.permissionProfileModel
+      .find({ organizationId, ...activeDocumentFilter })
+      .sort({ createdAt: 1 })
+      .exec();
+    return docs.map((doc) => toProfileResponse(doc, this.normalizePermissions));
+  }
+
+  async findProfileById(id: string, organizationId: string): Promise<PermissionProfileResponse> {
+    const doc = await this.permissionProfileModel
+      .findOne({ _id: id, organizationId, ...activeDocumentFilter })
+      .exec();
+    if (!doc) throw new NotFoundException("Profile not found");
+    return toProfileResponse(doc, this.normalizePermissions);
+  }
+
+  async updateProfile(
+    id: string,
+    body: UpdatePermissionProfileBody,
+  ): Promise<PermissionProfileResponse> {
+    const update: Partial<{
+      name: string;
+      description?: string;
+      permissions: PermissionCode[];
+    }> = {};
+    if (typeof body.name !== "undefined") update.name = body.name;
+    if (typeof body.description !== "undefined") update.description = body.description;
+    if (typeof body.permissions !== "undefined") {
+      update.permissions = this.normalizePermissions(body.permissions);
+    }
+    try {
+      const doc = await this.permissionProfileModel
+        .findOneAndUpdate(
+          { _id: id, organizationId: body.organizationId, ...activeDocumentFilter },
+          { $set: update },
+          { new: true },
+        )
+        .exec();
+      if (!doc) throw new NotFoundException("Profile not found");
+      return toProfileResponse(doc, this.normalizePermissions);
+    } catch (err: unknown) {
+      if (this.isDuplicateKeyError(err)) {
+        throw new ConflictException("Profile name already exists in organization");
+      }
+      throw err;
+    }
+  }
+
+  async deleteProfile(id: string, organizationId: string): Promise<{ deleted: true }> {
+    const result = await this.permissionProfileModel
+      .updateOne(
+        { _id: id, organizationId, ...activeDocumentFilter },
+        { $set: { deletedAt: new Date() } },
+      )
+      .exec();
+    if (!result.matchedCount) throw new NotFoundException("Profile not found");
+    await this.userAssignmentModel.updateMany(
+      { organizationId, profileId: id },
+      { $unset: { profileId: 1 } },
+    );
+    await this.invitationModel.updateMany(
+      { organizationId, profileId: id, status: "pending" },
+      { $unset: { profileId: 1 } },
+    );
+    return { deleted: true };
+  }
+
+  async assignUserPermissions(
+    body: AssignUserPermissionsBody,
+  ): Promise<UserPermissionAssignmentResponse> {
+    const extraPermissions = this.normalizePermissions(body.extraPermissions ?? []);
+    const revokedPermissions = this.normalizePermissions(body.revokedPermissions ?? []);
+    const profileId = body.profileId ?? undefined;
+    let profilePermissions: PermissionCode[] = [];
+    if (profileId) {
+      const profile = await this.permissionProfileModel
+        .findOne({
+          _id: profileId,
+          organizationId: body.organizationId,
+          ...activeDocumentFilter,
+        })
+        .exec();
+      if (!profile) {
+        throw new NotFoundException("Profile not found in this organization");
+      }
+      profilePermissions = profile.permissions as PermissionCode[];
+    }
+
+    const doc = await this.userAssignmentModel
+      .findOneAndUpdate(
+        { organizationId: body.organizationId, userId: body.userId },
+        {
+          $set: {
+            profileId,
+            extraPermissions,
+            revokedPermissions,
+          },
+          $setOnInsert: {
+            organizationId: body.organizationId,
+            userId: body.userId,
+          },
+        },
+        { upsert: true, new: true, setDefaultsOnInsert: true },
+      )
+      .exec();
+    return toAssignmentResponse(
+      doc,
+      profilePermissions,
+      this.normalizePermissions,
+      this.mergePermissions,
+    );
+  }
+
+  async getUserAssignment(
+    organizationId: string,
+    userId: string,
+  ): Promise<UserPermissionAssignmentResponse> {
+    const assignment = await this.userAssignmentModel.findOne({ organizationId, userId }).exec();
+    if (!assignment) {
+      return {
+        organizationId,
+        userId,
+        extraPermissions: [],
+        revokedPermissions: [],
+        effectivePermissions: [],
+      };
+    }
+    const profilePermissions = await this.getProfilePermissions(
+      organizationId,
+      assignment.profileId,
+    );
+    return toAssignmentResponse(
+      assignment,
+      profilePermissions,
+      this.normalizePermissions,
+      this.mergePermissions,
+    );
+  }
+
+  async resolveEffectivePermissions(
+    body: ResolveEffectivePermissionsBody,
+  ): Promise<EffectivePermissionsResponse> {
+    if (body.role === "admin") {
+      return { permissions: [...ASSIGNABLE_PERMISSION_CODES] };
+    }
+    const defaultPermissions = ROLE_DEFAULT_PERMISSIONS[body.role] ?? [];
+    const assignment = await this.userAssignmentModel
+      .findOne({ organizationId: body.organizationId, userId: body.userId })
+      .exec();
+    if (!assignment) {
+      return { permissions: this.normalizePermissions(defaultPermissions) };
+    }
+
+    const profilePermissions = await this.getProfilePermissions(
+      body.organizationId,
+      assignment.profileId,
+    );
+    const merged = this.mergePermissions(defaultPermissions, profilePermissions);
+    const plusExtra = this.mergePermissions(
+      merged,
+      assignment.extraPermissions as PermissionCode[],
+    );
+    const permissions = plusExtra.filter(
+      (permission) => !(assignment.revokedPermissions as PermissionCode[]).includes(permission),
+    );
+    return { permissions: this.normalizePermissions(permissions) };
+  }
+
+  async createInvitation(body: CreateInvitationBody): Promise<InvitationResponse> {
+    const profileId = body.profileId;
+    if (profileId) {
+      const profile = await this.permissionProfileModel
+        .findOne({
+          _id: profileId,
+          organizationId: body.organizationId,
+          ...activeDocumentFilter,
+        })
+        .exec();
+      if (!profile) throw new NotFoundException("Profile not found in this organization");
+    }
+    const extraPermissions = this.normalizePermissions(body.extraPermissions ?? []);
+    const revokedPermissions = this.normalizePermissions(body.revokedPermissions ?? []);
+    try {
+      const doc = await this.invitationModel.create({
+        organizationId: body.organizationId,
+        invitedUserId: body.invitedUserId,
+        invitedEmail: body.invitedEmail,
+        invitedName: body.invitedName,
+        invitedByUserId: body.invitedByUserId,
+        profileId,
+        extraPermissions,
+        revokedPermissions,
+        invitationToken: randomUUID(),
+        status: "pending",
+      });
+      return toInvitationResponse(doc, this.normalizePermissions);
+    } catch (err: unknown) {
+      if (this.isDuplicateKeyError(err)) {
+        throw new ConflictException("A pending invitation already exists for this email");
+      }
+      throw err;
+    }
+  }
+
+  async listInvitations(
+    organizationId: string,
+    status?: "pending" | "accepted" | "cancelled",
+  ): Promise<InvitationResponse[]> {
+    const query: { organizationId: string; status?: "pending" | "accepted" | "cancelled" } = {
+      organizationId,
+    };
+    if (status) query.status = status;
+    const docs = await this.invitationModel.find(query).sort({ createdAt: -1 }).exec();
+    return docs.map((doc) => toInvitationResponse(doc, this.normalizePermissions));
+  }
+
+  async findInvitationById(
+    invitationId: string,
+    organizationId: string,
+  ): Promise<InvitationResponse> {
+    const doc = await this.invitationModel.findOne({ _id: invitationId, organizationId }).exec();
+    if (!doc) throw new NotFoundException("Invitation not found");
+    return toInvitationResponse(doc, this.normalizePermissions);
+  }
+
+  async updatePendingInvitationEmail(
+    invitationId: string,
+    organizationId: string,
+    email: string,
+  ): Promise<InvitationResponse> {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail || !normalizedEmail.includes("@")) {
+      throw new BadRequestException("Adresse e-mail invalide");
+    }
+
+    const doc = await this.invitationModel
+      .findOne({ _id: invitationId, organizationId, status: "pending" })
+      .exec();
+    if (!doc) throw new NotFoundException("Pending invitation not found");
+
+    if (doc.invitedEmail === normalizedEmail) {
+      return toInvitationResponse(doc, this.normalizePermissions);
+    }
+
+    try {
+      doc.invitedEmail = normalizedEmail;
+      doc.invitationToken = randomUUID();
+      await doc.save();
+      return toInvitationResponse(doc, this.normalizePermissions);
+    } catch (err: unknown) {
+      if (this.isDuplicateKeyError(err)) {
+        throw new ConflictException("A pending invitation already exists for this email");
+      }
+      throw err;
+    }
+  }
+
+  async cancelInvitation(
+    invitationId: string,
+    organizationId: string,
+  ): Promise<InvitationResponse> {
+    const doc = await this.invitationModel
+      .findOne({ _id: invitationId, organizationId, status: "pending" })
+      .exec();
+    if (!doc) throw new NotFoundException("Pending invitation not found");
+    doc.status = "cancelled";
+    await doc.save();
+    return toInvitationResponse(doc, this.normalizePermissions);
+  }
+
+  async deleteUserAssignment(organizationId: string, userId: string): Promise<void> {
+    await this.userAssignmentModel.deleteOne({ organizationId, userId }).exec();
+  }
+
+  async resolveInvitation(invitationToken: string): Promise<InvitationResponse> {
+    const doc = await this.invitationModel.findOne({ invitationToken }).exec();
+    if (!doc) throw new NotFoundException("Invitation not found");
+    if (doc.status !== "pending") {
+      throw new ConflictException("Invitation has already been processed");
+    }
+    return toInvitationResponse(doc, this.normalizePermissions);
+  }
+
+  async acceptInvitation(invitationToken: string): Promise<InvitationResponse> {
+    const doc = await this.invitationModel.findOne({ invitationToken, status: "pending" }).exec();
+    if (!doc) throw new NotFoundException("Pending invitation not found");
+    doc.status = "accepted";
+    doc.acceptedAt = new Date();
+    await doc.save();
+    return toInvitationResponse(doc, this.normalizePermissions);
+  }
+
+  private async getProfilePermissions(
+    organizationId: string,
+    profileId?: string,
+  ): Promise<PermissionCode[]> {
+    if (!profileId) return [];
+    const profile = await this.permissionProfileModel
+      .findOne({ _id: profileId, organizationId, ...activeDocumentFilter })
+      .exec();
+    if (!profile) return [];
+    return this.normalizePermissions(profile.permissions as PermissionCode[]);
+  }
+
+  private normalizePermissions(permissions: PermissionCode[]): PermissionCode[] {
+    const knownPermissions = new Set<PermissionCode>(ASSIGNABLE_PERMISSION_CODES);
+    const invalid = permissions.filter((permission) => !knownPermissions.has(permission));
+    if (invalid.length > 0) {
+      throw new BadRequestException(`Unknown permissions: ${invalid.join(", ")}`);
+    }
+    return [...new Set(permissions)];
+  }
+
+  private mergePermissions(first: PermissionCode[], second: PermissionCode[]): PermissionCode[] {
+    return [...new Set([...first, ...second])];
+  }
+
+  async purgeTestData(organizationId: string): Promise<{ purged: true }> {
+    await this.permissionProfileModel.deleteMany({ organizationId, isTestData: true }).exec();
+    return { purged: true };
+  }
+
+  private isDuplicateKeyError(err: unknown): boolean {
+    return (err as { code?: number })?.code === 11000;
+  }
+}

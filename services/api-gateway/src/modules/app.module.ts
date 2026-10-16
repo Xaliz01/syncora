@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { EventEmitterModule } from "@nestjs/event-emitter";
+import { ScheduleModule } from "@nestjs/schedule";
 import { APP_INTERCEPTOR } from "@nestjs/core";
 import { provideHttpAccessLogInterceptor } from "@planwise/shared/nest";
 import { AppController } from "../presentation/http/app.controller";
@@ -30,10 +31,24 @@ import { TrialTestDataModule } from "./trial-test-data.module";
 import { DataImportModule } from "./data-import.module";
 import { PlatformModule } from "./platform.module";
 import { AssistantModule } from "./assistant.module";
+import { DatabaseModule } from "./database.module";
+import { PermissionsModule } from "./permissions.module";
+import { TechniciansDomainModule } from "./technicians-domain.module";
+import { CustomersDomainModule } from "./customers-domain.module";
+import { UsersModule } from "./users.module";
+import { FleetDomainModule } from "./fleet-domain.module";
+import { DocumentsDomainModule } from "./documents-domain.module";
+import { OrganizationsDomainModule } from "./organizations-domain.module";
+import { StockDomainModule } from "./stock-domain.module";
+import { BillingDomainModule } from "./billing-domain.module";
+import { SubscriptionsDomainModule } from "./subscriptions-domain.module";
+import { NotificationsDomainModule } from "./notifications-domain.module";
 
 @Module({
   imports: [
     EventEmitterModule.forRoot(),
+    ScheduleModule.forRoot(),
+    DatabaseModule,
     GatewayHttpModule,
     AnalyticsModule,
     AuthModule,
@@ -55,6 +70,17 @@ import { AssistantModule } from "./assistant.module";
     ExportsModule,
     IntegrationsModule,
     BillingModule,
+    PermissionsModule,
+    UsersModule,
+    TechniciansDomainModule,
+    CustomersDomainModule,
+    FleetDomainModule,
+    DocumentsDomainModule,
+    OrganizationsDomainModule,
+    StockDomainModule,
+    BillingDomainModule,
+    SubscriptionsDomainModule,
+    NotificationsDomainModule,
     TrialTestDataModule,
     DataImportModule,
   ],

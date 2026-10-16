@@ -74,14 +74,16 @@ Cela évite toute migration de données et permet de fusionner les databases plu
 ### D2 — Remplacement des appels HTTP par injection directe
 
 Aujourd'hui le gateway fait :
+
 ```typescript
 // Gateway cases.service.ts
 const res = await firstValueFrom(
-  this.scopedHttp.request('GET', SERVICE_URLS.cases, '/cases', user)
+  this.scopedHttp.request("GET", SERVICE_URLS.cases, "/cases", user),
 );
 ```
 
 Demain, le controller injecte directement le port abstrait :
+
 ```typescript
 // CasesController
 constructor(private readonly casesService: AbstractCasesService) {}
@@ -96,6 +98,7 @@ L'`OrganizationScopedHttpClient` et `SERVICE_URLS` disparaissent progressivement
 ### D3 — Notifications : instance séparée justifiée
 
 Les notifications restent un service séparé parce que :
+
 1. **Crons à la minute** (`InterventionReminderScheduler`) — charge indépendante de l'API
 2. **Envoi push/email** — I/O lent, ne doit pas impacter la latence API
 3. **Scalabilité future** — seul module susceptible de nécessiter un scaling horizontal (envois en masse)
@@ -105,6 +108,7 @@ La communication API → Notifications reste par **EventEmitter** in-process qua
 ### D4 — Worker : crons isolés
 
 Les crons lourds (maintenance contracts toutes les heures, trial cleanup quotidien) sont isolés pour :
+
 1. Ne pas bloquer l'API en cas de traitement long
 2. Permettre un restart sans downtime API
 3. Logs séparés pour le monitoring
@@ -121,46 +125,46 @@ Le package partagé ne change pas. Les types, DTOs, et utilitaires restent ident
 
 ## Mapping services → instances
 
-| Service actuel | Instance cible | Connexion Mongo |
-|---|---|---|
-| api-gateway | **planwise-api** | (pas de DB propre) |
-| organizations-service | **planwise-api** | `organizations` |
-| users-service | **planwise-api** | `users` |
-| permissions-service | **planwise-api** | `permissions` |
-| cases-service | **planwise-api** | `cases` |
-| fleet-service | **planwise-api** | `fleet` |
-| technicians-service | **planwise-api** | `technicians` |
-| stock-service | **planwise-api** | `stock` |
-| customers-service | **planwise-api** | `customers` |
-| subscriptions-service | **planwise-api** | `subscriptions` |
-| documents-service | **planwise-api** | `documents` |
-| exports-service | **planwise-api** | (pas de DB, HTTP only) |
-| integrations-service | **planwise-api** | `integrations` |
-| billing-service | **planwise-api** | `billing` |
-| notifications-service | **planwise-notifications** | `notifications` |
-| *crons cases* | **planwise-worker** | `cases` |
-| *crons organizations* | **planwise-worker** | `organizations`, `cases`, `stock`, `fleet`, `technicians`, `customers`, `permissions`, `integrations` |
-| *crons integrations* | **planwise-worker** | `integrations` |
+| Service actuel        | Instance cible             | Connexion Mongo                                                                                       |
+| --------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------- |
+| api-gateway           | **planwise-api**           | (pas de DB propre)                                                                                    |
+| organizations-service | **planwise-api**           | `organizations`                                                                                       |
+| users-service         | **planwise-api**           | `users`                                                                                               |
+| permissions-service   | **planwise-api**           | `permissions`                                                                                         |
+| cases-service         | **planwise-api**           | `cases`                                                                                               |
+| fleet-service         | **planwise-api**           | `fleet`                                                                                               |
+| technicians-service   | **planwise-api**           | `technicians`                                                                                         |
+| stock-service         | **planwise-api**           | `stock`                                                                                               |
+| customers-service     | **planwise-api**           | `customers`                                                                                           |
+| subscriptions-service | **planwise-api**           | `subscriptions`                                                                                       |
+| documents-service     | **planwise-api**           | `documents`                                                                                           |
+| exports-service       | **planwise-api**           | (pas de DB, HTTP only)                                                                                |
+| integrations-service  | **planwise-api**           | `integrations`                                                                                        |
+| billing-service       | **planwise-api**           | `billing`                                                                                             |
+| notifications-service | **planwise-notifications** | `notifications`                                                                                       |
+| _crons cases_         | **planwise-worker**        | `cases`                                                                                               |
+| _crons organizations_ | **planwise-worker**        | `organizations`, `cases`, `stock`, `fleet`, `technicians`, `customers`, `permissions`, `integrations` |
+| _crons integrations_  | **planwise-worker**        | `integrations`                                                                                        |
 
 ## Dépendances inter-modules actuelles (à convertir en injections)
 
 La matrice ci-dessous montre les appels HTTP actuels entre services (hors gateway) qui deviennent des injections :
 
-| Appelant | Appelle (HTTP) | Motif |
-|---|---|---|
-| notifications-service | cases-service | interventions upcoming, mark-reminded |
-| notifications-service | users-service | résoudre email user |
-| notifications-service | subscriptions-service | vérifier accès org |
-| notifications-service | technicians-service | résoudre userId depuis assigneeId |
-| organizations-service | subscriptions-service | vérifier fin essai |
-| organizations-service | cases, stock, fleet, technicians, customers, permissions, integrations | purge test-data |
-| exports-service | cases, users, customers, technicians, integrations | agrégation données |
-| billing-service | cases-service | lier facture au dossier |
-| billing-service | notifications-service | notifier envoi facture |
-| integrations-service | cases-service | sync factures |
-| subscriptions-service | notifications-service | notifier |
-| subscriptions-service | organizations-service | lookup org |
-| gateway (NotificationEventListener) | notifications-service, users-service, subscriptions-service | créer notif, push, email |
+| Appelant                            | Appelle (HTTP)                                                         | Motif                                 |
+| ----------------------------------- | ---------------------------------------------------------------------- | ------------------------------------- |
+| notifications-service               | cases-service                                                          | interventions upcoming, mark-reminded |
+| notifications-service               | users-service                                                          | résoudre email user                   |
+| notifications-service               | subscriptions-service                                                  | vérifier accès org                    |
+| notifications-service               | technicians-service                                                    | résoudre userId depuis assigneeId     |
+| organizations-service               | subscriptions-service                                                  | vérifier fin essai                    |
+| organizations-service               | cases, stock, fleet, technicians, customers, permissions, integrations | purge test-data                       |
+| exports-service                     | cases, users, customers, technicians, integrations                     | agrégation données                    |
+| billing-service                     | cases-service                                                          | lier facture au dossier               |
+| billing-service                     | notifications-service                                                  | notifier envoi facture                |
+| integrations-service                | cases-service                                                          | sync factures                         |
+| subscriptions-service               | notifications-service                                                  | notifier                              |
+| subscriptions-service               | organizations-service                                                  | lookup org                            |
+| gateway (NotificationEventListener) | notifications-service, users-service, subscriptions-service            | créer notif, push, email              |
 
 ## Structure du code cible
 

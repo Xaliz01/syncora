@@ -5,9 +5,10 @@ import { AbstractOrganizationsGatewayService } from "../domain/ports/organizatio
 import { OrganizationsGatewayService } from "../domain/organizations.gateway.service";
 import { RequirePermissionGuard } from "../infrastructure/require-permission.guard";
 import { AuthOrOnboardingGuard } from "../infrastructure/auth-or-onboarding.guard";
+import { OrganizationsDomainModule } from "./organizations-domain.module";
 
 @Module({
-  imports: [HttpModule.register({ timeout: 5000, maxRedirects: 0 })],
+  imports: [HttpModule.register({ timeout: 5000, maxRedirects: 0 }), OrganizationsDomainModule],
   controllers: [OrganizationsController],
   providers: [
     { provide: AbstractOrganizationsGatewayService, useClass: OrganizationsGatewayService },

@@ -1,0 +1,306 @@
+import { Injectable, Logger } from "@nestjs/common";
+import { Cron, CronExpression } from "@nestjs/schedule";
+import { InjectModel } from "@nestjs/mongoose";
+import { Model } from "mongoose";
+import { HttpService } from "@nestjs/axios";
+import { firstValueFrom } from "rxjs";
+import type {
+  InterventionResponse,
+  NotificationPreferencesData,
+  OrganizationSubscriptionResponse,
+  ReminderLeadTime,
+  UserResponse,
+} from "@planwise/shared";
+import {
+  buildDefaultNotificationPreferences,
+  getEnabledChannels,
+  withNotificationOrganizationId,
+} from "@planwise/shared";
+import type { NotificationPreferencesDocument } from "../../persistence/notifications/notification-preferences.schema";
+import type { NotificationDocument } from "../../persistence/notifications/notification.schema";
+import type { SentReminderDocument } from "../../persistence/notifications/sent-reminder.schema";
+import { AbstractPushSubscriptionService } from "./ports/push-subscription.service.port";
+import { AbstractEmailService } from "./ports/email.service.port";
+import { CronRunRecorder } from "./cron-run.recorder";
+import { SERVICE_URLS } from "../../infrastructure/service-urls.config";
+const JOB_KEY = "notifications.intervention-reminders";
+
+@Injectable()
+export class InterventionReminderScheduler {
+  private readonly logger = new Logger(InterventionReminderScheduler.name);
+
+  constructor(
+    @InjectModel("NotificationPreferences", "notifications")
+    private readonly preferencesModel: Model<NotificationPreferencesDocument>,
+    @InjectModel("Notification", "notifications")
+    private readonly notificationModel: Model<NotificationDocument>,
+    @InjectModel("SentReminder", "notifications")
+    private readonly sentReminderModel: Model<SentReminderDocument>,
+    private readonly pushService: AbstractPushSubscriptionService,
+    private readonly emailService: AbstractEmailService,
+    private readonly httpService: HttpService,
+    private readonly cronRunRecorder: CronRunRecorder,
+  ) {}
+
+  @Cron(CronExpression.EVERY_MINUTE)
+  async checkUpcomingInterventions(): Promise<void> {
+    const runId = await this.cronRunRecorder.start(JOB_KEY);
+    let processed = 0;
+    let succeeded = 0;
+    let skipped = 0;
+
+    try {
+      const allPrefs = await this.preferencesModel.find({}).exec();
+      const prefsMap = new Map<string, NotificationPreferencesData>();
+      for (const p of allPrefs) {
+        prefsMap.set(`${p.userId}:${p.organizationId}`, p.preferences);
+      }
+
+      const leadTimes: ReminderLeadTime[] = [15, 30, 60, 120, 1440];
+      const maxLeadMinutes = Math.max(...leadTimes);
+
+      const now = new Date();
+      const windowEnd = new Date(now.getTime() + maxLeadMinutes * 60 * 1000);
+
+      const interventions = await this.fetchUpcomingInterventions(
+        now.toISOString(),
+        windowEnd.toISOString(),
+      );
+      processed = interventions.length;
+
+      const accessByOrganization = new Map<string, boolean>();
+
+      for (const intervention of interventions) {
+        if (!intervention.scheduledStart || !intervention.assigneeId) {
+          skipped += 1;
+          continue;
+        }
+
+        const orgId = intervention.organizationId;
+        let hasAccess = accessByOrganization.get(orgId);
+        if (hasAccess === undefined) {
+          hasAccess = await this.organizationHasActiveSubscription(orgId);
+          accessByOrganization.set(orgId, hasAccess);
+        }
+        if (!hasAccess) {
+          skipped += 1;
+          continue;
+        }
+
+        const scheduledStart = new Date(intervention.scheduledStart);
+        const minutesUntilStart = (scheduledStart.getTime() - now.getTime()) / (60 * 1000);
+
+        const userId = await this.resolveNotificationUserId(orgId, intervention.assigneeId);
+        if (!userId) {
+          skipped += 1;
+          continue;
+        }
+        const userPrefs =
+          prefsMap.get(`${userId}:${orgId}`) ?? buildDefaultNotificationPreferences();
+
+        const userLeadTime = userPrefs.reminderLeadTime ?? 30;
+
+        if (minutesUntilStart <= userLeadTime && minutesUntilStart > 0) {
+          const alreadySent = await this.hasReminderBeenSent(intervention.id, userId, userLeadTime);
+          if (alreadySent) {
+            skipped += 1;
+            continue;
+          }
+
+          const channels = getEnabledChannels(userPrefs, "intervention_reminder");
+
+          if (channels.includes("in_app")) {
+            await this.createReminderNotification(intervention, userId, orgId);
+          }
+
+          if (channels.includes("push")) {
+            const title = "Rappel intervention";
+            const body = intervention.title
+              ? `Intervention « ${intervention.title} » dans ${Math.round(minutesUntilStart)} min`
+              : `Intervention dans ${Math.round(minutesUntilStart)} min`;
+            const deepLink = withNotificationOrganizationId(
+              intervention.caseId ? `/cases/${intervention.caseId}` : "/my-day",
+              orgId,
+            );
+            await this.pushService.sendPushToUser(userId, orgId, {
+              title,
+              body,
+              url: deepLink,
+            });
+          }
+
+          if (channels.includes("email")) {
+            const emailBody = intervention.title
+              ? `Intervention « ${intervention.title} » prévue dans ${Math.round(minutesUntilStart)} minutes.`
+              : `Vous avez une intervention prévue dans ${Math.round(minutesUntilStart)} minutes.`;
+            const userEmail = await this.resolveUserEmail(userId);
+            if (userEmail) {
+              await this.emailService.sendNotificationEmail(
+                userEmail,
+                "Rappel intervention",
+                emailBody,
+                withNotificationOrganizationId(
+                  intervention.caseId ? `/cases/${intervention.caseId}` : "/my-day",
+                  orgId,
+                ),
+              );
+            }
+          }
+
+          await this.markReminderSent(intervention.id, userId, userLeadTime);
+          succeeded += 1;
+          this.logger.log(`Reminder sent for intervention ${intervention.id} to user ${userId}`);
+        } else {
+          skipped += 1;
+        }
+      }
+
+      await this.cronRunRecorder.finish(runId, {
+        status: "ok",
+        stats: { processed, succeeded, skipped },
+      });
+    } catch (err) {
+      const message = (err as Error).message;
+      this.logger.warn("Reminder check failed", message);
+      await this.cronRunRecorder.finish(runId, {
+        status: "error",
+        stats: { processed, succeeded, skipped },
+        errorMessage: message,
+      });
+    }
+  }
+
+  // TODO: replace with direct technicians domain service when consolidated
+  private async resolveNotificationUserId(
+    organizationId: string,
+    assigneeId: string,
+  ): Promise<string | null> {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get<{ id?: string; firstName?: string; userId?: string }>(
+          `${SERVICE_URLS.technicians}/technicians/${assigneeId}`,
+          { params: { organizationId } },
+        ),
+      );
+      if (
+        response.data &&
+        (response.data.firstName !== undefined || response.data.id === assigneeId)
+      ) {
+        return response.data.userId?.trim() || null;
+      }
+    } catch {
+      // assigneeId may be a legacy user id
+    }
+
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get<{ id?: string } | null>(
+          `${SERVICE_URLS.technicians}/technicians/by-user/${assigneeId}`,
+          { params: { organizationId } },
+        ),
+      );
+      if (response.data) return assigneeId;
+    } catch {
+      // ignore
+    }
+
+    return assigneeId;
+  }
+
+  private async hasReminderBeenSent(
+    interventionId: string,
+    userId: string,
+    leadTime: number,
+  ): Promise<boolean> {
+    const existing = await this.sentReminderModel
+      .findOne({ interventionId, userId, leadTime })
+      .lean()
+      .exec();
+    return !!existing;
+  }
+
+  private async markReminderSent(
+    interventionId: string,
+    userId: string,
+    leadTime: number,
+  ): Promise<void> {
+    await this.sentReminderModel
+      .updateOne(
+        { interventionId, userId, leadTime },
+        { $setOnInsert: { interventionId, userId, leadTime } },
+        { upsert: true },
+      )
+      .exec();
+  }
+
+  // TODO: replace with direct subscriptions domain service when consolidated
+  private async organizationHasActiveSubscription(organizationId: string): Promise<boolean> {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get<OrganizationSubscriptionResponse>(
+          `${SERVICE_URLS.subscriptions}/subscriptions/current`,
+          { params: { organizationId } },
+        ),
+      );
+      return response.data.hasAccess;
+    } catch (err) {
+      this.logger.debug(
+        `Reminder skipped for organization ${organizationId} (subscription check failed)`,
+        (err as Error).message,
+      );
+      return false;
+    }
+  }
+
+  // TODO: replace with direct cases domain service when consolidated
+  private async fetchUpcomingInterventions(
+    from: string,
+    to: string,
+  ): Promise<InterventionResponse[]> {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get<InterventionResponse[]>(
+          `${SERVICE_URLS.cases}/cases/interventions/upcoming`,
+          { params: { from, to } },
+        ),
+      );
+      return response.data;
+    } catch {
+      this.logger.debug("Could not fetch upcoming interventions");
+      return [];
+    }
+  }
+
+  private async createReminderNotification(
+    intervention: InterventionResponse,
+    userId: string,
+    organizationId: string,
+  ): Promise<void> {
+    await this.notificationModel.create({
+      organizationId,
+      userId,
+      actorId: "system",
+      actorName: "Planwise",
+      entityType: "intervention",
+      entityId: intervention.id,
+      entityLabel: intervention.title,
+      action: "updated",
+      relatedEntityType: intervention.caseId ? "case" : undefined,
+      relatedEntityId: intervention.caseId,
+      detail: "Rappel : intervention imminente",
+      read: false,
+    });
+  }
+
+  // TODO: replace with direct users domain service when consolidated
+  private async resolveUserEmail(userId: string): Promise<string | null> {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get<UserResponse>(`${SERVICE_URLS.users}/users/${userId}`),
+      );
+      return response.data.email ?? null;
+    } catch {
+      return null;
+    }
+  }
+}
