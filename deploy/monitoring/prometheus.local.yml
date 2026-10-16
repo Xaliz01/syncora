@@ -60,7 +60,7 @@ scrape_configs:
       module: [http_2xx]
     static_configs:
       - targets: [http://host.docker.internal:3000/api/health]
-        labels: { service: api-gateway }
+        labels: { service: api }
       - targets: [http://host.docker.internal:3020/api/health]
         labels: { service: planwise-worker }
       - targets: [http://host.docker.internal:3010/api/health]

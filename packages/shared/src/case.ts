@@ -1,4 +1,4 @@
-/** API contracts for cases-service (templates, cases, interventions) */
+/** Contrats API des dossiers (modèles, dossiers, interventions). */
 
 import type { CustomerKind, PostalAddress } from "./customer";
 import type { DashboardMaintenanceVisitItem } from "./maintenance-contract";
@@ -238,7 +238,7 @@ export interface CreateCaseBody {
   reference?: string;
   description?: string;
   priority?: CasePriority;
-  /** Resolved by api-gateway from user ids */
+  /** Libellés résolus à partir des identifiants utilisateur. */
   assignees?: CaseAssignee[];
   dueDate?: string;
   tags?: string[];

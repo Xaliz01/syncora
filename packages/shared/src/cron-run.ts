@@ -11,11 +11,7 @@ export type PlatformCronJobKey =
 
 export interface PlatformCronJobDefinition {
   jobKey: PlatformCronJobKey;
-  service:
-    | "integrations-service"
-    | "notifications-service"
-    | "organizations-service"
-    | "cases-service";
+  service: "worker" | "notifications";
   label: string;
   schedule: string;
   description: string;
@@ -25,7 +21,7 @@ export interface PlatformCronJobDefinition {
 export const PLATFORM_CRON_JOBS: PlatformCronJobDefinition[] = [
   {
     jobKey: "integrations.invoice-sync",
-    service: "integrations-service",
+    service: "worker",
     label: "Sync factures (connecteurs) — désactivé",
     schedule: "Désactivé",
     description:
@@ -33,14 +29,14 @@ export const PLATFORM_CRON_JOBS: PlatformCronJobDefinition[] = [
   },
   {
     jobKey: "notifications.intervention-reminders",
-    service: "notifications-service",
+    service: "notifications",
     label: "Rappels d’interventions",
     schedule: "Toutes les minutes",
     description: "Envoie les rappels in-app / push / email avant les interventions planifiées.",
   },
   {
     jobKey: "notifications.maintenance-visit-reminders",
-    service: "notifications-service",
+    service: "notifications",
     label: "Rappels visites de maintenance",
     schedule: "Toutes les heures",
     description:
@@ -48,14 +44,14 @@ export const PLATFORM_CRON_JOBS: PlatformCronJobDefinition[] = [
   },
   {
     jobKey: "organizations.trial-test-data-cleanup",
-    service: "organizations-service",
+    service: "worker",
     label: "Purge données de démo essai",
     schedule: "Tous les jours à 04:00 (Europe/Paris)",
     description: "Supprime les données de test des organisations dont l’essai est terminé.",
   },
   {
     jobKey: "cases.maintenance-contract-visits",
-    service: "cases-service",
+    service: "worker",
     label: "Visites contrats de maintenance",
     schedule: "Toutes les heures",
     description:

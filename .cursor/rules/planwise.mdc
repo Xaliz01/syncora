@@ -9,7 +9,7 @@ Avant toute feature, lire (ou se réaligner sur) :
 
 - `planwise.vision.md` — cible (artisans / TPE), vision, roadmap par phases
 - `planwise.product.config.yml` — métier, entités, auth/permissions
-- `planwise.tech.config.yml` — stack (Nest hexagonal, Mongo, gateway, `@planwise/shared`, CI)
+- `planwise.tech.config.yml` — stack (Nest hexagonal, Mongo, `@planwise/shared`, CI)
 - `planwise.ui.config.yml` — design (slate + brand violet) **et conventions formulaires / pages**
 - `docs/assistant/ROADMAP.md` — **si la demande touche l’IA / l’assistant / un copilote métier** : une tranche = un change OpenSpec (`/opsx-propose` avec le nom de change de la tranche)
 
@@ -28,8 +28,8 @@ Avant toute feature, lire (ou se réaligner sur) :
 
 ## Permissions
 
-- Chaque **nouvelle entité ou action métier** doit définir ses codes dans `packages/shared/src/permissions.ts` (`ASSIGNABLE_PERMISSION_CODES`), les libellés dans `apps/frontend/lib/permissions-catalog.ts`, et les appliquer côté **API gateway** (`@RequirePermissions` / `@RequireAnyPermissions` + garde `RequirePermissionGuard`) et **frontend** (`hasPermission`, `PermissionGate`, boutons masqués).
-- Vérifier que les routes gateway et les parcours UI ne restent pas accessibles sans le droit associé (y compris pour les membres non admin).
+- Chaque **nouvelle entité ou action métier** doit définir ses codes dans `packages/shared/src/permissions.ts` (`ASSIGNABLE_PERMISSION_CODES`), les libellés dans `apps/frontend/lib/permissions-catalog.ts`, et les appliquer côté **API** (`@RequirePermissions` / `@RequireAnyPermissions` + garde `RequirePermissionGuard`) et **frontend** (`hasPermission`, `PermissionGate`, boutons masqués).
+- Vérifier que les routes API et les parcours UI ne restent pas accessibles sans le droit associé (y compris pour les membres non admin).
 
 ## Assistant IA in-app — enrichir à chaque feature
 
@@ -39,7 +39,7 @@ Pour **tout nouveau développement** qui touche l’UX métier (écran, menu, pa
 
 1. **`docs/product/`** — source de vérité rédigée : `routes.md` (label, href, permission), `glossary.md`, et/ou un parcours dans `journeys/*.md`.
 2. **`packages/shared/src/assistant.ts`** — `ASSISTANT_ROUTE_CATALOG` si nouvelle route proposable (whitelist + permissions).
-3. **`services/api-gateway/.../product-docs.loader.ts`** — chunks embarqués `PRODUCT_DOC_CHUNKS` (Docker n’a pas `docs/` au runtime) : **aligner le texte** sur les docs product, pas seulement un résumé trop court.
+3. **`services/api/.../product-docs.loader.ts`** — chunks embarqués `PRODUCT_DOC_CHUNKS` (Docker n’a pas `docs/` au runtime) : **aligner le texte** sur les docs product, pas seulement un résumé trop court.
 4. **Offline** — `offline-reply.ts` / FAQ si la question doit marcher sans clé LLM.
 5. **Tests** — retrieval / filtre suggestions si nouveau comportement.
 
@@ -49,8 +49,8 @@ L’assistant **guide** (explique + liens) ; il ne lit pas les données org et n
 ## Isolation organisation (multi-tenant)
 
 - Toute ressource métier persistée doit être filtrée par `organizationId` : utiliser `organizationScopeFilter()` / `parseOrganizationIdQuery()` / `parseOrganizationIdBody()` depuis `@planwise/shared`.
-- **Gateway** : appels downstream via `OrganizationScopedHttpClient` (injection `organizationId` depuis `AuthUser`, validation des réponses).
-- **Microservices** : requêtes Mongo avec `organizationScopeFilter`, et `assertOrganizationScopedListNest` / `assertOrganizationScopedResourceNest` en sortie de service (défense en profondeur).
+- Requêtes Mongo avec `organizationScopeFilter`, et `assertOrganizationScopedListNest` / `assertOrganizationScopedResourceNest` en sortie de service (défense en profondeur).
+- L’`organizationId` vient de `AuthUser`, pas d’un client HTTP interne.
 
 ## Suppressions / cycle de vie des données
 
@@ -68,7 +68,7 @@ Un objet « supprimé » est souvent encore référencé ailleurs. Règle : **re
 
 ## Migrations Mongo (migrate-mongo) — obligatoire
 
-Toute **évolution de schéma / index / données** Mongo passe par [migrate-mongo](https://github.com/seppevs/migrate-mongo), dans `services/api-gateway/migrations/<base>/`. Le boot API et worker applique chaque changelog. **Interdit** : drop/create d’index ou migration ad hoc dans `main.ts`, `OnModuleInit`, ou un helper one-shot hors changelog.
+Toute **évolution de schéma / index / données** Mongo passe par [migrate-mongo](https://github.com/seppevs/migrate-mongo), dans `services/api/migrations/<base>/`. Le boot API et worker applique chaque changelog. **Interdit** : drop/create d’index ou migration ad hoc dans `main.ts`, `OnModuleInit`, ou un helper one-shot hors changelog.
 
 ### Mécanisme partagé (`@planwise/shared/nest`)
 
@@ -79,9 +79,9 @@ Toute **évolution de schéma / index / données** Mongo passe par [migrate-mong
 ### Setup
 
 1. Dépendances déjà présentes sur l’API : `migrate-mongo`, `dotenv`.
-2. `services/api-gateway/migrate-mongo-config.js` lit `MIGRATE_DATABASE` et `MONGODB_URI`.
+2. `services/api/migrate-mongo-config.js` lit `MIGRATE_DATABASE` et `MONGODB_URI`.
 3. Fichiers `migrations/<base>/*.js` (CommonJS, `module.exports = { async up(db) {}, async down(db) {} }`).
-4. Le boot (`runGatewayMigrations`) lance `migrate-mongo up` pour chaque base, avec verrou, **avant** `NestFactory.create`. Échec → `process.exit(1)`.
+4. Le boot (`runDatabaseMigrations`) lance `migrate-mongo up` pour chaque base, avec verrou, **avant** `NestFactory.create`. Échec → `process.exit(1)`.
 5. Changelog : collection Mongo `changelog` dans la base concernée.
 
 ### Règles d’écriture
@@ -89,7 +89,7 @@ Toute **évolution de schéma / index / données** Mongo passe par [migrate-mong
 - Nom de fichier horodaté : `YYYYMMDDHHMMSS-description-kebab.js`.
 - Idempotence quand c’est raisonnable (ex. `dropIndex` : ignorer `IndexNotFound` / code 27).
 - Prévoir un `down` cohérent quand c’est possible.
-- Références : `services/api-gateway/migrations/`, `packages/shared/src/migrate-mongo.ts`, `deploy/README.md` § Migrations Mongo.
+- Références : `services/api/migrations/`, `packages/shared/src/migrate-mongo.ts`, `deploy/README.md` § Migrations Mongo.
 
 ## Crons — suivi backoffice obligatoire
 
@@ -98,7 +98,7 @@ Tout **nouveau job cron** (Nest `@Cron` / scheduler) doit être instrumenté com
 1. **Catalogue** : ajouter la définition dans `packages/shared/src/cron-run.ts` (`PlatformCronJobKey` + `PLATFORM_CRON_JOBS`) — label, service, schedule, description.
 2. **Persistance** : enregistrer chaque run via le `CronRunRecorder` du service (`start` → `finish` avec `status` ok/error/skipped, `stats` processed/succeeded/failed/skipped, `errorMessage` si échec).
 3. **Schéma** : collection `cron_runs` + TTL (~90j) déjà en place dans le service concerné (réutiliser le pattern existant).
-4. **Gateway / UI** : le backoffice `/platform/crons` lit le catalogue + l'historique — pas de page dédiée supplémentaire si le catalogue est à jour.
+4. **API / UI** : le backoffice `/platform/crons` lit le catalogue + l'historique — pas de page dédiée supplémentaire si le catalogue est à jour.
 5. **Sémantique** : distinguer erreurs métier réelles vs skips attendus (ex. provider non connecté) pour ne pas polluer le statut du run.
 
 Références : `invoice-sync.scheduler.ts`, `intervention-reminders` (notifications), `trial-test-data-cleanup.scheduler.ts`.
@@ -115,7 +115,7 @@ Contrat unique : **`limit` / `offset` + `total`** (`packages/shared/src/paginati
 
 ## Architecture — monolithe modulaire
 
-Le backend vit dans `services/api-gateway`. Trois processus partagent ce code (`PLANWISE_PROCESS`) :
+Le backend vit dans `services/api`. Trois processus partagent ce code (`PLANWISE_PROCESS`) :
 
 - `all` (défaut local) : HTTP + tous les crons
 - `api` : HTTP, sans crons
@@ -131,7 +131,7 @@ Les domaines restent hexagonaux. Ne pas recréer de microservice HTTP interne.
 - Le **controller** injecte les ports abstraits (pas les implémentations concrètes).
 - Le **module** lie chaque port abstrait à son implémentation : `{ provide: AbstractXxxService, useClass: XxxService }`.
 
-Exemples de référence dans `services/api-gateway` :
+Exemples de référence dans `services/api` :
 - cases : `CasesService`, `InterventionsService`, `QuotesService`, `CommentsService`, `CaseHistoryService`, `CaseTemplatesService`, `DashboardService`
 - stock : `ArticleStockService`, `PrestationService`, `StockLocationService`
 - users : `UsersService`, `UserSessionsService`, `UserPreferencesService`, `ProspectOutreachService`, `ImpersonationAuditService`
@@ -145,7 +145,7 @@ Exemples de référence dans `services/api-gateway` :
 
 ### Helpers partagés
 
-- Les utilitaires réutilisables entre services d'un même microservice vont dans `domain/utils.ts` (ex. `isDuplicateKeyError`).
+- Les utilitaires réutilisables entre domaines de `services/api` vont dans `domain/utils.ts` (ex. `isDuplicateKeyError`).
 - Les utilitaires de validation dans `domain/utils/validation.utils.ts` si nécessaire.
 
 ## Appels entre domaines
@@ -153,7 +153,7 @@ Exemples de référence dans `services/api-gateway` :
 - Les domaines s’appellent par **injection de port**, pas par HTTP interne.
 - `HttpService` reste réservé aux API externes (Pappers, SIRET, géocodage BAN, S3 distant).
 - Ne pas réintroduire `SERVICE_URLS` ni `OrganizationScopedHttpClient` pour un domaine Planwise.
-- Chaque controller gateway dépend d’un **port abstrait** dans `domain/ports/`.
+- Chaque controller HTTP dépend d’un **port abstrait** dans `domain/ports/`.
 
 ## Qualité
 

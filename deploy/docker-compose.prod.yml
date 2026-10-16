@@ -1,7 +1,7 @@
 # Déploiement production — VM unique (OVH) + Docker Compose + Caddy.
 #
-# Trois processus Nest partagent l’image api-gateway :
-#   api-gateway-{blue,green}  PLANWISE_PROCESS=api            :3000
+# Trois processus Nest partagent l’image api :
+#   api-{blue,green}  PLANWISE_PROCESS=api            :3000
 #   planwise-worker           PLANWISE_PROCESS=worker         :3020
 #   planwise-notifications    PLANWISE_PROCESS=notifications  :3010
 #
@@ -89,7 +89,7 @@ x-planwise-env: &planwise-env
   INVOICE_SYNC_BATCH_SIZE: ${INVOICE_SYNC_BATCH_SIZE:-200}
 
 x-planwise-process: &planwise-process
-  image: ${REGISTRY}/planwise-api-gateway:${IMAGE_TAG:-latest}
+  image: ${REGISTRY}/planwise-api:${IMAGE_TAG:-latest}
   restart: unless-stopped
   networks: [planwise]
   depends_on:
@@ -97,7 +97,7 @@ x-planwise-process: &planwise-process
       condition: service_healthy
   healthcheck: *tcp-healthcheck
 
-x-api-gateway: &api-gateway
+x-api: &api
   <<: *planwise-process
   stop_grace_period: 25s
   environment:
@@ -160,11 +160,11 @@ services:
       planwise-worker:
         condition: service_healthy
 
-  api-gateway-blue:
-    <<: *api-gateway
+  api-blue:
+    <<: *api
 
-  api-gateway-green:
-    <<: *api-gateway
+  api-green:
+    <<: *api
 
   frontend-blue:
     <<: *frontend

@@ -1,4 +1,4 @@
-/** Contrats API permissions-service (profils, invitations, affectations) */
+/** Contrats API permissions (profils, invitations, affectations). */
 
 /** Droits configurables via profils et affectations (hors abonnement). */
 export const ASSIGNABLE_PERMISSION_CODES = [

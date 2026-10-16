@@ -129,7 +129,7 @@ export interface DataImportRollbackResponse {
   status: "rolled_back";
 }
 
-// ── Row payloads (microservice / gateway après parse CSV) ──
+// ── Row payloads (après parse CSV) ──
 
 export interface ImportCustomerRow {
   externalId: string;

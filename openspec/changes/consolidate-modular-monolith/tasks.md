@@ -1,5 +1,7 @@
 # Tasks — Consolidation monolithe modulaire
 
+Résultat livré : un seul package `services/api` (`@planwise/api`). Les trois processus (API, worker, notifications) sont la même image, distingués par `PLANWISE_PROCESS`. Les dossiers `services/*-service` n’existent plus.
+
 ## Phase 0 — Préparation (`planwise-api` scaffold)
 
 ### T0.1 — Créer le package `planwise-api`

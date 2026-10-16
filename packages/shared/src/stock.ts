@@ -1,4 +1,4 @@
-/** API contracts for stock-service (articles, movements, intervention usage, locations) */
+/** Contrats API stock (articles, mouvements, usages d’intervention, emplacements). */
 
 export type StockMovementType = "in" | "out" | "adjustment" | "transfer";
 export type StockStatus = "ok" | "low" | "out";

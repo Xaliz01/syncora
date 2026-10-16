@@ -35,9 +35,9 @@ describe("runtime-version", () => {
     it("inclut version et gitSha dans la charge utile", () => {
       process.env.APP_VERSION = "v0.1.0";
       process.env.GIT_SHA = "a1b2c3d";
-      expect(buildHealthPayload("api-gateway")).toEqual({
+      expect(buildHealthPayload("api")).toEqual({
         status: "ok",
-        service: "api-gateway",
+        service: "api",
         version: "v0.1.0",
         gitSha: "a1b2c3d",
       });
@@ -46,9 +46,9 @@ describe("runtime-version", () => {
     it("omet gitSha quand absent", () => {
       process.env.APP_VERSION = "dev";
       delete process.env.GIT_SHA;
-      expect(buildHealthPayload("api-gateway")).toEqual({
+      expect(buildHealthPayload("api")).toEqual({
         status: "ok",
-        service: "api-gateway",
+        service: "api",
         version: "dev",
       });
     });

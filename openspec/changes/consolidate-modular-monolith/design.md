@@ -127,7 +127,7 @@ Le package partagé ne change pas. Les types, DTOs, et utilitaires restent ident
 
 | Service actuel        | Instance cible             | Connexion Mongo                                                                                       |
 | --------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------- |
-| api-gateway           | **planwise-api**           | (pas de DB propre)                                                                                    |
+| api                   | **planwise-api**           | (pas de DB propre)                                                                                    |
 | organizations-service | **planwise-api**           | `organizations`                                                                                       |
 | users-service         | **planwise-api**           | `users`                                                                                               |
 | permissions-service   | **planwise-api**           | `permissions`                                                                                         |
@@ -166,73 +166,29 @@ La matrice ci-dessous montre les appels HTTP actuels entre services (hors gatewa
 | subscriptions-service               | organizations-service                                                  | lookup org                            |
 | gateway (NotificationEventListener) | notifications-service, users-service, subscriptions-service            | créer notif, push, email              |
 
-## Structure du code cible
+## Structure du code
+
+Un seul package. Le rôle est choisi par `PLANWISE_PROCESS` (`all` | `api` | `worker` | `notifications`).
 
 ```
 services/
-├── planwise-api/
-│   ├── src/
-│   │   ├── main.ts                    # Boot: multi-DB, migrations, NestFactory
-│   │   ├── tracer.ts
-│   │   ├── modules/
-│   │   │   ├── app.module.ts          # Root: importe tous les feature modules
-│   │   │   ├── database.module.ts     # MongooseModule.forRoot() × N connexions
-│   │   │   ├── cases.module.ts        # Ex cases-service + ex gateway cases
-│   │   │   ├── customers.module.ts
-│   │   │   ├── stock.module.ts
-│   │   │   ├── ...                    # Un module par domaine
-│   │   │   └── auth.module.ts
-│   │   ├── domain/                    # Services métier (ports + implémentations)
-│   │   │   ├── cases/
-│   │   │   │   ├── ports/cases.service.port.ts
-│   │   │   │   ├── cases.service.ts
-│   │   │   │   ├── interventions.service.ts
-│   │   │   │   └── mappers/case.mapper.ts
-│   │   │   ├── customers/
-│   │   │   ├── stock/
-│   │   │   └── ...
-│   │   ├── persistence/               # Schemas Mongoose (par domaine)
-│   │   │   ├── cases/
-│   │   │   ├── customers/
-│   │   │   └── ...
-│   │   ├── presentation/http/         # Controllers (ex-gateway fusionnés)
-│   │   │   ├── cases.controller.ts
-│   │   │   ├── customers.controller.ts
-│   │   │   └── ...
-│   │   └── infrastructure/            # Auth, interceptors, config
-│   ├── migrations/                    # Toutes les migrations, par database
-│   │   ├── cases/
-│   │   ├── integrations/
-│   │   └── billing/
-│   └── package.json
-├── planwise-worker/
-│   ├── src/
-│   │   ├── main.ts
-│   │   ├── modules/app.module.ts      # DatabaseModule + ScheduleModule + schedulers
-│   │   └── schedulers/
-│   │       ├── maintenance-contract-visits.scheduler.ts
-│   │       ├── invoice-sync.scheduler.ts
-│   │       └── trial-test-data-cleanup.scheduler.ts
-│   └── package.json
-├── planwise-notifications/
-│   ├── src/
-│   │   ├── main.ts
-│   │   ├── modules/app.module.ts
-│   │   ├── domain/                    # Notification logic + schedulers
-│   │   └── persistence/
-│   └── package.json
-└── (anciens services supprimés)
+└── api/                               # @planwise/api
+    ├── src/
+    │   ├── main.ts                    # Boot: migrations, NestFactory, rôle du processus
+    │   ├── process-role.ts
+    │   ├── tracer.ts
+    │   ├── modules/
+    │   │   ├── app.module.ts
+    │   │   └── database.module.ts     # MongooseModule.forRoot() × 13 connexions
+    │   ├── domain/                    # Un dossier par domaine (ports, services, mappers)
+    │   └── persistence/
+    ├── migrations/                    # Par database (cases, integrations, billing, …)
+    └── package.json
 ```
 
-## Stratégie de migration (incrémentale)
+## Migration réalisée
 
-La migration se fait **progressivement**, service par service, pour garder l'app fonctionnelle à chaque étape :
-
-1. **Phase préparatoire** : créer `planwise-api` qui importe le gateway actuel + un `DatabaseModule` avec toutes les connexions nommées
-2. **Phase migration** : pour chaque ex-microservice, déplacer le module dans `planwise-api`, convertir les appels HTTP du gateway en injections directes, supprimer l'ancien service
-3. **Phase nettoyage** : supprimer `OrganizationScopedHttpClient`, `SERVICE_URLS`, adapter CI/CD
-4. **Phase worker** : extraire les schedulers dans `planwise-worker`
-5. **Phase notifications** : consolider notifications dans `planwise-notifications` avec injection directe des modules métier nécessaires
+Les anciens packages `services/*-service` et `services/api-gateway` ont été fusionnés dans `services/api`. Les trois processus partagent cette image ; il n’y a pas de dossiers `planwise-worker` ni `planwise-notifications`. Les appels HTTP internes sont des injections Nest. Le worker et les notifications sont isolés par `PLANWISE_PROCESS`, pas par un second codebase.
 
 ## Impact déploiement
 
@@ -240,7 +196,7 @@ La migration se fait **progressivement**, service par service, pour garder l'app
 
 ```yaml
 # docker-compose.prod.yml — 16 services
-mongodb, api-gateway-blue, api-gateway-green, frontend-blue, frontend-green,
+mongodb, api-blue, api-green, frontend-blue, frontend-green,
 organizations-service, users-service, permissions-service, cases-service,
 fleet-service, technicians-service, stock-service, customers-service,
 subscriptions-service, notifications-service, documents-service,
@@ -250,13 +206,13 @@ exports-service, integrations-service, billing-service
 ### Après (3+1 conteneurs)
 
 ```yaml
-# docker-compose.prod.yml — 5 services
-mongodb, planwise-api-blue, planwise-api-green, planwise-worker,
+# docker-compose.prod.yml — une image planwise-api, trois processus
+mongodb, api-blue, api-green, planwise-worker,
 planwise-notifications, frontend-blue, frontend-green
 ```
 
 ### CI/CD
 
-- Build : 3 images Docker au lieu de 15 (Dockerfile.backend modifié avec `SERVICE=planwise-api|planwise-worker|planwise-notifications`)
-- Deploy : `rolling-edge.sh` ne blue/green que `planwise-api` et `frontend`
-- Temps de build GitHub Actions : réduit de ~60% (3 builds parallèles au lieu de 15)
+- Build : une image Docker (`SERVICE=api`) au lieu de 15
+- Deploy : `rolling-edge.sh` blue/green `api` et `frontend` ; worker et notifications en instance unique
+- `PLANWISE_PROCESS` distingue les trois processus de la même image

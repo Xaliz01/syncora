@@ -2,11 +2,11 @@
 
 ## Résumé
 
-Remplacer les 14 microservices NestJS + 1 API gateway par **3 processus déployables** :
+Remplacer les 14 microservices NestJS + 1 API gateway par **un package** `services/api` (`@planwise/api`) et **3 processus** de la même image :
 
-1. **`planwise-api`** — API principale (tous les modules métier + gateway HTTP)
-2. **`planwise-worker`** — Jobs cron / tâches de fond (maintenance contracts, invoice sync, trial cleanup)
-3. **`planwise-notifications`** — Notifications, rappels, push, email
+1. **`planwise-api`** (`PLANWISE_PROCESS=api`, slots `api-blue` / `api-green`) — HTTP, tous les modules métier
+2. **`planwise-worker`** — Jobs cron lourds (visites de maintenance, sync factures, purge données d’essai)
+3. **`planwise-notifications`** — Rappels, push, e-mail
 
 Le tout **en conservant** la base MongoDB existante (13 databases) et l'architecture hexagonale (ports, services, mappers) au sein de chaque module.
 

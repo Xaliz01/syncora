@@ -10,26 +10,26 @@ stateless hormis MongoDB et le volume documents).
 
 ## Contenu du dossier
 
-| Fichier                         | Rôle                                                            |
-| ------------------------------- | --------------------------------------------------------------- |
-| `Dockerfile.backend`            | Image unique `api-gateway` (API, worker, notifications)         |
-| `Dockerfile.frontend`           | Image Next.js (sortie standalone)                               |
-| `docker-compose.prod.yml`       | Orchestration prod (services internes + Caddy)                  |
-| `docker-compose.monitoring.yml` | Stack Grafana/Prometheus (profil `monitoring`, optionnel)       |
-| `monitoring/`                   | Config Prometheus, Blackbox, Tempo, OTel Collector, Grafana     |
-| `Caddyfile`                     | Reverse proxy + HTTPS (Let's Encrypt)                           |
-| `static/maintenance.html`       | Page de secours si le frontend upstream est KO (Caddy 5xx)      |
-| `rolling-edge.sh`               | Bascule blue/green api-gateway + frontend (quasi zero-downtime) |
-| `prune-planwise-images.sh`      | Après MEP : garde images courante + précédente uniquement       |
-| `.env.production.example`       | Modèle de configuration (à copier en `.env.production`)         |
+| Fichier                         | Rôle                                                        |
+| ------------------------------- | ----------------------------------------------------------- |
+| `Dockerfile.backend`            | Image unique `api` (API, worker, notifications)             |
+| `Dockerfile.frontend`           | Image Next.js (sortie standalone)                           |
+| `docker-compose.prod.yml`       | Orchestration prod (services internes + Caddy)              |
+| `docker-compose.monitoring.yml` | Stack Grafana/Prometheus (profil `monitoring`, optionnel)   |
+| `monitoring/`                   | Config Prometheus, Blackbox, Tempo, OTel Collector, Grafana |
+| `Caddyfile`                     | Reverse proxy + HTTPS (Let's Encrypt)                       |
+| `static/maintenance.html`       | Page de secours si le frontend upstream est KO (Caddy 5xx)  |
+| `rolling-edge.sh`               | Bascule blue/green api + frontend (quasi zero-downtime)     |
+| `prune-planwise-images.sh`      | Après MEP : garde images courante + précédente uniquement   |
+| `.env.production.example`       | Modèle de configuration (à copier en `.env.production`)     |
 
 ## Migrations Mongo
 
 L’API et le worker appliquent les migrations [migrate-mongo](https://github.com/seppevs/migrate-mongo)
-au démarrage (`runGatewayMigrations`), une base à la fois :
+au démarrage (`runDatabaseMigrations`), une base à la fois :
 
-- Config : `services/api-gateway/migrate-mongo-config.js` (`MIGRATE_DATABASE` + `MONGODB_URI`)
-- Fichiers : `services/api-gateway/migrations/<base>/*.js`
+- Config : `services/api/migrate-mongo-config.js` (`MIGRATE_DATABASE` + `MONGODB_URI`)
+- Fichiers : `services/api/migrations/<base>/*.js`
 - Changelog Mongo : collection `changelog` dans la base concernée
 - Échec d’une migration → le process refuse de démarrer
 
@@ -131,7 +131,7 @@ de tag d'image et de version applicative).
 4. Copie de `docker-compose.prod.yml`, `Caddyfile`, `rolling-edge.sh` et monitoring
    sur la VM (SCP).
 5. Sur la VM : `pull` → `up` des microservices / Caddy / monitoring →
-   **`rolling-edge.sh`** bascule api-gateway + frontend (blue/green, sans coupure
+   **`rolling-edge.sh`** bascule api + frontend (blue/green, sans coupure
    visible sur les domaines publics).
 6. **Prune images** : `prune-planwise-images.sh` ne conserve que les images
    applicatives (`$REGISTRY/planwise-*`) de la MEP courante et de la précédente
@@ -142,7 +142,7 @@ de tag d'image et de version applicative).
    a réussi, le workflow crée et pousse le tag Git correspondant (ex. `v0.1.0`)
    sur le commit déployé. Étape ignorée pour un déploiement sans version (SHA).
 
-### Blue/green (api-gateway + frontend)
+### Blue/green (api + frontend)
 
 Caddy route vers `*-blue` et `*-green` avec health checks (`lb_policy first`) :
 seul le slot healthy reçoit le trafic. Le script `rolling-edge.sh` :
@@ -184,9 +184,9 @@ Depuis la racine du repo, sur une machine avec Docker :
 
 ```bash
 # Exemple pour un service backend
-docker build -f deploy/Dockerfile.backend --build-arg SERVICE=api-gateway \
+docker build -f deploy/Dockerfile.backend --build-arg SERVICE=api \
   --build-arg APP_VERSION=v0.1.0 --build-arg GIT_SHA=$(git rev-parse --short HEAD) \
-  -t ghcr.io/mon-org/planwise-api-gateway:manuel .
+  -t ghcr.io/mon-org/planwise-api:manuel .
 
 # Frontend (la version est facultative en build manuel)
 docker build -f deploy/Dockerfile.frontend \
@@ -211,7 +211,7 @@ docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml \
   mongodb planwise-worker planwise-notifications \
   prometheus tempo otel-collector grafana loki alloy node-exporter cadvisor blackbox-exporter mongodb-exporter
 ./rolling-edge.sh
-# Caddy + purge des anciens conteneurs api-gateway / frontend
+# Caddy + purge des anciens conteneurs api / frontend
 docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml \
   --env-file .env.production --profile monitoring up -d --remove-orphans caddy
 ```
@@ -300,7 +300,7 @@ restent à sauvegarder côté VM.
 
 ## 8. Stripe (webhook)
 
-Endpoint public (Caddy → `subscriptions-service`, **pas** le gateway) :
+Endpoint public (Caddy → le slot API actif) :
 
 ```text
 https://api.exemple.fr/webhooks/stripe
@@ -314,11 +314,11 @@ https://api.exemple.fr/webhooks/stripe
    - `customer.subscription.updated`
    - `customer.subscription.deleted`
 4. Copier le **Signing secret** (`whsec_…`) dans `.env.production` → `STRIPE_WEBHOOK_SECRET`.
-5. Redémarrer le service abonnements :
+5. Redémarrer l’API (le slot actif) pour prendre en compte le secret :
 
 ```bash
 cd /opt/planwise/deploy
-docker compose -f docker-compose.prod.yml --env-file .env.production up -d subscriptions-service
+./rolling-edge.sh
 ```
 
 Après un déploiement qui met à jour `Caddyfile.template`, recharger Caddy
@@ -357,11 +357,13 @@ VAPID_PRIVATE_KEY=...
 VAPID_SUBJECT=mailto:contact@planwise.fr
 ```
 
-Puis redémarrer uniquement le service de notifications :
+Puis redémarrer les processus qui envoient les notifications :
 
 ```bash
 cd /opt/planwise/deploy
-docker compose -f docker-compose.prod.yml --env-file .env.production up -d notifications-service
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d \
+  planwise-notifications planwise-worker
+./rolling-edge.sh
 ```
 
 La clé publique est exposée au frontend via `GET /api/notifications/vapid-public-key`.
@@ -446,9 +448,9 @@ Dans Grafana : **Explore** → datasource **Loki**, ou dashboard **Planwise — 
 Exemples LogQL :
 
 ```logql
-{compose_service="api-gateway-blue"} |= "ERROR"
-{compose_service=~"cases-service|customers-service"} |= "organizationId"
-{container=~".*(cases-service|api-gateway).*"} |~ "(?i)exception|fatal"
+{compose_service="api-blue"} |= "ERROR"
+{compose_service=~"planwise-worker|planwise-notifications"} |= "ERROR"
+{container=~".*(api-blue|planwise-worker).*"} |~ "(?i)exception|fatal"
 ```
 
 Les labels utiles : `compose_service`, `container`, `stream` (stdout/stderr), `job=docker`,
@@ -475,7 +477,7 @@ Chaque service Nest émet un access log HTTP (hors `/health` et `/metrics`) au f
 Exemples :
 
 ```logql
-{compose_service="api-gateway-blue", context="HTTP"}
+{compose_service="api-blue", context="HTTP"}
 {job="docker", context="HTTP"} |~ " 5[0-9]{2} "
 {job="docker"} | json | organizationId="…"
 ```
@@ -488,8 +490,8 @@ docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml \
   --env-file .env.production --profile monitoring up -d --force-recreate alloy
 ```
 
-Puis Explore → Loki → `{job="docker"}` : vérifier `compose_service` (`cases-service`,
-`api-gateway-blue`, etc.).
+Puis Explore → Loki → `{job="docker"}` : vérifier `compose_service` (`api-blue`,
+`planwise-worker`, `planwise-notifications`).
 
 ### cAdvisor (métriques conteneurs)
 
@@ -531,7 +533,7 @@ docker compose -f docker-compose.prod.yml --env-file .env.production up -d
 ```
 
 3. Dans Grafana : **Explore** → datasource **Tempo** → rechercher par service
-   (`planwise-api-gateway`, `planwise-cases-service`, etc.) ou par trace ID.
+   (`planwise-api`, `planwise-worker`, `planwise-notifications`) ou par trace ID.
 
 Dashboard **Planwise — API & traces** : endpoint (`http.target`), méthode, statut HTTP,
 débit et latence p95 (métriques dérivées des traces via Tempo → Prometheus).

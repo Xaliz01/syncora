@@ -45,7 +45,7 @@ jobs:
           - packages/shared
           - packages/telemetry
           - apps/frontend
-          - services/api-gateway
+          - services/api
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js
@@ -82,7 +82,7 @@ jobs:
       fail-fast: false
       matrix:
         service:
-          - "@planwise/api-gateway"
+          - "@planwise/api"
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js

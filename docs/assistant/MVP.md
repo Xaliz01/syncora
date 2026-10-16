@@ -20,12 +20,12 @@ Un utilisateur authentifié peut ouvrir un panneau « Assistant », poser une qu
 ## Architecture cible (MVP)
 
 ```text
-Frontend drawer  →  POST /assistant/chat (gateway)  →  retrieve docs/product  →  LLM
+Frontend drawer  →  POST /assistant/chat  →  retrieve docs/product  →  LLM
                          ↑
               AuthUser + pathname + permissions
 ```
 
-- **Pas de microservice dédié au départ** : module Nest dans l’api-gateway (un service `assistant-service` si le module grossit).
+- **Module Nest dans `services/api`** : pas de processus séparé pour l’assistant.
 - **Connaissance** : Markdown versionné sous `docs/product/` (source de vérité produit).
 - **Retrieval** : V1 = recherche lexicale / chunks pré-indexés en mémoire ; V1.1 = embeddings + store (plus tard).
 
@@ -99,11 +99,11 @@ Frontend drawer  →  POST /assistant/chat (gateway)  →  retrieve docs/product
 
 | Livrable       | Chemin (indicatif)                                                                                       |
 | -------------- | -------------------------------------------------------------------------------------------------------- |
-| Port + service | `services/api-gateway/src/domain/assistant.service.ts`                                                   |
-| Controller     | `services/api-gateway/src/presentation/http/assistant.controller.ts`                                     |
-| Module         | `services/api-gateway/src/modules/assistant.module.ts`                                                   |
-| Loader docs    | `services/api-gateway/src/infrastructure/assistant/product-docs.loader.ts`                               |
-| Prompt         | `services/api-gateway/src/infrastructure/assistant/assistant.prompt.ts`                                  |
+| Port + service | `services/api/src/domain/assistant.service.ts`                                                           |
+| Controller     | `services/api/src/presentation/http/assistant.controller.ts`                                             |
+| Module         | `services/api/src/modules/assistant.module.ts`                                                           |
+| Loader docs    | `services/api/src/infrastructure/assistant/product-docs.loader.ts`                                       |
+| Prompt         | `services/api/src/infrastructure/assistant/assistant.prompt.ts`                                          |
 | Tests          | `**/assistant*.spec.ts`                                                                                  |
 | Env            | `OPENAI_API_KEY` ou `ANTHROPIC_API_KEY` (+ modèle), doc dans `planwise.tech.config.yml` / `.env.example` |
 
@@ -178,7 +178,7 @@ Hors MVP strict, backlog suivant :
 
 - Embeddings + index persistant
 - Feedback 👍/👎 + logs qualité
-- Microservice `assistant-service` si charge / isolation
+- Processus dédié si la charge ou l’isolation le justifie
 - Tools bornés (`explain_permission`) sans write
 - Quota / rate-limit par org
 
@@ -194,7 +194,7 @@ docs/product/journeys/*.md
 docs/assistant/MVP.md          ← ce fichier
 
 packages/shared/src/assistant.ts          # T2 ✓
-services/api-gateway/.../assistant.*      # T3 ✓
+services/api/.../assistant.*      # T3 ✓
 apps/frontend/components/assistant/*      # T4 ✓
 apps/frontend/lib/assistant.api.ts        # T4 ✓
 apps/frontend/tests/e2e/assistant.spec.ts # T4 ✓

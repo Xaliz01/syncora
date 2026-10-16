@@ -74,7 +74,7 @@ function main() {
   process.on("SIGTERM", () => shutdown(0));
 
   log("Démarrage de l’API (port 3000, crons inclus)…");
-  const gateway = spawn("npm", ["run", "backend:gateway"], {
+  const gateway = spawn("npm", ["run", "backend:api"], {
     stdio: "inherit",
     shell: true,
     detached: true,

@@ -1,4 +1,4 @@
-/** Contrat API users-service (création + validation credentials) */
+/** Contrat API utilisateurs (création + validation credentials). */
 
 import type { UserRole } from "./auth";
 import type { OrganizationMembershipStatus } from "./organization-membership";
@@ -32,7 +32,7 @@ export interface AccountUserResponse {
 }
 
 /**
- * Résultat interne users-service → gateway (code OTP une seule fois pour l'e-mail).
+ * Résultat interne (code OTP une seule fois pour l'e-mail).
  * Ne jamais exposer `emailVerificationCode` au client.
  */
 export interface CreateAccountResult {
@@ -47,7 +47,7 @@ export interface IssueEmailVerificationResult {
 }
 
 /**
- * Résultat interne users-service → gateway (jeton une seule fois pour l'e-mail).
+ * Résultat interne (jeton une seule fois pour l'e-mail).
  * Ne jamais exposer `resetToken` au client.
  */
 export interface IssuePasswordResetResult {
@@ -87,13 +87,13 @@ export interface CreateInvitedUserBody {
 }
 
 export interface ActivateInvitedUserBody {
-  /** Requis sauf si `trustedAuthenticatedUserId` correspond à l’utilisateur (gateway). */
+  /** Requis sauf si `trustedAuthenticatedUserId` correspond à l’utilisateur authentifié. */
   password?: string;
   name?: string;
   /** Organisation de l'invitation à activer (requis pour multi-org). */
   organizationId: string;
   /**
-   * Rempli uniquement par le gateway après vérification JWT :
+   * Rempli uniquement par l’API après vérification JWT :
    * l’appelant est déjà authentifié comme cet utilisateur (2ᵉ org, etc.).
    */
   trustedAuthenticatedUserId?: string;
@@ -116,7 +116,7 @@ export interface CancelOrganizationInvitationBody {
   organizationId: string;
 }
 
-/** Mise à jour partielle côté serveur (ex. gateway → users-service). */
+/** Mise à jour partielle côté serveur. */
 export interface PatchUserBody {
   /** Organisation active du compte (le rôle par org vit dans organization_memberships). */
   organizationId?: string;
@@ -161,7 +161,7 @@ export interface UserPreferences {
   onboardingCompletedOrganizationIds: string[];
   /**
    * Calculé pour l’organisation courante : true si l’onboarding y est terminé.
-   * Rempli par le gateway / users-service selon le contexte org.
+   * Rempli selon le contexte d’organisation.
    */
   onboardingProfileCompleted: boolean;
   /**

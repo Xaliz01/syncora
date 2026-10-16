@@ -1,4 +1,4 @@
-/** Contrat API organizations-service */
+/** Contrat API organisations. */
 
 import type { InvoiceMentions } from "./invoice-mentions";
 import type { TrialTestDataStatus } from "./test-data";
@@ -31,7 +31,7 @@ export interface UpdateOrganizationBody {
   postalCode?: string | null;
   city?: string | null;
   country?: string | null;
-  /** Document image (documents-service) servant de logo — null pour retirer. */
+  /** Document image servant de logo — null pour retirer. */
   logoDocumentId?: string | null;
   legalForm?: string | null;
   shareCapital?: string | null;

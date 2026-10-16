@@ -689,8 +689,8 @@
       {
         "current": {
           "selected": true,
-          "text": "planwise-api-gateway",
-          "value": "planwise-api-gateway"
+          "text": "planwise-api",
+          "value": "planwise-api"
         },
         "hide": 0,
         "includeAll": true,
@@ -698,30 +698,16 @@
         "multi": true,
         "name": "service",
         "options": [
-          { "selected": true, "text": "planwise-api-gateway", "value": "planwise-api-gateway" },
+          { "selected": true, "text": "planwise-api", "value": "planwise-api" },
+          { "selected": false, "text": "planwise-worker", "value": "planwise-worker" },
           {
             "selected": false,
-            "text": "planwise-cases-service",
-            "value": "planwise-cases-service"
-          },
-          {
-            "selected": false,
-            "text": "planwise-users-service",
-            "value": "planwise-users-service"
-          },
-          {
-            "selected": false,
-            "text": "planwise-notifications-service",
-            "value": "planwise-notifications-service"
-          },
-          {
-            "selected": false,
-            "text": "planwise-customers-service",
-            "value": "planwise-customers-service"
+            "text": "planwise-notifications",
+            "value": "planwise-notifications"
           },
           { "selected": false, "text": "All", "value": "$__all" }
         ],
-        "query": "planwise-api-gateway,planwise-worker,planwise-notifications",
+        "query": "planwise-api,planwise-worker,planwise-notifications",
         "skipUrlSync": false,
         "type": "custom"
       },

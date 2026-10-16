@@ -12,10 +12,9 @@ Planwise est un **CRM SaaS orienté opérations terrain**. Il permet de :
 ## Architecture & stack
 
 - **Architecture**
-  - Microservices + **hexagonale**
+  - Monolithe modulaire **hexagonal** (`services/api`), trois processus : API, worker, notifications
   - **API REST**
-  - **API Gateway** frontale pour exposer les routes sur le web
-  - Package `@planwise/shared` pour partager les **types** et contrats (front/back et inter-microservices)
+  - Package `@planwise/shared` pour partager les **types** et contrats front/back
 
 - **Frontend**
   - React + TypeScript
@@ -41,7 +40,7 @@ planwise/
   apps/
     frontend/              # Frontend React/Tailwind/TanStack Query/Playwright
   services/
-    api-gateway/           # API Nest (domaines, crons worker et notifications)
+    api/           # API Nest (domaines, crons worker et notifications)
   packages/
     shared/                # Types & contrats partagés (@planwise/shared)
   docker-compose.yml       # MongoDB pour le dev local
@@ -64,7 +63,7 @@ planwise/
   - Invitation d’un utilisateur dans l’organisation
   - Création de profils personnalisés de permissions
   - Affectation d’un profil à un utilisateur + surcharges fines (ajouts/retraits de permissions)
-  - API admin exposée via l’API Gateway (`/api/admin/...`, admin uniquement)
+  - API admin (`/api/admin/...`, admin uniquement)
 
 ## Installation
 
@@ -117,7 +116,7 @@ Par défaut, l’application sera disponible sur `http://localhost:5173`.
 
 Si MongoDB tourne déjà :
 
-- **API** (3000) : `npm run start:dev -w @planwise/api-gateway`
+- **API** (3000) : `npm run start:dev -w @planwise/api`
 
 Endpoints utiles :
 
@@ -174,7 +173,7 @@ Depuis la **racine** du monorepo (`planwise/`) :
 
 Le workflow GitHub Actions (`.github/workflows/ci.yml`) :
 
-- Détecte les **briques modifiées** (frontend, API Gateway, etc.)
+- Détecte les **briques modifiées** (frontend, API, etc.)
 - Exécute pour chaque brique concernée :
   - Lint
   - Tests
@@ -185,6 +184,5 @@ Le workflow GitHub Actions (`.github/workflows/ci.yml`) :
 
 ## Prochaines étapes possibles
 
-- Définir les **microservices métier** (clients, interventions, stocks, flotte, intervenants)
 - Enrichir `@planwise/shared` avec les **DTOs, schémas et contrats d’API**
 - Ajouter la configuration Docker/ECR/ECS concrète (référentiels, services ECS, secrets)

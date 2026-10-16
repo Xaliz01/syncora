@@ -56,10 +56,10 @@ scrape_configs:
     params:
       module: [http_2xx]
     static_configs:
-      - targets: [http://api-gateway-blue:3000/api/health]
-        labels: { service: api-gateway, slot: blue }
-      - targets: [http://api-gateway-green:3000/api/health]
-        labels: { service: api-gateway, slot: green }
+      - targets: [http://api-blue:3000/api/health]
+        labels: { service: api, slot: blue }
+      - targets: [http://api-green:3000/api/health]
+        labels: { service: api, slot: green }
       - targets: [http://planwise-worker:3020/api/health]
         labels: { service: planwise-worker }
       - targets: [http://planwise-notifications:3010/api/health]

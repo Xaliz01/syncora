@@ -1,4 +1,4 @@
-/** Contrat API notifications-service */
+/** Contrat API des notifications. */
 
 export type NotificationEntityType =
   | "case"

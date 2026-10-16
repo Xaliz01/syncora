@@ -33,7 +33,6 @@ tech:
       - api
       - worker
       - notifications
-    api_gateway: true
     shared_package:
       name: "@planwise/shared"
       purpose:
