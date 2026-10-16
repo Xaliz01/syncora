@@ -53,16 +53,16 @@ www.{$MARKETING_DOMAIN} {
 	import frontend_proxy
 }
 
-# API Gateway (+ webhook Stripe hors gateway — body brut requis)
+# API (webhook Stripe inclus : corps brut, hors préfixe /api)
 {$API_DOMAIN} {
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 		X-Content-Type-Options "nosniff"
 	}
 
-	# Stripe → subscriptions-service (ne passe pas par le gateway Nest).
+	# Stripe exige le corps brut. Même slot blue/green que le reste de l’API.
 	handle /webhooks/stripe* {
-		reverse_proxy subscriptions-service:3008
+		reverse_proxy __API_GATEWAY_UPSTREAM__
 	}
 
 	handle {

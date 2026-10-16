@@ -3,5 +3,13 @@
  * OpenTelemetry → collector OTLP → Tempo (Grafana).
  */
 import { initTelemetry } from "@planwise/telemetry";
+import { planwiseProcess } from "./process-role";
 
-initTelemetry("planwise-api-gateway");
+const telemetryServiceName =
+  planwiseProcess() === "worker"
+    ? "planwise-worker"
+    : planwiseProcess() === "notifications"
+      ? "planwise-notifications"
+      : "planwise-api-gateway";
+
+initTelemetry(telemetryServiceName);

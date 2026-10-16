@@ -1,3 +1,4 @@
+import { httpControllers } from "../process-role";
 import { Module } from "@nestjs/common";
 import { OrderGiversController } from "../presentation/http/order-givers.controller";
 import { AbstractOrderGiversGatewayService } from "../domain/ports/order-givers.service.port";
@@ -8,7 +9,7 @@ import { CustomersDomainModule } from "./customers-domain.module";
 
 @Module({
   imports: [SubscriptionsModule, CustomersDomainModule],
-  controllers: [OrderGiversController],
+  controllers: httpControllers([OrderGiversController]),
   providers: [
     { provide: AbstractOrderGiversGatewayService, useClass: OrderGiversGatewayService },
     RequirePermissionGuard,

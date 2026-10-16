@@ -1,3 +1,4 @@
+import { httpControllers } from "../process-role";
 import { Module } from "@nestjs/common";
 import { NotificationsController } from "../presentation/http/notifications.controller";
 import { AbstractNotificationsGatewayService } from "../domain/ports/notifications.gateway.service.port";
@@ -9,7 +10,7 @@ import { UsersModule } from "./users.module";
 
 @Module({
   imports: [SubscriptionsModule, NotificationsDomainModule, UsersModule],
-  controllers: [NotificationsController],
+  controllers: httpControllers([NotificationsController]),
   providers: [
     {
       provide: AbstractNotificationsGatewayService,

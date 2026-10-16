@@ -1,3 +1,4 @@
+import { httpControllers } from "../process-role";
 import { Module } from "@nestjs/common";
 import { DataImportController } from "../presentation/http/data-import.controller";
 import { AbstractDataImportService } from "../domain/ports/data-import.service.port";
@@ -22,7 +23,7 @@ import { TechniciansDomainModule } from "./technicians-domain.module";
     UsersModule,
     TechniciansDomainModule,
   ],
-  controllers: [DataImportController],
+  controllers: httpControllers([DataImportController]),
   providers: [
     AssistantLlmClient,
     { provide: AbstractDataImportService, useClass: DataImportService },

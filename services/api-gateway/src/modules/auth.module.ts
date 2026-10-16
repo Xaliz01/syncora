@@ -1,3 +1,4 @@
+import { httpControllers } from "../process-role";
 import { Module } from "@nestjs/common";
 import { JwtModule } from "@nestjs/jwt";
 import { ConfigModule } from "@nestjs/config";
@@ -34,7 +35,7 @@ import { NotificationsDomainModule } from "./notifications-domain.module";
       signOptions: { expiresIn: "7d" },
     }),
   ],
-  controllers: [AuthController],
+  controllers: httpControllers([AuthController]),
   providers: [
     { provide: AbstractAuthService, useClass: AuthService },
     RequirePermissionGuard,

@@ -1,3 +1,4 @@
+import { httpControllers } from "../process-role";
 import { Module } from "@nestjs/common";
 import { SearchController } from "../presentation/http/search.controller";
 import { AbstractSearchService } from "../domain/ports/search.service.port";
@@ -20,7 +21,7 @@ import { UsersModule } from "./users.module";
     BillingDomainModule,
     UsersModule,
   ],
-  controllers: [SearchController],
+  controllers: httpControllers([SearchController]),
   providers: [{ provide: AbstractSearchService, useClass: SearchGatewayService }],
 })
 export class SearchModule {}

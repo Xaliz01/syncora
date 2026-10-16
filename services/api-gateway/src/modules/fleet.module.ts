@@ -1,3 +1,4 @@
+import { httpControllers } from "../process-role";
 import { Module } from "@nestjs/common";
 import { FleetController } from "../presentation/http/fleet.controller";
 import { AbstractFleetGatewayService } from "../domain/ports/fleet.service.port";
@@ -8,7 +9,7 @@ import { FleetDomainModule } from "./fleet-domain.module";
 
 @Module({
   imports: [SubscriptionsModule, FleetDomainModule],
-  controllers: [FleetController],
+  controllers: httpControllers([FleetController]),
   providers: [
     { provide: AbstractFleetGatewayService, useClass: FleetGatewayService },
     RequirePermissionGuard,

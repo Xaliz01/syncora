@@ -1,3 +1,4 @@
+import { httpControllers } from "../process-role";
 import { Module } from "@nestjs/common";
 import { DocumentsController } from "../presentation/http/documents.controller";
 import { AbstractDocumentsGatewayService } from "../domain/ports/documents.service.port";
@@ -20,7 +21,7 @@ import { OrganizationsDomainModule } from "./organizations-domain.module";
     TechniciansDomainModule,
     OrganizationsDomainModule,
   ],
-  controllers: [DocumentsController],
+  controllers: httpControllers([DocumentsController]),
   providers: [{ provide: AbstractDocumentsGatewayService, useClass: DocumentsGatewayService }],
 })
 export class DocumentsModule {}

@@ -39,6 +39,7 @@ import { InterventionTypesService } from "../domain/cases/intervention-types.ser
 import { CasesDataImportService } from "../domain/cases/cases-data-import.service";
 import { MaintenanceContractsService } from "../domain/cases/maintenance-contracts.service";
 import { MaintenanceContractVisitsScheduler } from "../domain/cases/maintenance-contract-visits.scheduler";
+import { httpControllers, whenWorkerCrons } from "../process-role";
 import { CronRunRecorder } from "../domain/cases/cron-run.recorder";
 
 import { CaseTemplateSchema } from "../persistence/cases/case-template.schema";
@@ -78,7 +79,7 @@ import { CronRunSchema } from "../persistence/cases/cron-run.schema";
     UsersModule,
     PermissionsModule,
   ],
-  controllers: [CasesController, MaintenanceContractsController],
+  controllers: httpControllers([CasesController, MaintenanceContractsController]),
   providers: [
     { provide: AbstractCasesGatewayService, useClass: CasesGatewayService },
     {
@@ -95,7 +96,7 @@ import { CronRunSchema } from "../persistence/cases/cron-run.schema";
     { provide: AbstractInterventionTypesService, useClass: InterventionTypesService },
     { provide: AbstractCasesDataImportService, useClass: CasesDataImportService },
     MaintenanceContractsService,
-    MaintenanceContractVisitsScheduler,
+    ...whenWorkerCrons([MaintenanceContractVisitsScheduler]),
     CronRunRecorder,
     RequirePermissionGuard,
   ],

@@ -41,10 +41,7 @@ planwise/
   apps/
     frontend/              # Frontend React/Tailwind/TanStack Query/Playwright
   services/
-    api-gateway/           # API Gateway Nest.js (auth, orchestration)
-    organizations-service/ # Microservice organisations (MongoDB)
-    users-service/         # Microservice utilisateurs (MongoDB, bcrypt, validation credentials)
-    permissions-service/   # Microservice permissions (profils, affectations, invitations)
+    api-gateway/           # API Nest (domaines, crons worker et notifications)
   packages/
     shared/                # Types & contrats partagés (@planwise/shared)
   docker-compose.yml       # MongoDB pour le dev local
@@ -62,7 +59,7 @@ planwise/
 - **Inscription** : création d’une **organisation** puis d’un **utilisateur admin** lié. (API : `POST /api/auth/register`.)
 - **Connexion** : email + mot de passe → JWT avec `sub`, `organizationId`, `role`, `email`. (API : `POST /api/auth/login`, `GET /api/auth/me`.)
 - **Rôles** : `admin` (créateur de l’org, pourra gérer les utilisateurs et droits), `member` (pour les futurs utilisateurs créés par l’admin).
-- **Permissions** : système granulaire piloté par le `permissions-service` (profils de droits, exceptions par utilisateur, permissions effectives).
+- **Permissions** : profils de droits, exceptions par utilisateur, permissions effectives.
 - **Administration organisation** :
   - Invitation d’un utilisateur dans l’organisation
   - Création de profils personnalisés de permissions
@@ -82,20 +79,18 @@ npm install
 
 ### Backend (une seule commande)
 
-À la racine du projet, une commande lance **MongoDB** (Docker) puis les **trois services** (organizations, users, api-gateway) en mode dev :
+À la racine du projet, une commande lance **MongoDB** (Docker) puis l’**API** en mode dev :
 
 ```bash
 npm run backend
 ```
 
 - Démarre le conteneur **MongoDB** (`docker compose up -d`) sur le port **27017**
-- Attend que MongoDB soit prêt, puis lance en parallèle :
-  - **organizations-service** (port 3001)
-  - **users-service** (port 3002)
-  - **permissions-service** (port 3003)
-  - **api-gateway** (port 3000)
+- Attend que MongoDB soit prêt, puis lance l’API sur le port **3000** (`PLANWISE_PROCESS=all` : HTTP et crons)
 
-Les services se connectent à `localhost:27017` avec leurs bases respectives (`planwise-organizations`, `planwise-users`, `planwise-permissions`). Aucune variable d’environnement requise pour le dev local.
+Les domaines utilisent `localhost:27017` et une base par connexion (`planwise-organizations`, `planwise-users`, `planwise-cases`, …). Aucune variable d’environnement requise pour le dev local.
+
+En production, la même image tourne en trois processus : `api` (3000), `notifications` (3010), `worker` (3020). En local : `npm run backend:worker` et `npm run backend:notifications` si on veut les séparer (ne pas les lancer en plus du mode `all`, les crons seraient en double).
 
 Pour arrêter uniquement MongoDB :
 
@@ -103,7 +98,7 @@ Pour arrêter uniquement MongoDB :
 npm run backend:down
 ```
 
-Pour lancer uniquement les trois services Node (si MongoDB tourne déjà) :
+Pour lancer uniquement l’API (si MongoDB tourne déjà) :
 
 ```bash
 npm run backend:run
@@ -118,14 +113,11 @@ npm run dev
 
 Par défaut, l’application sera disponible sur `http://localhost:5173`.
 
-### Démarrer les services backend individuellement
+### Démarrer l’API seule
 
-Si besoin (par ex. après `npm run backend:down` pour ne garder que MongoDB) :
+Si MongoDB tourne déjà :
 
-- **organizations-service** (3001) : `npm run start:dev -w @planwise/organizations-service`
-- **users-service** (3002) : `npm run start:dev -w @planwise/users-service`
-- **permissions-service** (3003) : `npm run start:dev -w @planwise/permissions-service`
-- **api-gateway** (3000) : `npm run start:dev -w @planwise/api-gateway`
+- **API** (3000) : `npm run start:dev -w @planwise/api-gateway`
 
 Endpoints utiles :
 
@@ -145,11 +137,10 @@ Endpoints utiles :
 
 Variables d’environnement optionnelles :
 
-- `MONGODB_URI` (organizations-service et users-service)
-- `MONGODB_URI` (permissions-service)
-- `ORGANIZATIONS_SERVICE_URL`, `USERS_SERVICE_URL`, `PERMISSIONS_SERVICE_URL` (api-gateway, défaut localhost:3001 / 3002 / 3003)
-- `JWT_SECRET` (api-gateway)
-- `CORS_ORIGIN` (api-gateway, défaut http://localhost:5173)
+- `MONGO_BASE_URI` (préfixe commun, ex. `mongodb://localhost:27017`) ou une variable par base (`CASES_DB_URI`, …)
+- `PLANWISE_PROCESS` (`all` par défaut, `api`, `worker`, `notifications`)
+- `JWT_SECRET`
+- `CORS_ORIGIN` (défaut http://localhost:5173)
 
 ## Scripts principaux
 

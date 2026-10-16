@@ -1,3 +1,4 @@
+import { httpControllers } from "../process-role";
 import { Module } from "@nestjs/common";
 import { HttpModule } from "@nestjs/axios";
 import { BillingController } from "../presentation/http/billing.controller";
@@ -23,7 +24,7 @@ import { DocumentsDomainModule } from "./documents-domain.module";
     BillingDomainModule,
     DocumentsDomainModule,
   ],
-  controllers: [BillingController],
+  controllers: httpControllers([BillingController]),
   providers: [
     { provide: AbstractBillingGatewayService, useClass: BillingGatewayService },
     RequirePermissionGuard,

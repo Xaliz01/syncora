@@ -1,3 +1,4 @@
+import { httpControllers } from "../process-role";
 import { Module } from "@nestjs/common";
 import { AnalyticsGatewayController } from "../presentation/http/analytics.controller";
 import { AbstractAnalyticsGatewayService } from "../domain/ports/analytics.gateway.service.port";
@@ -6,7 +7,7 @@ import { OrganizationsDomainModule } from "./organizations-domain.module";
 
 @Module({
   imports: [OrganizationsDomainModule],
-  controllers: [AnalyticsGatewayController],
+  controllers: httpControllers([AnalyticsGatewayController]),
   providers: [{ provide: AbstractAnalyticsGatewayService, useClass: AnalyticsGatewayService }],
   exports: [AbstractAnalyticsGatewayService],
 })

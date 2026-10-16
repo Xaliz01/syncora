@@ -1,5 +1,7 @@
 import { Module } from "@nestjs/common";
 import { SubscriptionsController } from "../presentation/http/subscriptions.controller";
+import { StripeWebhookController } from "../presentation/http/stripe-webhook.controller";
+import { httpControllers } from "../process-role";
 import { AbstractSubscriptionsGatewayService } from "../domain/ports/subscriptions.service.port";
 import { SubscriptionsGatewayService } from "../domain/subscriptions.gateway.service";
 import { RequirePermissionGuard } from "../infrastructure/require-permission.guard";
@@ -10,7 +12,7 @@ import { OrganizationsDomainModule } from "./organizations-domain.module";
 
 @Module({
   imports: [SubscriptionsDomainModule, DocumentsDomainModule, OrganizationsDomainModule],
-  controllers: [SubscriptionsController],
+  controllers: httpControllers([SubscriptionsController, StripeWebhookController]),
   providers: [
     { provide: AbstractSubscriptionsGatewayService, useClass: SubscriptionsGatewayService },
     RequirePermissionGuard,

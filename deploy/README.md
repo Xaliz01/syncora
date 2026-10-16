@@ -2,7 +2,7 @@
 
 Cible MVP : une VM unique (VPC OVH) faisant tourner tous les services via Docker
 Compose, derrière Caddy (HTTPS automatique). Seul Caddy est exposé publiquement
-(ports 80/443) ; MongoDB et les microservices restent sur le réseau interne.
+(ports 80/443) ; MongoDB, l’API, le worker et les notifications restent sur le réseau interne.
 
 L'architecture est volontairement prête pour une migration Kubernetes ultérieure
 (une image par service, configuration par variables d'environnement, services
@@ -10,32 +10,28 @@ stateless hormis MongoDB et le volume documents).
 
 ## Contenu du dossier
 
-| Fichier                         | Rôle                                                             |
-| ------------------------------- | ---------------------------------------------------------------- |
-| `Dockerfile.backend`            | Image générique gateway + microservices (`--build-arg SERVICE=`) |
-| `Dockerfile.frontend`           | Image Next.js (sortie standalone)                                |
-| `docker-compose.prod.yml`       | Orchestration prod (services internes + Caddy)                   |
-| `docker-compose.monitoring.yml` | Stack Grafana/Prometheus (profil `monitoring`, optionnel)        |
-| `monitoring/`                   | Config Prometheus, Blackbox, Tempo, OTel Collector, Grafana      |
-| `Caddyfile`                     | Reverse proxy + HTTPS (Let's Encrypt)                            |
-| `static/maintenance.html`       | Page de secours si le frontend upstream est KO (Caddy 5xx)       |
-| `rolling-edge.sh`               | Bascule blue/green api-gateway + frontend (quasi zero-downtime)  |
-| `prune-planwise-images.sh`      | Après MEP : garde images courante + précédente uniquement        |
-| `.env.production.example`       | Modèle de configuration (à copier en `.env.production`)          |
+| Fichier                         | Rôle                                                            |
+| ------------------------------- | --------------------------------------------------------------- |
+| `Dockerfile.backend`            | Image unique `api-gateway` (API, worker, notifications)         |
+| `Dockerfile.frontend`           | Image Next.js (sortie standalone)                               |
+| `docker-compose.prod.yml`       | Orchestration prod (services internes + Caddy)                  |
+| `docker-compose.monitoring.yml` | Stack Grafana/Prometheus (profil `monitoring`, optionnel)       |
+| `monitoring/`                   | Config Prometheus, Blackbox, Tempo, OTel Collector, Grafana     |
+| `Caddyfile`                     | Reverse proxy + HTTPS (Let's Encrypt)                           |
+| `static/maintenance.html`       | Page de secours si le frontend upstream est KO (Caddy 5xx)      |
+| `rolling-edge.sh`               | Bascule blue/green api-gateway + frontend (quasi zero-downtime) |
+| `prune-planwise-images.sh`      | Après MEP : garde images courante + précédente uniquement       |
+| `.env.production.example`       | Modèle de configuration (à copier en `.env.production`)         |
 
-## Migrations Mongo (microservices)
+## Migrations Mongo
 
-Les microservices appliquent les migrations [migrate-mongo](https://github.com/seppevs/migrate-mongo)
-au démarrage via `runPendingMigrations` (`@planwise/shared/nest`) :
+L’API et le worker appliquent les migrations [migrate-mongo](https://github.com/seppevs/migrate-mongo)
+au démarrage (`runGatewayMigrations`), une base à la fois :
 
-- Config partagée : `createMigrateMongoConfig({ defaultUri })` dans `migrate-mongo-config.js`
-- Fichiers : `services/<service>/migrations/*.js`
-- Changelog Mongo : collection `changelog` dans la DB du service
+- Config : `services/api-gateway/migrate-mongo-config.js` (`MIGRATE_DATABASE` + `MONGODB_URI`)
+- Fichiers : `services/api-gateway/migrations/<base>/*.js`
+- Changelog Mongo : collection `changelog` dans la base concernée
 - Échec d’une migration → le process refuse de démarrer
-- En local / ops : `npm run migrate:status|up|down -w @planwise/<service>`
-
-Services déjà équipés : `integrations-service`, `cases-service`, `billing-service`.
-Les autres services doivent adopter le même schéma pour toute évolution d’index / schéma Mongo.
 
 ## 1. Pré-requis sur la VM
 
@@ -212,10 +208,7 @@ docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml \
 # Microservices + monitoring (pas un up global)
 docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml \
   --env-file .env.production --profile monitoring up -d \
-  mongodb organizations-service users-service permissions-service \
-  cases-service fleet-service technicians-service stock-service \
-  subscriptions-service customers-service notifications-service \
-  documents-service exports-service integrations-service billing-service \
+  mongodb planwise-worker planwise-notifications \
   prometheus tempo otel-collector grafana loki alloy node-exporter cadvisor blackbox-exporter mongodb-exporter
 ./rolling-edge.sh
 # Caddy + purge des anciens conteneurs api-gateway / frontend

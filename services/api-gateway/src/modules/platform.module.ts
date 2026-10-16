@@ -1,3 +1,4 @@
+import { httpControllers } from "../process-role";
 import { Module } from "@nestjs/common";
 import { HttpModule } from "@nestjs/axios";
 import { PlatformController } from "../presentation/http/platform.controller";
@@ -43,7 +44,7 @@ import { CasesModule } from "./cases.module";
     IntegrationsDomainModule,
     CasesModule,
   ],
-  controllers: [PlatformController],
+  controllers: httpControllers([PlatformController]),
   providers: [
     { provide: AbstractPrometheusOpsHealthService, useClass: PrometheusOpsHealthService },
     { provide: AbstractPlatformOrgLookupService, useClass: PlatformOrgLookupService },

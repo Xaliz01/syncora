@@ -1,3 +1,4 @@
+import { httpControllers } from "../process-role";
 import { Module } from "@nestjs/common";
 import { AccountController } from "../presentation/http/account.controller";
 import { AbstractAccountService } from "../domain/ports/account.service.port";
@@ -7,7 +8,7 @@ import { TechniciansDomainModule } from "./technicians-domain.module";
 
 @Module({
   imports: [UsersModule, TechniciansDomainModule],
-  controllers: [AccountController],
+  controllers: httpControllers([AccountController]),
   providers: [{ provide: AbstractAccountService, useClass: AccountService }],
 })
 export class AccountModule {}

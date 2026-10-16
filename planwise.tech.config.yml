@@ -27,8 +27,12 @@ tech:
       - Prettier
   architecture:
     style: hexagonale
-    pattern: microservices
-    communication: REST
+    pattern: modular-monolith
+    communication: in-process
+    processes:
+      - api
+      - worker
+      - notifications
     api_gateway: true
     shared_package:
       name: "@planwise/shared"
@@ -36,7 +40,6 @@ tech:
         - Partage des types TypeScript
         - Contrats front/back
         - DTOs et schémas communs
-        - Facilitation des appels inter-microservices
   devops:
     cloud: AWS
     container_orchestration: ECS
@@ -46,11 +49,9 @@ tech:
       env_vars:
         - "LOG_LEVEL (niveau Winston: error, warn, info, debug)"
         - "DD_SERVICE, DD_ENV, DD_VERSION (Datadog)"
-        - "STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_PRICE_ID (abonnements ; webhook public Caddy → subscriptions-service : https://$API_DOMAIN/webhooks/stripe)"
-        - "SUBSCRIPTIONS_SERVICE_URL (gateway → microservice abonnements)"
-        - "EXPORTS_SERVICE_URL (gateway → microservice exports, défaut localhost:3012)"
-        - "INTEGRATIONS_SERVICE_URL (gateway → microservice intégrations, défaut localhost:3013)"
-        - "BILLING_SERVICE_URL (gateway → microservice facturation locale, défaut localhost:3014)"
+        - "PLANWISE_PROCESS (all | api | worker | notifications)"
+        - "MONGO_BASE_URI (préfixe des 13 bases planwise-<domaine>)"
+        - "STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_PRICE_ID (abonnements ; webhook public Caddy → API : https://$API_DOMAIN/webhooks/stripe)"
         - "INTEGRATIONS_ENCRYPTION_KEY (chiffrement des tokens API partenaires, 64 hex)"
         - "PENNYLANE_CLIENT_ID / PENNYLANE_CLIENT_SECRET (OAuth app Partnerships ; bouton Connecter avec Pennylane)"
         - "PENNYLANE_OAUTH_REDIRECT_URI ou APP_URL (callback /settings/integrations/pennylane/callback)"

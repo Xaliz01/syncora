@@ -1,3 +1,4 @@
+import { httpControllers } from "../process-role";
 import { Module } from "@nestjs/common";
 import { TechniciansController } from "../presentation/http/technicians.controller";
 import { AbstractTechniciansGatewayService } from "../domain/ports/technicians.service.port";
@@ -17,7 +18,7 @@ import { PermissionsModule } from "./permissions.module";
     UsersModule,
     PermissionsModule,
   ],
-  controllers: [TechniciansController],
+  controllers: httpControllers([TechniciansController]),
   providers: [
     { provide: AbstractTechniciansGatewayService, useClass: TechniciansGatewayService },
     RequirePermissionGuard,

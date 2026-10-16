@@ -1,3 +1,4 @@
+import { httpControllers } from "../process-role";
 import { Module } from "@nestjs/common";
 import { HttpModule } from "@nestjs/axios";
 import { ExportsController } from "../presentation/http/exports.controller";
@@ -24,7 +25,7 @@ import { PermissionsModule } from "./permissions.module";
     IntegrationsDomainModule,
     PermissionsModule,
   ],
-  controllers: [ExportsController],
+  controllers: httpControllers([ExportsController]),
   providers: [
     ExportsService,
     { provide: AbstractExportsGatewayService, useClass: ExportsGatewayService },

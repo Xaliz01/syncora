@@ -1,3 +1,4 @@
+import { httpControllers } from "../process-role";
 import { Module } from "@nestjs/common";
 import { HttpModule } from "@nestjs/axios";
 import { AssistantController } from "../presentation/http/assistant.controller";
@@ -7,7 +8,7 @@ import { AssistantLlmClient } from "../infrastructure/assistant/llm.client";
 
 @Module({
   imports: [HttpModule.register({ timeout: 50_000, maxRedirects: 0 })],
-  controllers: [AssistantController],
+  controllers: httpControllers([AssistantController]),
   providers: [
     AssistantLlmClient,
     { provide: AbstractAssistantService, useClass: AssistantService },

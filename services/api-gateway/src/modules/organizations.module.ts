@@ -1,3 +1,4 @@
+import { httpControllers } from "../process-role";
 import { Module } from "@nestjs/common";
 import { HttpModule } from "@nestjs/axios";
 import { OrganizationsController } from "../presentation/http/organizations.controller";
@@ -14,7 +15,7 @@ import { UsersModule } from "./users.module";
     OrganizationsDomainModule,
     UsersModule,
   ],
-  controllers: [OrganizationsController],
+  controllers: httpControllers([OrganizationsController]),
   providers: [
     { provide: AbstractOrganizationsGatewayService, useClass: OrganizationsGatewayService },
     RequirePermissionGuard,

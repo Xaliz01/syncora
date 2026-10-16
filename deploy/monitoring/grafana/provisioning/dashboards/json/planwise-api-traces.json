@@ -721,7 +721,7 @@
           },
           { "selected": false, "text": "All", "value": "$__all" }
         ],
-        "query": "planwise-api-gateway,planwise-cases-service,planwise-users-service,planwise-notifications-service,planwise-customers-service",
+        "query": "planwise-api-gateway,planwise-worker,planwise-notifications",
         "skipUrlSync": false,
         "type": "custom"
       },

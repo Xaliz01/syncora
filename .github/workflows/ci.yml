@@ -46,20 +46,6 @@ jobs:
           - packages/telemetry
           - apps/frontend
           - services/api-gateway
-          - services/organizations-service
-          - services/users-service
-          - services/permissions-service
-          - services/fleet-service
-          - services/technicians-service
-          - services/cases-service
-          - services/stock-service
-          - services/customers-service
-          - services/subscriptions-service
-          - services/notifications-service
-          - services/documents-service
-          - services/exports-service
-          - services/integrations-service
-          - services/billing-service
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js
@@ -96,20 +82,6 @@ jobs:
       fail-fast: false
       matrix:
         service:
-          - "@planwise/organizations-service"
-          - "@planwise/users-service"
-          - "@planwise/permissions-service"
-          - "@planwise/fleet-service"
-          - "@planwise/technicians-service"
-          - "@planwise/cases-service"
-          - "@planwise/stock-service"
-          - "@planwise/customers-service"
-          - "@planwise/subscriptions-service"
-          - "@planwise/notifications-service"
-          - "@planwise/documents-service"
-          - "@planwise/exports-service"
-          - "@planwise/integrations-service"
-          - "@planwise/billing-service"
           - "@planwise/api-gateway"
     steps:
       - uses: actions/checkout@v4

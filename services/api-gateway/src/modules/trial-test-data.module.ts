@@ -3,6 +3,7 @@ import { TrialTestDataController } from "../presentation/http/trial-test-data.co
 import { AbstractTrialTestDataService } from "../domain/ports/trial-test-data.service.port";
 import { TrialTestDataService } from "../domain/trial-test-data.service";
 import { TrialTestDataCleanupScheduler } from "../domain/organizations/trial-test-data-cleanup.scheduler";
+import { httpControllers, whenWorkerCrons } from "../process-role";
 import { AdminRoleGuard } from "../infrastructure/admin-role.guard";
 import { SubscriptionsModule } from "./subscriptions.module";
 import { SubscriptionsDomainModule } from "./subscriptions-domain.module";
@@ -28,11 +29,11 @@ import { IntegrationsDomainModule } from "./integrations-domain.module";
     PermissionsModule,
     IntegrationsDomainModule,
   ],
-  controllers: [TrialTestDataController],
+  controllers: httpControllers([TrialTestDataController]),
   providers: [
     TrialTestDataService,
     { provide: AbstractTrialTestDataService, useExisting: TrialTestDataService },
-    TrialTestDataCleanupScheduler,
+    ...whenWorkerCrons([TrialTestDataCleanupScheduler]),
     AdminRoleGuard,
   ],
   exports: [AbstractTrialTestDataService],

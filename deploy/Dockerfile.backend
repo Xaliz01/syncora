@@ -1,6 +1,6 @@
-# Image générique pour l'API gateway et tous les microservices NestJS.
-# Le service à construire est passé via --build-arg SERVICE=<nom-sans-prefixe>
-# (ex: api-gateway, users-service, cases-service…).
+# Image unique du monolithe Nest (api-gateway).
+# Les processus api, worker et notifications partagent cette image.
+# Le rôle est choisi au runtime via PLANWISE_PROCESS (api | worker | notifications | all).
 #
 # Build (depuis la racine du repo) :
 #   docker build -f deploy/Dockerfile.backend --build-arg SERVICE=api-gateway -t planwise-api-gateway .

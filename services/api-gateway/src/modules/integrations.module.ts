@@ -1,3 +1,4 @@
+import { httpControllers } from "../process-role";
 import { Module } from "@nestjs/common";
 import { IntegrationsController } from "../presentation/http/integrations.controller";
 import { AbstractIntegrationsGatewayService } from "../domain/ports/integrations.service.port";
@@ -17,7 +18,7 @@ import { IntegrationsDomainModule } from "./integrations-domain.module";
     OrderGiversModule,
     SubscriptionsModule,
   ],
-  controllers: [IntegrationsController],
+  controllers: httpControllers([IntegrationsController]),
   providers: [
     { provide: AbstractIntegrationsGatewayService, useClass: IntegrationsGatewayService },
     RequirePermissionGuard,

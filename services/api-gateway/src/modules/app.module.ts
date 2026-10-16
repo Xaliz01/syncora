@@ -44,6 +44,7 @@ import { BillingDomainModule } from "./billing-domain.module";
 import { SubscriptionsDomainModule } from "./subscriptions-domain.module";
 import { NotificationsDomainModule } from "./notifications-domain.module";
 import { NotificationSchedulersModule } from "./notification-schedulers.module";
+import { runsNotificationCrons } from "../process-role";
 
 @Module({
   imports: [
@@ -82,7 +83,7 @@ import { NotificationSchedulersModule } from "./notification-schedulers.module";
     BillingDomainModule,
     SubscriptionsDomainModule,
     NotificationsDomainModule,
-    NotificationSchedulersModule,
+    ...(runsNotificationCrons() ? [NotificationSchedulersModule] : []),
     TrialTestDataModule,
     DataImportModule,
   ],

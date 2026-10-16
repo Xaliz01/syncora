@@ -71,20 +71,6 @@ jobs:
       matrix:
         service:
           - api-gateway
-          - organizations-service
-          - users-service
-          - permissions-service
-          - fleet-service
-          - technicians-service
-          - cases-service
-          - stock-service
-          - customers-service
-          - subscriptions-service
-          - notifications-service
-          - documents-service
-          - exports-service
-          - integrations-service
-          - billing-service
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
@@ -197,14 +183,10 @@ jobs:
 
             compose pull
 
-            # 1) Microservices (+ monitoring) sans toucher aux slots edge ni purger
-            #    les anciens conteneurs `api-gateway` / `frontend` tout de suite.
+            # 1) Worker, notifications et monitoring. Les slots edge sont basculés ensuite.
             compose up -d \
               mongodb \
-              organizations-service users-service permissions-service \
-              cases-service fleet-service technicians-service stock-service \
-              subscriptions-service customers-service notifications-service \
-              documents-service exports-service integrations-service billing-service \
+              planwise-worker planwise-notifications \
               prometheus tempo otel-collector grafana loki alloy node-exporter cadvisor blackbox-exporter mongodb-exporter
 
             # Recharge la config Prometheus (bind-mount) sans recréer le volume TSDB.
@@ -232,10 +214,7 @@ jobs:
             compose up -d --remove-orphans \
               caddy \
               mongodb \
-              organizations-service users-service permissions-service \
-              cases-service fleet-service technicians-service stock-service \
-              subscriptions-service customers-service notifications-service \
-              documents-service exports-service integrations-service billing-service \
+              planwise-worker planwise-notifications \
               prometheus tempo otel-collector grafana loki alloy node-exporter cadvisor blackbox-exporter mongodb-exporter
 
             # Smoke : au moins un slot frontend / gateway doit répondre en local.

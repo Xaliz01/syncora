@@ -1,29 +1,16 @@
-# Déploiement production MVP — VM unique (OVH) + Docker Compose + Caddy.
+# Déploiement production — VM unique (OVH) + Docker Compose + Caddy.
 #
-# Seuls Caddy (80/443) est exposé publiquement. Tous les microservices et MongoDB
-# restent sur le réseau interne `planwise` et ne publient aucun port sur l'hôte.
+# Trois processus Nest partagent l’image api-gateway :
+#   api-gateway-{blue,green}  PLANWISE_PROCESS=api            :3000
+#   planwise-worker           PLANWISE_PROCESS=worker         :3020
+#   planwise-notifications    PLANWISE_PROCESS=notifications  :3010
+#
+# Seul Caddy (80/443) est exposé. MongoDB et les processus restent sur le réseau `planwise`.
 #
 # Usage :
-#   cp deploy/.env.production.example deploy/.env.production   # puis renseigner les secrets
+#   cp deploy/.env.production.example deploy/.env.production
 #   docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.production pull
-#   # microservices… puis ./rolling-edge.sh (ne pas `up -d` global : démarrerait blue+green)
-
-# ── Ancres réutilisables ──────────────────────────────────────
-x-service-urls: &service-urls
-  ORGANIZATIONS_SERVICE_URL: http://organizations-service:3001
-  USERS_SERVICE_URL: http://users-service:3002
-  PERMISSIONS_SERVICE_URL: http://permissions-service:3003
-  CASES_SERVICE_URL: http://cases-service:3004
-  FLEET_SERVICE_URL: http://fleet-service:3005
-  TECHNICIANS_SERVICE_URL: http://technicians-service:3006
-  STOCK_SERVICE_URL: http://stock-service:3007
-  SUBSCRIPTIONS_SERVICE_URL: http://subscriptions-service:3008
-  CUSTOMERS_SERVICE_URL: http://customers-service:3009
-  NOTIFICATIONS_SERVICE_URL: http://notifications-service:3010
-  DOCUMENTS_SERVICE_URL: http://documents-service:3011
-  EXPORTS_SERVICE_URL: http://exports-service:3012
-  INTEGRATIONS_SERVICE_URL: http://integrations-service:3013
-  BILLING_SERVICE_URL: http://billing-service:3014
+#   # puis ./rolling-edge.sh (ne pas `up -d` global : démarrerait blue+green)
 
 x-healthcheck: &tcp-healthcheck
   test:
@@ -34,60 +21,93 @@ x-healthcheck: &tcp-healthcheck
   interval: 10s
   timeout: 5s
   retries: 5
-  start_period: 20s
+  start_period: 40s
 
-x-backend: &backend
+x-planwise-env: &planwise-env
+  OTEL_TRACES_ENABLED: ${OTEL_TRACES_ENABLED:-false}
+  OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
+  PROMETHEUS_URL: ${PROMETHEUS_URL:-http://prometheus:9090}
+  NODE_ENV: production
+  MONGO_BASE_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}
+  JWT_SECRET: ${JWT_SECRET:?JWT_SECRET requis}
+  CORS_ORIGIN: ${CORS_ORIGIN:?CORS_ORIGIN requis}
+  PLATFORM_STAFF_EMAILS: ${PLATFORM_STAFF_EMAILS:-mail@benoistbabin.fr}
+  PLATFORM_STAFF_EMAIL_DOMAINS: ${PLATFORM_STAFF_EMAIL_DOMAINS:-planwise.fr}
+  PLATFORM_SIGNUP_ALERT_EMAIL: ${PLATFORM_SIGNUP_ALERT_EMAIL:-mail@benoistbabin.fr}
+  PAPPERS_API_KEY: ${PAPPERS_API_KEY:-}
+  PAPPERS_API_URL: ${PAPPERS_API_URL:-https://api.pappers.fr/v2}
+  APP_PUBLIC_URL: ${APP_PUBLIC_URL:-https://planwise.fr}
+  APP_URL: ${APP_URL:-https://app.planwise.fr}
+  CRISP_IDENTITY_SECRET: ${CRISP_IDENTITY_SECRET:-}
+  ASSISTANT_ENABLED: ${ASSISTANT_ENABLED:-}
+  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+  OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+  OPENAI_API_BASE: ${OPENAI_API_BASE:-}
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+  ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-}
+  STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+  STRIPE_PRICE_ID: ${STRIPE_PRICE_ID:-}
+  STRIPE_TRIAL_DAYS: ${STRIPE_TRIAL_DAYS:-}
+  STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+  STRIPE_BILLING_PORTAL_CONFIGURATION_ID: ${STRIPE_BILLING_PORTAL_CONFIGURATION_ID:-}
+  STRIPE_LEGAL_MARKETING_URL: ${STRIPE_LEGAL_MARKETING_URL:-}
+  STRIPE_CGV_URL: ${STRIPE_CGV_URL:-}
+  STRIPE_CGU_URL: ${STRIPE_CGU_URL:-}
+  STRIPE_ADDON_TEAM_SUGGESTION_PRICE_ID: ${STRIPE_ADDON_TEAM_SUGGESTION_PRICE_ID:-}
+  STRIPE_ADDON_EXTRA_USERS_PRICE_ID: ${STRIPE_ADDON_EXTRA_USERS_PRICE_ID:-}
+  STRIPE_ADDON_EXTRA_STORAGE_PRICE_ID: ${STRIPE_ADDON_EXTRA_STORAGE_PRICE_ID:-}
+  VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+  VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+  VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:contact@planwise.fr}
+  SMTP_HOST: ${SMTP_HOST:-}
+  SMTP_PORT: ${SMTP_PORT:-587}
+  SMTP_USER: ${SMTP_USER:-}
+  SMTP_PASS: ${SMTP_PASS:-}
+  SMTP_FROM: ${SMTP_FROM:-Planwise <contact@planwise.fr>}
+  SMTP_BCC: ${SMTP_BCC:-}
+  STORAGE_PROVIDER: ${STORAGE_PROVIDER:-local}
+  DOCUMENT_STORAGE_PATH: /data/uploads
+  S3_BUCKET: ${S3_BUCKET:-}
+  S3_ENDPOINT: ${S3_ENDPOINT:-}
+  AWS_REGION: ${AWS_REGION:-}
+  AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+  AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+  INTEGRATIONS_ENCRYPTION_KEY: ${INTEGRATIONS_ENCRYPTION_KEY:?INTEGRATIONS_ENCRYPTION_KEY requis (64 hex)}
+  PENNYLANE_API_BASE_URL: ${PENNYLANE_API_BASE_URL:-https://app.pennylane.com/api/external/v2}
+  PENNYLANE_CLIENT_ID: ${PENNYLANE_CLIENT_ID:-}
+  PENNYLANE_CLIENT_SECRET: ${PENNYLANE_CLIENT_SECRET:-}
+  PENNYLANE_OAUTH_REDIRECT_URI: ${PENNYLANE_OAUTH_REDIRECT_URI:-}
+  PENNYLANE_OAUTH_SCOPES: ${PENNYLANE_OAUTH_SCOPES:-customers:all customer_invoices:all}
+  QONTO_API_BASE_URL: ${QONTO_API_BASE_URL:-https://thirdparty.qonto.com/v2}
+  QONTO_CLIENT_ID: ${QONTO_CLIENT_ID:-}
+  QONTO_CLIENT_SECRET: ${QONTO_CLIENT_SECRET:-}
+  QONTO_OAUTH_REDIRECT_URI: ${QONTO_OAUTH_REDIRECT_URI:-}
+  QONTO_OAUTH_SCOPES: ${QONTO_OAUTH_SCOPES:-organization.read offline_access client.read client.write client_invoice.read client_invoice.write}
+  QONTO_STAGING_TOKEN: ${QONTO_STAGING_TOKEN:-}
+  QONTO_OAUTH_AUTHORIZE_URL: ${QONTO_OAUTH_AUTHORIZE_URL:-}
+  QONTO_OAUTH_TOKEN_URL: ${QONTO_OAUTH_TOKEN_URL:-}
+  INVOICE_SYNC_BATCH_SIZE: ${INVOICE_SYNC_BATCH_SIZE:-200}
+
+x-planwise-process: &planwise-process
+  image: ${REGISTRY}/planwise-api-gateway:${IMAGE_TAG:-latest}
   restart: unless-stopped
   networks: [planwise]
   depends_on:
     mongodb:
       condition: service_healthy
+  healthcheck: *tcp-healthcheck
 
 x-api-gateway: &api-gateway
-  image: ${REGISTRY}/planwise-api-gateway:${IMAGE_TAG:-latest}
-  restart: unless-stopped
+  <<: *planwise-process
   stop_grace_period: 25s
-  networks: [planwise]
   environment:
-    <<: *service-urls
-    OTEL_TRACES_ENABLED: ${OTEL_TRACES_ENABLED:-false}
-    OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
-    PROMETHEUS_URL: ${PROMETHEUS_URL:-http://prometheus:9090}
-    NODE_ENV: production
+    <<: *planwise-env
+    PLANWISE_PROCESS: api
     PORT: "3000"
-    JWT_SECRET: ${JWT_SECRET:?JWT_SECRET requis}
-    CORS_ORIGIN: ${CORS_ORIGIN:?CORS_ORIGIN requis}
-    PLATFORM_STAFF_EMAILS: ${PLATFORM_STAFF_EMAILS:-mail@benoistbabin.fr}
-    PLATFORM_STAFF_EMAIL_DOMAINS: ${PLATFORM_STAFF_EMAIL_DOMAINS:-planwise.fr}
-    PLATFORM_SIGNUP_ALERT_EMAIL: ${PLATFORM_SIGNUP_ALERT_EMAIL:-mail@benoistbabin.fr}
-    PAPPERS_API_KEY: ${PAPPERS_API_KEY:-}
-    PAPPERS_API_URL: ${PAPPERS_API_URL:-https://api.pappers.fr/v2}
-    APP_PUBLIC_URL: ${APP_PUBLIC_URL:-https://planwise.fr}
-    CRISP_IDENTITY_SECRET: ${CRISP_IDENTITY_SECRET:-}
     SWAGGER_PATH: ${SWAGGER_PATH:-api/docs}
-    SWAGGER_TITLE: ${SWAGGER_TITLE:-Planwise API Gateway}
-    ASSISTANT_ENABLED: ${ASSISTANT_ENABLED:-}
-    OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-    OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
-    OPENAI_API_BASE: ${OPENAI_API_BASE:-}
-    ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-    ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-}
-  depends_on:
-    - organizations-service
-    - users-service
-    - permissions-service
-    - cases-service
-    - fleet-service
-    - technicians-service
-    - stock-service
-    - subscriptions-service
-    - customers-service
-    - notifications-service
-    - documents-service
-    - exports-service
-    - integrations-service
-    - billing-service
-  healthcheck: *tcp-healthcheck
+    SWAGGER_TITLE: ${SWAGGER_TITLE:-Planwise API}
+  volumes:
+    - documents-data:/data/uploads
 
 x-frontend: &frontend
   image: ${REGISTRY}/planwise-frontend:${IMAGE_TAG:-latest}
@@ -101,7 +121,6 @@ x-frontend: &frontend
   healthcheck: *tcp-healthcheck
 
 services:
-  # ── Base de données ─────────────────────────────────────────
   mongodb:
     image: mongo:7
     container_name: planwise-mongodb
@@ -122,237 +141,37 @@ services:
       retries: 5
       start_period: 20s
 
-  # ── Microservices internes ──────────────────────────────────
-  organizations-service:
-    <<: *backend
-    image: ${REGISTRY}/planwise-organizations-service:${IMAGE_TAG:-latest}
+  planwise-worker:
+    <<: *planwise-process
     environment:
-      <<: *service-urls
-      OTEL_TRACES_ENABLED: ${OTEL_TRACES_ENABLED:-false}
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
-      NODE_ENV: production
-      PORT: "3001"
-      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-organizations
-    healthcheck: *tcp-healthcheck
+      <<: *planwise-env
+      PLANWISE_PROCESS: worker
+      PORT: "3020"
 
-  users-service:
-    <<: *backend
-    image: ${REGISTRY}/planwise-users-service:${IMAGE_TAG:-latest}
+  planwise-notifications:
+    <<: *planwise-process
     environment:
-      OTEL_TRACES_ENABLED: ${OTEL_TRACES_ENABLED:-false}
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
-      NODE_ENV: production
-      PORT: "3002"
-      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-users
-    healthcheck: *tcp-healthcheck
-
-  permissions-service:
-    <<: *backend
-    image: ${REGISTRY}/planwise-permissions-service:${IMAGE_TAG:-latest}
-    environment:
-      OTEL_TRACES_ENABLED: ${OTEL_TRACES_ENABLED:-false}
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
-      NODE_ENV: production
-      PORT: "3003"
-      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-permissions
-    healthcheck: *tcp-healthcheck
-
-  cases-service:
-    <<: *backend
-    image: ${REGISTRY}/planwise-cases-service:${IMAGE_TAG:-latest}
-    environment:
-      OTEL_TRACES_ENABLED: ${OTEL_TRACES_ENABLED:-false}
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
-      NODE_ENV: production
-      PORT: "3004"
-      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-cases
-    healthcheck: *tcp-healthcheck
-
-  fleet-service:
-    <<: *backend
-    image: ${REGISTRY}/planwise-fleet-service:${IMAGE_TAG:-latest}
-    environment:
-      OTEL_TRACES_ENABLED: ${OTEL_TRACES_ENABLED:-false}
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
-      NODE_ENV: production
-      PORT: "3005"
-      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-fleet
-    healthcheck: *tcp-healthcheck
-
-  technicians-service:
-    <<: *backend
-    image: ${REGISTRY}/planwise-technicians-service:${IMAGE_TAG:-latest}
-    environment:
-      OTEL_TRACES_ENABLED: ${OTEL_TRACES_ENABLED:-false}
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
-      NODE_ENV: production
-      PORT: "3006"
-      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-technicians
-    healthcheck: *tcp-healthcheck
-
-  stock-service:
-    <<: *backend
-    image: ${REGISTRY}/planwise-stock-service:${IMAGE_TAG:-latest}
-    environment:
-      OTEL_TRACES_ENABLED: ${OTEL_TRACES_ENABLED:-false}
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
-      NODE_ENV: production
-      PORT: "3007"
-      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-stock
-    healthcheck: *tcp-healthcheck
-
-  subscriptions-service:
-    <<: *backend
-    image: ${REGISTRY}/planwise-subscriptions-service:${IMAGE_TAG:-latest}
-    environment:
-      OTEL_TRACES_ENABLED: ${OTEL_TRACES_ENABLED:-false}
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
-      NODE_ENV: production
-      PORT: "3008"
-      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-subscriptions
-      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
-      STRIPE_PRICE_ID: ${STRIPE_PRICE_ID:-}
-      STRIPE_TRIAL_DAYS: ${STRIPE_TRIAL_DAYS:-}
-      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
-      STRIPE_BILLING_PORTAL_CONFIGURATION_ID: ${STRIPE_BILLING_PORTAL_CONFIGURATION_ID:-}
-      STRIPE_LEGAL_MARKETING_URL: ${STRIPE_LEGAL_MARKETING_URL:-}
-      STRIPE_CGV_URL: ${STRIPE_CGV_URL:-}
-      STRIPE_CGU_URL: ${STRIPE_CGU_URL:-}
-      STRIPE_ADDON_TEAM_SUGGESTION_PRICE_ID: ${STRIPE_ADDON_TEAM_SUGGESTION_PRICE_ID:-}
-      STRIPE_ADDON_EXTRA_USERS_PRICE_ID: ${STRIPE_ADDON_EXTRA_USERS_PRICE_ID:-}
-      STRIPE_ADDON_EXTRA_STORAGE_PRICE_ID: ${STRIPE_ADDON_EXTRA_STORAGE_PRICE_ID:-}
-      NOTIFICATIONS_SERVICE_URL: http://notifications-service:3010
-      ORGANIZATIONS_SERVICE_URL: http://organizations-service:3001
-      PLATFORM_SIGNUP_ALERT_EMAIL: ${PLATFORM_SIGNUP_ALERT_EMAIL:-mail@benoistbabin.fr}
-    healthcheck: *tcp-healthcheck
-
-  customers-service:
-    <<: *backend
-    image: ${REGISTRY}/planwise-customers-service:${IMAGE_TAG:-latest}
-    environment:
-      OTEL_TRACES_ENABLED: ${OTEL_TRACES_ENABLED:-false}
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
-      NODE_ENV: production
-      PORT: "3009"
-      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-customers
-    healthcheck: *tcp-healthcheck
-
-  notifications-service:
-    <<: *backend
-    image: ${REGISTRY}/planwise-notifications-service:${IMAGE_TAG:-latest}
-    environment:
-      OTEL_TRACES_ENABLED: ${OTEL_TRACES_ENABLED:-false}
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
-      NODE_ENV: production
+      <<: *planwise-env
+      PLANWISE_PROCESS: notifications
       PORT: "3010"
-      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-notifications
-      CASES_SERVICE_URL: http://cases-service:3004
-      USERS_SERVICE_URL: http://users-service:3002
-      SUBSCRIPTIONS_SERVICE_URL: http://subscriptions-service:3008
-      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
-      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
-      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:contact@planwise.fr}
-      SMTP_HOST: ${SMTP_HOST:-}
-      SMTP_PORT: ${SMTP_PORT:-587}
-      SMTP_USER: ${SMTP_USER:-}
-      SMTP_PASS: ${SMTP_PASS:-}
-      SMTP_FROM: ${SMTP_FROM:-Planwise <contact@planwise.fr>}
-      SMTP_BCC: ${SMTP_BCC:-}
-      APP_URL: ${APP_URL:-https://app.planwise.fr}
-    healthcheck: *tcp-healthcheck
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      planwise-worker:
+        condition: service_healthy
 
-  documents-service:
-    <<: *backend
-    image: ${REGISTRY}/planwise-documents-service:${IMAGE_TAG:-latest}
-    environment:
-      OTEL_TRACES_ENABLED: ${OTEL_TRACES_ENABLED:-false}
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
-      NODE_ENV: production
-      PORT: "3011"
-      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-documents
-      # STORAGE_PROVIDER=s3 pour basculer sur un Object Storage (recommandé à terme).
-      STORAGE_PROVIDER: ${STORAGE_PROVIDER:-local}
-      DOCUMENT_STORAGE_PATH: /data/uploads
-      S3_BUCKET: ${S3_BUCKET:-}
-      S3_ENDPOINT: ${S3_ENDPOINT:-}
-      AWS_REGION: ${AWS_REGION:-}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
-    volumes:
-      - documents-data:/data/uploads
-    healthcheck: *tcp-healthcheck
-
-  exports-service:
-    <<: *backend
-    image: ${REGISTRY}/planwise-exports-service:${IMAGE_TAG:-latest}
-    # exports-service n'a pas de base Mongo mais appelle d'autres services.
-    depends_on: {}
-    environment:
-      <<: *service-urls
-      OTEL_TRACES_ENABLED: ${OTEL_TRACES_ENABLED:-false}
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
-      NODE_ENV: production
-      PORT: "3012"
-    healthcheck: *tcp-healthcheck
-
-  integrations-service:
-    <<: *backend
-    image: ${REGISTRY}/planwise-integrations-service:${IMAGE_TAG:-latest}
-    environment:
-      <<: *service-urls
-      OTEL_TRACES_ENABLED: ${OTEL_TRACES_ENABLED:-false}
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
-      NODE_ENV: production
-      PORT: "3013"
-      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-integrations
-      INTEGRATIONS_ENCRYPTION_KEY: ${INTEGRATIONS_ENCRYPTION_KEY:?INTEGRATIONS_ENCRYPTION_KEY requis (64 hex)}
-      PENNYLANE_API_BASE_URL: ${PENNYLANE_API_BASE_URL:-https://app.pennylane.com/api/external/v2}
-      PENNYLANE_CLIENT_ID: ${PENNYLANE_CLIENT_ID:-}
-      PENNYLANE_CLIENT_SECRET: ${PENNYLANE_CLIENT_SECRET:-}
-      PENNYLANE_OAUTH_REDIRECT_URI: ${PENNYLANE_OAUTH_REDIRECT_URI:-}
-      PENNYLANE_OAUTH_SCOPES: ${PENNYLANE_OAUTH_SCOPES:-customers:all customer_invoices:all}
-      QONTO_API_BASE_URL: ${QONTO_API_BASE_URL:-https://thirdparty.qonto.com/v2}
-      QONTO_CLIENT_ID: ${QONTO_CLIENT_ID:-}
-      QONTO_CLIENT_SECRET: ${QONTO_CLIENT_SECRET:-}
-      QONTO_OAUTH_REDIRECT_URI: ${QONTO_OAUTH_REDIRECT_URI:-}
-      QONTO_OAUTH_SCOPES: ${QONTO_OAUTH_SCOPES:-organization.read offline_access client.read client.write client_invoice.read client_invoice.write}
-      # Sandbox only — ne pas définir en production
-      QONTO_STAGING_TOKEN: ${QONTO_STAGING_TOKEN:-}
-      QONTO_OAUTH_AUTHORIZE_URL: ${QONTO_OAUTH_AUTHORIZE_URL:-}
-      QONTO_OAUTH_TOKEN_URL: ${QONTO_OAUTH_TOKEN_URL:-}
-      INVOICE_SYNC_BATCH_SIZE: ${INVOICE_SYNC_BATCH_SIZE:-200}
-      APP_URL: ${APP_URL:-https://app.planwise.fr}
-    healthcheck: *tcp-healthcheck
-
-  billing-service:
-    <<: *backend
-    image: ${REGISTRY}/planwise-billing-service:${IMAGE_TAG:-latest}
-    environment:
-      <<: *service-urls
-      OTEL_TRACES_ENABLED: ${OTEL_TRACES_ENABLED:-false}
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
-      NODE_ENV: production
-      PORT: "3014"
-      MONGODB_URI: ${MONGO_BASE_URI:-mongodb://mongodb:27017}/planwise-billing
-    healthcheck: *tcp-healthcheck
-
-  # ── API Gateway — slots blue/green (bascule sans downtime via Caddy) ──
-  # Un seul slot tourne en régime normal ; pendant un deploy les deux sont
-  # brièvement up, puis l'ancien est arrêté (cf. rolling-edge.sh).
   api-gateway-blue:
     <<: *api-gateway
 
   api-gateway-green:
     <<: *api-gateway
 
-  # ── Frontend Next.js — slots blue/green ─────────────────────
   frontend-blue:
     <<: *frontend
 
   frontend-green:
     <<: *frontend
 
-  # ── Reverse proxy (HTTPS automatique Let's Encrypt) ─────────
   caddy:
     image: caddy:2
     container_name: planwise-caddy
@@ -373,9 +192,6 @@ services:
       - ./static:/srv/static:ro
       - caddy-data:/data
       - caddy-config:/config
-    # Pas de depends_on sur les slots : un seul est up en régime normal ;
-    # Caddy ignore les upstreams down via health checks.
-    # ./static/maintenance.html est servi si le frontend upstream répond 5xx.
 
 networks:
   planwise:

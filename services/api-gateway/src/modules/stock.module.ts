@@ -1,3 +1,4 @@
+import { httpControllers } from "../process-role";
 import { Module } from "@nestjs/common";
 import { StockController } from "../presentation/http/stock.controller";
 import { AbstractStockGatewayService } from "../domain/ports/stock.service.port";
@@ -8,7 +9,7 @@ import { StockDomainModule } from "./stock-domain.module";
 
 @Module({
   imports: [SubscriptionsModule, StockDomainModule],
-  controllers: [StockController],
+  controllers: httpControllers([StockController]),
   providers: [
     { provide: AbstractStockGatewayService, useClass: StockGatewayService },
     RequirePermissionGuard,
