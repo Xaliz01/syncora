@@ -8,9 +8,16 @@ import { UsersModule } from "./users.module";
 import { PermissionsModule } from "./permissions.module";
 import { NotificationsDomainModule } from "./notifications-domain.module";
 import { SubscriptionsDomainModule } from "./subscriptions-domain.module";
+import { SubscriptionsModule } from "./subscriptions.module";
 
 @Module({
-  imports: [UsersModule, PermissionsModule, NotificationsDomainModule, SubscriptionsDomainModule],
+  imports: [
+    UsersModule,
+    PermissionsModule,
+    NotificationsDomainModule,
+    SubscriptionsDomainModule,
+    SubscriptionsModule,
+  ],
   controllers: httpControllers([AdminController]),
   providers: [{ provide: AbstractAdminService, useClass: AdminService }, RequirePermissionGuard],
   exports: [AbstractAdminService],
