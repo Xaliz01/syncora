@@ -1,11 +1,5 @@
 import { Injectable } from "@nestjs/common";
 import type { AuthUser } from "@planwise/shared";
-import type {
-  GenerateMaintenanceVisitResponse,
-  MaintenanceContractResponse,
-  MaintenanceContractsListResponse,
-} from "@planwise/shared";
-import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
 import {
   AbstractMaintenanceContractsGatewayService,
   type CreateMaintenanceContractForOrgBody,
@@ -13,12 +7,12 @@ import {
   type UpdateMaintenanceContractForOrgBody,
 } from "./ports/maintenance-contracts.service.port";
 import { AbstractCustomersGatewayService } from "./ports/customers.service.port";
-import { SERVICE_URLS } from "../infrastructure/service-urls.config";
+import { MaintenanceContractsService } from "./cases/maintenance-contracts.service";
 
 @Injectable()
 export class MaintenanceContractsGatewayService extends AbstractMaintenanceContractsGatewayService {
   constructor(
-    private readonly scopedHttp: OrganizationScopedHttpClient,
+    private readonly contractsService: MaintenanceContractsService,
     private readonly customersGateway: AbstractCustomersGatewayService,
   ) {
     super();
@@ -26,13 +20,9 @@ export class MaintenanceContractsGatewayService extends AbstractMaintenanceContr
 
   async create(user: AuthUser, body: CreateMaintenanceContractForOrgBody) {
     await this.customersGateway.getCustomer(user, body.customerId);
-    return this.scopedHttp.request<MaintenanceContractResponse>({
-      baseUrl: SERVICE_URLS.cases,
+    return this.contractsService.create({
       organizationId: user.organizationId,
-      method: "post",
-      path: "/maintenance-contracts",
-      body: { ...body },
-      errorLabel: "Contracts service error",
+      ...body,
     });
   }
 
@@ -47,62 +37,29 @@ export class MaintenanceContractsGatewayService extends AbstractMaintenanceContr
       offset?: number;
     },
   ) {
-    return this.scopedHttp.request<MaintenanceContractsListResponse>({
-      baseUrl: SERVICE_URLS.cases,
-      organizationId: user.organizationId,
-      method: "get",
-      path: "/maintenance-contracts",
-      query: {
-        ...filters,
-        toSchedule: filters?.toSchedule ? "true" : undefined,
-      },
-      errorLabel: "Contracts service error",
-    });
+    return this.contractsService.list(user.organizationId, filters);
   }
 
   async get(user: AuthUser, contractId: string) {
-    return this.scopedHttp.request<MaintenanceContractResponse>({
-      baseUrl: SERVICE_URLS.cases,
-      organizationId: user.organizationId,
-      method: "get",
-      path: `/maintenance-contracts/${contractId}`,
-      errorLabel: "Contracts service error",
-    });
+    return this.contractsService.get(user.organizationId, contractId);
   }
 
   async update(user: AuthUser, contractId: string, body: UpdateMaintenanceContractForOrgBody) {
     if (body.customerId) {
       await this.customersGateway.getCustomer(user, body.customerId);
     }
-    return this.scopedHttp.request<MaintenanceContractResponse>({
-      baseUrl: SERVICE_URLS.cases,
+    return this.contractsService.update(contractId, {
       organizationId: user.organizationId,
-      method: "patch",
-      path: `/maintenance-contracts/${contractId}`,
-      body: { ...body },
-      errorLabel: "Contracts service error",
+      ...body,
     });
   }
 
   async remove(user: AuthUser, contractId: string) {
-    return this.scopedHttp.request<{ deleted: true }>({
-      baseUrl: SERVICE_URLS.cases,
-      organizationId: user.organizationId,
-      method: "delete",
-      path: `/maintenance-contracts/${contractId}`,
-      errorLabel: "Contracts service error",
-    });
+    return this.contractsService.remove(user.organizationId, contractId);
   }
 
   async generate(user: AuthUser, contractId: string, body?: { force?: boolean }) {
-    return this.scopedHttp.request<GenerateMaintenanceVisitResponse>({
-      baseUrl: SERVICE_URLS.cases,
-      organizationId: user.organizationId,
-      method: "post",
-      path: `/maintenance-contracts/${contractId}/generate`,
-      body: body ?? {},
-      errorLabel: "Contracts service error",
-    });
+    return this.contractsService.generateVisit(user.organizationId, contractId, body);
   }
 
   async scheduleVisit(
@@ -110,13 +67,9 @@ export class MaintenanceContractsGatewayService extends AbstractMaintenanceContr
     contractId: string,
     body: ScheduleMaintenanceVisitForOrgBody,
   ) {
-    return this.scopedHttp.request<GenerateMaintenanceVisitResponse>({
-      baseUrl: SERVICE_URLS.cases,
-      organizationId: user.organizationId,
-      method: "post",
-      path: `/maintenance-contracts/${contractId}/schedule-visit`,
-      body: { ...body },
-      errorLabel: "Contracts service error",
+    return this.contractsService.generateVisit(user.organizationId, contractId, {
+      scheduledStart: body.scheduledStart,
+      scheduledEnd: body.scheduledEnd,
     });
   }
 }

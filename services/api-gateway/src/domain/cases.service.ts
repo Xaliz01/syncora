@@ -9,19 +9,11 @@ import type {
   CaseOrderGiverRef,
   CaseHistoryChange,
   CaseHistoryAction,
-  CaseHistoryEntryResponse,
-  CompleteInterventionBody,
-  CompleteInterventionResponse,
-  CreateCaseBody,
-  CreateCaseHistoryBody,
-  CreateCaseTemplateBody,
   CreateInterventionBody,
-  CreateInterventionTypeBody,
   CaseDashboardResponse,
   CaseResponse,
   CasesListResponse,
   CaseSummaryResponse,
-  CaseTemplateResponse,
   CustomerResponse,
   OrderGiverResponse,
   DashboardStatFilter,
@@ -29,32 +21,18 @@ import type {
   DocumentResponse,
   InterventionResponse,
   InterventionsListResponse,
-  InterventionTypeResponse,
-  InterventionTypesListResponse,
-  SignInterventionBody,
-  SignInterventionResponse,
-  StartInterventionBody,
-  StartInterventionResponse,
   TeamResponse,
   TechnicianResponse,
-  UpdateCaseBody,
-  UpdateCaseTemplateBody,
   UpdateInterventionBody,
-  UpdateInterventionTypeBody,
-  UpdateTodoBody,
+  UpdateCaseBody,
   UserPermissionAssignmentResponse,
   UserResponse,
   OrganizationResponse,
   QuoteResponse,
-  QuoteSummaryResponse,
   QuoteEmailSendEntry,
+  CreateCaseHistoryBody,
 } from "@planwise/shared";
-import type {
-  CommentEntityType,
-  CommentResponse,
-  CreateCommentBody,
-  UpdateCommentBody,
-} from "@planwise/shared";
+import type { CommentEntityType, CommentResponse, CreateCommentBody } from "@planwise/shared";
 import {
   sanitizePdfText,
   shouldSetToInvoiceOnQuoteAccepted,
@@ -91,9 +69,26 @@ import {
 } from "./ports/cases.service.port";
 import { SERVICE_URLS } from "../infrastructure/service-urls.config";
 
+import { AbstractCasesService } from "./cases/ports/cases.service.port";
+import { AbstractInterventionsService } from "./cases/ports/interventions.service.port";
+import { AbstractQuotesService } from "./cases/ports/quotes.service.port";
+import { AbstractCommentsService } from "./cases/ports/comments.service.port";
+import { AbstractCaseHistoryService } from "./cases/ports/case-history.service.port";
+import { AbstractDashboardService } from "./cases/ports/dashboard.service.port";
+import { AbstractCaseTemplatesService } from "./cases/ports/case-templates.service.port";
+import { AbstractInterventionTypesService } from "./cases/ports/intervention-types.service.port";
+
 @Injectable()
 export class CasesGatewayService extends AbstractCasesGatewayService {
   constructor(
+    private readonly casesService: AbstractCasesService,
+    private readonly interventionsService: AbstractInterventionsService,
+    private readonly quotesService: AbstractQuotesService,
+    private readonly commentsService: AbstractCommentsService,
+    private readonly caseHistoryService: AbstractCaseHistoryService,
+    private readonly dashboardService: AbstractDashboardService,
+    private readonly caseTemplatesService: AbstractCaseTemplatesService,
+    private readonly interventionTypesService: AbstractInterventionTypesService,
     private readonly scopedHttp: OrganizationScopedHttpClient,
     private readonly customersGateway: AbstractCustomersGatewayService,
     private readonly orderGiversGateway: AbstractOrderGiversGatewayService,
@@ -105,49 +100,29 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
   // ── Templates ──
 
   async createTemplate(user: AuthUser, body: CreateTemplateForOrgBody) {
-    return this.callCasesService<CaseTemplateResponse>(user.organizationId, {
-      method: "post",
-      path: "/templates",
-      body: {
-        organizationId: user.organizationId,
-        ...body,
-      } satisfies CreateCaseTemplateBody,
+    return this.caseTemplatesService.createTemplate({
+      organizationId: user.organizationId,
+      ...body,
     });
   }
 
   async listTemplates(user: AuthUser) {
-    return this.callCasesService<CaseTemplateResponse[]>(user.organizationId, {
-      method: "get",
-      path: "/templates",
-      query: { organizationId: user.organizationId },
-    });
+    return this.caseTemplatesService.listTemplates(user.organizationId);
   }
 
   async getTemplate(user: AuthUser, templateId: string) {
-    return this.callCasesService<CaseTemplateResponse>(user.organizationId, {
-      method: "get",
-      path: `/templates/${templateId}`,
-      query: { organizationId: user.organizationId },
-    });
+    return this.caseTemplatesService.getTemplate(templateId, user.organizationId);
   }
 
   async updateTemplate(user: AuthUser, templateId: string, body: UpdateTemplateForOrgBody) {
-    return this.callCasesService<CaseTemplateResponse>(user.organizationId, {
-      method: "patch",
-      path: `/templates/${templateId}`,
-      body: {
-        organizationId: user.organizationId,
-        ...body,
-      } satisfies UpdateCaseTemplateBody,
+    return this.caseTemplatesService.updateTemplate(templateId, {
+      organizationId: user.organizationId,
+      ...body,
     });
   }
 
   async deleteTemplate(user: AuthUser, templateId: string) {
-    return this.callCasesService<{ deleted: true }>(user.organizationId, {
-      method: "delete",
-      path: `/templates/${templateId}`,
-      query: { organizationId: user.organizationId },
-    });
+    return this.caseTemplatesService.deleteTemplate(templateId, user.organizationId);
   }
 
   // ── Intervention types ──
@@ -156,30 +131,18 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     user: AuthUser,
     body: { name: string; description?: string; color?: string },
   ) {
-    return this.callCasesService<InterventionTypeResponse>(user.organizationId, {
-      method: "post",
-      path: "/intervention-types",
-      body: {
-        organizationId: user.organizationId,
-        ...body,
-      } satisfies CreateInterventionTypeBody,
+    return this.interventionTypesService.create({
+      organizationId: user.organizationId,
+      ...body,
     });
   }
 
   async listInterventionTypes(user: AuthUser) {
-    return this.callCasesService<InterventionTypesListResponse>(user.organizationId, {
-      method: "get",
-      path: "/intervention-types",
-      query: { organizationId: user.organizationId },
-    });
+    return this.interventionTypesService.list(user.organizationId);
   }
 
   async getInterventionType(user: AuthUser, typeId: string) {
-    return this.callCasesService<InterventionTypeResponse>(user.organizationId, {
-      method: "get",
-      path: `/intervention-types/${typeId}`,
-      query: { organizationId: user.organizationId },
-    });
+    return this.interventionTypesService.getById(typeId, user.organizationId);
   }
 
   async updateInterventionType(
@@ -187,22 +150,14 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     typeId: string,
     body: { name?: string; description?: string | null; color?: string | null },
   ) {
-    return this.callCasesService<InterventionTypeResponse>(user.organizationId, {
-      method: "patch",
-      path: `/intervention-types/${typeId}`,
-      body: {
-        organizationId: user.organizationId,
-        ...body,
-      } satisfies UpdateInterventionTypeBody,
+    return this.interventionTypesService.update(typeId, {
+      organizationId: user.organizationId,
+      ...body,
     });
   }
 
   async deleteInterventionType(user: AuthUser, typeId: string) {
-    return this.callCasesService<{ deleted: true }>(user.organizationId, {
-      method: "delete",
-      path: `/intervention-types/${typeId}`,
-      query: { organizationId: user.organizationId },
-    });
+    return this.interventionTypesService.remove(typeId, user.organizationId);
   }
 
   // ── Cases ──
@@ -222,17 +177,13 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       assignees = await this.resolveCaseAssigneesForWrite(user.organizationId, assigneeIds);
     }
 
-    const created = await this.callCasesService<CaseResponse>(user.organizationId, {
-      method: "post",
-      path: "/cases",
-      body: {
-        organizationId: user.organizationId,
-        ...rest,
-        ...(customerId?.trim() ? { customerId: customerId.trim() } : {}),
-        ...(orderGiverId?.trim() ? { orderGiverId: orderGiverId.trim() } : {}),
-        ...(customerDisplayName ? { customerDisplayName } : {}),
-        ...(assignees !== undefined ? { assignees } : {}),
-      } as CreateCaseBody,
+    const created = await this.casesService.createCase({
+      organizationId: user.organizationId,
+      ...rest,
+      ...(customerId?.trim() ? { customerId: customerId.trim() } : {}),
+      ...(orderGiverId?.trim() ? { orderGiverId: orderGiverId.trim() } : {}),
+      ...(customerDisplayName ? { customerDisplayName } : {}),
+      ...(assignees !== undefined ? { assignees } : {}),
     });
     this.recordHistory(
       user.organizationId,
@@ -259,14 +210,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       offset?: number;
     },
   ): Promise<CasesListResponse> {
-    const response = await this.callCasesService<CasesListResponse>(user.organizationId, {
-      method: "get",
-      path: "/cases",
-      query: {
-        organizationId: user.organizationId,
-        ...filters,
-      },
-    });
+    const response = await this.casesService.listCases(user.organizationId, filters);
     const cases = await this.enrichCaseSummaries(user, response.cases);
     return { cases, total: response.total };
   }
@@ -275,28 +219,11 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     user: AuthUser,
     filters: { customerId?: string; orderGiverId?: string },
   ): Promise<string[]> {
-    const customerId = filters.customerId?.trim();
-    const orderGiverId = filters.orderGiverId?.trim();
-    if (!customerId && !orderGiverId) return [];
-
-    const response = await this.callCasesService<{ ids: string[] }>(user.organizationId, {
-      method: "get",
-      path: "/cases/ids",
-      query: {
-        organizationId: user.organizationId,
-        ...(customerId ? { customerId } : {}),
-        ...(orderGiverId ? { orderGiverId } : {}),
-      },
-    });
-    return response.ids ?? [];
+    return this.casesService.listCaseIds(user.organizationId, filters);
   }
 
   async getCase(user: AuthUser, caseId: string) {
-    const row = await this.callCasesService<CaseResponse>(user.organizationId, {
-      method: "get",
-      path: `/cases/${caseId}`,
-      query: { organizationId: user.organizationId },
-    });
+    const row = await this.casesService.getCase(caseId, user.organizationId);
     return this.enrichCaseResponse(user, row);
   }
 
@@ -316,20 +243,16 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
 
     let previousCase: CaseResponse | undefined;
     try {
-      previousCase = await this.callCasesService<CaseResponse>(user.organizationId, {
-        method: "get",
-        path: `/cases/${caseId}`,
-        query: { organizationId: user.organizationId },
-      });
+      previousCase = await this.casesService.getCase(caseId, user.organizationId);
     } catch {
       /* proceed without previous state */
     }
 
-    const casesBody = {
+    const casesBody: Record<string, unknown> = {
       organizationId: user.organizationId,
       ...body,
       ...(customerDisplayName !== undefined ? { customerDisplayName } : {}),
-    } as UpdateCaseBody;
+    };
 
     if (body.billingStatus !== undefined) {
       assertAnyAssignablePermission(user, ["cases.manage_billing", "cases.update"]);
@@ -343,11 +266,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       );
     }
 
-    const updated = await this.callCasesService<CaseResponse>(user.organizationId, {
-      method: "patch",
-      path: `/cases/${caseId}`,
-      body: casesBody,
-    });
+    const updated = await this.casesService.updateCase(caseId, casesBody as UpdateCaseBody);
 
     this.emitCaseUpdateHistory(user, caseId, body, previousCase, updated);
 
@@ -355,11 +274,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
   }
 
   async deleteCase(user: AuthUser, caseId: string) {
-    const result = await this.callCasesService<{ deleted: true }>(user.organizationId, {
-      method: "delete",
-      path: `/cases/${caseId}`,
-      query: { organizationId: user.organizationId },
-    });
+    const result = await this.casesService.deleteCase(caseId, user.organizationId);
     this.recordHistory(
       user.organizationId,
       caseId,
@@ -371,13 +286,9 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
   }
 
   async updateTodo(user: AuthUser, caseId: string, body: UpdateTodoForOrgBody) {
-    const row = await this.callCasesService<CaseResponse>(user.organizationId, {
-      method: "put",
-      path: `/cases/${caseId}/todos`,
-      body: {
-        organizationId: user.organizationId,
-        ...body,
-      } as UpdateTodoBody,
+    const row = await this.casesService.updateTodo(caseId, {
+      organizationId: user.organizationId,
+      ...body,
     });
     const todoLabel = row.steps.flatMap((s) => s.todos).find((t) => t.id === body.todoId)?.label;
     this.recordHistory(
@@ -399,15 +310,11 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       assigneeId: body.assigneeId,
       assignedTeamId: body.assignedTeamId,
     });
-    const result = await this.callCasesService<InterventionResponse>(user.organizationId, {
-      method: "post",
-      path: "/interventions",
-      body: {
-        organizationId: user.organizationId,
-        ...body,
-        ...assignment,
-      } as CreateInterventionBody,
-    });
+    const result = await this.interventionsService.createIntervention({
+      organizationId: user.organizationId,
+      ...body,
+      ...assignment,
+    } as CreateInterventionBody);
     this.recordHistory(
       user.organizationId,
       body.caseId,
@@ -453,23 +360,18 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       assignedTeamIds = await this.resolveTeamIdsForAssignee(user, filters.assigneeId);
     }
 
-    return this.callCasesService<InterventionsListResponse>(user.organizationId, {
-      method: "get",
-      path: "/interventions",
-      query: {
-        organizationId: user.organizationId,
-        caseId: filters?.caseId,
-        assigneeId,
-        assignedTeamIds: assignedTeamIds?.length ? assignedTeamIds.join(",") : undefined,
-        startDate: filters?.startDate,
-        endDate: filters?.endDate,
-        status: filters?.status,
-        typeId: filters?.typeId,
-        unscheduled: filters?.unscheduled,
-        search: filters?.search,
-        limit: filters?.limit,
-        offset: filters?.offset,
-      },
+    return this.interventionsService.listInterventions(user.organizationId, {
+      caseId: filters?.caseId,
+      assigneeId,
+      assignedTeamIds,
+      startDate: filters?.startDate,
+      endDate: filters?.endDate,
+      status: filters?.status,
+      typeId: filters?.typeId,
+      unscheduled: filters?.unscheduled === "true",
+      search: filters?.search,
+      limit: filters?.limit,
+      offset: filters?.offset,
     });
   }
 
@@ -562,13 +464,10 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     return labels;
   }
 
-  /** Accepte un id technicien ou un userId lié ; refuse les utilisateurs hors flotte. */
   private async resolveTechnicianForInterventionAssignment(
     organizationId: string,
     assigneeId: string,
   ): Promise<TechnicianResponse | null> {
-    // Essayer d’abord by-user : évite un 404 bruyant quand assigneeId est un userId
-    // (filtre « Ma journée », anciennes affectations).
     try {
       const byUser = await this.scopedHttp.request<TechnicianResponse | null>({
         baseUrl: SERVICE_URLS.technicians,
@@ -580,7 +479,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       });
       if (byUser?.id) return byUser;
     } catch {
-      // ignore — on tente l’id technicien
+      // ignore — try technician id
     }
 
     try {
@@ -612,11 +511,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
   }
 
   async getIntervention(user: AuthUser, interventionId: string) {
-    return this.callCasesService<InterventionResponse>(user.organizationId, {
-      method: "get",
-      path: `/interventions/${interventionId}`,
-      query: { organizationId: user.organizationId },
-    });
+    return this.interventionsService.getIntervention(interventionId, user.organizationId);
   }
 
   async updateIntervention(
@@ -636,15 +531,11 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
           })
         : {};
 
-    const result = await this.callCasesService<InterventionResponse>(user.organizationId, {
-      method: "patch",
-      path: `/interventions/${interventionId}`,
-      body: {
-        organizationId: user.organizationId,
-        ...body,
-        ...assignment,
-      } as UpdateInterventionBody,
-    });
+    const result = await this.interventionsService.updateIntervention(interventionId, {
+      organizationId: user.organizationId,
+      ...body,
+      ...assignment,
+    } as UpdateInterventionBody);
     this.recordHistory(
       user.organizationId,
       result.caseId,
@@ -661,29 +552,26 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     interventionId: string,
     billingStatus: BillingStatus,
   ) {
-    return this.callCasesService<InterventionResponse>(user.organizationId, {
-      method: "patch",
-      path: `/interventions/${interventionId}`,
-      body: { organizationId: user.organizationId, billingStatus },
+    return this.interventionsService.updateIntervention(interventionId, {
+      organizationId: user.organizationId,
+      billingStatus,
     });
   }
 
   async deleteIntervention(user: AuthUser, interventionId: string) {
     let intervention: InterventionResponse | undefined;
     try {
-      intervention = await this.callCasesService<InterventionResponse>(user.organizationId, {
-        method: "get",
-        path: `/interventions/${interventionId}`,
-        query: { organizationId: user.organizationId },
-      });
+      intervention = await this.interventionsService.getIntervention(
+        interventionId,
+        user.organizationId,
+      );
     } catch {
       /* proceed without intervention info */
     }
-    const result = await this.callCasesService<{ deleted: true }>(user.organizationId, {
-      method: "delete",
-      path: `/interventions/${interventionId}`,
-      query: { organizationId: user.organizationId },
-    });
+    const result = await this.interventionsService.deleteIntervention(
+      interventionId,
+      user.organizationId,
+    );
     if (intervention) {
       this.recordHistory(
         user.organizationId,
@@ -702,18 +590,13 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     interventionId: string,
     body: StartInterventionForOrgBody,
   ) {
-    const intervention = await this.callCasesService<InterventionResponse>(user.organizationId, {
-      method: "get",
-      path: `/interventions/${interventionId}`,
-      query: { organizationId: user.organizationId },
-    });
-    const result = await this.callCasesService<StartInterventionResponse>(user.organizationId, {
-      method: "post",
-      path: `/interventions/${interventionId}/start`,
-      body: {
-        organizationId: user.organizationId,
-        ...body,
-      } as StartInterventionBody,
+    const intervention = await this.interventionsService.getIntervention(
+      interventionId,
+      user.organizationId,
+    );
+    const result = await this.interventionsService.startIntervention(interventionId, {
+      organizationId: user.organizationId,
+      ...body,
     });
     this.recordHistory(
       user.organizationId,
@@ -736,18 +619,13 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     interventionId: string,
     body: CompleteInterventionForOrgBody,
   ) {
-    const intervention = await this.callCasesService<InterventionResponse>(user.organizationId, {
-      method: "get",
-      path: `/interventions/${interventionId}`,
-      query: { organizationId: user.organizationId },
-    });
-    const result = await this.callCasesService<CompleteInterventionResponse>(user.organizationId, {
-      method: "post",
-      path: `/interventions/${interventionId}/complete`,
-      body: {
-        organizationId: user.organizationId,
-        ...body,
-      } as CompleteInterventionBody,
+    const intervention = await this.interventionsService.getIntervention(
+      interventionId,
+      user.organizationId,
+    );
+    const result = await this.interventionsService.completeIntervention(interventionId, {
+      organizationId: user.organizationId,
+      ...body,
     });
     this.recordHistory(
       user.organizationId,
@@ -768,18 +646,13 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
   // ── Signature ──
 
   async signIntervention(user: AuthUser, interventionId: string, body: SignInterventionForOrgBody) {
-    const intervention = await this.callCasesService<InterventionResponse>(user.organizationId, {
-      method: "get",
-      path: `/interventions/${interventionId}`,
-      query: { organizationId: user.organizationId },
-    });
-    const result = await this.callCasesService<SignInterventionResponse>(user.organizationId, {
-      method: "post",
-      path: `/interventions/${interventionId}/sign`,
-      body: {
-        organizationId: user.organizationId,
-        ...body,
-      } as SignInterventionBody,
+    const intervention = await this.interventionsService.getIntervention(
+      interventionId,
+      user.organizationId,
+    );
+    const result = await this.interventionsService.signIntervention(interventionId, {
+      organizationId: user.organizationId,
+      ...body,
     });
     this.recordHistory(
       user.organizationId,
@@ -800,10 +673,9 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
   // ── Quotes ──
 
   async createQuote(user: AuthUser, body: CreateQuoteForOrgBody) {
-    const result = await this.callCasesService<QuoteResponse>(user.organizationId, {
-      method: "post",
-      path: "/quotes",
-      body: { organizationId: user.organizationId, ...body },
+    const result = await this.quotesService.createQuote({
+      organizationId: user.organizationId,
+      ...body,
     });
     this.recordHistory(
       user.organizationId,
@@ -817,26 +689,17 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
   }
 
   async listQuotes(user: AuthUser, filters?: { caseId?: string; status?: string }) {
-    return this.callCasesService<QuoteSummaryResponse[]>(user.organizationId, {
-      method: "get",
-      path: "/quotes",
-      query: { organizationId: user.organizationId, ...filters },
-    });
+    return this.quotesService.listQuotes(user.organizationId, filters);
   }
 
   async getQuote(user: AuthUser, quoteId: string) {
-    return this.callCasesService<QuoteResponse>(user.organizationId, {
-      method: "get",
-      path: `/quotes/${quoteId}`,
-      query: { organizationId: user.organizationId },
-    });
+    return this.quotesService.getQuote(quoteId, user.organizationId);
   }
 
   async updateQuote(user: AuthUser, quoteId: string, body: UpdateQuoteForOrgBody) {
-    const result = await this.callCasesService<QuoteResponse>(user.organizationId, {
-      method: "patch",
-      path: `/quotes/${quoteId}`,
-      body: { organizationId: user.organizationId, ...body },
+    const result = await this.quotesService.updateQuote(quoteId, {
+      organizationId: user.organizationId,
+      ...body,
     });
     this.recordHistory(
       user.organizationId,
@@ -849,16 +712,12 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
 
     if (body.status === "accepted") {
       try {
-        const caseData = await this.callCasesService<CaseResponse>(user.organizationId, {
-          method: "get",
-          path: `/cases/${result.caseId}`,
-          query: { organizationId: user.organizationId },
-        });
+        const caseData = await this.casesService.getCase(result.caseId, user.organizationId);
         if (shouldSetToInvoiceOnQuoteAccepted(caseData.billingStatus)) {
           await this.updateCase(user, result.caseId, { billingStatus: "to_invoice" });
         }
       } catch {
-        /* Ne bloque pas l’acceptation du devis si le passage « À facturer » échoue. */
+        /* Don't block quote acceptance if billing status update fails. */
       }
     }
 
@@ -872,11 +731,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     } catch {
       /* proceed */
     }
-    const result = await this.callCasesService<{ deleted: true }>(user.organizationId, {
-      method: "delete",
-      path: `/quotes/${quoteId}`,
-      query: { organizationId: user.organizationId },
-    });
+    const result = await this.quotesService.deleteQuote(quoteId, user.organizationId);
     if (quote) {
       this.recordHistory(
         user.organizationId,
@@ -892,11 +747,9 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
 
   async generateQuotePdf(user: AuthUser, quoteId: string): Promise<Buffer> {
     const quote = await this.getQuote(user, quoteId);
-    const caseData = await this.callCasesService<CaseResponse>(user.organizationId, {
-      method: "get",
-      path: `/cases/${quote.caseId}`,
-      query: { organizationId: user.organizationId },
-    }).then((c) => this.enrichCaseResponse(user, c));
+    const caseData = await this.casesService
+      .getCase(quote.caseId, user.organizationId)
+      .then((c) => this.enrichCaseResponse(user, c));
 
     const org = await this.fetchOrganization(user.organizationId);
     const logo = org?.logoDocumentId
@@ -913,11 +766,9 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     if (!body.lines?.length) {
       throw new BadRequestException("Au moins une ligne est requise pour la prévisualisation.");
     }
-    const caseData = await this.callCasesService<CaseResponse>(user.organizationId, {
-      method: "get",
-      path: `/cases/${body.caseId}`,
-      query: { organizationId: user.organizationId },
-    }).then((c) => this.enrichCaseResponse(user, c));
+    const caseData = await this.casesService
+      .getCase(body.caseId, user.organizationId)
+      .then((c) => this.enrichCaseResponse(user, c));
 
     const quote = this.buildPreviewQuote(user.organizationId, body);
     const org = await this.fetchOrganization(user.organizationId);
@@ -944,7 +795,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     }
     const cc = (body.cc ?? []).map((value) => value.trim()).filter(Boolean);
     if (cc.some((value) => !isValidEmailAddress(value))) {
-      throw new BadRequestException("Une adresse en copie n’est pas valide.");
+      throw new BadRequestException("Une adresse en copie n'est pas valide.");
     }
 
     const org = await this.fetchOrganization(user.organizationId);
@@ -997,15 +848,12 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       reason: sent ? undefined : reason,
     };
     const markSent = sent && quote.status === "draft";
-    const result = await this.callCasesService<QuoteResponse>(user.organizationId, {
-      method: "post",
-      path: `/quotes/${quoteId}/email-sends`,
-      body: {
-        organizationId: user.organizationId,
-        entry,
-        markSent,
-      },
-    });
+    const result = await this.quotesService.appendQuoteEmailSend(
+      quoteId,
+      user.organizationId,
+      entry,
+      { markSent },
+    );
 
     if (!sent) {
       throw new BadRequestException(invoiceEmailFailureMessage(reason));
@@ -1084,7 +932,6 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       const contentBottom = () => doc.page.height - 80;
       const logo = options?.logo;
 
-      // Header — logo org en haut à gauche, titre Devis + numéro à droite / en dessous
       let headerBottom = 72;
       if (logo) {
         try {
@@ -1126,7 +973,6 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       }
       doc.y += 10;
 
-      // Customer info
       if (customer) {
         this.pdfSection(doc, "Client");
         this.pdfField(doc, "Nom", customer.displayName);
@@ -1146,11 +992,9 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
         }
       }
 
-      // Case reference
       this.pdfSection(doc, "Dossier");
       this.pdfField(doc, "Référence", caseData.caseNumber || caseData.title);
 
-      // Quote metadata
       this.pdfSection(doc, "Informations du devis");
       if (quote.createdAt) {
         this.pdfField(doc, "Date", this.formatDateFr(quote.createdAt));
@@ -1159,7 +1003,6 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
         this.pdfField(doc, "Valable jusqu'au", this.formatDateFr(quote.validUntil));
       }
 
-      // Lines table
       this.pdfSection(doc, "Détail des prestations");
 
       const colX = { desc: 50, qty: 310, unit: 355, price: 405, tva: 460, total: 500 };
@@ -1193,7 +1036,6 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
         doc.y = lineY + Math.max(descHeight, 14) + 4;
       }
 
-      // Totals
       if (doc.y + 80 > contentBottom()) {
         doc.addPage();
         doc.y = 50;
@@ -1226,7 +1068,6 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       });
       doc.y += 20;
 
-      // Notes
       if (quote.notes) {
         if (doc.y + 60 > contentBottom()) {
           doc.addPage();
@@ -1266,13 +1107,9 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
 
   async generateInterventionReport(user: AuthUser, interventionId: string): Promise<Buffer> {
     const [intervention, caseData, signatureResult] = await Promise.all([
-      this.callCasesService<InterventionResponse>(user.organizationId, {
-        method: "get",
-        path: `/interventions/${interventionId}`,
-        query: { organizationId: user.organizationId },
-      }),
+      this.interventionsService.getIntervention(interventionId, user.organizationId),
       this.fetchCaseForReport(user, interventionId),
-      this.fetchSignatureData(user.organizationId, interventionId),
+      this.interventionsService.getInterventionWithSignature(interventionId, user.organizationId),
     ]);
 
     const customer = caseData?.customer;
@@ -1286,36 +1123,14 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     interventionId: string,
   ): Promise<CaseResponse | undefined> {
     try {
-      const intervention = await this.callCasesService<InterventionResponse>(user.organizationId, {
-        method: "get",
-        path: `/interventions/${interventionId}`,
-        query: { organizationId: user.organizationId },
-      });
-      return await this.callCasesService<CaseResponse>(user.organizationId, {
-        method: "get",
-        path: `/cases/${intervention.caseId}`,
-        query: { organizationId: user.organizationId },
-      }).then((c) => this.enrichCaseResponse(user, c));
+      const intervention = await this.interventionsService.getIntervention(
+        interventionId,
+        user.organizationId,
+      );
+      const caseData = await this.casesService.getCase(intervention.caseId, user.organizationId);
+      return this.enrichCaseResponse(user, caseData);
     } catch {
       return undefined;
-    }
-  }
-
-  private async fetchSignatureData(
-    organizationId: string,
-    interventionId: string,
-  ): Promise<{ signatureData?: string; signatoryName?: string }> {
-    try {
-      return await this.callCasesService<{ signatureData?: string; signatoryName?: string }>(
-        organizationId,
-        {
-          method: "get",
-          path: `/interventions/${interventionId}/signature-image`,
-          query: { organizationId },
-        },
-      );
-    } catch {
-      return {};
     }
   }
 
@@ -1419,7 +1234,6 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       const mutedColor = "#64748b";
       const contentBottom = () => doc.page.height - 70;
 
-      // Header
       doc.fontSize(22).fillColor(brandColor);
       this.pdfText(doc, "Planwise", 50, 40);
       doc.fontSize(10).fillColor(mutedColor);
@@ -1429,7 +1243,6 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
 
       doc.y = 100;
 
-      // Intervention title & status
       doc.fontSize(16).fillColor(textColor);
       this.pdfText(doc, intervention.title, 50, doc.y, { width: 495 });
 
@@ -1449,7 +1262,6 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
 
       doc.y += 15;
 
-      // Case & customer info
       if (caseData) {
         this.pdfSection(doc, "Dossier");
         this.pdfField(doc, "Dossier", caseData.title);
@@ -1476,7 +1288,6 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
         }
       }
 
-      // Intervention details
       this.pdfSection(doc, "Détails de l'intervention");
       if (intervention.description) {
         this.pdfField(doc, "Description", intervention.description);
@@ -1518,7 +1329,6 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
         this.pdfField(doc, "Notes", intervention.notes);
       }
 
-      // Photos
       if (photos.length > 0) {
         this.pdfSection(doc, "Photos terrain");
         const photoWidth = 150;
@@ -1550,7 +1360,6 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
         }
       }
 
-      // Signature
       if (signatureResult.signatureData) {
         if (doc.y + 120 > contentBottom()) doc.addPage();
         this.pdfSection(doc, "Signature client");
@@ -1590,13 +1399,11 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     return options ? doc.text(safe, options) : doc.text(safe);
   }
 
-  /** Pied de page sur chaque page, sans créer de page blanche. */
   private stampGeneratedByFooter(doc: PDFKit.PDFDocument): void {
     const label = `Généré le ${this.formatDateTimeFr(new Date().toISOString())} — Planwise`;
     const range = doc.bufferedPageRange();
     for (let i = range.start; i < range.start + range.count; i++) {
       doc.switchToPage(i);
-      // PDFKit déclenche un addPage si on écrit sous margin.bottom — on le désactive le temps du tampon.
       const margins = doc.page.margins;
       const prevBottom = margins.bottom;
       margins.bottom = 0;
@@ -1659,15 +1466,11 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
 
   async getDashboard(user: AuthUser) {
     const userProfileId = await this.resolveUserProfileId(user);
-    const dash = await this.callCasesService<CaseDashboardResponse>(user.organizationId, {
-      method: "get",
-      path: "/dashboard",
-      query: {
-        organizationId: user.organizationId,
-        userId: user.id,
-        userProfileId,
-      },
-    });
+    const dash = await this.dashboardService.getDashboard(
+      user.organizationId,
+      user.id,
+      userProfileId,
+    );
     const [assignedCases, overdueCases] = await Promise.all([
       this.enrichCaseSummaries(user, dash.assignedCases),
       this.enrichCaseSummaries(user, dash.overdueCases),
@@ -1710,17 +1513,13 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     todoLabel: string,
   ): Promise<DashboardTodoCaseItem[]> {
     const userProfileId = await this.resolveUserProfileId(user);
-    const rows = await this.callCasesService<DashboardTodoCaseItem[]>(user.organizationId, {
-      method: "get",
-      path: "/dashboard/todo-cases",
-      query: {
-        organizationId: user.organizationId,
-        userId: user.id,
-        userProfileId,
-        templateId,
-        todoLabel,
-      },
-    });
+    const rows = await this.dashboardService.getDashboardTodoCases(
+      user.organizationId,
+      user.id,
+      userProfileId,
+      templateId,
+      todoLabel,
+    );
     return this.enrichDashboardCaseListItems(user, rows);
   }
 
@@ -1729,16 +1528,12 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     filter: DashboardStatFilter,
   ): Promise<DashboardTodoCaseItem[]> {
     const userProfileId = await this.resolveUserProfileId(user);
-    const rows = await this.callCasesService<DashboardTodoCaseItem[]>(user.organizationId, {
-      method: "get",
-      path: "/dashboard/stat-cases",
-      query: {
-        organizationId: user.organizationId,
-        userId: user.id,
-        userProfileId,
-        filter,
-      },
-    });
+    const rows = await this.dashboardService.getDashboardStatCases(
+      user.organizationId,
+      user.id,
+      userProfileId,
+      filter,
+    );
     return this.enrichDashboardCaseListItems(user, rows);
   }
 
@@ -1786,11 +1581,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
   // ── History ──
 
   async listCaseHistory(user: AuthUser, caseId: string) {
-    return this.callCasesService<CaseHistoryEntryResponse[]>(user.organizationId, {
-      method: "get",
-      path: `/cases/${caseId}/history`,
-      query: { organizationId: user.organizationId },
-    });
+    return this.caseHistoryService.listCaseHistory(caseId, user.organizationId);
   }
 
   // ── Comments ──
@@ -1804,11 +1595,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       authorId: user.id,
       authorName: user.name ?? user.email,
     };
-    const created = await this.callCasesService<CommentResponse>(user.organizationId, {
-      method: "post",
-      path: "/comments",
-      body: payload,
-    });
+    const created = await this.commentsService.createComment(payload);
     const detail =
       created.entityType === "intervention"
         ? `Commentaire sur intervention`
@@ -1829,15 +1616,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     entityType: CommentEntityType,
     entityId: string,
   ): Promise<CommentResponse[]> {
-    return this.callCasesService<CommentResponse[]>(user.organizationId, {
-      method: "get",
-      path: "/comments",
-      query: {
-        organizationId: user.organizationId,
-        entityType,
-        entityId,
-      },
-    });
+    return this.commentsService.listComments(user.organizationId, entityType, entityId);
   }
 
   async updateComment(
@@ -1845,20 +1624,11 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     commentId: string,
     body: UpdateCommentForOrgBody,
   ): Promise<CommentResponse> {
-    const existing = await this.callCasesService<CommentResponse>(user.organizationId, {
-      method: "get",
-      path: `/comments/${commentId}`,
-      query: { organizationId: user.organizationId },
-    });
+    const existing = await this.commentsService.getComment(commentId, user.organizationId);
     this.assertCanModifyComment(user, existing);
-    const payload: UpdateCommentBody = {
+    const updated = await this.commentsService.updateComment(commentId, {
       organizationId: user.organizationId,
       body: body.body,
-    };
-    const updated = await this.callCasesService<CommentResponse>(user.organizationId, {
-      method: "patch",
-      path: `/comments/${commentId}`,
-      body: payload,
     });
     this.recordHistory(
       user.organizationId,
@@ -1871,17 +1641,9 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
   }
 
   async deleteComment(user: AuthUser, commentId: string): Promise<{ deleted: true }> {
-    const existing = await this.callCasesService<CommentResponse>(user.organizationId, {
-      method: "get",
-      path: `/comments/${commentId}`,
-      query: { organizationId: user.organizationId },
-    });
+    const existing = await this.commentsService.getComment(commentId, user.organizationId);
     this.assertCanModifyComment(user, existing);
-    const result = await this.callCasesService<{ deleted: true }>(user.organizationId, {
-      method: "delete",
-      path: `/comments/${commentId}`,
-      query: { organizationId: user.organizationId },
-    });
+    const result = await this.commentsService.deleteComment(commentId, user.organizationId);
     this.recordHistory(
       user.organizationId,
       existing.caseId,
@@ -2051,11 +1813,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       details,
       changes,
     };
-    this.callCasesService<CaseHistoryEntryResponse>(organizationId, {
-      method: "post",
-      path: `/cases/${caseId}/history`,
-      body,
-    }).catch(() => {
+    this.caseHistoryService.addCaseHistory(body).catch(() => {
       /* best-effort: don't fail the main operation if history recording fails */
     });
   }
@@ -2191,28 +1949,6 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       baseUrl: SERVICE_URLS.users,
       organizationId,
       errorLabel: "Users service error",
-      method: params.method,
-      path: params.path,
-      body: params.body,
-      query: params.query,
-      validateResponseScope: params.validateResponseScope,
-    });
-  }
-
-  private callCasesService<T>(
-    organizationId: string,
-    params: {
-      method: "get" | "post" | "patch" | "put" | "delete";
-      path: string;
-      body?: object;
-      query?: Record<string, unknown>;
-      validateResponseScope?: boolean;
-    },
-  ): Promise<T> {
-    return this.scopedHttp.request<T>({
-      baseUrl: SERVICE_URLS.cases,
-      organizationId,
-      errorLabel: "Cases service error",
       method: params.method,
       path: params.path,
       body: params.body,
