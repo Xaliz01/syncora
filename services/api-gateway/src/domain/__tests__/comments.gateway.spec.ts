@@ -3,7 +3,14 @@ import { ForbiddenException } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import type { AuthUser, CommentResponse } from "@planwise/shared";
 import { CasesGatewayService } from "../cases.service";
-import { OrganizationScopedHttpClient } from "../../infrastructure/organization-scoped-http.client";
+import { AbstractTechniciansService } from "../technicians/ports/technicians.service.port";
+import { AbstractTeamsService } from "../technicians/ports/teams.service.port";
+import { AbstractOrganizationsService } from "../organizations/ports/organizations.service.port";
+import { AbstractDocumentsService } from "../documents/ports/documents.service.port";
+import { AbstractStorageProvider } from "../../infrastructure/storage/storage.port";
+import { AbstractEmailService } from "../notifications/ports/email.service.port";
+import { AbstractUsersService } from "../users/ports/users.service.port";
+import { AbstractPermissionsService } from "../permissions/ports/permissions.service.port";
 import { AbstractCustomersGatewayService } from "../ports/customers.service.port";
 import { AbstractOrderGiversGatewayService } from "../ports/order-givers.service.port";
 import { AbstractCasesService } from "../cases/ports/cases.service.port";
@@ -76,7 +83,14 @@ describe("CasesGatewayService comments", () => {
         { provide: AbstractDashboardService, useValue: {} },
         { provide: AbstractCaseTemplatesService, useValue: {} },
         { provide: AbstractInterventionTypesService, useValue: {} },
-        { provide: OrganizationScopedHttpClient, useValue: { request: jest.fn() } },
+        { provide: AbstractTechniciansService, useValue: {} },
+        { provide: AbstractTeamsService, useValue: {} },
+        { provide: AbstractOrganizationsService, useValue: {} },
+        { provide: AbstractDocumentsService, useValue: {} },
+        { provide: AbstractStorageProvider, useValue: {} },
+        { provide: AbstractEmailService, useValue: {} },
+        { provide: AbstractUsersService, useValue: {} },
+        { provide: AbstractPermissionsService, useValue: {} },
         {
           provide: AbstractCustomersGatewayService,
           useValue: {},

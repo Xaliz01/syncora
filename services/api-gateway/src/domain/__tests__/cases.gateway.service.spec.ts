@@ -4,7 +4,14 @@ import { HttpService } from "@nestjs/axios";
 import { of } from "rxjs";
 import type { AuthUser, CaseResponse, CustomerResponse, QuoteResponse } from "@planwise/shared";
 import { CasesGatewayService } from "../cases.service";
-import { OrganizationScopedHttpClient } from "../../infrastructure/organization-scoped-http.client";
+import { AbstractTechniciansService } from "../technicians/ports/technicians.service.port";
+import { AbstractTeamsService } from "../technicians/ports/teams.service.port";
+import { AbstractOrganizationsService } from "../organizations/ports/organizations.service.port";
+import { AbstractDocumentsService } from "../documents/ports/documents.service.port";
+import { AbstractStorageProvider } from "../../infrastructure/storage/storage.port";
+import { AbstractEmailService } from "../notifications/ports/email.service.port";
+import { AbstractUsersService } from "../users/ports/users.service.port";
+import { AbstractPermissionsService } from "../permissions/ports/permissions.service.port";
 import { AbstractCustomersGatewayService } from "../ports/customers.service.port";
 import { AbstractOrderGiversGatewayService } from "../ports/order-givers.service.port";
 import { AbstractCasesService } from "../cases/ports/cases.service.port";
@@ -18,7 +25,8 @@ import { AbstractInterventionTypesService } from "../cases/ports/intervention-ty
 
 describe("CasesGatewayService", () => {
   let service: CasesGatewayService;
-  let scopedHttp: { request: jest.Mock };
+  let emailService: { sendTransactionalEmail: jest.Mock };
+  let organizationsService: { findById: jest.Mock };
   let customersGateway: { getCustomer: jest.Mock; listCustomersByIds: jest.Mock };
   let httpService: { get: jest.Mock; post: jest.Mock };
   let casesService: Record<string, jest.Mock>;
@@ -68,7 +76,8 @@ describe("CasesGatewayService", () => {
   };
 
   beforeEach(async () => {
-    scopedHttp = { request: jest.fn() };
+    emailService = { sendTransactionalEmail: jest.fn().mockResolvedValue({ sent: true }) };
+    organizationsService = { findById: jest.fn().mockResolvedValue({ name: "Atelier Test" }) };
     customersGateway = {
       getCustomer: jest.fn(),
       listCustomersByIds: jest.fn(),
@@ -140,7 +149,17 @@ describe("CasesGatewayService", () => {
         { provide: AbstractDashboardService, useValue: {} },
         { provide: AbstractCaseTemplatesService, useValue: {} },
         { provide: AbstractInterventionTypesService, useValue: {} },
-        { provide: OrganizationScopedHttpClient, useValue: scopedHttp },
+        {
+          provide: AbstractTechniciansService,
+          useValue: { findByUserId: jest.fn(), getTechnician: jest.fn() },
+        },
+        { provide: AbstractTeamsService, useValue: { listTeams: jest.fn(), getTeam: jest.fn() } },
+        { provide: AbstractOrganizationsService, useValue: organizationsService },
+        { provide: AbstractDocumentsService, useValue: {} },
+        { provide: AbstractStorageProvider, useValue: {} },
+        { provide: AbstractEmailService, useValue: emailService },
+        { provide: AbstractUsersService, useValue: { findById: jest.fn() } },
+        { provide: AbstractPermissionsService, useValue: { getUserAssignment: jest.fn() } },
         { provide: AbstractCustomersGatewayService, useValue: customersGateway },
         {
           provide: AbstractOrderGiversGatewayService,
@@ -312,15 +331,17 @@ describe("CasesGatewayService", () => {
       quotesService.getQuote.mockResolvedValue(quote);
       quotesService.appendQuoteEmailSend.mockResolvedValue(sentQuote);
       jest.spyOn(service, "generateQuotePdf").mockResolvedValue(Buffer.from("%PDF"));
-      httpService.get.mockReturnValue(of({ data: { name: "Atelier Test" } }));
-
       const result = await service.sendQuote(user, "quote-1", { to: "client@example.com" });
 
       expect(result.status).toBe("sent");
-      expect(httpService.post).toHaveBeenCalledWith(
-        expect.stringContaining("/email/transactional"),
+      expect(emailService.sendTransactionalEmail).toHaveBeenCalledWith(
+        "client@example.com",
+        expect.any(String),
+        expect.any(String),
+        undefined,
+        undefined,
+        expect.any(String),
         expect.objectContaining({
-          to: "client@example.com",
           attachments: expect.arrayContaining([
             expect.objectContaining({
               contentType: "application/pdf",
@@ -328,7 +349,6 @@ describe("CasesGatewayService", () => {
             }),
           ]),
         }),
-        expect.objectContaining({ timeout: 60_000 }),
       );
       expect(quotesService.appendQuoteEmailSend).toHaveBeenCalledWith(
         "quote-1",
@@ -343,7 +363,7 @@ describe("CasesGatewayService", () => {
       await expect(
         service.sendQuote(user, "quote-1", { to: "client@example.com" }),
       ).rejects.toBeInstanceOf(BadRequestException);
-      expect(httpService.post).not.toHaveBeenCalled();
+      expect(emailService.sendTransactionalEmail).not.toHaveBeenCalled();
     });
 
     it("persists a failed send then throws a generic error", async () => {
@@ -353,9 +373,10 @@ describe("CasesGatewayService", () => {
         emailSends: [{ status: "failed", to: "client@example.com" }],
       });
       jest.spyOn(service, "generateQuotePdf").mockResolvedValue(Buffer.from("%PDF"));
-      httpService.post.mockReturnValue(
-        of({ data: { sent: false, reason: "smtp_not_configured" } }),
-      );
+      emailService.sendTransactionalEmail.mockResolvedValue({
+        sent: false,
+        reason: "smtp_not_configured",
+      });
 
       await expect(
         service.sendQuote(user, "quote-1", { to: "client@example.com" }),

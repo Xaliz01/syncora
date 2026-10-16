@@ -3,7 +3,6 @@ import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
 import type {
   AuthUser,
-  OrganizationMembershipResponse,
   OrganizationResponse,
   SiretLookupResponse,
   SiretLookupResult,
@@ -12,25 +11,22 @@ import type {
 } from "@planwise/shared";
 import { AbstractOrganizationsGatewayService } from "./ports/organizations.service.port";
 import { AbstractOrganizationsService } from "./organizations/ports/organizations.service.port";
-import { SERVICE_URLS } from "../infrastructure/service-urls.config";
+import { AbstractUsersService } from "./users/ports/users.service.port";
 
 @Injectable()
 export class OrganizationsGatewayService extends AbstractOrganizationsGatewayService {
   constructor(
     private readonly httpService: HttpService,
     private readonly organizationsService: AbstractOrganizationsService,
+    private readonly usersService: AbstractUsersService,
   ) {
     super();
   }
 
   async listMine(user: AuthUser): Promise<UserOrganizationsListResponse> {
     try {
-      const res = await firstValueFrom(
-        this.httpService.get<OrganizationMembershipResponse[]>(
-          `${SERVICE_URLS.users}/users/${user.id}/organization-memberships`,
-        ),
-      );
-      const ids = [...new Set(res.data.map((m) => m.organizationId))];
+      const memberships = await this.usersService.listOrganizationMemberships(user.id);
+      const ids = [...new Set(memberships.map((m) => m.organizationId))];
       if (ids.length === 0 && user.organizationId) {
         const org = await this.organizationsService.findById(user.organizationId);
         return { organizations: org ? [org] : [] };

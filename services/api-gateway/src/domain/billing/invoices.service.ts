@@ -1,7 +1,5 @@
 import { BadRequestException, Injectable, Logger } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
-import { HttpService } from "@nestjs/axios";
-import { firstValueFrom } from "rxjs";
 import { Model } from "mongoose";
 import {
   LOCAL_INVOICE_KINDS,
@@ -25,9 +23,7 @@ import {
   type LocalInvoiceStatsResponse,
   type LocalInvoiceStatus,
   type LocalInvoicesListResponse,
-  type SendEmailNotificationResponse,
   type SendLocalInvoiceEmailBody,
-  type SendTransactionalEmailBody,
 } from "@planwise/shared";
 import {
   assertOrganizationScopedListNest,
@@ -41,7 +37,7 @@ import { AbstractInvoicesService } from "./ports/invoices.service.port";
 import { toInvoiceResponse } from "./mappers/invoice.mapper";
 import { renderInvoicePdf } from "./invoice-pdf";
 import { buildInvoiceSearchOr } from "./utils";
-import { SERVICE_URLS } from "../../infrastructure/service-urls.config";
+import { AbstractEmailService } from "../notifications/ports/email.service.port";
 
 function isKind(value: string | undefined): value is LocalInvoiceKind {
   return LOCAL_INVOICE_KINDS.includes(value as LocalInvoiceKind);
@@ -60,7 +56,7 @@ export class InvoicesService extends AbstractInvoicesService {
     private readonly invoiceModel: Model<InvoiceDocument>,
     @InjectModel("InvoiceSequence", "billing")
     private readonly sequenceModel: Model<InvoiceSequenceDocument>,
-    private readonly httpService: HttpService,
+    private readonly emailService: AbstractEmailService,
   ) {
     super();
   }
@@ -307,28 +303,26 @@ export class InvoicesService extends AbstractInvoicesService {
     let sent = false;
     let reason: string | undefined;
     try {
-      const payload: SendTransactionalEmailBody = {
+      const response = await this.emailService.sendTransactionalEmail(
         to,
         subject,
-        body: message,
+        message,
+        undefined,
+        undefined,
         footer,
-        cc: cc.length > 0 ? cc : undefined,
-        attachments: [
-          {
-            filename,
-            contentType: "application/pdf",
-            contentBase64: pdf.toString("base64"),
-          },
-        ],
-      };
-      const response = await firstValueFrom(
-        this.httpService.post<SendEmailNotificationResponse>(
-          `${SERVICE_URLS.notifications}/email/transactional`,
-          payload,
-        ),
+        {
+          cc: cc.length > 0 ? cc : undefined,
+          attachments: [
+            {
+              filename,
+              contentType: "application/pdf",
+              contentBase64: pdf.toString("base64"),
+            },
+          ],
+        },
       );
-      sent = response.data.sent === true;
-      reason = response.data.reason;
+      sent = response.sent === true;
+      reason = response.reason;
     } catch {
       sent = false;
       reason = "send_failed";

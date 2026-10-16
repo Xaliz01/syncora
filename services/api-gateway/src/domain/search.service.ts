@@ -1,26 +1,19 @@
 import { Injectable } from "@nestjs/common";
 import type {
   AuthUser,
-  ArticlesListResponse,
   CaseSummaryResponse,
-  CasesListResponse,
   InterventionResponse,
-  InterventionsListResponse,
   VehicleResponse,
   TechnicianResponse,
   ArticleResponse,
   UserResponse,
   CustomerResponse,
-  CustomersListResponse,
   OrderGiverResponse,
-  OrderGiversListResponse,
   PostalAddress,
   PrestationResponse,
-  PrestationsListResponse,
   TeamResponse,
   AgenceResponse,
   LocalInvoiceResponse,
-  LocalInvoicesListResponse,
 } from "@planwise/shared";
 import {
   DEFAULT_PAGE_LIMIT,
@@ -32,12 +25,35 @@ import {
   type GlobalSearchResponse,
   type SearchResultItem,
 } from "./ports/search.service.port";
-import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
-import { SERVICE_URLS } from "../infrastructure/service-urls.config";
+import { AbstractCasesService } from "./cases/ports/cases.service.port";
+import { AbstractInterventionsService } from "./cases/ports/interventions.service.port";
+import { AbstractCustomersService } from "./customers/ports/customers.service.port";
+import { AbstractOrderGiversService } from "./customers/ports/order-givers.service.port";
+import { AbstractFleetService } from "./fleet/ports/fleet.service.port";
+import { AbstractTechniciansService } from "./technicians/ports/technicians.service.port";
+import { AbstractTeamsService } from "./technicians/ports/teams.service.port";
+import { AbstractAgencesService } from "./technicians/ports/agences.service.port";
+import { AbstractArticleStockService } from "./stock/ports/article-stock.service.port";
+import { AbstractPrestationService } from "./stock/ports/prestation.service.port";
+import { AbstractInvoicesService } from "./billing/ports/invoices.service.port";
+import { AbstractUsersService } from "./users/ports/users.service.port";
 
 @Injectable()
 export class SearchGatewayService extends AbstractSearchService {
-  constructor(private readonly scopedHttp: OrganizationScopedHttpClient) {
+  constructor(
+    private readonly casesService: AbstractCasesService,
+    private readonly interventionsService: AbstractInterventionsService,
+    private readonly customersService: AbstractCustomersService,
+    private readonly orderGiversService: AbstractOrderGiversService,
+    private readonly fleetService: AbstractFleetService,
+    private readonly techniciansService: AbstractTechniciansService,
+    private readonly teamsService: AbstractTeamsService,
+    private readonly agencesService: AbstractAgencesService,
+    private readonly articlesService: AbstractArticleStockService,
+    private readonly prestationsService: AbstractPrestationService,
+    private readonly invoicesService: AbstractInvoicesService,
+    private readonly usersService: AbstractUsersService,
+  ) {
     super();
   }
 
@@ -428,143 +444,64 @@ export class SearchGatewayService extends AbstractSearchService {
   }
 
   private fetchCases(user: AuthUser, search: string): Promise<CaseSummaryResponse[]> {
-    return this.scopedHttp
-      .request<CasesListResponse>({
-        baseUrl: SERVICE_URLS.cases,
-        organizationId: user.organizationId,
-        method: "get",
-        path: "/cases",
-        query: { search, limit: DEFAULT_PAGE_LIMIT, offset: 0 },
-        errorLabel: "Cases service error",
-      })
+    return this.casesService
+      .listCases(user.organizationId, { search, limit: DEFAULT_PAGE_LIMIT, offset: 0 })
       .then((response) => response.cases);
   }
 
   private fetchInterventions(user: AuthUser, search: string): Promise<InterventionResponse[]> {
-    return this.scopedHttp
-      .request<InterventionsListResponse>({
-        baseUrl: SERVICE_URLS.cases,
-        organizationId: user.organizationId,
-        method: "get",
-        path: "/interventions",
-        query: { search, limit: DEFAULT_PAGE_LIMIT, offset: 0 },
-        errorLabel: "Cases service error",
-      })
+    return this.interventionsService
+      .listInterventions(user.organizationId, { search, limit: DEFAULT_PAGE_LIMIT, offset: 0 })
       .then((response) => response.interventions);
   }
 
   private fetchCustomers(user: AuthUser, search: string): Promise<CustomerResponse[]> {
-    return this.scopedHttp
-      .request<CustomersListResponse>({
-        baseUrl: SERVICE_URLS.customers,
-        organizationId: user.organizationId,
-        method: "get",
-        path: "/customers",
-        query: { search, limit: DEFAULT_PAGE_LIMIT, offset: 0 },
-        errorLabel: "Customers service error",
-      })
+    return this.customersService
+      .listCustomers(user.organizationId, { search, limit: DEFAULT_PAGE_LIMIT, offset: 0 })
       .then((response) => response.customers);
   }
 
   private fetchOrderGivers(user: AuthUser, search: string): Promise<OrderGiverResponse[]> {
-    return this.scopedHttp
-      .request<OrderGiversListResponse>({
-        baseUrl: SERVICE_URLS.customers,
-        organizationId: user.organizationId,
-        method: "get",
-        path: "/order-givers",
-        query: { search, limit: DEFAULT_PAGE_LIMIT, offset: 0 },
-        errorLabel: "Order givers service error",
-      })
+    return this.orderGiversService
+      .listOrderGivers(user.organizationId, { search, limit: DEFAULT_PAGE_LIMIT, offset: 0 })
       .then((response) => response.orderGivers);
   }
 
   private fetchVehicles(user: AuthUser): Promise<VehicleResponse[]> {
-    return this.scopedHttp.request<VehicleResponse[]>({
-      baseUrl: SERVICE_URLS.fleet,
-      organizationId: user.organizationId,
-      method: "get",
-      path: "/vehicles",
-      errorLabel: "Fleet service error",
-    });
+    return this.fleetService.listVehicles(user.organizationId);
   }
 
   private fetchTechnicians(user: AuthUser): Promise<TechnicianResponse[]> {
-    return this.scopedHttp.request<TechnicianResponse[]>({
-      baseUrl: SERVICE_URLS.technicians,
-      organizationId: user.organizationId,
-      method: "get",
-      path: "/technicians",
-      errorLabel: "Technicians service error",
-    });
+    return this.techniciansService.listTechnicians(user.organizationId);
   }
 
   private fetchTeams(user: AuthUser): Promise<TeamResponse[]> {
-    return this.scopedHttp.request<TeamResponse[]>({
-      baseUrl: SERVICE_URLS.technicians,
-      organizationId: user.organizationId,
-      method: "get",
-      path: "/teams",
-      errorLabel: "Technicians service error",
-    });
+    return this.teamsService.listTeams(user.organizationId);
   }
 
   private fetchAgences(user: AuthUser): Promise<AgenceResponse[]> {
-    return this.scopedHttp.request<AgenceResponse[]>({
-      baseUrl: SERVICE_URLS.technicians,
-      organizationId: user.organizationId,
-      method: "get",
-      path: "/agences",
-      errorLabel: "Technicians service error",
-    });
+    return this.agencesService.listAgences(user.organizationId);
   }
 
   private fetchArticles(user: AuthUser, search: string): Promise<ArticleResponse[]> {
-    return this.scopedHttp
-      .request<ArticlesListResponse>({
-        baseUrl: SERVICE_URLS.stock,
-        organizationId: user.organizationId,
-        method: "get",
-        path: "/articles",
-        query: { search, limit: DEFAULT_PAGE_LIMIT, offset: 0 },
-        errorLabel: "Stock service error",
-      })
+    return this.articlesService
+      .listArticles(user.organizationId, { search, limit: DEFAULT_PAGE_LIMIT, offset: 0 })
       .then((response) => response.articles);
   }
 
   private fetchPrestations(user: AuthUser, search: string): Promise<PrestationResponse[]> {
-    return this.scopedHttp
-      .request<PrestationsListResponse>({
-        baseUrl: SERVICE_URLS.stock,
-        organizationId: user.organizationId,
-        method: "get",
-        path: "/prestations",
-        query: { search, limit: DEFAULT_PAGE_LIMIT, offset: 0 },
-        errorLabel: "Stock service error",
-      })
+    return this.prestationsService
+      .listPrestations(user.organizationId, { search, limit: DEFAULT_PAGE_LIMIT, offset: 0 })
       .then((response) => response.prestations);
   }
 
   private fetchInvoices(user: AuthUser, search: string): Promise<LocalInvoiceResponse[]> {
-    return this.scopedHttp
-      .request<LocalInvoicesListResponse>({
-        baseUrl: SERVICE_URLS.billing,
-        organizationId: user.organizationId,
-        method: "get",
-        path: "/invoices",
-        query: { search, limit: DEFAULT_PAGE_LIMIT, offset: 0 },
-        errorLabel: "Billing service error",
-      })
+    return this.invoicesService
+      .listInvoices(user.organizationId, { search, limit: DEFAULT_PAGE_LIMIT, offset: 0 })
       .then((response) => response.invoices ?? []);
   }
 
   private fetchUsers(user: AuthUser): Promise<UserResponse[]> {
-    return this.scopedHttp.request<UserResponse[]>({
-      baseUrl: SERVICE_URLS.users,
-      organizationId: user.organizationId,
-      method: "get",
-      path: "/users",
-      errorLabel: "Users service error",
-    });
+    return this.usersService.listByOrganization(user.organizationId);
   }
 }

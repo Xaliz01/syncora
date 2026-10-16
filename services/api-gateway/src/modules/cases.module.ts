@@ -11,6 +11,12 @@ import { RequirePermissionGuard } from "../infrastructure/require-permission.gua
 import { CustomersModule } from "./customers.module";
 import { OrderGiversModule } from "./order-givers.module";
 import { SubscriptionsModule } from "./subscriptions.module";
+import { TechniciansDomainModule } from "./technicians-domain.module";
+import { OrganizationsDomainModule } from "./organizations-domain.module";
+import { DocumentsDomainModule } from "./documents-domain.module";
+import { NotificationsDomainModule } from "./notifications-domain.module";
+import { UsersModule } from "./users.module";
+import { PermissionsModule } from "./permissions.module";
 
 import { AbstractCasesService } from "../domain/cases/ports/cases.service.port";
 import { AbstractInterventionsService } from "../domain/cases/ports/interventions.service.port";
@@ -65,6 +71,12 @@ import { CronRunSchema } from "../persistence/cases/cron-run.schema";
     CustomersModule,
     OrderGiversModule,
     SubscriptionsModule,
+    TechniciansDomainModule,
+    OrganizationsDomainModule,
+    DocumentsDomainModule,
+    NotificationsDomainModule,
+    UsersModule,
+    PermissionsModule,
   ],
   controllers: [CasesController, MaintenanceContractsController],
   providers: [

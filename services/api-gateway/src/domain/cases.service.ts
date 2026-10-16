@@ -1,6 +1,12 @@
-import { BadRequestException, ForbiddenException, Injectable } from "@nestjs/common";
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
+import * as fs from "fs";
 import type {
   AuthUser,
   BillingStatus,
@@ -22,15 +28,11 @@ import type {
   OrderGiverResponse,
   DashboardStatFilter,
   DashboardTodoCaseItem,
-  DocumentResponse,
   InterventionResponse,
   InterventionsListResponse,
-  TeamResponse,
   TechnicianResponse,
   UpdateInterventionBody,
   UpdateCaseBody,
-  UserPermissionAssignmentResponse,
-  UserResponse,
   OrganizationResponse,
   QuoteResponse,
   QuoteEmailSendEntry,
@@ -47,10 +49,8 @@ import {
   invoiceEmailFailureMessage,
   INVOICE_EMAIL_COMMERCIAL_FOOTER,
 } from "@planwise/shared";
-import type { SendTransactionalEmailBody, SendEmailNotificationResponse } from "@planwise/shared";
 import PDFDocument from "pdfkit";
 import { assertAnyAssignablePermission } from "../infrastructure/permission-checks";
-import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
 import { AbstractCustomersGatewayService } from "./ports/customers.service.port";
 import { AbstractOrderGiversGatewayService } from "./ports/order-givers.service.port";
 import {
@@ -71,7 +71,15 @@ import {
   type CreateCommentForOrgBody,
   type UpdateCommentForOrgBody,
 } from "./ports/cases.service.port";
-import { SERVICE_URLS } from "../infrastructure/service-urls.config";
+import { AbstractTechniciansService } from "./technicians/ports/technicians.service.port";
+import { AbstractTeamsService } from "./technicians/ports/teams.service.port";
+import { AbstractOrganizationsService } from "./organizations/ports/organizations.service.port";
+import { AbstractDocumentsService } from "./documents/ports/documents.service.port";
+import { AbstractStorageProvider } from "../infrastructure/storage/storage.port";
+import { LocalStorageProvider } from "../infrastructure/storage/local-storage.provider";
+import { AbstractEmailService } from "./notifications/ports/email.service.port";
+import { AbstractUsersService } from "./users/ports/users.service.port";
+import { AbstractPermissionsService } from "./permissions/ports/permissions.service.port";
 
 import { AbstractCasesService } from "./cases/ports/cases.service.port";
 import { AbstractInterventionsService } from "./cases/ports/interventions.service.port";
@@ -93,7 +101,14 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     private readonly dashboardService: AbstractDashboardService,
     private readonly caseTemplatesService: AbstractCaseTemplatesService,
     private readonly interventionTypesService: AbstractInterventionTypesService,
-    private readonly scopedHttp: OrganizationScopedHttpClient,
+    private readonly techniciansService: AbstractTechniciansService,
+    private readonly teamsService: AbstractTeamsService,
+    private readonly organizationsService: AbstractOrganizationsService,
+    private readonly documentsService: AbstractDocumentsService,
+    private readonly storage: AbstractStorageProvider,
+    private readonly emailService: AbstractEmailService,
+    private readonly usersService: AbstractUsersService,
+    private readonly permissionsService: AbstractPermissionsService,
     private readonly customersGateway: AbstractCustomersGatewayService,
     private readonly orderGiversGateway: AbstractOrderGiversGatewayService,
     private readonly httpService: HttpService,
@@ -391,13 +406,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     if (!technicianId) return [];
 
     try {
-      const teams = await this.scopedHttp.request<TeamResponse[]>({
-        baseUrl: SERVICE_URLS.technicians,
-        organizationId: user.organizationId,
-        method: "get",
-        path: "/teams",
-        errorLabel: "Technicians service error",
-      });
+      const teams = await this.teamsService.listTeams(user.organizationId);
       return teams
         .filter((team) => team.technicianIds.includes(technicianId))
         .map((team) => team.id);
@@ -411,14 +420,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     userId: string,
   ): Promise<string | undefined> {
     try {
-      const technician = await this.scopedHttp.request<TechnicianResponse | null>({
-        baseUrl: SERVICE_URLS.technicians,
-        organizationId,
-        method: "get",
-        path: `/technicians/by-user/${userId}`,
-        validateResponseScope: false,
-        errorLabel: "Technicians service error",
-      });
+      const technician = await this.techniciansService.findByUserId(organizationId, userId);
       return technician?.id;
     } catch {
       return undefined;
@@ -476,27 +478,14 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     assigneeId: string,
   ): Promise<TechnicianResponse | null> {
     try {
-      const byUser = await this.scopedHttp.request<TechnicianResponse | null>({
-        baseUrl: SERVICE_URLS.technicians,
-        organizationId,
-        method: "get",
-        path: `/technicians/by-user/${assigneeId}`,
-        validateResponseScope: false,
-        errorLabel: "Technicians service error",
-      });
+      const byUser = await this.techniciansService.findByUserId(organizationId, assigneeId);
       if (byUser?.id) return byUser;
     } catch {
       // ignore — try technician id
     }
 
     try {
-      return await this.scopedHttp.request<TechnicianResponse>({
-        baseUrl: SERVICE_URLS.technicians,
-        organizationId,
-        method: "get",
-        path: `/technicians/${assigneeId}`,
-        errorLabel: "Technicians service error",
-      });
+      return await this.techniciansService.getTechnician(organizationId, assigneeId);
     } catch {
       return null;
     }
@@ -504,13 +493,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
 
   private async resolveTeamDisplayName(organizationId: string, teamId: string): Promise<string> {
     try {
-      const team = await this.scopedHttp.request<TeamResponse>({
-        baseUrl: SERVICE_URLS.technicians,
-        organizationId,
-        method: "get",
-        path: `/teams/${teamId}`,
-        errorLabel: "Technicians service error",
-      });
+      const team = await this.teamsService.getTeam(organizationId, teamId);
       return team.name;
     } catch {
       return teamId;
@@ -817,29 +800,26 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     let sent = false;
     let reason: string | undefined;
     try {
-      const payload: SendTransactionalEmailBody = {
+      const response = await this.emailService.sendTransactionalEmail(
         to,
         subject,
-        body: message,
+        message,
+        undefined,
+        undefined,
         footer,
-        cc: cc.length > 0 ? cc : undefined,
-        attachments: [
-          {
-            filename,
-            contentType: "application/pdf",
-            contentBase64: pdf.toString("base64"),
-          },
-        ],
-      };
-      const response = await firstValueFrom(
-        this.httpService.post<SendEmailNotificationResponse>(
-          `${SERVICE_URLS.notifications}/email/transactional`,
-          payload,
-          { timeout: 60_000 },
-        ),
+        {
+          cc: cc.length > 0 ? cc : undefined,
+          attachments: [
+            {
+              filename,
+              contentType: "application/pdf",
+              contentBase64: pdf.toString("base64"),
+            },
+          ],
+        },
       );
-      sent = response.data.sent === true;
-      reason = response.data.reason;
+      sent = response.sent === true;
+      reason = response.reason;
     } catch {
       sent = false;
       reason = "send_failed";
@@ -1143,12 +1123,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
 
   private async fetchOrganization(organizationId: string): Promise<OrganizationResponse | null> {
     try {
-      const res = await firstValueFrom(
-        this.httpService.get<OrganizationResponse>(
-          `${SERVICE_URLS.organizations}/organizations/${organizationId}`,
-        ),
-      );
-      return res.data;
+      return await this.organizationsService.findById(organizationId);
     } catch {
       return null;
     }
@@ -1158,24 +1133,7 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     organizationId: string,
     documentId: string,
   ): Promise<Buffer | null> {
-    try {
-      const urlRes = await firstValueFrom(
-        this.httpService.get<{ url: string }>(
-          `${SERVICE_URLS.documents}/documents/${documentId}/download-url`,
-          { params: { organizationId } },
-        ),
-      );
-      let downloadUrl = urlRes.data.url;
-      if (downloadUrl.startsWith("/documents/download/")) {
-        downloadUrl = `${SERVICE_URLS.documents}${downloadUrl}`;
-      }
-      const fileRes = await firstValueFrom(
-        this.httpService.get(downloadUrl, { responseType: "arraybuffer", timeout: 15000 }),
-      );
-      return Buffer.from(fileRes.data);
-    } catch {
-      return null;
-    }
+    return this.readDocumentBytes(organizationId, documentId);
   }
 
   private async fetchInterventionPhotos(
@@ -1183,38 +1141,18 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     interventionId: string,
   ): Promise<{ data: Buffer; mimeType: string }[]> {
     try {
-      const docs = await firstValueFrom(
-        this.httpService.get<DocumentResponse[]>(`${SERVICE_URLS.documents}/documents`, {
-          params: {
-            organizationId: user.organizationId,
-            entityType: "intervention",
-            entityId: interventionId,
-          },
-        }),
-      ).then((r) => r.data);
+      const docs = await this.documentsService.listByEntity(
+        user.organizationId,
+        "intervention",
+        interventionId,
+      );
 
       const images = docs.filter((d) => d.mimeType.startsWith("image/"));
       const results: { data: Buffer; mimeType: string }[] = [];
 
       for (const img of images.slice(0, 6)) {
-        try {
-          const urlRes = await firstValueFrom(
-            this.httpService.get<{ url: string }>(
-              `${SERVICE_URLS.documents}/documents/${img.id}/download-url`,
-              { params: { organizationId: user.organizationId } },
-            ),
-          );
-          let downloadUrl = urlRes.data.url;
-          if (downloadUrl.startsWith("/documents/download/")) {
-            downloadUrl = `${SERVICE_URLS.documents}${downloadUrl}`;
-          }
-          const fileRes = await firstValueFrom(
-            this.httpService.get(downloadUrl, { responseType: "arraybuffer" }),
-          );
-          results.push({ data: Buffer.from(fileRes.data), mimeType: img.mimeType });
-        } catch {
-          /* skip photos that fail to download */
-        }
+        const data = await this.readDocumentBytes(user.organizationId, img.id);
+        if (data) results.push({ data, mimeType: img.mimeType });
       }
       return results;
     } catch {
@@ -1573,13 +1511,11 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
 
   private async resolveUserProfileId(user: AuthUser): Promise<string | undefined> {
     try {
-      const res = await firstValueFrom(
-        this.httpService.get<UserPermissionAssignmentResponse>(
-          `${SERVICE_URLS.permissions}/assignments/${user.id}`,
-          { params: { organizationId: user.organizationId } },
-        ),
+      const assignment = await this.permissionsService.getUserAssignment(
+        user.organizationId,
+        user.id,
       );
-      return res.data.profileId;
+      return assignment.profileId;
     } catch {
       return undefined;
     }
@@ -1928,10 +1864,10 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     const ids = [...new Set(assigneeIds.map((id) => id.trim()).filter(Boolean))];
     const assignees: CaseAssignee[] = [];
     for (const id of ids) {
-      const user = await this.callUsersService<UserResponse>(organizationId, {
-        method: "get",
-        path: `/users/${id}`,
-      });
+      const user = await this.usersService.findById(id, organizationId);
+      if (!user) {
+        throw new NotFoundException("Utilisateur introuvable");
+      }
       if (user.organizationId !== organizationId) {
         throw new ForbiddenException(
           "Un utilisateur assigné n'appartient pas à cette organisation",
@@ -1942,25 +1878,25 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
     return assignees;
   }
 
-  private callUsersService<T>(
+  private async readDocumentBytes(
     organizationId: string,
-    params: {
-      method: "get" | "post" | "patch" | "put" | "delete";
-      path: string;
-      body?: object;
-      query?: Record<string, unknown>;
-      validateResponseScope?: boolean;
-    },
-  ): Promise<T> {
-    return this.scopedHttp.request<T>({
-      baseUrl: SERVICE_URLS.users,
-      organizationId,
-      errorLabel: "Users service error",
-      method: params.method,
-      path: params.path,
-      body: params.body,
-      query: params.query,
-      validateResponseScope: params.validateResponseScope,
-    });
+    documentId: string,
+  ): Promise<Buffer | null> {
+    try {
+      const downloadUrl = await this.documentsService.getDownloadUrl(organizationId, documentId);
+      if (downloadUrl.startsWith("/documents/download/")) {
+        if (!(this.storage instanceof LocalStorageProvider)) return null;
+        const storageKey = decodeURIComponent(downloadUrl.slice("/documents/download/".length));
+        const filePath = this.storage.getAbsolutePath(storageKey);
+        if (!fs.existsSync(filePath)) return null;
+        return fs.readFileSync(filePath);
+      }
+      const fileRes = await firstValueFrom(
+        this.httpService.get(downloadUrl, { responseType: "arraybuffer", timeout: 15000 }),
+      );
+      return Buffer.from(fileRes.data);
+    } catch {
+      return null;
+    }
   }
 }
