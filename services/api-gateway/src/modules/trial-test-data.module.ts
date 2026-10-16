@@ -1,5 +1,4 @@
 import { Module } from "@nestjs/common";
-import { HttpModule } from "@nestjs/axios";
 import { TrialTestDataController } from "../presentation/http/trial-test-data.controller";
 import { AbstractTrialTestDataService } from "../domain/ports/trial-test-data.service.port";
 import { TrialTestDataService } from "../domain/trial-test-data.service";
@@ -14,10 +13,10 @@ import { FleetDomainModule } from "./fleet-domain.module";
 import { TechniciansDomainModule } from "./technicians-domain.module";
 import { CustomersDomainModule } from "./customers-domain.module";
 import { PermissionsModule } from "./permissions.module";
+import { IntegrationsDomainModule } from "./integrations-domain.module";
 
 @Module({
   imports: [
-    HttpModule.register({ timeout: 10000, maxRedirects: 0 }),
     SubscriptionsModule,
     SubscriptionsDomainModule,
     OrganizationsDomainModule,
@@ -27,6 +26,7 @@ import { PermissionsModule } from "./permissions.module";
     TechniciansDomainModule,
     CustomersDomainModule,
     PermissionsModule,
+    IntegrationsDomainModule,
   ],
   controllers: [TrialTestDataController],
   providers: [

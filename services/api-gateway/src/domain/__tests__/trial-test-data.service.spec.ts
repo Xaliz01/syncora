@@ -1,7 +1,5 @@
 import { BadRequestException, ConflictException } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
-import { HttpService } from "@nestjs/axios";
-import { of } from "rxjs";
 import type { AuthUser } from "@planwise/shared";
 import { TrialTestDataService } from "../trial-test-data.service";
 import { AbstractSubscriptionsGatewayService } from "../ports/subscriptions.service.port";
@@ -21,10 +19,11 @@ import { AbstractOrderGiversService } from "../customers/ports/order-givers.serv
 import { AbstractArticleStockService } from "../stock/ports/article-stock.service.port";
 import { AbstractPrestationService } from "../stock/ports/prestation.service.port";
 import { AbstractStockLocationService } from "../stock/ports/stock-location.service.port";
+import { AbstractIntegrationsService } from "../integrations/ports/integrations.service.port";
 
 describe("TrialTestDataService", () => {
   let service: TrialTestDataService;
-  const httpDelete = jest.fn();
+  const purgeIntegrations = jest.fn();
   const getCurrentSubscription = jest.fn();
   const getTrialTestDataStatus = jest.fn();
   const updateTrialTestData = jest.fn();
@@ -62,7 +61,7 @@ describe("TrialTestDataService", () => {
       hasTestData: false,
       injectedAt: null,
     });
-    httpDelete.mockReturnValue(of({ data: { purged: true } }));
+    purgeIntegrations.mockResolvedValue({ purged: true });
     getCurrentSubscription.mockResolvedValue({
       status: "trialing",
       hasAccess: true,
@@ -84,7 +83,6 @@ describe("TrialTestDataService", () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TrialTestDataService,
-        { provide: HttpService, useValue: { delete: httpDelete } },
         {
           provide: AbstractSubscriptionsGatewayService,
           useValue: { getCurrentSubscription },
@@ -133,6 +131,7 @@ describe("TrialTestDataService", () => {
         },
         { provide: AbstractPrestationService, useValue: { purgeTestData: purgePrestations } },
         { provide: AbstractStockLocationService, useValue: { purgeTestData: purgeLocations } },
+        { provide: AbstractIntegrationsService, useValue: { purgeTestData: purgeIntegrations } },
       ],
     }).compile();
 
@@ -184,7 +183,7 @@ describe("TrialTestDataService", () => {
     expect(purgeTechnicians).toHaveBeenCalledWith("org-1");
     expect(purgeCustomers).toHaveBeenCalledWith("org-1");
     expect(purgePermissions).toHaveBeenCalledWith("org-1");
-    expect(httpDelete).toHaveBeenCalled();
+    expect(purgeIntegrations).toHaveBeenCalledWith("org-1");
     expect(updateTrialTestData).toHaveBeenCalledWith(
       "org-1",
       expect.objectContaining({ status: "none" }),

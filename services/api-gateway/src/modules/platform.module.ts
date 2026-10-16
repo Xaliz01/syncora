@@ -27,6 +27,8 @@ import { OrganizationsDomainModule } from "./organizations-domain.module";
 import { PermissionsModule } from "./permissions.module";
 import { NotificationsDomainModule } from "./notifications-domain.module";
 import { SubscriptionsDomainModule } from "./subscriptions-domain.module";
+import { IntegrationsDomainModule } from "./integrations-domain.module";
+import { CasesModule } from "./cases.module";
 
 @Module({
   imports: [
@@ -38,6 +40,8 @@ import { SubscriptionsDomainModule } from "./subscriptions-domain.module";
     PermissionsModule,
     NotificationsDomainModule,
     SubscriptionsDomainModule,
+    IntegrationsDomainModule,
+    CasesModule,
   ],
   controllers: [PlatformController],
   providers: [

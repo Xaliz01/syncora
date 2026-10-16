@@ -1,9 +1,9 @@
 import { GoneException } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
-import { HttpService } from "@nestjs/axios";
 import type { AuthUser } from "@planwise/shared";
 import { BILLING_CONNECTORS_UNAVAILABLE_MESSAGE } from "@planwise/shared";
 import { IntegrationsGatewayService } from "../integrations.service";
+import { AbstractIntegrationsService } from "../integrations/ports/integrations.service.port";
 import { AbstractCasesGatewayService } from "../ports/cases.service.port";
 import { AbstractCustomersGatewayService } from "../ports/customers.service.port";
 import { AbstractOrderGiversGatewayService } from "../ports/order-givers.service.port";
@@ -25,7 +25,7 @@ describe("IntegrationsGatewayService billing connectors unavailable", () => {
     const module = await Test.createTestingModule({
       providers: [
         IntegrationsGatewayService,
-        { provide: HttpService, useValue: { get: jest.fn(), post: jest.fn() } },
+        { provide: AbstractIntegrationsService, useValue: {} },
         { provide: AbstractCasesGatewayService, useValue: {} },
         { provide: AbstractCustomersGatewayService, useValue: {} },
         { provide: AbstractOrderGiversGatewayService, useValue: {} },

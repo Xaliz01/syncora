@@ -43,6 +43,7 @@ import { CronRunRecorder } from "../domain/notifications/cron-run.recorder";
     AbstractNotificationPreferencesService,
     AbstractPushSubscriptionService,
     AbstractEmailService,
+    CronRunRecorder,
   ],
 })
 export class NotificationsDomainModule {}

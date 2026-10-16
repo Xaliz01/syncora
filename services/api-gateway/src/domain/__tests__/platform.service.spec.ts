@@ -78,6 +78,13 @@ describe("PlatformService", () => {
     listLandingToAppVisits: jest.fn(),
     listPathVisits: jest.fn(),
   };
+  const integrationsDomain = {
+    listPlatformIntegrations: jest.fn().mockResolvedValue({ integrations: [], total: 0 }),
+  };
+  const cronRecorder = {
+    list: jest.fn().mockResolvedValue({ runs: [], total: 0 }),
+    getLatest: jest.fn().mockResolvedValue(null),
+  };
   const prometheusOpsHealth = {
     getOpsHealth: jest.fn().mockResolvedValue({
       available: false,
@@ -109,6 +116,9 @@ describe("PlatformService", () => {
     outreaches.listProspectOutreachesBySirens.mockResolvedValue({ outreaches: [] });
     email.sendTransactionalEmail.mockResolvedValue({ sent: true });
     audits.createImpersonationAudit.mockResolvedValue({ id: "audit-1" });
+    integrationsDomain.listPlatformIntegrations.mockResolvedValue({ integrations: [], total: 0 });
+    cronRecorder.list.mockResolvedValue({ runs: [], total: 0 });
+    cronRecorder.getLatest.mockResolvedValue(null);
     process.env.PLATFORM_STAFF_EMAILS = "mail@benoistbabin.fr";
     process.env.PLATFORM_STAFF_EMAIL_DOMAINS = "planwise.fr";
 
@@ -122,7 +132,6 @@ describe("PlatformService", () => {
       jwtService as never,
     );
     const directory = new PlatformDirectoryService(
-      http,
       jwtService as never,
       subscriptionsGateway as never,
       orgLookup,
@@ -130,8 +139,16 @@ describe("PlatformService", () => {
       organizations as unknown as AbstractOrganizationsService,
       email as unknown as AbstractEmailService,
       audits as unknown as AbstractImpersonationAuditService,
+      integrationsDomain as never,
     );
-    const integrationsCrons = new PlatformIntegrationsCronsService(http, orgLookup);
+    const integrationsCrons = new PlatformIntegrationsCronsService(
+      orgLookup,
+      integrationsDomain as never,
+      cronRecorder as never,
+      cronRecorder as never,
+      cronRecorder as never,
+      cronRecorder as never,
+    );
     const dashboard = new PlatformDashboardService(
       analyticsGateway as never,
       prometheusOpsHealth as never,
@@ -239,51 +256,43 @@ describe("PlatformService", () => {
   });
 
   it("merges cron runs across services with real total and offset", async () => {
-    httpService.get.mockImplementation(
-      (_url: string, config?: { params?: { jobKey?: string } }) => {
-        const jobKey = config?.params?.jobKey;
-        if (jobKey === "notifications.intervention-reminders") {
-          return of({
-            data: {
-              total: 89,
-              runs: Array.from({ length: 50 }, (_, i) => ({
-                id: `n-${i}`,
-                jobKey,
-                service: "notifications-service",
-                status: "ok",
-                startedAt: new Date(2026, 6, 21, 12, 50 - i).toISOString(),
-              })),
-            },
-          });
-        }
-        if (jobKey === "integrations.invoice-sync") {
-          return of({
-            data: {
-              total: 10,
-              runs: Array.from({ length: 10 }, (_, i) => ({
-                id: `i-${i}`,
-                jobKey,
-                service: "integrations-service",
-                status: "ok",
-                startedAt: new Date(2026, 6, 21, 11, 10 - i).toISOString(),
-              })),
-            },
-          });
-        }
-        return of({
-          data: {
-            total: 5,
-            runs: Array.from({ length: 5 }, (_, i) => ({
-              id: `o-${i}`,
-              jobKey: jobKey ?? "organizations.trial-test-data-cleanup",
-              service: "organizations-service",
-              status: "ok",
-              startedAt: new Date(2026, 6, 20, 4, i).toISOString(),
-            })),
-          },
-        });
-      },
-    );
+    cronRecorder.list.mockImplementation(async (filters?: { jobKey?: string }) => {
+      const jobKey = filters?.jobKey;
+      if (jobKey === "notifications.intervention-reminders") {
+        return {
+          total: 89,
+          runs: Array.from({ length: 50 }, (_, i) => ({
+            id: `n-${i}`,
+            jobKey,
+            service: "notifications-service",
+            status: "ok" as const,
+            startedAt: new Date(2026, 6, 21, 12, 50 - i).toISOString(),
+          })),
+        };
+      }
+      if (jobKey === "integrations.invoice-sync") {
+        return {
+          total: 10,
+          runs: Array.from({ length: 10 }, (_, i) => ({
+            id: `i-${i}`,
+            jobKey,
+            service: "integrations-service",
+            status: "ok" as const,
+            startedAt: new Date(2026, 6, 21, 11, 10 - i).toISOString(),
+          })),
+        };
+      }
+      return {
+        total: 5,
+        runs: Array.from({ length: 5 }, (_, i) => ({
+          id: `o-${i}`,
+          jobKey: jobKey ?? "organizations.trial-test-data-cleanup",
+          service: "organizations-service",
+          status: "ok" as const,
+          startedAt: new Date(2026, 6, 20, 4, i).toISOString(),
+        })),
+      };
+    });
 
     const expectedTotal =
       89 + 10 + (PLATFORM_CRON_JOBS.length - 2) * 5; /* 5 runs par défaut pour chaque autre job */

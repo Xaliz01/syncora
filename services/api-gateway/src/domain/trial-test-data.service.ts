@@ -5,9 +5,6 @@ import {
   Injectable,
   Logger,
 } from "@nestjs/common";
-import { HttpService } from "@nestjs/axios";
-import { firstValueFrom } from "rxjs";
-import axios from "axios";
 import type {
   AuthUser,
   InjectTrialTestDataResponse,
@@ -33,6 +30,7 @@ import { AbstractOrderGiversService } from "./customers/ports/order-givers.servi
 import { AbstractArticleStockService } from "./stock/ports/article-stock.service.port";
 import { AbstractPrestationService } from "./stock/ports/prestation.service.port";
 import { AbstractStockLocationService } from "./stock/ports/stock-location.service.port";
+import { AbstractIntegrationsService } from "./integrations/ports/integrations.service.port";
 import {
   buildDemoAgences,
   buildDemoArticles,
@@ -49,7 +47,6 @@ import {
   runInBatches,
   TRIAL_DEMO_COUNTS,
 } from "./trial-test-data-seed";
-import { SERVICE_URLS } from "../infrastructure/service-urls.config";
 
 const INJECT_BATCH_SIZE = 10;
 
@@ -59,7 +56,6 @@ export class TrialTestDataService extends AbstractTrialTestDataService {
   private readonly injectionInFlight = new Set<string>();
 
   constructor(
-    private readonly httpService: HttpService,
     private readonly subscriptionsGateway: AbstractSubscriptionsGatewayService,
     private readonly organizations: AbstractOrganizationsService,
     private readonly agences: AbstractAgencesService,
@@ -77,6 +73,7 @@ export class TrialTestDataService extends AbstractTrialTestDataService {
     private readonly articles: AbstractArticleStockService,
     private readonly prestations: AbstractPrestationService,
     private readonly stockLocations: AbstractStockLocationService,
+    private readonly integrations: AbstractIntegrationsService,
   ) {
     super();
   }
@@ -316,15 +313,6 @@ export class TrialTestDataService extends AbstractTrialTestDataService {
     await this.customers.purgeTestData(organizationId);
     await this.orderGivers.purgeTestData(organizationId);
     await this.permissions.purgeTestData(organizationId);
-    try {
-      await firstValueFrom(
-        this.httpService.delete(`${SERVICE_URLS.integrations}/test-data`, {
-          params: { organizationId },
-        }),
-      );
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err) && err.response?.status === 404) return;
-      this.logger.warn("Purge test data: integrations service returned an error", err);
-    }
+    await this.integrations.purgeTestData(organizationId);
   }
 }

@@ -1,12 +1,4 @@
-import {
-  BadRequestException,
-  GoneException,
-  Injectable,
-  ServiceUnavailableException,
-} from "@nestjs/common";
-import { HttpService } from "@nestjs/axios";
-import { firstValueFrom } from "rxjs";
-import axios from "axios";
+import { GoneException, Injectable } from "@nestjs/common";
 import type {
   AuthUser,
   BillingIntegrationAvailability,
@@ -30,15 +22,15 @@ import type {
 } from "@planwise/shared";
 import { BILLING_CONNECTORS_UNAVAILABLE_MESSAGE } from "@planwise/shared";
 import { AbstractIntegrationsGatewayService } from "./ports/integrations.service.port";
+import { AbstractIntegrationsService } from "./integrations/ports/integrations.service.port";
 import { AbstractCasesGatewayService } from "./ports/cases.service.port";
 import { AbstractCustomersGatewayService } from "./ports/customers.service.port";
 import { AbstractOrderGiversGatewayService } from "./ports/order-givers.service.port";
-import { SERVICE_URLS } from "../infrastructure/service-urls.config";
 
 @Injectable()
 export class IntegrationsGatewayService extends AbstractIntegrationsGatewayService {
   constructor(
-    private readonly httpService: HttpService,
+    private readonly integrations: AbstractIntegrationsService,
     private readonly casesService: AbstractCasesGatewayService,
     private readonly customersService: AbstractCustomersGatewayService,
     private readonly orderGiversService: AbstractOrderGiversGatewayService,
@@ -164,32 +156,29 @@ export class IntegrationsGatewayService extends AbstractIntegrationsGatewayServi
       offset?: number;
     },
   ): Promise<OrganizationInvoiceSyncsListResponse> {
-    const params: Record<string, string> = { organizationId: user.organizationId };
-    if (filters?.remoteStatus) params.remoteStatus = filters.remoteStatus;
-    if (filters?.provider) params.provider = filters.provider;
-    if (filters?.invoiceKind) params.invoiceKind = filters.invoiceKind;
-    if (filters?.startDate) params.startDate = filters.startDate;
-    if (filters?.endDate) params.endDate = filters.endDate;
-    if (filters?.limit != null) params.limit = String(filters.limit);
-    if (filters?.offset != null) params.offset = String(filters.offset);
-
     const customerId = filters?.customerId?.trim();
     const orderGiverId = filters?.orderGiverId?.trim();
+    let partyCaseIds: string[] | undefined;
     if (customerId || orderGiverId) {
-      const caseIds = await this.casesService.listCaseIdsForParty(user, {
+      partyCaseIds = await this.casesService.listCaseIdsForParty(user, {
         customerId,
         orderGiverId,
       });
-      if (caseIds.length === 0) {
+      if (partyCaseIds.length === 0) {
         return { invoices: [], total: 0 };
       }
-      params.caseIds = caseIds.join(",");
     }
 
-    const raw = await this.getJson<OrganizationInvoiceSyncsListResponse>(
-      "/integrations/invoice-syncs",
-      params,
-    );
+    const raw = await this.integrations.listOrganizationInvoiceSyncs(user.organizationId, {
+      remoteStatus: filters?.remoteStatus,
+      provider: filters?.provider,
+      invoiceKind: filters?.invoiceKind,
+      startDate: filters?.startDate,
+      endDate: filters?.endDate,
+      caseIds: partyCaseIds,
+      limit: filters?.limit,
+      offset: filters?.offset,
+    });
     if (raw.invoices.length === 0) {
       return raw;
     }
@@ -238,20 +227,11 @@ export class IntegrationsGatewayService extends AbstractIntegrationsGatewayServi
     user: AuthUser,
     filters?: { startDate?: string; endDate?: string; provider?: string },
   ): Promise<OrganizationInvoiceSyncStatsResponse> {
-    const params: Record<string, string> = { organizationId: user.organizationId };
-    if (filters?.startDate) params.startDate = filters.startDate;
-    if (filters?.endDate) params.endDate = filters.endDate;
-    if (filters?.provider) params.provider = filters.provider;
-    return this.getJson<OrganizationInvoiceSyncStatsResponse>(
-      "/integrations/invoice-syncs/stats",
-      params,
-    );
+    return this.integrations.getOrganizationInvoiceSyncStats(user.organizationId, filters);
   }
 
   async getCaseInvoiceSync(user: AuthUser, caseId: string): Promise<CaseInvoiceSyncListResponse> {
-    return this.getJson<CaseInvoiceSyncListResponse>(`/integrations/cases/${caseId}/invoice-sync`, {
-      organizationId: user.organizationId,
-    });
+    return this.integrations.getCaseInvoiceSync(user.organizationId, caseId);
   }
 
   async finalizeCaseInvoice(
@@ -283,34 +263,5 @@ export class IntegrationsGatewayService extends AbstractIntegrationsGatewayServi
     _syncId: string,
   ): Promise<CaseInvoiceSyncListResponse> {
     this.throwConnectorsUnavailable();
-  }
-
-  private async getJson<T>(path: string, params: Record<string, string>): Promise<T> {
-    try {
-      const res = await firstValueFrom(
-        this.httpService.get<T>(`${SERVICE_URLS.integrations}${path}`, { params }),
-      );
-      return res.data;
-    } catch (err) {
-      this.rethrow(err);
-    }
-  }
-
-  private rethrow(err: unknown): never {
-    if (axios.isAxiosError(err)) {
-      if (!err.response) {
-        throw new ServiceUnavailableException(
-          "Service d’intégrations indisponible. Réessayez dans un instant.",
-        );
-      }
-      const status = err.response.status;
-      const data = err.response.data as { message?: string | string[] } | undefined;
-      const raw = data?.message;
-      const message = Array.isArray(raw) ? raw.join(", ") : (raw ?? "Erreur d’intégration");
-      if (status === 400) throw new BadRequestException(message);
-      if (status === 404) throw new BadRequestException(message);
-      throw new ServiceUnavailableException(message);
-    }
-    throw err;
   }
 }

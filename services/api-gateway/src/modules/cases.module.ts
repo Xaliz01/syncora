@@ -112,6 +112,7 @@ import { CronRunSchema } from "../persistence/cases/cron-run.schema";
     AbstractInterventionTypesService,
     AbstractCasesDataImportService,
     MaintenanceContractsService,
+    CronRunRecorder,
   ],
 })
 export class CasesModule {}

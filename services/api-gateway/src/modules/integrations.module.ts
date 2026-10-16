@@ -1,5 +1,4 @@
 import { Module } from "@nestjs/common";
-import { HttpModule } from "@nestjs/axios";
 import { IntegrationsController } from "../presentation/http/integrations.controller";
 import { AbstractIntegrationsGatewayService } from "../domain/ports/integrations.service.port";
 import { IntegrationsGatewayService } from "../domain/integrations.service";
@@ -8,10 +7,11 @@ import { CasesModule } from "./cases.module";
 import { CustomersModule } from "./customers.module";
 import { OrderGiversModule } from "./order-givers.module";
 import { SubscriptionsModule } from "./subscriptions.module";
+import { IntegrationsDomainModule } from "./integrations-domain.module";
 
 @Module({
   imports: [
-    HttpModule.register({ timeout: 60000, maxRedirects: 0 }),
+    IntegrationsDomainModule,
     CasesModule,
     CustomersModule,
     OrderGiversModule,

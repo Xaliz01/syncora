@@ -1,14 +1,11 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
-import { HttpService } from "@nestjs/axios";
-import { firstValueFrom } from "rxjs";
 import type {
   AuthResponse,
   AuthUser,
   JwtPayload,
   PlatformAuthUser,
   PlatformIntegrationSummary,
-  PlatformIntegrationsListResponse,
   PlatformOrganizationDetailResponse,
   PlatformOrganizationSummary,
   PlatformOrganizationsListResponse,
@@ -25,15 +22,14 @@ import { AbstractUsersService } from "../users/ports/users.service.port";
 import { AbstractOrganizationsService } from "../organizations/ports/organizations.service.port";
 import { AbstractEmailService } from "../notifications/ports/email.service.port";
 import { AbstractImpersonationAuditService } from "../users/ports/impersonation-audit.service.port";
+import { AbstractIntegrationsService } from "../integrations/ports/integrations.service.port";
 import { IMPERSONATION_TTL, IMPERSONATION_TTL_MS, MIN_REASON_LENGTH } from "./platform.constants";
-import { SERVICE_URLS } from "../../infrastructure/service-urls.config";
 
 @Injectable()
 export class PlatformDirectoryService extends AbstractPlatformDirectoryService {
   private readonly logger = new Logger(PlatformDirectoryService.name);
 
   constructor(
-    private readonly httpService: HttpService,
     private readonly jwtService: JwtService,
     private readonly subscriptionsGateway: AbstractSubscriptionsGatewayService,
     private readonly orgLookup: AbstractPlatformOrgLookupService,
@@ -41,6 +37,7 @@ export class PlatformDirectoryService extends AbstractPlatformDirectoryService {
     private readonly organizations: AbstractOrganizationsService,
     private readonly email: AbstractEmailService,
     private readonly audits: AbstractImpersonationAuditService,
+    private readonly integrationsService: AbstractIntegrationsService,
   ) {
     super();
   }
@@ -130,15 +127,15 @@ export class PlatformDirectoryService extends AbstractPlatformDirectoryService {
 
     let integrations: PlatformIntegrationSummary[] = [];
     try {
-      const intRes = await firstValueFrom(
-        this.httpService.get<PlatformIntegrationsListResponse>(
-          `${SERVICE_URLS.integrations}/platform/integrations`,
-          { params: { organizationId, limit: 20 } },
-        ),
-      );
-      integrations = intRes.data.integrations.map((i) => ({
+      const intRes = await this.integrationsService.listPlatformIntegrations({
+        organizationId,
+        limit: 20,
+      });
+      integrations = intRes.integrations.map((i) => ({
         ...i,
         organizationName: organization.name,
+        authMethod:
+          i.authMethod === "oauth" || i.authMethod === "api_token" ? i.authMethod : undefined,
       }));
     } catch {
       integrations = [];
