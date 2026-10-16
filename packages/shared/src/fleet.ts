@@ -1,4 +1,4 @@
-/** Contrats API fleet-service (véhicules, techniciens, équipes, agences, affectations) */
+/** Contrats API flotte (véhicules, techniciens, équipes, agences, affectations). */
 
 export const VEHICLE_TYPES = [
   "camion",
@@ -111,7 +111,7 @@ export interface TechnicianResponse {
   speciality?: string;
   status: TechnicianStatus;
   userId?: string;
-  /** Compte lié (enrichi par la gateway) — pour distinguer invitation en attente vs compte actif. */
+  /** Compte lié (enrichi par l’API) — pour distinguer invitation en attente vs compte actif. */
   linkedUser?: TechnicianLinkedUser;
   /** Hex #RRGGBB pour les cartes du calendrier ; absent = palette automatique */
   calendarColor?: string;

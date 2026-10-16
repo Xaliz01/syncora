@@ -57,6 +57,6 @@ Programme IA **futur** (interne, pas à citer comme livré) : [`docs/assistant/R
 1. Mettre à jour `routes.md` / `glossary.md` / `journeys/*.md` **dans la même PR**.
 2. Aligner `ASSISTANT_ROUTE_CATALOG` (`packages/shared/src/assistant.ts`) si nouveau lien proposable.
 3. Aligner les chunks embarqués `PRODUCT_DOC_CHUNKS` dans
-   `services/api-gateway/src/infrastructure/assistant/product-docs.loader.ts`
+   `services/api/src/infrastructure/assistant/product-docs.loader.ts`
    (le runtime Docker n’embarque pas `docs/product/` — les chunks doivent rester riches et à jour).
 4. Enrichir `offline-reply.ts` (FAQ) et le prompt (`assistant.prompt.ts`) pour les faits produits durs.

@@ -588,7 +588,7 @@ export function PlatformProspectionPage() {
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-sm">
         {!pappersConfigured ? (
           <span className="text-amber-700 dark:text-amber-300">
-            Clé Pappers non configurée (`PAPPERS_API_KEY` sur l’api-gateway).
+            La recherche d’entreprises est indisponible pour le moment.
           </span>
         ) : (
           <span className="text-slate-600 dark:text-slate-300">

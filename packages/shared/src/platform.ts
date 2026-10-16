@@ -575,7 +575,7 @@ export interface ProspectOutreachesListResponse {
   offset: number;
 }
 
-/** Filtres liste prospects suivis (gateway + users-service). */
+/** Filtres liste prospects suivis. */
 export interface ProspectOutreachesListFilters {
   limit?: number;
   offset?: number;

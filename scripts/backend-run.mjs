@@ -1,38 +1,15 @@
 #!/usr/bin/env node
 /**
- * Phase 1 : démarre les 11 microservices (backend:microservices).
- * Phase 2 : attend que tous les ports TCP soient ouverts (logs de progression).
- * Phase 3 : démarre l’API gateway.
+ * Démarre l’API gateway (PLANWISE_PROCESS=all : HTTP + crons) après MongoDB.
+ * Worker et notifications sont des processus séparés en production.
  *
- * Ctrl+C / SIGTERM : tue tout l’arbre (npm → concurrently → ts-node-dev), puis
- * libère les ports (certains ts-node-dev ignorent SIGTERM).
+ * Ctrl+C / SIGTERM : tue l’arbre npm, puis libère les ports.
  */
 import { spawn, execFileSync } from "node:child_process";
-import net from "node:net";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-
-const SERVICE_PORTS = [3001, 3002, 3003, 3004, 3005, 3006, 3007, 3008, 3009, 3010, 3011, 3012, 3013, 3014];
-const PORT_LABELS = {
-  3001: "organizations",
-  3002: "users",
-  3003: "permissions",
-  3004: "cases",
-  3005: "fleet",
-  3006: "technicians",
-  3007: "stock",
-  3008: "subscriptions",
-  3009: "customers",
-  3010: "notifications",
-  3011: "documents",
-  3012: "exports",
-  3013: "integrations",
-  3014: "billing",
-};
-const WAIT_TIMEOUT_MS = 180_000;
-const PROGRESS_INTERVAL_MS = 3_000;
 
 /** @type {import('node:child_process').ChildProcess[]} */
 const children = [];
@@ -42,7 +19,6 @@ function log(message) {
   console.log(`[backend] ${message}`);
 }
 
-/** Tue le process group (npm + concurrently + ts-node-dev), pas seulement le shell. */
 function killProcessTree(pid, signal = "SIGTERM") {
   if (!pid) return;
   try {
@@ -62,14 +38,14 @@ function freeBackendPorts() {
       stdio: "inherit",
     });
   } catch {
-    /* ignore — déjà loggé par le script */
+    /* ignore */
   }
 }
 
 function shutdown(exitCode = 0) {
   if (shuttingDown) return;
   shuttingDown = true;
-  log("Arrêt des services…");
+  log("Arrêt de l’API…");
 
   for (const child of children) {
     if (child.pid) killProcessTree(child.pid, "SIGTERM");
@@ -81,140 +57,39 @@ function shutdown(exitCode = 0) {
     }
     freeBackendPorts();
     process.exit(exitCode);
-  }, 700);
+  }, 1500);
 }
 
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function isPortOpen(port) {
-  return new Promise((resolve) => {
-    const socket = net.connect({ port, host: "127.0.0.1" });
-    const done = (open) => {
-      socket.removeAllListeners();
-      socket.destroy();
-      resolve(open);
-    };
-    socket.setTimeout(800);
-    socket.once("connect", () => done(true));
-    socket.once("timeout", () => done(false));
-    socket.once("error", () => done(false));
-  });
-}
-
-async function getMissingPorts() {
-  const checks = await Promise.all(
-    SERVICE_PORTS.map(async (port) => ({
-      port,
-      open: await isPortOpen(port),
-    })),
-  );
-  return checks.filter((c) => !c.open).map((c) => c.port);
-}
-
-function formatMissingPorts(ports) {
-  return ports
-    .map((port) => `${port} (${PORT_LABELS[port] ?? "?"})`)
-    .join(", ");
-}
-
-async function waitForAllMicroservices() {
-  log(
-    `Attente des microservices (ports ${SERVICE_PORTS.join(", ")}, max ${WAIT_TIMEOUT_MS / 1000}s)…`,
-  );
-
-  const deadline = Date.now() + WAIT_TIMEOUT_MS;
-  let lastProgressAt = 0;
-
-  while (Date.now() < deadline) {
-    const missing = await getMissingPorts();
-    if (missing.length === 0) {
-      log("Tous les microservices sont prêts.");
-      return;
-    }
-
-    const now = Date.now();
-    if (now - lastProgressAt >= PROGRESS_INTERVAL_MS) {
-      log(`En attente : ${formatMissingPorts(missing)}`);
-      lastProgressAt = now;
-    }
-
-    await sleep(500);
-  }
-
-  const stillMissing = await getMissingPorts();
-  throw new Error(
-    stillMissing.length > 0
-      ? `timeout — ports encore fermés : ${formatMissingPorts(stillMissing)}`
-      : "timeout",
-  );
-}
-
-/**
- * OTEL doit être dans process.env *avant* le premier import de `tracer.ts`.
- * Les `.env` Nest / dotenv arrivent trop tard ; on injecte donc ici pour tout
- * `npm run backend` (gateway + microservices). Surcharge possible via export shell.
- */
 function withLocalOtelEnv(baseEnv = process.env) {
-  return {
+  const env = {
     ...baseEnv,
     TS_NODE_TRANSPILE_ONLY: "true",
-    OTEL_TRACES_ENABLED: baseEnv.OTEL_TRACES_ENABLED ?? "true",
-    OTEL_EXPORTER_OTLP_ENDPOINT:
-      baseEnv.OTEL_EXPORTER_OTLP_ENDPOINT ?? "http://127.0.0.1:4318",
   };
+  // Les traces ne sont pas activées par défaut : le chargement d'OpenTelemetry
+  // sous ts-node-dev reste silencieux plusieurs minutes. Pour les activer :
+  // OTEL_TRACES_ENABLED=true npm run backend (collector sur :4318).
+  if (baseEnv.OTEL_TRACES_ENABLED === "true" && !baseEnv.OTEL_EXPORTER_OTLP_ENDPOINT) {
+    env.OTEL_EXPORTER_OTLP_ENDPOINT = "http://127.0.0.1:4318";
+  }
+  return env;
 }
 
-function spawnNpmScript(scriptName) {
-  // `detached: true` → nouveau process group ; Ctrl+C peut tuer tout l’arbre via kill(-pid).
-  const child = spawn("npm", ["run", scriptName], {
+function main() {
+  process.on("SIGINT", () => shutdown(0));
+  process.on("SIGTERM", () => shutdown(0));
+
+  log("Démarrage de l’API (port 3000, crons inclus)…");
+  const gateway = spawn("npm", ["run", "backend:api"], {
     stdio: "inherit",
     shell: true,
     detached: true,
     env: withLocalOtelEnv(),
   });
-  children.push(child);
-  return child;
-}
-
-async function main() {
-  process.on("SIGINT", () => shutdown(0));
-  process.on("SIGTERM", () => shutdown(0));
-
-  log("Démarrage des microservices…");
-  const microservices = spawnNpmScript("backend:microservices");
-
-  microservices.on("exit", (code) => {
-    if (shuttingDown) return;
-    if (code !== null && code !== 0) {
-      log(`Microservices arrêtés (code ${code}).`);
-      shutdown(code);
-    }
-  });
-
-  try {
-    await waitForAllMicroservices();
-  } catch (err) {
-    const detail = err instanceof Error ? err.message : String(err);
-    log(`Échec : ${detail}`);
-    log(
-      "Astuce : relancez après « npm run backend:free-ports » ou vérifiez les logs du service manquant (souvent subscriptions ou users).",
-    );
-    shutdown(1);
-    return;
-  }
-
-  log("Démarrage de l’API gateway (port 3000)…");
-  const gateway = spawnNpmScript("backend:gateway");
-
+  children.push(gateway);
   gateway.on("exit", (code) => {
     if (shuttingDown) return;
     shutdown(code ?? 1);
   });
 }
 
-main().catch((err) => {
-  console.error("[backend] Erreur fatale :", err);
-  shutdown(1);
-});
+main();

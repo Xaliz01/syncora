@@ -15,7 +15,7 @@ export function membershipCountsTowardUserSeat(
   return status === "active" || status === "invited" || status == null || status === "";
 }
 
-/** Table de jointure utilisateur ↔ organisation (users-service). */
+/** Table de jointure utilisateur ↔ organisation. */
 export interface OrganizationMembershipResponse {
   id: string;
   userId: string;

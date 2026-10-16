@@ -29,24 +29,24 @@ service_running() {
 }
 
 slot=""
-if service_running frontend-green && service_running api-gateway-green; then
+if service_running frontend-green && service_running api-green; then
   slot=green
-elif service_running frontend-blue && service_running api-gateway-blue; then
+elif service_running frontend-blue && service_running api-blue; then
   slot=blue
 elif service_running frontend-green; then
   slot=green
-  compose up -d --no-deps --pull missing api-gateway-green
+  compose up -d --no-deps --pull missing api-green
 elif service_running frontend-blue; then
   slot=blue
-  compose up -d --no-deps --pull missing api-gateway-blue
+  compose up -d --no-deps --pull missing api-blue
 else
   echo "ℹ️  Aucun slot — bootstrap blue"
   slot=blue
-  compose up -d --no-deps --pull missing api-gateway-blue frontend-blue
+  compose up -d --no-deps --pull missing api-blue frontend-blue
 fi
 
 echo "=== Récupération edge (slot=$slot) ==="
-compose up -d --no-deps --pull missing "api-gateway-${slot}" "frontend-${slot}"
+compose up -d --no-deps --pull missing "api-${slot}" "frontend-${slot}"
 
 if [[ ! -f Caddyfile.template ]]; then
   echo "❌ Caddyfile.template manquant — scp depuis le repo"
@@ -55,7 +55,7 @@ fi
 
 sed \
   -e "s|__FRONTEND_UPSTREAM__|frontend-${slot}:5173|g" \
-  -e "s|__API_GATEWAY_UPSTREAM__|api-gateway-${slot}:3000|g" \
+  -e "s|__API_UPSTREAM__|api-${slot}:3000|g" \
   Caddyfile.template >Caddyfile
 echo "$slot" >.edge-slot
 
@@ -65,7 +65,7 @@ compose up -d --no-deps caddy
 
 echo "DNS depuis Caddy :"
 docker exec planwise-caddy wget -S -O /dev/null "http://frontend-${slot}:5173/" 2>&1 | head -12 || true
-docker exec planwise-caddy wget -S -O /dev/null "http://api-gateway-${slot}:3000/api/health" 2>&1 | head -12 || true
+docker exec planwise-caddy wget -S -O /dev/null "http://api-${slot}:3000/api/health" 2>&1 | head -12 || true
 
 echo "=== Tester https://app.planwise.fr ==="
 curl -sI https://app.planwise.fr/ | head -5 || true

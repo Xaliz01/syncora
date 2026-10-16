@@ -2,7 +2,7 @@
 # Les domaines et l'email ACME proviennent de variables d'environnement (cf. docker-compose.prod.yml).
 #
 # TEMPLATE : ne pas monter tel quel. `rolling-edge.sh` / `recover-edge.sh` génèrent
-# `Caddyfile` en remplaçant __FRONTEND_UPSTREAM__ et __API_GATEWAY_UPSTREAM__
+# `Caddyfile` en remplaçant __FRONTEND_UPSTREAM__ et __API_UPSTREAM__
 # par le slot actif (ex. frontend-green:5173). Un seul upstream évite les 502
 # quand l'autre slot n'a pas de conteneur (DNS « bad address »).
 {
@@ -53,21 +53,21 @@ www.{$MARKETING_DOMAIN} {
 	import frontend_proxy
 }
 
-# API Gateway (+ webhook Stripe hors gateway — body brut requis)
+# API (webhook Stripe inclus : corps brut, hors préfixe /api)
 {$API_DOMAIN} {
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 		X-Content-Type-Options "nosniff"
 	}
 
-	# Stripe → subscriptions-service (ne passe pas par le gateway Nest).
+	# Stripe exige le corps brut. Même slot blue/green que le reste de l’API.
 	handle /webhooks/stripe* {
-		reverse_proxy subscriptions-service:3008
+		reverse_proxy __API_UPSTREAM__
 	}
 
 	handle {
 		encode zstd gzip
-		reverse_proxy __API_GATEWAY_UPSTREAM__
+		reverse_proxy __API_UPSTREAM__
 	}
 }
 

@@ -5,8 +5,18 @@ name: CD (déploiement manuel)
 on:
   workflow_dispatch:
     inputs:
+      bump:
+        description: "Incrément SemVer calculé depuis le dernier tag vX.Y.Z. none = déployer le SHA, sans tag Git."
+        type: choice
+        required: true
+        default: patch
+        options:
+          - patch
+          - minor
+          - major
+          - none
       version:
-        description: "Version applicative à déployer (SemVer, ex: v0.1.0). Vide = SHA court du commit."
+        description: "Version explicite optionnelle (ex. v1.2.0). Si renseignée, elle prime sur l'incrément."
         required: false
         default: ""
 
@@ -40,21 +50,43 @@ jobs:
       sha: ${{ steps.meta.outputs.sha }}
       is_release: ${{ steps.meta.outputs.is_release }}
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
       - id: meta
+        env:
+          VERSION_INPUT: ${{ github.event.inputs.version }}
+          BUMP: ${{ github.event.inputs.bump }}
         run: |
+          set -euo pipefail
           OWNER="${{ github.repository_owner }}"
           REGISTRY="ghcr.io/$(echo "$OWNER" | tr '[:upper:]' '[:lower:]')"
           SHA="$(echo "${{ github.sha }}" | cut -c1-7)"
-          VERSION_INPUT="${{ github.event.inputs.version }}"
-          # is_release : true seulement si une version explicite est fournie (sinon fallback SHA, pas de tag Git).
+          BUMP="${BUMP:-patch}"
+          # Version explicite > incrément major/minor/patch > SHA (bump=none).
           if [ -n "$VERSION_INPUT" ]; then
             VERSION="$VERSION_INPUT"
             IS_RELEASE="true"
-          else
+          elif [ "$BUMP" = "none" ]; then
             VERSION="$SHA"
             IS_RELEASE="false"
+          else
+            VERSION="$(node scripts/next-version.mjs "$BUMP")"
+            IS_RELEASE="true"
           fi
-          # Le tag d'image principal suit la version (ou le SHA court à défaut).
+          if [ "$IS_RELEASE" = "true" ]; then
+            case "$VERSION" in
+              v*) ;;
+              *) VERSION="v${VERSION}" ;;
+            esac
+            if ! [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "Version invalide : ${VERSION} (attendu vX.Y.Z)"
+              exit 1
+            fi
+          fi
           TAG="$VERSION"
           echo "registry=$REGISTRY" >> "$GITHUB_OUTPUT"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
@@ -70,21 +102,7 @@ jobs:
       fail-fast: false
       matrix:
         service:
-          - api-gateway
-          - organizations-service
-          - users-service
-          - permissions-service
-          - fleet-service
-          - technicians-service
-          - cases-service
-          - stock-service
-          - customers-service
-          - subscriptions-service
-          - notifications-service
-          - documents-service
-          - exports-service
-          - integrations-service
-          - billing-service
+          - api
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
@@ -197,14 +215,10 @@ jobs:
 
             compose pull
 
-            # 1) Microservices (+ monitoring) sans toucher aux slots edge ni purger
-            #    les anciens conteneurs `api-gateway` / `frontend` tout de suite.
+            # 1) Worker, notifications et monitoring. Les slots edge sont basculés ensuite.
             compose up -d \
               mongodb \
-              organizations-service users-service permissions-service \
-              cases-service fleet-service technicians-service stock-service \
-              subscriptions-service customers-service notifications-service \
-              documents-service exports-service integrations-service billing-service \
+              planwise-worker planwise-notifications \
               prometheus tempo otel-collector grafana loki alloy node-exporter cadvisor blackbox-exporter mongodb-exporter
 
             # Recharge la config Prometheus (bind-mount) sans recréer le volume TSDB.
@@ -227,15 +241,12 @@ jobs:
             sleep 2
             echo "Caddy recréé OK"
 
-            # 4) Purge des orphelins (anciens noms api-gateway / frontend) une fois
+            # 4) Purge des orphelins (anciens noms api / frontend) une fois
             #    blue (ou green) + Caddy en place.
             compose up -d --remove-orphans \
               caddy \
               mongodb \
-              organizations-service users-service permissions-service \
-              cases-service fleet-service technicians-service stock-service \
-              subscriptions-service customers-service notifications-service \
-              documents-service exports-service integrations-service billing-service \
+              planwise-worker planwise-notifications \
               prometheus tempo otel-collector grafana loki alloy node-exporter cadvisor blackbox-exporter mongodb-exporter
 
             # Smoke : au moins un slot frontend / gateway doit répondre en local.

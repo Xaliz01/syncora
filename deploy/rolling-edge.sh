@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Bascule blue/green des points d'entrée (api-gateway + frontend) sans downtime.
+# Bascule blue/green des points d'entrée (api + frontend) sans downtime.
 #
 # Génère Caddyfile depuis Caddyfile.template avec UN seul upstream (slot actif).
 # Caddy ne sait pas fallback correctement si le 1er hostname n'existe pas en DNS.
@@ -79,10 +79,10 @@ apply_caddy_slot() {
     return 1
   fi
   local fe="frontend-${slot}:5173"
-  local api="api-gateway-${slot}:3000"
+  local api="api-${slot}:3000"
   sed \
     -e "s|__FRONTEND_UPSTREAM__|${fe}|g" \
-    -e "s|__API_GATEWAY_UPSTREAM__|${api}|g" \
+    -e "s|__API_UPSTREAM__|${api}|g" \
     "$template" >"$target"
   echo "$slot" >"${ROOT_DIR}/.edge-slot"
   echo "📝 Caddyfile → frontend=${fe} api=${api}"
@@ -96,7 +96,7 @@ apply_caddy_slot() {
 }
 
 roll_pair() {
-  local base="$1" # api-gateway | frontend
+  local base="$1" # api | frontend
   local blue="${base}-blue"
   local green="${base}-green"
   local active="" inactive=""
@@ -138,15 +138,15 @@ roll_pair() {
   LAST_SLOT=$inactive
 }
 
-echo "=== Rolling edge (api-gateway + frontend) ==="
+echo "=== Rolling edge (api + frontend) ==="
 LAST_SLOT=blue
-roll_pair "api-gateway"
+roll_pair "api"
 roll_pair "frontend"
 
 # Garantit Caddy aligné sur un slot où frontend ET gateway tournent.
-if service_running frontend-green && service_running api-gateway-green; then
+if service_running frontend-green && service_running api-green; then
   apply_caddy_slot green
-elif service_running frontend-blue && service_running api-gateway-blue; then
+elif service_running frontend-blue && service_running api-blue; then
   apply_caddy_slot blue
 else
   echo "❌ Pas de paire frontend+gateway cohérente"

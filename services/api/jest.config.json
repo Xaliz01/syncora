@@ -1,0 +1,14 @@
+{
+  "preset": "<rootDir>/../../../jest-presets/planwise",
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": "src",
+  "testRegex": ".*\\.spec\\.ts$",
+  "testEnvironment": "node",
+  "passWithNoTests": true,
+  "moduleNameMapper": {
+    "^@nestjs/mongoose$": "<rootDir>/../../../node_modules/@nestjs/mongoose",
+    "^@nestjs/schedule$": "<rootDir>/../../../node_modules/@nestjs/schedule",
+    "^@planwise/shared/nest$": "<rootDir>/../../../packages/shared/src/nest.ts",
+    "^@planwise/shared$": "<rootDir>/../../../packages/shared/src/index.ts"
+  }
+}

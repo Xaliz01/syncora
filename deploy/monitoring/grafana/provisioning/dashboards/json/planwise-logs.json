@@ -70,17 +70,17 @@
         "current": {
           "selected": true,
           "text": "All",
-          "value": "api-gateway.*|frontend.*|.*-service|caddy"
+          "value": "api-blue|api-green|planwise-worker|planwise-notifications|frontend.*|caddy"
         },
         "datasource": { "type": "loki", "uid": "loki" },
         "definition": "label_values({job=\"docker\"}, compose_service)",
         "includeAll": true,
-        "allValue": "api-gateway.*|frontend.*|.*-service|caddy",
+        "allValue": "api-blue|api-green|planwise-worker|planwise-notifications|frontend.*|caddy",
         "label": "Service",
         "name": "service",
         "query": "label_values({job=\"docker\"}, compose_service)",
         "refresh": 2,
-        "regex": "/^(api-gateway.*|frontend.*|.*-service|caddy)$/",
+        "regex": "/^(api-blue|api-green|planwise-worker|planwise-notifications|frontend.*|caddy)$/",
         "type": "query"
       },
       {

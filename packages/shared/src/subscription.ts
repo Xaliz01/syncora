@@ -218,7 +218,7 @@ export const BASE_SUBSCRIPTION_PLAN = {
   monthlyPriceCents: 999,
   periodDisplay: "mois",
   commitmentDisplay: "sans engagement",
-  /** Aligné sur STRIPE_TRIAL_DAYS / DEFAULT_TRIAL_DAYS côté subscriptions-service. */
+  /** Aligné sur STRIPE_TRIAL_DAYS / DEFAULT_TRIAL_DAYS. */
   trialDays: 15,
   includedUsers: BASE_SUBSCRIPTION_INCLUDED_USERS,
   /**
@@ -376,7 +376,7 @@ export interface OrganizationSubscriptionResponse {
 
 // ── Checkout / billing DTOs ──
 
-/** Corps attendu par le microservice (organizationId fourni par la gateway). */
+/** Corps interne (organizationId ajouté depuis la session). */
 export interface CreateCheckoutSessionBody {
   organizationId: string;
   /** Email Stripe (nouveau client) ; ignoré si un client Stripe existe déjà. */
@@ -385,10 +385,10 @@ export interface CreateCheckoutSessionBody {
   cancelUrl: string;
 }
 
-/** Corps côté client → API gateway (sans organizationId). */
+/** Corps côté client (sans organizationId). */
 export interface CreateCheckoutSessionGatewayBody {
   /**
-   * Ignoré par la gateway : l’e-mail Stripe est toujours celui de facturation
+   * Ignoré par l’API : l’e-mail Stripe est toujours celui de facturation
    * de l’organisation (`Organization.email`).
    * @deprecated Conservé pour compatibilité client ; ne pas s’y fier.
    */
@@ -401,14 +401,14 @@ export interface CreateCheckoutSessionResponse {
   url: string;
 }
 
-/** Corps attendu par le microservice (organizationId fourni par la gateway). */
+/** Corps interne (organizationId ajouté depuis la session). */
 export interface StartTrialBody {
   organizationId: string;
 }
 
 export type StartTrialResponse = OrganizationSubscriptionResponse;
 
-/** Corps attendu par le microservice (organizationId fourni par la gateway). */
+/** Corps interne (organizationId ajouté depuis la session). */
 export interface ExtendTrialBody {
   organizationId: string;
 }
@@ -434,7 +434,7 @@ export interface CreateBillingPortalResponse {
   url: string;
 }
 
-/** Corps attendu par le microservice pour un checkout addon. */
+/** Corps interne pour un checkout addon. */
 export interface CreateAddonCheckoutSessionBody {
   organizationId: string;
   addonCode: AddonCode;
@@ -444,11 +444,11 @@ export interface CreateAddonCheckoutSessionBody {
   cancelUrl: string;
 }
 
-/** Corps côté client → API gateway (sans organizationId). */
+/** Corps côté client (sans organizationId). */
 export interface CreateAddonCheckoutSessionGatewayBody {
   addonCode: AddonCode;
   /**
-   * Ignoré par la gateway : l’e-mail Stripe est toujours celui de facturation
+   * Ignoré par l’API : l’e-mail Stripe est toujours celui de facturation
    * de l’organisation (`Organization.email`).
    * @deprecated Conservé pour compatibilité client ; ne pas s’y fier.
    */

@@ -1,0 +1,1902 @@
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
+import { HttpService } from "@nestjs/axios";
+import { firstValueFrom } from "rxjs";
+import * as fs from "fs";
+import type {
+  AuthUser,
+  BillingStatus,
+  CaseAssignee,
+  CaseCustomerRef,
+  CaseOrderGiverRef,
+  CaseHistoryChange,
+  CaseHistoryAction,
+  CreateInterventionBody,
+  CaseDashboardResponse,
+  CaseResponse,
+  CasesListResponse,
+  CreateCaseBody,
+  CreateQuoteBody,
+  UpdateQuoteBody,
+  UpdateTodoBody,
+  CaseSummaryResponse,
+  CustomerResponse,
+  OrderGiverResponse,
+  DashboardStatFilter,
+  DashboardTodoCaseItem,
+  InterventionResponse,
+  InterventionsListResponse,
+  TechnicianResponse,
+  UpdateInterventionBody,
+  UpdateCaseBody,
+  OrganizationResponse,
+  QuoteResponse,
+  QuoteEmailSendEntry,
+  CreateCaseHistoryBody,
+} from "@planwise/shared";
+import type { CommentEntityType, CommentResponse, CreateCommentBody } from "@planwise/shared";
+import {
+  sanitizePdfText,
+  shouldSetToInvoiceOnQuoteAccepted,
+  canSendQuoteByEmail,
+  defaultQuoteEmailBody,
+  defaultQuoteEmailSubject,
+  isValidEmailAddress,
+  invoiceEmailFailureMessage,
+  INVOICE_EMAIL_COMMERCIAL_FOOTER,
+} from "@planwise/shared";
+import PDFDocument from "pdfkit";
+import { assertAnyAssignablePermission } from "../infrastructure/permission-checks";
+import { AbstractCustomersGatewayService } from "./ports/customers.service.port";
+import { AbstractOrderGiversGatewayService } from "./ports/order-givers.service.port";
+import {
+  AbstractCasesGatewayService,
+  type CreateCaseForOrgBody,
+  type UpdateCaseForOrgBody,
+  type CreateTemplateForOrgBody,
+  type UpdateTemplateForOrgBody,
+  type CompleteInterventionForOrgBody,
+  type CreateInterventionForOrgBody,
+  type SignInterventionForOrgBody,
+  type StartInterventionForOrgBody,
+  type UpdateInterventionForOrgBody,
+  type UpdateTodoForOrgBody,
+  type CreateQuoteForOrgBody,
+  type UpdateQuoteForOrgBody,
+  type SendQuoteEmailForOrgBody,
+  type CreateCommentForOrgBody,
+  type UpdateCommentForOrgBody,
+} from "./ports/cases.service.port";
+import { AbstractTechniciansService } from "./technicians/ports/technicians.service.port";
+import { AbstractTeamsService } from "./technicians/ports/teams.service.port";
+import { AbstractOrganizationsService } from "./organizations/ports/organizations.service.port";
+import { AbstractDocumentsService } from "./documents/ports/documents.service.port";
+import { AbstractStorageProvider } from "../infrastructure/storage/storage.port";
+import { LocalStorageProvider } from "../infrastructure/storage/local-storage.provider";
+import { AbstractEmailService } from "./notifications/ports/email.service.port";
+import { AbstractUsersService } from "./users/ports/users.service.port";
+import { AbstractPermissionsService } from "./permissions/ports/permissions.service.port";
+
+import { AbstractCasesService } from "./cases/ports/cases.service.port";
+import { AbstractInterventionsService } from "./cases/ports/interventions.service.port";
+import { AbstractQuotesService } from "./cases/ports/quotes.service.port";
+import { AbstractCommentsService } from "./cases/ports/comments.service.port";
+import { AbstractCaseHistoryService } from "./cases/ports/case-history.service.port";
+import { AbstractDashboardService } from "./cases/ports/dashboard.service.port";
+import { AbstractCaseTemplatesService } from "./cases/ports/case-templates.service.port";
+import { AbstractInterventionTypesService } from "./cases/ports/intervention-types.service.port";
+
+@Injectable()
+export class CasesGatewayService extends AbstractCasesGatewayService {
+  constructor(
+    private readonly casesService: AbstractCasesService,
+    private readonly interventionsService: AbstractInterventionsService,
+    private readonly quotesService: AbstractQuotesService,
+    private readonly commentsService: AbstractCommentsService,
+    private readonly caseHistoryService: AbstractCaseHistoryService,
+    private readonly dashboardService: AbstractDashboardService,
+    private readonly caseTemplatesService: AbstractCaseTemplatesService,
+    private readonly interventionTypesService: AbstractInterventionTypesService,
+    private readonly techniciansService: AbstractTechniciansService,
+    private readonly teamsService: AbstractTeamsService,
+    private readonly organizationsService: AbstractOrganizationsService,
+    private readonly documentsService: AbstractDocumentsService,
+    private readonly storage: AbstractStorageProvider,
+    private readonly emailService: AbstractEmailService,
+    private readonly usersService: AbstractUsersService,
+    private readonly permissionsService: AbstractPermissionsService,
+    private readonly customersGateway: AbstractCustomersGatewayService,
+    private readonly orderGiversGateway: AbstractOrderGiversGatewayService,
+    private readonly httpService: HttpService,
+  ) {
+    super();
+  }
+
+  // ── Templates ──
+
+  async createTemplate(user: AuthUser, body: CreateTemplateForOrgBody) {
+    return this.caseTemplatesService.createTemplate({
+      organizationId: user.organizationId,
+      ...body,
+    });
+  }
+
+  async listTemplates(user: AuthUser) {
+    return this.caseTemplatesService.listTemplates(user.organizationId);
+  }
+
+  async getTemplate(user: AuthUser, templateId: string) {
+    return this.caseTemplatesService.getTemplate(templateId, user.organizationId);
+  }
+
+  async updateTemplate(user: AuthUser, templateId: string, body: UpdateTemplateForOrgBody) {
+    return this.caseTemplatesService.updateTemplate(templateId, {
+      organizationId: user.organizationId,
+      ...body,
+    });
+  }
+
+  async deleteTemplate(user: AuthUser, templateId: string) {
+    return this.caseTemplatesService.deleteTemplate(templateId, user.organizationId);
+  }
+
+  // ── Intervention types ──
+
+  async createInterventionType(
+    user: AuthUser,
+    body: { name: string; description?: string; color?: string },
+  ) {
+    return this.interventionTypesService.create({
+      organizationId: user.organizationId,
+      ...body,
+    });
+  }
+
+  async listInterventionTypes(user: AuthUser) {
+    return this.interventionTypesService.list(user.organizationId);
+  }
+
+  async getInterventionType(user: AuthUser, typeId: string) {
+    return this.interventionTypesService.getById(typeId, user.organizationId);
+  }
+
+  async updateInterventionType(
+    user: AuthUser,
+    typeId: string,
+    body: { name?: string; description?: string | null; color?: string | null },
+  ) {
+    return this.interventionTypesService.update(typeId, {
+      organizationId: user.organizationId,
+      ...body,
+    });
+  }
+
+  async deleteInterventionType(user: AuthUser, typeId: string) {
+    return this.interventionTypesService.remove(typeId, user.organizationId);
+  }
+
+  // ── Cases ──
+
+  async createCase(user: AuthUser, body: CreateCaseForOrgBody) {
+    const { assigneeIds, customerId, orderGiverId, ...rest } = body;
+    let customerDisplayName: string | undefined;
+    if (customerId?.trim()) {
+      const customer = await this.customersGateway.getCustomer(user, customerId.trim());
+      customerDisplayName = customer.displayName;
+    }
+    if (orderGiverId?.trim()) {
+      await this.orderGiversGateway.getOrderGiver(user, orderGiverId.trim());
+    }
+    let assignees: CaseAssignee[] | undefined;
+    if (assigneeIds !== undefined) {
+      assignees = await this.resolveCaseAssigneesForWrite(user.organizationId, assigneeIds);
+    }
+
+    const created = await this.casesService.createCase({
+      organizationId: user.organizationId,
+      ...rest,
+      ...(customerId?.trim() ? { customerId: customerId.trim() } : {}),
+      ...(orderGiverId?.trim() ? { orderGiverId: orderGiverId.trim() } : {}),
+      ...(customerDisplayName ? { customerDisplayName } : {}),
+      ...(assignees !== undefined ? { assignees } : {}),
+    } as CreateCaseBody);
+    this.recordHistory(
+      user.organizationId,
+      created.id,
+      user.id,
+      user.name ?? user.email,
+      "case_created",
+      created.title,
+    );
+    return this.enrichCaseResponse(user, created);
+  }
+
+  async listCases(
+    user: AuthUser,
+    filters?: {
+      status?: string;
+      billingStatus?: string;
+      assigneeId?: string;
+      priority?: string;
+      search?: string;
+      customerId?: string;
+      orderGiverId?: string;
+      limit?: number;
+      offset?: number;
+    },
+  ): Promise<CasesListResponse> {
+    const response = await this.casesService.listCases(user.organizationId, filters);
+    const cases = await this.enrichCaseSummaries(user, response.cases);
+    return { cases, total: response.total };
+  }
+
+  async listCaseIdsForParty(
+    user: AuthUser,
+    filters: { customerId?: string; orderGiverId?: string },
+  ): Promise<string[]> {
+    return this.casesService.listCaseIds(user.organizationId, filters);
+  }
+
+  async getCase(user: AuthUser, caseId: string) {
+    const row = await this.casesService.getCase(caseId, user.organizationId);
+    return this.enrichCaseResponse(user, row);
+  }
+
+  async updateCase(user: AuthUser, caseId: string, body: UpdateCaseForOrgBody) {
+    let customerDisplayName: string | null | undefined;
+    if (body.customerId !== undefined) {
+      if (body.customerId !== null && body.customerId.trim()) {
+        const customer = await this.customersGateway.getCustomer(user, body.customerId.trim());
+        customerDisplayName = customer.displayName;
+      } else {
+        customerDisplayName = null;
+      }
+    }
+    if (body.orderGiverId !== undefined && body.orderGiverId !== null && body.orderGiverId.trim()) {
+      await this.orderGiversGateway.getOrderGiver(user, body.orderGiverId.trim());
+    }
+
+    let previousCase: CaseResponse | undefined;
+    try {
+      previousCase = await this.casesService.getCase(caseId, user.organizationId);
+    } catch {
+      /* proceed without previous state */
+    }
+
+    const casesBody: Record<string, unknown> = {
+      organizationId: user.organizationId,
+      ...body,
+      ...(customerDisplayName !== undefined ? { customerDisplayName } : {}),
+    };
+
+    if (body.billingStatus !== undefined) {
+      assertAnyAssignablePermission(user, ["cases.manage_billing", "cases.update"]);
+    }
+
+    if (Object.prototype.hasOwnProperty.call(body, "assigneeIds")) {
+      assertAnyAssignablePermission(user, ["cases.assign", "cases.update"]);
+      casesBody.assignees = await this.resolveCaseAssigneesForWrite(
+        user.organizationId,
+        body.assigneeIds ?? [],
+      );
+    }
+
+    const updated = await this.casesService.updateCase(
+      caseId,
+      casesBody as unknown as UpdateCaseBody,
+    );
+
+    this.emitCaseUpdateHistory(user, caseId, body, previousCase, updated);
+
+    return this.enrichCaseResponse(user, updated);
+  }
+
+  async deleteCase(user: AuthUser, caseId: string) {
+    const result = await this.casesService.deleteCase(caseId, user.organizationId);
+    this.recordHistory(
+      user.organizationId,
+      caseId,
+      user.id,
+      user.name ?? user.email,
+      "case_deleted",
+    );
+    return result;
+  }
+
+  async updateTodo(user: AuthUser, caseId: string, body: UpdateTodoForOrgBody) {
+    const row = await this.casesService.updateTodo(caseId, {
+      organizationId: user.organizationId,
+      ...body,
+    } as UpdateTodoBody);
+    const todoLabel = row.steps.flatMap((s) => s.todos).find((t) => t.id === body.todoId)?.label;
+    this.recordHistory(
+      user.organizationId,
+      caseId,
+      user.id,
+      user.name ?? user.email,
+      "todo_updated",
+      todoLabel,
+      [{ field: "status", newValue: body.status }],
+    );
+    return this.enrichCaseResponse(user, row);
+  }
+
+  // ── Interventions ──
+
+  async createIntervention(user: AuthUser, body: CreateInterventionForOrgBody) {
+    const assignment = await this.resolveInterventionAssignmentLabels(user.organizationId, {
+      assigneeId: body.assigneeId,
+      assignedTeamId: body.assignedTeamId,
+    });
+    const result = await this.interventionsService.createIntervention({
+      organizationId: user.organizationId,
+      ...body,
+      ...assignment,
+    } as CreateInterventionBody);
+    this.recordHistory(
+      user.organizationId,
+      body.caseId,
+      user.id,
+      user.name ?? user.email,
+      "intervention_created",
+      result.title,
+    );
+    return result;
+  }
+
+  async listInterventions(
+    user: AuthUser,
+    filters?: {
+      caseId?: string;
+      assigneeId?: string;
+      startDate?: string;
+      endDate?: string;
+      status?: string;
+      typeId?: string;
+      unscheduled?: string;
+      includeTeamAssignments?: string;
+      search?: string;
+      limit?: number;
+      offset?: number;
+    },
+  ): Promise<InterventionsListResponse> {
+    let assigneeId = filters?.assigneeId;
+    if (assigneeId) {
+      const technician = await this.resolveTechnicianForInterventionAssignment(
+        user.organizationId,
+        assigneeId,
+      );
+      if (technician) assigneeId = technician.id;
+    }
+
+    let assignedTeamIds: string[] | undefined;
+    if (
+      filters?.includeTeamAssignments === "true" &&
+      filters.assigneeId &&
+      filters.assigneeId === user.id
+    ) {
+      assignedTeamIds = await this.resolveTeamIdsForAssignee(user, filters.assigneeId);
+    }
+
+    return this.interventionsService.listInterventions(user.organizationId, {
+      caseId: filters?.caseId,
+      assigneeId,
+      assignedTeamIds,
+      startDate: filters?.startDate,
+      endDate: filters?.endDate,
+      status: filters?.status,
+      typeId: filters?.typeId,
+      unscheduled: filters?.unscheduled === "true",
+      search: filters?.search,
+      limit: filters?.limit,
+      offset: filters?.offset,
+    });
+  }
+
+  private async resolveTeamIdsForAssignee(user: AuthUser, assigneeId: string): Promise<string[]> {
+    const technicianId =
+      user.id === assigneeId
+        ? (user.technicianId ??
+          (await this.findTechnicianIdByUserId(user.organizationId, assigneeId)))
+        : await this.findTechnicianIdByUserId(user.organizationId, assigneeId);
+    if (!technicianId) return [];
+
+    try {
+      const teams = await this.teamsService.listTeams(user.organizationId);
+      return teams
+        .filter((team) => team.technicianIds.includes(technicianId))
+        .map((team) => team.id);
+    } catch {
+      return [];
+    }
+  }
+
+  private async findTechnicianIdByUserId(
+    organizationId: string,
+    userId: string,
+  ): Promise<string | undefined> {
+    try {
+      const technician = await this.techniciansService.findByUserId(organizationId, userId);
+      return technician?.id;
+    } catch {
+      return undefined;
+    }
+  }
+
+  private async resolveInterventionAssignmentLabels(
+    organizationId: string,
+    filters: { assigneeId?: string | null; assignedTeamId?: string | null },
+  ): Promise<{
+    assigneeId?: string | null;
+    assigneeName?: string | null;
+    assignedTeamName?: string | null;
+  }> {
+    const labels: {
+      assigneeId?: string | null;
+      assigneeName?: string | null;
+      assignedTeamName?: string | null;
+    } = {};
+
+    if (filters.assigneeId) {
+      const technician = await this.resolveTechnicianForInterventionAssignment(
+        organizationId,
+        filters.assigneeId,
+      );
+      if (!technician) {
+        throw new BadRequestException(
+          "L'affectation d'une intervention doit viser un technicien de la flotte",
+        );
+      }
+      labels.assigneeId = technician.id;
+      labels.assigneeName = `${technician.firstName} ${technician.lastName}`.trim();
+      labels.assignedTeamName = null;
+    } else if (filters.assigneeId === null) {
+      labels.assigneeId = null;
+      labels.assigneeName = null;
+    }
+
+    if (filters.assignedTeamId) {
+      labels.assignedTeamName = await this.resolveTeamDisplayName(
+        organizationId,
+        filters.assignedTeamId,
+      );
+      labels.assigneeId = null;
+      labels.assigneeName = null;
+    } else if (filters.assignedTeamId === null) {
+      labels.assignedTeamName = null;
+    }
+
+    return labels;
+  }
+
+  private async resolveTechnicianForInterventionAssignment(
+    organizationId: string,
+    assigneeId: string,
+  ): Promise<TechnicianResponse | null> {
+    try {
+      const byUser = await this.techniciansService.findByUserId(organizationId, assigneeId);
+      if (byUser?.id) return byUser;
+    } catch {
+      // ignore — try technician id
+    }
+
+    try {
+      return await this.techniciansService.getTechnician(organizationId, assigneeId);
+    } catch {
+      return null;
+    }
+  }
+
+  private async resolveTeamDisplayName(organizationId: string, teamId: string): Promise<string> {
+    try {
+      const team = await this.teamsService.getTeam(organizationId, teamId);
+      return team.name;
+    } catch {
+      return teamId;
+    }
+  }
+
+  async getIntervention(user: AuthUser, interventionId: string) {
+    return this.interventionsService.getIntervention(interventionId, user.organizationId);
+  }
+
+  async updateIntervention(
+    user: AuthUser,
+    interventionId: string,
+    body: UpdateInterventionForOrgBody,
+  ) {
+    if (body.billingStatus !== undefined) {
+      assertAnyAssignablePermission(user, ["cases.manage_billing", "interventions.update"]);
+    }
+
+    const assignment =
+      body.assigneeId !== undefined || body.assignedTeamId !== undefined
+        ? await this.resolveInterventionAssignmentLabels(user.organizationId, {
+            assigneeId: body.assigneeId,
+            assignedTeamId: body.assignedTeamId,
+          })
+        : {};
+
+    const result = await this.interventionsService.updateIntervention(interventionId, {
+      organizationId: user.organizationId,
+      ...body,
+      ...assignment,
+    } as UpdateInterventionBody);
+    this.recordHistory(
+      user.organizationId,
+      result.caseId,
+      user.id,
+      user.name ?? user.email,
+      "intervention_updated",
+      result.title,
+    );
+    return result;
+  }
+
+  async setInterventionBillingStatus(
+    user: AuthUser,
+    interventionId: string,
+    billingStatus: BillingStatus,
+  ) {
+    return this.interventionsService.updateIntervention(interventionId, {
+      organizationId: user.organizationId,
+      billingStatus,
+    });
+  }
+
+  async deleteIntervention(user: AuthUser, interventionId: string) {
+    let intervention: InterventionResponse | undefined;
+    try {
+      intervention = await this.interventionsService.getIntervention(
+        interventionId,
+        user.organizationId,
+      );
+    } catch {
+      /* proceed without intervention info */
+    }
+    const result = await this.interventionsService.deleteIntervention(
+      interventionId,
+      user.organizationId,
+    );
+    if (intervention) {
+      this.recordHistory(
+        user.organizationId,
+        intervention.caseId,
+        user.id,
+        user.name ?? user.email,
+        "intervention_deleted",
+        intervention.title,
+      );
+    }
+    return result;
+  }
+
+  async startIntervention(
+    user: AuthUser,
+    interventionId: string,
+    body: StartInterventionForOrgBody,
+  ) {
+    const intervention = await this.interventionsService.getIntervention(
+      interventionId,
+      user.organizationId,
+    );
+    const result = await this.interventionsService.startIntervention(interventionId, {
+      organizationId: user.organizationId,
+      ...body,
+    });
+    this.recordHistory(
+      user.organizationId,
+      intervention.caseId,
+      user.id,
+      user.name ?? user.email,
+      "intervention_started",
+      intervention.title,
+    );
+    return {
+      ...result,
+      title: intervention.title,
+      caseId: intervention.caseId,
+      caseTitle: intervention.caseTitle,
+    };
+  }
+
+  async completeIntervention(
+    user: AuthUser,
+    interventionId: string,
+    body: CompleteInterventionForOrgBody,
+  ) {
+    const intervention = await this.interventionsService.getIntervention(
+      interventionId,
+      user.organizationId,
+    );
+    const result = await this.interventionsService.completeIntervention(interventionId, {
+      organizationId: user.organizationId,
+      ...body,
+    });
+    this.recordHistory(
+      user.organizationId,
+      intervention.caseId,
+      user.id,
+      user.name ?? user.email,
+      "intervention_completed",
+      intervention.title,
+    );
+    return {
+      ...result,
+      title: intervention.title,
+      caseId: intervention.caseId,
+      caseTitle: intervention.caseTitle,
+    };
+  }
+
+  // ── Signature ──
+
+  async signIntervention(user: AuthUser, interventionId: string, body: SignInterventionForOrgBody) {
+    const intervention = await this.interventionsService.getIntervention(
+      interventionId,
+      user.organizationId,
+    );
+    const result = await this.interventionsService.signIntervention(interventionId, {
+      organizationId: user.organizationId,
+      ...body,
+    });
+    this.recordHistory(
+      user.organizationId,
+      intervention.caseId,
+      user.id,
+      user.name ?? user.email,
+      "intervention_signed",
+      `Signé par ${body.signatoryName}`,
+    );
+    return {
+      ...result,
+      title: intervention.title,
+      caseId: intervention.caseId,
+      caseTitle: intervention.caseTitle,
+    };
+  }
+
+  // ── Quotes ──
+
+  async createQuote(user: AuthUser, body: CreateQuoteForOrgBody) {
+    const result = await this.quotesService.createQuote({
+      organizationId: user.organizationId,
+      ...body,
+    } as CreateQuoteBody);
+    this.recordHistory(
+      user.organizationId,
+      body.caseId,
+      user.id,
+      user.name ?? user.email,
+      "quote_created",
+      result.quoteNumber,
+    );
+    return result;
+  }
+
+  async listQuotes(user: AuthUser, filters?: { caseId?: string; status?: string }) {
+    return this.quotesService.listQuotes(user.organizationId, filters);
+  }
+
+  async getQuote(user: AuthUser, quoteId: string) {
+    return this.quotesService.getQuote(quoteId, user.organizationId);
+  }
+
+  async updateQuote(user: AuthUser, quoteId: string, body: UpdateQuoteForOrgBody) {
+    const result = await this.quotesService.updateQuote(quoteId, {
+      organizationId: user.organizationId,
+      ...body,
+    } as UpdateQuoteBody);
+    this.recordHistory(
+      user.organizationId,
+      result.caseId,
+      user.id,
+      user.name ?? user.email,
+      "quote_updated",
+      result.quoteNumber,
+    );
+
+    if (body.status === "accepted") {
+      try {
+        const caseData = await this.casesService.getCase(result.caseId, user.organizationId);
+        if (shouldSetToInvoiceOnQuoteAccepted(caseData.billingStatus)) {
+          await this.updateCase(user, result.caseId, { billingStatus: "to_invoice" });
+        }
+      } catch {
+        /* Don't block quote acceptance if billing status update fails. */
+      }
+    }
+
+    return result;
+  }
+
+  async deleteQuote(user: AuthUser, quoteId: string) {
+    let quote: QuoteResponse | undefined;
+    try {
+      quote = await this.getQuote(user, quoteId);
+    } catch {
+      /* proceed */
+    }
+    const result = await this.quotesService.deleteQuote(quoteId, user.organizationId);
+    if (quote) {
+      this.recordHistory(
+        user.organizationId,
+        quote.caseId,
+        user.id,
+        user.name ?? user.email,
+        "quote_deleted",
+        quote.quoteNumber,
+      );
+    }
+    return result;
+  }
+
+  async generateQuotePdf(user: AuthUser, quoteId: string): Promise<Buffer> {
+    const quote = await this.getQuote(user, quoteId);
+    const caseData = await this.casesService
+      .getCase(quote.caseId, user.organizationId)
+      .then((c) => this.enrichCaseResponse(user, c));
+
+    const org = await this.fetchOrganization(user.organizationId);
+    const logo = org?.logoDocumentId
+      ? await this.fetchDocumentImageBuffer(user.organizationId, org.logoDocumentId)
+      : null;
+
+    return this.buildQuotePdf(quote, caseData, { logo, organizationName: org?.name });
+  }
+
+  async previewQuotePdf(user: AuthUser, body: CreateQuoteForOrgBody): Promise<Buffer> {
+    if (!body.caseId?.trim()) {
+      throw new BadRequestException("caseId est requis.");
+    }
+    if (!body.lines?.length) {
+      throw new BadRequestException("Au moins une ligne est requise pour la prévisualisation.");
+    }
+    const caseData = await this.casesService
+      .getCase(body.caseId, user.organizationId)
+      .then((c) => this.enrichCaseResponse(user, c));
+
+    const quote = this.buildPreviewQuote(user.organizationId, body);
+    const org = await this.fetchOrganization(user.organizationId);
+    const logo = org?.logoDocumentId
+      ? await this.fetchDocumentImageBuffer(user.organizationId, org.logoDocumentId)
+      : null;
+
+    return this.buildQuotePdf(quote, caseData, { logo, organizationName: org?.name });
+  }
+
+  async sendQuote(
+    user: AuthUser,
+    quoteId: string,
+    body: SendQuoteEmailForOrgBody,
+  ): Promise<QuoteResponse> {
+    const quote = await this.getQuote(user, quoteId);
+    if (!canSendQuoteByEmail(quote.status)) {
+      throw new BadRequestException("Ce devis ne peut pas être envoyé.");
+    }
+
+    const to = body.to?.trim() ?? "";
+    if (!isValidEmailAddress(to)) {
+      throw new BadRequestException("Indiquez une adresse e-mail valide.");
+    }
+    const cc = (body.cc ?? []).map((value) => value.trim()).filter(Boolean);
+    if (cc.some((value) => !isValidEmailAddress(value))) {
+      throw new BadRequestException("Une adresse en copie n'est pas valide.");
+    }
+
+    const org = await this.fetchOrganization(user.organizationId);
+    const subject = body.subject?.trim() || defaultQuoteEmailSubject(quote);
+    const message = body.body?.trim() || defaultQuoteEmailBody(quote, org?.name);
+    const pdf = await this.generateQuotePdf(user, quoteId);
+    const filename = `${quote.quoteNumber || "devis"}.pdf`;
+    const footer = org?.name
+      ? `${INVOICE_EMAIL_COMMERCIAL_FOOTER} Document de ${org.name}.`
+      : INVOICE_EMAIL_COMMERCIAL_FOOTER;
+
+    let sent = false;
+    let reason: string | undefined;
+    try {
+      const response = await this.emailService.sendTransactionalEmail(
+        to,
+        subject,
+        message,
+        undefined,
+        undefined,
+        footer,
+        {
+          cc: cc.length > 0 ? cc : undefined,
+          attachments: [
+            {
+              filename,
+              contentType: "application/pdf",
+              contentBase64: pdf.toString("base64"),
+            },
+          ],
+        },
+      );
+      sent = response.sent === true;
+      reason = response.reason;
+    } catch {
+      sent = false;
+      reason = "send_failed";
+    }
+
+    const entry: QuoteEmailSendEntry = {
+      sentAt: new Date().toISOString(),
+      to,
+      cc: cc.length > 0 ? cc : undefined,
+      sentByUserId: user.id,
+      sentByName: user.name?.trim() || undefined,
+      status: sent ? "sent" : "failed",
+      reason: sent ? undefined : reason,
+    };
+    const markSent = sent && quote.status === "draft";
+    const result = await this.quotesService.appendQuoteEmailSend(
+      quoteId,
+      user.organizationId,
+      entry,
+      { markSent },
+    );
+
+    if (!sent) {
+      throw new BadRequestException(invoiceEmailFailureMessage(reason));
+    }
+
+    if (markSent) {
+      this.recordHistory(
+        user.organizationId,
+        result.caseId,
+        user.id,
+        user.name ?? user.email,
+        "quote_updated",
+        result.quoteNumber,
+      );
+    }
+    return result;
+  }
+
+  private buildPreviewQuote(organizationId: string, body: CreateQuoteForOrgBody): QuoteResponse {
+    const lines = body.lines
+      .filter((l) => l.description?.trim())
+      .map((l, index) => {
+        const quantity = Number(l.quantity) || 0;
+        const unitPrice = Number(l.unitPrice) || 0;
+        const tvaRate = Number(l.tvaRate) as QuoteResponse["lines"][0]["tvaRate"];
+        const totalHt = Math.round(quantity * unitPrice * 100) / 100;
+        const totalTtc = Math.round(totalHt * (1 + tvaRate / 100) * 100) / 100;
+        return {
+          id: `preview-${index}`,
+          articleId: l.articleId,
+          description: l.description.trim(),
+          quantity,
+          unitPrice,
+          tvaRate,
+          unit: l.unit,
+          totalHt,
+          totalTtc,
+        };
+      });
+    const totalHt = Math.round(lines.reduce((s, l) => s + l.totalHt, 0) * 100) / 100;
+    const totalTtc = Math.round(lines.reduce((s, l) => s + l.totalTtc, 0) * 100) / 100;
+    const totalTva = Math.round((totalTtc - totalHt) * 100) / 100;
+    return {
+      id: "preview",
+      organizationId,
+      caseId: body.caseId,
+      quoteNumber: "BROUILLON",
+      subject: body.subject?.trim() || undefined,
+      notes: body.notes?.trim() || undefined,
+      status: "draft",
+      validUntil: body.validUntil || undefined,
+      lines,
+      totalHt,
+      totalTva,
+      totalTtc,
+      createdAt: new Date().toISOString(),
+    };
+  }
+
+  private buildQuotePdf(
+    quote: QuoteResponse,
+    caseData: CaseResponse,
+    options?: { logo?: Buffer | null; organizationName?: string },
+  ): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({ size: "A4", margin: 50, bufferPages: true });
+      const chunks: Buffer[] = [];
+      doc.on("data", (chunk: Buffer) => chunks.push(chunk));
+      doc.on("end", () => resolve(Buffer.concat(chunks)));
+      doc.on("error", reject);
+
+      const brandColor = "#6d28d9";
+      const textColor = "#1e293b";
+      const mutedColor = "#64748b";
+      const customer = caseData.customer;
+      const contentBottom = () => doc.page.height - 80;
+      const logo = options?.logo;
+
+      let headerBottom = 72;
+      if (logo) {
+        try {
+          doc.image(logo, 50, 28, { fit: [120, 48] });
+          doc.fontSize(20).fillColor(brandColor);
+          this.pdfText(doc, `Devis ${quote.quoteNumber}`, 185, 36, { width: 310 });
+          if (options?.organizationName) {
+            doc.fontSize(9).fillColor(mutedColor);
+            this.pdfText(doc, options.organizationName, 185, 58, { width: 310 });
+          }
+          headerBottom = 88;
+        } catch {
+          doc.fontSize(22).fillColor(brandColor);
+          this.pdfText(doc, `Devis ${quote.quoteNumber}`, 50, 40);
+          headerBottom = 72;
+        }
+      } else {
+        doc.fontSize(22).fillColor(brandColor);
+        this.pdfText(doc, `Devis ${quote.quoteNumber}`, 50, 40);
+        if (options?.organizationName) {
+          doc.fontSize(9).fillColor(mutedColor);
+          this.pdfText(doc, options.organizationName, 50, 64, { width: 495 });
+          headerBottom = 82;
+        }
+      }
+
+      doc
+        .moveTo(50, headerBottom)
+        .lineTo(545, headerBottom)
+        .strokeColor("#e2e8f0")
+        .lineWidth(1)
+        .stroke();
+      doc.y = headerBottom + 18;
+
+      if (quote.subject) {
+        doc.fontSize(11).fillColor(textColor);
+        this.pdfText(doc, quote.subject, 50, doc.y + 5, { width: 495 });
+        doc.y += 5;
+      }
+      doc.y += 10;
+
+      if (customer) {
+        this.pdfSection(doc, "Client");
+        this.pdfField(doc, "Nom", customer.displayName);
+        if (customer.email) this.pdfField(doc, "Email", customer.email);
+        if (customer.phone) this.pdfField(doc, "Téléphone", customer.phone);
+        if (customer.mobile) this.pdfField(doc, "Mobile", customer.mobile);
+        if (customer.address) {
+          const addr = [
+            customer.address.line1,
+            customer.address.line2,
+            [customer.address.postalCode, customer.address.city].filter(Boolean).join(" "),
+            customer.address.country,
+          ]
+            .filter(Boolean)
+            .join(", ");
+          this.pdfField(doc, "Adresse", addr);
+        }
+      }
+
+      this.pdfSection(doc, "Dossier");
+      this.pdfField(doc, "Référence", caseData.caseNumber || caseData.title);
+
+      this.pdfSection(doc, "Informations du devis");
+      if (quote.createdAt) {
+        this.pdfField(doc, "Date", this.formatDateFr(quote.createdAt));
+      }
+      if (quote.validUntil) {
+        this.pdfField(doc, "Valable jusqu'au", this.formatDateFr(quote.validUntil));
+      }
+
+      this.pdfSection(doc, "Détail des prestations");
+
+      const colX = { desc: 50, qty: 310, unit: 355, price: 405, tva: 460, total: 500 };
+      const headerY = doc.y;
+      doc.fontSize(8).fillColor(mutedColor);
+      this.pdfText(doc, "Description", colX.desc, headerY);
+      this.pdfText(doc, "Qté", colX.qty, headerY);
+      this.pdfText(doc, "Unité", colX.unit, headerY);
+      this.pdfText(doc, "P.U. HT", colX.price, headerY);
+      this.pdfText(doc, "TVA", colX.tva, headerY);
+      this.pdfText(doc, "Total HT", colX.total, headerY);
+      doc.y = headerY + 14;
+      doc.moveTo(50, doc.y).lineTo(545, doc.y).strokeColor("#e2e8f0").lineWidth(0.5).stroke();
+      doc.y += 6;
+
+      for (const line of quote.lines) {
+        if (doc.y > contentBottom()) {
+          doc.addPage();
+          doc.y = 50;
+        }
+        const lineY = doc.y;
+        const safeDesc = sanitizePdfText(line.description);
+        doc.fontSize(9).fillColor(textColor);
+        this.pdfText(doc, safeDesc, colX.desc, lineY, { width: 255 });
+        const descHeight = doc.heightOfString(safeDesc, { width: 255 });
+        this.pdfText(doc, String(line.quantity), colX.qty, lineY, { width: 40 });
+        this.pdfText(doc, line.unit ?? "unité", colX.unit, lineY, { width: 45 });
+        this.pdfText(doc, this.formatNumber(line.unitPrice), colX.price, lineY, { width: 50 });
+        this.pdfText(doc, `${line.tvaRate}%`, colX.tva, lineY, { width: 35 });
+        this.pdfText(doc, this.formatNumber(line.totalHt), colX.total, lineY, { width: 45 });
+        doc.y = lineY + Math.max(descHeight, 14) + 4;
+      }
+
+      if (doc.y + 80 > contentBottom()) {
+        doc.addPage();
+        doc.y = 50;
+      }
+      doc.y += 6;
+      doc.moveTo(380, doc.y).lineTo(545, doc.y).strokeColor("#e2e8f0").lineWidth(0.5).stroke();
+      doc.y += 8;
+
+      doc.fontSize(9).fillColor(mutedColor);
+      this.pdfText(doc, "Total HT :", 380, doc.y, { width: 80 });
+      doc.fillColor(textColor);
+      this.pdfText(doc, this.formatCurrencyPdf(quote.totalHt), 460, doc.y, {
+        width: 85,
+        align: "right",
+      });
+      doc.y += 14;
+      doc.fillColor(mutedColor);
+      this.pdfText(doc, "TVA :", 380, doc.y, { width: 80 });
+      doc.fillColor(textColor);
+      this.pdfText(doc, this.formatCurrencyPdf(quote.totalTva), 460, doc.y, {
+        width: 85,
+        align: "right",
+      });
+      doc.y += 14;
+      doc.fontSize(10).fillColor(brandColor);
+      this.pdfText(doc, "Total TTC :", 380, doc.y, { width: 80 });
+      this.pdfText(doc, this.formatCurrencyPdf(quote.totalTtc), 460, doc.y, {
+        width: 85,
+        align: "right",
+      });
+      doc.y += 20;
+
+      if (quote.notes) {
+        if (doc.y + 60 > contentBottom()) {
+          doc.addPage();
+          doc.y = 50;
+        }
+        this.pdfSection(doc, "Conditions");
+        doc.fontSize(9).fillColor(textColor);
+        this.pdfText(doc, quote.notes, 50, doc.y, { width: 495 });
+        doc.y += 10;
+      }
+
+      this.stampGeneratedByFooter(doc);
+      doc.end();
+    });
+  }
+
+  private formatDateFr(iso: string): string {
+    return new Date(iso).toLocaleDateString("fr-FR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  }
+
+  private formatNumber(value: number): string {
+    return value.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  private formatCurrencyPdf(value: number): string {
+    return value.toLocaleString("fr-FR", {
+      style: "currency",
+      currency: "EUR",
+    });
+  }
+
+  // ── Report PDF ──
+
+  async generateInterventionReport(user: AuthUser, interventionId: string): Promise<Buffer> {
+    const [intervention, caseData, signatureResult] = await Promise.all([
+      this.interventionsService.getIntervention(interventionId, user.organizationId),
+      this.fetchCaseForReport(user, interventionId),
+      this.interventionsService.getInterventionWithSignature(interventionId, user.organizationId),
+    ]);
+
+    const customer = caseData?.customer;
+    const photos = await this.fetchInterventionPhotos(user, interventionId);
+
+    return this.buildReportPdf(intervention, caseData, customer, photos, signatureResult);
+  }
+
+  private async fetchCaseForReport(
+    user: AuthUser,
+    interventionId: string,
+  ): Promise<CaseResponse | undefined> {
+    try {
+      const intervention = await this.interventionsService.getIntervention(
+        interventionId,
+        user.organizationId,
+      );
+      const caseData = await this.casesService.getCase(intervention.caseId, user.organizationId);
+      return this.enrichCaseResponse(user, caseData);
+    } catch {
+      return undefined;
+    }
+  }
+
+  private async fetchOrganization(organizationId: string): Promise<OrganizationResponse | null> {
+    try {
+      return await this.organizationsService.findById(organizationId);
+    } catch {
+      return null;
+    }
+  }
+
+  private async fetchDocumentImageBuffer(
+    organizationId: string,
+    documentId: string,
+  ): Promise<Buffer | null> {
+    return this.readDocumentBytes(organizationId, documentId);
+  }
+
+  private async fetchInterventionPhotos(
+    user: AuthUser,
+    interventionId: string,
+  ): Promise<{ data: Buffer; mimeType: string }[]> {
+    try {
+      const docs = await this.documentsService.listByEntity(
+        user.organizationId,
+        "intervention",
+        interventionId,
+      );
+
+      const images = docs.filter((d) => d.mimeType.startsWith("image/"));
+      const results: { data: Buffer; mimeType: string }[] = [];
+
+      for (const img of images.slice(0, 6)) {
+        const data = await this.readDocumentBytes(user.organizationId, img.id);
+        if (data) results.push({ data, mimeType: img.mimeType });
+      }
+      return results;
+    } catch {
+      return [];
+    }
+  }
+
+  private buildReportPdf(
+    intervention: InterventionResponse,
+    caseData: CaseResponse | undefined,
+    customer: CaseCustomerRef | undefined,
+    photos: { data: Buffer; mimeType: string }[],
+    signatureResult: { signatureData?: string; signatoryName?: string },
+  ): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({ size: "A4", margin: 50, bufferPages: true });
+      const chunks: Buffer[] = [];
+      doc.on("data", (chunk: Buffer) => chunks.push(chunk));
+      doc.on("end", () => resolve(Buffer.concat(chunks)));
+      doc.on("error", reject);
+
+      const brandColor = "#6d28d9";
+      const textColor = "#1e293b";
+      const mutedColor = "#64748b";
+      const contentBottom = () => doc.page.height - 70;
+
+      doc.fontSize(22).fillColor(brandColor);
+      this.pdfText(doc, "Planwise", 50, 40);
+      doc.fontSize(10).fillColor(mutedColor);
+      this.pdfText(doc, "Rapport d'intervention", 50, 65);
+
+      doc.moveTo(50, 85).lineTo(545, 85).strokeColor("#e2e8f0").lineWidth(1).stroke();
+
+      doc.y = 100;
+
+      doc.fontSize(16).fillColor(textColor);
+      this.pdfText(doc, intervention.title, 50, doc.y, { width: 495 });
+
+      const statusLabels: Record<string, string> = {
+        planned: "Planifiée",
+        in_progress: "En cours",
+        completed: "Terminée",
+        cancelled: "Annulée",
+      };
+      doc.fontSize(10).fillColor(mutedColor);
+      this.pdfText(
+        doc,
+        `Statut : ${statusLabels[intervention.status] ?? intervention.status}`,
+        50,
+        doc.y + 5,
+      );
+
+      doc.y += 15;
+
+      if (caseData) {
+        this.pdfSection(doc, "Dossier");
+        this.pdfField(doc, "Dossier", caseData.title);
+        if (caseData.caseNumber) this.pdfField(doc, "N° dossier", caseData.caseNumber);
+        if (caseData.description) this.pdfField(doc, "Description", caseData.description);
+      }
+
+      if (customer) {
+        this.pdfSection(doc, "Client");
+        this.pdfField(doc, "Nom", customer.displayName);
+        if (customer.email) this.pdfField(doc, "Email", customer.email);
+        if (customer.phone) this.pdfField(doc, "Téléphone", customer.phone);
+        if (customer.mobile) this.pdfField(doc, "Mobile", customer.mobile);
+        if (customer.address) {
+          const addr = [
+            customer.address.line1,
+            customer.address.line2,
+            [customer.address.postalCode, customer.address.city].filter(Boolean).join(" "),
+            customer.address.country,
+          ]
+            .filter(Boolean)
+            .join(", ");
+          this.pdfField(doc, "Adresse", addr);
+        }
+      }
+
+      this.pdfSection(doc, "Détails de l'intervention");
+      if (intervention.description) {
+        this.pdfField(doc, "Description", intervention.description);
+      }
+      if (intervention.assigneeName) {
+        this.pdfField(doc, "Technicien", intervention.assigneeName);
+      }
+      if (intervention.assignedTeamName) {
+        this.pdfField(doc, "Équipe", intervention.assignedTeamName);
+      }
+      if (intervention.scheduledStart) {
+        this.pdfField(
+          doc,
+          "Planifié",
+          this.formatDateTimeFr(intervention.scheduledStart) +
+            (intervention.scheduledEnd
+              ? ` → ${this.formatDateTimeFr(intervention.scheduledEnd)}`
+              : ""),
+        );
+      }
+      if (intervention.startedAt) {
+        this.pdfField(doc, "Démarré", this.formatDateTimeFr(intervention.startedAt));
+      }
+      if (intervention.completedAt) {
+        this.pdfField(doc, "Terminé", this.formatDateTimeFr(intervention.completedAt));
+      }
+      if (intervention.startedAt && intervention.completedAt) {
+        const ms =
+          new Date(intervention.completedAt).getTime() - new Date(intervention.startedAt).getTime();
+        const hours = Math.floor(ms / 3600000);
+        const minutes = Math.floor((ms % 3600000) / 60000);
+        this.pdfField(
+          doc,
+          "Durée",
+          hours > 0 ? `${hours}h${String(minutes).padStart(2, "0")}` : `${minutes}min`,
+        );
+      }
+      if (intervention.notes) {
+        this.pdfField(doc, "Notes", intervention.notes);
+      }
+
+      if (photos.length > 0) {
+        this.pdfSection(doc, "Photos terrain");
+        const photoWidth = 150;
+        const photoHeight = 112;
+        const gap = 15;
+        let x = 50;
+
+        for (const photo of photos) {
+          if (doc.y + photoHeight > contentBottom()) {
+            doc.addPage();
+            x = 50;
+            doc.y = 50;
+          }
+          try {
+            doc.image(photo.data, x, doc.y, {
+              fit: [photoWidth, photoHeight],
+            });
+          } catch {
+            /* skip invalid images */
+          }
+          x += photoWidth + gap;
+          if (x + photoWidth > 545) {
+            x = 50;
+            doc.y += photoHeight + gap;
+          }
+        }
+        if (x > 50) {
+          doc.y += photoHeight + gap;
+        }
+      }
+
+      if (signatureResult.signatureData) {
+        if (doc.y + 120 > contentBottom()) doc.addPage();
+        this.pdfSection(doc, "Signature client");
+        if (signatureResult.signatoryName) {
+          this.pdfField(doc, "Nom", signatureResult.signatoryName);
+        }
+        if (intervention.signedAt) {
+          this.pdfField(doc, "Date", this.formatDateTimeFr(intervention.signedAt));
+        }
+        try {
+          const sigBuffer = this.dataUrlToBuffer(signatureResult.signatureData);
+          if (sigBuffer) {
+            doc.image(sigBuffer, 50, doc.y + 5, { fit: [200, 80] });
+            doc.y += 90;
+          }
+        } catch {
+          /* skip invalid signature */
+        }
+      }
+
+      this.stampGeneratedByFooter(doc);
+      doc.end();
+    });
+  }
+
+  private pdfText(
+    doc: PDFKit.PDFDocument,
+    text: string,
+    x?: number,
+    y?: number,
+    options?: PDFKit.Mixins.TextOptions,
+  ): PDFKit.PDFDocument {
+    const safe = sanitizePdfText(text);
+    if (x !== undefined && y !== undefined) {
+      return options ? doc.text(safe, x, y, options) : doc.text(safe, x, y);
+    }
+    return options ? doc.text(safe, options) : doc.text(safe);
+  }
+
+  private stampGeneratedByFooter(doc: PDFKit.PDFDocument): void {
+    const label = `Généré le ${this.formatDateTimeFr(new Date().toISOString())} — Planwise`;
+    const range = doc.bufferedPageRange();
+    for (let i = range.start; i < range.start + range.count; i++) {
+      doc.switchToPage(i);
+      const margins = doc.page.margins;
+      const prevBottom = margins.bottom;
+      margins.bottom = 0;
+      try {
+        const lineY = doc.page.height - 44;
+        const textY = doc.page.height - 36;
+        doc
+          .moveTo(50, lineY)
+          .lineTo(doc.page.width - 50, lineY)
+          .strokeColor("#e2e8f0")
+          .lineWidth(0.5)
+          .stroke();
+        doc.fontSize(7).fillColor("#94a3b8");
+        this.pdfText(doc, label, 50, textY, {
+          align: "center",
+          width: doc.page.width - 100,
+          lineBreak: false,
+        });
+      } finally {
+        margins.bottom = prevBottom;
+      }
+    }
+  }
+
+  private pdfSection(doc: PDFKit.PDFDocument, title: string): void {
+    doc.y += 10;
+    doc.fontSize(12).fillColor("#6d28d9");
+    this.pdfText(doc, title, 50, doc.y, { width: 495 });
+    doc.y += 3;
+    doc.moveTo(50, doc.y).lineTo(545, doc.y).strokeColor("#e2e8f0").lineWidth(0.5).stroke();
+    doc.y += 8;
+  }
+
+  private pdfField(doc: PDFKit.PDFDocument, label: string, value: string): void {
+    doc.fontSize(9).fillColor("#64748b");
+    this.pdfText(doc, `${label} :`, 50, doc.y, { continued: true, width: 100 });
+    doc.fillColor("#1e293b");
+    this.pdfText(doc, ` ${value}`, undefined, undefined, { width: 395 });
+    doc.y += 3;
+  }
+
+  private formatDateTimeFr(iso: string): string {
+    const d = new Date(iso);
+    return d.toLocaleDateString("fr-FR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  private dataUrlToBuffer(dataUrl: string): Buffer | null {
+    const match = dataUrl.match(/^data:[^;]+;base64,(.+)$/);
+    if (!match) return null;
+    return Buffer.from(match[1], "base64");
+  }
+
+  // ── Dashboard ──
+
+  async getDashboard(user: AuthUser) {
+    const userProfileId = await this.resolveUserProfileId(user);
+    const dash = await this.dashboardService.getDashboard(
+      user.organizationId,
+      user.id,
+      userProfileId,
+    );
+    const [assignedCases, overdueCases] = await Promise.all([
+      this.enrichCaseSummaries(user, dash.assignedCases),
+      this.enrichCaseSummaries(user, dash.overdueCases),
+    ]);
+
+    const canReadContracts = (user.permissions ?? []).includes("contracts.read");
+    let pendingMaintenanceVisits = dash.pendingMaintenanceVisits ?? [];
+    if (!canReadContracts) {
+      pendingMaintenanceVisits = [];
+    } else if (pendingMaintenanceVisits.length > 0) {
+      pendingMaintenanceVisits = await this.enrichPendingMaintenanceVisits(
+        user,
+        pendingMaintenanceVisits,
+      );
+    }
+
+    return { ...dash, assignedCases, overdueCases, pendingMaintenanceVisits };
+  }
+
+  private async enrichPendingMaintenanceVisits(
+    user: AuthUser,
+    items: CaseDashboardResponse["pendingMaintenanceVisits"],
+  ): Promise<CaseDashboardResponse["pendingMaintenanceVisits"]> {
+    const ids = [...new Set(items.map((i) => i.customerId).filter(Boolean))];
+    if (ids.length === 0) return items;
+    const customers = await this.customersGateway.listCustomersByIds(user, ids);
+    const map = new Map(customers.map((c) => [c.id, c]));
+    return items.map((item) => {
+      const c = map.get(item.customerId);
+      return {
+        ...item,
+        customerName: c?.displayName ?? item.customerName,
+      };
+    });
+  }
+
+  async getDashboardTodoCases(
+    user: AuthUser,
+    templateId: string,
+    todoLabel: string,
+  ): Promise<DashboardTodoCaseItem[]> {
+    const userProfileId = await this.resolveUserProfileId(user);
+    const rows = await this.dashboardService.getDashboardTodoCases(
+      user.organizationId,
+      user.id,
+      userProfileId,
+      templateId,
+      todoLabel,
+    );
+    return this.enrichDashboardCaseListItems(user, rows);
+  }
+
+  async getDashboardStatCases(
+    user: AuthUser,
+    filter: DashboardStatFilter,
+  ): Promise<DashboardTodoCaseItem[]> {
+    const userProfileId = await this.resolveUserProfileId(user);
+    const rows = await this.dashboardService.getDashboardStatCases(
+      user.organizationId,
+      user.id,
+      userProfileId,
+      filter,
+    );
+    return this.enrichDashboardCaseListItems(user, rows);
+  }
+
+  private async enrichDashboardCaseListItems(
+    user: AuthUser,
+    rows: DashboardTodoCaseItem[],
+  ): Promise<DashboardTodoCaseItem[]> {
+    const summaries: CaseSummaryResponse[] = rows.map((r) => ({
+      id: r.caseId,
+      organizationId: user.organizationId,
+      caseNumber: "",
+      title: r.caseTitle,
+      status: r.status,
+      billingStatus: "none" as const,
+      priority: r.priority,
+      assignees: [],
+      tags: [],
+      progress: 0,
+      interventionCount: 0,
+      customerId: r.customerId,
+      createdAt: r.createdAt,
+      dueDate: r.dueDate,
+    }));
+    const enriched = await this.enrichCaseSummaries(user, summaries);
+    return rows.map((r, i) => ({
+      ...r,
+      customerName: enriched[i]?.customer?.displayName,
+    }));
+  }
+
+  private async resolveUserProfileId(user: AuthUser): Promise<string | undefined> {
+    try {
+      const assignment = await this.permissionsService.getUserAssignment(
+        user.organizationId,
+        user.id,
+      );
+      return assignment.profileId;
+    } catch {
+      return undefined;
+    }
+  }
+
+  // ── History ──
+
+  async listCaseHistory(user: AuthUser, caseId: string) {
+    return this.caseHistoryService.listCaseHistory(caseId, user.organizationId);
+  }
+
+  // ── Comments ──
+
+  async createComment(user: AuthUser, body: CreateCommentForOrgBody): Promise<CommentResponse> {
+    const payload: CreateCommentBody = {
+      organizationId: user.organizationId,
+      entityType: body.entityType,
+      entityId: body.entityId,
+      body: body.body,
+      authorId: user.id,
+      authorName: user.name ?? user.email,
+    };
+    const created = await this.commentsService.createComment(payload);
+    const detail =
+      created.entityType === "intervention"
+        ? `Commentaire sur intervention`
+        : `Commentaire sur le dossier`;
+    this.recordHistory(
+      user.organizationId,
+      created.caseId,
+      user.id,
+      user.name ?? user.email,
+      "comment_added",
+      detail,
+    );
+    return created;
+  }
+
+  async listComments(
+    user: AuthUser,
+    entityType: CommentEntityType,
+    entityId: string,
+  ): Promise<CommentResponse[]> {
+    return this.commentsService.listComments(user.organizationId, entityType, entityId);
+  }
+
+  async updateComment(
+    user: AuthUser,
+    commentId: string,
+    body: UpdateCommentForOrgBody,
+  ): Promise<CommentResponse> {
+    const existing = await this.commentsService.getComment(commentId, user.organizationId);
+    this.assertCanModifyComment(user, existing);
+    const updated = await this.commentsService.updateComment(commentId, {
+      organizationId: user.organizationId,
+      body: body.body,
+    });
+    this.recordHistory(
+      user.organizationId,
+      updated.caseId,
+      user.id,
+      user.name ?? user.email,
+      "comment_updated",
+    );
+    return updated;
+  }
+
+  async deleteComment(user: AuthUser, commentId: string): Promise<{ deleted: true }> {
+    const existing = await this.commentsService.getComment(commentId, user.organizationId);
+    this.assertCanModifyComment(user, existing);
+    const result = await this.commentsService.deleteComment(commentId, user.organizationId);
+    this.recordHistory(
+      user.organizationId,
+      existing.caseId,
+      user.id,
+      user.name ?? user.email,
+      "comment_deleted",
+    );
+    return result;
+  }
+
+  private assertCanModifyComment(user: AuthUser, comment: CommentResponse): void {
+    if (user.role === "admin") return;
+    if (comment.authorId === user.id) return;
+    throw new ForbiddenException("You can only modify your own comments");
+  }
+
+  private emitCaseUpdateHistory(
+    user: AuthUser,
+    caseId: string,
+    body: UpdateCaseForOrgBody,
+    prev: CaseResponse | undefined,
+    updated: CaseResponse,
+  ): void {
+    const actorName = user.name ?? user.email;
+
+    if (body.status !== undefined && prev && body.status !== prev.status) {
+      this.recordHistory(
+        user.organizationId,
+        caseId,
+        user.id,
+        actorName,
+        "status_changed",
+        undefined,
+        [{ field: "status", oldValue: prev.status, newValue: body.status }],
+      );
+      return;
+    }
+
+    if (body.billingStatus !== undefined && prev && body.billingStatus !== prev.billingStatus) {
+      this.recordHistory(
+        user.organizationId,
+        caseId,
+        user.id,
+        actorName,
+        "billing_status_changed",
+        undefined,
+        [{ field: "billingStatus", oldValue: prev.billingStatus, newValue: body.billingStatus }],
+      );
+      return;
+    }
+
+    if (body.priority !== undefined && prev && body.priority !== prev.priority) {
+      this.recordHistory(
+        user.organizationId,
+        caseId,
+        user.id,
+        actorName,
+        "priority_changed",
+        undefined,
+        [{ field: "priority", oldValue: prev.priority, newValue: body.priority }],
+      );
+      return;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(body, "assigneeIds")) {
+      const oldNames = (prev?.assignees ?? []).map((a) => a.name).join(", ") || "aucun";
+      const newNames = (updated.assignees ?? []).map((a) => a.name).join(", ") || "aucun";
+      if (oldNames !== newNames) {
+        this.recordHistory(
+          user.organizationId,
+          caseId,
+          user.id,
+          actorName,
+          "assignees_changed",
+          undefined,
+          [{ field: "assignees", oldValue: oldNames, newValue: newNames }],
+        );
+        return;
+      }
+    }
+
+    if (body.customerId !== undefined && prev && body.customerId !== prev.customerId) {
+      this.recordHistory(
+        user.organizationId,
+        caseId,
+        user.id,
+        actorName,
+        "customer_changed",
+        undefined,
+        [
+          {
+            field: "customer",
+            oldValue: prev.customerId ?? "aucun",
+            newValue: body.customerId ?? "aucun",
+          },
+        ],
+      );
+      return;
+    }
+
+    if (body.orderGiverId !== undefined && prev && body.orderGiverId !== prev.orderGiverId) {
+      this.recordHistory(
+        user.organizationId,
+        caseId,
+        user.id,
+        actorName,
+        "case_updated",
+        undefined,
+        [
+          {
+            field: "orderGiver",
+            oldValue: prev.orderGiverId ?? "aucun",
+            newValue: body.orderGiverId ?? "aucun",
+          },
+        ],
+      );
+      return;
+    }
+
+    const changes: CaseHistoryChange[] = [];
+    if (prev && updated.title !== prev.title) {
+      changes.push({ field: "title", oldValue: prev.title, newValue: updated.title });
+    }
+    if (body.description !== undefined && prev && body.description !== prev.description) {
+      changes.push({
+        field: "description",
+        oldValue: prev.description ?? "",
+        newValue: body.description ?? "",
+      });
+    }
+    if (body.dueDate !== undefined && prev) {
+      const oldDue = prev.dueDate?.split("T")[0] ?? "";
+      const newDue = body.dueDate === null ? "" : (body.dueDate?.split("T")[0] ?? "");
+      if (oldDue !== newDue) {
+        changes.push({ field: "dueDate", oldValue: oldDue, newValue: newDue });
+      }
+    }
+
+    if (changes.length > 0) {
+      this.recordHistory(
+        user.organizationId,
+        caseId,
+        user.id,
+        actorName,
+        "case_updated",
+        undefined,
+        changes,
+      );
+    }
+  }
+
+  private recordHistory(
+    organizationId: string,
+    caseId: string,
+    actorId: string,
+    actorName: string,
+    action: CaseHistoryAction,
+    details?: string,
+    changes?: CaseHistoryChange[],
+  ): void {
+    const body: CreateCaseHistoryBody = {
+      organizationId,
+      caseId,
+      actorId,
+      actorName,
+      action,
+      details,
+      changes,
+    };
+    this.caseHistoryService.addCaseHistory(body).catch(() => {
+      /* best-effort: don't fail the main operation if history recording fails */
+    });
+  }
+
+  private toCaseCustomerRef(c: CustomerResponse): CaseCustomerRef {
+    return {
+      id: c.id,
+      displayName: c.displayName,
+      kind: c.kind,
+      email: c.email,
+      phone: c.phone,
+      mobile: c.mobile,
+      address: c.address,
+      sites: c.sites,
+    };
+  }
+
+  private toCaseOrderGiverRef(o: OrderGiverResponse): CaseOrderGiverRef {
+    return {
+      id: o.id,
+      displayName: o.displayName,
+      kind: o.kind,
+      email: o.email,
+      phone: o.phone,
+      mobile: o.mobile,
+      address: o.address,
+      legalIdentifier: o.legalIdentifier,
+    };
+  }
+
+  private resolveInterventionAddress(
+    customer: CustomerResponse | undefined,
+    interventionSiteId: string | undefined,
+  ) {
+    if (!customer || !interventionSiteId) return undefined;
+    const site = customer.sites?.find((s) => s.id === interventionSiteId);
+    return site?.address;
+  }
+
+  private async enrichCaseSummaries(
+    user: AuthUser,
+    rows: CaseSummaryResponse[],
+  ): Promise<CaseSummaryResponse[]> {
+    const customerIds = [...new Set(rows.map((r) => r.customerId).filter(Boolean))] as string[];
+    const orderGiverIds = [...new Set(rows.map((r) => r.orderGiverId).filter(Boolean))] as string[];
+    const [customers, orderGivers] = await Promise.all([
+      customerIds.length > 0
+        ? this.customersGateway.listCustomersByIds(user, customerIds)
+        : Promise.resolve([]),
+      orderGiverIds.length > 0
+        ? this.orderGiversGateway.listOrderGiversByIds(user, orderGiverIds)
+        : Promise.resolve([]),
+    ]);
+    const customerMap = new Map(customers.map((c) => [c.id, c]));
+    const orderGiverMap = new Map(orderGivers.map((o) => [o.id, o]));
+    return rows.map((r) => {
+      const c = r.customerId ? customerMap.get(r.customerId) : undefined;
+      const o = r.orderGiverId ? orderGiverMap.get(r.orderGiverId) : undefined;
+      const interventionAddress = this.resolveInterventionAddress(c, r.interventionSiteId);
+      return {
+        ...r,
+        customer: c ? this.toCaseCustomerRef(c) : undefined,
+        orderGiver: o ? this.toCaseOrderGiverRef(o) : undefined,
+        interventionAddress,
+      };
+    });
+  }
+
+  private async enrichCaseResponse(user: AuthUser, row: CaseResponse): Promise<CaseResponse> {
+    let customer: CaseCustomerRef | undefined;
+    let interventionAddress: CaseResponse["interventionAddress"];
+    let orderGiver: CaseOrderGiverRef | undefined;
+
+    if (row.customerId) {
+      try {
+        const c = await this.customersGateway.getCustomer(user, row.customerId);
+        customer = this.toCaseCustomerRef(c);
+        interventionAddress = this.resolveInterventionAddress(c, row.interventionSiteId);
+      } catch {
+        customer = undefined;
+      }
+    }
+
+    if (row.orderGiverId) {
+      try {
+        const o = await this.orderGiversGateway.getOrderGiver(user, row.orderGiverId);
+        orderGiver = this.toCaseOrderGiverRef(o);
+      } catch {
+        orderGiver = undefined;
+      }
+    }
+
+    return {
+      ...row,
+      customer,
+      orderGiver,
+      interventionAddress,
+    };
+  }
+
+  private async resolveCaseAssigneesForWrite(
+    organizationId: string,
+    assigneeIds: string[],
+  ): Promise<CaseAssignee[]> {
+    const ids = [...new Set(assigneeIds.map((id) => id.trim()).filter(Boolean))];
+    const assignees: CaseAssignee[] = [];
+    for (const id of ids) {
+      const user = await this.usersService.findById(id, organizationId);
+      if (!user) {
+        throw new NotFoundException("Utilisateur introuvable");
+      }
+      if (user.organizationId !== organizationId) {
+        throw new ForbiddenException(
+          "Un utilisateur assigné n'appartient pas à cette organisation",
+        );
+      }
+      assignees.push({ userId: id, name: user.name?.trim() || user.email });
+    }
+    return assignees;
+  }
+
+  private async readDocumentBytes(
+    organizationId: string,
+    documentId: string,
+  ): Promise<Buffer | null> {
+    try {
+      const downloadUrl = await this.documentsService.getDownloadUrl(organizationId, documentId);
+      if (downloadUrl.startsWith("/documents/download/")) {
+        if (!(this.storage instanceof LocalStorageProvider)) return null;
+        const storageKey = decodeURIComponent(downloadUrl.slice("/documents/download/".length));
+        const filePath = this.storage.getAbsolutePath(storageKey);
+        if (!fs.existsSync(filePath)) return null;
+        return fs.readFileSync(filePath);
+      }
+      const fileRes = await firstValueFrom(
+        this.httpService.get(downloadUrl, { responseType: "arraybuffer", timeout: 15000 }),
+      );
+      return Buffer.from(fileRes.data);
+    } catch {
+      return null;
+    }
+  }
+}

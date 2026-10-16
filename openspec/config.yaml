@@ -26,8 +26,9 @@ context: |
   team_suggestion. Quotas are per org per month; user-facing copy, no token
   jargon.
 
-  Stack: Nest hexagonal microservices, Mongo per service, api-gateway,
-  @planwise/shared, frontend Next. After code changes: format, typecheck,
+  Stack: Nest hexagonal modular monolith in services/api (processes api,
+  worker, notifications), Mongo named connections, @planwise/shared,
+  frontend Next. After code changes: format, typecheck,
   unit tests, Playwright e2e.
 
 # Per-artifact rules (optional)

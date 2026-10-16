@@ -2,7 +2,7 @@
 
 Cible MVP : une VM unique (VPC OVH) faisant tourner tous les services via Docker
 Compose, derrière Caddy (HTTPS automatique). Seul Caddy est exposé publiquement
-(ports 80/443) ; MongoDB et les microservices restent sur le réseau interne.
+(ports 80/443) ; MongoDB, l’API, le worker et les notifications restent sur le réseau interne.
 
 L'architecture est volontairement prête pour une migration Kubernetes ultérieure
 (une image par service, configuration par variables d'environnement, services
@@ -10,32 +10,28 @@ stateless hormis MongoDB et le volume documents).
 
 ## Contenu du dossier
 
-| Fichier                         | Rôle                                                             |
-| ------------------------------- | ---------------------------------------------------------------- |
-| `Dockerfile.backend`            | Image générique gateway + microservices (`--build-arg SERVICE=`) |
-| `Dockerfile.frontend`           | Image Next.js (sortie standalone)                                |
-| `docker-compose.prod.yml`       | Orchestration prod (services internes + Caddy)                   |
-| `docker-compose.monitoring.yml` | Stack Grafana/Prometheus (profil `monitoring`, optionnel)        |
-| `monitoring/`                   | Config Prometheus, Blackbox, Tempo, OTel Collector, Grafana      |
-| `Caddyfile`                     | Reverse proxy + HTTPS (Let's Encrypt)                            |
-| `static/maintenance.html`       | Page de secours si le frontend upstream est KO (Caddy 5xx)       |
-| `rolling-edge.sh`               | Bascule blue/green api-gateway + frontend (quasi zero-downtime)  |
-| `prune-planwise-images.sh`      | Après MEP : garde images courante + précédente uniquement        |
-| `.env.production.example`       | Modèle de configuration (à copier en `.env.production`)          |
+| Fichier                         | Rôle                                                        |
+| ------------------------------- | ----------------------------------------------------------- |
+| `Dockerfile.backend`            | Image unique `api` (API, worker, notifications)             |
+| `Dockerfile.frontend`           | Image Next.js (sortie standalone)                           |
+| `docker-compose.prod.yml`       | Orchestration prod (services internes + Caddy)              |
+| `docker-compose.monitoring.yml` | Stack Grafana/Prometheus (profil `monitoring`, optionnel)   |
+| `monitoring/`                   | Config Prometheus, Blackbox, Tempo, OTel Collector, Grafana |
+| `Caddyfile`                     | Reverse proxy + HTTPS (Let's Encrypt)                       |
+| `static/maintenance.html`       | Page de secours si le frontend upstream est KO (Caddy 5xx)  |
+| `rolling-edge.sh`               | Bascule blue/green api + frontend (quasi zero-downtime)     |
+| `prune-planwise-images.sh`      | Après MEP : garde images courante + précédente uniquement   |
+| `.env.production.example`       | Modèle de configuration (à copier en `.env.production`)     |
 
-## Migrations Mongo (microservices)
+## Migrations Mongo
 
-Les microservices appliquent les migrations [migrate-mongo](https://github.com/seppevs/migrate-mongo)
-au démarrage via `runPendingMigrations` (`@planwise/shared/nest`) :
+L’API et le worker appliquent les migrations [migrate-mongo](https://github.com/seppevs/migrate-mongo)
+au démarrage (`runDatabaseMigrations`), une base à la fois :
 
-- Config partagée : `createMigrateMongoConfig({ defaultUri })` dans `migrate-mongo-config.js`
-- Fichiers : `services/<service>/migrations/*.js`
-- Changelog Mongo : collection `changelog` dans la DB du service
+- Config : `services/api/migrate-mongo-config.js` (`MIGRATE_DATABASE` + `MONGODB_URI`)
+- Fichiers : `services/api/migrations/<base>/*.js`
+- Changelog Mongo : collection `changelog` dans la base concernée
 - Échec d’une migration → le process refuse de démarrer
-- En local / ops : `npm run migrate:status|up|down -w @planwise/<service>`
-
-Services déjà équipés : `integrations-service`, `cases-service`, `billing-service`.
-Les autres services doivent adopter le même schéma pour toute évolution d’index / schéma Mongo.
 
 ## 1. Pré-requis sur la VM
 
@@ -119,34 +115,37 @@ Le workflow **CD (déploiement manuel)** se lance à la main, **depuis master un
 
 `Actions > CD (déploiement manuel) > Run workflow` (brancher sur `master`).
 
-Renseigner l'input **`version`** avec la version SemVer à déployer (ex. `v0.1.0`).
-Laisser vide pour un déploiement non versionné (le SHA court du commit sert alors
-de tag d'image et de version applicative).
+Choisir l'incrément **`bump`** : `patch` (défaut), `minor` ou `major`.
+La CD calcule le prochain tag `vX.Y.Z` depuis le dernier tag Git SemVer.
+`bump = none` déploie sans tag Git : le SHA court du commit sert de tag d'image
+et de version applicative. L'input **`version`** reste disponible pour forcer
+un libellé (ex. `v1.2.0`) ; s'il est renseigné, il prime sur l'incrément.
 
 Étapes automatiques :
 
 1. Garde-fou : refus si la ref n'est pas `master`.
-2. Build & push des 13 images backend + frontend sur GHCR. Chaque image reçoit
-   trois tags : la version (ou SHA si vide), le SHA court du commit, et `latest`.
+2. Calcul de la version (`scripts/next-version.mjs`), puis build & push de
+   l'image `planwise-api` et du frontend sur GHCR. Chaque image reçoit trois
+   tags : la version (ou SHA si `bump=none`), le SHA court du commit, et `latest`.
 3. Le frontend est buildé avec `NEXT_PUBLIC_APP_VERSION` (= version) et
    `NEXT_PUBLIC_GIT_SHA` (= SHA court) → affichés dans l'app (page « Mon compte »).
    Les images backend reçoivent `APP_VERSION` / `GIT_SHA` au build : exposés par
    `GET /api/health` et les en-têtes `X-App-Version` / `X-Git-Sha` sur chaque réponse.
 4. Copie de `docker-compose.prod.yml`, `Caddyfile`, `rolling-edge.sh` et monitoring
    sur la VM (SCP).
-5. Sur la VM : `pull` → `up` des microservices / Caddy / monitoring →
-   **`rolling-edge.sh`** bascule api-gateway + frontend (blue/green, sans coupure
-   visible sur les domaines publics).
+5. Sur la VM : `pull` → `up` du worker, des notifications et du monitoring →
+   **`rolling-edge.sh`** bascule api + frontend (blue/green, sans coupure
+   visible sur les domaines publics) → les anciens conteneurs sont retirés.
 6. **Prune images** : `prune-planwise-images.sh` ne conserve que les images
    applicatives (`$REGISTRY/planwise-*`) de la MEP courante et de la précédente
    (fichier `.previous-image-tag` sur la VM, pour un rollback rapide). Les images
    monitoring / Mongo ne sont pas touchées. Remplace le `docker image prune -a`
    manuel périodique.
-7. **Tag Git automatique** : si une `version` a été fournie et que le déploiement
-   a réussi, le workflow crée et pousse le tag Git correspondant (ex. `v0.1.0`)
-   sur le commit déployé. Étape ignorée pour un déploiement sans version (SHA).
+7. **Tag Git automatique** : si l'incrément n'est pas `none` (ou si `version` est
+   forcée) et que le déploiement a réussi, le workflow crée et pousse le tag
+   Git (ex. `v0.1.0`) sur le commit déployé. Étape ignorée pour `bump=none`.
 
-### Blue/green (api-gateway + frontend)
+### Blue/green (api + frontend)
 
 Caddy route vers `*-blue` et `*-green` avec health checks (`lb_policy first`) :
 seul le slot healthy reçoit le trafic. Le script `rolling-edge.sh` :
@@ -157,8 +156,8 @@ seul le slot healthy reçoit le trafic. Le script `rolling-edge.sh` :
 4. laisse Caddy basculer (~quelques secondes) ;
 5. arrête l'ancien slot.
 
-Les microservices internes sont toujours mis à jour via un `compose up` classique
-(courte interruption possible sur les appels en cours uniquement).
+Le worker et les notifications sont mis à jour via un `compose up` classique
+(courte interruption possible sur un job en cours).
 
 **Important** : ne pas lancer un `docker compose up -d` sans liste de services —
 cela démarrerait blue **et** green en parallèle.
@@ -174,10 +173,12 @@ export REGISTRY IMAGE_TAG   # tag déjà pullé
 ### Convention de versioning (SemVer + tag Git)
 
 On suit [SemVer](https://semver.org/lang/fr/) : `MAJEUR.MINEUR.CORRECTIF`
-(ex. `0.1.0`). **Pas besoin de créer le tag à la main** : il suffit de lancer la CD
-avec `version = v0.1.0`. Le workflow tague automatiquement le commit déployé une fois
-le déploiement réussi. Le même libellé sert de tag d'image Docker, de tag Git, et de
-version affichée dans l'application.
+(ex. `v0.1.0`). **Pas besoin de calculer ni de créer le tag à la main.**
+Au lancement de la CD, choisir `patch`, `minor` ou `major` : le workflow lit
+le dernier tag `vX.Y.Z`, calcule le suivant, déploie, puis tague le commit.
+Le même libellé sert de tag d'image Docker, de tag Git, et de version affichée
+dans l'application. Sans aucun tag encore, le premier `patch` donne `v0.0.1`,
+le premier `minor` donne `v0.1.0`, le premier `major` donne `v1.0.0`.
 
 La création du tag est **idempotente** : si le tag existe déjà sur `origin` (release
 rejouée), l'étape n'échoue pas et ne le récrée pas.
@@ -188,9 +189,9 @@ Depuis la racine du repo, sur une machine avec Docker :
 
 ```bash
 # Exemple pour un service backend
-docker build -f deploy/Dockerfile.backend --build-arg SERVICE=api-gateway \
+docker build -f deploy/Dockerfile.backend --build-arg SERVICE=api \
   --build-arg APP_VERSION=v0.1.0 --build-arg GIT_SHA=$(git rev-parse --short HEAD) \
-  -t ghcr.io/mon-org/planwise-api-gateway:manuel .
+  -t ghcr.io/mon-org/planwise-api:manuel .
 
 # Frontend (la version est facultative en build manuel)
 docker build -f deploy/Dockerfile.frontend \
@@ -212,13 +213,10 @@ docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml \
 # Microservices + monitoring (pas un up global)
 docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml \
   --env-file .env.production --profile monitoring up -d \
-  mongodb organizations-service users-service permissions-service \
-  cases-service fleet-service technicians-service stock-service \
-  subscriptions-service customers-service notifications-service \
-  documents-service exports-service integrations-service billing-service \
+  mongodb planwise-worker planwise-notifications \
   prometheus tempo otel-collector grafana loki alloy node-exporter cadvisor blackbox-exporter mongodb-exporter
 ./rolling-edge.sh
-# Caddy + purge des anciens conteneurs api-gateway / frontend
+# Caddy + purge des anciens conteneurs api / frontend
 docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml \
   --env-file .env.production --profile monitoring up -d --remove-orphans caddy
 ```
@@ -307,7 +305,7 @@ restent à sauvegarder côté VM.
 
 ## 8. Stripe (webhook)
 
-Endpoint public (Caddy → `subscriptions-service`, **pas** le gateway) :
+Endpoint public (Caddy → le slot API actif) :
 
 ```text
 https://api.exemple.fr/webhooks/stripe
@@ -321,11 +319,11 @@ https://api.exemple.fr/webhooks/stripe
    - `customer.subscription.updated`
    - `customer.subscription.deleted`
 4. Copier le **Signing secret** (`whsec_…`) dans `.env.production` → `STRIPE_WEBHOOK_SECRET`.
-5. Redémarrer le service abonnements :
+5. Redémarrer l’API (le slot actif) pour prendre en compte le secret :
 
 ```bash
 cd /opt/planwise/deploy
-docker compose -f docker-compose.prod.yml --env-file .env.production up -d subscriptions-service
+./rolling-edge.sh
 ```
 
 Après un déploiement qui met à jour `Caddyfile.template`, recharger Caddy
@@ -364,11 +362,13 @@ VAPID_PRIVATE_KEY=...
 VAPID_SUBJECT=mailto:contact@planwise.fr
 ```
 
-Puis redémarrer uniquement le service de notifications :
+Puis redémarrer les processus qui envoient les notifications :
 
 ```bash
 cd /opt/planwise/deploy
-docker compose -f docker-compose.prod.yml --env-file .env.production up -d notifications-service
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d \
+  planwise-notifications planwise-worker
+./rolling-edge.sh
 ```
 
 La clé publique est exposée au frontend via `GET /api/notifications/vapid-public-key`.
@@ -453,9 +453,9 @@ Dans Grafana : **Explore** → datasource **Loki**, ou dashboard **Planwise — 
 Exemples LogQL :
 
 ```logql
-{compose_service="api-gateway-blue"} |= "ERROR"
-{compose_service=~"cases-service|customers-service"} |= "organizationId"
-{container=~".*(cases-service|api-gateway).*"} |~ "(?i)exception|fatal"
+{compose_service="api-blue"} |= "ERROR"
+{compose_service=~"planwise-worker|planwise-notifications"} |= "ERROR"
+{container=~".*(api-blue|planwise-worker).*"} |~ "(?i)exception|fatal"
 ```
 
 Les labels utiles : `compose_service`, `container`, `stream` (stdout/stderr), `job=docker`,
@@ -482,7 +482,7 @@ Chaque service Nest émet un access log HTTP (hors `/health` et `/metrics`) au f
 Exemples :
 
 ```logql
-{compose_service="api-gateway-blue", context="HTTP"}
+{compose_service="api-blue", context="HTTP"}
 {job="docker", context="HTTP"} |~ " 5[0-9]{2} "
 {job="docker"} | json | organizationId="…"
 ```
@@ -495,8 +495,8 @@ docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml \
   --env-file .env.production --profile monitoring up -d --force-recreate alloy
 ```
 
-Puis Explore → Loki → `{job="docker"}` : vérifier `compose_service` (`cases-service`,
-`api-gateway-blue`, etc.).
+Puis Explore → Loki → `{job="docker"}` : vérifier `compose_service` (`api-blue`,
+`planwise-worker`, `planwise-notifications`).
 
 ### cAdvisor (métriques conteneurs)
 
@@ -538,7 +538,7 @@ docker compose -f docker-compose.prod.yml --env-file .env.production up -d
 ```
 
 3. Dans Grafana : **Explore** → datasource **Tempo** → rechercher par service
-   (`planwise-api-gateway`, `planwise-cases-service`, etc.) ou par trace ID.
+   (`planwise-api`, `planwise-worker`, `planwise-notifications`) ou par trace ID.
 
 Dashboard **Planwise — API & traces** : endpoint (`http.target`), méthode, statut HTTP,
 débit et latence p95 (métriques dérivées des traces via Tempo → Prometheus).
@@ -547,12 +547,13 @@ En local (`npm run backend`) avec le collector Docker :
 
 ```bash
 npm run monitoring:local
-npm run backend
+OTEL_TRACES_ENABLED=true npm run backend
 ```
 
-`scripts/backend-run.mjs` active automatiquement `OTEL_TRACES_ENABLED=true` et
-`OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318` (surcharge possible via `export`).
-Après démarrage, les logs doivent contenir `[otel] traces enabled → …`.
+Sans `OTEL_TRACES_ENABLED=true`, l’API locale ne charge pas OpenTelemetry
+(le chargement sous ts-node-dev bloque le démarrage). L’endpoint par défaut
+est `http://127.0.0.1:4318`. Après démarrage, les logs doivent contenir
+`[otel] traces enabled → …`.
 Si Tempo reste vide : le tracer a démarré **avant** le chargement des variables
 (souvent un `start:dev` isolé sans `npm run backend`) — relancer via `npm run backend`.
 

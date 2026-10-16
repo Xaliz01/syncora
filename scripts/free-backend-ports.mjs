@@ -1,14 +1,13 @@
 #!/usr/bin/env node
 /**
- * Libère les ports utilisés par la gateway et les microservices (évite EADDRINUSE
- * quand un ancien ts-node-dev tourne encore).
+ * Libère les ports des processus Planwise (API, notifications, worker).
  *
  * Stratégie : SIGTERM d'abord (arrêt propre), puis SIGKILL pour les survivants
  * (certains process ts-node-dev ignorent SIGTERM et gardent le port occupé).
  */
 import { execSync } from "node:child_process";
 
-const PORTS = [3000, 3001, 3002, 3003, 3004, 3005, 3006, 3007, 3008, 3009, 3010, 3011, 3012, 3013, 3014];
+const PORTS = [3000, 3010, 3020];
 
 function listListeners(port) {
   try {

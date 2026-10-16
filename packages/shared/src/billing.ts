@@ -1,4 +1,4 @@
-/** Contrats API facturation locale (billing-service) — factures clients dans Planwise. */
+/** Contrats API facturation locale — factures clients dans Planwise. */
 
 import type { BillingStatus } from "./case";
 import type { InvoiceMentions } from "./invoice-mentions";

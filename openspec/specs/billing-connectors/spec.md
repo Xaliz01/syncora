@@ -18,7 +18,7 @@ The authenticated application MUST NOT offer connect, disconnect, OAuth, or “s
 #### Scenario: Provider status API
 
 - **WHEN** a client calls GET connection status for Pennylane, Qonto, or demo billing
-- **THEN** the gateway responds 410 Gone and does not proxy the request to the integrations-service
+- **THEN** the API responds 410 Gone and does not call the remote provider
 
 #### Scenario: Case invoice actions
 
@@ -31,7 +31,7 @@ The scheduled job that refreshed remote Pennylane/Qonto invoice statuses MUST NO
 
 #### Scenario: Scheduler idle
 
-- **WHEN** the integrations-service process is running
+- **WHEN** the API or worker process is running
 - **THEN** it MUST NOT periodically call remote billing APIs to refresh invoice syncs
 
 ### Requirement: Upcoming e-invoicing notice

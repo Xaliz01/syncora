@@ -1,7 +1,7 @@
 # Reverse proxy Planwise — HTTPS automatique (Let's Encrypt).
 # Les domaines et l'email ACME proviennent de variables d'environnement (cf. docker-compose.prod.yml).
 #
-# Frontend + API Gateway : deux slots (blue/green). `lb_policy first` envoie le
+# Frontend + API : deux slots (blue/green). `lb_policy first` envoie le
 # trafic au premier upstream joignable ; l'autre peut être arrêté (DNS vide / dial
 # fail → Caddy passe au suivant). Pas de health_uri actif : les sondes actives
 # cassent Next (Host interne ≠ app/marketing) et provoquent des ERR_INVALID_RESPONSE.
@@ -55,21 +55,25 @@ www.{$MARKETING_DOMAIN} {
 	import frontend_proxy
 }
 
-# API Gateway (+ webhook Stripe hors gateway — body brut requis)
+# API (webhook Stripe inclus : corps brut, hors préfixe /api).
+# En production, rolling-edge.sh réécrit ce fichier depuis Caddyfile.template
+# avec un seul upstream (api-blue ou api-green).
 {$API_DOMAIN} {
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 		X-Content-Type-Options "nosniff"
 	}
 
-	# Stripe → subscriptions-service (ne passe pas par le gateway Nest).
+	# Stripe exige le corps brut. Mêmes slots que le reste de l’API.
 	handle /webhooks/stripe* {
-		reverse_proxy subscriptions-service:3008
+		reverse_proxy api-blue:3000 api-green:3000 {
+			lb_policy first
+		}
 	}
 
 	handle {
 		encode zstd gzip
-		reverse_proxy api-gateway-blue:3000 api-gateway-green:3000 {
+		reverse_proxy api-blue:3000 api-green:3000 {
 			lb_policy first
 		}
 	}
