@@ -1,20 +1,5 @@
-import {
-  BadRequestException,
-  ConflictException,
-  ForbiddenException,
-  Injectable,
-  InternalServerErrorException,
-  NotFoundException,
-  ServiceUnavailableException,
-} from "@nestjs/common";
-import { HttpService } from "@nestjs/axios";
-import axios from "axios";
-import { firstValueFrom } from "rxjs";
-import type {
-  AuthUser,
-  OrganizationResponse,
-  OrganizationStorageUsageResponse,
-} from "@planwise/shared";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import type { AuthUser } from "@planwise/shared";
 import type {
   CreateAddonCheckoutSessionGatewayBody,
   CreateBillingPortalGatewayBody,
@@ -33,33 +18,29 @@ import {
   isStorageQuotaWarning,
 } from "@planwise/shared";
 import { AbstractSubscriptionsGatewayService } from "./ports/subscriptions.service.port";
-import { SERVICE_URLS } from "../infrastructure/service-urls.config";
+import { SubscriptionsService } from "./subscriptions/subscriptions.service";
+import { AbstractDocumentsService } from "./documents/ports/documents.service.port";
+import { AbstractOrganizationsService } from "./organizations/ports/organizations.service.port";
 
 @Injectable()
 export class SubscriptionsGatewayService extends AbstractSubscriptionsGatewayService {
-  constructor(private readonly httpService: HttpService) {
+  constructor(
+    private readonly subscriptions: SubscriptionsService,
+    private readonly documents: AbstractDocumentsService,
+    private readonly organizations: AbstractOrganizationsService,
+  ) {
     super();
   }
 
   async getCurrentSubscription(user: AuthUser): Promise<OrganizationSubscriptionResponse> {
-    const sub = await this.callSubscriptions<OrganizationSubscriptionResponse>({
-      method: "get",
-      path: "/subscriptions/current",
-      query: { organizationId: user.organizationId },
-    });
-
+    const sub = await this.subscriptions.getByOrganization(user.organizationId);
     const storageQuotaBytes = computeOrganizationStorageQuotaBytes(sub.addonQuantities);
     let storageUsedBytes = sub.storageUsedBytes ?? 0;
     try {
-      const usage = await firstValueFrom(
-        this.httpService.get<OrganizationStorageUsageResponse>(
-          `${SERVICE_URLS.documents}/documents/storage-usage`,
-          { params: { organizationId: user.organizationId } },
-        ),
-      );
-      storageUsedBytes = usage.data.usedBytes;
+      const usage = await this.documents.getOrganizationStorageUsage(user.organizationId);
+      storageUsedBytes = usage.usedBytes;
     } catch {
-      /* documents-service indisponible : conserver la valeur par défaut */
+      /* usage indisponible : conserver la valeur déjà portée par l'abonnement */
     }
 
     return {
@@ -76,40 +57,24 @@ export class SubscriptionsGatewayService extends AbstractSubscriptionsGatewaySer
     body: CreateCheckoutSessionGatewayBody,
   ): Promise<CreateCheckoutSessionResponse> {
     const customerEmail = await this.resolveOrganizationBillingEmail(user.organizationId);
-    return this.callSubscriptions<CreateCheckoutSessionResponse>({
-      method: "post",
-      path: "/subscriptions/checkout-session",
-      body: {
-        organizationId: user.organizationId,
-        customerEmail,
-        successUrl: body.successUrl,
-        cancelUrl: body.cancelUrl,
-      },
+    return this.subscriptions.createCheckoutSession({
+      organizationId: user.organizationId,
+      customerEmail,
+      successUrl: body.successUrl,
+      cancelUrl: body.cancelUrl,
     });
   }
 
   async startTrial(user: AuthUser): Promise<StartTrialResponse> {
-    return this.callSubscriptions<StartTrialResponse>({
-      method: "post",
-      path: "/subscriptions/start-trial",
-      body: { organizationId: user.organizationId },
-    });
+    return this.subscriptions.startTrial(user.organizationId);
   }
 
   async extendTrial(user: AuthUser): Promise<ExtendTrialResponse> {
-    return this.callSubscriptions<ExtendTrialResponse>({
-      method: "post",
-      path: "/subscriptions/extend-trial",
-      body: { organizationId: user.organizationId },
-    });
+    return this.subscriptions.extendTrial(user.organizationId);
   }
 
   async staffExtendTrial(organizationId: string): Promise<ExtendTrialResponse> {
-    return this.callSubscriptions<ExtendTrialResponse>({
-      method: "post",
-      path: "/subscriptions/staff-extend-trial",
-      body: { organizationId },
-    });
+    return this.subscriptions.staffExtendTrial(organizationId);
   }
 
   async createAddonCheckoutSession(
@@ -117,16 +82,12 @@ export class SubscriptionsGatewayService extends AbstractSubscriptionsGatewaySer
     body: CreateAddonCheckoutSessionGatewayBody,
   ): Promise<CreateCheckoutSessionResponse> {
     const customerEmail = await this.resolveOrganizationBillingEmail(user.organizationId);
-    return this.callSubscriptions<CreateCheckoutSessionResponse>({
-      method: "post",
-      path: "/subscriptions/addon-checkout-session",
-      body: {
-        organizationId: user.organizationId,
-        addonCode: body.addonCode,
-        customerEmail,
-        successUrl: body.successUrl,
-        cancelUrl: body.cancelUrl,
-      },
+    return this.subscriptions.createAddonCheckoutSession({
+      organizationId: user.organizationId,
+      addonCode: body.addonCode,
+      customerEmail,
+      successUrl: body.successUrl,
+      cancelUrl: body.cancelUrl,
     });
   }
 
@@ -134,14 +95,10 @@ export class SubscriptionsGatewayService extends AbstractSubscriptionsGatewaySer
     user: AuthUser,
     body: CreateBillingPortalGatewayBody,
   ): Promise<CreateBillingPortalResponse> {
-    return this.callSubscriptions<CreateBillingPortalResponse>({
-      method: "post",
-      path: "/subscriptions/billing-portal",
-      body: {
-        organizationId: user.organizationId,
-        returnUrl: body.returnUrl,
-        flow: body.flow,
-      },
+    return this.subscriptions.createBillingPortalSession({
+      organizationId: user.organizationId,
+      returnUrl: body.returnUrl,
+      flow: body.flow,
     });
   }
 
@@ -149,118 +106,25 @@ export class SubscriptionsGatewayService extends AbstractSubscriptionsGatewaySer
     user: AuthUser,
     body: UpdateSubscriptionAddonsGatewayBody,
   ): Promise<UpdateSubscriptionAddonsResponse> {
-    return this.callSubscriptions<UpdateSubscriptionAddonsResponse>({
-      method: "post",
-      path: "/subscriptions/update-addons",
-      body: {
-        organizationId: user.organizationId,
-        addonCodes: body.addonCodes,
-        addonQuantities: body.addonQuantities,
-        successUrl: body.successUrl,
-      },
+    return this.subscriptions.updateSubscriptionAddons({
+      organizationId: user.organizationId,
+      addonCodes: body.addonCodes,
+      addonQuantities: body.addonQuantities,
+      successUrl: body.successUrl,
     });
   }
 
   private async resolveOrganizationBillingEmail(organizationId: string): Promise<string> {
-    try {
-      const res = await firstValueFrom(
-        this.httpService.get<OrganizationResponse>(
-          `${SERVICE_URLS.organizations}/organizations/${organizationId}`,
-        ),
+    const organization = await this.organizations.findById(organizationId);
+    if (!organization) {
+      throw new NotFoundException("Organisation introuvable.");
+    }
+    const email = organization.email?.trim() ?? "";
+    if (!email || !email.includes("@")) {
+      throw new BadRequestException(
+        "E-mail de facturation de l’organisation requis. Renseignez-le dans Organisation avant de vous abonner.",
       );
-      const email = res.data.email?.trim() ?? "";
-      if (!email || !email.includes("@")) {
-        throw new BadRequestException(
-          "E-mail de facturation de l’organisation requis. Renseignez-le dans Organisation avant de vous abonner.",
-        );
-      }
-      return email;
-    } catch (err: unknown) {
-      if (err instanceof BadRequestException) throw err;
-      this.rethrowAsHttpException(err);
     }
-  }
-
-  private async callSubscriptions<T>(params: {
-    method: "get" | "post";
-    path: string;
-    body?: unknown;
-    query?: Record<string, unknown>;
-  }): Promise<T> {
-    try {
-      const response = await firstValueFrom(
-        this.httpService.request<T>({
-          method: params.method,
-          url: `${SERVICE_URLS.subscriptions}${params.path}`,
-          data: params.body,
-          params: params.query,
-        }),
-      );
-      return response.data;
-    } catch (err: unknown) {
-      this.rethrowAsHttpException(err);
-    }
-  }
-
-  private rethrowAsHttpException(err: unknown): never {
-    if (axios.isAxiosError(err)) {
-      const res = err.response;
-      const netCode = err.code;
-
-      if (
-        !res &&
-        (netCode === "ECONNREFUSED" ||
-          netCode === "ECONNRESET" ||
-          netCode === "ETIMEDOUT" ||
-          netCode === "ENOTFOUND")
-      ) {
-        throw new ServiceUnavailableException(
-          `Service subscriptions injoignable (${SERVICE_URLS.subscriptions}). Lancez « npm run start:dev -w @planwise/subscriptions-service » (port 3008) ou définissez SUBSCRIPTIONS_SERVICE_URL.`,
-        );
-      }
-
-      const status = res?.status;
-      const data = res?.data as Record<string, unknown> | string | undefined;
-
-      const extractMessage = (): string => {
-        if (typeof data === "string" && data.trim()) {
-          return data.trim();
-        }
-        if (data && typeof data === "object") {
-          const m = data.message;
-          if (Array.isArray(m)) {
-            return m.map(String).join(", ");
-          }
-          if (typeof m === "string" && m.trim()) {
-            return m.trim();
-          }
-          const e = data.error;
-          if (typeof e === "string" && e.trim()) {
-            return e.trim();
-          }
-        }
-        if (err.message?.trim()) {
-          return err.message.trim();
-        }
-        return status
-          ? `Erreur HTTP ${status} depuis le service subscriptions`
-          : "Erreur du service subscriptions (réponse invalide)";
-      };
-
-      const text = extractMessage();
-
-      if (status === 400) throw new BadRequestException(text);
-      if (status === 403) throw new ForbiddenException(text);
-      if (status === 404) throw new NotFoundException(text);
-      if (status === 409) throw new ConflictException(text);
-      if (status === 502 || status === 503) {
-        throw new ServiceUnavailableException(text);
-      }
-      throw new InternalServerErrorException(text);
-    }
-
-    throw new InternalServerErrorException(
-      err instanceof Error ? err.message : "Subscriptions service error",
-    );
+    return email;
   }
 }

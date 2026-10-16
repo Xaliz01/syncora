@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
+import * as fs from "fs";
 import type {
   AuthUser,
   BillingStatus,
@@ -34,13 +35,15 @@ import {
   shouldUpgradeBillingStatus,
   sumInvoiceAmountsHt,
 } from "@planwise/shared";
-import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
 import { AbstractBillingGatewayService } from "./ports/billing.service.port";
 import { AbstractCasesGatewayService } from "./ports/cases.service.port";
 import { AbstractCustomersGatewayService } from "./ports/customers.service.port";
 import { AbstractOrderGiversGatewayService } from "./ports/order-givers.service.port";
 import { AbstractOrganizationsGatewayService } from "./ports/organizations.service.port";
-import { SERVICE_URLS } from "../infrastructure/service-urls.config";
+import { AbstractInvoicesService } from "./billing/ports/invoices.service.port";
+import { AbstractDocumentsService } from "./documents/ports/documents.service.port";
+import { AbstractStorageProvider } from "../infrastructure/storage/storage.port";
+import { LocalStorageProvider } from "../infrastructure/storage/local-storage.provider";
 
 type InvoiceBillingParty = Pick<
   CustomerResponse,
@@ -63,7 +66,9 @@ function toInvoiceBillingParty(party: CustomerResponse | OrderGiverResponse): In
 @Injectable()
 export class BillingGatewayService extends AbstractBillingGatewayService {
   constructor(
-    private readonly scopedHttp: OrganizationScopedHttpClient,
+    private readonly invoices: AbstractInvoicesService,
+    private readonly documents: AbstractDocumentsService,
+    private readonly storage: AbstractStorageProvider,
     private readonly httpService: HttpService,
     private readonly casesService: AbstractCasesGatewayService,
     private readonly customersService: AbstractCustomersGatewayService,
@@ -87,38 +92,18 @@ export class BillingGatewayService extends AbstractBillingGatewayService {
       offset?: number;
     },
   ): Promise<LocalInvoicesListResponse> {
-    return this.scopedHttp.request<LocalInvoicesListResponse>({
-      baseUrl: SERVICE_URLS.billing,
-      organizationId: user.organizationId,
-      method: "get",
-      path: "/invoices",
-      query: filters,
-      errorLabel: "Billing service error",
-    });
+    return this.invoices.listInvoices(user.organizationId, filters);
   }
 
   async getInvoice(user: AuthUser, invoiceId: string): Promise<LocalInvoiceResponse> {
-    return this.scopedHttp.request<LocalInvoiceResponse>({
-      baseUrl: SERVICE_URLS.billing,
-      organizationId: user.organizationId,
-      method: "get",
-      path: `/invoices/${invoiceId}`,
-      errorLabel: "Billing service error",
-    });
+    return this.invoices.getInvoice(invoiceId, user.organizationId);
   }
 
   async getStats(
     user: AuthUser,
     filters?: { startDate?: string; endDate?: string },
   ): Promise<LocalInvoiceStatsResponse> {
-    return this.scopedHttp.request<LocalInvoiceStatsResponse>({
-      baseUrl: SERVICE_URLS.billing,
-      organizationId: user.organizationId,
-      method: "get",
-      path: "/invoices/stats",
-      query: filters,
-      errorLabel: "Billing service error",
-    });
+    return this.invoices.getStats(user.organizationId, filters);
   }
 
   async createInvoice(
@@ -128,27 +113,21 @@ export class BillingGatewayService extends AbstractBillingGatewayService {
   ): Promise<LocalInvoiceResponse> {
     const prepared = await this.prepareInvoice(user, caseId, options);
     const org = await this.organizationsService.getMine(user);
-    const invoice = await this.scopedHttp.request<LocalInvoiceResponse>({
-      baseUrl: SERVICE_URLS.billing,
+    const invoice = await this.invoices.createInvoice({
       organizationId: user.organizationId,
-      method: "post",
-      path: "/invoices",
-      body: {
-        caseId,
-        caseTitle: prepared.caseData.title,
-        quoteId: prepared.quoteId,
-        kind: prepared.invoiceKind,
-        lines: prepared.lines,
-        amountHt: prepared.amountHt,
-        situationNumber: prepared.situationNumber,
-        situationPercent: prepared.situationPercent,
-        customer: this.toCustomerSnapshot(prepared),
-        seller: this.toSellerSnapshot(org),
-        draft: options.draft !== false,
-        interventionIds: prepared.interventionIds,
-      } satisfies Omit<CreateLocalInvoiceBody, "organizationId">,
-      errorLabel: "Billing service error",
-    });
+      caseId,
+      caseTitle: prepared.caseData.title,
+      quoteId: prepared.quoteId,
+      kind: prepared.invoiceKind,
+      lines: prepared.lines,
+      amountHt: prepared.amountHt,
+      situationNumber: prepared.situationNumber,
+      situationPercent: prepared.situationPercent,
+      customer: this.toCustomerSnapshot(prepared),
+      seller: this.toSellerSnapshot(org),
+      draft: options.draft !== false,
+      interventionIds: prepared.interventionIds,
+    } satisfies CreateLocalInvoiceBody);
     await this.recomputeCaseBillingStatus(user, caseId, prepared.quoteTotalHt);
     await this.syncInterventionBillingStatuses(user, {
       ...invoice,
@@ -160,42 +139,21 @@ export class BillingGatewayService extends AbstractBillingGatewayService {
   }
 
   async finalizeInvoice(user: AuthUser, invoiceId: string): Promise<LocalInvoiceResponse> {
-    const invoice = await this.scopedHttp.request<LocalInvoiceResponse>({
-      baseUrl: SERVICE_URLS.billing,
-      organizationId: user.organizationId,
-      method: "post",
-      path: `/invoices/${invoiceId}/finalize`,
-      body: {},
-      errorLabel: "Billing service error",
-    });
+    const invoice = await this.invoices.finalizeInvoice(invoiceId, user.organizationId);
     await this.recomputeCaseBillingStatus(user, invoice.caseId);
     await this.syncInterventionBillingStatuses(user, invoice);
     return invoice;
   }
 
   async markPaid(user: AuthUser, invoiceId: string): Promise<LocalInvoiceResponse> {
-    const invoice = await this.scopedHttp.request<LocalInvoiceResponse>({
-      baseUrl: SERVICE_URLS.billing,
-      organizationId: user.organizationId,
-      method: "post",
-      path: `/invoices/${invoiceId}/paid`,
-      body: {},
-      errorLabel: "Billing service error",
-    });
+    const invoice = await this.invoices.markPaid(invoiceId, user.organizationId);
     await this.recomputeCaseBillingStatus(user, invoice.caseId);
     await this.syncInterventionBillingStatuses(user, invoice);
     return invoice;
   }
 
   async cancelInvoice(user: AuthUser, invoiceId: string): Promise<LocalInvoiceResponse> {
-    const invoice = await this.scopedHttp.request<LocalInvoiceResponse>({
-      baseUrl: SERVICE_URLS.billing,
-      organizationId: user.organizationId,
-      method: "post",
-      path: `/invoices/${invoiceId}/cancel`,
-      body: {},
-      errorLabel: "Billing service error",
-    });
+    const invoice = await this.invoices.cancelInvoice(invoiceId, user.organizationId);
     await this.recomputeCaseBillingStatus(user, invoice.caseId);
     await this.syncInterventionBillingStatuses(user, invoice);
     return invoice;
@@ -206,13 +164,9 @@ export class BillingGatewayService extends AbstractBillingGatewayService {
     invoiceId: string,
     body?: CreditLocalInvoiceBody,
   ): Promise<LocalInvoiceResponse> {
-    const invoice = await this.scopedHttp.request<LocalInvoiceResponse>({
-      baseUrl: SERVICE_URLS.billing,
+    const invoice = await this.invoices.creditInvoice(invoiceId, {
       organizationId: user.organizationId,
-      method: "post",
-      path: `/invoices/${invoiceId}/credit`,
-      body: { amountHt: body?.amountHt },
-      errorLabel: "Billing service error",
+      amountHt: body?.amountHt,
     });
     await this.recomputeCaseBillingStatus(user, invoice.caseId);
     return invoice;
@@ -228,20 +182,14 @@ export class BillingGatewayService extends AbstractBillingGatewayService {
     invoiceId: string,
     body: Pick<SendLocalInvoiceEmailBody, "to" | "cc" | "subject" | "body">,
   ): Promise<LocalInvoiceResponse> {
-    return this.scopedHttp.request<LocalInvoiceResponse>({
-      baseUrl: SERVICE_URLS.billing,
+    return this.invoices.sendInvoice(invoiceId, {
       organizationId: user.organizationId,
-      method: "post",
-      path: `/invoices/${invoiceId}/send`,
-      body: {
-        to: body.to,
-        cc: body.cc,
-        subject: body.subject,
-        body: body.body,
-        sentByUserId: user.id,
-        sentByName: user.name,
-      },
-      errorLabel: "Billing service error",
+      to: body.to,
+      cc: body.cc,
+      subject: body.subject,
+      body: body.body,
+      sentByUserId: user.id,
+      sentByName: user.name,
     });
   }
 
@@ -316,20 +264,10 @@ export class BillingGatewayService extends AbstractBillingGatewayService {
     const logo = org?.logoDocumentId
       ? await this.fetchDocumentImageBuffer(user.organizationId, org.logoDocumentId)
       : null;
-    const data = await this.scopedHttp.request<ArrayBuffer>({
-      baseUrl: SERVICE_URLS.billing,
-      organizationId: user.organizationId,
-      method: "post",
-      path: "/invoices/render-pdf",
-      body: {
-        invoice,
-        logoBase64: logo ? logo.toString("base64") : undefined,
-      },
-      validateResponseScope: false,
-      axiosConfig: { responseType: "arraybuffer" },
-      errorLabel: "Billing service error",
+    return this.invoices.renderInvoicePdf(user.organizationId, {
+      invoice,
+      logoBase64: logo ? logo.toString("base64") : undefined,
     });
-    return Buffer.from(data);
   }
 
   private async fetchDocumentImageBuffer(
@@ -337,15 +275,13 @@ export class BillingGatewayService extends AbstractBillingGatewayService {
     documentId: string,
   ): Promise<Buffer | null> {
     try {
-      const urlRes = await firstValueFrom(
-        this.httpService.get<{ url: string }>(
-          `${SERVICE_URLS.documents}/documents/${documentId}/download-url`,
-          { params: { organizationId } },
-        ),
-      );
-      let downloadUrl = urlRes.data.url;
+      const downloadUrl = await this.documents.getDownloadUrl(organizationId, documentId);
       if (downloadUrl.startsWith("/documents/download/")) {
-        downloadUrl = `${SERVICE_URLS.documents}${downloadUrl}`;
+        if (!(this.storage instanceof LocalStorageProvider)) return null;
+        const storageKey = decodeURIComponent(downloadUrl.slice("/documents/download/".length));
+        const filePath = this.storage.getAbsolutePath(storageKey);
+        if (!fs.existsSync(filePath)) return null;
+        return fs.readFileSync(filePath);
       }
       const fileRes = await firstValueFrom(
         this.httpService.get(downloadUrl, { responseType: "arraybuffer", timeout: 15000 }),

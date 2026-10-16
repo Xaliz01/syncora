@@ -10,7 +10,9 @@ import type {
   QuoteResponse,
 } from "@planwise/shared";
 import { BillingGatewayService } from "../billing.gateway.service";
-import { OrganizationScopedHttpClient } from "../../infrastructure/organization-scoped-http.client";
+import { AbstractInvoicesService } from "../billing/ports/invoices.service.port";
+import { AbstractDocumentsService } from "../documents/ports/documents.service.port";
+import { AbstractStorageProvider } from "../../infrastructure/storage/storage.port";
 import { AbstractCasesGatewayService } from "../ports/cases.service.port";
 import { AbstractCustomersGatewayService } from "../ports/customers.service.port";
 import { AbstractOrderGiversGatewayService } from "../ports/order-givers.service.port";
@@ -29,7 +31,13 @@ describe("BillingGatewayService prepareInvoice billing party", () => {
   let customersService: { getCustomer: jest.Mock };
   let orderGiversService: { getOrderGiver: jest.Mock };
   let organizationsService: { getMine: jest.Mock };
-  let scopedHttp: { request: jest.Mock };
+  let invoices: {
+    listInvoices: jest.Mock;
+    createInvoice: jest.Mock;
+    renderInvoicePdf: jest.Mock;
+    sendInvoice: jest.Mock;
+    cancelInvoice: jest.Mock;
+  };
 
   const user: AuthUser = {
     id: "user-1",
@@ -130,28 +138,25 @@ describe("BillingGatewayService prepareInvoice billing party", () => {
         invoiceMentions: { paymentTerms: "Paiement à 15 jours" },
       }),
     };
-    scopedHttp = {
-      request: jest.fn().mockImplementation(async (opts: { method: string; path: string }) => {
-        if (opts.method === "get" && opts.path === "/invoices") {
-          return { invoices: [], total: 0 };
-        }
-        if (opts.method === "post" && opts.path === "/invoices") {
-          return createdInvoice;
-        }
-        if (opts.method === "post" && opts.path === "/invoices/render-pdf") {
-          return Buffer.from("%PDF-preview");
-        }
-        if (opts.method === "post" && opts.path === "/invoices/inv-1/send") {
-          return { ...createdInvoice, status: "finalized", emailSends: [] };
-        }
-        return {};
-      }),
+    invoices = {
+      listInvoices: jest.fn().mockResolvedValue({ invoices: [], total: 0 }),
+      createInvoice: jest.fn().mockImplementation(async (body: { interventionIds?: string[] }) => ({
+        ...createdInvoice,
+        interventionIds: body.interventionIds,
+      })),
+      renderInvoicePdf: jest.fn().mockResolvedValue(Buffer.from("%PDF-preview")),
+      sendInvoice: jest
+        .fn()
+        .mockResolvedValue({ ...createdInvoice, status: "finalized", emailSends: [] }),
+      cancelInvoice: jest.fn(),
     };
 
     const module = await Test.createTestingModule({
       providers: [
         BillingGatewayService,
-        { provide: OrganizationScopedHttpClient, useValue: scopedHttp },
+        { provide: AbstractInvoicesService, useValue: invoices },
+        { provide: AbstractDocumentsService, useValue: { getDownloadUrl: jest.fn() } },
+        { provide: AbstractStorageProvider, useValue: {} },
         {
           provide: HttpService,
           useValue: {
@@ -175,15 +180,12 @@ describe("BillingGatewayService prepareInvoice billing party", () => {
     await service.createInvoice(user, "case-1", { quoteId: quote.id });
     expect(customersService.getCustomer).toHaveBeenCalledWith(user, customer.id);
     expect(orderGiversService.getOrderGiver).not.toHaveBeenCalled();
-    const payload = scopedHttp.request.mock.calls.find(
-      (call: [{ method: string; path: string }]) =>
-        call[0].method === "post" && call[0].path === "/invoices",
-    )?.[0];
-    expect(payload.body.customer.displayName).toBe("Client SA");
-    expect(payload.body.customer.partyId).toBe("cust-1");
-    expect(payload.body.seller.legalForm).toBe("SARL");
-    expect(payload.body.seller.mentions.paymentTerms).toBe("Paiement à 15 jours");
-    expect(payload.body.seller.mentions.latePenalties).toMatch(/L441-10/);
+    const payload = invoices.createInvoice.mock.calls[0]?.[0];
+    expect(payload.customer.displayName).toBe("Client SA");
+    expect(payload.customer.partyId).toBe("cust-1");
+    expect(payload.seller.legalForm).toBe("SARL");
+    expect(payload.seller.mentions.paymentTerms).toBe("Paiement à 15 jours");
+    expect(payload.seller.mentions.latePenalties).toMatch(/L441-10/);
   });
 
   it("bills the order giver when set on the case", async () => {
@@ -191,12 +193,9 @@ describe("BillingGatewayService prepareInvoice billing party", () => {
     await service.createInvoice(user, "case-1", { quoteId: quote.id });
     expect(orderGiversService.getOrderGiver).toHaveBeenCalledWith(user, orderGiver.id);
     expect(customersService.getCustomer).not.toHaveBeenCalled();
-    const payload = scopedHttp.request.mock.calls.find(
-      (call: [{ method: string; path: string }]) =>
-        call[0].method === "post" && call[0].path === "/invoices",
-    )?.[0];
-    expect(payload.body.customer.displayName).toBe("Donneur SA");
-    expect(payload.body.customer.partyType).toBe("order_giver");
+    const payload = invoices.createInvoice.mock.calls[0]?.[0];
+    expect(payload.customer.displayName).toBe("Donneur SA");
+    expect(payload.customer.partyType).toBe("order_giver");
   });
 
   it("creates a full invoice from custom lines without a quote", async () => {
@@ -208,26 +207,19 @@ describe("BillingGatewayService prepareInvoice billing party", () => {
       ],
     });
     expect(casesService.getQuote).not.toHaveBeenCalled();
-    const payload = scopedHttp.request.mock.calls.find(
-      (call: [{ method: string; path: string }]) =>
-        call[0].method === "post" && call[0].path === "/invoices",
-    )?.[0];
-    expect(payload.body.quoteId).toBeUndefined();
-    expect(payload.body.kind).toBe("full");
-    expect(payload.body.amountHt).toBe("100.00");
+    const payload = invoices.createInvoice.mock.calls[0]?.[0];
+    expect(payload.quoteId).toBeUndefined();
+    expect(payload.kind).toBe("full");
+    expect(payload.amountHt).toBe("100.00");
   });
 
   it("creates a custom-line invoice when the case billing status is none", async () => {
     casesService.getCase.mockResolvedValue({ ...baseCase, billingStatus: "none" });
-    scopedHttp.request.mockImplementation(async (opts: { method: string; path: string }) => {
-      if (opts.method === "get" && opts.path === "/invoices") {
-        return { invoices: [{ ...createdInvoice, quoteId: undefined }], total: 1 };
-      }
-      if (opts.method === "post" && opts.path === "/invoices") {
-        return { ...createdInvoice, quoteId: undefined };
-      }
-      return {};
+    invoices.listInvoices.mockResolvedValue({
+      invoices: [{ ...createdInvoice, quoteId: undefined }],
+      total: 1,
     });
+    invoices.createInvoice.mockResolvedValue({ ...createdInvoice, quoteId: undefined });
     await service.createInvoice(user, "case-1", {
       lines: [{ label: "Pièce", quantity: 1, unitPriceHt: 80, tvaRate: 20 }],
     });
@@ -267,26 +259,12 @@ describe("BillingGatewayService prepareInvoice billing party", () => {
         caseId: "case-1",
         billingStatus: "none",
       });
-    scopedHttp.request.mockImplementation(
-      async (opts: { method: string; path: string; body?: { interventionIds?: string[] } }) => {
-        if (opts.method === "get" && opts.path === "/invoices") {
-          return { invoices: [], total: 0 };
-        }
-        if (opts.method === "post" && opts.path === "/invoices") {
-          return { ...createdInvoice, interventionIds: opts.body?.interventionIds ?? [] };
-        }
-        return {};
-      },
-    );
     await service.createInvoice(user, "case-1", {
       lines: [{ label: "Pièce", quantity: 1, unitPriceHt: 40, tvaRate: 20 }],
       interventionIds: ["int-1", "int-2"],
     });
-    const payload = scopedHttp.request.mock.calls.find(
-      (call: [{ method: string; path: string }]) =>
-        call[0].method === "post" && call[0].path === "/invoices",
-    )?.[0];
-    expect(payload.body.interventionIds).toEqual(["int-1", "int-2"]);
+    const payload = invoices.createInvoice.mock.calls[0]?.[0];
+    expect(payload.interventionIds).toEqual(["int-1", "int-2"]);
     expect(casesService.setInterventionBillingStatus).toHaveBeenCalledWith(
       user,
       "int-1",
@@ -313,9 +291,7 @@ describe("BillingGatewayService prepareInvoice billing party", () => {
         interventionIds: ["int-x"],
       }),
     ).rejects.toThrow(/dossier facturé/);
-    expect(scopedHttp.request).not.toHaveBeenCalledWith(
-      expect.objectContaining({ method: "post", path: "/invoices" }),
-    );
+    expect(invoices.createInvoice).not.toHaveBeenCalled();
   });
 
   it("reverts intervention billing status when a draft is cancelled and no other invoice remains", async () => {
@@ -324,15 +300,8 @@ describe("BillingGatewayService prepareInvoice billing party", () => {
       status: "cancelled" as const,
       interventionIds: ["int-1"],
     };
-    scopedHttp.request.mockImplementation(async (opts: { method: string; path: string }) => {
-      if (opts.method === "get" && opts.path === "/invoices") {
-        return { invoices: [cancelled], total: 1 };
-      }
-      if (opts.method === "post" && opts.path === "/invoices/inv-1/cancel") {
-        return cancelled;
-      }
-      return {};
-    });
+    invoices.listInvoices.mockResolvedValue({ invoices: [cancelled], total: 1 });
+    invoices.cancelInvoice.mockResolvedValue(cancelled);
     await service.cancelInvoice(user, "inv-1");
     expect(casesService.setInterventionBillingStatus).toHaveBeenCalledWith(
       user,
@@ -353,9 +322,7 @@ describe("BillingGatewayService prepareInvoice billing party", () => {
     await expect(service.createInvoice(user, "case-1", { quoteId: quote.id })).rejects.toThrow(
       /devis accepté/i,
     );
-    expect(scopedHttp.request).not.toHaveBeenCalledWith(
-      expect.objectContaining({ method: "post", path: "/invoices" }),
-    );
+    expect(invoices.createInvoice).not.toHaveBeenCalled();
   });
 
   it("rejects invoice creation when the case has no accepted quote", async () => {
@@ -379,22 +346,15 @@ describe("BillingGatewayService prepareInvoice billing party", () => {
     casesService.getCase.mockResolvedValue(baseCase);
     const pdf = await service.previewInvoice(user, "case-1", { quoteId: quote.id });
     expect(Buffer.from(pdf).toString()).toContain("%PDF");
-    const persistCall = scopedHttp.request.mock.calls.find(
-      (call: [{ method: string; path: string }]) =>
-        call[0].method === "post" && call[0].path === "/invoices",
-    );
-    expect(persistCall).toBeUndefined();
-    const renderCall = scopedHttp.request.mock.calls.find(
-      (call: [{ method: string; path: string }]) =>
-        call[0].method === "post" && call[0].path === "/invoices/render-pdf",
-    );
-    expect(renderCall).toBeDefined();
-    expect(renderCall?.[0].body.invoice.status).toBe("draft");
-    expect(renderCall?.[0].body.invoice.seller.name).toBe("SARL Demo");
+    expect(invoices.createInvoice).not.toHaveBeenCalled();
+    expect(invoices.renderInvoicePdf).toHaveBeenCalled();
+    const rendered = invoices.renderInvoicePdf.mock.calls[0]?.[1];
+    expect(rendered.invoice.status).toBe("draft");
+    expect(rendered.invoice.seller.name).toBe("SARL Demo");
   });
 
   it("returns send history on list payloads", async () => {
-    scopedHttp.request.mockResolvedValueOnce({
+    invoices.listInvoices.mockResolvedValueOnce({
       invoices: [
         {
           id: "inv-1",
@@ -416,7 +376,7 @@ describe("BillingGatewayService prepareInvoice billing party", () => {
   });
 
   it("surfaces a 400 when sending a draft invoice", async () => {
-    scopedHttp.request.mockRejectedValueOnce(
+    invoices.sendInvoice.mockRejectedValueOnce(
       new BadRequestException("Validez la facture avant de l’envoyer."),
     );
     await expect(
@@ -430,18 +390,15 @@ describe("BillingGatewayService prepareInvoice billing party", () => {
       subject: "Facture F-2026-00001",
       body: "Ci-joint",
     });
-    expect(scopedHttp.request).toHaveBeenCalledWith(
+    expect(invoices.sendInvoice).toHaveBeenCalledWith(
+      "inv-1",
       expect.objectContaining({
-        method: "post",
-        path: "/invoices/inv-1/send",
         organizationId: "org-1",
-        body: expect.objectContaining({
-          to: "client@example.com",
-          subject: "Facture F-2026-00001",
-          body: "Ci-joint",
-          sentByUserId: "user-1",
-          sentByName: "Admin",
-        }),
+        to: "client@example.com",
+        subject: "Facture F-2026-00001",
+        body: "Ci-joint",
+        sentByUserId: "user-1",
+        sentByName: "Admin",
       }),
     );
   });

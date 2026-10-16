@@ -1,13 +1,20 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { HttpService } from "@nestjs/axios";
-import { of } from "rxjs";
 import { NotificationEventListener } from "../notification-event.listener";
 import { AbstractSubscriptionsGatewayService } from "../ports/subscriptions.service.port";
+import { AbstractNotificationsService } from "../notifications/ports/notifications.service.port";
+import { AbstractNotificationPreferencesService } from "../notifications/ports/notification-preferences.service.port";
+import { AbstractPushSubscriptionService } from "../notifications/ports/push-subscription.service.port";
+import { AbstractEmailService } from "../notifications/ports/email.service.port";
+import { AbstractUsersService } from "../users/ports/users.service.port";
 import type { PlanwiseDomainEvent } from "../../infrastructure/notify.interceptor";
 
 describe("NotificationEventListener", () => {
   let listener: NotificationEventListener;
-  let mockHttpService: { post: jest.Mock; get: jest.Mock };
+  let notifications: { createForOrganization: jest.Mock };
+  let preferences: { getPreferences: jest.Mock };
+  let push: { sendPushToUser: jest.Mock };
+  let email: { sendTransactionalEmail: jest.Mock; sendNotificationEmail: jest.Mock };
+  let users: { listByOrganization: jest.Mock; findById: jest.Mock };
   let mockSubscriptionsGateway: { getCurrentSubscription: jest.Mock };
 
   const baseEvent: PlanwiseDomainEvent = {
@@ -20,22 +27,24 @@ describe("NotificationEventListener", () => {
     action: "created",
   };
 
+  const defaultPreferences = {
+    preferences: {
+      events: {},
+      reminderLeadTime: 30,
+    },
+  };
+
   beforeEach(async () => {
-    mockHttpService = {
-      post: jest.fn().mockReturnValue(of({ data: {} })),
-      get: jest.fn().mockImplementation((url: string) => {
-        if (url.includes("/users")) {
-          return of({ data: [{ id: "user-2" }] });
-        }
-        return of({
-          data: {
-            preferences: {
-              events: {},
-              reminderLeadTime: 30,
-            },
-          },
-        });
-      }),
+    notifications = { createForOrganization: jest.fn().mockResolvedValue([]) };
+    preferences = { getPreferences: jest.fn().mockResolvedValue(defaultPreferences) };
+    push = { sendPushToUser: jest.fn().mockResolvedValue({ sent: 1, failed: 0 }) };
+    email = {
+      sendTransactionalEmail: jest.fn().mockResolvedValue({ sent: true }),
+      sendNotificationEmail: jest.fn().mockResolvedValue({ sent: true }),
+    };
+    users = {
+      listByOrganization: jest.fn().mockResolvedValue([{ id: "user-2", email: "bob@example.com" }]),
+      findById: jest.fn().mockResolvedValue({ id: "user-2", email: "bob@example.com" }),
     };
     mockSubscriptionsGateway = {
       getCurrentSubscription: jest.fn().mockResolvedValue({ hasAccess: true }),
@@ -44,7 +53,11 @@ describe("NotificationEventListener", () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         NotificationEventListener,
-        { provide: HttpService, useValue: mockHttpService },
+        { provide: AbstractNotificationsService, useValue: notifications },
+        { provide: AbstractNotificationPreferencesService, useValue: preferences },
+        { provide: AbstractPushSubscriptionService, useValue: push },
+        { provide: AbstractEmailService, useValue: email },
+        { provide: AbstractUsersService, useValue: users },
         {
           provide: AbstractSubscriptionsGatewayService,
           useValue: mockSubscriptionsGateway,
@@ -63,84 +76,66 @@ describe("NotificationEventListener", () => {
     expect(mockSubscriptionsGateway.getCurrentSubscription).toHaveBeenCalledWith(
       expect.objectContaining({ organizationId: "org-1" }),
     );
-    expect(mockHttpService.post).not.toHaveBeenCalled();
-    expect(mockHttpService.get).not.toHaveBeenCalled();
+    expect(notifications.createForOrganization).not.toHaveBeenCalled();
+    expect(users.listByOrganization).not.toHaveBeenCalled();
   });
 
   it("should send notifications when organization has active subscription", async () => {
     await listener.handleEntityChanged(baseEvent);
 
     expect(mockSubscriptionsGateway.getCurrentSubscription).toHaveBeenCalled();
-    expect(mockHttpService.post).toHaveBeenCalled();
+    expect(notifications.createForOrganization).toHaveBeenCalled();
   });
 
   it("should include organizationId on push and email deep links", async () => {
-    mockHttpService.get.mockImplementation((url: string) => {
-      if (url.includes("/users")) {
-        return of({ data: [{ id: "user-2", email: "bob@example.com" }] });
-      }
-      return of({
-        data: {
-          preferences: {
-            events: {
-              case_created: {
-                channels: {
-                  in_app: { enabled: true },
-                  push: { enabled: true },
-                  email: { enabled: true },
-                  sms: { enabled: false },
-                },
-              },
+    preferences.getPreferences.mockResolvedValue({
+      preferences: {
+        events: {
+          case_created: {
+            channels: {
+              in_app: { enabled: true },
+              push: { enabled: true },
+              email: { enabled: true },
+              sms: { enabled: false },
             },
-            reminderLeadTime: 30,
           },
         },
-      });
+        reminderLeadTime: 30,
+      },
     });
 
     await listener.handleEntityChanged(baseEvent);
 
-    const pushCall = mockHttpService.post.mock.calls.find((call) =>
-      String(call[0]).includes("/push-subscriptions/send"),
-    );
-    const emailCall = mockHttpService.post.mock.calls.find((call) =>
-      String(call[0]).includes("/email/send"),
-    );
-
-    expect(pushCall?.[1]).toEqual(
+    expect(push.sendPushToUser).toHaveBeenCalledWith(
+      "user-2",
+      "org-1",
       expect.objectContaining({
         url: "/cases/case-1?organizationId=org-1",
       }),
     );
-    expect(emailCall?.[1]).toEqual(
-      expect.objectContaining({
-        url: "/cases/case-1?organizationId=org-1",
-      }),
+    expect(email.sendNotificationEmail).toHaveBeenCalledWith(
+      "bob@example.com",
+      expect.any(String),
+      expect.any(String),
+      "/cases/case-1?organizationId=org-1",
     );
   });
 
   it("should deep-link intervention events to the related case with organizationId", async () => {
-    mockHttpService.get.mockImplementation((url: string) => {
-      if (url.includes("/users")) {
-        return of({ data: [{ id: "user-2" }] });
-      }
-      return of({
-        data: {
-          preferences: {
-            events: {
-              intervention_started: {
-                channels: {
-                  in_app: { enabled: true },
-                  push: { enabled: true },
-                  email: { enabled: false },
-                  sms: { enabled: false },
-                },
-              },
+    preferences.getPreferences.mockResolvedValue({
+      preferences: {
+        events: {
+          intervention_started: {
+            channels: {
+              in_app: { enabled: true },
+              push: { enabled: true },
+              email: { enabled: false },
+              sms: { enabled: false },
             },
-            reminderLeadTime: 30,
           },
         },
-      });
+        reminderLeadTime: 30,
+      },
     });
 
     await listener.handleEntityChanged({
@@ -156,10 +151,9 @@ describe("NotificationEventListener", () => {
       detail: "Intervention démarrée",
     });
 
-    const pushCall = mockHttpService.post.mock.calls.find((call) =>
-      String(call[0]).includes("/push-subscriptions/send"),
-    );
-    expect(pushCall?.[1]).toEqual(
+    expect(push.sendPushToUser).toHaveBeenCalledWith(
+      "user-2",
+      "org-1",
       expect.objectContaining({
         url: "/cases/case-9?organizationId=org-1",
       }),
@@ -179,7 +173,6 @@ describe("NotificationEventListener", () => {
 
     it("sends a transactional ops alert email asynchronously", async () => {
       delete process.env.PLATFORM_SIGNUP_ALERT_EMAIL;
-      mockHttpService.post.mockReturnValue(of({ data: { sent: true } }));
 
       await listener.handleAccountRegistered({
         userId: "user-new",
@@ -187,13 +180,13 @@ describe("NotificationEventListener", () => {
         name: "Alice",
       });
 
-      expect(mockHttpService.post).toHaveBeenCalledWith(
-        expect.stringContaining("/email/transactional"),
-        expect.objectContaining({
-          to: "mail@benoistbabin.fr",
-          subject: "Nouvel utilisateur inscrit",
-          body: expect.stringContaining("new@example.com"),
-        }),
+      expect(email.sendTransactionalEmail).toHaveBeenCalledWith(
+        "mail@benoistbabin.fr",
+        "Nouvel utilisateur inscrit",
+        expect.stringContaining("new@example.com"),
+        undefined,
+        undefined,
+        expect.any(String),
       );
     });
 
@@ -205,7 +198,7 @@ describe("NotificationEventListener", () => {
         email: "new@example.com",
       });
 
-      expect(mockHttpService.post).not.toHaveBeenCalled();
+      expect(email.sendTransactionalEmail).not.toHaveBeenCalled();
     });
   });
 
@@ -222,7 +215,6 @@ describe("NotificationEventListener", () => {
 
     it("sends a transactional ops alert email asynchronously", async () => {
       delete process.env.PLATFORM_SIGNUP_ALERT_EMAIL;
-      mockHttpService.post.mockReturnValue(of({ data: { sent: true } }));
 
       await listener.handleOrganizationCreated({
         organizationId: "org-new",
@@ -233,13 +225,13 @@ describe("NotificationEventListener", () => {
         createdByEmail: "admin@dupont.fr",
       });
 
-      expect(mockHttpService.post).toHaveBeenCalledWith(
-        expect.stringContaining("/email/transactional"),
-        expect.objectContaining({
-          to: "mail@benoistbabin.fr",
-          subject: "Nouvelle organisation créée",
-          body: expect.stringContaining("Plomberie Dupont"),
-        }),
+      expect(email.sendTransactionalEmail).toHaveBeenCalledWith(
+        "mail@benoistbabin.fr",
+        "Nouvelle organisation créée",
+        expect.stringContaining("Plomberie Dupont"),
+        undefined,
+        undefined,
+        expect.any(String),
       );
     });
   });

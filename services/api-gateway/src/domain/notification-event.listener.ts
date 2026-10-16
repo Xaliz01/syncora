@@ -1,7 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
-import { HttpService } from "@nestjs/axios";
-import { firstValueFrom } from "rxjs";
 import type { PlanwiseDomainEvent } from "../infrastructure/notify.interceptor";
 import {
   ACCOUNT_REGISTERED_EVENT,
@@ -19,12 +17,14 @@ import type {
   NotificationAction,
   NotificationEventType,
   NotificationPreferencesResponse,
-  SendEmailNotificationResponse,
-  UserResponse,
 } from "@planwise/shared";
 import { getEnabledChannels, withNotificationOrganizationId } from "@planwise/shared";
 import { AbstractSubscriptionsGatewayService } from "./ports/subscriptions.service.port";
-import { SERVICE_URLS } from "../infrastructure/service-urls.config";
+import { AbstractNotificationsService } from "./notifications/ports/notifications.service.port";
+import { AbstractNotificationPreferencesService } from "./notifications/ports/notification-preferences.service.port";
+import { AbstractPushSubscriptionService } from "./notifications/ports/push-subscription.service.port";
+import { AbstractEmailService } from "./notifications/ports/email.service.port";
+import { AbstractUsersService } from "./users/ports/users.service.port";
 const DEFAULT_SIGNUP_ALERT_EMAIL = "mail@benoistbabin.fr";
 
 @Injectable()
@@ -32,7 +32,11 @@ export class NotificationEventListener {
   private readonly logger = new Logger(NotificationEventListener.name);
 
   constructor(
-    private readonly httpService: HttpService,
+    private readonly notifications: AbstractNotificationsService,
+    private readonly preferencesService: AbstractNotificationPreferencesService,
+    private readonly push: AbstractPushSubscriptionService,
+    private readonly email: AbstractEmailService,
+    private readonly users: AbstractUsersService,
     private readonly subscriptionsGateway: AbstractSubscriptionsGatewayService,
   ) {}
 
@@ -84,20 +88,17 @@ export class NotificationEventListener {
     }
 
     try {
-      const res = await firstValueFrom(
-        this.httpService.post<SendEmailNotificationResponse>(
-          `${SERVICE_URLS.notifications}/email/transactional`,
-          {
-            to,
-            subject: params.subject,
-            body: params.body,
-            footer: params.footer,
-          },
-        ),
+      const res = await this.email.sendTransactionalEmail(
+        to,
+        params.subject,
+        params.body,
+        undefined,
+        undefined,
+        params.footer,
       );
-      if (!res.data.sent) {
+      if (!res.sent) {
         this.logger.warn(
-          `Ops alert email not sent to ${to} (${params.context}): ${res.data.reason ?? "unknown"}`,
+          `Ops alert email not sent to ${to} (${params.context}): ${res.reason ?? "unknown"}`,
         );
       }
     } catch (err) {
@@ -127,7 +128,7 @@ export class NotificationEventListener {
       );
 
       if (inAppRecipientIds.length > 0) {
-        const body: CreateNotificationBody & { userIds: string[] } = {
+        const body: CreateNotificationBody = {
           organizationId: event.organizationId,
           actorId: event.actorId,
           actorName: event.actorName,
@@ -139,12 +140,9 @@ export class NotificationEventListener {
           relatedEntityId: event.relatedEntityId,
           relatedEntityLabel: event.relatedEntityLabel,
           detail: event.detail,
-          userIds: inAppRecipientIds,
         };
 
-        await firstValueFrom(
-          this.httpService.post(`${SERVICE_URLS.notifications}/notifications`, body),
-        );
+        await this.notifications.createForOrganization(body, inAppRecipientIds);
       }
 
       if (eventType) {
@@ -189,15 +187,11 @@ export class NotificationEventListener {
         if (channels.includes("push")) {
           const title = this.buildPushTitle(event);
           const body = this.buildPushBody(event);
-          await firstValueFrom(
-            this.httpService.post(`${SERVICE_URLS.notifications}/push-subscriptions/send`, {
-              userId,
-              organizationId: event.organizationId,
-              title,
-              body,
-              url: this.buildPushUrl(event),
-            }),
-          );
+          await this.push.sendPushToUser(userId, event.organizationId, {
+            title,
+            body,
+            url: this.buildPushUrl(event),
+          });
         }
       } catch (err) {
         this.logger.debug(`Push notification skipped for user ${userId}`, (err as Error).message);
@@ -210,13 +204,7 @@ export class NotificationEventListener {
     organizationId: string,
   ): Promise<NotificationPreferencesResponse | null> {
     try {
-      const response = await firstValueFrom(
-        this.httpService.get<NotificationPreferencesResponse>(
-          `${SERVICE_URLS.notifications}/notification-preferences`,
-          { params: { userId, organizationId } },
-        ),
-      );
-      return response.data;
+      return await this.preferencesService.getPreferences(userId, organizationId);
     } catch {
       return null;
     }
@@ -287,18 +275,12 @@ export class NotificationEventListener {
         const channels = getEnabledChannels(prefs?.preferences, eventType);
 
         if (channels.includes("email")) {
+          const recipient = await this.users.findById(userId, event.organizationId);
+          const address = recipient?.email?.trim();
+          if (!address) continue;
           const title = this.buildPushTitle(event);
           const body = this.buildPushBody(event);
-          await firstValueFrom(
-            this.httpService.post(`${SERVICE_URLS.notifications}/email/send`, {
-              userId,
-              organizationId: event.organizationId,
-              subject: title,
-              body,
-              eventType,
-              url: this.buildPushUrl(event),
-            }),
-          );
+          await this.email.sendNotificationEmail(address, title, body, this.buildPushUrl(event));
         }
       } catch (err) {
         this.logger.debug(`Email notification skipped for user ${userId}`, (err as Error).message);
@@ -329,12 +311,8 @@ export class NotificationEventListener {
 
   private async getOrganizationUserIds(organizationId: string): Promise<string[]> {
     try {
-      const response = await firstValueFrom(
-        this.httpService.get<UserResponse[]>(`${SERVICE_URLS.users}/users`, {
-          params: { organizationId },
-        }),
-      );
-      return response.data.map((u) => u.id);
+      const users = await this.users.listByOrganization(organizationId);
+      return users.map((u) => u.id);
     } catch (err) {
       this.logger.warn(
         `Failed to fetch users for organization ${organizationId}`,
