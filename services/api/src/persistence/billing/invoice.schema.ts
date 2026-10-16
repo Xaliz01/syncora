@@ -22,10 +22,10 @@ export class InvoiceDocument extends Document {
   @Prop()
   quoteId?: string;
 
-  @Prop({ required: true })
+  @Prop({ type: String, required: true })
   kind!: LocalInvoiceKind;
 
-  @Prop({ required: true, default: "draft" })
+  @Prop({ type: String, required: true, default: "draft" })
   status!: LocalInvoiceStatus;
 
   @Prop()

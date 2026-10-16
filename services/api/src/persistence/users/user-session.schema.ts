@@ -15,7 +15,7 @@ export class UserSessionDocument extends Document {
   label!: string;
 
   /** "desktop" | "mobile" — au plus une session active par classe et par user. */
-  @Prop({ required: true, enum: ["desktop", "mobile"] })
+  @Prop({ type: String, required: true, enum: ["desktop", "mobile"] })
   deviceClass!: "desktop" | "mobile";
 
   @Prop()

@@ -547,12 +547,13 @@ En local (`npm run backend`) avec le collector Docker :
 
 ```bash
 npm run monitoring:local
-npm run backend
+OTEL_TRACES_ENABLED=true npm run backend
 ```
 
-`scripts/backend-run.mjs` active automatiquement `OTEL_TRACES_ENABLED=true` et
-`OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318` (surcharge possible via `export`).
-Après démarrage, les logs doivent contenir `[otel] traces enabled → …`.
+Sans `OTEL_TRACES_ENABLED=true`, l’API locale ne charge pas OpenTelemetry
+(le chargement sous ts-node-dev bloque le démarrage). L’endpoint par défaut
+est `http://127.0.0.1:4318`. Après démarrage, les logs doivent contenir
+`[otel] traces enabled → …`.
 Si Tempo reste vide : le tracer a démarré **avant** le chargement des variables
 (souvent un `start:dev` isolé sans `npm run backend`) — relancer via `npm run backend`.
 

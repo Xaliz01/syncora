@@ -1,13 +1,3 @@
-import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
-import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
-import { Resource } from "@opentelemetry/resources";
-import { NodeSDK } from "@opentelemetry/sdk-node";
-import {
-  ATTR_DEPLOYMENT_ENVIRONMENT_NAME,
-  ATTR_SERVICE_NAME,
-  ATTR_SERVICE_VERSION,
-} from "@opentelemetry/semantic-conventions";
-
 let started = false;
 
 function isTruthy(value: string | undefined): boolean {
@@ -34,7 +24,7 @@ function resolveOtlpTracesUrl(): string | null {
  * No-op unless `OTEL_TRACES_ENABLED=true` (ou `OTEL_SDK_DISABLED=true` pour forcer l'arrêt).
  * Doit être appelé avant tout autre import applicatif (voir `main.ts`).
  */
-export function initTelemetry(defaultServiceName: string): void {
+export async function initTelemetry(defaultServiceName: string): Promise<void> {
   if (started || isTruthy(process.env.OTEL_SDK_DISABLED)) {
     return;
   }
@@ -56,6 +46,15 @@ export function initTelemetry(defaultServiceName: string): void {
     undefined;
   const deploymentEnvironment =
     process.env.OTEL_ENV?.trim() || process.env.NODE_ENV?.trim() || "development";
+
+  // Import tardif : le graphe OpenTelemetry bloque ts-node-dev plusieurs minutes
+  // s'il est chargé alors que les traces sont désactivées.
+  const { getNodeAutoInstrumentations } = await import("@opentelemetry/auto-instrumentations-node");
+  const { OTLPTraceExporter } = await import("@opentelemetry/exporter-trace-otlp-http");
+  const { Resource } = await import("@opentelemetry/resources");
+  const { NodeSDK } = await import("@opentelemetry/sdk-node");
+  const { ATTR_DEPLOYMENT_ENVIRONMENT_NAME, ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } =
+    await import("@opentelemetry/semantic-conventions");
 
   const sdk = new NodeSDK({
     resource: new Resource({

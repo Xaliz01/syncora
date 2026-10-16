@@ -12,4 +12,6 @@ const telemetryServiceName =
       ? "planwise-notifications"
       : "planwise-api";
 
-initTelemetry(telemetryServiceName);
+export function startTelemetry(): Promise<void> {
+  return initTelemetry(telemetryServiceName);
+}

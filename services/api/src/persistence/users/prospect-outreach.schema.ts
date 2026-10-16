@@ -22,7 +22,7 @@ export class ProspectOutreachDocument extends Document {
   @Prop({ required: true })
   subject!: string;
 
-  @Prop({ required: true, default: "sent" })
+  @Prop({ type: String, required: true, default: "sent" })
   status!: "sent" | "failed" | "email_not_found" | "noted";
 
   @Prop({ required: true })

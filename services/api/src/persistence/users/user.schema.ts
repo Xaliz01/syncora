@@ -15,7 +15,7 @@ export class UserDocument extends Document {
   @Prop()
   name?: string;
 
-  @Prop({ required: true, enum: ["active", "invited"], default: "active" })
+  @Prop({ type: String, required: true, enum: ["active", "invited"], default: "active" })
   status!: "active" | "invited";
 
   /**

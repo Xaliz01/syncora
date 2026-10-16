@@ -19,7 +19,12 @@ export class InvitationDocument extends Document {
   @Prop({ required: true })
   invitedByUserId!: string;
 
-  @Prop({ required: true, enum: ["pending", "accepted", "cancelled"], default: "pending" })
+  @Prop({
+    type: String,
+    required: true,
+    enum: ["pending", "accepted", "cancelled"],
+    default: "pending",
+  })
   status!: "pending" | "accepted" | "cancelled";
 
   @Prop({ required: true, unique: true })

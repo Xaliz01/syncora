@@ -8,10 +8,10 @@ export class UserPreferencesDocument extends Document {
   @Prop({ required: true, unique: true })
   userId!: string;
 
-  @Prop({ required: true, enum: ["light", "dark"], default: "light" })
+  @Prop({ type: String, required: true, enum: ["light", "dark"], default: "light" })
   theme!: "light" | "dark";
 
-  @Prop({ required: true, enum: ["expanded", "collapsed"], default: "expanded" })
+  @Prop({ type: String, required: true, enum: ["expanded", "collapsed"], default: "expanded" })
   sidebarCollapsed!: "expanded" | "collapsed";
 
   /** Commandes vocales terrain (Ma journée). */

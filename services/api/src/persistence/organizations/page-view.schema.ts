@@ -4,7 +4,7 @@ import type { AnalyticsSurface } from "@planwise/shared";
 
 @Schema({ timestamps: { createdAt: true, updatedAt: false }, _id: true, collection: "page_views" })
 export class PageViewDocument extends Document {
-  @Prop({ required: true, enum: ["marketing", "app", "platform"] })
+  @Prop({ type: String, required: true, enum: ["marketing", "app", "platform"] })
   surface!: AnalyticsSurface;
 
   @Prop({ required: true })

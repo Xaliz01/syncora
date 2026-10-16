@@ -27,6 +27,7 @@ export class MaintenanceContractDocument extends Document {
   description?: string;
 
   @Prop({
+    type: String,
     required: true,
     enum: ["draft", "active", "suspended", "ended"],
     default: "draft",
@@ -47,12 +48,13 @@ export class MaintenanceContractDocument extends Document {
   nextDueDate!: string;
 
   @Prop({
+    type: String,
     enum: ["schedule_with_client", "auto_plan"],
     default: "schedule_with_client",
   })
   schedulingMode?: MaintenanceSchedulingMode;
 
-  @Prop({ enum: [7, 14, 30], default: 14 })
+  @Prop({ type: Number, enum: [7, 14, 30], default: 14 })
   remindBeforeDays?: MaintenanceRemindBeforeDays;
 
   @Prop({ default: false, index: true })

@@ -7,7 +7,7 @@ export class EmailTemplateDocument extends Document {
   @Prop({ required: true })
   name!: string;
 
-  @Prop({ required: true, index: true })
+  @Prop({ type: String, required: true, index: true })
   purpose!: PlatformEmailTemplatePurpose;
 
   @Prop({ required: true })

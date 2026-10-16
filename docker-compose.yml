@@ -9,8 +9,8 @@
 #
 # Backend avec traces :
 #   npm run monitoring:local
-#   npm run backend
-#   (`scripts/backend-run.mjs` active OTEL → http://127.0.0.1:4318 par défaut)
+#   OTEL_TRACES_ENABLED=true npm run backend
+#   (désactivé par défaut : OpenTelemetry sous ts-node-dev bloque le démarrage)
 
 services:
   mongodb:

@@ -8,7 +8,7 @@ export class InvoiceSequenceDocument extends Document {
   @Prop({ required: true })
   organizationId!: string;
 
-  @Prop({ required: true })
+  @Prop({ type: String, required: true })
   series!: "F" | "A";
 
   @Prop({ required: true })

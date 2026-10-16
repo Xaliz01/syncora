@@ -61,12 +61,17 @@ function shutdown(exitCode = 0) {
 }
 
 function withLocalOtelEnv(baseEnv = process.env) {
-  return {
+  const env = {
     ...baseEnv,
     TS_NODE_TRANSPILE_ONLY: "true",
-    OTEL_TRACES_ENABLED: baseEnv.OTEL_TRACES_ENABLED ?? "true",
-    OTEL_EXPORTER_OTLP_ENDPOINT: baseEnv.OTEL_EXPORTER_OTLP_ENDPOINT ?? "http://127.0.0.1:4318",
   };
+  // Les traces ne sont pas activées par défaut : le chargement d'OpenTelemetry
+  // sous ts-node-dev reste silencieux plusieurs minutes. Pour les activer :
+  // OTEL_TRACES_ENABLED=true npm run backend (collector sur :4318).
+  if (baseEnv.OTEL_TRACES_ENABLED === "true" && !baseEnv.OTEL_EXPORTER_OTLP_ENDPOINT) {
+    env.OTEL_EXPORTER_OTLP_ENDPOINT = "http://127.0.0.1:4318";
+  }
+  return env;
 }
 
 function main() {

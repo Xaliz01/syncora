@@ -16,7 +16,12 @@ export class OrganizationMembershipDocument extends Document {
   role!: string;
 
   /** Aligné sur le cycle invitation / désactivation du rattachement org. */
-  @Prop({ required: true, enum: ["active", "invited", "disabled"], default: "active" })
+  @Prop({
+    type: String,
+    required: true,
+    enum: ["active", "invited", "disabled"],
+    default: "active",
+  })
   membershipStatus!: "active" | "invited" | "disabled";
 
   @Prop({ type: Date })

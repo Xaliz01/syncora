@@ -7,7 +7,7 @@ export class DataImportRunDocument extends Document {
   @Prop({ required: true, index: true })
   organizationId!: string;
 
-  @Prop({ required: true })
+  @Prop({ type: String, required: true })
   entity!: DataImportEntity;
 
   @Prop()
@@ -19,7 +19,7 @@ export class DataImportRunDocument extends Document {
   @Prop({ required: true })
   createdAt!: Date;
 
-  @Prop({ required: true, enum: ["completed", "rolled_back"] })
+  @Prop({ type: String, required: true, enum: ["completed", "rolled_back"] })
   status!: DataImportRunStatus;
 
   @Prop()
