@@ -1,13 +1,22 @@
-import { ExportsGatewayService } from "../exports.service";
-import { HttpService } from "@nestjs/axios";
-import { of } from "rxjs";
+import { BadRequestException } from "@nestjs/common";
 import type { AuthUser } from "@planwise/shared";
+import { ExportsGatewayService } from "../exports.service";
+import type { ExportsService } from "../exports/exports.service";
+import type { AbstractPermissionsService } from "../permissions/ports/permissions.service.port";
 
-describe("ExportsGatewayService (proxy)", () => {
-  let service: ExportsGatewayService;
-  let mockHttpService: jest.Mocked<HttpService>;
+describe("ExportsGatewayService", () => {
+  const exportsService = {
+    exportCaseSummaryPdf: jest.fn(),
+    exportCasesList: jest.fn(),
+    getReportingStats: jest.fn(),
+    exportDashboardTodoCases: jest.fn(),
+    previewReport: jest.fn(),
+  };
+  const permissions = {
+    getUserAssignment: jest.fn(),
+  };
 
-  const mockUser: AuthUser = {
+  const user: AuthUser = {
     id: "user-123",
     email: "admin@example.com",
     organizationId: "org-123",
@@ -17,120 +26,82 @@ describe("ExportsGatewayService (proxy)", () => {
     name: "Admin User",
   };
 
+  const service = new ExportsGatewayService(
+    exportsService as unknown as ExportsService,
+    permissions as unknown as AbstractPermissionsService,
+  );
+
   beforeEach(() => {
-    mockHttpService = {
-      get: jest.fn(),
-    } as unknown as jest.Mocked<HttpService>;
-
-    service = new ExportsGatewayService(mockHttpService);
+    jest.clearAllMocks();
   });
 
-  describe("exportCaseSummaryPdf", () => {
-    it("should proxy request to exports-service and return ExportResult", async () => {
-      const pdfBuffer = Buffer.from("fake-pdf-content");
-      mockHttpService.get.mockReturnValue(
-        of({
-          data: pdfBuffer,
-          headers: {
-            "content-type": "application/pdf",
-            "content-disposition": 'attachment; filename="dossier-test.pdf"',
-          },
-          status: 200,
-          statusText: "OK",
-          config: {} as never,
-        }) as never,
-      );
+  it("delegates a case PDF export to the domain service", async () => {
+    const result = {
+      buffer: Buffer.from("pdf"),
+      contentType: "application/pdf",
+      filename: "dossier-test.pdf",
+    };
+    exportsService.exportCaseSummaryPdf.mockResolvedValue(result);
 
-      const result = await service.exportCaseSummaryPdf(mockUser, "case-1");
+    await expect(service.exportCaseSummaryPdf(user, "case-1")).resolves.toBe(result);
+    expect(exportsService.exportCaseSummaryPdf).toHaveBeenCalledWith("org-123", "case-1");
+  });
 
-      expect(mockHttpService.get).toHaveBeenCalledWith(
-        expect.stringContaining("/exports/cases/case-1/pdf"),
-        expect.objectContaining({
-          params: { organizationId: "org-123" },
-          responseType: "arraybuffer",
-        }),
-      );
-      expect(result.contentType).toBe("application/pdf");
-      expect(result.filename).toBe("dossier-test.pdf");
-      expect(result.buffer).toBeInstanceOf(Buffer);
+  it("delegates a cases list export with filters", async () => {
+    exportsService.exportCasesList.mockResolvedValue({
+      buffer: Buffer.from("xlsx"),
+      contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      filename: "liste-dossiers.xlsx",
+    });
+
+    const result = await service.exportCasesList(user, "xlsx", {
+      status: "open",
+      billingStatus: "to_invoice",
+    });
+
+    expect(result.filename).toBe("liste-dossiers.xlsx");
+    expect(exportsService.exportCasesList).toHaveBeenCalledWith("org-123", "xlsx", {
+      status: "open",
+      billingStatus: "to_invoice",
     });
   });
 
-  describe("exportCasesList", () => {
-    it("should proxy with format and filters", async () => {
-      const xlsxBuffer = Buffer.from("fake-xlsx-content");
-      mockHttpService.get.mockReturnValue(
-        of({
-          data: xlsxBuffer,
-          headers: {
-            "content-type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            "content-disposition": 'attachment; filename="liste-dossiers.xlsx"',
-          },
-          status: 200,
-          statusText: "OK",
-          config: {} as never,
-        }) as never,
-      );
+  it("delegates reporting stats", async () => {
+    const stats = { casesTotal: 50 };
+    exportsService.getReportingStats.mockResolvedValue(stats);
 
-      const result = await service.exportCasesList(mockUser, "xlsx", {
-        status: "open",
-        billingStatus: "to_invoice",
-      });
-
-      expect(mockHttpService.get).toHaveBeenCalledWith(
-        expect.stringContaining("/exports/cases"),
-        expect.objectContaining({
-          params: expect.objectContaining({
-            organizationId: "org-123",
-            format: "xlsx",
-            status: "open",
-            billingStatus: "to_invoice",
-          }),
-        }),
-      );
-      expect(result.filename).toBe("liste-dossiers.xlsx");
+    await expect(
+      service.getReportingStats(user, { startDate: "2024-01-01", endDate: "2024-01-31" }),
+    ).resolves.toBe(stats);
+    expect(exportsService.getReportingStats).toHaveBeenCalledWith("org-123", {
+      startDate: "2024-01-01",
+      endDate: "2024-01-31",
     });
   });
 
-  describe("getReportingStats", () => {
-    it("should proxy reporting stats request", async () => {
-      const stats = {
-        casesTotal: 50,
-        casesCompleted: 20,
-        casesInProgress: 15,
-        casesOverdue: 5,
-        interventionsTotal: 100,
-        interventionsCompleted: 60,
-        avgCompletionDays: 3.2,
-        techniciansActive: 8,
-        customersTotal: 30,
-      };
-      mockHttpService.get.mockReturnValue(
-        of({
-          data: stats,
-          headers: {},
-          status: 200,
-          statusText: "OK",
-          config: {} as never,
-        }) as never,
-      );
-
-      const result = await service.getReportingStats(mockUser, {
-        startDate: "2024-01-01",
-        endDate: "2024-01-31",
-      });
-
-      expect(mockHttpService.get).toHaveBeenCalledWith(
-        expect.stringContaining("/exports/reporting/stats"),
-        expect.objectContaining({
-          params: {
-            organizationId: "org-123",
-            startDate: "2024-01-01",
-            endDate: "2024-01-31",
-          },
-        }),
-      );
-      expect(result).toEqual(stats);
+  it("passes the user permission profile when exporting dashboard todos", async () => {
+    permissions.getUserAssignment.mockResolvedValue({ profileId: "profile-1" });
+    exportsService.exportDashboardTodoCases.mockResolvedValue({
+      buffer: Buffer.from("csv"),
+      contentType: "text/csv",
+      filename: "taches.csv",
     });
+
+    await service.exportDashboardTodoCases(user, "csv", {
+      templateId: "tpl-1",
+      todoLabel: "Vérifier",
+    });
+
+    expect(exportsService.exportDashboardTodoCases).toHaveBeenCalledWith("org-123", "csv", {
+      userId: "user-123",
+      userProfileId: "profile-1",
+      templateId: "tpl-1",
+      todoLabel: "Vérifier",
+    });
+  });
+
+  it("rejects an unknown report type", async () => {
+    await expect(service.previewReport(user, "nope")).rejects.toBeInstanceOf(BadRequestException);
+    expect(exportsService.previewReport).not.toHaveBeenCalled();
   });
 });

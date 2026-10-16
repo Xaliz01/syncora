@@ -1,7 +1,4 @@
-import { Injectable, BadRequestException, ServiceUnavailableException } from "@nestjs/common";
-import { HttpService } from "@nestjs/axios";
-import { firstValueFrom } from "rxjs";
-import axios from "axios";
+import { BadRequestException, Injectable } from "@nestjs/common";
 import type {
   AuthUser,
   ExportFormat,
@@ -9,25 +6,26 @@ import type {
   ReportPreviewQuery,
   ReportPreviewResponse,
   ReportingStatsResponse,
-  UserPermissionAssignmentResponse,
 } from "@planwise/shared";
 import { isReportPreviewType } from "@planwise/shared";
 import { AbstractExportsGatewayService, type ExportResult } from "./ports/exports.service.port";
-import { SERVICE_URLS } from "../infrastructure/service-urls.config";
+import { ExportsService } from "./exports/exports.service";
+import { AbstractPermissionsService } from "./permissions/ports/permissions.service.port";
 
 @Injectable()
 export class ExportsGatewayService extends AbstractExportsGatewayService {
-  constructor(private readonly httpService: HttpService) {
+  constructor(
+    private readonly exportsService: ExportsService,
+    private readonly permissions: AbstractPermissionsService,
+  ) {
     super();
   }
 
-  async exportCaseSummaryPdf(user: AuthUser, caseId: string): Promise<ExportResult> {
-    return this.proxyExport(`${SERVICE_URLS.exports}/exports/cases/${caseId}/pdf`, {
-      organizationId: user.organizationId,
-    });
+  exportCaseSummaryPdf(user: AuthUser, caseId: string): Promise<ExportResult> {
+    return this.exportsService.exportCaseSummaryPdf(user.organizationId, caseId);
   }
 
-  async exportCasesList(
+  exportCasesList(
     user: AuthUser,
     format: ExportFormat,
     filters?: {
@@ -38,35 +36,26 @@ export class ExportsGatewayService extends AbstractExportsGatewayService {
       search?: string;
       startDate?: string;
       endDate?: string;
+      customerId?: string;
+      orderGiverId?: string;
     },
   ): Promise<ExportResult> {
-    return this.proxyExport(`${SERVICE_URLS.exports}/exports/cases`, {
-      organizationId: user.organizationId,
-      format,
-      ...this.cleanFilters(filters),
-    });
+    return this.exportsService.exportCasesList(user.organizationId, format, filters);
   }
 
-  async exportUsersList(user: AuthUser, format: ExportFormat): Promise<ExportResult> {
-    return this.proxyExport(`${SERVICE_URLS.exports}/exports/users`, {
-      organizationId: user.organizationId,
-      format,
-    });
+  exportUsersList(user: AuthUser, format: ExportFormat): Promise<ExportResult> {
+    return this.exportsService.exportUsersList(user.organizationId, format);
   }
 
-  async exportCustomersList(
+  exportCustomersList(
     user: AuthUser,
     format: ExportFormat,
     filters?: { search?: string; kind?: string },
   ): Promise<ExportResult> {
-    return this.proxyExport(`${SERVICE_URLS.exports}/exports/customers`, {
-      organizationId: user.organizationId,
-      format,
-      ...this.cleanFilters(filters),
-    });
+    return this.exportsService.exportCustomersList(user.organizationId, format, filters);
   }
 
-  async exportInterventionsList(
+  exportInterventionsList(
     user: AuthUser,
     format: ExportFormat,
     filters?: {
@@ -78,26 +67,18 @@ export class ExportsGatewayService extends AbstractExportsGatewayService {
       typeId?: string;
     },
   ): Promise<ExportResult> {
-    return this.proxyExport(`${SERVICE_URLS.exports}/exports/interventions`, {
-      organizationId: user.organizationId,
-      format,
-      ...this.cleanFilters(filters),
-    });
+    return this.exportsService.exportInterventionsList(user.organizationId, format, filters);
   }
 
-  async exportTechniciansActivity(
+  exportTechniciansActivity(
     user: AuthUser,
     format: ExportFormat,
     filters?: { startDate?: string; endDate?: string; technicianId?: string },
   ): Promise<ExportResult> {
-    return this.proxyExport(`${SERVICE_URLS.exports}/exports/technicians-activity`, {
-      organizationId: user.organizationId,
-      format,
-      ...this.cleanFilters(filters),
-    });
+    return this.exportsService.exportTechniciansActivity(user.organizationId, format, filters);
   }
 
-  async exportMileageReport(
+  exportMileageReport(
     user: AuthUser,
     format: ExportFormat,
     filters?: {
@@ -108,11 +89,7 @@ export class ExportsGatewayService extends AbstractExportsGatewayService {
       groupBy?: "team" | "technician";
     },
   ): Promise<ExportResult> {
-    return this.proxyExport(`${SERVICE_URLS.exports}/exports/mileage-report`, {
-      organizationId: user.organizationId,
-      format,
-      ...this.cleanFilters(filters),
-    });
+    return this.exportsService.exportMileageReport(user.organizationId, format, filters);
   }
 
   async exportDashboardTodoCases(
@@ -121,9 +98,7 @@ export class ExportsGatewayService extends AbstractExportsGatewayService {
     params: { templateId: string; todoLabel: string },
   ): Promise<ExportResult> {
     const userProfileId = await this.resolveUserProfileId(user);
-    return this.proxyExport(`${SERVICE_URLS.exports}/exports/dashboard-todo-cases`, {
-      organizationId: user.organizationId,
-      format,
+    return this.exportsService.exportDashboardTodoCases(user.organizationId, format, {
       userId: user.id,
       userProfileId,
       templateId: params.templateId,
@@ -131,30 +106,12 @@ export class ExportsGatewayService extends AbstractExportsGatewayService {
     });
   }
 
-  async exportInvoicesList(
+  exportInvoicesList(
     user: AuthUser,
     format: ExportFormat,
     filters?: ExportInvoicesListParams,
   ): Promise<ExportResult> {
-    return this.proxyExport(`${SERVICE_URLS.exports}/exports/invoices`, {
-      organizationId: user.organizationId,
-      format,
-      ...this.cleanFilters(filters as Record<string, string | undefined>),
-    });
-  }
-
-  private async resolveUserProfileId(user: AuthUser): Promise<string | undefined> {
-    try {
-      const res = await firstValueFrom(
-        this.httpService.get<UserPermissionAssignmentResponse>(
-          `${SERVICE_URLS.permissions}/assignments/${user.id}`,
-          { params: { organizationId: user.organizationId } },
-        ),
-      );
-      return res.data.profileId;
-    } catch {
-      return undefined;
-    }
+    return this.exportsService.exportInvoicesList(user.organizationId, format, filters);
   }
 
   async previewReport(
@@ -165,120 +122,22 @@ export class ExportsGatewayService extends AbstractExportsGatewayService {
     if (!isReportPreviewType(reportType)) {
       throw new BadRequestException(`Type de rapport inconnu : ${reportType}`);
     }
-    try {
-      const response = await firstValueFrom(
-        this.httpService.get<ReportPreviewResponse>(
-          `${SERVICE_URLS.exports}/exports/reporting/preview`,
-          {
-            params: {
-              organizationId: user.organizationId,
-              type: reportType,
-              ...this.cleanFilters(filters as Record<string, string | undefined>),
-            },
-            timeout: 60000,
-          },
-        ),
-      );
-      return response.data;
-    } catch (err) {
-      this.rethrowAsHttpException(err);
-    }
+    return this.exportsService.previewReport(user.organizationId, reportType, filters);
   }
 
-  async getReportingStats(
+  getReportingStats(
     user: AuthUser,
     filters?: { startDate?: string; endDate?: string },
   ): Promise<ReportingStatsResponse> {
-    try {
-      const response = await firstValueFrom(
-        this.httpService.get<ReportingStatsResponse>(
-          `${SERVICE_URLS.exports}/exports/reporting/stats`,
-          {
-            params: {
-              organizationId: user.organizationId,
-              ...this.cleanFilters(filters),
-            },
-          },
-        ),
-      );
-      return response.data;
-    } catch (err) {
-      this.rethrowAsHttpException(err);
-    }
+    return this.exportsService.getReportingStats(user.organizationId, filters);
   }
 
-  private async proxyExport(
-    url: string,
-    params: Record<string, string | undefined>,
-  ): Promise<ExportResult> {
+  private async resolveUserProfileId(user: AuthUser): Promise<string | undefined> {
     try {
-      const response = await firstValueFrom(
-        this.httpService.get(url, {
-          params: this.cleanFilters(params),
-          responseType: "arraybuffer",
-          timeout: 60000,
-        }),
-      );
-
-      const contentType =
-        (response.headers["content-type"] as string) ?? "application/octet-stream";
-      const disposition = (response.headers["content-disposition"] as string) ?? "";
-      const filenameMatch = disposition.match(/filename="?([^";\n]+)"?/);
-      const filename = filenameMatch?.[1] ?? "export";
-
-      return {
-        buffer: Buffer.from(response.data),
-        contentType,
-        filename,
-      };
-    } catch (err) {
-      this.rethrowAsHttpException(err);
-    }
-  }
-
-  private rethrowAsHttpException(err: unknown): never {
-    if (axios.isAxiosError(err)) {
-      if (!err.response) {
-        throw new ServiceUnavailableException(
-          "Service d’exports indisponible. Réessayez dans un instant.",
-        );
-      }
-      const status = err.response.status;
-      const data = this.parseAxiosErrorData(err.response.data);
-      const raw = data?.message;
-      const message = Array.isArray(raw)
-        ? raw.join(", ")
-        : (raw ?? "Erreur lors de la génération de l'export");
-      if (status === 400) throw new BadRequestException(message);
-      throw new ServiceUnavailableException(message);
-    }
-    throw err;
-  }
-
-  private parseAxiosErrorData(data: unknown): { message?: string | string[] } | undefined {
-    if (!data) return undefined;
-    if (typeof data === "object" && !(data instanceof ArrayBuffer) && !Buffer.isBuffer(data)) {
-      return data as { message?: string | string[] };
-    }
-    try {
-      const text =
-        typeof data === "string"
-          ? data
-          : Buffer.isBuffer(data)
-            ? data.toString("utf8")
-            : Buffer.from(data as ArrayBuffer).toString("utf8");
-      return JSON.parse(text) as { message?: string | string[] };
+      const assignment = await this.permissions.getUserAssignment(user.organizationId, user.id);
+      return assignment.profileId;
     } catch {
       return undefined;
     }
-  }
-
-  private cleanFilters(filters?: Record<string, string | undefined>): Record<string, string> {
-    if (!filters) return {};
-    const clean: Record<string, string> = {};
-    for (const [key, value] of Object.entries(filters)) {
-      if (value !== undefined && value !== "") clean[key] = value;
-    }
-    return clean;
   }
 }
