@@ -43,6 +43,7 @@ import { StockDomainModule } from "./stock-domain.module";
 import { BillingDomainModule } from "./billing-domain.module";
 import { SubscriptionsDomainModule } from "./subscriptions-domain.module";
 import { NotificationsDomainModule } from "./notifications-domain.module";
+import { NotificationSchedulersModule } from "./notification-schedulers.module";
 
 @Module({
   imports: [
@@ -81,6 +82,7 @@ import { NotificationsDomainModule } from "./notifications-domain.module";
     BillingDomainModule,
     SubscriptionsDomainModule,
     NotificationsDomainModule,
+    NotificationSchedulersModule,
     TrialTestDataModule,
     DataImportModule,
   ],

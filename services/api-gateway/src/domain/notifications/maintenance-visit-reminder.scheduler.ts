@@ -2,14 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
-import { HttpService } from "@nestjs/axios";
-import { firstValueFrom } from "rxjs";
-import type {
-  MaintenanceContractResponse,
-  NotificationPreferencesData,
-  OrganizationSubscriptionResponse,
-  UserResponse,
-} from "@planwise/shared";
+import type { MaintenanceContractResponse, NotificationPreferencesData } from "@planwise/shared";
 import {
   buildDefaultNotificationPreferences,
   getEnabledChannels,
@@ -20,7 +13,9 @@ import type { NotificationDocument } from "../../persistence/notifications/notif
 import { AbstractPushSubscriptionService } from "./ports/push-subscription.service.port";
 import { AbstractEmailService } from "./ports/email.service.port";
 import { CronRunRecorder } from "./cron-run.recorder";
-import { SERVICE_URLS } from "../../infrastructure/service-urls.config";
+import { MaintenanceContractsService } from "../cases/maintenance-contracts.service";
+import { AbstractUsersService } from "../users/ports/users.service.port";
+import { SubscriptionsService } from "../subscriptions/subscriptions.service";
 const JOB_KEY = "notifications.maintenance-visit-reminders";
 
 @Injectable()
@@ -34,7 +29,9 @@ export class MaintenanceVisitReminderScheduler {
     private readonly notificationModel: Model<NotificationDocument>,
     private readonly pushService: AbstractPushSubscriptionService,
     private readonly emailService: AbstractEmailService,
-    private readonly httpService: HttpService,
+    private readonly maintenanceContracts: MaintenanceContractsService,
+    private readonly users: AbstractUsersService,
+    private readonly subscriptions: SubscriptionsService,
     private readonly cronRunRecorder: CronRunRecorder,
   ) {}
 
@@ -162,68 +159,41 @@ export class MaintenanceVisitReminderScheduler {
     }
   }
 
-  // TODO: replace with direct cases domain service when consolidated
   private async fetchReminderCandidates(): Promise<MaintenanceContractResponse[]> {
     try {
-      const response = await firstValueFrom(
-        this.httpService.get<MaintenanceContractResponse[]>(
-          `${SERVICE_URLS.cases}/maintenance-contracts/reminder-candidates`,
-        ),
-      );
-      return Array.isArray(response.data) ? response.data : [];
+      return await this.maintenanceContracts.listReminderCandidates();
     } catch {
       this.logger.debug("Could not fetch maintenance reminder candidates");
       return [];
     }
   }
 
-  // TODO: replace with direct cases domain service when consolidated
   private async markReminded(organizationId: string, contractId: string): Promise<void> {
-    await firstValueFrom(
-      this.httpService.post(
-        `${SERVICE_URLS.cases}/maintenance-contracts/${contractId}/mark-reminded`,
-        {},
-        { params: { organizationId } },
-      ),
-    );
+    await this.maintenanceContracts.markReminded(organizationId, contractId);
   }
 
-  // TODO: replace with direct users domain service when consolidated
   private async getOrganizationUserIds(organizationId: string): Promise<string[]> {
     try {
-      const response = await firstValueFrom(
-        this.httpService.get<UserResponse[]>(`${SERVICE_URLS.users}/users`, {
-          params: { organizationId },
-        }),
-      );
-      return (response.data ?? []).map((u) => u.id).filter(Boolean);
+      const users = await this.users.listByOrganization(organizationId);
+      return users.map((u) => u.id).filter(Boolean);
     } catch {
       return [];
     }
   }
 
-  // TODO: replace with direct subscriptions domain service when consolidated
   private async organizationHasActiveSubscription(organizationId: string): Promise<boolean> {
     try {
-      const response = await firstValueFrom(
-        this.httpService.get<OrganizationSubscriptionResponse>(
-          `${SERVICE_URLS.subscriptions}/subscriptions/current`,
-          { params: { organizationId } },
-        ),
-      );
-      return response.data.hasAccess;
+      const subscription = await this.subscriptions.getByOrganization(organizationId);
+      return subscription.hasAccess;
     } catch {
       return false;
     }
   }
 
-  // TODO: replace with direct users domain service when consolidated
   private async resolveUserEmail(userId: string): Promise<string | null> {
     try {
-      const response = await firstValueFrom(
-        this.httpService.get<UserResponse>(`${SERVICE_URLS.users}/users/${userId}`),
-      );
-      return response.data.email ?? null;
+      const user = await this.users.findById(userId);
+      return user?.email ?? null;
     } catch {
       return null;
     }

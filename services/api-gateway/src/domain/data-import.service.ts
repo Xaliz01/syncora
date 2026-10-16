@@ -2,19 +2,14 @@ import { BadRequestException, Injectable, Logger, NotFoundException } from "@nes
 import type {
   AuthUser,
   DataImportBulkResult,
-  DataImportDeleteCreatedResult,
   DataImportEntity,
-  DataImportResolvedCustomerRef,
   DataImportRollbackResponse,
   DataImportRowError,
   DataImportRunListResponse,
   DataImportRunResponse,
-  DataImportRunSummary,
   DataImportSuggestMappingRequest,
   DataImportSuggestMappingResponse,
   DataImportValidateResponse,
-  TeamResponse,
-  UserResponse,
 } from "@planwise/shared";
 import {
   DATA_IMPORT_BATCH_SIZE,
@@ -22,9 +17,13 @@ import {
   isDataImportEntity,
 } from "@planwise/shared";
 import { AssistantLlmClient } from "../infrastructure/assistant/llm.client";
-import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
-import { SERVICE_URLS } from "../infrastructure/service-urls.config";
 import { AbstractDataImportService } from "./ports/data-import.service.port";
+import { AbstractCustomersDataImportService } from "./customers/ports/customers-data-import.service.port";
+import { AbstractStockDataImportService } from "./stock/ports/stock-data-import.service.port";
+import { AbstractCasesDataImportService } from "./cases/ports/cases-data-import.service.port";
+import { AbstractDataImportRunsService } from "./organizations/ports/data-import-runs.service.port";
+import { AbstractUsersService } from "./users/ports/users.service.port";
+import { AbstractTeamsService } from "./technicians/ports/teams.service.port";
 import {
   assertCsvLimits,
   mapArticleRows,
@@ -78,8 +77,13 @@ export class DataImportService extends AbstractDataImportService {
   private readonly logger = new Logger(DataImportService.name);
 
   constructor(
-    private readonly scopedHttp: OrganizationScopedHttpClient,
     private readonly llm: AssistantLlmClient,
+    private readonly customersImport: AbstractCustomersDataImportService,
+    private readonly stockImport: AbstractStockDataImportService,
+    private readonly casesImport: AbstractCasesDataImportService,
+    private readonly importRuns: AbstractDataImportRunsService,
+    private readonly users: AbstractUsersService,
+    private readonly teams: AbstractTeamsService,
   ) {
     super();
   }
@@ -202,9 +206,9 @@ export class DataImportService extends AbstractDataImportService {
 
     switch (entity) {
       case "customers":
-        result = await this.postImportBatched(orgId, SERVICE_URLS.customers, "/import/customers", {
-          rows: mapCustomerRows(rows),
-        });
+        result = await this.importBatched(mapCustomerRows(rows), (chunk) =>
+          this.customersImport.importCustomers({ organizationId: orgId, rows: chunk }),
+        );
         break;
       case "customer_sites": {
         const customerExternalIds = [
@@ -214,36 +218,29 @@ export class DataImportService extends AbstractDataImportService {
           orgId,
           customerExternalIds,
         );
-        result = await this.postImportBatched(
-          orgId,
-          SERVICE_URLS.customers,
-          "/import/customer-sites",
-          {
-            rows: mapCustomerSiteRows(rows),
+        result = await this.importBatched(mapCustomerSiteRows(rows), (chunk) =>
+          this.customersImport.importCustomerSites({
+            organizationId: orgId,
+            rows: chunk,
             customerIdByExternalId,
-          },
+          }),
         );
         break;
       }
       case "order_givers":
-        result = await this.postImportBatched(
-          orgId,
-          SERVICE_URLS.customers,
-          "/import/order-givers",
-          {
-            rows: mapOrderGiverRows(rows),
-          },
+        result = await this.importBatched(mapOrderGiverRows(rows), (chunk) =>
+          this.customersImport.importOrderGivers({ organizationId: orgId, rows: chunk }),
         );
         break;
       case "articles":
-        result = await this.postImportBatched(orgId, SERVICE_URLS.stock, "/import/articles", {
-          rows: mapArticleRows(rows),
-        });
+        result = await this.importBatched(mapArticleRows(rows), (chunk) =>
+          this.stockImport.importArticles({ organizationId: orgId, rows: chunk }),
+        );
         break;
       case "prestations":
-        result = await this.postImportBatched(orgId, SERVICE_URLS.stock, "/import/prestations", {
-          rows: mapPrestationRows(rows),
-        });
+        result = await this.importBatched(mapPrestationRows(rows), (chunk) =>
+          this.stockImport.importPrestations({ organizationId: orgId, rows: chunk }),
+        );
         break;
       case "cases": {
         const customerExternalIds = [
@@ -258,49 +255,40 @@ export class DataImportService extends AbstractDataImportService {
         const [customersResolved, orderGiverIdByExternalId, siteIdByExternalId] = await Promise.all(
           [
             this.resolveCustomers(orgId, customerExternalIds),
-            this.resolveIds(
-              orgId,
-              SERVICE_URLS.customers,
-              "/import/resolve/order-givers",
-              orderGiverExternalIds,
-            ),
-            this.resolveIds(
-              orgId,
-              SERVICE_URLS.customers,
-              "/import/resolve/customer-sites",
-              siteExternalIds,
-            ),
+            this.resolveOrderGiverIds(orgId, orderGiverExternalIds),
+            this.resolveSiteIds(orgId, siteExternalIds),
           ],
         );
-        result = await this.postImportBatched(orgId, SERVICE_URLS.cases, "/import/cases", {
-          rows: mapCaseRows(rows),
-          customerIdByExternalId: customersResolved.idByExternalId,
-          customerDisplayNameByExternalId: customersResolved.displayNameByExternalId,
-          orderGiverIdByExternalId,
-          siteIdByExternalId,
-        });
+        result = await this.importBatched(mapCaseRows(rows), (chunk) =>
+          this.casesImport.importCases({
+            organizationId: orgId,
+            rows: chunk,
+            customerIdByExternalId: customersResolved.idByExternalId,
+            customerDisplayNameByExternalId: customersResolved.displayNameByExternalId,
+            orderGiverIdByExternalId,
+            siteIdByExternalId,
+          }),
+        );
         break;
       }
       case "interventions": {
         const caseExternalIds = [
           ...new Set(rows.map((r) => r.caseExternalId).filter(Boolean)),
         ] as string[];
-        const caseIdByExternalId = await this.resolveIds(
-          orgId,
-          SERVICE_URLS.cases,
-          "/import/resolve/cases",
-          caseExternalIds,
-        );
+        const caseIdByExternalId = await this.resolveCaseIds(orgId, caseExternalIds);
         const [assigneeIdByEmail, teamIdByName] = await Promise.all([
           this.buildAssigneeEmailMap(orgId),
           this.buildTeamNameMap(orgId),
         ]);
-        result = await this.postImportBatched(orgId, SERVICE_URLS.cases, "/import/interventions", {
-          rows: mapInterventionRows(rows),
-          caseIdByExternalId,
-          assigneeIdByEmail,
-          teamIdByName,
-        });
+        result = await this.importBatched(mapInterventionRows(rows), (chunk) =>
+          this.casesImport.importInterventions({
+            organizationId: orgId,
+            rows: chunk,
+            caseIdByExternalId,
+            assigneeIdByEmail,
+            teamIdByName,
+          }),
+        );
         break;
       }
       default:
@@ -322,38 +310,19 @@ export class DataImportService extends AbstractDataImportService {
     user: AuthUser,
     opts?: { limit?: number; offset?: number },
   ): Promise<DataImportRunListResponse> {
-    return this.scopedHttp.request<DataImportRunListResponse>({
-      baseUrl: SERVICE_URLS.organizations,
-      organizationId: user.organizationId,
-      method: "get",
-      path: "/data-import-runs",
-      query: {
-        ...(opts?.limit != null ? { limit: opts.limit } : {}),
-        ...(opts?.offset != null ? { offset: opts.offset } : {}),
-      },
-      errorLabel: "List data import runs error",
-    });
+    return this.importRuns.list(user.organizationId, opts);
   }
 
   async rollbackRun(user: AuthUser, runId: string): Promise<DataImportRollbackResponse> {
     if (!runId?.trim()) throw new BadRequestException("runId requis");
-    const run = await this.scopedHttp.request<
-      DataImportRunSummary & { createdResourceIds: string[] }
-    >({
-      baseUrl: SERVICE_URLS.organizations,
-      organizationId: user.organizationId,
-      method: "get",
-      path: `/data-import-runs/${encodeURIComponent(runId.trim())}`,
-      query: { includeIds: "1" },
-      errorLabel: "Get data import run error",
-    });
+    const run = await this.importRuns.findByIdWithIds(user.organizationId, runId.trim());
     if (!run) throw new NotFoundException("Import introuvable");
     if (run.status === "rolled_back") {
       throw new BadRequestException("Cet import a déjà été annulé");
     }
     const ids = run.createdResourceIds ?? [];
     if (ids.length === 0) {
-      await this.markRunRolledBack(user.organizationId, run.id);
+      await this.importRuns.markRolledBack(user.organizationId, run.id);
       return {
         runId: run.id,
         entity: run.entity,
@@ -363,7 +332,7 @@ export class DataImportService extends AbstractDataImportService {
     }
 
     const deleted = await this.deleteCreatedResources(user.organizationId, run.entity, ids);
-    await this.markRunRolledBack(user.organizationId, run.id);
+    await this.importRuns.markRolledBack(user.organizationId, run.id);
     return {
       runId: run.id,
       entity: run.entity,
@@ -382,24 +351,18 @@ export class DataImportService extends AbstractDataImportService {
       .filter((m) => m.action === "created")
       .map((m) => m.id);
     try {
-      const saved = await this.scopedHttp.request<DataImportRunSummary>({
-        baseUrl: SERVICE_URLS.organizations,
+      const saved = await this.importRuns.create({
         organizationId: user.organizationId,
-        method: "post",
-        path: "/data-import-runs",
-        body: {
-          entity,
-          fileName: fileName || undefined,
-          createdByUserId: user.id,
-          stats: {
-            created: result.created,
-            updated: result.updated,
-            skipped: result.skipped,
-            errorCount: result.errors.filter((e) => e.severity === "error").length,
-          },
-          createdResourceIds,
+        entity,
+        fileName: fileName || undefined,
+        createdByUserId: user.id,
+        stats: {
+          created: result.created,
+          updated: result.updated,
+          skipped: result.skipped,
+          errorCount: result.errors.filter((e) => e.severity === "error").length,
         },
-        errorLabel: "Persist data import run error",
+        createdResourceIds,
       });
       return saved.id;
     } catch (err) {
@@ -410,57 +373,22 @@ export class DataImportService extends AbstractDataImportService {
     }
   }
 
-  private async markRunRolledBack(organizationId: string, runId: string) {
-    await this.scopedHttp.request({
-      baseUrl: SERVICE_URLS.organizations,
-      organizationId,
-      method: "patch",
-      path: `/data-import-runs/${encodeURIComponent(runId)}/rolled-back`,
-      body: {},
-      errorLabel: "Mark data import run rolled back error",
-    });
-  }
-
-  private deleteServiceForEntity(entity: DataImportEntity): string {
-    switch (entity) {
-      case "customers":
-      case "customer_sites":
-      case "order_givers":
-        return SERVICE_URLS.customers;
-      case "articles":
-      case "prestations":
-        return SERVICE_URLS.stock;
-      case "cases":
-      case "interventions":
-        return SERVICE_URLS.cases;
-      default:
-        throw new BadRequestException(`Entité inconnue : ${entity}`);
-    }
-  }
-
   private async deleteCreatedResources(
     organizationId: string,
     entity: DataImportEntity,
     ids: string[],
   ): Promise<number> {
-    const baseUrl = this.deleteServiceForEntity(entity);
     let deleted = 0;
     const chunkSize = 500;
     for (let i = 0; i < ids.length; i += chunkSize) {
       const chunk = ids.slice(i, i + chunkSize);
-      const res = await this.scopedHttp.request<DataImportDeleteCreatedResult>({
-        baseUrl,
-        organizationId,
-        method: "post",
-        path: "/import/delete-created",
-        body: {
-          entity,
-          ids: chunk,
-        },
-        validateResponseScope: false,
-        errorLabel: "Delete created import resources error",
-        axiosConfig: { timeout: 120_000 },
-      });
+      const body = { organizationId, entity, ids: chunk };
+      const res =
+        entity === "articles" || entity === "prestations"
+          ? await this.stockImport.deleteCreated(body)
+          : entity === "cases" || entity === "interventions"
+            ? await this.casesImport.deleteCreated(body)
+            : await this.customersImport.deleteCreated(body);
       deleted += res.deleted ?? 0;
     }
     return deleted;
@@ -482,44 +410,20 @@ export class DataImportService extends AbstractDataImportService {
     return { rows: parsed.rows, headerErrors, limitError };
   }
 
-  /** Envoie les lignes par lots pour rester sous la limite body Express (~100 Ko). */
-  private async postImportBatched(
-    organizationId: string,
-    baseUrl: string,
-    path: string,
-    body: { rows: unknown[] } & Record<string, unknown>,
+  /** Envoie les lignes par lots pour rester sous la limite d’un appel (même taille qu’avant). */
+  private async importBatched<TRow>(
+    rows: TRow[],
+    send: (chunk: TRow[]) => Promise<DataImportBulkResult>,
   ): Promise<DataImportBulkResult> {
-    const { rows, ...rest } = body;
     const merged = emptyBulk();
     const chunks = chunkArray(rows, DATA_IMPORT_BATCH_SIZE);
     for (let c = 0; c < chunks.length; c += 1) {
       const chunk = chunks[c]!;
       const rowOffset = c * DATA_IMPORT_BATCH_SIZE;
-      const part = await this.postImport(organizationId, baseUrl, path, {
-        ...rest,
-        rows: chunk,
-      });
+      const part = await send(chunk);
       mergeBulk(merged, part, rowOffset);
     }
     return merged;
-  }
-
-  private postImport(
-    organizationId: string,
-    baseUrl: string,
-    path: string,
-    body: Record<string, unknown>,
-  ): Promise<DataImportBulkResult> {
-    return this.scopedHttp.request<DataImportBulkResult>({
-      baseUrl,
-      organizationId,
-      method: "post",
-      path,
-      body,
-      errorLabel: `Import ${path} error`,
-      axiosConfig: { timeout: 120_000 },
-      validateResponseScope: false,
-    });
   }
 
   private async resolveCustomers(
@@ -536,15 +440,7 @@ export class DataImportService extends AbstractDataImportService {
     const idByExternalId: Record<string, string> = {};
     const displayNameByExternalId: Record<string, string> = {};
     for (const chunk of chunks) {
-      const part = await this.scopedHttp.request<Record<string, DataImportResolvedCustomerRef>>({
-        baseUrl: SERVICE_URLS.customers,
-        organizationId,
-        method: "post",
-        path: "/import/resolve/customers",
-        body: { externalIds: chunk },
-        errorLabel: "Resolve customers error",
-        validateResponseScope: false,
-      });
+      const part = await this.customersImport.resolveCustomerIds(organizationId, chunk);
       for (const [externalId, ref] of Object.entries(part ?? {})) {
         if (!ref?.id) continue;
         idByExternalId[externalId] = ref.id;
@@ -556,41 +452,39 @@ export class DataImportService extends AbstractDataImportService {
     return { idByExternalId, displayNameByExternalId };
   }
 
-  private resolveIds(
-    organizationId: string,
-    baseUrl: string,
-    path: string,
+  private resolveOrderGiverIds(organizationId: string, externalIds: string[]) {
+    return this.resolveIdMap(externalIds, (chunk) =>
+      this.customersImport.resolveOrderGiverIds(organizationId, chunk),
+    );
+  }
+
+  private resolveSiteIds(organizationId: string, externalIds: string[]) {
+    return this.resolveIdMap(externalIds, (chunk) =>
+      this.customersImport.resolveSiteIds(organizationId, chunk),
+    );
+  }
+
+  private resolveCaseIds(organizationId: string, externalIds: string[]) {
+    return this.resolveIdMap(externalIds, (chunk) =>
+      this.casesImport.resolveCaseIds(organizationId, chunk),
+    );
+  }
+
+  private async resolveIdMap(
     externalIds: string[],
+    resolve: (chunk: string[]) => Promise<Record<string, string>>,
   ): Promise<Record<string, string>> {
-    if (externalIds.length === 0) return Promise.resolve({});
-    // Résolution aussi par lots (5000 ids max côté import).
+    if (externalIds.length === 0) return {};
     const chunks = chunkArray(externalIds, 500);
-    return (async () => {
-      const map: Record<string, string> = {};
-      for (const chunk of chunks) {
-        const part = await this.scopedHttp.request<Record<string, string>>({
-          baseUrl,
-          organizationId,
-          method: "post",
-          path,
-          body: { externalIds: chunk },
-          errorLabel: `Resolve ${path} error`,
-          validateResponseScope: false,
-        });
-        Object.assign(map, part);
-      }
-      return map;
-    })();
+    const map: Record<string, string> = {};
+    for (const chunk of chunks) {
+      Object.assign(map, await resolve(chunk));
+    }
+    return map;
   }
 
   private async buildAssigneeEmailMap(organizationId: string): Promise<Record<string, string>> {
-    const users = await this.scopedHttp.request<UserResponse[]>({
-      baseUrl: SERVICE_URLS.users,
-      organizationId,
-      method: "get",
-      path: "/users",
-      errorLabel: "Users list error",
-    });
+    const users = await this.users.listByOrganization(organizationId);
     const map: Record<string, string> = {};
     for (const u of users) {
       if (u.email) map[u.email.trim().toLowerCase()] = u.id;
@@ -599,13 +493,7 @@ export class DataImportService extends AbstractDataImportService {
   }
 
   private async buildTeamNameMap(organizationId: string): Promise<Record<string, string>> {
-    const teams = await this.scopedHttp.request<TeamResponse[]>({
-      baseUrl: SERVICE_URLS.technicians,
-      organizationId,
-      method: "get",
-      path: "/teams",
-      errorLabel: "Teams list error",
-    });
+    const teams = await this.teams.listTeams(organizationId);
     const map: Record<string, string> = {};
     for (const t of teams) {
       if (t.name) map[t.name.trim().toLowerCase()] = t.id;

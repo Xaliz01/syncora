@@ -1,18 +1,23 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getModelToken } from "@nestjs/mongoose";
-import { HttpService } from "@nestjs/axios";
-import { of } from "rxjs";
 import { InterventionReminderScheduler } from "../intervention-reminder.scheduler";
 import { AbstractPushSubscriptionService } from "../ports/push-subscription.service.port";
 import { AbstractEmailService } from "../ports/email.service.port";
 import { CronRunRecorder } from "../cron-run.recorder";
+import { AbstractInterventionsService } from "../../cases/ports/interventions.service.port";
+import { AbstractTechniciansService } from "../../technicians/ports/technicians.service.port";
+import { AbstractUsersService } from "../../users/ports/users.service.port";
+import { SubscriptionsService } from "../../subscriptions/subscriptions.service";
 
 describe("InterventionReminderScheduler", () => {
   let scheduler: InterventionReminderScheduler;
   let mockPreferencesModel: { find: jest.Mock };
   let mockNotificationModel: { create: jest.Mock };
   let mockSentReminderModel: { findOne: jest.Mock; updateOne: jest.Mock };
-  let mockHttpService: { get: jest.Mock };
+  let mockInterventions: { listUpcomingInterventions: jest.Mock };
+  let mockTechnicians: { getTechnician: jest.Mock; findByUserId: jest.Mock };
+  let mockUsers: { findById: jest.Mock };
+  let mockSubscriptions: { getByOrganization: jest.Mock };
   let mockPushService: { sendPushToUser: jest.Mock };
   let mockEmailService: {
     sendNotificationEmail: jest.Mock;
@@ -35,7 +40,15 @@ describe("InterventionReminderScheduler", () => {
       }),
       updateOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue({}) }),
     };
-    mockHttpService = { get: jest.fn() };
+    mockInterventions = { listUpcomingInterventions: jest.fn().mockResolvedValue([]) };
+    mockTechnicians = {
+      getTechnician: jest.fn().mockRejectedValue(new Error("not a technician id")),
+      findByUserId: jest.fn().mockResolvedValue({ id: "tech-1", userId: "user-1" }),
+    };
+    mockUsers = {
+      findById: jest.fn().mockResolvedValue({ id: "user-1", email: "tech@example.com" }),
+    };
+    mockSubscriptions = { getByOrganization: jest.fn().mockResolvedValue({ hasAccess: true }) };
     mockPushService = { sendPushToUser: jest.fn().mockResolvedValue(undefined) };
     mockEmailService = {
       sendNotificationEmail: jest.fn().mockResolvedValue(undefined),
@@ -64,7 +77,10 @@ describe("InterventionReminderScheduler", () => {
         },
         { provide: AbstractPushSubscriptionService, useValue: mockPushService },
         { provide: AbstractEmailService, useValue: mockEmailService },
-        { provide: HttpService, useValue: mockHttpService },
+        { provide: AbstractInterventionsService, useValue: mockInterventions },
+        { provide: AbstractTechniciansService, useValue: mockTechnicians },
+        { provide: AbstractUsersService, useValue: mockUsers },
+        { provide: SubscriptionsService, useValue: mockSubscriptions },
         { provide: CronRunRecorder, useValue: mockCronRunRecorder },
       ],
     }).compile();
@@ -87,15 +103,8 @@ describe("InterventionReminderScheduler", () => {
       scheduledStart: futureDate(20),
     };
 
-    mockHttpService.get.mockImplementation((url: string) => {
-      if (url.includes("/subscriptions/current")) {
-        return of({ data: { hasAccess: true } });
-      }
-      if (url.includes("/upcoming")) {
-        return of({ data: [intervention] });
-      }
-      return of({ data: { email: "tech@example.com" } });
-    });
+    mockInterventions.listUpcomingInterventions.mockResolvedValue([intervention]);
+    mockSubscriptions.getByOrganization.mockResolvedValue({ hasAccess: true });
 
     await scheduler.checkUpcomingInterventions();
 
@@ -120,15 +129,8 @@ describe("InterventionReminderScheduler", () => {
       scheduledStart: futureDate(20),
     };
 
-    mockHttpService.get.mockImplementation((url: string) => {
-      if (url.includes("/subscriptions/current")) {
-        return of({ data: { hasAccess: false } });
-      }
-      if (url.includes("/upcoming")) {
-        return of({ data: [intervention] });
-      }
-      return of({ data: { email: "tech@example.com" } });
-    });
+    mockInterventions.listUpcomingInterventions.mockResolvedValue([intervention]);
+    mockSubscriptions.getByOrganization.mockResolvedValue({ hasAccess: false });
 
     await scheduler.checkUpcomingInterventions();
 
@@ -136,9 +138,7 @@ describe("InterventionReminderScheduler", () => {
   });
 
   it("should gracefully handle upstream fetch failure", async () => {
-    mockHttpService.get.mockImplementation(() => {
-      throw new Error("Network error");
-    });
+    mockInterventions.listUpcomingInterventions.mockRejectedValue(new Error("Network error"));
 
     await expect(scheduler.checkUpcomingInterventions()).resolves.toBeUndefined();
   });

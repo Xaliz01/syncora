@@ -2,14 +2,10 @@ import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
-import { HttpService } from "@nestjs/axios";
-import { firstValueFrom } from "rxjs";
 import type {
   InterventionResponse,
   NotificationPreferencesData,
-  OrganizationSubscriptionResponse,
   ReminderLeadTime,
-  UserResponse,
 } from "@planwise/shared";
 import {
   buildDefaultNotificationPreferences,
@@ -22,7 +18,10 @@ import type { SentReminderDocument } from "../../persistence/notifications/sent-
 import { AbstractPushSubscriptionService } from "./ports/push-subscription.service.port";
 import { AbstractEmailService } from "./ports/email.service.port";
 import { CronRunRecorder } from "./cron-run.recorder";
-import { SERVICE_URLS } from "../../infrastructure/service-urls.config";
+import { AbstractInterventionsService } from "../cases/ports/interventions.service.port";
+import { AbstractTechniciansService } from "../technicians/ports/technicians.service.port";
+import { AbstractUsersService } from "../users/ports/users.service.port";
+import { SubscriptionsService } from "../subscriptions/subscriptions.service";
 const JOB_KEY = "notifications.intervention-reminders";
 
 @Injectable()
@@ -38,7 +37,10 @@ export class InterventionReminderScheduler {
     private readonly sentReminderModel: Model<SentReminderDocument>,
     private readonly pushService: AbstractPushSubscriptionService,
     private readonly emailService: AbstractEmailService,
-    private readonly httpService: HttpService,
+    private readonly interventions: AbstractInterventionsService,
+    private readonly technicians: AbstractTechniciansService,
+    private readonly users: AbstractUsersService,
+    private readonly subscriptions: SubscriptionsService,
     private readonly cronRunRecorder: CronRunRecorder,
   ) {}
 
@@ -170,36 +172,20 @@ export class InterventionReminderScheduler {
     }
   }
 
-  // TODO: replace with direct technicians domain service when consolidated
   private async resolveNotificationUserId(
     organizationId: string,
     assigneeId: string,
   ): Promise<string | null> {
     try {
-      const response = await firstValueFrom(
-        this.httpService.get<{ id?: string; firstName?: string; userId?: string }>(
-          `${SERVICE_URLS.technicians}/technicians/${assigneeId}`,
-          { params: { organizationId } },
-        ),
-      );
-      if (
-        response.data &&
-        (response.data.firstName !== undefined || response.data.id === assigneeId)
-      ) {
-        return response.data.userId?.trim() || null;
-      }
+      const technician = await this.technicians.getTechnician(organizationId, assigneeId);
+      return technician.userId?.trim() || null;
     } catch {
       // assigneeId may be a legacy user id
     }
 
     try {
-      const response = await firstValueFrom(
-        this.httpService.get<{ id?: string } | null>(
-          `${SERVICE_URLS.technicians}/technicians/by-user/${assigneeId}`,
-          { params: { organizationId } },
-        ),
-      );
-      if (response.data) return assigneeId;
+      const byUser = await this.technicians.findByUserId(organizationId, assigneeId);
+      if (byUser) return assigneeId;
     } catch {
       // ignore
     }
@@ -233,16 +219,10 @@ export class InterventionReminderScheduler {
       .exec();
   }
 
-  // TODO: replace with direct subscriptions domain service when consolidated
   private async organizationHasActiveSubscription(organizationId: string): Promise<boolean> {
     try {
-      const response = await firstValueFrom(
-        this.httpService.get<OrganizationSubscriptionResponse>(
-          `${SERVICE_URLS.subscriptions}/subscriptions/current`,
-          { params: { organizationId } },
-        ),
-      );
-      return response.data.hasAccess;
+      const subscription = await this.subscriptions.getByOrganization(organizationId);
+      return subscription.hasAccess;
     } catch (err) {
       this.logger.debug(
         `Reminder skipped for organization ${organizationId} (subscription check failed)`,
@@ -252,19 +232,12 @@ export class InterventionReminderScheduler {
     }
   }
 
-  // TODO: replace with direct cases domain service when consolidated
   private async fetchUpcomingInterventions(
     from: string,
     to: string,
   ): Promise<InterventionResponse[]> {
     try {
-      const response = await firstValueFrom(
-        this.httpService.get<InterventionResponse[]>(
-          `${SERVICE_URLS.cases}/cases/interventions/upcoming`,
-          { params: { from, to } },
-        ),
-      );
-      return response.data;
+      return await this.interventions.listUpcomingInterventions(from, to);
     } catch {
       this.logger.debug("Could not fetch upcoming interventions");
       return [];
@@ -292,13 +265,10 @@ export class InterventionReminderScheduler {
     });
   }
 
-  // TODO: replace with direct users domain service when consolidated
   private async resolveUserEmail(userId: string): Promise<string | null> {
     try {
-      const response = await firstValueFrom(
-        this.httpService.get<UserResponse>(`${SERVICE_URLS.users}/users/${userId}`),
-      );
-      return response.data.email ?? null;
+      const user = await this.users.findById(userId);
+      return user?.email ?? null;
     } catch {
       return null;
     }

@@ -1,5 +1,4 @@
 import { Module } from "@nestjs/common";
-import { HttpModule } from "@nestjs/axios";
 import { MongooseModule } from "@nestjs/mongoose";
 import { NotificationSchema } from "../persistence/notifications/notification.schema";
 import { NotificationPreferencesSchema } from "../persistence/notifications/notification-preferences.schema";
@@ -15,12 +14,9 @@ import { PushSubscriptionService } from "../domain/notifications/push-subscripti
 import { AbstractEmailService } from "../domain/notifications/ports/email.service.port";
 import { EmailService } from "../domain/notifications/email.service";
 import { CronRunRecorder } from "../domain/notifications/cron-run.recorder";
-import { InterventionReminderScheduler } from "../domain/notifications/intervention-reminder.scheduler";
-import { MaintenanceVisitReminderScheduler } from "../domain/notifications/maintenance-visit-reminder.scheduler";
 
 @Module({
   imports: [
-    HttpModule.register({ timeout: 10000, maxRedirects: 0 }),
     MongooseModule.forFeature(
       [
         { name: "Notification", schema: NotificationSchema },
@@ -41,8 +37,6 @@ import { MaintenanceVisitReminderScheduler } from "../domain/notifications/maint
     { provide: AbstractPushSubscriptionService, useClass: PushSubscriptionService },
     { provide: AbstractEmailService, useClass: EmailService },
     CronRunRecorder,
-    InterventionReminderScheduler,
-    MaintenanceVisitReminderScheduler,
   ],
   exports: [
     AbstractNotificationsService,
