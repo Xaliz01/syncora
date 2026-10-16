@@ -1,80 +1,66 @@
 import { Injectable } from "@nestjs/common";
-import type { AuthUser, OrderGiverResponse, OrderGiversListResponse } from "@planwise/shared";
-import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
+import type { AuthUser, CreateOrderGiverBody, UpdateOrderGiverBody } from "@planwise/shared";
 import {
   AbstractOrderGiversGatewayService,
   type CreateOrderGiverForOrgBody,
   type UpdateOrderGiverForOrgBody,
 } from "./ports/order-givers.service.port";
-import { SERVICE_URLS } from "../infrastructure/service-urls.config";
+import { AbstractOrderGiversService } from "./customers/ports/order-givers.service.port";
+
+function parseIds(ids?: string): string[] | undefined {
+  if (!ids?.trim()) return undefined;
+  return ids
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
+}
 
 @Injectable()
 export class OrderGiversGatewayService extends AbstractOrderGiversGatewayService {
-  constructor(private readonly scopedHttp: OrganizationScopedHttpClient) {
+  constructor(private readonly orderGiversService: AbstractOrderGiversService) {
     super();
   }
 
   async createOrderGiver(user: AuthUser, body: CreateOrderGiverForOrgBody) {
-    return this.scopedHttp.request<OrderGiverResponse>({
-      baseUrl: SERVICE_URLS.customers,
+    return this.orderGiversService.createOrderGiver({
+      ...body,
       organizationId: user.organizationId,
-      method: "post",
-      path: "/order-givers",
-      body: { ...body },
-      errorLabel: "Order givers service error",
-    });
+    } as CreateOrderGiverBody);
   }
 
   async listOrderGivers(
     user: AuthUser,
     filters?: { search?: string; ids?: string; limit?: number; offset?: number },
   ) {
-    return this.scopedHttp.request<OrderGiversListResponse>({
-      baseUrl: SERVICE_URLS.customers,
-      organizationId: user.organizationId,
-      method: "get",
-      path: "/order-givers",
-      query: filters,
-      errorLabel: "Order givers service error",
+    return this.orderGiversService.listOrderGivers(user.organizationId, {
+      search: filters?.search,
+      ids: parseIds(filters?.ids),
+      limit: filters?.limit,
+      offset: filters?.offset,
     });
   }
 
   async listOrderGiversByIds(user: AuthUser, ids: string[]) {
     const unique = [...new Set(ids.map((id) => id.trim()).filter(Boolean))].slice(0, 100);
     if (unique.length === 0) return [];
-    const response = await this.listOrderGivers(user, { ids: unique.join(",") });
+    const response = await this.orderGiversService.listOrderGivers(user.organizationId, {
+      ids: unique,
+    });
     return response.orderGivers;
   }
 
   async getOrderGiver(user: AuthUser, orderGiverId: string) {
-    return this.scopedHttp.request<OrderGiverResponse>({
-      baseUrl: SERVICE_URLS.customers,
-      organizationId: user.organizationId,
-      method: "get",
-      path: `/order-givers/${orderGiverId}`,
-      errorLabel: "Order givers service error",
-    });
+    return this.orderGiversService.getOrderGiver(orderGiverId, user.organizationId);
   }
 
   async updateOrderGiver(user: AuthUser, orderGiverId: string, body: UpdateOrderGiverForOrgBody) {
-    return this.scopedHttp.request<OrderGiverResponse>({
-      baseUrl: SERVICE_URLS.customers,
+    return this.orderGiversService.updateOrderGiver(orderGiverId, {
+      ...body,
       organizationId: user.organizationId,
-      method: "patch",
-      path: `/order-givers/${orderGiverId}`,
-      body: { ...body },
-      errorLabel: "Order givers service error",
-    });
+    } as UpdateOrderGiverBody);
   }
 
   async deleteOrderGiver(user: AuthUser, orderGiverId: string) {
-    return this.scopedHttp.request<{ deleted: true }>({
-      baseUrl: SERVICE_URLS.customers,
-      organizationId: user.organizationId,
-      method: "delete",
-      path: `/order-givers/${orderGiverId}`,
-      validateResponseScope: false,
-      errorLabel: "Order givers service error",
-    });
+    return this.orderGiversService.deleteOrderGiver(orderGiverId, user.organizationId);
   }
 }

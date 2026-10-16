@@ -6,12 +6,14 @@ import { TechniciansGatewayService } from "../domain/technicians.service";
 import { RequirePermissionGuard } from "../infrastructure/require-permission.guard";
 import { SubscriptionsModule } from "./subscriptions.module";
 import { AdminModule } from "./admin.module";
+import { TechniciansDomainModule } from "./technicians-domain.module";
 
 @Module({
   imports: [
     HttpModule.register({ timeout: 5000, maxRedirects: 0 }),
     SubscriptionsModule,
     AdminModule,
+    TechniciansDomainModule,
   ],
   controllers: [TechniciansController],
   providers: [

@@ -1,5 +1,10 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import type { AuthUser, PermissionProfileResponse, UserResponse } from "@planwise/shared";
+import type {
+  AuthUser,
+  PermissionProfileResponse,
+  TechnicianResponse,
+  UserResponse,
+} from "@planwise/shared";
 import {
   TECHNICIAN_FIELD_DEFAULT_PERMISSIONS,
   TECHNICIAN_FIELD_PROFILE_NAME,
@@ -7,11 +12,15 @@ import {
 import { TechniciansGatewayService } from "../technicians.service";
 import { OrganizationScopedHttpClient } from "../../infrastructure/organization-scoped-http.client";
 import { AbstractAdminService } from "../ports/admin.service.port";
+import { AbstractTechniciansService } from "../technicians/ports/technicians.service.port";
 
 describe("TechniciansGatewayService", () => {
   let service: TechniciansGatewayService;
   const scopedRequest = jest.fn();
   const inviteUser = jest.fn();
+  const getTechnician = jest.fn();
+  const linkUserToTechnician = jest.fn();
+  const findByUserId = jest.fn();
 
   const admin: AuthUser = {
     id: "admin-1",
@@ -40,6 +49,15 @@ describe("TechniciansGatewayService", () => {
     permissions: [...TECHNICIAN_FIELD_DEFAULT_PERMISSIONS],
   };
 
+  const technician: TechnicianResponse = {
+    id: "t1",
+    organizationId: "org-1",
+    firstName: "Jean",
+    lastName: "Dupont",
+    email: "tech@test.fr",
+    status: "actif",
+  };
+
   beforeEach(async () => {
     jest.clearAllMocks();
 
@@ -53,6 +71,10 @@ describe("TechniciansGatewayService", () => {
         {
           provide: AbstractAdminService,
           useValue: { inviteUser },
+        },
+        {
+          provide: AbstractTechniciansService,
+          useValue: { getTechnician, linkUserToTechnician, findByUserId },
         },
       ],
     }).compile();
@@ -81,30 +103,13 @@ describe("TechniciansGatewayService", () => {
       emailSent: true,
     });
 
+    getTechnician.mockResolvedValue(technician);
+    linkUserToTechnician.mockResolvedValue({ ...technician, userId: invitedUser.id });
+    findByUserId.mockResolvedValue(null);
+
     scopedRequest.mockImplementation(async (options: { path?: string; method?: string }) => {
       if (options.path === "/profiles" && options.method === "get") {
         return [fieldProfile];
-      }
-      if (options.path === "/technicians/t1/link-user" && options.method === "put") {
-        return {
-          id: "t1",
-          userId: invitedUser.id,
-          organizationId: "org-1",
-          firstName: "Jean",
-          lastName: "Dupont",
-          email: "tech@test.fr",
-          status: "actif",
-        };
-      }
-      if (options.path === "/technicians/t1" && options.method === "get") {
-        return {
-          id: "t1",
-          organizationId: "org-1",
-          firstName: "Jean",
-          lastName: "Dupont",
-          email: "tech@test.fr",
-          status: "actif",
-        };
       }
       throw new Error(`Unexpected request: ${options.method} ${options.path}`);
     });
@@ -119,13 +124,7 @@ describe("TechniciansGatewayService", () => {
       role: "member",
       profileId: fieldProfile.id,
     });
-    expect(scopedRequest).toHaveBeenCalledWith(
-      expect.objectContaining({
-        path: "/technicians/t1/link-user",
-        method: "put",
-        body: { userId: invitedUser.id },
-      }),
-    );
+    expect(linkUserToTechnician).toHaveBeenCalledWith("org-1", "t1", invitedUser.id);
     expect(result).toEqual({
       technician: expect.objectContaining({
         id: "t1",
@@ -142,20 +141,9 @@ describe("TechniciansGatewayService", () => {
   });
 
   it("should enrich getTechnician with linked user even when primary org differs", async () => {
+    getTechnician.mockResolvedValue({ ...technician, userId: invitedUser.id });
     scopedRequest.mockImplementation(async (options: { path?: string; method?: string }) => {
-      if (options.path === "/technicians/t1" && options.method === "get") {
-        return {
-          id: "t1",
-          organizationId: "org-1",
-          firstName: "Jean",
-          lastName: "Dupont",
-          email: "tech@test.fr",
-          status: "actif",
-          userId: invitedUser.id,
-        };
-      }
       if (options.path === `/users/${invitedUser.id}` && options.method === "get") {
-        // Membership org-1 actif ; le document user peut avoir organizationId = org-2.
         return {
           ...invitedUser,
           organizationId: "org-1",
@@ -177,18 +165,8 @@ describe("TechniciansGatewayService", () => {
   });
 
   it("should enrich getTechnician with linked user membership status", async () => {
+    getTechnician.mockResolvedValue({ ...technician, userId: invitedUser.id });
     scopedRequest.mockImplementation(async (options: { path?: string; method?: string }) => {
-      if (options.path === "/technicians/t1" && options.method === "get") {
-        return {
-          id: "t1",
-          organizationId: "org-1",
-          firstName: "Jean",
-          lastName: "Dupont",
-          email: "tech@test.fr",
-          status: "actif",
-          userId: invitedUser.id,
-        };
-      }
       if (options.path === `/users/${invitedUser.id}` && options.method === "get") {
         return { ...invitedUser, organizationMembershipStatus: "invited" };
       }
@@ -212,18 +190,9 @@ describe("TechniciansGatewayService", () => {
       status: "active",
       organizationMembershipStatus: "active",
     };
+    linkUserToTechnician.mockResolvedValue({ ...technician, userId: activeUser.id });
 
     scopedRequest.mockImplementation(async (options: { path?: string; method?: string }) => {
-      if (options.path === "/technicians/t1" && options.method === "get") {
-        return {
-          id: "t1",
-          organizationId: "org-1",
-          firstName: "Jean",
-          lastName: "Dupont",
-          email: "tech@test.fr",
-          status: "actif",
-        };
-      }
       if (options.path === `/users/${activeUser.id}` && options.method === "get") {
         return activeUser;
       }
@@ -241,25 +210,13 @@ describe("TechniciansGatewayService", () => {
           },
         ];
       }
-      if (options.path === `/technicians/by-user/${activeUser.id}` && options.method === "get") {
-        return null;
-      }
-      if (options.path === "/technicians/t1/link-user" && options.method === "put") {
-        return {
-          id: "t1",
-          organizationId: "org-1",
-          firstName: "Jean",
-          lastName: "Dupont",
-          email: "tech@test.fr",
-          status: "actif",
-          userId: activeUser.id,
-        };
-      }
       throw new Error(`Unexpected request: ${options.method} ${options.path}`);
     });
 
     const result = await service.linkTechnicianUser(admin, "t1", activeUser.id);
 
+    expect(findByUserId).toHaveBeenCalledWith("org-1", activeUser.id);
+    expect(linkUserToTechnician).toHaveBeenCalledWith("org-1", "t1", activeUser.id);
     expect(result).toEqual(
       expect.objectContaining({
         userId: activeUser.id,
@@ -275,19 +232,6 @@ describe("TechniciansGatewayService", () => {
     scopedRequest.mockImplementation(async (options: { path?: string; method?: string }) => {
       if (options.path === "/profiles" && options.method === "get") return [];
       if (options.path === "/profiles" && options.method === "post") return fieldProfile;
-      if (options.path === "/technicians/t1") {
-        return {
-          id: "t1",
-          organizationId: "org-1",
-          firstName: "Jean",
-          lastName: "Dupont",
-          email: "tech@test.fr",
-          status: "actif",
-        };
-      }
-      if (options.path === "/technicians/t1/link-user") {
-        return { id: "t1", userId: invitedUser.id, organizationId: "org-1" };
-      }
       throw new Error(`Unexpected request: ${options.method} ${options.path}`);
     });
 

@@ -1,27 +1,17 @@
 import { Injectable } from "@nestjs/common";
 import type {
   AddInterventionArticleUsageBody,
-  ArticleResponse,
-  ArticlesListResponse,
   AuthUser,
   CreateArticleBody,
   CreateArticleMovementBody,
   CreatePrestationBody,
   CreateStockLocationBody,
   CreateStockTransferBody,
-  InterventionArticleUsageResponse,
-  InterventionPrestationUsageResponse,
-  InterventionPrestationUsagesListResponse,
-  PrestationResponse,
-  PrestationsListResponse,
   SetInterventionPrestationUsagesBody,
-  StockLocationResponse,
-  StockMovementResponse,
   UpdateArticleBody,
   UpdatePrestationBody,
   UpdateStockLocationBody,
 } from "@planwise/shared";
-import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
 import {
   AbstractStockGatewayService,
   type AddInterventionArticleUsageForOrgBody,
@@ -35,35 +25,27 @@ import {
   type UpdatePrestationForOrgBody,
   type UpdateStockLocationForOrgBody,
 } from "./ports/stock.service.port";
-import { SERVICE_URLS } from "../infrastructure/service-urls.config";
+import { AbstractArticleStockService } from "./stock/ports/article-stock.service.port";
+import { AbstractPrestationService } from "./stock/ports/prestation.service.port";
+import { AbstractStockLocationService } from "./stock/ports/stock-location.service.port";
+import { AbstractInterventionPrestationUsageService } from "./stock/ports/intervention-prestation-usage.service.port";
 
 @Injectable()
 export class StockGatewayService extends AbstractStockGatewayService {
-  constructor(private readonly scopedHttp: OrganizationScopedHttpClient) {
+  constructor(
+    private readonly articles: AbstractArticleStockService,
+    private readonly prestations: AbstractPrestationService,
+    private readonly locations: AbstractStockLocationService,
+    private readonly prestationUsages: AbstractInterventionPrestationUsageService,
+  ) {
     super();
   }
 
-  private request<T>(
-    user: AuthUser,
-    params: Omit<
-      Parameters<OrganizationScopedHttpClient["request"]>[0],
-      "baseUrl" | "organizationId" | "errorLabel"
-    >,
-  ) {
-    return this.scopedHttp.request<T>({
-      ...params,
-      baseUrl: SERVICE_URLS.stock,
-      organizationId: user.organizationId,
-      errorLabel: "Downstream service error",
-    });
-  }
-
   async createArticle(user: AuthUser, body: CreateArticleForOrgBody) {
-    return this.request<ArticleResponse>(user, {
-      method: "post",
-      path: "/articles",
-      body: { ...body } as CreateArticleBody,
-    });
+    return this.articles.createArticle({
+      ...body,
+      organizationId: user.organizationId,
+    } as CreateArticleBody);
   }
 
   async listArticles(
@@ -77,42 +59,29 @@ export class StockGatewayService extends AbstractStockGatewayService {
       offset?: number;
     },
   ) {
-    return this.request<ArticlesListResponse>(user, {
-      method: "get",
-      path: "/articles",
-      query: filters,
-    });
+    return this.articles.listArticles(user.organizationId, filters);
   }
 
   async getArticle(user: AuthUser, articleId: string) {
-    return this.request<ArticleResponse>(user, {
-      method: "get",
-      path: `/articles/${articleId}`,
-    });
+    return this.articles.getArticle(articleId, user.organizationId);
   }
 
   async updateArticle(user: AuthUser, articleId: string, body: UpdateArticleForOrgBody) {
-    return this.request<ArticleResponse>(user, {
-      method: "patch",
-      path: `/articles/${articleId}`,
-      body: { ...body } as UpdateArticleBody,
-    });
+    return this.articles.updateArticle(articleId, {
+      ...body,
+      organizationId: user.organizationId,
+    } as UpdateArticleBody);
   }
 
   async deleteArticle(user: AuthUser, articleId: string) {
-    return this.request<{ deleted: true }>(user, {
-      method: "delete",
-      path: `/articles/${articleId}`,
-      validateResponseScope: false,
-    });
+    return this.articles.deleteArticle(articleId, user.organizationId);
   }
 
   async createPrestation(user: AuthUser, body: CreatePrestationForOrgBody) {
-    return this.request<PrestationResponse>(user, {
-      method: "post",
-      path: "/prestations",
-      body: { ...body } as CreatePrestationBody,
-    });
+    return this.prestations.createPrestation({
+      ...body,
+      organizationId: user.organizationId,
+    } as CreatePrestationBody);
   }
 
   async listPrestations(
@@ -124,46 +93,31 @@ export class StockGatewayService extends AbstractStockGatewayService {
       offset?: number;
     },
   ) {
-    return this.request<PrestationsListResponse>(user, {
-      method: "get",
-      path: "/prestations",
-      query: filters,
-    });
+    return this.prestations.listPrestations(user.organizationId, filters);
   }
 
   async getPrestation(user: AuthUser, prestationId: string) {
-    return this.request<PrestationResponse>(user, {
-      method: "get",
-      path: `/prestations/${prestationId}`,
-    });
+    return this.prestations.getPrestation(prestationId, user.organizationId);
   }
 
   async updatePrestation(user: AuthUser, prestationId: string, body: UpdatePrestationForOrgBody) {
-    return this.request<PrestationResponse>(user, {
-      method: "patch",
-      path: `/prestations/${prestationId}`,
-      body: { ...body } as UpdatePrestationBody,
-    });
+    return this.prestations.updatePrestation(prestationId, {
+      ...body,
+      organizationId: user.organizationId,
+    } as UpdatePrestationBody);
   }
 
   async deletePrestation(user: AuthUser, prestationId: string) {
-    return this.request<{ deleted: true }>(user, {
-      method: "delete",
-      path: `/prestations/${prestationId}`,
-      validateResponseScope: false,
-    });
+    return this.prestations.deletePrestation(prestationId, user.organizationId);
   }
 
   async createArticleMovement(user: AuthUser, body: CreateArticleMovementForOrgBody) {
-    return this.request<StockMovementResponse>(user, {
-      method: "post",
-      path: "/movements",
-      body: {
-        actorUserId: user.id,
-        actorUserName: user.name,
-        ...body,
-      } as CreateArticleMovementBody,
-    });
+    return this.articles.createArticleMovement({
+      actorUserId: user.id,
+      actorUserName: user.name,
+      ...body,
+      organizationId: user.organizationId,
+    } as CreateArticleMovementBody);
   }
 
   async listArticleMovements(
@@ -176,11 +130,7 @@ export class StockGatewayService extends AbstractStockGatewayService {
       limit?: number;
     },
   ) {
-    return this.request<StockMovementResponse[]>(user, {
-      method: "get",
-      path: "/movements",
-      query: filters,
-    });
+    return this.articles.listArticleMovements(user.organizationId, filters);
   }
 
   async addInterventionArticleUsage(
@@ -188,29 +138,20 @@ export class StockGatewayService extends AbstractStockGatewayService {
     interventionId: string,
     body: AddInterventionArticleUsageForOrgBody,
   ) {
-    return this.request<StockMovementResponse>(user, {
-      method: "post",
-      path: `/interventions/${interventionId}/articles`,
-      body: {
-        actorUserId: user.id,
-        actorUserName: user.name,
-        ...body,
-      } as AddInterventionArticleUsageBody,
-    });
+    return this.articles.addInterventionArticleUsage(interventionId, {
+      actorUserId: user.id,
+      actorUserName: user.name,
+      ...body,
+      organizationId: user.organizationId,
+    } as AddInterventionArticleUsageBody);
   }
 
   async getInterventionUsage(user: AuthUser, interventionId: string) {
-    return this.request<InterventionArticleUsageResponse[]>(user, {
-      method: "get",
-      path: `/interventions/${interventionId}/usage`,
-    });
+    return this.articles.getInterventionUsage(user.organizationId, interventionId);
   }
 
   async listInterventionPrestationUsages(user: AuthUser, interventionId: string) {
-    return this.request<InterventionPrestationUsagesListResponse>(user, {
-      method: "get",
-      path: `/interventions/${interventionId}/prestations`,
-    });
+    return this.prestationUsages.listByIntervention(user.organizationId, interventionId);
   }
 
   async setInterventionPrestationUsages(
@@ -218,41 +159,29 @@ export class StockGatewayService extends AbstractStockGatewayService {
     interventionId: string,
     body: SetInterventionPrestationUsagesForOrgBody,
   ) {
-    return this.request<InterventionPrestationUsageResponse[]>(user, {
-      method: "put",
-      path: `/interventions/${interventionId}/prestations`,
-      body: { ...body } as SetInterventionPrestationUsagesBody,
-    });
+    return this.prestationUsages.replaceUsages(interventionId, {
+      ...body,
+      organizationId: user.organizationId,
+    } as SetInterventionPrestationUsagesBody);
   }
 
   async listCaseInterventionPrestationUsages(user: AuthUser, caseId: string) {
-    return this.request<InterventionPrestationUsagesListResponse>(user, {
-      method: "get",
-      path: "/intervention-prestation-usages",
-      query: { caseId },
-    });
+    return this.prestationUsages.listByCase(user.organizationId, caseId);
   }
 
   async createStockLocation(user: AuthUser, body: CreateStockLocationForOrgBody) {
-    return this.request<StockLocationResponse>(user, {
-      method: "post",
-      path: "/locations",
-      body: { ...body } as CreateStockLocationBody,
-    });
+    return this.locations.createStockLocation({
+      ...body,
+      organizationId: user.organizationId,
+    } as CreateStockLocationBody);
   }
 
   async listStockLocations(user: AuthUser) {
-    return this.request<StockLocationResponse[]>(user, {
-      method: "get",
-      path: "/locations",
-    });
+    return this.locations.listStockLocations(user.organizationId);
   }
 
   async getStockLocation(user: AuthUser, locationId: string) {
-    return this.request<StockLocationResponse>(user, {
-      method: "get",
-      path: `/locations/${locationId}`,
-    });
+    return this.locations.getStockLocation(locationId, user.organizationId);
   }
 
   async updateStockLocation(
@@ -260,30 +189,22 @@ export class StockGatewayService extends AbstractStockGatewayService {
     locationId: string,
     body: UpdateStockLocationForOrgBody,
   ) {
-    return this.request<StockLocationResponse>(user, {
-      method: "patch",
-      path: `/locations/${locationId}`,
-      body: { ...body } as UpdateStockLocationBody,
-    });
+    return this.locations.updateStockLocation(locationId, {
+      ...body,
+      organizationId: user.organizationId,
+    } as UpdateStockLocationBody);
   }
 
   async deleteStockLocation(user: AuthUser, locationId: string) {
-    return this.request<{ deleted: true }>(user, {
-      method: "delete",
-      path: `/locations/${locationId}`,
-      validateResponseScope: false,
-    });
+    return this.locations.deleteStockLocation(locationId, user.organizationId);
   }
 
   async createStockTransfer(user: AuthUser, body: CreateStockTransferForOrgBody) {
-    return this.request<StockMovementResponse>(user, {
-      method: "post",
-      path: "/transfers",
-      body: {
-        actorUserId: user.id,
-        actorUserName: user.name,
-        ...body,
-      } as CreateStockTransferBody,
-    });
+    return this.articles.createStockTransfer({
+      actorUserId: user.id,
+      actorUserName: user.name,
+      ...body,
+      organizationId: user.organizationId,
+    } as CreateStockTransferBody);
   }
 }

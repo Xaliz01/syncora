@@ -1,11 +1,11 @@
 import { Module } from "@nestjs/common";
-import { HttpModule } from "@nestjs/axios";
 import { TeamsGatewayController } from "../presentation/http/teams.controller";
 import { AbstractTeamsGatewayService } from "../domain/ports/teams.service.port";
 import { TeamsGatewayService } from "../domain/teams.service";
+import { TechniciansDomainModule } from "./technicians-domain.module";
 
 @Module({
-  imports: [HttpModule.register({ timeout: 5000, maxRedirects: 0 })],
+  imports: [TechniciansDomainModule],
   controllers: [TeamsGatewayController],
   providers: [{ provide: AbstractTeamsGatewayService, useClass: TeamsGatewayService }],
 })

@@ -1,11 +1,11 @@
 import { Module } from "@nestjs/common";
-import { HttpModule } from "@nestjs/axios";
 import { AgencesGatewayController } from "../presentation/http/agences.controller";
 import { AbstractAgencesGatewayService } from "../domain/ports/agences.service.port";
 import { AgencesGatewayService } from "../domain/agences.service";
+import { TechniciansDomainModule } from "./technicians-domain.module";
 
 @Module({
-  imports: [HttpModule.register({ timeout: 5000, maxRedirects: 0 })],
+  imports: [TechniciansDomainModule],
   controllers: [AgencesGatewayController],
   providers: [{ provide: AbstractAgencesGatewayService, useClass: AgencesGatewayService }],
 })

@@ -6,29 +6,13 @@ import type {
   TeamStatus,
   UpdateTeamBody,
 } from "@planwise/shared";
-import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
 import { AbstractTeamsGatewayService } from "./ports/teams.service.port";
-import { SERVICE_URLS } from "../infrastructure/service-urls.config";
+import { AbstractTeamsService } from "./technicians/ports/teams.service.port";
 
 @Injectable()
 export class TeamsGatewayService extends AbstractTeamsGatewayService {
-  constructor(private readonly scopedHttp: OrganizationScopedHttpClient) {
+  constructor(private readonly teamsService: AbstractTeamsService) {
     super();
-  }
-
-  private request<T>(
-    user: AuthUser,
-    params: Omit<
-      Parameters<OrganizationScopedHttpClient["request"]>[0],
-      "baseUrl" | "organizationId" | "errorLabel"
-    >,
-  ) {
-    return this.scopedHttp.request<T>({
-      ...params,
-      baseUrl: SERVICE_URLS.technicians,
-      organizationId: user.organizationId,
-      errorLabel: "Downstream service error",
-    });
   }
 
   async createTeam(
@@ -41,25 +25,18 @@ export class TeamsGatewayService extends AbstractTeamsGatewayService {
       calendarColor?: string;
     },
   ): Promise<TeamResponse> {
-    return this.request<TeamResponse>(currentUser, {
-      method: "post",
-      path: "/teams",
-      body: { ...body } as CreateTeamBody,
-    });
+    return this.teamsService.createTeam({
+      ...body,
+      organizationId: currentUser.organizationId,
+    } as CreateTeamBody);
   }
 
   async listTeams(currentUser: AuthUser): Promise<TeamResponse[]> {
-    return this.request<TeamResponse[]>(currentUser, {
-      method: "get",
-      path: "/teams",
-    });
+    return this.teamsService.listTeams(currentUser.organizationId);
   }
 
   async getTeam(currentUser: AuthUser, teamId: string): Promise<TeamResponse> {
-    return this.request<TeamResponse>(currentUser, {
-      method: "get",
-      path: `/teams/${teamId}`,
-    });
+    return this.teamsService.getTeam(currentUser.organizationId, teamId);
   }
 
   async updateTeam(
@@ -67,19 +44,11 @@ export class TeamsGatewayService extends AbstractTeamsGatewayService {
     teamId: string,
     body: UpdateTeamBody,
   ): Promise<TeamResponse> {
-    return this.request<TeamResponse>(currentUser, {
-      method: "patch",
-      path: `/teams/${teamId}`,
-      body,
-    });
+    return this.teamsService.updateTeam(currentUser.organizationId, teamId, body);
   }
 
   async deleteTeam(currentUser: AuthUser, teamId: string): Promise<{ deleted: true }> {
-    return this.request<{ deleted: true }>(currentUser, {
-      method: "delete",
-      path: `/teams/${teamId}`,
-      validateResponseScope: false,
-    });
+    return this.teamsService.deleteTeam(currentUser.organizationId, teamId);
   }
 
   async addMember(
@@ -87,10 +56,7 @@ export class TeamsGatewayService extends AbstractTeamsGatewayService {
     teamId: string,
     technicianId: string,
   ): Promise<TeamResponse> {
-    return this.request<TeamResponse>(currentUser, {
-      method: "put",
-      path: `/teams/${teamId}/members/${technicianId}`,
-    });
+    return this.teamsService.addMember(currentUser.organizationId, teamId, technicianId);
   }
 
   async removeMember(
@@ -98,9 +64,6 @@ export class TeamsGatewayService extends AbstractTeamsGatewayService {
     teamId: string,
     technicianId: string,
   ): Promise<TeamResponse> {
-    return this.request<TeamResponse>(currentUser, {
-      method: "delete",
-      path: `/teams/${teamId}/members/${technicianId}`,
-    });
+    return this.teamsService.removeMember(currentUser.organizationId, teamId, technicianId);
   }
 }

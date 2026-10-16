@@ -5,29 +5,13 @@ import type {
   CreateAgenceBody,
   UpdateAgenceBody,
 } from "@planwise/shared";
-import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
 import { AbstractAgencesGatewayService } from "./ports/agences.service.port";
-import { SERVICE_URLS } from "../infrastructure/service-urls.config";
+import { AbstractAgencesService } from "./technicians/ports/agences.service.port";
 
 @Injectable()
 export class AgencesGatewayService extends AbstractAgencesGatewayService {
-  constructor(private readonly scopedHttp: OrganizationScopedHttpClient) {
+  constructor(private readonly agencesService: AbstractAgencesService) {
     super();
-  }
-
-  private request<T>(
-    user: AuthUser,
-    params: Omit<
-      Parameters<OrganizationScopedHttpClient["request"]>[0],
-      "baseUrl" | "organizationId" | "errorLabel"
-    >,
-  ) {
-    return this.scopedHttp.request<T>({
-      ...params,
-      baseUrl: SERVICE_URLS.technicians,
-      organizationId: user.organizationId,
-      errorLabel: "Downstream service error",
-    });
   }
 
   async createAgence(
@@ -40,25 +24,18 @@ export class AgencesGatewayService extends AbstractAgencesGatewayService {
       phone?: string;
     },
   ): Promise<AgenceResponse> {
-    return this.request<AgenceResponse>(currentUser, {
-      method: "post",
-      path: "/agences",
-      body: { ...body } as CreateAgenceBody,
-    });
+    return this.agencesService.createAgence({
+      ...body,
+      organizationId: currentUser.organizationId,
+    } as CreateAgenceBody);
   }
 
   async listAgences(currentUser: AuthUser): Promise<AgenceResponse[]> {
-    return this.request<AgenceResponse[]>(currentUser, {
-      method: "get",
-      path: "/agences",
-    });
+    return this.agencesService.listAgences(currentUser.organizationId);
   }
 
   async getAgence(currentUser: AuthUser, agenceId: string): Promise<AgenceResponse> {
-    return this.request<AgenceResponse>(currentUser, {
-      method: "get",
-      path: `/agences/${agenceId}`,
-    });
+    return this.agencesService.getAgence(currentUser.organizationId, agenceId);
   }
 
   async updateAgence(
@@ -66,18 +43,10 @@ export class AgencesGatewayService extends AbstractAgencesGatewayService {
     agenceId: string,
     body: UpdateAgenceBody,
   ): Promise<AgenceResponse> {
-    return this.request<AgenceResponse>(currentUser, {
-      method: "patch",
-      path: `/agences/${agenceId}`,
-      body,
-    });
+    return this.agencesService.updateAgence(currentUser.organizationId, agenceId, body);
   }
 
   async deleteAgence(currentUser: AuthUser, agenceId: string): Promise<{ deleted: true }> {
-    return this.request<{ deleted: true }>(currentUser, {
-      method: "delete",
-      path: `/agences/${agenceId}`,
-      validateResponseScope: false,
-    });
+    return this.agencesService.deleteAgence(currentUser.organizationId, agenceId);
   }
 }

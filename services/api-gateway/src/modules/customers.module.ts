@@ -4,9 +4,10 @@ import { AbstractCustomersGatewayService } from "../domain/ports/customers.servi
 import { CustomersGatewayService } from "../domain/customers.gateway.service";
 import { RequirePermissionGuard } from "../infrastructure/require-permission.guard";
 import { SubscriptionsModule } from "./subscriptions.module";
+import { CustomersDomainModule } from "./customers-domain.module";
 
 @Module({
-  imports: [SubscriptionsModule],
+  imports: [SubscriptionsModule, CustomersDomainModule],
   controllers: [CustomersController],
   providers: [
     { provide: AbstractCustomersGatewayService, useClass: CustomersGatewayService },

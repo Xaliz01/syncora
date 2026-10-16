@@ -1,12 +1,13 @@
 import { Injectable } from "@nestjs/common";
-import type { AuthUser } from "@planwise/shared";
 import type {
-  CustomerContactResponse,
-  CustomerResponse,
-  CustomerSiteResponse,
-  CustomersListResponse,
+  AuthUser,
+  CreateCustomerBody,
+  CreateCustomerContactBody,
+  CreateCustomerSiteBody,
+  UpdateCustomerBody,
+  UpdateCustomerContactBody,
+  UpdateCustomerSiteBody,
 } from "@planwise/shared";
-import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
 import {
   AbstractCustomersGatewayService,
   type CreateCustomerContactForOrgBody,
@@ -16,90 +17,70 @@ import {
   type UpdateCustomerForOrgBody,
   type UpdateCustomerSiteForOrgBody,
 } from "./ports/customers.service.port";
-import { SERVICE_URLS } from "../infrastructure/service-urls.config";
+import { AbstractCustomersService } from "./customers/ports/customers.service.port";
+
+function parseIds(ids?: string): string[] | undefined {
+  if (!ids?.trim()) return undefined;
+  return ids
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
+}
 
 @Injectable()
 export class CustomersGatewayService extends AbstractCustomersGatewayService {
-  constructor(private readonly scopedHttp: OrganizationScopedHttpClient) {
+  constructor(private readonly customersService: AbstractCustomersService) {
     super();
   }
 
   async createCustomer(user: AuthUser, body: CreateCustomerForOrgBody) {
-    return this.scopedHttp.request<CustomerResponse>({
-      baseUrl: SERVICE_URLS.customers,
+    return this.customersService.createCustomer({
+      ...body,
       organizationId: user.organizationId,
-      method: "post",
-      path: "/customers",
-      body: { ...body },
-      errorLabel: "Customers service error",
-    });
+    } as CreateCustomerBody);
   }
 
   async listCustomers(
     user: AuthUser,
     filters?: { search?: string; ids?: string; limit?: number; offset?: number },
   ) {
-    return this.scopedHttp.request<CustomersListResponse>({
-      baseUrl: SERVICE_URLS.customers,
-      organizationId: user.organizationId,
-      method: "get",
-      path: "/customers",
-      query: filters,
-      errorLabel: "Customers service error",
+    return this.customersService.listCustomers(user.organizationId, {
+      search: filters?.search,
+      ids: parseIds(filters?.ids),
+      limit: filters?.limit,
+      offset: filters?.offset,
     });
   }
 
   async listCustomersByIds(user: AuthUser, ids: string[]) {
     const unique = [...new Set(ids.map((id) => id.trim()).filter(Boolean))].slice(0, 100);
     if (unique.length === 0) return [];
-    const response = await this.listCustomers(user, { ids: unique.join(",") });
+    const response = await this.customersService.listCustomers(user.organizationId, {
+      ids: unique,
+    });
     return response.customers;
   }
 
   async getCustomer(user: AuthUser, customerId: string) {
-    return this.scopedHttp.request<CustomerResponse>({
-      baseUrl: SERVICE_URLS.customers,
-      organizationId: user.organizationId,
-      method: "get",
-      path: `/customers/${customerId}`,
-      errorLabel: "Customers service error",
-    });
+    return this.customersService.getCustomer(customerId, user.organizationId);
   }
 
   async updateCustomer(user: AuthUser, customerId: string, body: UpdateCustomerForOrgBody) {
-    return this.scopedHttp.request<CustomerResponse>({
-      baseUrl: SERVICE_URLS.customers,
+    return this.customersService.updateCustomer(customerId, {
+      ...body,
       organizationId: user.organizationId,
-      method: "patch",
-      path: `/customers/${customerId}`,
-      body: { ...body },
-      errorLabel: "Customers service error",
-    });
+    } as UpdateCustomerBody);
   }
 
   async deleteCustomer(user: AuthUser, customerId: string) {
-    return this.scopedHttp.request<{ deleted: true }>({
-      baseUrl: SERVICE_URLS.customers,
-      organizationId: user.organizationId,
-      method: "delete",
-      path: `/customers/${customerId}`,
-      validateResponseScope: false,
-      errorLabel: "Customers service error",
-    });
+    return this.customersService.deleteCustomer(customerId, user.organizationId);
   }
 
-  // ── Sites ──
-
   async createSite(user: AuthUser, customerId: string, body: CreateCustomerSiteForOrgBody) {
-    return this.scopedHttp.request<CustomerSiteResponse>({
-      baseUrl: SERVICE_URLS.customers,
+    return this.customersService.createSite(customerId, {
+      ...body,
       organizationId: user.organizationId,
-      method: "post",
-      path: `/customers/${customerId}/sites`,
-      body: { ...body },
-      validateResponseScope: false,
-      errorLabel: "Customers service error",
-    });
+    } as CreateCustomerSiteBody);
   }
 
   async updateSite(
@@ -108,40 +89,21 @@ export class CustomersGatewayService extends AbstractCustomersGatewayService {
     siteId: string,
     body: UpdateCustomerSiteForOrgBody,
   ) {
-    return this.scopedHttp.request<CustomerSiteResponse>({
-      baseUrl: SERVICE_URLS.customers,
+    return this.customersService.updateSite(customerId, siteId, {
+      ...body,
       organizationId: user.organizationId,
-      method: "patch",
-      path: `/customers/${customerId}/sites/${siteId}`,
-      body: { ...body },
-      validateResponseScope: false,
-      errorLabel: "Customers service error",
-    });
+    } as UpdateCustomerSiteBody);
   }
 
   async deleteSite(user: AuthUser, customerId: string, siteId: string) {
-    return this.scopedHttp.request<{ deleted: true }>({
-      baseUrl: SERVICE_URLS.customers,
-      organizationId: user.organizationId,
-      method: "delete",
-      path: `/customers/${customerId}/sites/${siteId}`,
-      validateResponseScope: false,
-      errorLabel: "Customers service error",
-    });
+    return this.customersService.deleteSite(customerId, siteId, user.organizationId);
   }
 
-  // ── Contacts ──
-
   async createContact(user: AuthUser, customerId: string, body: CreateCustomerContactForOrgBody) {
-    return this.scopedHttp.request<CustomerContactResponse>({
-      baseUrl: SERVICE_URLS.customers,
+    return this.customersService.createContact(customerId, {
+      ...body,
       organizationId: user.organizationId,
-      method: "post",
-      path: `/customers/${customerId}/contacts`,
-      body: { ...body },
-      validateResponseScope: false,
-      errorLabel: "Customers service error",
-    });
+    } as CreateCustomerContactBody);
   }
 
   async updateContact(
@@ -150,25 +112,13 @@ export class CustomersGatewayService extends AbstractCustomersGatewayService {
     contactId: string,
     body: UpdateCustomerContactForOrgBody,
   ) {
-    return this.scopedHttp.request<CustomerContactResponse>({
-      baseUrl: SERVICE_URLS.customers,
+    return this.customersService.updateContact(customerId, contactId, {
+      ...body,
       organizationId: user.organizationId,
-      method: "patch",
-      path: `/customers/${customerId}/contacts/${contactId}`,
-      body: { ...body },
-      validateResponseScope: false,
-      errorLabel: "Customers service error",
-    });
+    } as UpdateCustomerContactBody);
   }
 
   async deleteContact(user: AuthUser, customerId: string, contactId: string) {
-    return this.scopedHttp.request<{ deleted: true }>({
-      baseUrl: SERVICE_URLS.customers,
-      organizationId: user.organizationId,
-      method: "delete",
-      path: `/customers/${customerId}/contacts/${contactId}`,
-      validateResponseScope: false,
-      errorLabel: "Customers service error",
-    });
+    return this.customersService.deleteContact(customerId, contactId, user.organizationId);
   }
 }
