@@ -5,8 +5,6 @@ import {
   UnauthorizedException,
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
-import { HttpService } from "@nestjs/axios";
-import { firstValueFrom } from "rxjs";
 import type {
   LoginBody,
   PlatformAuthResponse,
@@ -16,12 +14,12 @@ import type {
 } from "@planwise/shared";
 import { isPlatformStaffEmail } from "@planwise/shared";
 import { AbstractPlatformAuthService } from "../ports/platform/platform-auth.service.port";
-import { SERVICE_URLS } from "../../infrastructure/service-urls.config";
+import { AbstractUsersService } from "../users/ports/users.service.port";
 
 @Injectable()
 export class PlatformAuthService extends AbstractPlatformAuthService {
   constructor(
-    private readonly httpService: HttpService,
+    private readonly users: AbstractUsersService,
     private readonly jwtService: JwtService,
   ) {
     super();
@@ -38,16 +36,11 @@ export class PlatformAuthService extends AbstractPlatformAuthService {
 
     let user: ValidateCredentialsResponse;
     try {
-      const res = await firstValueFrom(
-        this.httpService.post<ValidateCredentialsResponse>(
-          `${SERVICE_URLS.users}/users/validate-credentials`,
-          { email, password: body.password },
-        ),
-      );
-      user = res.data;
+      const result = await this.users.validateCredentials(email, body.password);
+      if (!result) throw new UnauthorizedException("Email ou mot de passe incorrect");
+      user = result;
     } catch (err: unknown) {
-      const status = (err as { response?: { status?: number } })?.response?.status;
-      if (status === 401) throw new UnauthorizedException("Email ou mot de passe incorrect");
+      if (err instanceof UnauthorizedException) throw err;
       throw err;
     }
 

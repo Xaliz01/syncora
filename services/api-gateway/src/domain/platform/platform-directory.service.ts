@@ -6,26 +6,25 @@ import type {
   AuthResponse,
   AuthUser,
   JwtPayload,
-  OrganizationMembershipResponse,
-  OrganizationResponse,
   PlatformAuthUser,
   PlatformIntegrationSummary,
   PlatformIntegrationsListResponse,
   PlatformOrganizationDetailResponse,
   PlatformOrganizationSummary,
   PlatformOrganizationsListResponse,
-  PlatformUserSummary,
   PlatformUsersListResponse,
   AccountUserResponse,
   PlatformSendUserEmailBody,
   PlatformSendUserEmailResponse,
-  SendEmailNotificationResponse,
   StartImpersonationBody,
-  UserResponse,
 } from "@planwise/shared";
 import { AbstractSubscriptionsGatewayService } from "../ports/subscriptions.service.port";
 import { AbstractPlatformDirectoryService } from "../ports/platform/platform-directory.service.port";
 import { AbstractPlatformOrgLookupService } from "../ports/platform/platform-org-lookup.service.port";
+import { AbstractUsersService } from "../users/ports/users.service.port";
+import { AbstractOrganizationsService } from "../organizations/ports/organizations.service.port";
+import { AbstractEmailService } from "../notifications/ports/email.service.port";
+import { AbstractImpersonationAuditService } from "../users/ports/impersonation-audit.service.port";
 import { IMPERSONATION_TTL, IMPERSONATION_TTL_MS, MIN_REASON_LENGTH } from "./platform.constants";
 import { SERVICE_URLS } from "../../infrastructure/service-urls.config";
 
@@ -38,6 +37,10 @@ export class PlatformDirectoryService extends AbstractPlatformDirectoryService {
     private readonly jwtService: JwtService,
     private readonly subscriptionsGateway: AbstractSubscriptionsGatewayService,
     private readonly orgLookup: AbstractPlatformOrgLookupService,
+    private readonly users: AbstractUsersService,
+    private readonly organizations: AbstractOrganizationsService,
+    private readonly email: AbstractEmailService,
+    private readonly audits: AbstractImpersonationAuditService,
   ) {
     super();
   }
@@ -48,23 +51,11 @@ export class PlatformDirectoryService extends AbstractPlatformDirectoryService {
     limit?: number;
     offset?: number;
   }): Promise<PlatformOrganizationsListResponse> {
-    const params: Record<string, string | number | boolean> = {};
-    if (filters?.search?.trim()) params.search = filters.search.trim();
-    if (filters?.includeTestAccounts) params.includeTestAccounts = true;
-    if (filters?.limit != null) params.limit = filters.limit;
-    if (filters?.offset != null) params.offset = filters.offset;
-
+    let excludeOrganizationIds: string[] | undefined;
     if (!filters?.includeTestAccounts) {
       try {
-        const excludedRes = await firstValueFrom(
-          this.httpService.get<string[]>(
-            `${SERVICE_URLS.users}/users/platform/excluded-organization-ids`,
-            { timeout: 10000 },
-          ),
-        );
-        if (excludedRes.data.length > 0) {
-          params.excludeOrganizationIds = excludedRes.data.join(",");
-        }
+        const excluded = await this.users.listOrganizationIdsWithExcludedEmails();
+        if (excluded.length > 0) excludeOrganizationIds = excluded;
       } catch (err: unknown) {
         this.logger.warn(
           `listOrganizations: excluded-organization-ids unavailable: ${(err as Error).message}`,
@@ -72,20 +63,15 @@ export class PlatformDirectoryService extends AbstractPlatformDirectoryService {
       }
     }
 
-    const res = await firstValueFrom(
-      this.httpService.get<{ organizations: OrganizationResponse[]; total: number }>(
-        `${SERVICE_URLS.organizations}/organizations`,
-        { params },
-      ),
-    );
-    const orgs = res.data.organizations;
-    const statsRes = await firstValueFrom(
-      this.httpService.post<Record<string, { userCount: number; lastUserLoginAt?: string }>>(
-        `${SERVICE_URLS.users}/users/platform/organization-stats`,
-        { organizationIds: orgs.map((o) => o.id) },
-      ),
-    );
-    const stats = statsRes.data;
+    const res = await this.organizations.listOrganizations({
+      search: filters?.search?.trim() || undefined,
+      includeTestAccounts: filters?.includeTestAccounts,
+      excludeOrganizationIds,
+      limit: filters?.limit,
+      offset: filters?.offset,
+    });
+    const orgs = res.organizations;
+    const stats = await this.users.countUsersByOrganizationIds(orgs.map((o) => o.id));
 
     const organizations: PlatformOrganizationSummary[] = orgs.map((o) => ({
       id: o.id,
@@ -98,35 +84,23 @@ export class PlatformDirectoryService extends AbstractPlatformDirectoryService {
       lastUserLoginAt: stats[o.id]?.lastUserLoginAt,
     }));
 
-    return { organizations, total: res.data.total };
+    return { organizations, total: res.total };
   }
 
   async getOrganization(organizationId: string): Promise<PlatformOrganizationDetailResponse> {
     if (!organizationId?.trim()) {
       throw new BadRequestException("organizationId est requis");
     }
-    let organization: OrganizationResponse;
-    try {
-      const res = await firstValueFrom(
-        this.httpService.get<OrganizationResponse>(
-          `${SERVICE_URLS.organizations}/organizations/${organizationId}`,
-        ),
-      );
-      organization = res.data;
-    } catch (err: unknown) {
-      const status = (err as { response?: { status?: number } })?.response?.status;
-      if (status === 404) throw new NotFoundException("Organisation introuvable");
-      throw err;
-    }
+    const organization = await this.organizations.findById(organizationId);
+    if (!organization) throw new NotFoundException("Organisation introuvable");
 
-    const usersRes = await firstValueFrom(
-      this.httpService.get<{ users: PlatformUserSummary[]; total: number }>(
-        `${SERVICE_URLS.users}/users/platform/directory`,
-        { params: { organizationId, limit: 200, includeTestAccounts: true } },
-      ),
-    );
+    const usersRes = await this.users.listPlatformDirectory({
+      organizationId,
+      limit: 200,
+      includeTestAccounts: true,
+    });
 
-    const users = await this.orgLookup.enrichUsersWithOrgNames(usersRes.data.users, {
+    const users = await this.orgLookup.enrichUsersWithOrgNames(usersRes.users, {
       [organization.id]: organization.name,
     });
 
@@ -200,27 +174,19 @@ export class PlatformDirectoryService extends AbstractPlatformDirectoryService {
     limit?: number;
     offset?: number;
   }): Promise<PlatformUsersListResponse> {
-    const params: Record<string, string | number | boolean> = {};
-    if (filters?.search?.trim()) params.search = filters.search.trim();
-    if (filters?.organizationId?.trim()) params.organizationId = filters.organizationId.trim();
-    if (filters?.activeOnly) params.activeOnly = true;
-    if (filters?.includeTestAccounts) params.includeTestAccounts = true;
-    if (filters?.limit != null) params.limit = filters.limit;
-    if (filters?.offset != null) params.offset = filters.offset;
+    const res = await this.users.listPlatformDirectory({
+      search: filters?.search?.trim() || undefined,
+      organizationId: filters?.organizationId?.trim() || undefined,
+      activeOnly: filters?.activeOnly,
+      includeTestAccounts: filters?.includeTestAccounts,
+      limit: filters?.limit,
+      offset: filters?.offset,
+    });
 
-    const res = await firstValueFrom(
-      this.httpService.get<{ users: PlatformUserSummary[]; total: number }>(
-        `${SERVICE_URLS.users}/users/platform/directory`,
-        { params },
-      ),
-    );
-
-    const orgIds = [
-      ...new Set(res.data.users.map((u) => u.organizationId).filter(Boolean) as string[]),
-    ];
+    const orgIds = [...new Set(res.users.map((u) => u.organizationId).filter(Boolean) as string[])];
     const orgNames = await this.orgLookup.resolveOrganizationNames(orgIds);
-    const users = await this.orgLookup.enrichUsersWithOrgNames(res.data.users, orgNames);
-    return { users, total: res.data.total };
+    const users = await this.orgLookup.enrichUsersWithOrgNames(res.users, orgNames);
+    return { users, total: res.total };
   }
 
   async sendUserEmail(
@@ -243,14 +209,14 @@ export class PlatformDirectoryService extends AbstractPlatformDirectoryService {
       throw new BadRequestException("Le message doit contenir au moins 10 caractères");
     }
 
-    let target: AccountUserResponse;
+    let target: AccountUserResponse | null;
     try {
-      const res = await firstValueFrom(
-        this.httpService.get<AccountUserResponse>(`${SERVICE_URLS.users}/users/accounts/${userId}`),
-      );
-      target = res.data;
+      target = await this.users.findAccountById(userId);
     } catch (err: unknown) {
       this.logger.warn(`sendUserEmail: user ${userId} not found: ${(err as Error).message}`);
+      throw new NotFoundException("Utilisateur introuvable");
+    }
+    if (!target) {
       throw new NotFoundException("Utilisateur introuvable");
     }
 
@@ -274,21 +240,16 @@ export class PlatformDirectoryService extends AbstractPlatformDirectoryService {
     let sent = false;
     let sendReason: string | undefined;
     try {
-      const res = await firstValueFrom(
-        this.httpService.post<SendEmailNotificationResponse>(
-          `${SERVICE_URLS.notifications}/email/transactional`,
-          {
-            to,
-            subject,
-            body: emailBody,
-            footer,
-            ...(ctaLabel ? { ctaLabel } : {}),
-            ...(ctaUrl ? { url: ctaUrl } : {}),
-          },
-        ),
+      const res = await this.email.sendTransactionalEmail(
+        to,
+        subject,
+        emailBody,
+        ctaUrl,
+        ctaLabel,
+        footer,
       );
-      sent = Boolean(res.data.sent);
-      sendReason = res.data.reason;
+      sent = Boolean(res.sent);
+      sendReason = res.reason;
       if (!sent) {
         this.logger.warn(`Platform user email not sent to ${to}: ${sendReason ?? "unknown"}`);
       }
@@ -317,24 +278,11 @@ export class PlatformDirectoryService extends AbstractPlatformDirectoryService {
       throw new BadRequestException("userId et organizationId sont requis");
     }
 
-    let target: UserResponse;
-    try {
-      const res = await firstValueFrom(
-        this.httpService.get<UserResponse>(`${SERVICE_URLS.users}/users/${userId}`),
-      );
-      target = res.data;
-    } catch (err: unknown) {
-      const status = (err as { response?: { status?: number } })?.response?.status;
-      if (status === 404) throw new NotFoundException("Utilisateur introuvable");
-      throw err;
-    }
+    const target = await this.users.findById(userId);
+    if (!target) throw new NotFoundException("Utilisateur introuvable");
 
-    const membershipsRes = await firstValueFrom(
-      this.httpService.get<OrganizationMembershipResponse[]>(
-        `${SERVICE_URLS.users}/users/${userId}/organization-memberships`,
-      ),
-    );
-    const membership = membershipsRes.data.find(
+    const memberships = await this.users.listOrganizationMemberships(userId);
+    const membership = memberships.find(
       (m) => m.organizationId === organizationId && m.membershipStatus === "active",
     );
     if (!membership) {
@@ -348,17 +296,15 @@ export class PlatformDirectoryService extends AbstractPlatformDirectoryService {
     );
     const expiresAt = new Date(Date.now() + IMPERSONATION_TTL_MS).toISOString();
 
-    await firstValueFrom(
-      this.httpService.post(`${SERVICE_URLS.users}/users/platform/impersonation-audits`, {
-        impersonatorUserId: staff.id,
-        impersonatorEmail: staff.email,
-        targetUserId: target.id,
-        targetEmail: target.email,
-        organizationId,
-        reason,
-        expiresAt,
-      }),
-    );
+    await this.audits.createImpersonationAudit({
+      impersonatorUserId: staff.id,
+      impersonatorEmail: staff.email,
+      targetUserId: target.id,
+      targetEmail: target.email,
+      organizationId,
+      reason,
+      expiresAt,
+    });
 
     const authUser: AuthUser = {
       id: target.id,

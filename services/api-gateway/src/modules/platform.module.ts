@@ -22,12 +22,22 @@ import { PrometheusOpsHealthService } from "../domain/prometheus-ops-health.serv
 import { PlatformJwtAuthGuard } from "../infrastructure/platform-jwt-auth.guard";
 import { SubscriptionsModule } from "./subscriptions.module";
 import { AnalyticsModule } from "./analytics.module";
+import { UsersModule } from "./users.module";
+import { OrganizationsDomainModule } from "./organizations-domain.module";
+import { PermissionsModule } from "./permissions.module";
+import { NotificationsDomainModule } from "./notifications-domain.module";
+import { SubscriptionsDomainModule } from "./subscriptions-domain.module";
 
 @Module({
   imports: [
     HttpModule.register({ timeout: 10000, maxRedirects: 0 }),
     SubscriptionsModule,
     AnalyticsModule,
+    UsersModule,
+    OrganizationsDomainModule,
+    PermissionsModule,
+    NotificationsDomainModule,
+    SubscriptionsDomainModule,
   ],
   controllers: [PlatformController],
   providers: [

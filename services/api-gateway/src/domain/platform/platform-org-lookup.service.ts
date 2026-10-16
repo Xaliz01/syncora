@@ -1,19 +1,16 @@
 import { Injectable } from "@nestjs/common";
-import { HttpService } from "@nestjs/axios";
-import { firstValueFrom } from "rxjs";
-import type {
-  EffectivePermissionsResponse,
-  JwtPayload,
-  OrganizationResponse,
-  PlatformUserSummary,
-} from "@planwise/shared";
+import type { JwtPayload, PlatformUserSummary } from "@planwise/shared";
 import { ASSIGNABLE_PERMISSION_CODES } from "@planwise/shared";
 import { AbstractPlatformOrgLookupService } from "../ports/platform/platform-org-lookup.service.port";
-import { SERVICE_URLS } from "../../infrastructure/service-urls.config";
+import { AbstractOrganizationsService } from "../organizations/ports/organizations.service.port";
+import { AbstractPermissionsService } from "../permissions/ports/permissions.service.port";
 
 @Injectable()
 export class PlatformOrgLookupService extends AbstractPlatformOrgLookupService {
-  constructor(private readonly httpService: HttpService) {
+  constructor(
+    private readonly organizations: AbstractOrganizationsService,
+    private readonly permissions: AbstractPermissionsService,
+  ) {
     super();
   }
 
@@ -32,12 +29,8 @@ export class PlatformOrgLookupService extends AbstractPlatformOrgLookupService {
     await Promise.all(
       ids.map(async (id) => {
         try {
-          const res = await firstValueFrom(
-            this.httpService.get<OrganizationResponse>(
-              `${SERVICE_URLS.organizations}/organizations/${id}`,
-            ),
-          );
-          out[id] = res.data.name;
+          const org = await this.organizations.findById(id);
+          if (org?.name) out[id] = org.name;
         } catch {
           /* ignore */
         }
@@ -52,13 +45,12 @@ export class PlatformOrgLookupService extends AbstractPlatformOrgLookupService {
     role: "admin" | "member",
   ): Promise<JwtPayload["permissions"]> {
     try {
-      const res = await firstValueFrom(
-        this.httpService.post<EffectivePermissionsResponse>(
-          `${SERVICE_URLS.permissions}/permissions/effective`,
-          { organizationId, userId, role },
-        ),
-      );
-      return res.data.permissions;
+      const res = await this.permissions.resolveEffectivePermissions({
+        organizationId,
+        userId,
+        role,
+      });
+      return res.permissions;
     } catch {
       return role === "admin" ? [...ASSIGNABLE_PERMISSION_CODES] : [];
     }

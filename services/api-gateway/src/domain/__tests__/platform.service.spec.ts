@@ -14,9 +14,58 @@ import { PlatformEmailTemplatesService } from "../platform/platform-email-templa
 import { PlatformIntegrationsCronsService } from "../platform/platform-integrations-crons.service";
 import { PlatformOrgLookupService } from "../platform/platform-org-lookup.service";
 import { PlatformProspectsService } from "../platform/platform-prospects.service";
+import { AbstractUsersService } from "../users/ports/users.service.port";
+import { AbstractOrganizationsService } from "../organizations/ports/organizations.service.port";
+import { AbstractPermissionsService } from "../permissions/ports/permissions.service.port";
+import { AbstractEmailTemplatesService } from "../users/ports/email-templates.service.port";
+import { AbstractProspectOutreachService } from "../users/ports/prospect-outreach.service.port";
+import { AbstractEmailService } from "../notifications/ports/email.service.port";
+import { AbstractImpersonationAuditService } from "../users/ports/impersonation-audit.service.port";
+import { SubscriptionsService } from "../subscriptions/subscriptions.service";
 
 describe("PlatformService", () => {
   const httpService = { get: jest.fn(), post: jest.fn() };
+  const users = {
+    validateCredentials: jest.fn(),
+    findById: jest.fn(),
+    findAccountById: jest.fn(),
+    listOrganizationMemberships: jest.fn(),
+    listOrganizationIdsWithExcludedEmails: jest.fn().mockResolvedValue([]),
+    listPlatformDirectory: jest.fn(),
+    countUsersByOrganizationIds: jest.fn(),
+    getPlatformDashboardStats: jest.fn(),
+  };
+  const organizations = {
+    findById: jest.fn(),
+    listOrganizations: jest.fn(),
+    getPlatformDashboardStats: jest.fn(),
+  };
+  const permissions = {
+    resolveEffectivePermissions: jest.fn().mockResolvedValue({ permissions: ["cases:read"] }),
+  };
+  const templates = {
+    list: jest.fn(),
+    getById: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
+    setDefault: jest.fn(),
+  };
+  const outreaches = {
+    createProspectOutreach: jest.fn().mockResolvedValue({ id: "o1", status: "sent" }),
+    upsertProspectComment: jest.fn(),
+    listProspectOutreachesBySirens: jest.fn().mockResolvedValue({ outreaches: [] }),
+    listProspectOutreaches: jest.fn(),
+  };
+  const email = {
+    sendTransactionalEmail: jest.fn().mockResolvedValue({ sent: true }),
+    previewTransactionalEmail: jest.fn(),
+  };
+  const audits = { createImpersonationAudit: jest.fn().mockResolvedValue({ id: "audit-1" }) };
+  const subscriptionsDomain = {
+    getPlatformDashboardCounts: jest.fn(),
+    getByOrganization: jest.fn(),
+  };
   const jwtService = { sign: jest.fn().mockReturnValue("platform-token") };
   const subscriptionsGateway = {
     getCurrentSubscription: jest.fn(),
@@ -54,27 +103,53 @@ describe("PlatformService", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    users.listOrganizationIdsWithExcludedEmails.mockResolvedValue([]);
+    permissions.resolveEffectivePermissions.mockResolvedValue({ permissions: ["cases:read"] });
+    outreaches.createProspectOutreach.mockResolvedValue({ id: "o1", status: "sent" });
+    outreaches.listProspectOutreachesBySirens.mockResolvedValue({ outreaches: [] });
+    email.sendTransactionalEmail.mockResolvedValue({ sent: true });
+    audits.createImpersonationAudit.mockResolvedValue({ id: "audit-1" });
     process.env.PLATFORM_STAFF_EMAILS = "mail@benoistbabin.fr";
     process.env.PLATFORM_STAFF_EMAIL_DOMAINS = "planwise.fr";
 
     const http = httpService as never;
-    const orgLookup = new PlatformOrgLookupService(http);
-    const auth = new PlatformAuthService(http, jwtService as never);
+    const orgLookup = new PlatformOrgLookupService(
+      organizations as unknown as AbstractOrganizationsService,
+      permissions as unknown as AbstractPermissionsService,
+    );
+    const auth = new PlatformAuthService(
+      users as unknown as AbstractUsersService,
+      jwtService as never,
+    );
     const directory = new PlatformDirectoryService(
       http,
       jwtService as never,
       subscriptionsGateway as never,
       orgLookup,
+      users as unknown as AbstractUsersService,
+      organizations as unknown as AbstractOrganizationsService,
+      email as unknown as AbstractEmailService,
+      audits as unknown as AbstractImpersonationAuditService,
     );
     const integrationsCrons = new PlatformIntegrationsCronsService(http, orgLookup);
     const dashboard = new PlatformDashboardService(
-      http,
       analyticsGateway as never,
       prometheusOpsHealth as never,
       orgLookup,
+      users as unknown as AbstractUsersService,
+      organizations as unknown as AbstractOrganizationsService,
+      subscriptionsDomain as unknown as SubscriptionsService,
     );
-    const emailTemplates = new PlatformEmailTemplatesService(http);
-    const prospects = new PlatformProspectsService(http, emailTemplates);
+    const emailTemplates = new PlatformEmailTemplatesService(
+      templates as unknown as AbstractEmailTemplatesService,
+      email as unknown as AbstractEmailService,
+    );
+    const prospects = new PlatformProspectsService(
+      http,
+      emailTemplates,
+      outreaches as unknown as AbstractProspectOutreachService,
+      email as unknown as AbstractEmailService,
+    );
 
     service = new PlatformService(
       auth,
@@ -90,21 +165,16 @@ describe("PlatformService", () => {
     await expect(
       service.login({ email: "client@acme.fr", password: "secret" }),
     ).rejects.toBeInstanceOf(ForbiddenException);
-    expect(httpService.post).not.toHaveBeenCalled();
+    expect(users.validateCredentials).not.toHaveBeenCalled();
   });
 
   it("issues a platform token for allowlisted staff", async () => {
-    httpService.post.mockReturnValue(
-      of({
-        data: {
-          id: "staff-1",
-          email: "mail@benoistbabin.fr",
-          name: "Benoist",
-          status: "active",
-        },
-        status: 200,
-      }),
-    );
+    users.validateCredentials.mockResolvedValue({
+      id: "staff-1",
+      email: "mail@benoistbabin.fr",
+      name: "Benoist",
+      status: "active",
+    });
 
     const result = await service.login({
       email: "mail@benoistbabin.fr",
@@ -120,33 +190,23 @@ describe("PlatformService", () => {
   });
 
   it("creates an audited impersonation session", async () => {
-    httpService.get
-      .mockReturnValueOnce(
-        of({
-          data: {
-            id: "user-1",
-            email: "client@acme.fr",
-            organizationId: "org-1",
-            role: "admin",
-            status: "active",
-            name: "Client",
-          },
-        }),
-      )
-      .mockReturnValueOnce(
-        of({
-          data: [
-            {
-              id: "m1",
-              userId: "user-1",
-              organizationId: "org-1",
-              role: "admin",
-              membershipStatus: "active",
-            },
-          ],
-        }),
-      );
-    httpService.post.mockReturnValue(of({ data: { id: "audit-1" } }));
+    users.findById.mockResolvedValue({
+      id: "user-1",
+      email: "client@acme.fr",
+      organizationId: "org-1",
+      role: "admin",
+      status: "active",
+      name: "Client",
+    });
+    users.listOrganizationMemberships.mockResolvedValue([
+      {
+        id: "m1",
+        userId: "user-1",
+        organizationId: "org-1",
+        role: "admin",
+        membershipStatus: "active",
+      },
+    ]);
     jwtService.sign.mockReturnValue("impersonation-token");
 
     const result = await service.startImpersonation(
@@ -158,8 +218,7 @@ describe("PlatformService", () => {
       },
     );
 
-    expect(httpService.post).toHaveBeenCalledWith(
-      expect.stringContaining("/users/platform/impersonation-audits"),
+    expect(audits.createImpersonationAudit).toHaveBeenCalledWith(
       expect.objectContaining({
         impersonatorUserId: "staff-1",
         targetUserId: "user-1",
@@ -287,29 +346,25 @@ describe("PlatformService", () => {
             },
           });
         }
-        if (String(url).includes("prospect-outreaches")) {
-          return of({
-            data: {
-              outreaches: [
-                {
-                  id: "o1",
-                  siren: "123456789",
-                  companyName: "Plomberie Dupont",
-                  email: "jean@example.fr",
-                  sentByUserId: "staff-1",
-                  sentByEmail: "staff@planwise.fr",
-                  subject: "Sujet",
-                  status: "sent",
-                  sentAt: "2026-07-01T00:00:00.000Z",
-                },
-              ],
-            },
-          });
-        }
         if (String(url).includes("suivi-jetons")) {
           return of({ data: { jetons: 87.5 } });
         }
         return of({ data: {} });
+      });
+      outreaches.listProspectOutreachesBySirens.mockResolvedValue({
+        outreaches: [
+          {
+            id: "o1",
+            siren: "123456789",
+            companyName: "Plomberie Dupont",
+            email: "jean@example.fr",
+            sentByUserId: "staff-1",
+            sentByEmail: "staff@planwise.fr",
+            subject: "Sujet",
+            status: "sent",
+            sentAt: "2026-07-01T00:00:00.000Z",
+          },
+        ],
       });
 
       const result = await service.searchProspects({ page: 1, perPage: 20 });
@@ -524,8 +579,8 @@ describe("PlatformService", () => {
     });
 
     it("marks email not found without sending mail", async () => {
-      httpService.get.mockReturnValue(of({ data: { outreaches: [] } }));
-      httpService.post.mockReturnValue(of({ data: { id: "o1", status: "email_not_found" } }));
+      outreaches.listProspectOutreachesBySirens.mockResolvedValue({ outreaches: [] });
+      outreaches.createProspectOutreach.mockResolvedValue({ id: "o1", status: "email_not_found" });
 
       const result = await service.markProspectEmailNotFound(
         { id: "staff-1", email: "staff@planwise.fr" },
@@ -533,35 +588,27 @@ describe("PlatformService", () => {
       );
 
       expect(result).toEqual({ ok: true });
-      expect(httpService.post).toHaveBeenCalledWith(
-        expect.stringContaining("/prospect-outreaches"),
+      expect(outreaches.createProspectOutreach).toHaveBeenCalledWith(
         expect.objectContaining({
           siren: "123456789",
           status: "email_not_found",
           subject: "Email non trouvé",
         }),
       );
-      expect(httpService.post).not.toHaveBeenCalledWith(
-        expect.stringContaining("/email/transactional"),
-        expect.anything(),
-      );
+      expect(email.sendTransactionalEmail).not.toHaveBeenCalled();
     });
 
     it("rejects email-not-found when already contacted", async () => {
-      httpService.get.mockReturnValue(
-        of({
-          data: {
-            outreaches: [
-              {
-                id: "o1",
-                siren: "123456789",
-                status: "sent",
-                sentAt: "2026-07-01T00:00:00.000Z",
-              },
-            ],
+      outreaches.listProspectOutreachesBySirens.mockResolvedValue({
+        outreaches: [
+          {
+            id: "o1",
+            siren: "123456789",
+            status: "sent",
+            sentAt: "2026-07-01T00:00:00.000Z",
           },
-        }),
-      );
+        ],
+      });
 
       await expect(
         service.markProspectEmailNotFound(
@@ -572,9 +619,11 @@ describe("PlatformService", () => {
     });
 
     it("saves a prospect note via users-service", async () => {
-      httpService.post.mockReturnValue(
-        of({ data: { id: "o1", status: "noted", comment: "Pas d’e-mail sur le site" } }),
-      );
+      outreaches.upsertProspectComment.mockResolvedValue({
+        id: "o1",
+        status: "noted",
+        comment: "Pas d’e-mail sur le site",
+      });
 
       const result = await service.saveProspectNote(
         { id: "staff-1", email: "staff@planwise.fr" },
@@ -586,8 +635,7 @@ describe("PlatformService", () => {
       );
 
       expect(result).toEqual({ ok: true, comment: "Pas d’e-mail sur le site" });
-      expect(httpService.post).toHaveBeenCalledWith(
-        expect.stringContaining("/prospect-outreaches/comment"),
+      expect(outreaches.upsertProspectComment).toHaveBeenCalledWith(
         expect.objectContaining({
           siren: "123456789",
           comment: "Pas d’e-mail sur le site",
@@ -597,8 +645,8 @@ describe("PlatformService", () => {
     });
 
     it("creates a manual prospect without Pappers", async () => {
-      httpService.get.mockReturnValue(of({ data: { outreaches: [] } }));
-      httpService.post.mockReturnValue(of({ data: { id: "o1", status: "noted" } }));
+      outreaches.listProspectOutreachesBySirens.mockResolvedValue({ outreaches: [] });
+      outreaches.createProspectOutreach.mockResolvedValue({ id: "o1", status: "noted" });
 
       const result = await service.createManualProspect(
         { id: "staff-1", email: "staff@planwise.fr" },
@@ -611,8 +659,7 @@ describe("PlatformService", () => {
       );
 
       expect(result).toEqual({ ok: true });
-      expect(httpService.post).toHaveBeenCalledWith(
-        expect.stringContaining("/prospect-outreaches"),
+      expect(outreaches.createProspectOutreach).toHaveBeenCalledWith(
         expect.objectContaining({
           siren: "123456789",
           companyName: "Plomberie Dupont",
@@ -626,20 +673,16 @@ describe("PlatformService", () => {
     });
 
     it("rejects manual prospect when already tracked", async () => {
-      httpService.get.mockReturnValue(
-        of({
-          data: {
-            outreaches: [
-              {
-                id: "o1",
-                siren: "123456789",
-                status: "noted",
-                sentAt: "2026-07-01T00:00:00.000Z",
-              },
-            ],
+      outreaches.listProspectOutreachesBySirens.mockResolvedValue({
+        outreaches: [
+          {
+            id: "o1",
+            siren: "123456789",
+            status: "noted",
+            sentAt: "2026-07-01T00:00:00.000Z",
           },
-        }),
-      );
+        ],
+      });
 
       await expect(
         service.createManualProspect(
@@ -647,7 +690,7 @@ describe("PlatformService", () => {
           { siren: "123456789", companyName: "X" },
         ),
       ).rejects.toBeInstanceOf(ConflictException);
-      expect(httpService.post).not.toHaveBeenCalled();
+      expect(outreaches.createProspectOutreach).not.toHaveBeenCalled();
     });
 
     it("rejects outreach without email", async () => {
@@ -669,12 +712,8 @@ describe("PlatformService", () => {
     });
 
     it("rejects outreach when template is missing", async () => {
-      httpService.get.mockImplementation((url: string) => {
-        if (String(url).includes("email-templates/")) {
-          return throwError(() => ({ response: { status: 404 }, message: "Not Found" }));
-        }
-        return of({ data: { outreaches: [] } });
-      });
+      templates.getById.mockRejectedValue(new NotFoundException("Contenu e-mail introuvable"));
+      outreaches.listProspectOutreachesBySirens.mockResolvedValue({ outreaches: [] });
 
       await expect(
         service.sendProspectOutreach(
@@ -690,20 +729,16 @@ describe("PlatformService", () => {
     });
 
     it("rejects outreach when already contacted", async () => {
-      httpService.get.mockReturnValue(
-        of({
-          data: {
-            outreaches: [
-              {
-                id: "o1",
-                siren: "123456789",
-                status: "sent",
-                sentAt: "2026-07-01T00:00:00.000Z",
-              },
-            ],
+      outreaches.listProspectOutreachesBySirens.mockResolvedValue({
+        outreaches: [
+          {
+            id: "o1",
+            siren: "123456789",
+            status: "sent",
+            sentAt: "2026-07-01T00:00:00.000Z",
           },
-        }),
-      );
+        ],
+      });
 
       await expect(
         service.sendProspectOutreach(
@@ -719,38 +754,20 @@ describe("PlatformService", () => {
     });
 
     it("resends outreach when already contacted if force is true", async () => {
-      httpService.get.mockImplementation((url: string) => {
-        if (String(url).includes("email-templates/")) {
-          return of({
-            data: {
-              id: "tpl-1",
-              name: "Relance",
-              purpose: "prospect_outreach",
-              subject: "Suite",
-              body: "Bonjour",
-              footer: "Planwise",
-              ctaLabel: "Découvrir Planwise",
-              ctaUrl: "/",
-              isDefault: true,
-              createdAt: "2026-08-01T00:00:00.000Z",
-              updatedAt: "2026-08-01T00:00:00.000Z",
-            },
-          });
-        }
-        return of({
-          data: {
-            outreaches: [
-              {
-                id: "o1",
-                siren: "123456789",
-                status: "sent",
-                sentAt: "2026-07-01T00:00:00.000Z",
-              },
-            ],
-          },
-        });
+      templates.getById.mockResolvedValue({
+        id: "tpl-1",
+        name: "Relance",
+        purpose: "prospect_outreach",
+        subject: "Suite",
+        body: "Bonjour",
+        footer: "Planwise",
+        ctaLabel: "Découvrir Planwise",
+        ctaUrl: "/",
+        isDefault: true,
+        createdAt: "2026-08-01T00:00:00.000Z",
+        updatedAt: "2026-08-01T00:00:00.000Z",
       });
-      httpService.post.mockReturnValue(of({ data: { sent: true } }));
+      email.sendTransactionalEmail.mockResolvedValue({ sent: true });
 
       const result = await service.sendProspectOutreach(
         { id: "staff-1", email: "staff@planwise.fr" },
@@ -764,34 +781,32 @@ describe("PlatformService", () => {
       );
 
       expect(result.sent).toBe(true);
-      expect(httpService.post).toHaveBeenCalledWith(
-        expect.stringContaining("/email/transactional"),
-        expect.objectContaining({ to: "a@b.fr" }),
+      expect(email.sendTransactionalEmail).toHaveBeenCalledWith(
+        "a@b.fr",
+        expect.any(String),
+        expect.any(String),
+        expect.any(String),
+        expect.any(String),
+        expect.any(String),
       );
     });
 
     it("sends transactional email and logs outreach", async () => {
-      httpService.get.mockImplementation((url: string) => {
-        if (String(url).includes("email-templates/")) {
-          return of({
-            data: {
-              id: "tpl-1",
-              name: "Prospection beta",
-              purpose: "prospect_outreach",
-              subject: "Planwise — démarrer",
-              body: "{{greeting}}\n\nPendant toute la beta, Planwise reste **gratuit**. Ensuite, l’abonnement Essentiel sera à **9,99 €** par mois, sans engagement, résiliable à tout moment.\n\n{{landingUrl}}\n\nÉditeur basé à Landerneau (29)",
-              footer: "Cet e-mail est une présentation de Planwise.",
-              ctaLabel: "Découvrir Planwise",
-              ctaUrl: "/",
-              isDefault: true,
-              createdAt: "2026-08-01T00:00:00.000Z",
-              updatedAt: "2026-08-01T00:00:00.000Z",
-            },
-          });
-        }
-        return of({ data: { outreaches: [] } });
+      templates.getById.mockResolvedValue({
+        id: "tpl-1",
+        name: "Prospection beta",
+        purpose: "prospect_outreach",
+        subject: "Planwise — démarrer",
+        body: "{{greeting}}\n\nPendant toute la beta, Planwise reste **gratuit**. Ensuite, l’abonnement Essentiel sera à **9,99 €** par mois, sans engagement, résiliable à tout moment.\n\n{{landingUrl}}\n\nÉditeur basé à Landerneau (29)",
+        footer: "Cet e-mail est une présentation de Planwise.",
+        ctaLabel: "Découvrir Planwise",
+        ctaUrl: "/",
+        isDefault: true,
+        createdAt: "2026-08-01T00:00:00.000Z",
+        updatedAt: "2026-08-01T00:00:00.000Z",
       });
-      httpService.post.mockReturnValue(of({ data: { sent: true } }));
+      email.sendTransactionalEmail.mockResolvedValue({ sent: true });
+      outreaches.listProspectOutreachesBySirens.mockResolvedValue({ outreaches: [] });
 
       const result = await service.sendProspectOutreach(
         { id: "staff-1", email: "staff@planwise.fr" },
@@ -806,19 +821,17 @@ describe("PlatformService", () => {
       );
 
       expect(result.sent).toBe(true);
-      expect(httpService.post).toHaveBeenCalledWith(
-        expect.stringContaining("/email/transactional"),
-        expect.objectContaining({
-          to: "jean@example.fr",
-          subject: "Planwise — démarrer",
-          body: expect.stringMatching(
-            /Bonjour Jean Dupont,[\s\S]*\*\*gratuit\*\*[\s\S]*\*\*9,99 €\*\* par mois, sans engagement, résiliable à tout moment[\s\S]*Éditeur basé à Landerneau \(29\)/,
-          ),
-          footer: expect.stringContaining("présentation de Planwise"),
-        }),
+      expect(email.sendTransactionalEmail).toHaveBeenCalledWith(
+        "jean@example.fr",
+        "Planwise — démarrer",
+        expect.stringMatching(
+          /Bonjour Jean Dupont,[\s\S]*\*\*gratuit\*\*[\s\S]*\*\*9,99 €\*\* par mois, sans engagement, résiliable à tout moment[\s\S]*Éditeur basé à Landerneau \(29\)/,
+        ),
+        expect.any(String),
+        expect.any(String),
+        expect.stringContaining("présentation de Planwise"),
       );
-      expect(httpService.post).toHaveBeenCalledWith(
-        expect.stringContaining("/prospect-outreaches"),
+      expect(outreaches.createProspectOutreach).toHaveBeenCalledWith(
         expect.objectContaining({
           siren: "123456789",
           status: "sent",
@@ -877,31 +890,22 @@ describe("PlatformService", () => {
     });
 
     it("sends valid bulk recipients, skips invalid e-mails, and continues after a failure", async () => {
-      httpService.get.mockImplementation((url: string) => {
-        if (String(url).includes("email-templates/")) {
-          return of({
-            data: {
-              id: "tpl-1",
-              name: "Relance",
-              purpose: "prospect_outreach",
-              subject: "Suite",
-              body: "Bonjour",
-              footer: "Planwise",
-              ctaLabel: "Découvrir Planwise",
-              ctaUrl: "/",
-              isDefault: true,
-              createdAt: "2026-08-01T00:00:00.000Z",
-              updatedAt: "2026-08-01T00:00:00.000Z",
-            },
-          });
-        }
-        return of({ data: { outreaches: [] } });
+      templates.getById.mockResolvedValue({
+        id: "tpl-1",
+        name: "Relance",
+        purpose: "prospect_outreach",
+        subject: "Suite",
+        body: "Bonjour",
+        footer: "Planwise",
+        ctaLabel: "Découvrir Planwise",
+        ctaUrl: "/",
+        isDefault: true,
+        createdAt: "2026-08-01T00:00:00.000Z",
+        updatedAt: "2026-08-01T00:00:00.000Z",
       });
-      httpService.post.mockImplementation((url: string, payload: { to?: string }) => {
-        if (String(url).includes("/email/transactional") && payload.to === "fail@b.fr") {
-          return of({ data: { sent: false, reason: "Erreur d’envoi e-mail" } });
-        }
-        return of({ data: { sent: true } });
+      email.sendTransactionalEmail.mockImplementation(async (to: string) => {
+        if (to === "fail@b.fr") return { sent: false, reason: "Erreur d’envoi e-mail" };
+        return { sent: true };
       });
 
       const result = await service.sendProspectOutreachBulk(
@@ -920,9 +924,7 @@ describe("PlatformService", () => {
       expect(result.failed).toBe(1);
       expect(result.skipped).toBe(1);
       expect(result.results.map((r) => r.status)).toEqual(["skipped", "sent", "failed"]);
-      expect(
-        httpService.post.mock.calls.filter((c) => String(c[0]).includes("/email/transactional")),
-      ).toHaveLength(2);
+      expect(email.sendTransactionalEmail).toHaveBeenCalledTimes(2);
     });
 
     it("returns configured false when PAPPERS_API_KEY is missing", async () => {
@@ -976,17 +978,13 @@ describe("PlatformService", () => {
     });
 
     it("sends transactional email to the user address", async () => {
-      httpService.get.mockReturnValue(
-        of({
-          data: {
-            id: "user-1",
-            email: "client@acme.fr",
-            status: "active",
-            organizationId: "org-1",
-          },
-        }),
-      );
-      httpService.post.mockReturnValue(of({ data: { sent: true } }));
+      users.findAccountById.mockResolvedValue({
+        id: "user-1",
+        email: "client@acme.fr",
+        status: "active",
+        organizationId: "org-1",
+      });
+      email.sendTransactionalEmail.mockResolvedValue({ sent: true });
 
       const result = await service.sendUserEmail(staff, "user-1", {
         subject: "Suite à votre essai",
@@ -995,31 +993,25 @@ describe("PlatformService", () => {
       });
 
       expect(result).toEqual({ sent: true, to: "client@acme.fr" });
-      expect(httpService.get).toHaveBeenCalledWith(
-        expect.stringContaining("/users/accounts/user-1"),
-      );
-      expect(httpService.post).toHaveBeenCalledWith(
-        expect.stringContaining("/email/transactional"),
-        expect.objectContaining({
-          to: "client@acme.fr",
-          subject: "Suite à votre essai",
-          body: "Bonjour, on peut en discuter demain ?",
-        }),
+      expect(users.findAccountById).toHaveBeenCalledWith("user-1");
+      expect(email.sendTransactionalEmail).toHaveBeenCalledWith(
+        "client@acme.fr",
+        "Suite à votre essai",
+        "Bonjour, on peut en discuter demain ?",
+        undefined,
+        undefined,
+        expect.any(String),
       );
     });
 
     it("sends email to an account that has not created an organization yet", async () => {
-      httpService.get.mockReturnValue(
-        of({
-          data: {
-            id: "user-onboarding",
-            email: "pending@acme.fr",
-            status: "active",
-            emailVerified: false,
-          },
-        }),
-      );
-      httpService.post.mockReturnValue(of({ data: { sent: true } }));
+      users.findAccountById.mockResolvedValue({
+        id: "user-onboarding",
+        email: "pending@acme.fr",
+        status: "active",
+        emailVerified: false,
+      });
+      email.sendTransactionalEmail.mockResolvedValue({ sent: true });
 
       const result = await service.sendUserEmail(staff, "user-onboarding", {
         subject: "Besoin d’un coup de main ?",
@@ -1028,23 +1020,17 @@ describe("PlatformService", () => {
       });
 
       expect(result).toEqual({ sent: true, to: "pending@acme.fr" });
-      expect(httpService.get).toHaveBeenCalledWith(
-        expect.stringContaining("/users/accounts/user-onboarding"),
-      );
+      expect(users.findAccountById).toHaveBeenCalledWith("user-onboarding");
     });
 
     it("forwards footer and CTA when provided", async () => {
-      httpService.get.mockReturnValue(
-        of({
-          data: {
-            id: "user-1",
-            email: "client@acme.fr",
-            status: "active",
-            organizationId: "org-1",
-          },
-        }),
-      );
-      httpService.post.mockReturnValue(of({ data: { sent: true } }));
+      users.findAccountById.mockResolvedValue({
+        id: "user-1",
+        email: "client@acme.fr",
+        status: "active",
+        organizationId: "org-1",
+      });
+      email.sendTransactionalEmail.mockResolvedValue({ sent: true });
 
       await service.sendUserEmail(staff, "user-1", {
         subject: "Suite à votre essai",
@@ -1056,13 +1042,13 @@ describe("PlatformService", () => {
         ctaUrl: "/login",
       });
 
-      expect(httpService.post).toHaveBeenCalledWith(
-        expect.stringContaining("/email/transactional"),
-        expect.objectContaining({
-          footer: "Pied custom",
-          ctaLabel: "Ouvrir",
-          url: "/login",
-        }),
+      expect(email.sendTransactionalEmail).toHaveBeenCalledWith(
+        "client@acme.fr",
+        "Suite à votre essai",
+        "Bonjour, on peut en discuter demain ?",
+        "/login",
+        "Ouvrir",
+        "Pied custom",
       );
     });
   });

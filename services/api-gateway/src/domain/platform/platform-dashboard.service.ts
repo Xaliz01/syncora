@@ -1,6 +1,4 @@
 import { Injectable, Logger, ServiceUnavailableException } from "@nestjs/common";
-import { HttpService } from "@nestjs/axios";
-import { firstValueFrom } from "rxjs";
 import type {
   PlatformAnalyticsOverviewResponse,
   PlatformDashboardResponse,
@@ -12,17 +10,21 @@ import { AbstractAnalyticsGatewayService } from "../ports/analytics.gateway.serv
 import { AbstractPlatformDashboardService } from "../ports/platform/platform-dashboard.service.port";
 import { AbstractPlatformOrgLookupService } from "../ports/platform/platform-org-lookup.service.port";
 import { AbstractPrometheusOpsHealthService } from "../ports/platform/prometheus-ops-health.service.port";
-import { SERVICE_URLS } from "../../infrastructure/service-urls.config";
+import { AbstractUsersService } from "../users/ports/users.service.port";
+import { AbstractOrganizationsService } from "../organizations/ports/organizations.service.port";
+import { SubscriptionsService } from "../subscriptions/subscriptions.service";
 
 @Injectable()
 export class PlatformDashboardService extends AbstractPlatformDashboardService {
   private readonly logger = new Logger(PlatformDashboardService.name);
 
   constructor(
-    private readonly httpService: HttpService,
     private readonly analyticsGateway: AbstractAnalyticsGatewayService,
     private readonly prometheusOpsHealth: AbstractPrometheusOpsHealthService,
     private readonly orgLookup: AbstractPlatformOrgLookupService,
+    private readonly users: AbstractUsersService,
+    private readonly organizations: AbstractOrganizationsService,
+    private readonly subscriptions: SubscriptionsService,
   ) {
     super();
   }
@@ -57,34 +59,13 @@ export class PlatformDashboardService extends AbstractPlatformDashboardService {
       const visitDays = 90;
 
       const [userExcludedOrgIds, userStats, landing, login, register] = await Promise.all([
-        firstValueFrom(
-          this.httpService.get<string[]>(
-            `${SERVICE_URLS.users}/users/platform/excluded-organization-ids`,
-            { timeout: 10000 },
-          ),
-        )
-          .then((r) => r.data)
-          .catch((err: unknown) => {
-            this.logger.warn(
-              `platform dashboard: excluded-organization-ids unavailable: ${(err as Error).message}`,
-            );
-            return [] as string[];
-          }),
-        firstValueFrom(
-          this.httpService.get<{
-            userCount: number;
-            connectedUserCount: number;
-            recentLogins: Array<{
-              userId: string;
-              email: string;
-              name?: string;
-              organizationId?: string;
-              lastLoginAt: string;
-            }>;
-          }>(`${SERVICE_URLS.users}/users/platform/dashboard-stats`, {
-            timeout: 10000,
-          }),
-        ).then((r) => r.data),
+        this.users.listOrganizationIdsWithExcludedEmails().catch((err: unknown) => {
+          this.logger.warn(
+            `platform dashboard: excluded-organization-ids unavailable: ${(err as Error).message}`,
+          );
+          return [] as string[];
+        }),
+        this.users.getPlatformDashboardStats(),
         this.analyticsGateway.listPathVisits({
           surface: "marketing",
           path: "/",
@@ -105,29 +86,17 @@ export class PlatformDashboardService extends AbstractPlatformDashboardService {
         }),
       ]);
 
-      const orgStats = await firstValueFrom(
-        this.httpService.get<{
-          organizationCount: number;
-          excludedOrganizationIds: string[];
-        }>(`${SERVICE_URLS.organizations}/organizations/platform/dashboard-stats`, {
-          params:
-            userExcludedOrgIds.length > 0
-              ? { extraExcludeOrganizationIds: userExcludedOrgIds.join(",") }
-              : {},
-          timeout: 10000,
-        }),
-      ).then((r) => r.data);
+      const orgStats = await this.organizations.getPlatformDashboardStats(
+        userExcludedOrgIds.length > 0
+          ? { extraExcludeOrganizationIds: userExcludedOrgIds }
+          : undefined,
+      );
 
-      const excludeQs = orgStats.excludedOrganizationIds.join(",");
-      const subCounts = await firstValueFrom(
-        this.httpService.get<{ activeTrialCount: number; subscriberCount: number }>(
-          `${SERVICE_URLS.subscriptions}/subscriptions/platform/dashboard-counts`,
-          {
-            params: excludeQs ? { excludeOrganizationIds: excludeQs } : {},
-            timeout: 10000,
-          },
-        ),
-      ).then((r) => r.data);
+      const subCounts = await this.subscriptions.getPlatformDashboardCounts(
+        orgStats.excludedOrganizationIds.length > 0
+          ? { excludeOrganizationIds: orgStats.excludedOrganizationIds }
+          : undefined,
+      );
 
       const recentLoginOrgIds = [
         ...new Set(

@@ -23,10 +23,8 @@ import type {
   PlatformProspectSearchSort,
   PlatformProspectSummary,
   PlatformProspectsSearchResponse,
-  ProspectOutreachesBySirensResponse,
   ProspectOutreachesListResponse,
   ProspectOutreachStatus,
-  SendEmailNotificationResponse,
 } from "@planwise/shared";
 import {
   getPlatformProspectNafCodes,
@@ -42,7 +40,8 @@ import {
   compareProspectCreatedAtDesc,
 } from "./platform.constants";
 import type { PappersEntrepriseRow, PappersRechercheResponse } from "./pappers.types";
-import { SERVICE_URLS } from "../../infrastructure/service-urls.config";
+import { AbstractProspectOutreachService } from "../users/ports/prospect-outreach.service.port";
+import { AbstractEmailService } from "../notifications/ports/email.service.port";
 
 @Injectable()
 export class PlatformProspectsService extends AbstractPlatformProspectsService {
@@ -52,6 +51,8 @@ export class PlatformProspectsService extends AbstractPlatformProspectsService {
   constructor(
     private readonly httpService: HttpService,
     private readonly emailTemplates: AbstractPlatformEmailTemplatesService,
+    private readonly outreaches: AbstractProspectOutreachService,
+    private readonly email: AbstractEmailService,
   ) {
     super();
   }
@@ -270,21 +271,7 @@ export class PlatformProspectsService extends AbstractPlatformProspectsService {
     search?: string;
   }): Promise<ProspectOutreachesListResponse> {
     try {
-      const res = await firstValueFrom(
-        this.httpService.get<ProspectOutreachesListResponse>(
-          `${SERVICE_URLS.users}/users/platform/prospect-outreaches`,
-          {
-            params: {
-              ...(options?.limit != null ? { limit: options.limit } : {}),
-              ...(options?.offset != null ? { offset: options.offset } : {}),
-              ...(options?.status ? { status: options.status } : {}),
-              ...(options?.search?.trim() ? { search: options.search.trim() } : {}),
-            },
-            timeout: 10_000,
-          },
-        ),
-      );
-      return res.data;
+      return await this.outreaches.listProspectOutreaches(options);
     } catch (err: unknown) {
       this.logger.warn(`Failed to list tracked prospects: ${(err as Error).message}`);
       throw new ServiceUnavailableException("Impossible de charger les prospects suivis");
@@ -339,21 +326,16 @@ export class PlatformProspectsService extends AbstractPlatformProspectsService {
     let sent = false;
     let reason: string | undefined;
     try {
-      const res = await firstValueFrom(
-        this.httpService.post<SendEmailNotificationResponse>(
-          `${SERVICE_URLS.notifications}/email/transactional`,
-          {
-            to: toEmail,
-            subject,
-            body: emailBody,
-            url: template.ctaUrl || "/",
-            ctaLabel: template.ctaLabel || "Découvrir Planwise",
-            footer,
-          },
-        ),
+      const res = await this.email.sendTransactionalEmail(
+        toEmail,
+        subject,
+        emailBody,
+        template.ctaUrl || "/",
+        template.ctaLabel || "Découvrir Planwise",
+        footer,
       );
-      sent = Boolean(res.data.sent);
-      reason = res.data.reason;
+      sent = Boolean(res.sent);
+      reason = res.reason;
       if (!sent) {
         this.logger.warn(`Prospect outreach not sent to ${toEmail}: ${reason ?? "unknown"}`);
       }
@@ -364,19 +346,17 @@ export class PlatformProspectsService extends AbstractPlatformProspectsService {
     }
 
     try {
-      await firstValueFrom(
-        this.httpService.post(`${SERVICE_URLS.users}/users/platform/prospect-outreaches`, {
-          siren,
-          companyName,
-          email: toEmail,
-          sentByUserId: staff.id,
-          sentByEmail: staff.email,
-          subject,
-          status: sent ? "sent" : "failed",
-          templateId: template.id,
-          templateName: template.name,
-        }),
-      );
+      await this.outreaches.createProspectOutreach({
+        siren,
+        companyName,
+        email: toEmail,
+        sentByUserId: staff.id,
+        sentByEmail: staff.email,
+        subject,
+        status: sent ? "sent" : "failed",
+        templateId: template.id,
+        templateName: template.name,
+      });
     } catch (err: unknown) {
       this.logger.warn(`Failed to log prospect outreach: ${(err as Error).message}`);
     }
@@ -485,18 +465,17 @@ export class PlatformProspectsService extends AbstractPlatformProspectsService {
     }
 
     try {
-      await firstValueFrom(
-        this.httpService.post(`${SERVICE_URLS.users}/users/platform/prospect-outreaches`, {
-          siren,
-          companyName,
-          email: "",
-          sentByUserId: staff.id,
-          sentByEmail: staff.email,
-          subject: "Email non trouvé",
-          status: "email_not_found",
-        }),
-      );
+      await this.outreaches.createProspectOutreach({
+        siren,
+        companyName,
+        email: "",
+        sentByUserId: staff.id,
+        sentByEmail: staff.email,
+        subject: "Email non trouvé",
+        status: "email_not_found",
+      });
     } catch (err: unknown) {
+      if (err instanceof ConflictException) throw err;
       const status = (err as { response?: { status?: number } })?.response?.status;
       if (status === 409) {
         throw new ConflictException("Cette entreprise a déjà été contactée");
@@ -519,19 +498,14 @@ export class PlatformProspectsService extends AbstractPlatformProspectsService {
     const comment = typeof body.comment === "string" ? body.comment : "";
 
     try {
-      const res = await firstValueFrom(
-        this.httpService.post<{ comment?: string }>(
-          `${SERVICE_URLS.users}/users/platform/prospect-outreaches/comment`,
-          {
-            siren,
-            companyName,
-            comment,
-            sentByUserId: staff.id,
-            sentByEmail: staff.email,
-          },
-        ),
-      );
-      return { ok: true, ...(res.data.comment ? { comment: res.data.comment } : {}) };
+      const saved = await this.outreaches.upsertProspectComment({
+        siren,
+        companyName,
+        comment,
+        sentByUserId: staff.id,
+        sentByEmail: staff.email,
+      });
+      return { ok: true, ...(saved.comment ? { comment: saved.comment } : {}) };
     } catch (err: unknown) {
       this.logger.warn(`Failed to save prospect note: ${(err as Error).message}`);
       throw new ServiceUnavailableException("Impossible d’enregistrer le commentaire");
@@ -563,18 +537,16 @@ export class PlatformProspectsService extends AbstractPlatformProspectsService {
     }
 
     try {
-      await firstValueFrom(
-        this.httpService.post(`${SERVICE_URLS.users}/users/platform/prospect-outreaches`, {
-          siren,
-          companyName,
-          email,
-          sentByUserId: staff.id,
-          sentByEmail: staff.email,
-          subject: "Ajout manuel",
-          status: "noted",
-          ...(comment !== undefined ? { comment } : {}),
-        }),
-      );
+      await this.outreaches.createProspectOutreach({
+        siren,
+        companyName,
+        email,
+        sentByUserId: staff.id,
+        sentByEmail: staff.email,
+        subject: "Ajout manuel",
+        status: "noted",
+        ...(comment !== undefined ? { comment } : {}),
+      });
     } catch (err: unknown) {
       this.logger.warn(`Failed to create manual prospect: ${(err as Error).message}`);
       throw new ServiceUnavailableException("Impossible d’ajouter le prospect");
@@ -676,13 +648,8 @@ export class PlatformProspectsService extends AbstractPlatformProspectsService {
     >();
     if (sirens.length === 0) return map;
     try {
-      const res = await firstValueFrom(
-        this.httpService.get<ProspectOutreachesBySirensResponse>(
-          `${SERVICE_URLS.users}/users/platform/prospect-outreaches`,
-          { params: { sirens: sirens.join(",") } },
-        ),
-      );
-      for (const o of res.data.outreaches ?? []) {
+      const res = await this.outreaches.listProspectOutreachesBySirens(sirens);
+      for (const o of res.outreaches ?? []) {
         map.set(o.siren, {
           status: o.status,
           sentAt: o.sentAt,
