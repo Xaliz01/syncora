@@ -33,6 +33,8 @@ jobs:
         run: npm run format:check:changed
       - name: ESLint
         run: npm run lint
+      - name: Version SemVer
+        run: npm run test:version
 
   typecheck-matrix:
     name: 2. TypeScript (${{ matrix.workspace }})

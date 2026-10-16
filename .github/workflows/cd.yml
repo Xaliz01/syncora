@@ -5,8 +5,18 @@ name: CD (déploiement manuel)
 on:
   workflow_dispatch:
     inputs:
+      bump:
+        description: "Incrément SemVer calculé depuis le dernier tag vX.Y.Z. none = déployer le SHA, sans tag Git."
+        type: choice
+        required: true
+        default: patch
+        options:
+          - patch
+          - minor
+          - major
+          - none
       version:
-        description: "Version applicative à déployer (SemVer, ex: v0.1.0). Vide = SHA court du commit."
+        description: "Version explicite optionnelle (ex. v1.2.0). Si renseignée, elle prime sur l'incrément."
         required: false
         default: ""
 
@@ -40,21 +50,43 @@ jobs:
       sha: ${{ steps.meta.outputs.sha }}
       is_release: ${{ steps.meta.outputs.is_release }}
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
       - id: meta
+        env:
+          VERSION_INPUT: ${{ github.event.inputs.version }}
+          BUMP: ${{ github.event.inputs.bump }}
         run: |
+          set -euo pipefail
           OWNER="${{ github.repository_owner }}"
           REGISTRY="ghcr.io/$(echo "$OWNER" | tr '[:upper:]' '[:lower:]')"
           SHA="$(echo "${{ github.sha }}" | cut -c1-7)"
-          VERSION_INPUT="${{ github.event.inputs.version }}"
-          # is_release : true seulement si une version explicite est fournie (sinon fallback SHA, pas de tag Git).
+          BUMP="${BUMP:-patch}"
+          # Version explicite > incrément major/minor/patch > SHA (bump=none).
           if [ -n "$VERSION_INPUT" ]; then
             VERSION="$VERSION_INPUT"
             IS_RELEASE="true"
-          else
+          elif [ "$BUMP" = "none" ]; then
             VERSION="$SHA"
             IS_RELEASE="false"
+          else
+            VERSION="$(node scripts/next-version.mjs "$BUMP")"
+            IS_RELEASE="true"
           fi
-          # Le tag d'image principal suit la version (ou le SHA court à défaut).
+          if [ "$IS_RELEASE" = "true" ]; then
+            case "$VERSION" in
+              v*) ;;
+              *) VERSION="v${VERSION}" ;;
+            esac
+            if ! [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "Version invalide : ${VERSION} (attendu vX.Y.Z)"
+              exit 1
+            fi
+          fi
           TAG="$VERSION"
           echo "registry=$REGISTRY" >> "$GITHUB_OUTPUT"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"

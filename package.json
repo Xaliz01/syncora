@@ -15,6 +15,7 @@
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run build:shared && node scripts/typecheck-all.mjs",
     "test": "npm run test --workspaces --if-present",
+    "test:version": "node --test scripts/next-version.test.mjs",
     "test:e2e": "npm run e2e -w @planwise/frontend",
     "build": "npm run build --workspaces --if-present",
     "build:shared": "npm run build --workspace @planwise/shared --if-present && npm run build --workspace @planwise/telemetry --if-present",

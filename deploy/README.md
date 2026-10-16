@@ -115,32 +115,35 @@ Le workflow **CD (déploiement manuel)** se lance à la main, **depuis master un
 
 `Actions > CD (déploiement manuel) > Run workflow` (brancher sur `master`).
 
-Renseigner l'input **`version`** avec la version SemVer à déployer (ex. `v0.1.0`).
-Laisser vide pour un déploiement non versionné (le SHA court du commit sert alors
-de tag d'image et de version applicative).
+Choisir l'incrément **`bump`** : `patch` (défaut), `minor` ou `major`.
+La CD calcule le prochain tag `vX.Y.Z` depuis le dernier tag Git SemVer.
+`bump = none` déploie sans tag Git : le SHA court du commit sert de tag d'image
+et de version applicative. L'input **`version`** reste disponible pour forcer
+un libellé (ex. `v1.2.0`) ; s'il est renseigné, il prime sur l'incrément.
 
 Étapes automatiques :
 
 1. Garde-fou : refus si la ref n'est pas `master`.
-2. Build & push des 13 images backend + frontend sur GHCR. Chaque image reçoit
-   trois tags : la version (ou SHA si vide), le SHA court du commit, et `latest`.
+2. Calcul de la version (`scripts/next-version.mjs`), puis build & push de
+   l'image `planwise-api` et du frontend sur GHCR. Chaque image reçoit trois
+   tags : la version (ou SHA si `bump=none`), le SHA court du commit, et `latest`.
 3. Le frontend est buildé avec `NEXT_PUBLIC_APP_VERSION` (= version) et
    `NEXT_PUBLIC_GIT_SHA` (= SHA court) → affichés dans l'app (page « Mon compte »).
    Les images backend reçoivent `APP_VERSION` / `GIT_SHA` au build : exposés par
    `GET /api/health` et les en-têtes `X-App-Version` / `X-Git-Sha` sur chaque réponse.
 4. Copie de `docker-compose.prod.yml`, `Caddyfile`, `rolling-edge.sh` et monitoring
    sur la VM (SCP).
-5. Sur la VM : `pull` → `up` des microservices / Caddy / monitoring →
+5. Sur la VM : `pull` → `up` du worker, des notifications et du monitoring →
    **`rolling-edge.sh`** bascule api + frontend (blue/green, sans coupure
-   visible sur les domaines publics).
+   visible sur les domaines publics) → les anciens conteneurs sont retirés.
 6. **Prune images** : `prune-planwise-images.sh` ne conserve que les images
    applicatives (`$REGISTRY/planwise-*`) de la MEP courante et de la précédente
    (fichier `.previous-image-tag` sur la VM, pour un rollback rapide). Les images
    monitoring / Mongo ne sont pas touchées. Remplace le `docker image prune -a`
    manuel périodique.
-7. **Tag Git automatique** : si une `version` a été fournie et que le déploiement
-   a réussi, le workflow crée et pousse le tag Git correspondant (ex. `v0.1.0`)
-   sur le commit déployé. Étape ignorée pour un déploiement sans version (SHA).
+7. **Tag Git automatique** : si l'incrément n'est pas `none` (ou si `version` est
+   forcée) et que le déploiement a réussi, le workflow crée et pousse le tag
+   Git (ex. `v0.1.0`) sur le commit déployé. Étape ignorée pour `bump=none`.
 
 ### Blue/green (api + frontend)
 
@@ -153,8 +156,8 @@ seul le slot healthy reçoit le trafic. Le script `rolling-edge.sh` :
 4. laisse Caddy basculer (~quelques secondes) ;
 5. arrête l'ancien slot.
 
-Les microservices internes sont toujours mis à jour via un `compose up` classique
-(courte interruption possible sur les appels en cours uniquement).
+Le worker et les notifications sont mis à jour via un `compose up` classique
+(courte interruption possible sur un job en cours).
 
 **Important** : ne pas lancer un `docker compose up -d` sans liste de services —
 cela démarrerait blue **et** green en parallèle.
@@ -170,10 +173,12 @@ export REGISTRY IMAGE_TAG   # tag déjà pullé
 ### Convention de versioning (SemVer + tag Git)
 
 On suit [SemVer](https://semver.org/lang/fr/) : `MAJEUR.MINEUR.CORRECTIF`
-(ex. `0.1.0`). **Pas besoin de créer le tag à la main** : il suffit de lancer la CD
-avec `version = v0.1.0`. Le workflow tague automatiquement le commit déployé une fois
-le déploiement réussi. Le même libellé sert de tag d'image Docker, de tag Git, et de
-version affichée dans l'application.
+(ex. `v0.1.0`). **Pas besoin de calculer ni de créer le tag à la main.**
+Au lancement de la CD, choisir `patch`, `minor` ou `major` : le workflow lit
+le dernier tag `vX.Y.Z`, calcule le suivant, déploie, puis tague le commit.
+Le même libellé sert de tag d'image Docker, de tag Git, et de version affichée
+dans l'application. Sans aucun tag encore, le premier `patch` donne `v0.0.1`,
+le premier `minor` donne `v0.1.0`, le premier `major` donne `v1.0.0`.
 
 La création du tag est **idempotente** : si le tag existe déjà sur `origin` (release
 rejouée), l'étape n'échoue pas et ne le récrée pas.
