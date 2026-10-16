@@ -10,19 +10,29 @@ import { firstValueFrom } from "rxjs";
 import axios from "axios";
 import type {
   AuthUser,
-  CaseTemplateResponse,
   InjectTrialTestDataResponse,
-  InterventionTypeResponse,
-  InterventionTypesListResponse,
-  PermissionProfileResponse,
   PurgeTrialTestDataResponse,
-  TechnicianResponse,
   TrialTestDataStatusResponse,
   UpdateOrganizationTrialTestDataBody,
 } from "@planwise/shared";
-import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
 import { AbstractSubscriptionsGatewayService } from "./ports/subscriptions.service.port";
 import { AbstractTrialTestDataService } from "./ports/trial-test-data.service.port";
+import { AbstractOrganizationsService } from "./organizations/ports/organizations.service.port";
+import { AbstractAgencesService } from "./technicians/ports/agences.service.port";
+import { AbstractTechniciansService } from "./technicians/ports/technicians.service.port";
+import { AbstractTeamsService } from "./technicians/ports/teams.service.port";
+import { TestDataPurgeService } from "./technicians/test-data-purge.service";
+import { AbstractFleetService } from "./fleet/ports/fleet.service.port";
+import { AbstractPermissionsService } from "./permissions/ports/permissions.service.port";
+import { AbstractCaseTemplatesService } from "./cases/ports/case-templates.service.port";
+import { AbstractInterventionTypesService } from "./cases/ports/intervention-types.service.port";
+import { AbstractCasesService } from "./cases/ports/cases.service.port";
+import { AbstractInterventionsService } from "./cases/ports/interventions.service.port";
+import { AbstractCustomersService } from "./customers/ports/customers.service.port";
+import { AbstractOrderGiversService } from "./customers/ports/order-givers.service.port";
+import { AbstractArticleStockService } from "./stock/ports/article-stock.service.port";
+import { AbstractPrestationService } from "./stock/ports/prestation.service.port";
+import { AbstractStockLocationService } from "./stock/ports/stock-location.service.port";
 import {
   buildDemoAgences,
   buildDemoArticles,
@@ -50,19 +60,29 @@ export class TrialTestDataService extends AbstractTrialTestDataService {
 
   constructor(
     private readonly httpService: HttpService,
-    private readonly scopedHttp: OrganizationScopedHttpClient,
     private readonly subscriptionsGateway: AbstractSubscriptionsGatewayService,
+    private readonly organizations: AbstractOrganizationsService,
+    private readonly agences: AbstractAgencesService,
+    private readonly technicians: AbstractTechniciansService,
+    private readonly teams: AbstractTeamsService,
+    private readonly technicianPurge: TestDataPurgeService,
+    private readonly fleet: AbstractFleetService,
+    private readonly permissions: AbstractPermissionsService,
+    private readonly caseTemplates: AbstractCaseTemplatesService,
+    private readonly interventionTypes: AbstractInterventionTypesService,
+    private readonly cases: AbstractCasesService,
+    private readonly interventions: AbstractInterventionsService,
+    private readonly customers: AbstractCustomersService,
+    private readonly orderGivers: AbstractOrderGiversService,
+    private readonly articles: AbstractArticleStockService,
+    private readonly prestations: AbstractPrestationService,
+    private readonly stockLocations: AbstractStockLocationService,
   ) {
     super();
   }
 
   async getStatus(user: AuthUser): Promise<TrialTestDataStatusResponse> {
-    const res = await firstValueFrom(
-      this.httpService.get<TrialTestDataStatusResponse>(
-        `${SERVICE_URLS.organizations}/organizations/${user.organizationId}/trial-test-data/status`,
-      ),
-    );
-    return res.data;
+    return this.organizations.getTrialTestDataStatus(user.organizationId);
   }
 
   async inject(user: AuthUser): Promise<InjectTrialTestDataResponse> {
@@ -117,57 +137,41 @@ export class TrialTestDataService extends AbstractTrialTestDataService {
       const agences = await runInBatches(
         buildDemoAgences(organizationId),
         INJECT_BATCH_SIZE,
-        (body) =>
-          this.post<{ id: string }>(SERVICE_URLS.technicians, organizationId, "/agences", body),
+        (body) => this.agences.createAgence(body),
       );
       const agenceIds = agences.map((a) => a.id);
 
       const technicians = await runInBatches(
         buildDemoTechnicians(organizationId),
         INJECT_BATCH_SIZE,
-        (body) =>
-          this.post<{ id: string }>(SERVICE_URLS.technicians, organizationId, "/technicians", body),
+        (body) => this.technicians.createTechnician(body),
       );
       const technicianIds = technicians.map((t) => t.id);
 
       const teams = await runInBatches(
         buildDemoTeams(organizationId, agenceIds, technicianIds),
         INJECT_BATCH_SIZE,
-        (body) =>
-          this.post<{ id: string }>(SERVICE_URLS.technicians, organizationId, "/teams", body),
+        (body) => this.teams.createTeam(body),
       );
       const teamIds = teams.map((t) => t.id);
 
       const vehicles = await runInBatches(
         buildDemoVehicles(organizationId, orgSuffix),
         INJECT_BATCH_SIZE,
-        (body) => this.post<{ id: string }>(SERVICE_URLS.fleet, organizationId, "/vehicles", body),
+        (body) => this.fleet.createVehicle(body),
       );
       await runInBatches(vehicles, INJECT_BATCH_SIZE, (vehicle, i) =>
-        this.scopedHttp.request({
-          baseUrl: SERVICE_URLS.fleet,
-          organizationId,
-          method: "put",
-          path: `/vehicles/${vehicle.id}/assign-team`,
-          body: { teamId: teamIds[i % teamIds.length]! },
-          errorLabel: "Fleet service error",
-        }),
+        this.fleet.assignTeam(organizationId, vehicle.id, teamIds[i % teamIds.length]!),
       );
 
       await runInBatches(buildDemoPermissionProfiles(organizationId), INJECT_BATCH_SIZE, (body) =>
-        this.post<PermissionProfileResponse>(
-          SERVICE_URLS.permissions,
-          organizationId,
-          "/profiles",
-          body,
-        ),
+        this.permissions.createProfile(body),
       );
 
       const templates = await runInBatches(
         buildDemoCaseTemplates(organizationId),
         INJECT_BATCH_SIZE,
-        (body) =>
-          this.post<CaseTemplateResponse>(SERVICE_URLS.cases, organizationId, "/templates", body),
+        (body) => this.caseTemplates.createTemplate(body),
       );
       const templateIds = templates.map((t) => t.id);
 
@@ -175,7 +179,7 @@ export class TrialTestDataService extends AbstractTrialTestDataService {
 
       const customerBodies = buildDemoCustomers(organizationId);
       const customers = await runInBatches(customerBodies, INJECT_BATCH_SIZE, (body) =>
-        this.post<{ id: string }>(SERVICE_URLS.customers, organizationId, "/customers", body),
+        this.customers.createCustomer(body),
       );
       const demoCustomers = customers.map((c, i) => ({
         id: c.id,
@@ -183,7 +187,7 @@ export class TrialTestDataService extends AbstractTrialTestDataService {
       }));
 
       await runInBatches(buildDemoArticles(organizationId, orgSuffix), INJECT_BATCH_SIZE, (body) =>
-        this.post(SERVICE_URLS.stock, organizationId, "/articles", body),
+        this.articles.createArticle(body),
       );
 
       const caseAssignee = {
@@ -192,20 +196,11 @@ export class TrialTestDataService extends AbstractTrialTestDataService {
       };
       const caseSeeds = buildDemoCases(organizationId, demoCustomers, templateIds, caseAssignee);
       const createdCases = await runInBatches(caseSeeds, INJECT_BATCH_SIZE, async (seed) => {
-        const created = await this.post<{ id: string }>(
-          SERVICE_URLS.cases,
-          organizationId,
-          "/cases",
-          seed.create,
-        );
+        const created = await this.cases.createCase(seed.create);
         if (seed.status !== "draft") {
-          await this.scopedHttp.request({
-            baseUrl: SERVICE_URLS.cases,
+          await this.cases.updateCase(created.id, {
             organizationId,
-            method: "patch",
-            path: `/cases/${created.id}`,
-            body: { organizationId, status: seed.status },
-            errorLabel: "Cases service error",
+            status: seed.status,
           });
         }
         return created;
@@ -225,7 +220,7 @@ export class TrialTestDataService extends AbstractTrialTestDataService {
           interventionTypeIds,
         }),
         INJECT_BATCH_SIZE,
-        (body) => this.post(SERVICE_URLS.cases, organizationId, "/interventions", body),
+        (body) => this.interventions.createIntervention(body),
       );
 
       await this.patchTrialTestData(organizationId, {
@@ -246,29 +241,11 @@ export class TrialTestDataService extends AbstractTrialTestDataService {
     }
   }
 
-  private post<T>(baseUrl: string, organizationId: string, path: string, body: object): Promise<T> {
-    return this.scopedHttp.request<T>({
-      baseUrl,
-      organizationId,
-      method: "post",
-      path,
-      body,
-      errorLabel: `${baseUrl} error`,
-    });
-  }
-
   /**
    * Réutilise Pose / SAV s’ils existent déjà (ex. import catalogue), sinon les crée en démo.
    */
   private async ensureDemoInterventionTypeIds(organizationId: string): Promise<string[]> {
-    const existing = await this.scopedHttp.request<InterventionTypesListResponse>({
-      baseUrl: SERVICE_URLS.cases,
-      organizationId,
-      method: "get",
-      path: "/intervention-types",
-      query: { organizationId },
-      errorLabel: "Cases service error",
-    });
+    const existing = await this.interventionTypes.list(organizationId);
     const byName = new Map(
       (existing.types ?? []).map((t) => [t.name.trim().toLocaleLowerCase("fr"), t] as const),
     );
@@ -280,12 +257,7 @@ export class TrialTestDataService extends AbstractTrialTestDataService {
         ids.push(found.id);
         continue;
       }
-      const created = await this.post<InterventionTypeResponse>(
-        SERVICE_URLS.cases,
-        organizationId,
-        "/intervention-types",
-        body,
-      );
+      const created = await this.interventionTypes.create(body);
       byName.set(key, created);
       ids.push(created.id);
     }
@@ -298,39 +270,20 @@ export class TrialTestDataService extends AbstractTrialTestDataService {
    */
   private async ensureUserTechnician(user: AuthUser): Promise<string> {
     const organizationId = user.organizationId;
-    const existing = await this.scopedHttp.request<TechnicianResponse | null>({
-      baseUrl: SERVICE_URLS.technicians,
-      organizationId,
-      method: "get",
-      path: `/technicians/by-user/${user.id}`,
-      validateResponseScope: false,
-      errorLabel: "Technicians service error",
-    });
+    const existing = await this.technicians.findByUserId(organizationId, user.id);
     if (existing?.id) return existing.id;
 
     const nameParts = (user.name?.trim() || user.email).split(/\s+/);
     const firstName = nameParts[0] || "Admin";
     const lastName = nameParts.slice(1).join(" ") || firstName;
-    const created = await this.post<TechnicianResponse>(
-      SERVICE_URLS.technicians,
+    const created = await this.technicians.createTechnician({
       organizationId,
-      "/technicians",
-      {
-        organizationId,
-        firstName,
-        lastName,
-        email: user.email,
-        status: "actif",
-      },
-    );
-    await this.scopedHttp.request({
-      baseUrl: SERVICE_URLS.technicians,
-      organizationId,
-      method: "put",
-      path: `/technicians/${created.id}/link-user`,
-      body: { userId: user.id },
-      errorLabel: "Technicians service error",
+      firstName,
+      lastName,
+      email: user.email,
+      status: "actif",
     });
+    await this.technicians.linkUserToTechnician(organizationId, created.id, user.id);
     return created.id;
   }
 
@@ -350,32 +303,28 @@ export class TrialTestDataService extends AbstractTrialTestDataService {
     organizationId: string,
     body: UpdateOrganizationTrialTestDataBody,
   ): Promise<void> {
-    await firstValueFrom(
-      this.httpService.patch(
-        `${SERVICE_URLS.organizations}/organizations/${organizationId}/trial-test-data`,
-        body,
-      ),
-    );
+    await this.organizations.updateTrialTestData(organizationId, body);
   }
 
   private async purgeAllServices(organizationId: string): Promise<void> {
-    const query = { organizationId };
-    const urls = [
-      { url: SERVICE_URLS.cases, label: "cases" },
-      { url: SERVICE_URLS.stock, label: "stock" },
-      { url: SERVICE_URLS.fleet, label: "fleet" },
-      { url: SERVICE_URLS.technicians, label: "technicians" },
-      { url: SERVICE_URLS.customers, label: "customers" },
-      { url: SERVICE_URLS.permissions, label: "permissions" },
-      { url: SERVICE_URLS.integrations, label: "integrations" },
-    ];
-    for (const { url, label } of urls) {
-      try {
-        await firstValueFrom(this.httpService.delete(`${url}/test-data`, { params: query }));
-      } catch (err: unknown) {
-        if (axios.isAxiosError(err) && err.response?.status === 404) continue;
-        this.logger.warn(`Purge test data: ${label} service returned an error`, err);
-      }
+    await this.cases.purgeTestData(organizationId);
+    await this.articles.purgeTestData(organizationId);
+    await this.prestations.purgeTestData(organizationId);
+    await this.stockLocations.purgeTestData(organizationId);
+    await this.fleet.purgeTestData(organizationId);
+    await this.technicianPurge.purge(organizationId);
+    await this.customers.purgeTestData(organizationId);
+    await this.orderGivers.purgeTestData(organizationId);
+    await this.permissions.purgeTestData(organizationId);
+    try {
+      await firstValueFrom(
+        this.httpService.delete(`${SERVICE_URLS.integrations}/test-data`, {
+          params: { organizationId },
+        }),
+      );
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err) && err.response?.status === 404) return;
+      this.logger.warn("Purge test data: integrations service returned an error", err);
     }
   }
 }

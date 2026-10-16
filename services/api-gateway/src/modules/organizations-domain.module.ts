@@ -1,5 +1,4 @@
 import { Module } from "@nestjs/common";
-import { HttpModule } from "@nestjs/axios";
 import { MongooseModule } from "@nestjs/mongoose";
 import { OrganizationSchema } from "../persistence/organizations/organization.schema";
 import { CronRunSchema } from "../persistence/organizations/cron-run.schema";
@@ -12,11 +11,9 @@ import { AnalyticsService } from "../domain/organizations/analytics.service";
 import { AbstractDataImportRunsService } from "../domain/organizations/ports/data-import-runs.service.port";
 import { DataImportRunsService } from "../domain/organizations/data-import-runs.service";
 import { CronRunRecorder } from "../domain/organizations/cron-run.recorder";
-import { TrialTestDataCleanupScheduler } from "../domain/organizations/trial-test-data-cleanup.scheduler";
 
 @Module({
   imports: [
-    HttpModule.register({ timeout: 10000, maxRedirects: 0 }),
     MongooseModule.forFeature(
       [
         { name: "Organization", schema: OrganizationSchema },
@@ -32,8 +29,12 @@ import { TrialTestDataCleanupScheduler } from "../domain/organizations/trial-tes
     { provide: AbstractAnalyticsService, useClass: AnalyticsService },
     { provide: AbstractDataImportRunsService, useClass: DataImportRunsService },
     CronRunRecorder,
-    TrialTestDataCleanupScheduler,
   ],
-  exports: [AbstractOrganizationsService, AbstractAnalyticsService, AbstractDataImportRunsService],
+  exports: [
+    AbstractOrganizationsService,
+    AbstractAnalyticsService,
+    AbstractDataImportRunsService,
+    CronRunRecorder,
+  ],
 })
 export class OrganizationsDomainModule {}

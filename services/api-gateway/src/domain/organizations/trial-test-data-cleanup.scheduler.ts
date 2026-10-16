@@ -1,11 +1,9 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
-import { HttpService } from "@nestjs/axios";
 import { CronJob } from "cron";
-import { firstValueFrom } from "rxjs";
-import axios from "axios";
 import { AbstractOrganizationsService } from "./ports/organizations.service.port";
 import { CronRunRecorder } from "./cron-run.recorder";
-import { SERVICE_URLS } from "../../infrastructure/service-urls.config";
+import { TrialTestDataService } from "../trial-test-data.service";
+import { SubscriptionsService } from "../subscriptions/subscriptions.service";
 
 /** Purge quotidienne des données de démo (4h) — via `cron`, sans @nestjs/schedule. */
 const CLEANUP_CRON = "0 4 * * *";
@@ -17,9 +15,10 @@ export class TrialTestDataCleanupScheduler implements OnModuleInit, OnModuleDest
   private job?: CronJob;
 
   constructor(
-    private readonly httpService: HttpService,
     private readonly organizationsService: AbstractOrganizationsService,
     private readonly cronRunRecorder: CronRunRecorder,
+    private readonly trialTestData: TrialTestDataService,
+    private readonly subscriptions: SubscriptionsService,
   ) {}
 
   onModuleInit(): void {
@@ -65,12 +64,7 @@ export class TrialTestDataCleanupScheduler implements OnModuleInit, OnModuleDest
             skipped += 1;
             continue;
           }
-          await this.purgeAllServices(organizationId);
-          await this.organizationsService.updateTrialTestData(organizationId, {
-            status: "none",
-            injectedAt: null,
-            errorMessage: null,
-          });
+          await this.trialTestData.purgeOrganization(organizationId);
           succeeded += 1;
           this.logger.log(`Purged trial test data for organization ${organizationId}`);
         } catch (err: unknown) {
@@ -96,39 +90,12 @@ export class TrialTestDataCleanupScheduler implements OnModuleInit, OnModuleDest
 
   private async isTrialEnded(organizationId: string): Promise<boolean> {
     try {
-      const res = await firstValueFrom(
-        this.httpService.get<{ status: string; trialEndsAt: string | null }>(
-          `${SERVICE_URLS.subscriptions}/subscriptions/current`,
-          { params: { organizationId } },
-        ),
-      );
-      const { status, trialEndsAt } = res.data;
-      if (status !== "trialing") return true;
-      if (!trialEndsAt) return false;
-      return new Date(trialEndsAt).getTime() <= Date.now();
+      const sub = await this.subscriptions.getByOrganization(organizationId);
+      if (sub.status !== "trialing") return true;
+      if (!sub.trialEndsAt) return false;
+      return new Date(sub.trialEndsAt).getTime() <= Date.now();
     } catch {
       return false;
-    }
-  }
-
-  private async purgeAllServices(organizationId: string): Promise<void> {
-    const query = { organizationId };
-    const urls = [
-      SERVICE_URLS.cases,
-      SERVICE_URLS.stock,
-      SERVICE_URLS.fleet,
-      SERVICE_URLS.technicians,
-      SERVICE_URLS.customers,
-      SERVICE_URLS.permissions,
-      SERVICE_URLS.integrations,
-    ];
-    for (const url of urls) {
-      try {
-        await firstValueFrom(this.httpService.delete(`${url}/test-data`, { params: query }));
-      } catch (err: unknown) {
-        if (axios.isAxiosError(err) && err.response?.status === 404) continue;
-        throw err;
-      }
     }
   }
 }
