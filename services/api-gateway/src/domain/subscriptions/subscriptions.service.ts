@@ -40,7 +40,8 @@ import type { OrganizationSubscriptionDocument } from "../../persistence/subscri
 import type { ProcessedStripeEventDocument } from "../../persistence/subscriptions/processed-stripe-event.schema";
 import { buildStripeCheckoutLegalParams } from "./stripe-legal-params";
 import { toSubscriptionResponse } from "./mappers/subscription.mapper";
-import { SERVICE_URLS } from "../../infrastructure/service-urls.config";
+import { AbstractOrganizationsService } from "../organizations/ports/organizations.service.port";
+import { AbstractEmailService } from "../notifications/ports/email.service.port";
 
 const DEFAULT_TRIAL_DAYS = 15;
 const PLAN_LABEL = BASE_SUBSCRIPTION_PLAN_LABEL;
@@ -149,6 +150,8 @@ export class SubscriptionsService {
     private readonly subscriptionModel: Model<OrganizationSubscriptionDocument>,
     @InjectModel("ProcessedStripeEvent", "subscriptions")
     private readonly processedEventModel: Model<ProcessedStripeEventDocument>,
+    private readonly organizations: AbstractOrganizationsService,
+    private readonly email: AbstractEmailService,
   ) {}
 
   private readAddonQuantities(doc: OrganizationSubscriptionDocument | null): AddonQuantities {
@@ -1346,16 +1349,10 @@ export class SubscriptionsService {
       return;
     }
 
-    const notificationsUrl = SERVICE_URLS.notifications.replace(/\/$/, "");
-
     let organizationName: string | undefined;
     try {
-      const organizationsUrl = SERVICE_URLS.organizations.replace(/\/$/, "");
-      const orgRes = await fetch(`${organizationsUrl}/organizations/${params.organizationId}`);
-      if (orgRes.ok) {
-        const org = (await orgRes.json()) as { name?: string };
-        if (org.name?.trim()) organizationName = org.name.trim();
-      }
+      const org = await this.organizations.findById(params.organizationId);
+      if (org?.name?.trim()) organizationName = org.name.trim();
     } catch {
       /* best-effort */
     }
@@ -1373,23 +1370,14 @@ export class SubscriptionsService {
     ];
 
     try {
-      const res = await fetch(`${notificationsUrl}/email/transactional`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          to,
-          subject: "Nouvel abonnement Planwise",
-          body: lines.join("\n"),
-          footer: "Alerte ops Planwise — abonnement payant.",
-        }),
-      });
-      if (!res.ok) {
-        this.logger.warn(
-          `Ops subscription alert HTTP ${res.status} for org ${params.organizationId}`,
-        );
-        return;
-      }
-      const data = (await res.json()) as { sent?: boolean; reason?: string };
+      const data = await this.email.sendTransactionalEmail(
+        to,
+        "Nouvel abonnement Planwise",
+        lines.join("\n"),
+        undefined,
+        undefined,
+        "Alerte ops Planwise — abonnement payant.",
+      );
       if (!data.sent) {
         this.logger.warn(
           `Ops subscription alert not sent for org ${params.organizationId}: ${data.reason ?? "unknown"}`,
