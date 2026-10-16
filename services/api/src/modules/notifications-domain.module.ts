@@ -39,6 +39,7 @@ import { CronRunRecorder } from "../domain/notifications/cron-run.recorder";
     CronRunRecorder,
   ],
   exports: [
+    MongooseModule,
     AbstractNotificationsService,
     AbstractNotificationPreferencesService,
     AbstractPushSubscriptionService,
