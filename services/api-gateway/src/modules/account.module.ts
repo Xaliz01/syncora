@@ -1,11 +1,12 @@
 import { Module } from "@nestjs/common";
-import { HttpModule } from "@nestjs/axios";
 import { AccountController } from "../presentation/http/account.controller";
 import { AbstractAccountService } from "../domain/ports/account.service.port";
 import { AccountService } from "../domain/account.service";
+import { UsersModule } from "./users.module";
+import { TechniciansDomainModule } from "./technicians-domain.module";
 
 @Module({
-  imports: [HttpModule.register({ timeout: 5000, maxRedirects: 0 })],
+  imports: [UsersModule, TechniciansDomainModule],
   controllers: [AccountController],
   providers: [{ provide: AbstractAccountService, useClass: AccountService }],
 })

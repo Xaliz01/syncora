@@ -1,22 +1,40 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { JwtModule, JwtService } from "@nestjs/jwt";
-import { HttpModule, HttpService } from "@nestjs/axios";
-import { UnauthorizedException, ForbiddenException } from "@nestjs/common";
+import { ForbiddenException, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
-import { of, throwError } from "rxjs";
-import type { AxiosResponse } from "axios";
 import { AuthService } from "../auth.service";
 import { AbstractAuthService } from "../ports/auth.service.port";
 import { AbstractSubscriptionsGatewayService } from "../ports/subscriptions.service.port";
+import { AbstractUsersService } from "../users/ports/users.service.port";
+import { AbstractUserSessionsService } from "../users/ports/user-sessions.service.port";
+import { AbstractOrganizationsService } from "../organizations/ports/organizations.service.port";
+import { AbstractPermissionsService } from "../permissions/ports/permissions.service.port";
+import { AbstractTechniciansService } from "../technicians/ports/technicians.service.port";
+import { AbstractEmailService } from "../notifications/ports/email.service.port";
 import { ACCOUNT_REGISTERED_EVENT } from "../../infrastructure/account-registered.event";
 import { ORGANIZATION_CREATED_EVENT } from "../../infrastructure/organization-created.event";
 
 describe("AuthService", () => {
   let service: AuthService;
-  let httpService: HttpService;
   let jwtService: JwtService;
   let jwtSignSpy: jest.SpyInstance;
   let eventEmitter: { emit: jest.Mock };
+  let users: {
+    create: jest.Mock;
+    createAccount: jest.Mock;
+    verifyEmail: jest.Mock;
+    validateCredentials: jest.Mock;
+    requestPasswordReset: jest.Mock;
+    confirmPasswordReset: jest.Mock;
+    findById: jest.Mock;
+    listOrganizationMemberships: jest.Mock;
+    findFoundingAdminUserId: jest.Mock;
+  };
+  let sessions: { createSession: jest.Mock };
+  let organizations: { create: jest.Mock };
+  let permissions: { resolveEffectivePermissions: jest.Mock };
+  let technicians: { findByUserId: jest.Mock };
+  let email: { sendTransactionalEmail: jest.Mock };
 
   const mockOrgResponse = {
     id: "org-123",
@@ -29,8 +47,8 @@ describe("AuthService", () => {
     organizationId: "org-123",
     email: "admin@example.com",
     name: "Admin User",
-    role: "admin",
-    status: "active",
+    role: "admin" as const,
+    status: "active" as const,
   };
 
   const mockValidateCredentialsResponse = {
@@ -38,8 +56,8 @@ describe("AuthService", () => {
     organizationId: "org-123",
     email: "admin@example.com",
     name: "Admin User",
-    role: "admin",
-    status: "active",
+    role: "admin" as const,
+    status: "active" as const,
     emailVerified: true,
   };
 
@@ -76,10 +94,35 @@ describe("AuthService", () => {
 
   beforeEach(async () => {
     eventEmitter = { emit: jest.fn() };
+    users = {
+      create: jest.fn().mockResolvedValue(mockUserResponse),
+      createAccount: jest.fn(),
+      verifyEmail: jest.fn(),
+      validateCredentials: jest.fn(),
+      requestPasswordReset: jest.fn(),
+      confirmPasswordReset: jest.fn().mockResolvedValue(undefined),
+      findById: jest.fn().mockResolvedValue(mockUserResponse),
+      listOrganizationMemberships: jest
+        .fn()
+        .mockResolvedValue([
+          { organizationId: "org-123", role: "admin", membershipStatus: "active" },
+        ]),
+      findFoundingAdminUserId: jest.fn().mockResolvedValue(null),
+    };
+    sessions = {
+      createSession: jest.fn().mockResolvedValue({ sessionId: "session-abc" }),
+    };
+    organizations = { create: jest.fn().mockResolvedValue(mockOrgResponse) };
+    permissions = {
+      resolveEffectivePermissions: jest.fn().mockResolvedValue(mockPermissionsResponse),
+    };
+    technicians = { findByUserId: jest.fn().mockResolvedValue(null) };
+    email = {
+      sendTransactionalEmail: jest.fn().mockResolvedValue({ sent: true }),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       imports: [
-        HttpModule.register({ timeout: 5000 }),
         JwtModule.register({
           secret: "test-secret",
           signOptions: { expiresIn: "7d" },
@@ -89,11 +132,16 @@ describe("AuthService", () => {
         { provide: AbstractAuthService, useClass: AuthService },
         { provide: AbstractSubscriptionsGatewayService, useValue: mockSubscriptionsGateway },
         { provide: EventEmitter2, useValue: eventEmitter },
+        { provide: AbstractUsersService, useValue: users },
+        { provide: AbstractUserSessionsService, useValue: sessions },
+        { provide: AbstractOrganizationsService, useValue: organizations },
+        { provide: AbstractPermissionsService, useValue: permissions },
+        { provide: AbstractTechniciansService, useValue: technicians },
+        { provide: AbstractEmailService, useValue: email },
       ],
     }).compile();
 
     service = module.get<AbstractAuthService>(AbstractAuthService) as AuthService;
-    httpService = module.get<HttpService>(HttpService);
     jwtService = module.get<JwtService>(JwtService);
     jwtSignSpy = jest.spyOn(jwtService, "sign").mockReturnValue("mock-jwt-token");
   });
@@ -108,30 +156,6 @@ describe("AuthService", () => {
 
   describe("register", () => {
     it("should successfully register and return auth response with JWT", async () => {
-      jest.spyOn(httpService, "post").mockImplementation((url: string) => {
-        let response: AxiosResponse;
-        if (url.includes("/organizations")) {
-          response = { data: mockOrgResponse, status: 201, statusText: "Created" } as AxiosResponse;
-        } else if (url.includes("/sessions")) {
-          response = {
-            data: { sessionId: "session-abc" },
-            status: 201,
-            statusText: "Created",
-          } as AxiosResponse;
-        } else if (url.includes("/users") && !url.includes("validate-credentials")) {
-          response = {
-            data: mockUserResponse,
-            status: 201,
-            statusText: "Created",
-          } as AxiosResponse;
-        } else if (url.includes("/permissions/effective")) {
-          response = { data: mockPermissionsResponse, status: 200 } as AxiosResponse;
-        } else {
-          response = { data: {}, status: 200 } as AxiosResponse;
-        }
-        return of(response);
-      });
-
       const body = {
         organizationName: "Test Org",
         organizationSiret: "12345678901234",
@@ -146,6 +170,15 @@ describe("AuthService", () => {
       expect(result.user.id).toBe("user-123");
       expect(result.user.email).toBe("admin@example.com");
       expect(result.user.organizationId).toBe("org-123");
+      expect(organizations.create).toHaveBeenCalled();
+      expect(users.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          organizationId: "org-123",
+          email: "admin@example.com",
+          role: "admin",
+        }),
+      );
+      expect(sessions.createSession).toHaveBeenCalledWith("user-123", { userAgent: undefined });
       expect(jwtSignSpy).toHaveBeenCalled();
       expect(eventEmitter.emit).toHaveBeenCalledWith(
         ORGANIZATION_CREATED_EVENT,
@@ -161,26 +194,15 @@ describe("AuthService", () => {
 
   describe("registerAccount", () => {
     it("should create account and require email verification (no JWT yet)", async () => {
-      jest.spyOn(httpService, "post").mockImplementation((url: string) => {
-        if (url.includes("/users/accounts") && !url.includes("verify")) {
-          return of({
-            data: {
-              user: {
-                id: "user-new",
-                email: "new@example.com",
-                name: "New Admin",
-                status: "active",
-                emailVerified: false,
-              },
-              emailVerificationCode: "123456",
-            },
-            status: 201,
-          } as AxiosResponse);
-        }
-        if (url.includes("/email/transactional")) {
-          return of({ data: { sent: true }, status: 200 } as AxiosResponse);
-        }
-        return of({ data: {}, status: 200 } as AxiosResponse);
+      users.createAccount.mockResolvedValue({
+        user: {
+          id: "user-new",
+          email: "new@example.com",
+          name: "New Admin",
+          status: "active",
+          emailVerified: false,
+        },
+        emailVerificationCode: "123456",
       });
 
       const result = await service.registerAccount({
@@ -199,33 +221,22 @@ describe("AuthService", () => {
         email: "new@example.com",
         name: "New Admin",
       });
-      expect(httpService.post).toHaveBeenCalledWith(
-        expect.stringContaining("/email/transactional"),
-        expect.objectContaining({
-          to: "new@example.com",
-          subject: "Vérifiez votre adresse e-mail",
-          body: expect.stringContaining("seul le dernier code est valable"),
-        }),
+      expect(email.sendTransactionalEmail).toHaveBeenCalledWith(
+        "new@example.com",
+        "Vérifiez votre adresse e-mail",
+        expect.stringContaining("seul le dernier code est valable"),
       );
     });
 
     it("should not send another OTP email when the account already has a valid code", async () => {
-      jest.spyOn(httpService, "post").mockImplementation((url: string) => {
-        if (url.includes("/users/accounts") && !url.includes("verify")) {
-          return of({
-            data: {
-              user: {
-                id: "user-new",
-                email: "new@example.com",
-                name: "New Admin",
-                status: "active",
-                emailVerified: false,
-              },
-            },
-            status: 201,
-          } as AxiosResponse);
-        }
-        return of({ data: {}, status: 200 } as AxiosResponse);
+      users.createAccount.mockResolvedValue({
+        user: {
+          id: "user-new",
+          email: "new@example.com",
+          name: "New Admin",
+          status: "active",
+          emailVerified: false,
+        },
       });
 
       const result = await service.registerAccount({
@@ -238,27 +249,16 @@ describe("AuthService", () => {
         status: "email_verification_required",
         email: "new@example.com",
       });
-      expect(httpService.post).not.toHaveBeenCalledWith(
-        expect.stringContaining("/email/transactional"),
-        expect.anything(),
-      );
+      expect(email.sendTransactionalEmail).not.toHaveBeenCalled();
     });
 
     it("should verify email and return onboarding JWT", async () => {
-      jest.spyOn(httpService, "post").mockImplementation((url: string) => {
-        if (url.includes("/users/accounts/verify-email")) {
-          return of({
-            data: {
-              id: "user-new",
-              email: "new@example.com",
-              name: "New Admin",
-              status: "active",
-              emailVerified: true,
-            },
-            status: 200,
-          } as AxiosResponse);
-        }
-        return of({ data: {}, status: 200 } as AxiosResponse);
+      users.verifyEmail.mockResolvedValue({
+        id: "user-new",
+        email: "new@example.com",
+        name: "New Admin",
+        status: "active",
+        emailVerified: true,
       });
 
       const result = await service.verifyEmail({
@@ -277,26 +277,12 @@ describe("AuthService", () => {
 
   describe("login", () => {
     it("should successfully login and return auth response with JWT", async () => {
-      jest.spyOn(httpService, "post").mockImplementation((url: string) => {
-        let response: AxiosResponse;
-        if (url.includes("validate-credentials")) {
-          response = { data: mockValidateCredentialsResponse, status: 200 } as AxiosResponse;
-        } else if (url.includes("/sessions")) {
-          response = { data: { sessionId: "session-abc" }, status: 201 } as AxiosResponse;
-        } else if (url.includes("/permissions/effective")) {
-          response = { data: mockPermissionsResponse, status: 200 } as AxiosResponse;
-        } else {
-          response = { data: {}, status: 200 } as AxiosResponse;
-        }
-        return of(response);
-      });
+      users.validateCredentials.mockResolvedValue(mockValidateCredentialsResponse);
 
-      const body = {
+      const result = await service.login({
         email: "admin@example.com",
         password: "secret123",
-      };
-
-      const result = await service.login(body);
+      });
 
       expect(result.accessToken).toBe("mock-jwt-token");
       expect(jwtSignSpy).toHaveBeenCalledWith(
@@ -311,19 +297,11 @@ describe("AuthService", () => {
     });
 
     it("should return onboarding JWT when user has no organization yet", async () => {
-      jest.spyOn(httpService, "post").mockImplementation((url: string) => {
-        if (url.includes("validate-credentials")) {
-          return of({
-            data: {
-              id: "user-pending",
-              email: "pending@example.com",
-              status: "active",
-              emailVerified: true,
-            },
-            status: 200,
-          } as AxiosResponse);
-        }
-        return of({ data: {}, status: 200 } as AxiosResponse);
+      users.validateCredentials.mockResolvedValue({
+        id: "user-pending",
+        email: "pending@example.com",
+        status: "active",
+        emailVerified: true,
       });
 
       const result = await service.login({
@@ -341,39 +319,23 @@ describe("AuthService", () => {
     });
 
     it("should throw UnauthorizedException on failed login (401)", async () => {
-      jest.spyOn(httpService, "post").mockImplementation((url: string) => {
-        if (url.includes("validate-credentials")) {
-          return throwError(() => ({
-            response: { status: 401 },
-          }));
-        }
-        return of({ data: {}, status: 200 } as AxiosResponse);
-      });
+      users.validateCredentials.mockResolvedValue(null);
 
-      const body = {
-        email: "wrong@example.com",
-        password: "wrongpassword",
-      };
-
-      await expect(service.login(body)).rejects.toThrow(UnauthorizedException);
+      await expect(
+        service.login({
+          email: "wrong@example.com",
+          password: "wrongpassword",
+        }),
+      ).rejects.toThrow(UnauthorizedException);
       expect(jwtSignSpy).not.toHaveBeenCalled();
     });
 
     it("should throw ForbiddenException when organization access is disabled", async () => {
-      jest.spyOn(httpService, "post").mockImplementation((url: string) => {
-        if (url.includes("validate-credentials")) {
-          return throwError(() => ({
-            response: {
-              status: 403,
-              data: {
-                message:
-                  "Votre accès à l'organisation a été désactivé. Contactez un administrateur pour être réactivé.",
-              },
-            },
-          }));
-        }
-        return of({ data: {}, status: 200 } as AxiosResponse);
-      });
+      users.validateCredentials.mockRejectedValue(
+        new ForbiddenException(
+          "Votre accès à l'organisation a été désactivé. Contactez un administrateur pour être réactivé.",
+        ),
+      );
 
       await expect(
         service.login({ email: "disabled@example.com", password: "secret123" }),
@@ -394,27 +356,7 @@ describe("AuthService", () => {
     };
 
     it("should return the name from users-service, not the JWT", async () => {
-      jest.spyOn(httpService, "get").mockImplementation((url: string) => {
-        if (url.includes("/organization-memberships")) {
-          return of({
-            data: [{ organizationId: "org-123", role: "admin", membershipStatus: "active" }],
-            status: 200,
-          } as AxiosResponse);
-        }
-        if (url.includes("/users/user-123") && !url.includes("memberships")) {
-          return of({
-            data: { ...mockUserResponse, name: "Fresh DB Name" },
-            status: 200,
-          } as AxiosResponse);
-        }
-        return of({ data: {}, status: 200 } as AxiosResponse);
-      });
-      jest.spyOn(httpService, "post").mockImplementation((url: string) => {
-        if (url.includes("/permissions/effective")) {
-          return of({ data: mockPermissionsResponse, status: 200 } as AxiosResponse);
-        }
-        return of({ data: {}, status: 200 } as AxiosResponse);
-      });
+      users.findById.mockResolvedValue({ ...mockUserResponse, name: "Fresh DB Name" });
 
       const user = await service.getSessionUser(jwtPayload);
 
@@ -423,24 +365,7 @@ describe("AuthService", () => {
     });
 
     it("should fall back to JWT name when users-service is unavailable", async () => {
-      jest.spyOn(httpService, "get").mockImplementation((url: string) => {
-        if (url.includes("/organization-memberships")) {
-          return of({
-            data: [{ organizationId: "org-123", role: "admin", membershipStatus: "active" }],
-            status: 200,
-          } as AxiosResponse);
-        }
-        if (url.includes("/users/user-123")) {
-          return throwError(() => ({ response: { status: 404 } }));
-        }
-        return of({ data: {}, status: 200 } as AxiosResponse);
-      });
-      jest.spyOn(httpService, "post").mockImplementation((url: string) => {
-        if (url.includes("/permissions/effective")) {
-          return of({ data: mockPermissionsResponse, status: 200 } as AxiosResponse);
-        }
-        return of({ data: {}, status: 200 } as AxiosResponse);
-      });
+      users.findById.mockRejectedValue(new NotFoundException());
 
       const user = await service.getSessionUser(jwtPayload);
 
@@ -450,12 +375,7 @@ describe("AuthService", () => {
 
   describe("forgotPassword", () => {
     it("returns ok without revealing missing email", async () => {
-      jest.spyOn(httpService, "post").mockImplementation((url: string) => {
-        if (url.includes("/request-password-reset")) {
-          return throwError(() => ({ response: { status: 404 } }));
-        }
-        return of({ data: {}, status: 200 } as AxiosResponse);
-      });
+      users.requestPasswordReset.mockRejectedValue(new NotFoundException());
 
       await expect(service.forgotPassword({ email: "unknown@example.com" })).resolves.toEqual({
         ok: true,
@@ -463,43 +383,32 @@ describe("AuthService", () => {
     });
 
     it("sends reset email when user exists", async () => {
-      jest.spyOn(httpService, "post").mockImplementation((url: string) => {
-        if (url.includes("/request-password-reset")) {
-          return of({
-            data: { email: "user@example.com", resetToken: "tok-abc" },
-            status: 200,
-          } as AxiosResponse);
-        }
-        if (url.includes("/email/transactional")) {
-          return of({ data: { sent: true }, status: 200 } as AxiosResponse);
-        }
-        return of({ data: {}, status: 200 } as AxiosResponse);
+      users.requestPasswordReset.mockResolvedValue({
+        email: "user@example.com",
+        resetToken: "tok-abc",
       });
 
       const result = await service.forgotPassword({ email: "user@example.com" });
       expect(result.ok).toBe(true);
-      expect(httpService.post).toHaveBeenCalledWith(
-        expect.stringContaining("/email/transactional"),
-        expect.objectContaining({
-          to: "user@example.com",
-          url: expect.stringContaining("/reset-password?token="),
-        }),
+      expect(email.sendTransactionalEmail).toHaveBeenCalledWith(
+        "user@example.com",
+        expect.any(String),
+        expect.any(String),
+        expect.stringContaining("/reset-password?token="),
+        expect.any(String),
       );
     });
   });
 
   describe("resetPassword", () => {
     it("confirms reset via users-service", async () => {
-      jest.spyOn(httpService, "post").mockImplementation((url: string) => {
-        if (url.includes("/accounts/reset-password")) {
-          return of({ data: { ok: true }, status: 200 } as AxiosResponse);
-        }
-        return of({ data: {}, status: 200 } as AxiosResponse);
-      });
-
       await expect(
         service.resetPassword({ token: "tok", newPassword: "Newpass1" }),
       ).resolves.toEqual({ ok: true });
+      expect(users.confirmPasswordReset).toHaveBeenCalledWith({
+        token: "tok",
+        newPassword: "Newpass1",
+      });
     });
   });
 });

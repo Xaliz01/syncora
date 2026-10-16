@@ -1,13 +1,15 @@
 import { Module } from "@nestjs/common";
-import { HttpModule } from "@nestjs/axios";
 import { AdminController } from "../presentation/http/admin.controller";
 import { AbstractAdminService } from "../domain/ports/admin.service.port";
 import { AdminService } from "../domain/admin.service";
 import { RequirePermissionGuard } from "../infrastructure/require-permission.guard";
-import { SubscriptionsModule } from "./subscriptions.module";
+import { UsersModule } from "./users.module";
+import { PermissionsModule } from "./permissions.module";
+import { NotificationsDomainModule } from "./notifications-domain.module";
+import { SubscriptionsDomainModule } from "./subscriptions-domain.module";
 
 @Module({
-  imports: [HttpModule.register({ timeout: 5000, maxRedirects: 0 }), SubscriptionsModule],
+  imports: [UsersModule, PermissionsModule, NotificationsDomainModule, SubscriptionsDomainModule],
   controllers: [AdminController],
   providers: [{ provide: AbstractAdminService, useClass: AdminService }, RequirePermissionGuard],
   exports: [AbstractAdminService],

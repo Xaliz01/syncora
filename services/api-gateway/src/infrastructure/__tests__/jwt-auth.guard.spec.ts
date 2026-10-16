@@ -1,16 +1,15 @@
 import { UnauthorizedException } from "@nestjs/common";
 import { JwtModule, JwtService } from "@nestjs/jwt";
-import { HttpService } from "@nestjs/axios";
 import { Test } from "@nestjs/testing";
 import type { ExecutionContext } from "@nestjs/common";
-import { of, throwError } from "rxjs";
 import { SESSION_REPLACED_MESSAGE } from "@planwise/shared";
 import { JwtAuthGuard } from "../jwt-auth.guard";
+import { AbstractUserSessionsService } from "../../domain/users/ports/user-sessions.service.port";
 
 describe("JwtAuthGuard", () => {
   let guard: JwtAuthGuard;
   let jwtService: JwtService;
-  let httpService: { post: jest.Mock };
+  let sessions: { validateSession: jest.Mock };
 
   const mockContext = (authHeader?: string): ExecutionContext =>
     ({
@@ -22,7 +21,7 @@ describe("JwtAuthGuard", () => {
     }) as ExecutionContext;
 
   beforeEach(async () => {
-    httpService = { post: jest.fn() };
+    sessions = { validateSession: jest.fn() };
     const module = await Test.createTestingModule({
       imports: [
         JwtModule.register({
@@ -30,14 +29,14 @@ describe("JwtAuthGuard", () => {
           signOptions: { expiresIn: "7d" },
         }),
       ],
-      providers: [JwtAuthGuard, { provide: HttpService, useValue: httpService }],
+      providers: [JwtAuthGuard, { provide: AbstractUserSessionsService, useValue: sessions }],
     }).compile();
     guard = module.get(JwtAuthGuard);
     jwtService = module.get(JwtService);
   });
 
   it("accepts a normal session JWT with valid sid", async () => {
-    httpService.post.mockReturnValue(of({ data: { valid: true } }));
+    sessions.validateSession.mockResolvedValue({ valid: true });
     const token = jwtService.sign({
       sub: "user-1",
       organizationId: "org-1",
@@ -48,10 +47,7 @@ describe("JwtAuthGuard", () => {
       sid: "session-1",
     });
     await expect(guard.canActivate(mockContext(`Bearer ${token}`))).resolves.toBe(true);
-    expect(httpService.post).toHaveBeenCalledWith(
-      expect.stringContaining("/users/validate-session"),
-      { userId: "user-1", sessionId: "session-1" },
-    );
+    expect(sessions.validateSession).toHaveBeenCalledWith("user-1", "session-1");
   });
 
   it("rejects JWT without sid", async () => {
@@ -69,11 +65,11 @@ describe("JwtAuthGuard", () => {
     await expect(guard.canActivate(mockContext(`Bearer ${token}`))).rejects.toThrow(
       SESSION_REPLACED_MESSAGE,
     );
-    expect(httpService.post).not.toHaveBeenCalled();
+    expect(sessions.validateSession).not.toHaveBeenCalled();
   });
 
   it("rejects when session is no longer valid", async () => {
-    httpService.post.mockReturnValue(of({ data: { valid: false } }));
+    sessions.validateSession.mockResolvedValue({ valid: false });
     const token = jwtService.sign({
       sub: "user-1",
       organizationId: "org-1",
@@ -89,7 +85,7 @@ describe("JwtAuthGuard", () => {
   });
 
   it("rejects when session validation request fails", async () => {
-    httpService.post.mockReturnValue(throwError(() => new Error("network")));
+    sessions.validateSession.mockRejectedValue(new Error("network"));
     const token = jwtService.sign({
       sub: "user-1",
       organizationId: "org-1",
@@ -116,7 +112,7 @@ describe("JwtAuthGuard", () => {
       impersonatorEmail: "staff@planwise.fr",
     });
     await expect(guard.canActivate(mockContext(`Bearer ${token}`))).resolves.toBe(true);
-    expect(httpService.post).not.toHaveBeenCalled();
+    expect(sessions.validateSession).not.toHaveBeenCalled();
   });
 
   it("rejects onboarding JWT", async () => {

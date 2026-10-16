@@ -10,13 +10,17 @@ import {
   TECHNICIAN_FIELD_PROFILE_NAME,
 } from "@planwise/shared";
 import { TechniciansGatewayService } from "../technicians.service";
-import { OrganizationScopedHttpClient } from "../../infrastructure/organization-scoped-http.client";
 import { AbstractAdminService } from "../ports/admin.service.port";
 import { AbstractTechniciansService } from "../technicians/ports/technicians.service.port";
+import { AbstractUsersService } from "../users/ports/users.service.port";
+import { AbstractPermissionsService } from "../permissions/ports/permissions.service.port";
 
 describe("TechniciansGatewayService", () => {
   let service: TechniciansGatewayService;
-  const scopedRequest = jest.fn();
+  const findById = jest.fn();
+  const listOrganizationMemberships = jest.fn();
+  const listProfiles = jest.fn();
+  const createProfile = jest.fn();
   const inviteUser = jest.fn();
   const getTechnician = jest.fn();
   const linkUserToTechnician = jest.fn();
@@ -65,16 +69,20 @@ describe("TechniciansGatewayService", () => {
       providers: [
         TechniciansGatewayService,
         {
-          provide: OrganizationScopedHttpClient,
-          useValue: { request: scopedRequest },
-        },
-        {
           provide: AbstractAdminService,
           useValue: { inviteUser },
         },
         {
           provide: AbstractTechniciansService,
           useValue: { getTechnician, linkUserToTechnician, findByUserId },
+        },
+        {
+          provide: AbstractUsersService,
+          useValue: { findById, listOrganizationMemberships },
+        },
+        {
+          provide: AbstractPermissionsService,
+          useValue: { listProfiles, createProfile },
         },
       ],
     }).compile();
@@ -107,12 +115,7 @@ describe("TechniciansGatewayService", () => {
     linkUserToTechnician.mockResolvedValue({ ...technician, userId: invitedUser.id });
     findByUserId.mockResolvedValue(null);
 
-    scopedRequest.mockImplementation(async (options: { path?: string; method?: string }) => {
-      if (options.path === "/profiles" && options.method === "get") {
-        return [fieldProfile];
-      }
-      throw new Error(`Unexpected request: ${options.method} ${options.path}`);
-    });
+    listProfiles.mockResolvedValue([fieldProfile]);
   });
 
   it("should invite the user then link the technician", async () => {
@@ -142,16 +145,11 @@ describe("TechniciansGatewayService", () => {
 
   it("should enrich getTechnician with linked user even when primary org differs", async () => {
     getTechnician.mockResolvedValue({ ...technician, userId: invitedUser.id });
-    scopedRequest.mockImplementation(async (options: { path?: string; method?: string }) => {
-      if (options.path === `/users/${invitedUser.id}` && options.method === "get") {
-        return {
-          ...invitedUser,
-          organizationId: "org-1",
-          organizationMembershipStatus: "active",
-          status: "active",
-        };
-      }
-      throw new Error(`Unexpected request: ${options.method} ${options.path}`);
+    findById.mockResolvedValue({
+      ...invitedUser,
+      organizationId: "org-1",
+      organizationMembershipStatus: "active",
+      status: "active",
     });
 
     const result = await service.getTechnician(admin, "t1");
@@ -166,12 +164,7 @@ describe("TechniciansGatewayService", () => {
 
   it("should enrich getTechnician with linked user membership status", async () => {
     getTechnician.mockResolvedValue({ ...technician, userId: invitedUser.id });
-    scopedRequest.mockImplementation(async (options: { path?: string; method?: string }) => {
-      if (options.path === `/users/${invitedUser.id}` && options.method === "get") {
-        return { ...invitedUser, organizationMembershipStatus: "invited" };
-      }
-      throw new Error(`Unexpected request: ${options.method} ${options.path}`);
-    });
+    findById.mockResolvedValue({ ...invitedUser, organizationMembershipStatus: "invited" });
 
     const result = await service.getTechnician(admin, "t1");
 
@@ -192,26 +185,16 @@ describe("TechniciansGatewayService", () => {
     };
     linkUserToTechnician.mockResolvedValue({ ...technician, userId: activeUser.id });
 
-    scopedRequest.mockImplementation(async (options: { path?: string; method?: string }) => {
-      if (options.path === `/users/${activeUser.id}` && options.method === "get") {
-        return activeUser;
-      }
-      if (
-        options.path === `/users/${activeUser.id}/organization-memberships` &&
-        options.method === "get"
-      ) {
-        return [
-          {
-            id: "m1",
-            userId: activeUser.id,
-            organizationId: "org-1",
-            role: "member",
-            membershipStatus: "active",
-          },
-        ];
-      }
-      throw new Error(`Unexpected request: ${options.method} ${options.path}`);
-    });
+    findById.mockResolvedValue(activeUser);
+    listOrganizationMemberships.mockResolvedValue([
+      {
+        id: "m1",
+        userId: activeUser.id,
+        organizationId: "org-1",
+        role: "member",
+        membershipStatus: "active",
+      },
+    ]);
 
     const result = await service.linkTechnicianUser(admin, "t1", activeUser.id);
 
@@ -229,22 +212,15 @@ describe("TechniciansGatewayService", () => {
   });
 
   it("should create the default technician profile when it does not exist yet", async () => {
-    scopedRequest.mockImplementation(async (options: { path?: string; method?: string }) => {
-      if (options.path === "/profiles" && options.method === "get") return [];
-      if (options.path === "/profiles" && options.method === "post") return fieldProfile;
-      throw new Error(`Unexpected request: ${options.method} ${options.path}`);
-    });
+    listProfiles.mockResolvedValue([]);
+    createProfile.mockResolvedValue(fieldProfile);
 
     await service.createTechnicianUserAccount(admin, "t1");
 
-    expect(scopedRequest).toHaveBeenCalledWith(
+    expect(createProfile).toHaveBeenCalledWith(
       expect.objectContaining({
-        path: "/profiles",
-        method: "post",
-        body: expect.objectContaining({
-          name: TECHNICIAN_FIELD_PROFILE_NAME,
-          permissions: [...TECHNICIAN_FIELD_DEFAULT_PERMISSIONS],
-        }),
+        name: TECHNICIAN_FIELD_PROFILE_NAME,
+        permissions: [...TECHNICIAN_FIELD_DEFAULT_PERMISSIONS],
       }),
     );
     expect(inviteUser).toHaveBeenCalledWith(

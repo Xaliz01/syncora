@@ -1,21 +1,15 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from "@nestjs/common";
-import { HttpService } from "@nestjs/axios";
 import { JwtService } from "@nestjs/jwt";
 import { Request } from "express";
-import { firstValueFrom } from "rxjs";
-import type {
-  JwtPayload,
-  OnboardingJwtPayload,
-  ValidateUserSessionResponse,
-} from "@planwise/shared";
+import type { JwtPayload, OnboardingJwtPayload } from "@planwise/shared";
 import { isOnboardingJwtPayload, SESSION_REPLACED_MESSAGE } from "@planwise/shared";
-import { SERVICE_URLS } from "./service-urls.config";
+import { AbstractUserSessionsService } from "../domain/users/ports/user-sessions.service.port";
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   constructor(
     private readonly jwtService: JwtService,
-    private readonly httpService: HttpService,
+    private readonly sessions: AbstractUserSessionsService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -52,16 +46,8 @@ export class JwtAuthGuard implements CanActivate {
       throw new UnauthorizedException(SESSION_REPLACED_MESSAGE);
     }
     try {
-      const res = await firstValueFrom(
-        this.httpService.post<ValidateUserSessionResponse>(
-          `${SERVICE_URLS.users}/users/validate-session`,
-          {
-            userId: payload.sub,
-            sessionId: payload.sid,
-          },
-        ),
-      );
-      if (!res.data.valid) {
+      const res = await this.sessions.validateSession(payload.sub, payload.sid);
+      if (!res.valid) {
         throw new UnauthorizedException(SESSION_REPLACED_MESSAGE);
       }
     } catch (err) {

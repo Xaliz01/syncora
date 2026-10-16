@@ -4,8 +4,6 @@ import type {
   CreateTechnicianBody,
   CreateTechnicianUserAccountResponse,
   InvitationResponse,
-  OrganizationMembershipResponse,
-  PermissionProfileResponse,
   TechnicianLinkedUser,
   TechnicianResponse,
   TechnicianStatus,
@@ -20,47 +18,18 @@ import {
 import { AbstractTechniciansGatewayService } from "./ports/technicians.service.port";
 import { AbstractAdminService } from "./ports/admin.service.port";
 import { AbstractTechniciansService } from "./technicians/ports/technicians.service.port";
-import { OrganizationScopedHttpClient } from "../infrastructure/organization-scoped-http.client";
-import { SERVICE_URLS } from "../infrastructure/service-urls.config";
+import { AbstractUsersService } from "./users/ports/users.service.port";
+import { AbstractPermissionsService } from "./permissions/ports/permissions.service.port";
 
 @Injectable()
 export class TechniciansGatewayService extends AbstractTechniciansGatewayService {
   constructor(
-    private readonly scopedHttp: OrganizationScopedHttpClient,
     private readonly adminService: AbstractAdminService,
     private readonly techniciansService: AbstractTechniciansService,
+    private readonly users: AbstractUsersService,
+    private readonly permissions: AbstractPermissionsService,
   ) {
     super();
-  }
-
-  private permissionsRequest<T>(
-    organizationId: string,
-    params: Omit<
-      Parameters<OrganizationScopedHttpClient["request"]>[0],
-      "baseUrl" | "organizationId" | "errorLabel"
-    >,
-  ) {
-    return this.scopedHttp.request<T>({
-      ...params,
-      baseUrl: SERVICE_URLS.permissions,
-      organizationId,
-      errorLabel: "Permissions service error",
-    });
-  }
-
-  private usersRequest<T>(
-    organizationId: string,
-    params: Omit<
-      Parameters<OrganizationScopedHttpClient["request"]>[0],
-      "baseUrl" | "organizationId" | "errorLabel"
-    >,
-  ) {
-    return this.scopedHttp.request<T>({
-      ...params,
-      baseUrl: SERVICE_URLS.users,
-      organizationId,
-      errorLabel: "Users service error",
-    });
   }
 
   private toLinkedUser(user: UserResponse): TechnicianLinkedUser {
@@ -79,12 +48,8 @@ export class TechniciansGatewayService extends AbstractTechniciansGatewayService
   ): Promise<TechnicianResponse> {
     if (!technician.userId) return technician;
     try {
-      const user = await this.usersRequest<UserResponse>(currentUser.organizationId, {
-        method: "get",
-        path: `/users/${technician.userId}`,
-      });
-      // La réponse est déjà scopée à l’organisation courante (membership org),
-      // même si l’org « primaire » du document user pointe ailleurs (multi-org).
+      const user = await this.users.findById(technician.userId, currentUser.organizationId);
+      if (!user) return technician;
       return { ...technician, linkedUser: this.toLinkedUser(user) };
     } catch {
       return technician;
@@ -179,19 +144,12 @@ export class TechniciansGatewayService extends AbstractTechniciansGatewayService
       throw new BadRequestException("userId est requis");
     }
 
-    const user = await this.usersRequest<UserResponse>(currentUser.organizationId, {
-      method: "get",
-      path: `/users/${trimmedUserId}`,
-    });
+    const user = await this.users.findById(trimmedUserId, currentUser.organizationId);
+    if (!user) {
+      throw new BadRequestException("Cet utilisateur n'appartient pas à votre organisation");
+    }
 
-    const memberships = await this.usersRequest<OrganizationMembershipResponse[]>(
-      currentUser.organizationId,
-      {
-        method: "get",
-        path: `/users/${trimmedUserId}/organization-memberships`,
-        validateResponseScope: false,
-      },
-    );
+    const memberships = await this.users.listOrganizationMemberships(trimmedUserId);
     const membership = memberships.find((row) => row.organizationId === currentUser.organizationId);
     if (!membership) {
       throw new BadRequestException("Cet utilisateur n'appartient pas à votre organisation");
@@ -273,35 +231,22 @@ export class TechniciansGatewayService extends AbstractTechniciansGatewayService
   }
 
   private async ensureTechnicianFieldProfileId(organizationId: string): Promise<string> {
-    const profiles = await this.permissionsRequest<PermissionProfileResponse[]>(organizationId, {
-      method: "get",
-      path: "/profiles",
-    });
+    const profiles = await this.permissions.listProfiles(organizationId);
     const existing = profiles.find((profile) => profile.name === TECHNICIAN_FIELD_PROFILE_NAME);
     if (existing) return existing.id;
 
     try {
-      const created = await this.permissionsRequest<PermissionProfileResponse>(organizationId, {
-        method: "post",
-        path: "/profiles",
-        body: {
-          organizationId,
-          name: TECHNICIAN_FIELD_PROFILE_NAME,
-          description:
-            "Profil par défaut pour les comptes techniciens (lecture dossiers, interventions, clients).",
-          permissions: [...TECHNICIAN_FIELD_DEFAULT_PERMISSIONS],
-        },
+      const created = await this.permissions.createProfile({
+        organizationId,
+        name: TECHNICIAN_FIELD_PROFILE_NAME,
+        description:
+          "Profil par défaut pour les comptes techniciens (lecture dossiers, interventions, clients).",
+        permissions: [...TECHNICIAN_FIELD_DEFAULT_PERMISSIONS],
       });
       return created.id;
     } catch (err) {
       if (err instanceof ConflictException) {
-        const refreshed = await this.permissionsRequest<PermissionProfileResponse[]>(
-          organizationId,
-          {
-            method: "get",
-            path: "/profiles",
-          },
-        );
+        const refreshed = await this.permissions.listProfiles(organizationId);
         const profile = refreshed.find((p) => p.name === TECHNICIAN_FIELD_PROFILE_NAME);
         if (profile) return profile.id;
       }

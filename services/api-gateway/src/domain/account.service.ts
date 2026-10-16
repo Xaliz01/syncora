@@ -1,19 +1,11 @@
-import {
-  Injectable,
-  BadRequestException,
-  ForbiddenException,
-  NotFoundException,
-} from "@nestjs/common";
-import { HttpService } from "@nestjs/axios";
+import { Injectable, BadRequestException, ForbiddenException } from "@nestjs/common";
 import { createHmac } from "node:crypto";
-import { firstValueFrom } from "rxjs";
 import type {
   AuthUser,
   ChangePasswordBody,
   CompleteOnboardingProfileBody,
   CompleteOnboardingProfileResponse,
   CrispIdentityResponse,
-  TechnicianResponse,
   UpdateUserNameBody,
   UpdateUserPreferencesBody,
   UserPreferencesResponse,
@@ -21,7 +13,10 @@ import type {
   UserSessionsListResponse,
 } from "@planwise/shared";
 import { AbstractAccountService } from "./ports/account.service.port";
-import { SERVICE_URLS } from "../infrastructure/service-urls.config";
+import { AbstractUsersService } from "./users/ports/users.service.port";
+import { AbstractUserPreferencesService } from "./users/ports/user-preferences.service.port";
+import { AbstractUserSessionsService } from "./users/ports/user-sessions.service.port";
+import { AbstractTechniciansService } from "./technicians/ports/technicians.service.port";
 
 function signCrispEmail(email: string, secret: string): string {
   return createHmac("sha256", secret).update(email).digest("hex");
@@ -43,46 +38,34 @@ function splitDisplayName(
 
 @Injectable()
 export class AccountService extends AbstractAccountService {
-  constructor(private readonly httpService: HttpService) {
+  constructor(
+    private readonly users: AbstractUsersService,
+    private readonly preferences: AbstractUserPreferencesService,
+    private readonly sessions: AbstractUserSessionsService,
+    private readonly technicians: AbstractTechniciansService,
+  ) {
     super();
   }
 
   async updateName(user: AuthUser, body: UpdateUserNameBody): Promise<UserResponse> {
-    return this.callUsersService<UserResponse>({
-      method: "put",
-      path: `/users/${user.id}/name`,
-      body,
-    });
+    return this.users.updateName(user.id, body);
   }
 
   async changePassword(user: AuthUser, body: ChangePasswordBody): Promise<void> {
-    await this.callUsersServiceRaw({
-      method: "post",
-      path: `/users/${user.id}/change-password`,
-      body,
-    });
+    await this.users.changePassword(user.id, body);
   }
 
   async getPreferences(user: AuthUser): Promise<UserPreferencesResponse> {
-    const organizationId = encodeURIComponent(user.organizationId);
-    return this.callUsersService<UserPreferencesResponse>({
-      method: "get",
-      path: `/users/${user.id}/preferences?organizationId=${organizationId}`,
-    });
+    return this.preferences.getPreferences(user.id, user.organizationId);
   }
 
   async updatePreferences(
     user: AuthUser,
     body: UpdateUserPreferencesBody,
   ): Promise<UserPreferencesResponse> {
-    return this.callUsersService<UserPreferencesResponse>({
-      method: "put",
-      path: `/users/${user.id}/preferences`,
-      body: {
-        ...body,
-        // Toujours scoper la réponse (et l’onboarding) à l’org courante du JWT.
-        organizationId: user.organizationId,
-      },
+    return this.preferences.updatePreferences(user.id, {
+      ...body,
+      organizationId: user.organizationId,
     });
   }
 
@@ -122,28 +105,16 @@ export class AccountService extends AbstractAccountService {
   }
 
   async listSessions(userId: string, currentSessionId?: string): Promise<UserSessionsListResponse> {
-    const query = currentSessionId?.trim()
-      ? `?currentSessionId=${encodeURIComponent(currentSessionId.trim())}`
-      : "";
-    return this.callUsersService<UserSessionsListResponse>({
-      method: "get",
-      path: `/users/${userId}/sessions${query}`,
-    });
+    const sessions = await this.sessions.listSessions(userId, currentSessionId);
+    return { sessions };
   }
 
   async revokeSession(userId: string, sessionId: string): Promise<void> {
-    await this.callUsersServiceRaw({
-      method: "delete",
-      path: `/users/${userId}/sessions/${encodeURIComponent(sessionId)}`,
-    });
+    await this.sessions.revokeSession(userId, sessionId);
   }
 
   async revokeOtherSessions(userId: string, keepSessionId: string): Promise<void> {
-    await this.callUsersServiceRaw({
-      method: "post",
-      path: `/users/${userId}/sessions/revoke-others`,
-      body: { keepSessionId },
-    });
+    await this.sessions.revokeOtherSessions(userId, keepSessionId);
   }
 
   private async assertFoundingAdmin(user: AuthUser): Promise<void> {
@@ -151,15 +122,8 @@ export class AccountService extends AbstractAccountService {
       throw new ForbiddenException("Seul l'administrateur fondateur peut finaliser cet onboarding");
     }
     try {
-      const res = await firstValueFrom(
-        this.httpService.get<{ userId: string | null }>(
-          `${SERVICE_URLS.users}/users/founding-admin`,
-          {
-            params: { organizationId: user.organizationId },
-          },
-        ),
-      );
-      if (res.data.userId !== user.id) {
+      const foundingAdminId = await this.users.findFoundingAdminUserId(user.organizationId);
+      if (foundingAdminId !== user.id) {
         throw new ForbiddenException(
           "Seul l'administrateur fondateur peut finaliser cet onboarding",
         );
@@ -175,13 +139,8 @@ export class AccountService extends AbstractAccountService {
     userId: string,
   ): Promise<string | undefined> {
     try {
-      const res = await firstValueFrom(
-        this.httpService.get<TechnicianResponse | null>(
-          `${SERVICE_URLS.technicians}/technicians/by-user/${userId}`,
-          { params: { organizationId } },
-        ),
-      );
-      return res.data?.id;
+      const technician = await this.technicians.findByUserId(organizationId, userId);
+      return technician?.id;
     } catch {
       return undefined;
     }
@@ -189,70 +148,14 @@ export class AccountService extends AbstractAccountService {
 
   private async createAndLinkSelfTechnician(user: AuthUser): Promise<string> {
     const { firstName, lastName } = splitDisplayName(user.name, user.email);
-    const created = await firstValueFrom(
-      this.httpService.post<TechnicianResponse>(`${SERVICE_URLS.technicians}/technicians`, {
-        organizationId: user.organizationId,
-        firstName,
-        lastName: lastName || firstName,
-        email: user.email,
-        status: "actif",
-      }),
-    );
-    await firstValueFrom(
-      this.httpService.put<TechnicianResponse>(
-        `${SERVICE_URLS.technicians}/technicians/${created.data.id}/link-user`,
-        { userId: user.id },
-        { params: { organizationId: user.organizationId } },
-      ),
-    );
-    return created.data.id;
-  }
-
-  private async callUsersService<T>(params: {
-    method: "get" | "post" | "put" | "patch" | "delete";
-    path: string;
-    body?: unknown;
-  }): Promise<T> {
-    try {
-      const response = await firstValueFrom(
-        this.httpService.request<T>({
-          method: params.method,
-          url: `${SERVICE_URLS.users}${params.path}`,
-          data: params.body,
-        }),
-      );
-      return response.data;
-    } catch (err: unknown) {
-      this.rethrowAsHttpException(err);
-    }
-  }
-
-  private async callUsersServiceRaw(params: {
-    method: "get" | "post" | "put" | "patch" | "delete";
-    path: string;
-    body?: unknown;
-  }): Promise<void> {
-    try {
-      await firstValueFrom(
-        this.httpService.request({
-          method: params.method,
-          url: `${SERVICE_URLS.users}${params.path}`,
-          data: params.body,
-        }),
-      );
-    } catch (err: unknown) {
-      this.rethrowAsHttpException(err);
-    }
-  }
-
-  private rethrowAsHttpException(err: unknown): never {
-    const status = (err as { response?: { status?: number } })?.response?.status;
-    const message =
-      (err as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message ??
-      "Downstream service error";
-
-    if (status === 400) throw new BadRequestException(message);
-    if (status === 404) throw new NotFoundException(message);
-    throw err;
+    const created = await this.technicians.createTechnician({
+      organizationId: user.organizationId,
+      firstName,
+      lastName: lastName || firstName,
+      email: user.email,
+      status: "actif",
+    });
+    await this.technicians.linkUserToTechnician(user.organizationId, created.id, user.id);
+    return created.id;
   }
 }

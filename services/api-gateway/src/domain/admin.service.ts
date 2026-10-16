@@ -6,8 +6,6 @@ import {
   Logger,
   NotFoundException,
 } from "@nestjs/common";
-import { HttpService } from "@nestjs/axios";
-import { firstValueFrom } from "rxjs";
 import type {
   AssignUserPermissionsBody,
   AuthUser,
@@ -15,16 +13,11 @@ import type {
   CreateInvitationBody,
   CreateInvitedUserBody,
   CreatePermissionProfileBody,
-  EffectivePermissionsResponse,
   InvitationResponse,
-  OrganizationMembershipResponse,
-  OrganizationSubscriptionResponse,
   ResendInvitationResponse,
-  SendEmailNotificationResponse,
   UpdatePendingInvitationBody,
   UpdatePendingInvitationResponse,
   UpdatePermissionProfileBody,
-  UserPermissionAssignmentResponse,
   UserResponse,
 } from "@planwise/shared";
 import {
@@ -43,13 +36,21 @@ import {
   type CreatePermissionProfileForOrgBody,
   type UpdatePermissionProfileForOrgBody,
 } from "./ports/admin.service.port";
-import { SERVICE_URLS } from "../infrastructure/service-urls.config";
+import { AbstractUsersService } from "./users/ports/users.service.port";
+import { AbstractPermissionsService } from "./permissions/ports/permissions.service.port";
+import { AbstractEmailService } from "./notifications/ports/email.service.port";
+import { SubscriptionsService } from "./subscriptions/subscriptions.service";
 
 @Injectable()
 export class AdminService extends AbstractAdminService {
   private readonly logger = new Logger(AdminService.name);
 
-  constructor(private readonly httpService: HttpService) {
+  constructor(
+    private readonly users: AbstractUsersService,
+    private readonly permissions: AbstractPermissionsService,
+    private readonly email: AbstractEmailService,
+    private readonly subscriptions: SubscriptionsService,
+  ) {
     super();
   }
 
@@ -82,11 +83,7 @@ export class AdminService extends AbstractAdminService {
       role: invitedRole,
       invitedByUserId: currentUser.id,
     };
-    const invitedUser = await this.callUsersService<UserResponse>({
-      method: "post",
-      path: "/users/invite",
-      body: createInvitedUserBody,
-    });
+    const invitedUser = await this.users.invite(createInvitedUserBody);
 
     const assignment =
       invitedUser.role === "admin"
@@ -97,32 +94,24 @@ export class AdminService extends AbstractAdminService {
             revokedPermissions: [],
             effectivePermissions: [...ASSIGNABLE_PERMISSION_CODES],
           }
-        : await this.callPermissionsService<UserPermissionAssignmentResponse>({
-            method: "put",
-            path: `/assignments/${invitedUser.id}`,
-            body: {
-              organizationId: currentUser.organizationId,
-              userId: invitedUser.id,
-              profileId: body.profileId ?? null,
-              extraPermissions: body.extraPermissions ?? [],
-              revokedPermissions: body.revokedPermissions ?? [],
-            } satisfies AssignUserPermissionsBody,
-          });
+        : await this.permissions.assignUserPermissions({
+            organizationId: currentUser.organizationId,
+            userId: invitedUser.id,
+            profileId: body.profileId ?? null,
+            extraPermissions: body.extraPermissions ?? [],
+            revokedPermissions: body.revokedPermissions ?? [],
+          } satisfies AssignUserPermissionsBody);
 
-    const invitation = await this.callPermissionsService<InvitationResponse>({
-      method: "post",
-      path: "/invitations",
-      body: {
-        organizationId: currentUser.organizationId,
-        invitedUserId: invitedUser.id,
-        invitedEmail: invitedUser.email,
-        invitedName: invitedUser.name,
-        invitedByUserId: currentUser.id,
-        profileId: invitedUser.role === "admin" ? undefined : body.profileId,
-        extraPermissions: invitedUser.role === "admin" ? [] : (body.extraPermissions ?? []),
-        revokedPermissions: invitedUser.role === "admin" ? [] : (body.revokedPermissions ?? []),
-      } satisfies CreateInvitationBody,
-    });
+    const invitation = await this.permissions.createInvitation({
+      organizationId: currentUser.organizationId,
+      invitedUserId: invitedUser.id,
+      invitedEmail: invitedUser.email,
+      invitedName: invitedUser.name,
+      invitedByUserId: currentUser.id,
+      profileId: invitedUser.role === "admin" ? undefined : body.profileId,
+      extraPermissions: invitedUser.role === "admin" ? [] : (body.extraPermissions ?? []),
+      revokedPermissions: invitedUser.role === "admin" ? [] : (body.revokedPermissions ?? []),
+    } satisfies CreateInvitationBody);
 
     const emailSent = await this.sendInvitationEmail(
       invitation,
@@ -141,11 +130,10 @@ export class AdminService extends AbstractAdminService {
     currentUser: AuthUser,
     invitationId: string,
   ): Promise<ResendInvitationResponse> {
-    const invitation = await this.callPermissionsService<InvitationResponse>({
-      method: "get",
-      path: `/invitations/${invitationId}`,
-      query: { organizationId: currentUser.organizationId },
-    });
+    const invitation = await this.permissions.findInvitationById(
+      invitationId,
+      currentUser.organizationId,
+    );
 
     if (invitation.status !== "pending") {
       throw new BadRequestException("Seules les invitations en attente peuvent être renvoyées");
@@ -163,33 +151,26 @@ export class AdminService extends AbstractAdminService {
     invitationId: string,
     body: UpdatePendingInvitationBody,
   ): Promise<UpdatePendingInvitationResponse> {
-    const invitation = await this.callPermissionsService<InvitationResponse>({
-      method: "get",
-      path: `/invitations/${invitationId}`,
-      query: { organizationId: currentUser.organizationId },
-    });
+    const invitation = await this.permissions.findInvitationById(
+      invitationId,
+      currentUser.organizationId,
+    );
 
     if (invitation.status !== "pending") {
       throw new BadRequestException("Seules les invitations en attente peuvent être modifiées");
     }
 
-    await this.callUsersService<UserResponse>({
-      method: "patch",
-      path: `/users/${invitation.invitedUserId}/invited-email`,
-      body: {
-        organizationId: currentUser.organizationId,
-        email: body.email,
-      },
-    });
+    await this.users.updateInvitedUserEmail(
+      invitation.invitedUserId,
+      currentUser.organizationId,
+      body.email,
+    );
 
-    const updatedInvitation = await this.callPermissionsService<InvitationResponse>({
-      method: "patch",
-      path: `/invitations/${invitationId}`,
-      body: {
-        organizationId: currentUser.organizationId,
-        email: body.email,
-      },
-    });
+    const updatedInvitation = await this.permissions.updatePendingInvitationEmail(
+      invitationId,
+      currentUser.organizationId,
+      body.email,
+    );
 
     const emailSent = await this.sendInvitationEmail(
       updatedInvitation,
@@ -202,33 +183,24 @@ export class AdminService extends AbstractAdminService {
     currentUser: AuthUser,
     invitationId: string,
   ): Promise<CancelInvitationResponse> {
-    const invitation = await this.callPermissionsService<InvitationResponse>({
-      method: "get",
-      path: `/invitations/${invitationId}`,
-      query: { organizationId: currentUser.organizationId },
-    });
+    const invitation = await this.permissions.findInvitationById(
+      invitationId,
+      currentUser.organizationId,
+    );
 
     if (invitation.status !== "pending") {
       throw new BadRequestException("Seules les invitations en attente peuvent être annulées");
     }
 
-    await this.callPermissionsService<InvitationResponse>({
-      method: "post",
-      path: `/invitations/${invitationId}/cancel`,
-      body: { organizationId: currentUser.organizationId },
-    });
-
-    await this.callUsersService({
-      method: "post",
-      path: `/users/${invitation.invitedUserId}/cancel-organization-invitation`,
-      body: { organizationId: currentUser.organizationId },
-    });
-
-    await this.callPermissionsService({
-      method: "delete",
-      path: `/assignments/${invitation.invitedUserId}`,
-      query: { organizationId: currentUser.organizationId },
-    });
+    await this.permissions.cancelInvitation(invitationId, currentUser.organizationId);
+    await this.users.cancelOrganizationInvitation(
+      invitation.invitedUserId,
+      currentUser.organizationId,
+    );
+    await this.permissions.deleteUserAssignment(
+      currentUser.organizationId,
+      invitation.invitedUserId,
+    );
 
     return { ok: true };
   }
@@ -238,11 +210,10 @@ export class AdminService extends AbstractAdminService {
       throw new BadRequestException("Vous ne pouvez pas désactiver votre propre compte");
     }
 
-    const user = await this.callUsersService<UserResponse>({
-      method: "post",
-      path: `/users/${userId}/deactivate-organization-membership`,
-      body: { organizationId: currentUser.organizationId },
-    });
+    const user = await this.users.deactivateOrganizationMembership(
+      userId,
+      currentUser.organizationId,
+    );
 
     return { user };
   }
@@ -250,38 +221,25 @@ export class AdminService extends AbstractAdminService {
   async reactivateOrganizationUser(currentUser: AuthUser, userId: string) {
     await this.assertOrganizationUserSeatAvailable(currentUser.organizationId);
 
-    const user = await this.callUsersService<UserResponse>({
-      method: "post",
-      path: `/users/${userId}/reactivate-organization-membership`,
-      body: { organizationId: currentUser.organizationId },
-    });
+    const user = await this.users.reactivateOrganizationMembership(
+      userId,
+      currentUser.organizationId,
+    );
 
     return { user };
   }
 
   async listOrganizationUsers(currentUser: AuthUser) {
-    const users = await this.callUsersService<UserResponse[]>({
-      method: "get",
-      path: "/users",
-      query: { organizationId: currentUser.organizationId },
-    });
+    const users = await this.users.listByOrganization(currentUser.organizationId);
 
     const enrichedUsers = await Promise.all(
       users.map(async (user) => {
         const [assignment, effectivePermissions] = await Promise.all([
-          this.callPermissionsService<UserPermissionAssignmentResponse>({
-            method: "get",
-            path: `/assignments/${user.id}`,
-            query: { organizationId: currentUser.organizationId },
-          }),
-          this.callPermissionsService<EffectivePermissionsResponse>({
-            method: "post",
-            path: "/permissions/effective",
-            body: {
-              organizationId: currentUser.organizationId,
-              userId: user.id,
-              role: user.role,
-            },
+          this.permissions.getUserAssignment(currentUser.organizationId, user.id),
+          this.permissions.resolveEffectivePermissions({
+            organizationId: currentUser.organizationId,
+            userId: user.id,
+            role: user.role,
           }),
         ]);
         return {
@@ -298,15 +256,12 @@ export class AdminService extends AbstractAdminService {
 
   async getOrganizationUser(currentUser: AuthUser, userId: string) {
     const [user, memberships] = await Promise.all([
-      this.callUsersService<UserResponse>({
-        method: "get",
-        path: `/users/${userId}`,
-      }),
-      this.callUsersService<OrganizationMembershipResponse[]>({
-        method: "get",
-        path: `/users/${userId}/organization-memberships`,
-      }),
+      this.users.findById(userId),
+      this.users.listOrganizationMemberships(userId),
     ]);
+    if (!user) {
+      throw new NotFoundException("Utilisateur introuvable");
+    }
 
     const membershipForOrg = memberships.find(
       (row) => row.organizationId === currentUser.organizationId,
@@ -318,19 +273,11 @@ export class AdminService extends AbstractAdminService {
     }
 
     const [assignment, effectivePermissions] = await Promise.all([
-      this.callPermissionsService<UserPermissionAssignmentResponse>({
-        method: "get",
-        path: `/assignments/${user.id}`,
-        query: { organizationId: currentUser.organizationId },
-      }),
-      this.callPermissionsService<EffectivePermissionsResponse>({
-        method: "post",
-        path: "/permissions/effective",
-        body: {
-          organizationId: currentUser.organizationId,
-          userId: user.id,
-          role: membershipForOrg.role,
-        },
+      this.permissions.getUserAssignment(currentUser.organizationId, user.id),
+      this.permissions.resolveEffectivePermissions({
+        organizationId: currentUser.organizationId,
+        userId: user.id,
+        role: membershipForOrg.role,
       }),
     ]);
 
@@ -364,39 +311,25 @@ export class AdminService extends AbstractAdminService {
       assertAssignablePermission(currentUser, "users.manage_permissions");
     }
 
-    const targetUser = await this.callUsersService<UserResponse>({
-      method: "get",
-      path: `/users/${userId}`,
-    });
-    if (targetUser.organizationId !== currentUser.organizationId) {
-      throw new ForbiddenException("Impossible de gérer un utilisateur d'une autre organisation");
-    }
+    const targetUser = await this.requireOrganizationUser(currentUser.organizationId, userId);
     if (targetUser.role === "admin") {
       throw new BadRequestException(
         "Les administrateurs d'organisation ont tous les droits et ne peuvent pas avoir de profils/permissions personnalisés",
       );
     }
 
-    const assignment = await this.callPermissionsService<UserPermissionAssignmentResponse>({
-      method: "put",
-      path: `/assignments/${userId}`,
-      body: {
-        organizationId: currentUser.organizationId,
-        userId,
-        profileId: body.profileId ?? null,
-        extraPermissions: body.extraPermissions ?? [],
-        revokedPermissions: body.revokedPermissions ?? [],
-      } satisfies AssignUserPermissionsBody,
-    });
+    const assignment = await this.permissions.assignUserPermissions({
+      organizationId: currentUser.organizationId,
+      userId,
+      profileId: body.profileId ?? null,
+      extraPermissions: body.extraPermissions ?? [],
+      revokedPermissions: body.revokedPermissions ?? [],
+    } satisfies AssignUserPermissionsBody);
 
-    const effectivePermissions = await this.callPermissionsService<EffectivePermissionsResponse>({
-      method: "post",
-      path: "/permissions/effective",
-      body: {
-        organizationId: currentUser.organizationId,
-        userId,
-        role: targetUser.role,
-      },
+    const effectivePermissions = await this.permissions.resolveEffectivePermissions({
+      organizationId: currentUser.organizationId,
+      userId,
+      role: targetUser.role,
     });
 
     return {
@@ -408,32 +341,20 @@ export class AdminService extends AbstractAdminService {
   }
 
   async createPermissionProfile(currentUser: AuthUser, body: CreatePermissionProfileForOrgBody) {
-    return this.callPermissionsService({
-      method: "post",
-      path: "/profiles",
-      body: {
-        organizationId: currentUser.organizationId,
-        name: body.name,
-        description: body.description,
-        permissions: body.permissions,
-      } satisfies CreatePermissionProfileBody,
-    });
+    return this.permissions.createProfile({
+      organizationId: currentUser.organizationId,
+      name: body.name,
+      description: body.description,
+      permissions: body.permissions,
+    } satisfies CreatePermissionProfileBody);
   }
 
   async listPermissionProfiles(currentUser: AuthUser) {
-    return this.callPermissionsService({
-      method: "get",
-      path: "/profiles",
-      query: { organizationId: currentUser.organizationId },
-    });
+    return this.permissions.listProfiles(currentUser.organizationId);
   }
 
   async getPermissionProfile(currentUser: AuthUser, profileId: string) {
-    return this.callPermissionsService({
-      method: "get",
-      path: `/profiles/${profileId}`,
-      query: { organizationId: currentUser.organizationId },
-    });
+    return this.permissions.findProfileById(profileId, currentUser.organizationId);
   }
 
   async updatePermissionProfile(
@@ -441,30 +362,29 @@ export class AdminService extends AbstractAdminService {
     profileId: string,
     body: UpdatePermissionProfileForOrgBody,
   ) {
-    return this.callPermissionsService({
-      method: "patch",
-      path: `/profiles/${profileId}`,
-      body: {
-        organizationId: currentUser.organizationId,
-        ...body,
-      } satisfies UpdatePermissionProfileBody,
-    });
+    return this.permissions.updateProfile(profileId, {
+      organizationId: currentUser.organizationId,
+      ...body,
+    } satisfies UpdatePermissionProfileBody);
   }
 
   async deletePermissionProfile(currentUser: AuthUser, profileId: string) {
-    return this.callPermissionsService({
-      method: "delete",
-      path: `/profiles/${profileId}`,
-      query: { organizationId: currentUser.organizationId },
-    });
+    return this.permissions.deleteProfile(profileId, currentUser.organizationId);
   }
 
   async listInvitations(currentUser: AuthUser, status?: "pending" | "accepted" | "cancelled") {
-    return this.callPermissionsService({
-      method: "get",
-      path: "/invitations",
-      query: { organizationId: currentUser.organizationId, status },
-    });
+    return this.permissions.listInvitations(currentUser.organizationId, status);
+  }
+
+  private async requireOrganizationUser(
+    organizationId: string,
+    userId: string,
+  ): Promise<UserResponse> {
+    const targetUser = await this.users.findById(userId, organizationId);
+    if (!targetUser || targetUser.organizationId !== organizationId) {
+      throw new ForbiddenException("Impossible de gérer un utilisateur d'une autre organisation");
+    }
+    return targetUser;
   }
 
   private async sendInvitationEmail(
@@ -478,21 +398,16 @@ export class AdminService extends AbstractAdminService {
     const body = `${greeting}\n\n${invitedByLabel} vous invite à rejoindre une organisation sur Planwise.\n\nCliquez sur le bouton ci-dessous pour accepter l'invitation.\n\nSi vous n'attendiez pas cette invitation, vous pouvez ignorer cet e-mail.`;
 
     try {
-      const res = await firstValueFrom(
-        this.httpService.post<SendEmailNotificationResponse>(
-          `${SERVICE_URLS.notifications}/email/transactional`,
-          {
-            to: invitation.invitedEmail,
-            subject: "Invitation à rejoindre Planwise",
-            body,
-            url: acceptPath,
-            ctaLabel: "Accepter l'invitation",
-          },
-        ),
+      const res = await this.email.sendTransactionalEmail(
+        invitation.invitedEmail,
+        "Invitation à rejoindre Planwise",
+        body,
+        acceptPath,
+        "Accepter l'invitation",
       );
-      if (!res.data.sent) {
+      if (!res.sent) {
         this.logger.warn(
-          `Invitation email not sent to ${invitation.invitedEmail}: ${res.data.reason ?? "unknown"}`,
+          `Invitation email not sent to ${invitation.invitedEmail}: ${res.reason ?? "unknown"}`,
         );
         return false;
       }
@@ -508,16 +423,8 @@ export class AdminService extends AbstractAdminService {
 
   private async assertOrganizationUserSeatAvailable(organizationId: string): Promise<void> {
     const [subscription, users] = await Promise.all([
-      this.callSubscriptionsService<OrganizationSubscriptionResponse>({
-        method: "get",
-        path: "/subscriptions/current",
-        query: { organizationId },
-      }),
-      this.callUsersService<UserResponse[]>({
-        method: "get",
-        path: "/users",
-        query: { organizationId },
-      }),
+      this.subscriptions.getByOrganization(organizationId),
+      this.users.listByOrganization(organizationId),
     ]);
 
     if (!subscription.hasAccess) {
@@ -534,81 +441,5 @@ export class AdminService extends AbstractAdminService {
           `Ajoutez des utilisateurs supplémentaires depuis la page Abonnement.`,
       );
     }
-  }
-
-  private async callSubscriptionsService<T>(params: {
-    method: "get" | "post";
-    path: string;
-    body?: unknown;
-    query?: Record<string, unknown>;
-  }): Promise<T> {
-    try {
-      const response = await firstValueFrom(
-        this.httpService.request<T>({
-          method: params.method,
-          url: `${SERVICE_URLS.subscriptions}${params.path}`,
-          data: params.body,
-          params: params.query,
-        }),
-      );
-      return response.data;
-    } catch (err: unknown) {
-      this.rethrowAsHttpException(err);
-    }
-  }
-
-  private async callUsersService<T>(params: {
-    method: "get" | "post" | "patch" | "put" | "delete";
-    path: string;
-    body?: unknown;
-    query?: Record<string, unknown>;
-  }): Promise<T> {
-    try {
-      const response = await firstValueFrom(
-        this.httpService.request<T>({
-          method: params.method,
-          url: `${SERVICE_URLS.users}${params.path}`,
-          data: params.body,
-          params: params.query,
-        }),
-      );
-      return response.data;
-    } catch (err: unknown) {
-      this.rethrowAsHttpException(err);
-    }
-  }
-
-  private async callPermissionsService<T>(params: {
-    method: "get" | "post" | "patch" | "put" | "delete";
-    path: string;
-    body?: unknown;
-    query?: Record<string, unknown>;
-  }): Promise<T> {
-    try {
-      const response = await firstValueFrom(
-        this.httpService.request<T>({
-          method: params.method,
-          url: `${SERVICE_URLS.permissions}${params.path}`,
-          data: params.body,
-          params: params.query,
-        }),
-      );
-      return response.data;
-    } catch (err: unknown) {
-      this.rethrowAsHttpException(err);
-    }
-  }
-
-  private rethrowAsHttpException(err: unknown): never {
-    const status = (err as { response?: { status?: number } })?.response?.status;
-    const message =
-      (err as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message ??
-      "Downstream service error";
-
-    if (status === 400) throw new BadRequestException(message);
-    if (status === 403) throw new ForbiddenException(message);
-    if (status === 404) throw new NotFoundException(message);
-    if (status === 409) throw new ConflictException(message);
-    throw err;
   }
 }

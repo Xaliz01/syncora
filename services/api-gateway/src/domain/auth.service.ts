@@ -4,12 +4,11 @@ import {
   ConflictException,
   BadRequestException,
   ForbiddenException,
+  HttpException,
   Logger,
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
-import { HttpService } from "@nestjs/axios";
 import { EventEmitter2 } from "@nestjs/event-emitter";
-import { firstValueFrom } from "rxjs";
 import type {
   AcceptInvitationBody,
   RegisterBody,
@@ -30,7 +29,6 @@ import type {
   PermissionCode,
   CreateOrganizationBody,
   SwitchOrganizationBody,
-  TechnicianResponse,
   AccountUserResponse,
   CreateAccountResult,
   EmailVerificationRequiredResponse,
@@ -43,9 +41,6 @@ import type {
   ResetPasswordResponse,
   IssueEmailVerificationResult,
   IssuePasswordResetResult,
-  SendEmailNotificationResponse,
-  CreateUserSessionResponse,
-  InvitationActivationHintsResponse,
   ResolveInvitationPreviewResponse,
   UserRole,
   UserStatus,
@@ -65,7 +60,32 @@ import {
   ORGANIZATION_CREATED_EVENT,
   type OrganizationCreatedEvent,
 } from "../infrastructure/organization-created.event";
-import { SERVICE_URLS } from "../infrastructure/service-urls.config";
+import { AbstractUsersService } from "./users/ports/users.service.port";
+import { AbstractUserSessionsService } from "./users/ports/user-sessions.service.port";
+import { AbstractOrganizationsService } from "./organizations/ports/organizations.service.port";
+import { AbstractPermissionsService } from "./permissions/ports/permissions.service.port";
+import { AbstractTechniciansService } from "./technicians/ports/technicians.service.port";
+import { AbstractEmailService } from "./notifications/ports/email.service.port";
+
+function downstreamStatus(err: unknown): number | undefined {
+  if (err instanceof HttpException) return err.getStatus();
+  return (err as { response?: { status?: number } })?.response?.status;
+}
+
+function downstreamMessage(err: unknown): string | undefined {
+  if (err instanceof HttpException) {
+    const body = err.getResponse();
+    if (typeof body === "string") return body;
+    if (body && typeof body === "object" && "message" in body) {
+      const message = (body as { message?: string | string[] }).message;
+      if (Array.isArray(message)) return message.join(", ");
+      if (typeof message === "string") return message;
+    }
+  }
+  const message = (err as { response?: { data?: { message?: string | string[] } } })?.response?.data
+    ?.message;
+  return Array.isArray(message) ? message.join(", ") : message;
+}
 
 function buildOrganizationCreatePayload(body: CreateOrganizationBody): CreateOrganizationBody {
   const email = body.email?.trim() ?? "";
@@ -93,10 +113,15 @@ export class AuthService extends AbstractAuthService {
   private readonly logger = new Logger(AuthService.name);
 
   constructor(
-    private readonly httpService: HttpService,
     private readonly jwtService: JwtService,
     private readonly subscriptionsGateway: AbstractSubscriptionsGatewayService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly users: AbstractUsersService,
+    private readonly sessions: AbstractUserSessionsService,
+    private readonly organizations: AbstractOrganizationsService,
+    private readonly permissions: AbstractPermissionsService,
+    private readonly technicians: AbstractTechniciansService,
+    private readonly email: AbstractEmailService,
   ) {
     super();
   }
@@ -139,38 +164,33 @@ export class AuthService extends AbstractAuthService {
 
     let org: OrganizationResponse;
     try {
-      const res = await firstValueFrom(
-        this.httpService.post<OrganizationResponse>(
-          `${SERVICE_URLS.organizations}/organizations`,
-          buildOrganizationCreatePayload({
-            name: body.organizationName,
-            siret: body.organizationSiret.trim(),
-            email: body.adminEmail,
-          }),
-        ),
+      org = await this.organizations.create(
+        buildOrganizationCreatePayload({
+          name: body.organizationName,
+          siret: body.organizationSiret.trim(),
+          email: body.adminEmail,
+        }),
       );
-      org = res.data;
     } catch (err: unknown) {
-      const status = (err as { response?: { status?: number } })?.response?.status;
-      if (status === 409) throw new ConflictException("Ce nom d'organisation est déjà utilisé");
+      if (downstreamStatus(err) === 409) {
+        throw new ConflictException("Ce nom d'organisation est déjà utilisé");
+      }
       throw err;
     }
 
     let user: UserResponse;
     try {
-      const res = await firstValueFrom(
-        this.httpService.post<UserResponse>(`${SERVICE_URLS.users}/users`, {
-          organizationId: org.id,
-          email: body.adminEmail,
-          password: body.adminPassword,
-          name: body.adminName,
-          role: "admin",
-        }),
-      );
-      user = res.data;
+      user = await this.users.create({
+        organizationId: org.id,
+        email: body.adminEmail,
+        password: body.adminPassword,
+        name: body.adminName,
+        role: "admin",
+      });
     } catch (err: unknown) {
-      const status = (err as { response?: { status?: number } })?.response?.status;
-      if (status === 409) throw new ConflictException("Un utilisateur avec cet email existe déjà");
+      if (downstreamStatus(err) === 409) {
+        throw new ConflictException("Un utilisateur avec cet email existe déjà");
+      }
       throw err;
     }
 
@@ -208,19 +228,14 @@ export class AuthService extends AbstractAuthService {
 
     let created: CreateAccountResult;
     try {
-      const res = await firstValueFrom(
-        this.httpService.post<CreateAccountResult>(`${SERVICE_URLS.users}/users/accounts`, {
-          email: body.email,
-          password: body.password,
-          name: body.name,
-        }),
-      );
-      created = res.data;
+      created = await this.users.createAccount({
+        email: body.email,
+        password: body.password,
+        name: body.name,
+      });
     } catch (err: unknown) {
-      const status = (err as { response?: { status?: number; data?: { message?: string } } })
-        ?.response?.status;
-      const message = (err as { response?: { data?: { message?: string } } })?.response?.data
-        ?.message;
+      const status = downstreamStatus(err);
+      const message = downstreamMessage(err);
       if (status === 409) throw new ConflictException("Un utilisateur avec cet email existe déjà");
       if (status === 400) throw new BadRequestException(message ?? "Données invalides");
       throw err;
@@ -250,18 +265,9 @@ export class AuthService extends AbstractAuthService {
   async verifyEmail(body: VerifyEmailBody): Promise<OnboardingAuthResponse> {
     let user: AccountUserResponse;
     try {
-      const res = await firstValueFrom(
-        this.httpService.post<AccountUserResponse>(
-          `${SERVICE_URLS.users}/users/accounts/verify-email`,
-          {
-            email: body.email,
-            code: body.code,
-          },
-        ),
-      );
-      user = res.data;
+      user = await this.users.verifyEmail(body.email, body.code);
     } catch (err: unknown) {
-      const status = (err as { response?: { status?: number } })?.response?.status;
+      const status = downstreamStatus(err);
       if (status === 401) {
         throw new UnauthorizedException("Code de vérification invalide ou expiré");
       }
@@ -279,18 +285,10 @@ export class AuthService extends AbstractAuthService {
   ): Promise<ResendEmailVerificationResponse> {
     let issued: IssueEmailVerificationResult | null = null;
     try {
-      const res = await firstValueFrom(
-        this.httpService.post<IssueEmailVerificationResult>(
-          `${SERVICE_URLS.users}/users/accounts/resend-email-verification`,
-          { email: body.email },
-        ),
-      );
-      issued = res.data;
+      issued = await this.users.resendEmailVerification(body.email);
     } catch (err: unknown) {
-      const status = (err as { response?: { status?: number; data?: { message?: string } } })
-        ?.response?.status;
-      const message = (err as { response?: { data?: { message?: string } } })?.response?.data
-        ?.message;
+      const status = downstreamStatus(err);
+      const message = downstreamMessage(err);
       if (status === 400) {
         throw new BadRequestException(
           message ?? "Veuillez patienter avant de demander un nouveau code",
@@ -317,18 +315,10 @@ export class AuthService extends AbstractAuthService {
   async forgotPassword(body: ForgotPasswordBody): Promise<ForgotPasswordResponse> {
     let issued: IssuePasswordResetResult | null = null;
     try {
-      const res = await firstValueFrom(
-        this.httpService.post<IssuePasswordResetResult>(
-          `${SERVICE_URLS.users}/users/accounts/request-password-reset`,
-          { email: body.email },
-        ),
-      );
-      issued = res.data;
+      issued = await this.users.requestPasswordReset(body.email);
     } catch (err: unknown) {
-      const status = (err as { response?: { status?: number; data?: { message?: string } } })
-        ?.response?.status;
-      const message = (err as { response?: { data?: { message?: string } } })?.response?.data
-        ?.message;
+      const status = downstreamStatus(err);
+      const message = downstreamMessage(err);
       if (status === 400) {
         throw new BadRequestException(
           message ?? "Veuillez patienter avant de demander un nouveau lien",
@@ -358,17 +348,13 @@ export class AuthService extends AbstractAuthService {
       throw new BadRequestException(policyError);
     }
     try {
-      await firstValueFrom(
-        this.httpService.post<{ ok: true }>(`${SERVICE_URLS.users}/users/accounts/reset-password`, {
-          token: body.token,
-          newPassword: body.newPassword,
-        }),
-      );
+      await this.users.confirmPasswordReset({
+        token: body.token,
+        newPassword: body.newPassword,
+      });
     } catch (err: unknown) {
-      const status = (err as { response?: { status?: number; data?: { message?: string } } })
-        ?.response?.status;
-      const message = (err as { response?: { data?: { message?: string } } })?.response?.data
-        ?.message;
+      const status = downstreamStatus(err);
+      const message = downstreamMessage(err);
       if (status === 401) {
         throw new UnauthorizedException("Lien de réinitialisation invalide ou expiré");
       }
@@ -418,20 +404,13 @@ export class AuthService extends AbstractAuthService {
 
   private async sendEmailVerificationCode(email: string, code: string): Promise<void> {
     try {
-      const res = await firstValueFrom(
-        this.httpService.post<SendEmailNotificationResponse>(
-          `${SERVICE_URLS.notifications}/email/transactional`,
-          {
-            to: email,
-            subject: "Vérifiez votre adresse e-mail",
-            body: `Bonjour,\n\nVotre code de vérification Planwise est : ${code}\n\nIl expire dans 15 minutes. Si vous recevez plusieurs e-mails, seul le dernier code est valable.\n\nSi vous n'avez pas créé de compte, ignorez cet e-mail.`,
-          },
-        ),
+      const res = await this.email.sendTransactionalEmail(
+        email,
+        "Vérifiez votre adresse e-mail",
+        `Bonjour,\n\nVotre code de vérification Planwise est : ${code}\n\nIl expire dans 15 minutes. Si vous recevez plusieurs e-mails, seul le dernier code est valable.\n\nSi vous n'avez pas créé de compte, ignorez cet e-mail.`,
       );
-      if (!res.data.sent) {
-        this.logger.warn(
-          `Email verification OTP not sent to ${email}: ${res.data.reason ?? "unknown"}`,
-        );
+      if (!res.sent) {
+        this.logger.warn(`Email verification OTP not sent to ${email}: ${res.reason ?? "unknown"}`);
       }
     } catch (err) {
       this.logger.warn(`Failed to send email verification OTP to ${email}`, (err as Error).message);
@@ -441,22 +420,15 @@ export class AuthService extends AbstractAuthService {
   private async sendPasswordResetEmail(email: string, resetToken: string): Promise<void> {
     const resetPath = `/reset-password?token=${encodeURIComponent(resetToken)}`;
     try {
-      const res = await firstValueFrom(
-        this.httpService.post<SendEmailNotificationResponse>(
-          `${SERVICE_URLS.notifications}/email/transactional`,
-          {
-            to: email,
-            subject: "Réinitialisation de votre mot de passe",
-            body: `Bonjour,\n\nVous avez demandé à réinitialiser votre mot de passe Planwise.\n\nCliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe. Ce lien expire dans 1 heure.\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail — votre mot de passe actuel reste inchangé.`,
-            url: resetPath,
-            ctaLabel: "Choisir un nouveau mot de passe",
-          },
-        ),
+      const res = await this.email.sendTransactionalEmail(
+        email,
+        "Réinitialisation de votre mot de passe",
+        `Bonjour,\n\nVous avez demandé à réinitialiser votre mot de passe Planwise.\n\nCliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe. Ce lien expire dans 1 heure.\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail — votre mot de passe actuel reste inchangé.`,
+        resetPath,
+        "Choisir un nouveau mot de passe",
       );
-      if (!res.data.sent) {
-        this.logger.warn(
-          `Password reset email not sent to ${email}: ${res.data.reason ?? "unknown"}`,
-        );
+      if (!res.sent) {
+        this.logger.warn(`Password reset email not sent to ${email}: ${res.reason ?? "unknown"}`);
       }
     } catch (err) {
       this.logger.warn(`Failed to send password reset email to ${email}`, (err as Error).message);
@@ -469,19 +441,13 @@ export class AuthService extends AbstractAuthService {
   ): Promise<AuthResponse | OnboardingAuthResponse> {
     let user: ValidateCredentialsResponse;
     try {
-      const res = await firstValueFrom(
-        this.httpService.post<ValidateCredentialsResponse>(
-          `${SERVICE_URLS.users}/users/validate-credentials`,
-          { email: body.email, password: body.password },
-        ),
-      );
-      user = res.data;
+      const result = await this.users.validateCredentials(body.email, body.password);
+      if (!result) throw new UnauthorizedException("Email ou mot de passe incorrect");
+      user = result;
     } catch (err: unknown) {
-      const status = (err as { response?: { status?: number } })?.response?.status;
-      const message = (err as { response?: { data?: { message?: string | string[] } } })?.response
-        ?.data?.message;
-      const normalized = Array.isArray(message) ? message.join(", ") : message;
-      if (status === 401) throw new UnauthorizedException("Email ou mot de passe incorrect");
+      if (err instanceof UnauthorizedException) throw err;
+      const status = downstreamStatus(err);
+      const normalized = downstreamMessage(err);
       if (status === 403) {
         throw new ForbiddenException(
           normalized ??
@@ -555,41 +521,25 @@ export class AuthService extends AbstractAuthService {
 
     let org: OrganizationResponse;
     try {
-      const res = await firstValueFrom(
-        this.httpService.post<OrganizationResponse>(
-          `${SERVICE_URLS.organizations}/organizations`,
-          buildOrganizationCreatePayload(body),
-        ),
-      );
-      org = res.data;
+      org = await this.organizations.create(buildOrganizationCreatePayload(body));
     } catch (err: unknown) {
-      const status = (err as { response?: { status?: number } })?.response?.status;
-      if (status === 409) throw new ConflictException("Ce nom d'organisation est déjà utilisé");
+      if (downstreamStatus(err) === 409) {
+        throw new ConflictException("Ce nom d'organisation est déjà utilisé");
+      }
       throw err;
     }
 
-    await firstValueFrom(
-      this.httpService.post<OrganizationMembershipResponse>(
-        `${SERVICE_URLS.users}/users/${userId}/organization-memberships`,
-        {
-          organizationId: org.id,
-          role: "admin",
-          membershipStatus: "active",
-        },
-      ),
-    );
+    await this.users.addOrganizationMembership(userId, {
+      organizationId: org.id,
+      role: "admin",
+      membershipStatus: "active",
+    });
 
     let user: UserResponse;
     try {
-      const res = await firstValueFrom(
-        this.httpService.patch<UserResponse>(`${SERVICE_URLS.users}/users/${userId}`, {
-          organizationId: org.id,
-        }),
-      );
-      user = res.data;
+      user = await this.users.patch(userId, { organizationId: org.id });
     } catch (err: unknown) {
-      const status = (err as { response?: { status?: number } })?.response?.status;
-      if (status === 404) throw new UnauthorizedException("Utilisateur introuvable");
+      if (downstreamStatus(err) === 404) throw new UnauthorizedException("Utilisateur introuvable");
       throw err;
     }
 
@@ -630,15 +580,9 @@ export class AuthService extends AbstractAuthService {
 
     let memberships: OrganizationMembershipResponse[];
     try {
-      const res = await firstValueFrom(
-        this.httpService.get<OrganizationMembershipResponse[]>(
-          `${SERVICE_URLS.users}/users/${jwt.sub}/organization-memberships`,
-        ),
-      );
-      memberships = res.data;
+      memberships = await this.users.listOrganizationMemberships(jwt.sub);
     } catch (err: unknown) {
-      const status = (err as { response?: { status?: number } })?.response?.status;
-      if (status === 404) throw new UnauthorizedException("Utilisateur introuvable");
+      if (downstreamStatus(err) === 404) throw new UnauthorizedException("Utilisateur introuvable");
       throw err;
     }
 
@@ -651,15 +595,9 @@ export class AuthService extends AbstractAuthService {
 
     let user: UserResponse;
     try {
-      const res = await firstValueFrom(
-        this.httpService.patch<UserResponse>(`${SERVICE_URLS.users}/users/${jwt.sub}`, {
-          organizationId: targetId,
-        }),
-      );
-      user = res.data;
+      user = await this.users.patch(jwt.sub, { organizationId: targetId });
     } catch (err: unknown) {
-      const status = (err as { response?: { status?: number } })?.response?.status;
-      if (status === 404) throw new UnauthorizedException("Utilisateur introuvable");
+      if (downstreamStatus(err) === 404) throw new UnauthorizedException("Utilisateur introuvable");
       throw err;
     }
 
@@ -688,11 +626,7 @@ export class AuthService extends AbstractAuthService {
       return { ok: true };
     }
     try {
-      await firstValueFrom(
-        this.httpService.post(`${SERVICE_URLS.users}/users/${jwt.sub}/sessions/revoke`, {
-          sessionId: jwt.sid,
-        }),
-      );
+      await this.sessions.revokeSession(jwt.sub, jwt.sid);
     } catch {
       // Logout client-side even if revoke fails (session already gone).
     }
@@ -705,17 +639,9 @@ export class AuthService extends AbstractAuthService {
   ): Promise<AuthResponse> {
     let invitation: InvitationResponse;
     try {
-      const res = await firstValueFrom(
-        this.httpService.post<InvitationResponse>(
-          `${SERVICE_URLS.permissions}/invitations/resolve`,
-          {
-            invitationToken: body.invitationToken,
-          },
-        ),
-      );
-      invitation = res.data;
+      invitation = await this.permissions.resolveInvitation(body.invitationToken);
     } catch (err: unknown) {
-      const status = (err as { response?: { status?: number } })?.response?.status;
+      const status = downstreamStatus(err);
       if (status === 404) throw new UnauthorizedException("Invitation introuvable");
       if (status === 409) throw new UnauthorizedException("Cette invitation a déjà été utilisée");
       throw err;
@@ -743,18 +669,11 @@ export class AuthService extends AbstractAuthService {
         }
         activateBody.password = body.password;
       }
-      const res = await firstValueFrom(
-        this.httpService.post<UserResponse>(
-          `${SERVICE_URLS.users}/users/${invitation.invitedUserId}/activate`,
-          activateBody,
-        ),
-      );
-      user = res.data;
+      user = await this.users.activateInvitedUser(invitation.invitedUserId, activateBody);
     } catch (err: unknown) {
       if (err instanceof UnauthorizedException) throw err;
-      const status = (err as { response?: { status?: number } })?.response?.status;
-      const message = (err as { response?: { data?: { message?: string } } })?.response?.data
-        ?.message;
+      const status = downstreamStatus(err);
+      const message = downstreamMessage(err);
       if (status === 404) throw new UnauthorizedException("Utilisateur invité introuvable");
       if (status === 401) {
         throw new UnauthorizedException(message ?? "Mot de passe incorrect");
@@ -765,16 +684,9 @@ export class AuthService extends AbstractAuthService {
     }
 
     try {
-      await firstValueFrom(
-        this.httpService.post<InvitationResponse>(
-          `${SERVICE_URLS.permissions}/invitations/accept`,
-          {
-            invitationToken: body.invitationToken,
-          },
-        ),
-      );
+      await this.permissions.acceptInvitation(body.invitationToken);
     } catch (err: unknown) {
-      const status = (err as { response?: { status?: number } })?.response?.status;
+      const status = downstreamStatus(err);
       if (status === 404) throw new UnauthorizedException("Impossible de finaliser l'invitation");
       if (status === 409) throw new UnauthorizedException("Cette invitation a déjà été utilisée");
       throw err;
@@ -807,17 +719,9 @@ export class AuthService extends AbstractAuthService {
 
     let invitation: InvitationResponse;
     try {
-      const res = await firstValueFrom(
-        this.httpService.post<InvitationResponse>(
-          `${SERVICE_URLS.permissions}/invitations/resolve`,
-          {
-            invitationToken: token,
-          },
-        ),
-      );
-      invitation = res.data;
+      invitation = await this.permissions.resolveInvitation(token);
     } catch (err: unknown) {
-      const status = (err as { response?: { status?: number } })?.response?.status;
+      const status = downstreamStatus(err);
       if (status === 404) throw new UnauthorizedException("Invitation introuvable");
       if (status === 409) throw new UnauthorizedException("Cette invitation a déjà été utilisée");
       throw err;
@@ -825,12 +729,8 @@ export class AuthService extends AbstractAuthService {
 
     let requiresPasswordSetup = true;
     try {
-      const res = await firstValueFrom(
-        this.httpService.get<InvitationActivationHintsResponse>(
-          `${SERVICE_URLS.users}/users/${invitation.invitedUserId}/invitation-activation-hints`,
-        ),
-      );
-      requiresPasswordSetup = !res.data.hasPassword;
+      const hints = await this.users.getInvitationActivationHints(invitation.invitedUserId);
+      requiresPasswordSetup = !hints.hasPassword;
     } catch {
       requiresPasswordSetup = true;
     }
@@ -847,13 +747,8 @@ export class AuthService extends AbstractAuthService {
     userId: string,
   ): Promise<string | undefined> {
     try {
-      const res = await firstValueFrom(
-        this.httpService.get<TechnicianResponse | null>(
-          `${SERVICE_URLS.technicians}/technicians/by-user/${userId}`,
-          { params: { organizationId } },
-        ),
-      );
-      return res.data?.id;
+      const technician = await this.technicians.findByUserId(organizationId, userId);
+      return technician?.id;
     } catch {
       return undefined;
     }
@@ -862,10 +757,7 @@ export class AuthService extends AbstractAuthService {
   /** Nom / email / statut : rechargés depuis users-service (le JWT peut être obsolète). */
   private async resolveAccountProfile(userId: string): Promise<AccountUserResponse | null> {
     try {
-      const res = await firstValueFrom(
-        this.httpService.get<AccountUserResponse>(`${SERVICE_URLS.users}/users/accounts/${userId}`),
-      );
-      return res.data;
+      return await this.users.findAccountById(userId);
     } catch {
       return null;
     }
@@ -874,10 +766,7 @@ export class AuthService extends AbstractAuthService {
   /** Nom / email / statut : rechargés depuis users-service (le JWT peut être obsolète). */
   private async resolveUserProfile(userId: string): Promise<UserResponse | null> {
     try {
-      const res = await firstValueFrom(
-        this.httpService.get<UserResponse>(`${SERVICE_URLS.users}/users/${userId}`),
-      );
-      return res.data;
+      return await this.users.findById(userId);
     } catch {
       return null;
     }
@@ -890,12 +779,8 @@ export class AuthService extends AbstractAuthService {
     fallback: "admin" | "member",
   ): Promise<"admin" | "member"> {
     try {
-      const res = await firstValueFrom(
-        this.httpService.get<OrganizationMembershipResponse[]>(
-          `${SERVICE_URLS.users}/users/${userId}/organization-memberships`,
-        ),
-      );
-      const membership = res.data.find((m) => m.organizationId === organizationId);
+      const memberships = await this.users.listOrganizationMemberships(userId);
+      const membership = memberships.find((m) => m.organizationId === organizationId);
       if (membership?.membershipStatus === "disabled") {
         throw new UnauthorizedException("Votre accès à cette organisation a été désactivé");
       }
@@ -938,32 +823,20 @@ export class AuthService extends AbstractAuthService {
     role: "admin" | "member",
   ): Promise<EffectivePermissionsResponse["permissions"]> {
     try {
-      const res = await firstValueFrom(
-        this.httpService.post<EffectivePermissionsResponse>(
-          `${SERVICE_URLS.permissions}/permissions/effective`,
-          {
-            organizationId,
-            userId,
-            role,
-          },
-        ),
-      );
-      return res.data.permissions;
+      const res = await this.permissions.resolveEffectivePermissions({
+        organizationId,
+        userId,
+        role,
+      });
+      return res.permissions;
     } catch {
       return role === "admin" ? [...ASSIGNABLE_PERMISSION_CODES] : [];
     }
   }
 
   private async createUserSession(userId: string, userAgent?: string): Promise<string> {
-    const res = await firstValueFrom(
-      this.httpService.post<CreateUserSessionResponse>(
-        `${SERVICE_URLS.users}/users/${userId}/sessions`,
-        {
-          userAgent,
-        },
-      ),
-    );
-    return res.data.sessionId;
+    const res = await this.sessions.createSession(userId, { userAgent });
+    return res.sessionId;
   }
 
   private async issueOrganizationAuth(params: {
@@ -1013,15 +886,8 @@ export class AuthService extends AbstractAuthService {
 
   private async resolveIsFoundingAdmin(organizationId: string, userId: string): Promise<boolean> {
     try {
-      const res = await firstValueFrom(
-        this.httpService.get<{ userId: string | null }>(
-          `${SERVICE_URLS.users}/users/founding-admin`,
-          {
-            params: { organizationId },
-          },
-        ),
-      );
-      return Boolean(res.data.userId && res.data.userId === userId);
+      const foundingAdminId = await this.users.findFoundingAdminUserId(organizationId);
+      return Boolean(foundingAdminId && foundingAdminId === userId);
     } catch {
       return false;
     }
