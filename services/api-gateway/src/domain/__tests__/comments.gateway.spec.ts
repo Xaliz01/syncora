@@ -6,10 +6,19 @@ import { CasesGatewayService } from "../cases.service";
 import { OrganizationScopedHttpClient } from "../../infrastructure/organization-scoped-http.client";
 import { AbstractCustomersGatewayService } from "../ports/customers.service.port";
 import { AbstractOrderGiversGatewayService } from "../ports/order-givers.service.port";
+import { AbstractCasesService } from "../cases/ports/cases.service.port";
+import { AbstractInterventionsService } from "../cases/ports/interventions.service.port";
+import { AbstractQuotesService } from "../cases/ports/quotes.service.port";
+import { AbstractCommentsService } from "../cases/ports/comments.service.port";
+import { AbstractCaseHistoryService } from "../cases/ports/case-history.service.port";
+import { AbstractDashboardService } from "../cases/ports/dashboard.service.port";
+import { AbstractCaseTemplatesService } from "../cases/ports/case-templates.service.port";
+import { AbstractInterventionTypesService } from "../cases/ports/intervention-types.service.port";
 
 describe("CasesGatewayService comments", () => {
   let service: CasesGatewayService;
-  let scopedHttp: { request: jest.Mock };
+  let commentsService: Record<string, jest.Mock>;
+  let caseHistoryService: Record<string, jest.Mock>;
 
   const adminUser: AuthUser = {
     id: "admin-1",
@@ -44,14 +53,30 @@ describe("CasesGatewayService comments", () => {
   };
 
   beforeEach(async () => {
-    scopedHttp = {
-      request: jest.fn(),
+    commentsService = {
+      createComment: jest.fn(),
+      listComments: jest.fn(),
+      getComment: jest.fn(),
+      updateComment: jest.fn(),
+      deleteComment: jest.fn(),
+    };
+    caseHistoryService = {
+      addCaseHistory: jest.fn().mockResolvedValue({}),
+      listCaseHistory: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CasesGatewayService,
-        { provide: OrganizationScopedHttpClient, useValue: scopedHttp },
+        { provide: AbstractCasesService, useValue: {} },
+        { provide: AbstractInterventionsService, useValue: {} },
+        { provide: AbstractQuotesService, useValue: {} },
+        { provide: AbstractCommentsService, useValue: commentsService },
+        { provide: AbstractCaseHistoryService, useValue: caseHistoryService },
+        { provide: AbstractDashboardService, useValue: {} },
+        { provide: AbstractCaseTemplatesService, useValue: {} },
+        { provide: AbstractInterventionTypesService, useValue: {} },
+        { provide: OrganizationScopedHttpClient, useValue: { request: jest.fn() } },
         {
           provide: AbstractCustomersGatewayService,
           useValue: {},
@@ -74,11 +99,7 @@ describe("CasesGatewayService comments", () => {
   });
 
   it("creates a comment and records history", async () => {
-    scopedHttp.request.mockImplementation(async (opts: { path?: string; method?: string }) => {
-      if (opts.path === "/comments" && opts.method === "post") return comment;
-      if (opts.path?.includes("/history")) return { id: "hist-1" };
-      return {};
-    });
+    commentsService.createComment.mockResolvedValue(comment);
 
     const result = await service.createComment(memberUser, {
       entityType: "case",
@@ -87,48 +108,34 @@ describe("CasesGatewayService comments", () => {
     });
 
     expect(result.id).toBe("c-1");
-    expect(scopedHttp.request).toHaveBeenCalledWith(
+    expect(commentsService.createComment).toHaveBeenCalledWith(
       expect.objectContaining({
-        method: "post",
-        path: "/comments",
+        organizationId: "org-1",
+        entityType: "case",
+        entityId: "case-1",
+        body: "Note terrain",
+        authorId: "user-1",
+        authorName: "Tech",
       }),
     );
-    // history is best-effort / fire-and-forget
     await Promise.resolve();
-    expect(scopedHttp.request).toHaveBeenCalledWith(
-      expect.objectContaining({
-        method: "post",
-        path: "/cases/case-1/history",
-        body: expect.objectContaining({ action: "comment_added" }),
-      }),
+    expect(caseHistoryService.addCaseHistory).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "comment_added", caseId: "case-1" }),
     );
   });
 
   it("lists comments for an entity", async () => {
-    scopedHttp.request.mockResolvedValueOnce([comment]);
+    commentsService.listComments.mockResolvedValue([comment]);
 
     const result = await service.listComments(memberUser, "intervention", "int-1");
 
     expect(result).toHaveLength(1);
-    expect(scopedHttp.request).toHaveBeenCalledWith(
-      expect.objectContaining({
-        method: "get",
-        path: "/comments",
-        query: expect.objectContaining({
-          entityType: "intervention",
-          entityId: "int-1",
-        }),
-      }),
-    );
+    expect(commentsService.listComments).toHaveBeenCalledWith("org-1", "intervention", "int-1");
   });
 
   it("allows author to update own comment", async () => {
-    scopedHttp.request.mockImplementation(async (opts: { path?: string; method?: string }) => {
-      if (opts.method === "get" && opts.path === "/comments/c-1") return comment;
-      if (opts.method === "patch") return { ...comment, body: "Updated" };
-      if (opts.path?.includes("/history")) return { id: "hist-2" };
-      return {};
-    });
+    commentsService.getComment.mockResolvedValue(comment);
+    commentsService.updateComment.mockResolvedValue({ ...comment, body: "Updated" });
 
     const result = await service.updateComment(memberUser, "c-1", { body: "Updated" });
 
@@ -136,7 +143,7 @@ describe("CasesGatewayService comments", () => {
   });
 
   it("forbids member from updating someone else's comment", async () => {
-    scopedHttp.request.mockResolvedValueOnce({
+    commentsService.getComment.mockResolvedValue({
       ...comment,
       authorId: "other-user",
     });
@@ -147,12 +154,8 @@ describe("CasesGatewayService comments", () => {
   });
 
   it("allows admin to delete any comment", async () => {
-    scopedHttp.request.mockImplementation(async (opts: { path?: string; method?: string }) => {
-      if (opts.method === "get") return { ...comment, authorId: "other-user" };
-      if (opts.method === "delete") return { deleted: true };
-      if (opts.path?.includes("/history")) return { id: "hist-3" };
-      return {};
-    });
+    commentsService.getComment.mockResolvedValue({ ...comment, authorId: "other-user" });
+    commentsService.deleteComment.mockResolvedValue({ deleted: true });
 
     const result = await service.deleteComment(adminUser, "c-1");
     expect(result).toEqual({ deleted: true });
