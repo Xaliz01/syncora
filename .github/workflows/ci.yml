@@ -35,6 +35,8 @@ jobs:
         run: npm run lint
       - name: Version SemVer
         run: npm run test:version
+      - name: Rolling edge (slot api + frontend)
+        run: npm run test:rolling-edge
 
   typecheck-matrix:
     name: 2. TypeScript (${{ matrix.workspace }})

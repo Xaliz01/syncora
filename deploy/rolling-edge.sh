@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
 # Bascule blue/green des points d'entrée (api + frontend) sans downtime.
 #
-# Génère Caddyfile depuis Caddyfile.template avec UN seul upstream (slot actif).
-# Caddy ne sait pas fallback correctement si le 1er hostname n'existe pas en DNS.
+# L'API et le frontend changent de slot ensemble. Caddy n'est rechargé qu'une
+# fois les deux conteneurs du slot cible healthy : un seul upstream, et jamais
+# vers un slot où l'API ou le frontend est absent.
+#
+# Au premier déploiement après le renommage api-gateway-* → api-*, aucun
+# conteneur api-* ne tourne. Le slot publié reste celui du frontend déjà en
+# service (fichier .edge-slot) : les deux partent sur l'autre couleur.
 #
 # Usage (depuis le répertoire deploy/ sur la VM) :
 #   export REGISTRY IMAGE_TAG
@@ -10,21 +15,67 @@
 #
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$ROOT_DIR"
-
-COMPOSE_FILES=(-f docker-compose.prod.yml)
-ENV_FILE=(--env-file .env.production)
-if [[ -f docker-compose.monitoring.yml ]]; then
-  COMPOSE_FILES+=(-f docker-compose.monitoring.yml)
-fi
-
-compose() {
-  if [[ -f docker-compose.monitoring.yml ]]; then
-    docker compose "${COMPOSE_FILES[@]}" "${ENV_FILE[@]}" --profile monitoring "$@"
+opposite_slot() {
+  if [[ "$1" == "blue" ]]; then
+    echo green
   else
-    docker compose "${COMPOSE_FILES[@]}" "${ENV_FILE[@]}" "$@"
+    echo blue
   fi
+}
+
+# Décide le slot cible à partir de l'état observé, sans Docker.
+# Arguments : edge api_blue api_green fe_blue fe_green
+#   edge : "" | blue | green (contenu de .edge-slot)
+#   flags : 1 si le conteneur tourne, sinon 0
+# stdout : "bootstrap none blue" | "roll <published> <target>"
+resolve_edge_roll() {
+  local edge="${1:-}"
+  local api_blue="$2"
+  local api_green="$3"
+  local fe_blue="$4"
+  local fe_green="$5"
+  local published=""
+
+  if [[ "$edge" == "blue" || "$edge" == "green" ]]; then
+    published="$edge"
+  fi
+
+  # Fichier périmé : Caddy est censé viser une couleur dont le frontend est arrêté,
+  # alors que l'autre frontend tourne encore.
+  if [[ -n "$published" ]]; then
+    local fe_published=0 fe_other=0
+    if [[ "$published" == "blue" ]]; then
+      fe_published="$fe_blue"
+      fe_other="$fe_green"
+    else
+      fe_published="$fe_green"
+      fe_other="$fe_blue"
+    fi
+    if [[ "$fe_published" != "1" && "$fe_other" == "1" ]]; then
+      published="$(opposite_slot "$published")"
+    fi
+  fi
+
+  if [[ -z "$published" ]]; then
+    if [[ "$fe_blue" == "1" && "$fe_green" != "1" ]]; then
+      published=blue
+    elif [[ "$fe_green" == "1" && "$fe_blue" != "1" ]]; then
+      published=green
+    elif [[ "$fe_blue" == "1" && "$fe_green" == "1" ]]; then
+      published=blue
+    elif [[ "$api_blue" == "1" && "$api_green" != "1" ]]; then
+      published=blue
+    elif [[ "$api_green" == "1" && "$api_blue" != "1" ]]; then
+      published=green
+    elif [[ "$api_blue" == "1" && "$api_green" == "1" ]]; then
+      published=blue
+    else
+      echo "bootstrap none blue"
+      return 0
+    fi
+  fi
+
+  echo "roll ${published} $(opposite_slot "$published")"
 }
 
 service_running() {
@@ -72,6 +123,14 @@ wait_healthy() {
 
 apply_caddy_slot() {
   local slot="$1" # blue | green
+  if [[ "$slot" != "blue" && "$slot" != "green" ]]; then
+    echo "❌ Slot invalide : $slot"
+    return 1
+  fi
+  if ! service_running "frontend-${slot}" || ! service_running "api-${slot}"; then
+    echo "❌ Refus de basculer Caddy vers ${slot} : api-${slot} et frontend-${slot} doivent tourner"
+    return 1
+  fi
   local template="${ROOT_DIR}/Caddyfile.template"
   local target="${ROOT_DIR}/Caddyfile"
   if [[ ! -f "$template" ]]; then
@@ -95,63 +154,89 @@ apply_caddy_slot() {
   fi
 }
 
-roll_pair() {
-  local base="$1" # api | frontend
-  local blue="${base}-blue"
-  local green="${base}-green"
-  local active="" inactive=""
-
-  local blue_up=false green_up=false
-  service_running "$blue" && blue_up=true
-  service_running "$green" && green_up=true
-
-  if $blue_up && ! $green_up; then
-    active=blue
-    inactive=green
-  elif $green_up && ! $blue_up; then
-    active=green
-    inactive=blue
-  elif $blue_up && $green_up; then
-    echo "⚠️  $base : blue et green sont up — bascule forcée vers green"
-    active=blue
-    inactive=green
+running_flag() {
+  if service_running "$1"; then
+    echo 1
   else
-    echo "ℹ️  $base : aucun slot actif — bootstrap sur blue"
-    compose up -d --no-deps --pull never "$blue"
-    wait_healthy "$blue"
-    LAST_SLOT=blue
-    return 0
+    echo 0
   fi
-
-  echo "🔁 $base : actif=$active → déploiement sur $inactive"
-  compose up -d --no-deps --force-recreate --pull never "${base}-${inactive}"
-  wait_healthy "${base}-${inactive}"
-
-  # Les deux tournent : basculer Caddy vers le nouveau avant d'arrêter l'ancien.
-  apply_caddy_slot "$inactive"
-  sleep 2
-
-  echo "🛑 Arrêt de ${base}-${active}"
-  compose stop "${base}-${active}"
-  compose rm -f "${base}-${active}" >/dev/null
-  echo "✅ $base basculé sur $inactive"
-  LAST_SLOT=$inactive
 }
 
-echo "=== Rolling edge (api + frontend) ==="
-LAST_SLOT=blue
-roll_pair "api"
-roll_pair "frontend"
+read_edge_slot() {
+  local file="${ROOT_DIR}/.edge-slot"
+  if [[ ! -f "$file" ]]; then
+    echo ""
+    return 0
+  fi
+  tr '[:upper:]' '[:lower:]' <"$file" | tr -d '[:space:]'
+}
 
-# Garantit Caddy aligné sur un slot où frontend ET gateway tournent.
-if service_running frontend-green && service_running api-green; then
-  apply_caddy_slot green
-elif service_running frontend-blue && service_running api-blue; then
-  apply_caddy_slot blue
-else
-  echo "❌ Pas de paire frontend+gateway cohérente"
-  compose ps || true
-  exit 1
+retire_slot() {
+  local service="$1"
+  local id
+  id="$(compose ps -aq "$service" 2>/dev/null || true)"
+  if [[ -z "$id" ]]; then
+    return 0
+  fi
+  echo "🛑 Arrêt de ${service}"
+  compose stop "$service"
+  compose rm -f "$service" >/dev/null
+}
+
+main() {
+  ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  cd "$ROOT_DIR"
+
+  COMPOSE_FILES=(-f docker-compose.prod.yml)
+  ENV_FILE=(--env-file .env.production)
+  if [[ -f docker-compose.monitoring.yml ]]; then
+    COMPOSE_FILES+=(-f docker-compose.monitoring.yml)
+  fi
+
+  compose() {
+    if [[ -f docker-compose.monitoring.yml ]]; then
+      docker compose "${COMPOSE_FILES[@]}" "${ENV_FILE[@]}" --profile monitoring "$@"
+    else
+      docker compose "${COMPOSE_FILES[@]}" "${ENV_FILE[@]}" "$@"
+    fi
+  }
+
+  local edge decision mode published target retire
+  edge="$(read_edge_slot)"
+  decision="$(resolve_edge_roll \
+    "$edge" \
+    "$(running_flag api-blue)" \
+    "$(running_flag api-green)" \
+    "$(running_flag frontend-blue)" \
+    "$(running_flag frontend-green)")"
+  read -r mode published target <<<"$decision"
+  retire="$(opposite_slot "$target")"
+
+  echo "=== Rolling edge (api + frontend) ==="
+  echo "Décision : mode=${mode} publié=${published} cible=${target} (fichier=${edge:-<absent>})"
+
+  # Les deux images du slot cible démarrent avant tout changement de Caddy.
+  compose up -d --no-deps --force-recreate --pull never "api-${target}" "frontend-${target}"
+  wait_healthy "api-${target}"
+  wait_healthy "frontend-${target}"
+
+  apply_caddy_slot "$target"
+  sleep 2
+
+  retire_slot "api-${retire}"
+  retire_slot "frontend-${retire}"
+
+  if service_running "frontend-${target}" && service_running "api-${target}"; then
+    echo "✅ api + frontend sur ${target}"
+  else
+    echo "❌ Pas de paire frontend+api cohérente"
+    compose ps || true
+    exit 1
+  fi
+
+  echo "=== Rolling edge terminé (slot=$(cat .edge-slot)) ==="
+}
+
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  main "$@"
 fi
-
-echo "=== Rolling edge terminé (slot=$(cat .edge-slot)) ==="

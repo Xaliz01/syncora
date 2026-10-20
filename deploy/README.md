@@ -147,14 +147,18 @@ un libellé (ex. `v1.2.0`) ; s'il est renseigné, il prime sur l'incrément.
 
 ### Blue/green (api + frontend)
 
-Caddy route vers `*-blue` et `*-green` avec health checks (`lb_policy first`) :
-seul le slot healthy reçoit le trafic. Le script `rolling-edge.sh` :
+Caddy ne proxy qu’un slot (`blue` ou `green`), le même pour l’API et le frontend.
+`rolling-edge.sh` les bascule ensemble :
 
-1. détecte le slot actif ;
-2. démarre l'autre slot avec la nouvelle image ;
-3. attend `healthy` ;
-4. laisse Caddy basculer (~quelques secondes) ;
-5. arrête l'ancien slot.
+1. lit le slot publié (`.edge-slot`, sinon le frontend encore en service) ;
+2. démarre l’autre slot pour l’API **et** le frontend ;
+3. attend que les deux soient `healthy` ;
+4. régénère le Caddyfile et recharge Caddy ;
+5. arrête l’ancien slot.
+
+Après le renommage `api-gateway-*` → `api-*`, aucun conteneur `api-*` ne tourne.
+L’API suit le frontend déjà en ligne et part sur le même slot que lui, pas sur
+`blue` toute seule. Un bootstrap sur `blue` n’a lieu que si rien n’est en service.
 
 Le worker et les notifications sont mis à jour via un `compose up` classique
 (courte interruption possible sur un job en cours).
