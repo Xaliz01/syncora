@@ -225,7 +225,7 @@ jobs:
             docker exec planwise-prometheus wget -qO- --post-data='' http://localhost:9090/-/reload >/dev/null \
               || docker restart planwise-prometheus || true
 
-            # 2) Bascule blue/green (bootstrap blue si premier deploy après migration).
+            # 2) Bascule blue/green : api et frontend ensemble, sur le slot opposé au slot publié.
             ./rolling-edge.sh
 
             # 3) Caddy : rolling-edge a déjà écrit Caddyfile (slot actif unique).
