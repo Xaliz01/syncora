@@ -23,6 +23,8 @@ import { AbstractFleetService } from "./fleet/ports/fleet.service.port";
 import { AbstractTechniciansService } from "./technicians/ports/technicians.service.port";
 import { AbstractTeamsService } from "./technicians/ports/teams.service.port";
 import { AbstractOrganizationsService } from "./organizations/ports/organizations.service.port";
+import { AbstractPermissionsService } from "./permissions/ports/permissions.service.port";
+import { assertDocumentParentAccess, resolveCallerPermissions } from "./permissions/caller-access";
 
 const MIME_BY_EXT: Record<string, string> = {
   ".jpg": "image/jpeg",
@@ -46,6 +48,7 @@ export class DocumentsGatewayService extends AbstractDocumentsGatewayService {
     private readonly techniciansService: AbstractTechniciansService,
     private readonly teamsService: AbstractTeamsService,
     private readonly organizationsService: AbstractOrganizationsService,
+    private readonly permissions: AbstractPermissionsService,
   ) {
     super();
   }
@@ -56,6 +59,7 @@ export class DocumentsGatewayService extends AbstractDocumentsGatewayService {
     entityId: string,
     file: Express.Multer.File,
   ): Promise<DocumentUploadGatewayResponse> {
+    await this.assertParentAccess(currentUser, entityType, "write");
     const subscription = await this.subscriptionsGateway.getCurrentSubscription(currentUser);
     const document = await this.documents.upload({
       organizationId: currentUser.organizationId,
@@ -124,11 +128,13 @@ export class DocumentsGatewayService extends AbstractDocumentsGatewayService {
     entityType: DocumentEntityType,
     entityId: string,
   ): Promise<DocumentResponse[]> {
+    await this.assertParentAccess(currentUser, entityType, "read");
     return this.documents.listByEntity(currentUser.organizationId, entityType, entityId);
   }
 
   async getDownloadUrl(currentUser: AuthUser, documentId: string): Promise<{ url: string }> {
-    const url = await this.documents.getDownloadUrl(currentUser.organizationId, documentId);
+    const document = await this.requireReadableDocument(currentUser, documentId);
+    const url = await this.documents.getDownloadUrl(currentUser.organizationId, document.id);
     return { url: this.toClientDownloadUrl(url) };
   }
 
@@ -137,11 +143,19 @@ export class DocumentsGatewayService extends AbstractDocumentsGatewayService {
     if (!storageKey.startsWith(`${currentUser.organizationId}/`)) {
       throw new ForbiddenException("Accès refusé à ce fichier");
     }
+    const document = await this.documents.findActiveByStorageKey(
+      currentUser.organizationId,
+      storageKey,
+    );
+    if (!document) {
+      throw new NotFoundException("Fichier introuvable");
+    }
+    await this.assertParentAccess(currentUser, document.entityType, "read");
     if (!(this.storage instanceof LocalStorageProvider)) {
       throw new BadRequestException("Direct download only available in local storage mode");
     }
 
-    const filePath = this.storage.getAbsolutePath(storageKey);
+    const filePath = this.storage.getAbsolutePath(document.storageKey);
     if (!fs.existsSync(filePath)) {
       throw new NotFoundException("Fichier introuvable");
     }
@@ -161,6 +175,29 @@ export class DocumentsGatewayService extends AbstractDocumentsGatewayService {
   }
 
   async deleteDocument(currentUser: AuthUser, documentId: string): Promise<{ deleted: true }> {
-    return this.documents.deleteDocument(currentUser.organizationId, documentId);
+    const document = await this.documents.findActiveById(currentUser.organizationId, documentId);
+    if (!document) {
+      throw new NotFoundException("Document introuvable");
+    }
+    await this.assertParentAccess(currentUser, document.entityType, "write");
+    return this.documents.deleteDocument(currentUser.organizationId, document.id);
+  }
+
+  private async requireReadableDocument(currentUser: AuthUser, documentId: string) {
+    const document = await this.documents.findActiveById(currentUser.organizationId, documentId);
+    if (!document) {
+      throw new NotFoundException("Document introuvable");
+    }
+    await this.assertParentAccess(currentUser, document.entityType, "read");
+    return document;
+  }
+
+  private async assertParentAccess(
+    currentUser: AuthUser,
+    entityType: string,
+    mode: "read" | "write",
+  ): Promise<void> {
+    const granted = await resolveCallerPermissions(this.permissions, currentUser);
+    assertDocumentParentAccess(granted, entityType, mode);
   }
 }

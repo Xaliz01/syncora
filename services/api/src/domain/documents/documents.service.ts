@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
-import { Model } from "mongoose";
+import { Model, Types } from "mongoose";
 import { v4 as uuidv4 } from "uuid";
 import type {
   DocumentEntityType,
@@ -81,13 +81,38 @@ export class DocumentsService extends AbstractDocumentsService {
   }
 
   async getDownloadUrl(organizationId: string, documentId: string): Promise<string> {
-    const doc = await this.documentModel
-      .findOne({ _id: documentId, organizationId, ...activeDocumentFilter })
-      .exec();
+    const doc = await this.findActiveRecord(organizationId, documentId);
     if (!doc) {
       throw new NotFoundException("Document introuvable");
     }
     return this.storage.getDownloadUrl(doc.storageKey);
+  }
+
+  async findActiveById(
+    organizationId: string,
+    documentId: string,
+  ): Promise<DocumentResponse | null> {
+    const doc = await this.findActiveRecord(organizationId, documentId);
+    return doc ? toDocumentResponse(doc) : null;
+  }
+
+  async findActiveByStorageKey(
+    organizationId: string,
+    storageKey: string,
+  ): Promise<DocumentResponse | null> {
+    const normalizedKey = storageKey.trim();
+    if (!normalizedKey) return null;
+    const doc = await this.documentModel
+      .findOne({ organizationId, storageKey: normalizedKey, ...activeDocumentFilter })
+      .exec();
+    return doc ? toDocumentResponse(doc) : null;
+  }
+
+  private async findActiveRecord(organizationId: string, documentId: string) {
+    if (!Types.ObjectId.isValid(documentId)) return null;
+    return this.documentModel
+      .findOne({ _id: documentId, organizationId, ...activeDocumentFilter })
+      .exec();
   }
 
   async deleteDocument(organizationId: string, documentId: string): Promise<{ deleted: true }> {

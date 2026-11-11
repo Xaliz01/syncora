@@ -499,7 +499,7 @@ function buildStepsForRoute(href: string, label: string): string {
     "/account":
       "1. Ouvrez Mon compte.\n2. Consultez identité, mot de passe, préférences et sessions.\n3. Cliquez sur Modifier pour changer le nom ou l’affichage (thème, sidebar, commandes vocales).\n4. Le thème est aussi accessible via le toggle de l’en-tête.",
     "/search":
-      "1. Utilisez le champ recherche de l’en-tête (ou ouvrez Recherche).\n2. Saisissez un nom / mot-clé.\n3. Ouvrez le résultat selon vos droits.",
+      "1. Utilisez le champ recherche de l’en-tête (ou ouvrez Recherche).\n2. Saisissez un nom / mot-clé.\n3. Seuls les types que vous pouvez consulter apparaissent (dossiers, factures, clients, etc.).\n4. Ouvrez le résultat.",
   };
 
   return (

@@ -7,7 +7,7 @@ Retrouver rapidement une fiche ou une page déjà visitée.
 ## Recherche
 
 1. Champ **recherche** dans l’en-tête (desktop ou mobile) → `/search?q=…`
-2. Types recherchés (filtrés par droits) : dossiers, interventions, factures, clients, donneurs d’ordre, véhicules, techniciens, équipes, agences, articles, prestations, utilisateurs.
+2. Types recherchés, **seulement si le membre a le droit de lecture** du type (les mêmes codes que les listes : `cases.read`, `interventions.read`, `billing.invoices.read`, `customers.read`, `order_givers.read`, `fleet.vehicles.read`, `fleet.technicians.read`, `teams.read`, `agences.read` ou `teams.read`, `stock.articles.read`, `prestations.read`, `users.read`) : dossiers, interventions, factures, clients, donneurs d’ordre, véhicules, techniciens, équipes, agences, articles, prestations, utilisateurs. Un administrateur voit tous les types.
 3. Pas d’entrée sidebar dédiée ; route catalogue `/search`.
 
 ## Favoris
