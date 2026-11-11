@@ -1,6 +1,9 @@
 import { Test } from "@nestjs/testing";
 import type { ExecutionContext, INestApplication } from "@nestjs/common";
 import type { JwtPayload, PermissionCode } from "@planwise/shared";
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
 import request from "supertest";
 import { SearchController } from "../search.controller";
 import { DocumentsController } from "../documents.controller";
@@ -24,6 +27,7 @@ import { AbstractPermissionsService } from "../../../domain/permissions/ports/pe
 import { AbstractDocumentsService } from "../../../domain/documents/ports/documents.service.port";
 import { AbstractSubscriptionsGatewayService } from "../../../domain/ports/subscriptions.service.port";
 import { AbstractStorageProvider } from "../../../infrastructure/storage/storage.port";
+import { LocalStorageProvider } from "../../../infrastructure/storage/local-storage.provider";
 import { AbstractOrganizationsService } from "../../../domain/organizations/ports/organizations.service.port";
 import { JwtAuthGuard } from "../../../infrastructure/jwt-auth.guard";
 import { SubscriptionAccessGuard } from "../../../infrastructure/subscription-access.guard";
@@ -32,6 +36,7 @@ describe("Restricted member access", () => {
   let app: INestApplication;
   let currentJwt: JwtPayload;
   let livePermissions: PermissionCode[];
+  let storageDir: string;
 
   const invoices = {
     listInvoices: jest.fn().mockResolvedValue({
@@ -113,6 +118,8 @@ describe("Restricted member access", () => {
 
   beforeAll(async () => {
     signIn(["customers.read"]);
+    storageDir = fs.mkdtempSync(path.join(os.tmpdir(), "planwise-doc-download-"));
+    process.env.DOCUMENT_STORAGE_PATH = storageDir;
 
     const moduleRef = await Test.createTestingModule({
       controllers: [SearchController, DocumentsController],
@@ -169,7 +176,7 @@ describe("Restricted member access", () => {
           },
         },
         { provide: AbstractDocumentsService, useValue: documents },
-        { provide: AbstractStorageProvider, useValue: {} },
+        { provide: AbstractStorageProvider, useClass: LocalStorageProvider },
         {
           provide: AbstractSubscriptionsGatewayService,
           useValue: {
@@ -193,10 +200,14 @@ describe("Restricted member access", () => {
     app = moduleRef.createNestApplication({ logger: false });
     app.setGlobalPrefix("api");
     await app.init();
+    await app
+      .get(AbstractStorageProvider)
+      .upload(caseDocument.storageKey, Buffer.from("pdf-bytes"), "application/pdf");
   });
 
   afterAll(async () => {
     await app.close();
+    fs.rmSync(storageDir, { recursive: true, force: true });
   });
 
   beforeEach(() => {
@@ -262,6 +273,29 @@ describe("Restricted member access", () => {
     expect(download.status).toBe(200);
     expect(download.body.url).toBe("https://files.example/rapport.pdf");
     expect(documents.listByEntity).toHaveBeenCalledWith("org-1", "case", "case-1");
+  });
+
+  it("returns 403 when downloading a file whose parent the member cannot read", async () => {
+    const response = await request(app.getHttpServer()).get(
+      `/api/documents/download/${encodeURIComponent(caseDocument.storageKey)}`,
+    );
+
+    expect(response.status).toBe(403);
+    expect(response.body.message).toBe("Permissions insuffisantes");
+  });
+
+  it("downloads the file when the member can read the parent", async () => {
+    signIn(["cases.read"]);
+
+    const response = await request(app.getHttpServer()).get(
+      `/api/documents/download/${encodeURIComponent(caseDocument.storageKey)}`,
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers["content-type"]).toContain("application/pdf");
+    expect(response.headers["content-disposition"]).toContain("rapport.pdf");
+    const payload = Buffer.isBuffer(response.body) ? response.body.toString("utf8") : response.text;
+    expect(payload).toBe("pdf-bytes");
   });
 
   it("returns 403 on upload and delete without the parent update permission", async () => {

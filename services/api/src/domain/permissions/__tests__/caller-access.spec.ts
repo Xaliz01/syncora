@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import { ForbiddenException } from "@nestjs/common";
+import { ForbiddenException, Logger } from "@nestjs/common";
 import type { AuthUser, PermissionCode } from "@planwise/shared";
 import { AgencesGatewayController } from "../../../presentation/http/agences.controller";
 import { AdminController } from "../../../presentation/http/admin.controller";
@@ -159,9 +159,17 @@ describe("resolveCallerPermissions", () => {
   });
 
   it("falls back to the token when the permissions module fails", async () => {
+    const warn = jest.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
+
     const granted = await resolveCallerPermissions(permissionsPort(new Error("down")), member);
 
     expect(granted.has("billing.invoices.read")).toBe(true);
     expect(granted.has("customers.read")).toBe(true);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("down"));
+    const logged = warn.mock.calls.map((call) => String(call[0])).join(" ");
+    expect(logged).not.toContain(member.email);
+    expect(logged).not.toContain(member.id);
+    expect(logged).not.toContain(member.organizationId);
+    warn.mockRestore();
   });
 });

@@ -24,32 +24,42 @@ const completedPrefs = {
   },
 };
 
-function searchPayload(includeInvoice: boolean) {
-  const customer = {
-    id: "cust-1",
-    type: "customer",
-    title: "Dupont Services",
-    subtitle: "Entreprise",
-    url: "/customers/cust-1",
-  };
-  const invoice = {
-    id: "inv-1",
-    type: "invoice",
-    title: "F-2026-00001",
-    subtitle: "Facture · Dupont Services",
-    url: "/cases/case-99",
-  };
-  const results = includeInvoice ? [customer, invoice] : [customer];
-  const counts: Record<string, number> = { customer: 1 };
-  if (includeInvoice) counts.invoice = 1;
+const SEARCH_CATALOG = [
+  {
+    permission: "customers.read",
+    item: {
+      id: "cust-1",
+      type: "customer",
+      title: "Dupont Services",
+      subtitle: "Entreprise",
+      url: "/customers/cust-1",
+    },
+  },
+  {
+    permission: "billing.invoices.read",
+    item: {
+      id: "inv-1",
+      type: "invoice",
+      title: "F-2026-00001",
+      subtitle: "Facture · Dupont Services",
+      url: "/cases/case-99",
+    },
+  },
+] as const;
+
+function searchPayload(permissions: readonly string[]) {
+  const granted = new Set(permissions);
+  const results = SEARCH_CATALOG.filter((entry) => granted.has(entry.permission)).map(
+    (entry) => entry.item,
+  );
+  const counts: Record<string, number> = {};
+  for (const result of results) {
+    counts[result.type] = (counts[result.type] ?? 0) + 1;
+  }
   return { query: "Dupont", results, counts };
 }
 
-async function mockShell(
-  page: import("@playwright/test").Page,
-  permissions: string[],
-  includeInvoice: boolean,
-) {
+async function mockShell(page: import("@playwright/test").Page, permissions: string[]) {
   const user = { ...shellUser, permissions };
   await page.addInitScript(() => {
     localStorage.setItem("planwise_access_token", "e2e-search-token");
@@ -83,7 +93,7 @@ async function mockShell(
       return;
     }
     if (method === "GET" && path.startsWith("/search")) {
-      await route.fulfill({ json: searchPayload(includeInvoice) });
+      await route.fulfill({ json: searchPayload(permissions) });
       return;
     }
     await route.fulfill({ status: 200, json: {} });
@@ -92,7 +102,7 @@ async function mockShell(
 
 test.describe("Recherche selon les droits", () => {
   test("un membre sans lecture des factures ne voit pas les factures", async ({ page }) => {
-    await mockShell(page, ["subscription.active", "customers.read", "organizations.read"], false);
+    await mockShell(page, ["subscription.active", "customers.read", "organizations.read"]);
 
     await page.goto("/search?q=Dupont");
     await expect(page.getByRole("heading", { name: "Recherche globale" })).toBeVisible({
@@ -104,11 +114,12 @@ test.describe("Recherche selon les droits", () => {
   });
 
   test("un membre autorisé à lire les factures les voit dans les résultats", async ({ page }) => {
-    await mockShell(
-      page,
-      ["subscription.active", "customers.read", "billing.invoices.read", "organizations.read"],
-      true,
-    );
+    await mockShell(page, [
+      "subscription.active",
+      "customers.read",
+      "billing.invoices.read",
+      "organizations.read",
+    ]);
 
     await page.goto("/search?q=Dupont");
     await expect(page.getByRole("heading", { name: "Recherche globale" })).toBeVisible({

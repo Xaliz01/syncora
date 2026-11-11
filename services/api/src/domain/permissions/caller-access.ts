@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, Logger } from "@nestjs/common";
 import {
   ASSIGNABLE_PERMISSION_CODES,
   type AuthUser,
@@ -53,6 +53,8 @@ export const DOCUMENT_PARENT_ACCESS: Record<
 
 const DOCUMENT_ENTITY_TYPES = new Set<string>(Object.keys(DOCUMENT_PARENT_ACCESS));
 
+const logger = new Logger("CallerAccess");
+
 /**
  * Droits effectifs de l'appelant.
  * Un admin a tous les droits assignables, comme `RequirePermissionGuard`.
@@ -77,7 +79,9 @@ export async function resolveCallerPermissions(
       role: user.role,
     });
     live = new Set(resolved.permissions ?? []);
-  } catch {
+  } catch (err: unknown) {
+    const detail = err instanceof Error ? err.message : "erreur inconnue";
+    logger.warn(`Module permissions indisponible, repli sur les droits du jeton: ${detail}`);
     return token;
   }
 
