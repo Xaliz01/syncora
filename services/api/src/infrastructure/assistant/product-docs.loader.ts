@@ -181,7 +181,7 @@ Sans accès actif : menu réduit org/abonnement/compte. Abonnement Stripe Planwi
 Réponse : il n'y a PAS de plafond sur le nombre de documents. La limite est un QUOTA D'ESPACE (octets) pour toute l'organisation.
 Inclus Essentiel : 10 Go de stockage documents (ordre de grandeur ≈ 10 000 photos ou PDF). Addon stockage supplémentaire : +50 Go par unité (~4,99 €/mois).
 Où voir / augmenter : Mon abonnement (/subscription) — barre d'usage utilisé/quota, alerte vers 80 %, upload bloqué si quota atteint.
-Documents déposés sur les fiches dossier. Ne jamais dire « aucune limite » ni inventer un nombre max de fichiers. Ne pas confondre avec le stock articles (pièces) : ici = fichiers/documents.`,
+Documents déposés sur les fiches (dossier, intervention, client, véhicule, technicien, équipe, organisation). Consulter, lister ou télécharger un fichier exige le droit de lecture de la fiche porteuse. Déposer ou supprimer exige le droit de modification de cette fiche (ex. cases.read / cases.update). Ne jamais dire « aucune limite » ni inventer un nombre max de fichiers. Ne pas confondre avec le stock articles (pièces) : ici = fichiers/documents.`,
   },
   {
     id: "journey-reporting",
@@ -193,7 +193,7 @@ Documents déposés sur les fiches dossier. Ne jamais dire « aucune limite » n
     id: "journey-search",
     title: "Recherche",
     pathPrefixes: ["/search"],
-    text: `Champ recherche header → /search?q=… Types : dossiers, interventions, factures, clients, donneurs d'ordre, véhicules, techniciens, équipes, agences, articles, prestations, utilisateurs (filtrés par droits). Une facture ouvre le dossier associé. Pas d'entrée sidebar. Résultats vides = query courte, permissions, ou org vide (proposer démo en essai).`,
+    text: `Champ recherche header → /search?q=… Types : dossiers, interventions, factures, clients, donneurs d'ordre, véhicules, techniciens, équipes, agences, articles, prestations, utilisateurs. Chaque type n'est interrogé que si le membre a le droit de lecture correspondant (mêmes codes que les listes : cases.read, billing.invoices.read, customers.read, users.read, fleet.vehicles.read, etc. ; agences = agences.read ou teams.read). Un administrateur voit tous les types. Une facture ouvre le dossier associé. Pas d'entrée sidebar. Résultats vides = query courte, permissions, ou org vide (proposer démo en essai).`,
   },
   {
     id: "journey-organization",

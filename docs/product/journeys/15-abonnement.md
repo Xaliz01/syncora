@@ -18,7 +18,8 @@ Comprendre l’offre Planwise (accès produit) — **distinct** de la facturatio
 - La limite est un **quota d’espace** partagé pour l’organisation : **10 Go** inclus dans Essentiel.
 - L’usage (utilisé / quota) s’affiche sur **Mon abonnement** (`/subscription`) ; un bandeau d’alerte apparaît près du quota (≈ 80 %), et l’upload est **bloqué** si le quota est atteint.
 - Pour augmenter : addon **Stockage supplémentaire** (+50 Go / unité, ~4,99 €/mois) depuis `/subscription`.
-- Les documents se déposent sur les **fiches dossier** (et contextes liés) ; l’assistant ne lit pas votre consommation réelle.
+- Les documents se déposent sur les **fiches** (dossier, intervention, client, véhicule, technicien, équipe, organisation) ; l’assistant ne lit pas votre consommation réelle.
+- Consulter, lister ou télécharger un fichier exige le **droit de lecture** de la fiche porteuse. Déposer ou supprimer un fichier exige le **droit de modification** de cette fiche (par exemple `cases.read` / `cases.update`).
 
 ## Addons (sur le socle)
 

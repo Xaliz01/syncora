@@ -37,6 +37,12 @@ import { AbstractArticleStockService } from "./stock/ports/article-stock.service
 import { AbstractPrestationService } from "./stock/ports/prestation.service.port";
 import { AbstractInvoicesService } from "./billing/ports/invoices.service.port";
 import { AbstractUsersService } from "./users/ports/users.service.port";
+import { AbstractPermissionsService } from "./permissions/ports/permissions.service.port";
+import {
+  canReadSearchEntity,
+  resolveCallerPermissions,
+  type SearchEntityType,
+} from "./permissions/caller-access";
 
 @Injectable()
 export class SearchGatewayService extends AbstractSearchService {
@@ -53,6 +59,7 @@ export class SearchGatewayService extends AbstractSearchService {
     private readonly prestationsService: AbstractPrestationService,
     private readonly invoicesService: AbstractInvoicesService,
     private readonly usersService: AbstractUsersService,
+    private readonly permissions: AbstractPermissionsService,
   ) {
     super();
   }
@@ -62,6 +69,10 @@ export class SearchGatewayService extends AbstractSearchService {
     if (!normalizedQuery) {
       return { query, results: [], counts: {} };
     }
+
+    const granted = await resolveCallerPermissions(this.permissions, user);
+    const whenAllowed = <T>(type: SearchEntityType, task: () => Promise<T[]>): Promise<T[]> =>
+      canReadSearchEntity(granted, type) ? task() : Promise.resolve([]);
 
     const [
       cases,
@@ -77,18 +88,18 @@ export class SearchGatewayService extends AbstractSearchService {
       invoices,
       users,
     ] = await Promise.allSettled([
-      this.fetchCases(user, normalizedQuery),
-      this.fetchInterventions(user, normalizedQuery),
-      this.fetchCustomers(user, normalizedQuery),
-      this.fetchOrderGivers(user, normalizedQuery),
-      this.fetchVehicles(user),
-      this.fetchTechnicians(user),
-      this.fetchTeams(user),
-      this.fetchAgences(user),
-      this.fetchArticles(user, normalizedQuery),
-      this.fetchPrestations(user, normalizedQuery),
-      this.fetchInvoices(user, normalizedQuery),
-      user.role === "admin" ? this.fetchUsers(user) : Promise.resolve([]),
+      whenAllowed("case", () => this.fetchCases(user, normalizedQuery)),
+      whenAllowed("intervention", () => this.fetchInterventions(user, normalizedQuery)),
+      whenAllowed("customer", () => this.fetchCustomers(user, normalizedQuery)),
+      whenAllowed("order_giver", () => this.fetchOrderGivers(user, normalizedQuery)),
+      whenAllowed("vehicle", () => this.fetchVehicles(user)),
+      whenAllowed("technician", () => this.fetchTechnicians(user)),
+      whenAllowed("team", () => this.fetchTeams(user)),
+      whenAllowed("agence", () => this.fetchAgences(user)),
+      whenAllowed("article", () => this.fetchArticles(user, normalizedQuery)),
+      whenAllowed("prestation", () => this.fetchPrestations(user, normalizedQuery)),
+      whenAllowed("invoice", () => this.fetchInvoices(user, normalizedQuery)),
+      whenAllowed("user", () => this.fetchUsers(user)),
     ]);
 
     const results: SearchResultItem[] = [];

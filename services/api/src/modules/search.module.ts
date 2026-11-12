@@ -10,6 +10,7 @@ import { TechniciansDomainModule } from "./technicians-domain.module";
 import { StockDomainModule } from "./stock-domain.module";
 import { BillingDomainModule } from "./billing-domain.module";
 import { UsersModule } from "./users.module";
+import { PermissionsModule } from "./permissions.module";
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { UsersModule } from "./users.module";
     StockDomainModule,
     BillingDomainModule,
     UsersModule,
+    PermissionsModule,
   ],
   controllers: httpControllers([SearchController]),
   providers: [{ provide: AbstractSearchService, useClass: SearchGatewayService }],

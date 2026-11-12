@@ -10,6 +10,7 @@ import { CustomersDomainModule } from "./customers-domain.module";
 import { FleetDomainModule } from "./fleet-domain.module";
 import { TechniciansDomainModule } from "./technicians-domain.module";
 import { OrganizationsDomainModule } from "./organizations-domain.module";
+import { PermissionsModule } from "./permissions.module";
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { OrganizationsDomainModule } from "./organizations-domain.module";
     FleetDomainModule,
     TechniciansDomainModule,
     OrganizationsDomainModule,
+    PermissionsModule,
   ],
   controllers: httpControllers([DocumentsController]),
   providers: [{ provide: AbstractDocumentsGatewayService, useClass: DocumentsGatewayService }],

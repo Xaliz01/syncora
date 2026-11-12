@@ -28,5 +28,13 @@ export abstract class AbstractDocumentsService {
     entityId: string,
   ): Promise<DocumentResponse[]>;
   abstract getDownloadUrl(organizationId: string, documentId: string): Promise<string>;
+  abstract findActiveById(
+    organizationId: string,
+    documentId: string,
+  ): Promise<DocumentResponse | null>;
+  abstract findActiveByStorageKey(
+    organizationId: string,
+    storageKey: string,
+  ): Promise<DocumentResponse | null>;
   abstract deleteDocument(organizationId: string, documentId: string): Promise<{ deleted: true }>;
 }

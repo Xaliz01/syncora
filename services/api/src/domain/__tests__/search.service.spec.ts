@@ -1,5 +1,5 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import type { AuthUser } from "@planwise/shared";
+import type { AuthUser, PermissionCode } from "@planwise/shared";
 import { SearchGatewayService } from "../search.service";
 import { AbstractCasesService } from "../cases/ports/cases.service.port";
 import { AbstractInterventionsService } from "../cases/ports/interventions.service.port";
@@ -13,6 +13,7 @@ import { AbstractArticleStockService } from "../stock/ports/article-stock.servic
 import { AbstractPrestationService } from "../stock/ports/prestation.service.port";
 import { AbstractInvoicesService } from "../billing/ports/invoices.service.port";
 import { AbstractUsersService } from "../users/ports/users.service.port";
+import { AbstractPermissionsService } from "../permissions/ports/permissions.service.port";
 
 describe("SearchGatewayService", () => {
   let service: SearchGatewayService;
@@ -23,6 +24,12 @@ describe("SearchGatewayService", () => {
   let articlesService: { listArticles: jest.Mock };
   let prestationsService: { listPrestations: jest.Mock };
   let invoicesService: { listInvoices: jest.Mock };
+  let fleetService: { listVehicles: jest.Mock };
+  let techniciansService: { listTechnicians: jest.Mock };
+  let teamsService: { listTeams: jest.Mock };
+  let agencesService: { listAgences: jest.Mock };
+  let usersService: { listByOrganization: jest.Mock };
+  let permissions: { resolveEffectivePermissions: jest.Mock };
 
   const user: AuthUser = {
     id: "user-1",
@@ -46,6 +53,14 @@ describe("SearchGatewayService", () => {
     articlesService = { listArticles: jest.fn() };
     prestationsService = { listPrestations: jest.fn() };
     invoicesService = { listInvoices: jest.fn() };
+    fleetService = { listVehicles: jest.fn().mockResolvedValue([]) };
+    techniciansService = { listTechnicians: jest.fn().mockResolvedValue([]) };
+    teamsService = { listTeams: jest.fn().mockResolvedValue([]) };
+    agencesService = { listAgences: jest.fn().mockResolvedValue([]) };
+    usersService = { listByOrganization: jest.fn().mockResolvedValue([]) };
+    permissions = {
+      resolveEffectivePermissions: jest.fn().mockResolvedValue({ permissions: [] }),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -54,26 +69,15 @@ describe("SearchGatewayService", () => {
         { provide: AbstractInterventionsService, useValue: interventionsService },
         { provide: AbstractCustomersService, useValue: customersService },
         { provide: AbstractOrderGiversService, useValue: orderGiversService },
-        {
-          provide: AbstractFleetService,
-          useValue: { listVehicles: jest.fn().mockResolvedValue([]) },
-        },
-        {
-          provide: AbstractTechniciansService,
-          useValue: { listTechnicians: jest.fn().mockResolvedValue([]) },
-        },
-        { provide: AbstractTeamsService, useValue: { listTeams: jest.fn().mockResolvedValue([]) } },
-        {
-          provide: AbstractAgencesService,
-          useValue: { listAgences: jest.fn().mockResolvedValue([]) },
-        },
+        { provide: AbstractFleetService, useValue: fleetService },
+        { provide: AbstractTechniciansService, useValue: techniciansService },
+        { provide: AbstractTeamsService, useValue: teamsService },
+        { provide: AbstractAgencesService, useValue: agencesService },
         { provide: AbstractArticleStockService, useValue: articlesService },
         { provide: AbstractPrestationService, useValue: prestationsService },
         { provide: AbstractInvoicesService, useValue: invoicesService },
-        {
-          provide: AbstractUsersService,
-          useValue: { listByOrganization: jest.fn().mockResolvedValue([]) },
-        },
+        { provide: AbstractUsersService, useValue: usersService },
+        { provide: AbstractPermissionsService, useValue: permissions },
       ],
     }).compile();
 
@@ -365,5 +369,134 @@ describe("SearchGatewayService", () => {
     expect(result).toEqual({ query: "   ", results: [], counts: {} });
     expect(casesService.listCases).not.toHaveBeenCalled();
     expect(customersService.listCustomers).not.toHaveBeenCalled();
+    expect(permissions.resolveEffectivePermissions).not.toHaveBeenCalled();
+  });
+
+  describe("membre restreint", () => {
+    function memberWith(token: PermissionCode[], live: PermissionCode[] = token): AuthUser {
+      permissions.resolveEffectivePermissions.mockResolvedValue({ permissions: live });
+      return {
+        id: "member-1",
+        email: "membre@test.fr",
+        organizationId: "org-1",
+        role: "member",
+        status: "active",
+        permissions: token,
+        name: "Membre",
+      };
+    }
+
+    it("does not query or return invoices without billing.invoices.read", async () => {
+      const member = memberWith(["customers.read"]);
+
+      const result = await service.search(member, "Dupont");
+
+      expect(invoicesService.listInvoices).not.toHaveBeenCalled();
+      expect(result.results.filter((item) => item.type === "invoice")).toEqual([]);
+      expect(customersService.listCustomers).toHaveBeenCalledWith("org-1", {
+        search: "dupont",
+        limit: 50,
+        offset: 0,
+      });
+    });
+
+    it("returns invoices when the member holds billing.invoices.read", async () => {
+      const member = memberWith(["customers.read", "billing.invoices.read"]);
+
+      const result = await service.search(member, "F-2026-00001");
+
+      expect(invoicesService.listInvoices).toHaveBeenCalledWith("org-1", {
+        search: "f-2026-00001",
+        limit: 50,
+        offset: 0,
+      });
+      expect(result.results).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: "inv-1", type: "invoice", title: "F-2026-00001" }),
+        ]),
+      );
+    });
+
+    it("ignores a stale token once the permissions module has revoked the right", async () => {
+      const member = memberWith(["billing.invoices.read", "customers.read"], ["customers.read"]);
+
+      await service.search(member, "F-2026-00001");
+
+      expect(invoicesService.listInvoices).not.toHaveBeenCalled();
+    });
+
+    it("does not exceed the token even if the permissions module is broader", async () => {
+      const member = memberWith(["customers.read"], ["customers.read", "billing.invoices.read"]);
+
+      await service.search(member, "F-2026-00001");
+
+      expect(invoicesService.listInvoices).not.toHaveBeenCalled();
+    });
+
+    it("queries only the entity types the member can read", async () => {
+      const member = memberWith(["customers.read"]);
+
+      await service.search(member, "acme");
+
+      expect(customersService.listCustomers).toHaveBeenCalled();
+      expect(casesService.listCases).not.toHaveBeenCalled();
+      expect(interventionsService.listInterventions).not.toHaveBeenCalled();
+      expect(orderGiversService.listOrderGivers).not.toHaveBeenCalled();
+      expect(fleetService.listVehicles).not.toHaveBeenCalled();
+      expect(techniciansService.listTechnicians).not.toHaveBeenCalled();
+      expect(teamsService.listTeams).not.toHaveBeenCalled();
+      expect(agencesService.listAgences).not.toHaveBeenCalled();
+      expect(articlesService.listArticles).not.toHaveBeenCalled();
+      expect(prestationsService.listPrestations).not.toHaveBeenCalled();
+      expect(invoicesService.listInvoices).not.toHaveBeenCalled();
+      expect(usersService.listByOrganization).not.toHaveBeenCalled();
+    });
+
+    it("includes users when the member holds users.read", async () => {
+      usersService.listByOrganization.mockResolvedValue([
+        {
+          id: "user-9",
+          email: "paul@example.fr",
+          name: "Paul Martin",
+          role: "member",
+          organizationId: "org-1",
+        },
+      ]);
+      const member = memberWith(["users.read"]);
+
+      const result = await service.search(member, "paul");
+
+      expect(usersService.listByOrganization).toHaveBeenCalledWith("org-1");
+      expect(result.results).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: "user-9", type: "user", url: "/users/user-9" }),
+        ]),
+      );
+    });
+
+    it("searches agences when the member can read teams", async () => {
+      agencesService.listAgences.mockResolvedValue([
+        { id: "ag-1", name: "Agence Lyon", city: "Lyon", postalCode: "69002" },
+      ]);
+      const member = memberWith(["teams.read"]);
+
+      const result = await service.search(member, "lyon");
+
+      expect(agencesService.listAgences).toHaveBeenCalledWith("org-1");
+      expect(result.results).toEqual(
+        expect.arrayContaining([expect.objectContaining({ id: "ag-1", type: "agence" })]),
+      );
+    });
+
+    it("falls back to the token when the permissions module is unavailable", async () => {
+      const member = memberWith(["customers.read"]);
+      permissions.resolveEffectivePermissions.mockRejectedValue(new Error("permissions down"));
+
+      const result = await service.search(member, "acme");
+
+      expect(customersService.listCustomers).toHaveBeenCalled();
+      expect(invoicesService.listInvoices).not.toHaveBeenCalled();
+      expect(result.results.some((item) => item.type === "customer")).toBe(true);
+    });
   });
 });
