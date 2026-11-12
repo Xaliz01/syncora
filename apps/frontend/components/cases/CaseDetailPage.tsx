@@ -1875,6 +1875,17 @@ export function CaseDetailPage({ caseId }: { caseId: string }) {
                         </div>
                       )}
 
+                      {intervention.fieldReport ? (
+                        <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800">
+                          <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                            Compte-rendu
+                          </p>
+                          <p className="mt-1 whitespace-pre-wrap text-xs text-slate-700 dark:text-slate-200">
+                            {intervention.fieldReport}
+                          </p>
+                        </div>
+                      ) : null}
+
                       <InterventionPhotos
                         interventionId={intervention.id}
                         readOnly={!can("interventions.update")}

@@ -48,6 +48,8 @@ export const DEFAULT_PERMISSION_PROFILE_PRESETS: readonly DefaultPermissionProfi
       "fleet.vehicles.read",
       "contracts.read",
       "notifications.manage_preferences",
+      "ai.copilot",
+      "ai.field_report",
     ],
   },
   {
@@ -75,6 +77,7 @@ export const DEFAULT_PERMISSION_PROFILE_PRESETS: readonly DefaultPermissionProfi
       "contracts.create",
       "quotes.read",
       "quotes.create",
+      "ai.copilot",
     ],
   },
   {
@@ -115,6 +118,8 @@ export const DEFAULT_PERMISSION_PROFILE_PRESETS: readonly DefaultPermissionProfi
       "exports.interventions",
       "data_import.read",
       "data_import.run",
+      "ai.copilot",
+      "ai.field_report",
     ],
   },
   {
@@ -166,6 +171,7 @@ export const DEFAULT_PERMISSION_PROFILE_PRESETS: readonly DefaultPermissionProfi
       "billing.invoices.create",
       "billing.invoices.finalize",
       "billing.invoices.send",
+      "ai.copilot",
       "integrations.pennylane.read",
       "integrations.pennylane.sync",
       "integrations.qonto.read",

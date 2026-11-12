@@ -10,6 +10,7 @@ Source alignée sur le menu [`AppShell.tsx`](../../apps/frontend/components/layo
 | Mon abonnement          | `/subscription`                    |                                                |
 | Mon compte              | `/account`                         |                                                |
 | Ma journée              | `/my-day`                          | `interventions.read`                           |
+| Copilote                | `/copilote`                        | `ai.copilot`                                   |
 | Dossiers                | `/cases`                           | `cases.read`                                   |
 | Nouveau dossier         | `/cases/new`                       | `cases.create`                                 |
 | Planning                | `/cases/calendar`                  | `cases.read`                                   |

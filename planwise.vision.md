@@ -221,7 +221,7 @@ Spec actuelle du guide : [`openspec/specs/assistant/spec.md`](openspec/specs/ass
 
 | #   | Évolution                      | Change OpenSpec      | Pourquoi (TPE)                           | Statut |
 | --- | ------------------------------ | -------------------- | ---------------------------------------- | ------ |
-| 6.1 | Compte-rendu voix / photos     | `ai-field-report`    | Sortie de chantier déjà rédigée          | ⬜     |
+| 6.1 | Compte-rendu voix / photos     | `ai-field-report`    | Sortie de chantier déjà rédigée          | ✅     |
 | 6.2 | Filet anti-oubli « À traiter » | `ai-follow-ups`      | Devis, contrats, à facturer              | ⬜     |
 | 6.3 | Assistant lecture org          | `assistant-org-read` | Questions sur _leurs_ dossiers           | ⬜     |
 | 6.4 | Devis assisté (catalogue)      | `ai-assisted-quote`  | Chiffrage rapide sans prix inventés      | ⬜     |
@@ -234,12 +234,12 @@ Spec actuelle du guide : [`openspec/specs/assistant/spec.md`](openspec/specs/ass
 
 **Monétisation (figée)** — détail et quotas : [`docs/assistant/ROADMAP.md`](docs/assistant/ROADMAP.md) § modèle économique.
 
-| Offre              | Prix cible              | Copilote                                                                        |
-| ------------------ | ----------------------- | ------------------------------------------------------------------------------- |
-| **Essai 15 j**     | 0 €                     | Features **débloquées**, quotas **plafonnés** (conversion, pas farm)            |
-| **Essentiel**      | 9,99 € / org            | Guide + A2 + goût A1/A3/B1 (15 / 30 / 5 par mois)                               |
-| **Addon Copilote** | **7,99 € / mois / org** | Usage quotidien (code prévu `ai_copilot`, inclus essai comme `team_suggestion`) |
-| **Pro**            | 29–39 € / org           | Addon inclus                                                                    |
+| Offre              | Prix cible              | Copilote                                                                 |
+| ------------------ | ----------------------- | ------------------------------------------------------------------------ |
+| **Essai 15 j**     | 0 €                     | Features **débloquées**, quotas **plafonnés** (conversion, pas farm)     |
+| **Essentiel**      | 9,99 € / org            | Guide + A2 + goût A1/A3/B1 (15 / 30 / 5 par mois)                        |
+| **Addon Copilote** | **7,99 € / mois / org** | Usage quotidien (`ai_copilot`, inclus à l'essai comme `team_suggestion`) |
+| **Pro**            | 29–39 € / org           | Addon inclus                                                             |
 
 L’IA métier **n’est pas** illimitée dans les 9,99 €. L’essai **doit** permettre de tester (compte-rendu, etc.) : c’est un levier de conversion, pas un paywall CB.
 

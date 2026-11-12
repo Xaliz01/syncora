@@ -31,6 +31,7 @@ import { TrialTestDataModule } from "./trial-test-data.module";
 import { DataImportModule } from "./data-import.module";
 import { PlatformModule } from "./platform.module";
 import { AssistantModule } from "./assistant.module";
+import { AiCopilotModule } from "./ai-copilot.module";
 import { DatabaseModule } from "./database.module";
 import { PermissionsModule } from "./permissions.module";
 import { TechniciansDomainModule } from "./technicians-domain.module";
@@ -59,6 +60,7 @@ import { runsNotificationCrons } from "../process-role";
     AdminModule,
     PlatformModule,
     AssistantModule,
+    AiCopilotModule,
     FleetModule,
     TechniciansModule,
     TeamsModule,

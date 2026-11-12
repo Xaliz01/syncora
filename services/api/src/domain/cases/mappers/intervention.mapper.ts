@@ -28,6 +28,8 @@ export function toInterventionResponse(
     startLocation: doc.startLocation,
     endLocation: doc.endLocation,
     notes: doc.notes,
+    fieldReport: doc.fieldReport,
+    fieldReportConfirmedAt: doc.fieldReportConfirmedAt?.toISOString(),
     signatoryName: doc.signatoryName,
     signedAt: doc.signedAt?.toISOString(),
     createdAt: doc.get("createdAt")?.toISOString(),

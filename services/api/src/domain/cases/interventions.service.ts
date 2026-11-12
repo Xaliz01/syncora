@@ -10,6 +10,7 @@ import {
   activeDocumentFilter,
   clampPagination,
   MAX_PAGE_LIMIT_WIDE,
+  normalizeFieldReportText,
   type CompleteInterventionBody,
   type CompleteInterventionResponse,
   type CreateInterventionBody,
@@ -457,5 +458,25 @@ export class InterventionsService extends AbstractInterventionsService {
     const caseMap = new Map(cases.map((c) => [c._id.toString(), c.title]));
 
     return docs.map((d) => toInterventionResponse(d, caseMap.get(d.caseId)));
+  }
+
+  async confirmFieldReport(
+    id: string,
+    organizationId: string,
+    report: string,
+  ): Promise<InterventionResponse> {
+    const text = normalizeFieldReportText(report).trim();
+    if (text.length < 8) {
+      throw new BadRequestException("Le compte-rendu est trop court pour être enregistré.");
+    }
+    const doc = await this.interventionModel
+      .findOneAndUpdate(
+        { _id: id, organizationId, ...activeDocumentFilter },
+        { $set: { fieldReport: text, fieldReportConfirmedAt: new Date() } },
+        { new: true },
+      )
+      .exec();
+    if (!doc) throw new NotFoundException("Intervention not found");
+    return toInterventionResponse(doc);
   }
 }

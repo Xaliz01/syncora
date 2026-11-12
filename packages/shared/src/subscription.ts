@@ -12,7 +12,12 @@ export type OrganizationSubscriptionStatus =
 // ── Addon catalog ──
 
 /** Codes des addons disponibles à l'achat. Pour ajouter un addon : ajouter une entrée ici + dans ADDON_CATALOG. */
-export const ADDON_CODES = ["team_suggestion", "extra_users", "extra_storage"] as const;
+export const ADDON_CODES = [
+  "team_suggestion",
+  "extra_users",
+  "extra_storage",
+  "ai_copilot",
+] as const;
 export type AddonCode = (typeof ADDON_CODES)[number];
 
 /** Addons facturés par quantité (vente croisée sur le socle). */
@@ -108,6 +113,19 @@ export const ADDON_CATALOG: Record<AddonCode, AddonDescriptor> = {
     stripeProductDefault: "prod_addon_extra_storage",
     monthlyPriceCents: 499,
   },
+  ai_copilot: {
+    code: "ai_copilot",
+    label: "Copilote",
+    priceLabel: "7,99 € / mois",
+    pitch:
+      "Dictez une instruction : le copilote propose un compte-rendu, un client, un devis, une note ou un rendez-vous. Rien n'est enregistré tant que vous n'avez pas confirmé.",
+    billingModel: "boolean",
+    requiresBaseSubscription: true,
+    stripePriceEnvVar: "STRIPE_ADDON_AI_COPILOT_PRICE_ID",
+    // Identifiant prévu, pas un prix Stripe live : même convention que la suggestion d'équipe.
+    stripePriceDefault: "price_addon_ai_copilot",
+    monthlyPriceCents: 799,
+  },
 };
 
 export function addonRequiresBaseSubscription(code: AddonCode): boolean {
@@ -121,10 +139,10 @@ export function addonAllowsStandaloneCheckout(code: AddonCode): boolean {
 /**
  * Addons utilisables pendant l’essai (sans achat Stripe), pour découvrir la valeur.
  * Non persistés dans `activeAddons` — retirés automatiquement à la fin de l’essai.
- * Copilote IA (`ai_copilot`) : à ajouter ici au premier change A1 — voir
- * docs/assistant/ROADMAP.md (essai plafonné ≠ quotas addon).
+ * Copilote (`ai_copilot`) : débloqué pendant l'essai, avec les quotas essai
+ * (pas les quotas addon). Voir docs/assistant/ROADMAP.md.
  */
-export const TRIAL_INCLUDED_ADDON_CODES: readonly AddonCode[] = ["team_suggestion"];
+export const TRIAL_INCLUDED_ADDON_CODES: readonly AddonCode[] = ["team_suggestion", "ai_copilot"];
 
 export function isTrialIncludedAddon(code: AddonCode): boolean {
   return (TRIAL_INCLUDED_ADDON_CODES as readonly string[]).includes(code);

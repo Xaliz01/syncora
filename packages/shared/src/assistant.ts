@@ -47,6 +47,7 @@ export const ASSISTANT_ROUTE_CATALOG: readonly AssistantRouteEntry[] = [
   { label: "Mon abonnement", href: "/subscription", permissions: [] },
   { label: "Mon compte", href: "/account", permissions: [] },
   { label: "Ma journée", href: "/my-day", permissions: ["interventions.read"] },
+  { label: "Copilote", href: "/copilote", permissions: ["ai.copilot"] },
   { label: "Dossiers", href: "/cases", permissions: ["cases.read"] },
   { label: "Nouveau dossier", href: "/cases/new", permissions: ["cases.create"] },
   { label: "Planning", href: "/cases/calendar", permissions: ["cases.read"] },

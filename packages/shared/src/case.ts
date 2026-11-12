@@ -398,6 +398,9 @@ export interface InterventionResponse {
   startLocation?: GeoLocation;
   endLocation?: GeoLocation;
   notes?: string;
+  /** Compte-rendu confirmé par l'utilisateur (copilote). Jamais envoyé au client. */
+  fieldReport?: string;
+  fieldReportConfirmedAt?: string;
   signatoryName?: string;
   signedAt?: string;
   createdAt?: string;

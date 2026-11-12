@@ -20,6 +20,7 @@ import { PLANWISE_LOGO_SRC } from "@/lib/brand-assets";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { CrispHelpButton } from "@/components/support/CrispHelpButton";
 import { AssistantButton } from "@/components/assistant/AssistantDrawer";
+import { CopilotDictaphone } from "@/components/copilot/CopilotDictaphone";
 import { SetupGuideHost } from "@/components/onboarding/SetupGuideHost";
 import { QuickActionsBar } from "@/components/dashboard/QuickActionsSection";
 import { QuickActionLabelProvider } from "@/components/dashboard/QuickActionLabelContext";
@@ -294,6 +295,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             ...(hasPermission(user, "interventions.read")
               ? [{ label: "Ma journée", href: "/my-day" }]
               : []),
+            ...(hasPermission(user, "ai.copilot")
+              ? [{ label: "Copilote", href: "/copilote" }]
+              : []),
             ...(hasPermission(user, "cases.read") ? [{ label: "Dossiers", href: "/cases" }] : []),
             ...(hasPermission(user, "contracts.read")
               ? [{ label: "Contrats", href: "/contracts" }]
@@ -488,6 +492,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </div>
               <NotificationBell />
               <AssistantButton />
+              {subscriptionOk ? <CopilotDictaphone /> : null}
               <CrispHelpButton />
               <ThemeToggle />
               <button

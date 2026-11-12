@@ -275,6 +275,14 @@ function InterventionCard({
           {intervention.notes}
         </p>
       )}
+      {intervention.fieldReport ? (
+        <div className="mt-2 rounded-lg bg-slate-50 dark:bg-slate-800 px-3 py-2">
+          <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Compte-rendu</p>
+          <p className="mt-1 line-clamp-4 whitespace-pre-wrap text-xs text-slate-700 dark:text-slate-200">
+            {intervention.fieldReport}
+          </p>
+        </div>
+      ) : null}
 
       {/* Description */}
       {intervention.description && (
