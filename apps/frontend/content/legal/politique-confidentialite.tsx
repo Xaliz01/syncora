@@ -29,9 +29,9 @@ export function PolitiqueConfidentialiteContent() {
             "Organisation : raison sociale, SIRET, adresse postale.",
             "Facturation de l'abonnement Planwise : identifiants Stripe, historique d'abonnement (via Stripe).",
             "Factures clients émises dans Planwise : destinataire, lignes, montants, numéros, dates, statut.",
-            "Usage : journaux techniques, préférences compte (thème, sidebar, favoris / raccourcis par organisation, activation des commandes vocales terrain), historique de navigation stocké uniquement dans le navigateur (localStorage), notifications.",
+            "Usage : journaux techniques, préférences compte (thème, sidebar, favoris / raccourcis par organisation), historique de navigation stocké uniquement dans le navigateur (localStorage), notifications.",
             "Assistant produit in-app (optionnel) : questions posées à l'assistant et contexte de page courant, transmis à un prestataire d'IA générative pour produire une réponse d'aide à la navigation ; pas de données métier (clients, dossiers) dans le prompt MVP.",
-            "Commandes vocales terrain (optionnelles, opt-in sur Mon compte, Ma journée) : le micro du terminal est utilisé localement via l'API de reconnaissance vocale du navigateur pour convertir la parole en texte et déclencher des actions déjà disponibles à l'écran (démarrer / terminer une intervention, commentaire, navigation). Planwise ne reçoit ni n'enregistre l'audio ; seuls le transcript utile à l'action et la préférence d'activation peuvent être traités. Le prestataire de reconnaissance du navigateur (selon le navigateur et l'appareil) peut traiter l'audio selon ses propres conditions.",
+            "Copilote (optionnel, droit dédié) : instruction dictée ou écrite, et enregistrement audio si le micro est utilisé. Le texte et, le cas échéant, l'audio sont transmis à Planwise puis à un prestataire d'IA générative pour proposer des actions (compte-rendu, intervention, commentaire, client, devis, note, rendez-vous). Rien n'est enregistré dans le CRM avant confirmation de l'utilisateur. La reconnaissance vocale du navigateur peut aussi traiter l'audio localement pour afficher le texte en direct.",
             "Mesure d'audience first-party : pages vues (chemin, surface landing/app, referrer hôte, pays/région approximatifs dérivés de l'IP sans conservation de l'IP, identifiants aléatoires navigateur), sans publicité ni revente.",
             "Support : échanges via Crisp (si consentement cookies).",
             "Données saisies par le Client : clients, donneurs d’ordre, interventions, géolocalisation optionnelle, photos, signatures, devis et éléments nécessaires à la facturation.",
@@ -69,13 +69,11 @@ export function PolitiqueConfidentialiteContent() {
               durée limitée).
             </>,
             <>
-              <strong>Commandes vocales terrain</strong> — exécution du contrat lorsque
-              l&apos;utilisateur active volontairement la fonctionnalité (art. 6.1.b). Finalité :
-              faciliter les actions sur Ma journée sans saisir à l&apos;écran. Distinct de
-              l&apos;assistant produit IA : pas d&apos;envoi de l&apos;audio ni du transcript à un
-              prestataire d&apos;IA générative choisi par Planwise. La reconnaissance vocale est
-              assurée par le navigateur / le système ; l&apos;utilisateur peut désactiver la
-              préférence ou retirer l&apos;autorisation micro à tout moment.
+              <strong>Copilote</strong> — exécution du contrat lorsque l&apos;utilisateur dicte ou
+              écrit une instruction (art. 6.1.b). Finalité : proposer des actions métier que
+              l&apos;utilisateur confirme. Le transcript et l&apos;audio éventuel peuvent être
+              transmis à un prestataire d&apos;IA (ex. OpenAI, Anthropic). L&apos;utilisateur peut
+              écrire à la place du micro et ignorer toute proposition.
             </>,
             <>
               <strong>Amélioration du produit</strong> — intérêt légitime, données agrégées ou
@@ -102,17 +100,16 @@ export function PolitiqueConfidentialiteContent() {
             "OVHcloud — hébergement applicatif et stockage (France, datacenter de Gravelines).",
             "Crisp — support client (consentement requis).",
             "Google Ads — mesure des campagnes et conversions (consentement publicité requis).",
-            "Prestataire d'IA générative (OpenAI et/ou Anthropic, selon configuration) — assistant produit in-app ; messages utilisateur et contexte de page.",
+            "Prestataire d'IA générative (OpenAI et/ou Anthropic, selon configuration) — assistant produit in-app et copilote (instruction, transcript, audio éventuel).",
             "Prestataire email (SMTP) — notifications transactionnelles.",
             "API publiques françaises (recherche-entreprises.api.gouv.fr, data.geopf.fr/geocodage) — préremplissage SIRET/adresse.",
           ]}
         />
         <LegalParagraph>
-          Pour les commandes vocales terrain, le traitement de l&apos;audio (reconnaissance vocale)
-          peut être réalisé par le navigateur ou le système d&apos;exploitation et, le cas échéant,
-          par le prestataire associé à ce navigateur (ex. services de reconnaissance Google sur
-          Chrome). Ce traitement n&apos;est pas opéré par les serveurs Planwise ; il relève des
-          conditions du navigateur / de l&apos;appareil choisis par l&apos;utilisateur.
+          Pour le copilote, la transcription affichée en direct peut aussi être réalisée par le
+          navigateur (ex. services de reconnaissance associés à Chrome). L&apos;enregistrement
+          envoyé à Planwise est, lui, traité par les serveurs Planwise et le prestataire d&apos;IA
+          configuré.
         </LegalParagraph>
         <LegalParagraph>
           Le Client demeure responsable de traitement pour les données de ses propres clients finaux
@@ -130,7 +127,7 @@ export function PolitiqueConfidentialiteContent() {
             "Données de démonstration d'essai : jusqu'à purge manuelle, fin d'essai, ou suppression du compte.",
             "Journaux techniques : jusqu'à 12 mois.",
             "Requêtes assistant produit : durée du traitement de la requête ; pas d'historique conversationnel serveur durable en MVP (historique affiché uniquement dans la session navigateur).",
-            "Commandes vocales terrain : pas de conservation de l'audio par Planwise ; préférence d'activation conservée avec le compte ; actions métier (commentaires, statuts d'intervention, etc.) selon les durées applicables aux données saisies par le Client.",
+            "Copilote : instruction, transcript et audio éventuel conservés dans l'historique de l'organisation pendant la relation contractuelle ; les fiches créées après confirmation suivent la durée des données métier correspondantes.",
             "Mesure d'audience first-party (pages vues, pays/région approximatifs — sans IP stockée) : environ 400 jours.",
             "Données saisies par le Client : selon paramétrage ou demande de suppression de l'organisation.",
           ]}

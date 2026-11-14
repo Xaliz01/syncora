@@ -60,7 +60,7 @@ Vague C -- wow / Pro
 | ID  | Tranche                    | Change OpenSpec      | Capability path     | Dépend de                 | Statut |
 | --- | -------------------------- | -------------------- | ------------------- | ------------------------- | ------ |
 | —   | Guide produit (livré)      | —                    | `assistant`         | —                         | ✅     |
-| A1  | Compte-rendu chantier      | `ai-field-report`    | `ai-field-report`   | —                         | ⬜     |
+| A1  | Compte-rendu chantier      | `ai-field-report`    | `ai-field-report`   | —                         | ✅     |
 | A2  | Filet anti-oubli           | `ai-follow-ups`      | `ai-follow-ups`     | —                         | ⬜     |
 | A3  | Assistant lecture org      | `assistant-org-read` | `assistant`         | A1 ou A2 (socle quota OK) | ⬜     |
 | B1  | Devis assisté              | `ai-assisted-quote`  | `ai-assisted-quote` | A1 utile, 4.2 utile       | ⬜     |
@@ -221,7 +221,9 @@ monthly cap applies unless the copilote addon (or Pro) is active.
   the Copilote option continues this after the trial
 ```
 
-**Tests** : unitaires mapping / refus cross-org ; E2E Ma journée → terminer → préremplir → confirmer (LLM mocké).
+**Livré** : le compte-rendu passe par le dictaphone global (bouton sur toutes les pages) et l'historique `/copilote`. La même instruction peut proposer un client, un devis brouillon (prix saisis par l'utilisateur), une note ou un rendez-vous. Les photos ne sont pas envoyées au modèle. Rien n'est écrit avant confirmation, rien n'est envoyé au client.
+
+**Tests** : unitaires mapping / refus cross-org / quota / confirmation ; E2E dictée écrite → confirmer → historique (LLM mocké).
 
 ---
 

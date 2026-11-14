@@ -1273,6 +1273,12 @@ export class CasesGatewayService extends AbstractCasesGatewayService {
       if (intervention.notes) {
         this.pdfField(doc, "Notes", intervention.notes);
       }
+      if (intervention.fieldReport) {
+        this.pdfSection(doc, "Compte-rendu");
+        doc.fontSize(9).fillColor(textColor);
+        this.pdfText(doc, intervention.fieldReport, 50, doc.y, { width: 495 });
+        doc.moveDown(0.6);
+      }
 
       if (photos.length > 0) {
         this.pdfSection(doc, "Photos terrain");

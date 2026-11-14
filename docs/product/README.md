@@ -47,6 +47,7 @@ Documentation **fonctionnelle** destinée à l’assistant in-app et à l’équ
 | 21      | Flotte (véhicules / agences)       |
 | 22      | Donneurs d'ordre                   |
 | 23      | Import de données (CSV historique) |
+| 24      | Copilote (dictaphone)              |
 
 ## Maintenance
 

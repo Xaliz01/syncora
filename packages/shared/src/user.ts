@@ -149,7 +149,7 @@ export interface UserPreferences {
   theme: ThemePreference;
   sidebarCollapsed: SidebarPreference;
   /**
-   * Commandes vocales terrain (Ma journée) — opt-in.
+   * Ancienne préférence des commandes vocales de Ma journée. Conservée en base, sans effet.
    * Sur appareil non mobile, l’UI reste masquée sauf environnement de dev local.
    */
   voiceFieldEnabled: boolean;
@@ -195,7 +195,7 @@ export interface ChangePasswordBody {
 export interface UpdateUserPreferencesBody {
   theme?: ThemePreference;
   sidebarCollapsed?: SidebarPreference;
-  /** Active / désactive les commandes vocales terrain (Ma journée). */
+  /** Ancienne préférence vocale. Ignorée : le copilote remplace Ma journée mains libres. */
   voiceFieldEnabled?: boolean;
   /**
    * Favoris pour l’organisation courante (`organizationId` requis).

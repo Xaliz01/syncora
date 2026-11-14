@@ -79,6 +79,13 @@ export class InterventionDocument extends Document {
   @Prop()
   notes?: string;
 
+  /** Compte-rendu confirmé par l'utilisateur. Jamais envoyé au client. */
+  @Prop()
+  fieldReport?: string;
+
+  @Prop({ type: Date })
+  fieldReportConfirmedAt?: Date;
+
   @Prop()
   signatoryName?: string;
 

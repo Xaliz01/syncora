@@ -1,3 +1,5 @@
+import { HTTP_PAYLOAD_TOO_LARGE_MESSAGE } from "@planwise/shared";
+
 /** Erreurs HTTP renvoyées par api-client (utilisées pour l’affichage UI). */
 
 export const API_FORBIDDEN_MESSAGE = "Vous n'avez pas l'autorisation pour effectuer cette action.";
@@ -47,6 +49,7 @@ const API_MESSAGE_FR: Record<string, string> = {
     "Un article avec cette référence existe déjà. Choisissez une autre référence.",
   "A prestation with this reference already exists":
     "Une prestation avec cette référence existe déjà. Choisissez une autre référence.",
+  "request entity too large": HTTP_PAYLOAD_TOO_LARGE_MESSAGE,
 };
 
 const NETWORK_ERROR_PATTERNS = [
@@ -85,6 +88,9 @@ export function normalizeApiErrorMessage(
   fallbackError: string,
 ): string {
   const trimmed = message?.trim();
+  if (status === 413) {
+    return HTTP_PAYLOAD_TOO_LARGE_MESSAGE;
+  }
   if (status === 403) {
     if (!trimmed || GENERIC_FORBIDDEN_MESSAGES.has(trimmed)) {
       return API_FORBIDDEN_MESSAGE;

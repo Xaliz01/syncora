@@ -92,6 +92,7 @@ const ALL_PROTECTED_PATHS = [
   "/search",
   "/stock",
   "/my-day",
+  "/copilote",
   "/customers",
   "/customers/new",
   "/order-givers",

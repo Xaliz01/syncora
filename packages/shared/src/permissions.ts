@@ -120,6 +120,8 @@ export const ASSIGNABLE_PERMISSION_CODES = [
   "integrations.demo.sync",
   "data_import.read",
   "data_import.run",
+  "ai.copilot",
+  "ai.field_report",
 ] as const;
 
 export type AssignablePermissionCode = (typeof ASSIGNABLE_PERMISSION_CODES)[number];
@@ -150,6 +152,8 @@ export const TECHNICIAN_FIELD_DEFAULT_PERMISSIONS: readonly AssignablePermission
   "fleet.technicians.read",
   "teams.read",
   "notifications.manage_preferences",
+  "ai.copilot",
+  "ai.field_report",
 ] as const;
 
 export interface PermissionProfileResponse {

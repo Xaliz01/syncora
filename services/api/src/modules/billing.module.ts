@@ -29,5 +29,6 @@ import { DocumentsDomainModule } from "./documents-domain.module";
     { provide: AbstractBillingGatewayService, useClass: BillingGatewayService },
     RequirePermissionGuard,
   ],
+  exports: [AbstractBillingGatewayService],
 })
 export class BillingModule {}

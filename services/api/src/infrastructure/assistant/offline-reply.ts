@@ -36,6 +36,14 @@ const ROUTE_KEYWORDS: Readonly<Record<string, readonly string[]>> = {
   "/cases": ["dossier", "dossiers", "affaire", "affaires", "devis"],
   "/cases/calendar": ["planning", "calendrier", "agenda", "assigner", "intervention"],
   "/my-day": ["ma journee", "terrain", "intervention du jour", "technicien"],
+  "/copilote": [
+    "copilote",
+    "dictaphone",
+    "dicter",
+    "compte rendu",
+    "compte-rendu",
+    "instruction vocale",
+  ],
   "/billing": ["facture", "factures", "facturation", "avoir"],
   "/settings/case-templates": ["modele", "modeles", "template", "metier"],
   "/settings/prestations": ["prestation", "prestations", "catalogue"],
@@ -136,7 +144,13 @@ export function buildOfflineAssistantReply(options: {
 }): { reply: string; suggestions: AssistantSuggestion[]; escalateToSupport: boolean } {
   const faq = matchOfflineFaq(options.message);
   if (faq) {
-    return faq;
+    return {
+      ...faq,
+      suggestions: faq.suggestions.filter((suggestion) => {
+        const route = getAssistantRouteByHref(suggestion.href);
+        return !route || canAccessAssistantRoute(route, options.hasPermission);
+      }),
+    };
   }
 
   const matches = scoreRoutesForQuery(options.message, options.hasPermission);
@@ -220,6 +234,23 @@ export function matchOfflineFaq(
       reply:
         "Planwise est développé et édité par Benoist Babin, entrepreneur individuel basé à Landerneau (Finistère, France).\n\nContact : contact@planwise.fr — site : https://planwise.fr",
       suggestions: [],
+      escalateToSupport: false,
+    };
+  }
+
+  const copilotHit =
+    /copilote|dictaphone|dicter|compte[- ]rendu/.test(normalized) ||
+    tokens.has("copilote") ||
+    tokens.has("dictaphone");
+
+  if (copilotHit) {
+    return {
+      reply:
+        "Le bouton **Dicter une instruction** est disponible sur toutes les pages.\n\n1. Enregistrez ou écrivez ce qu'il faut faire (compte-rendu, démarrer ou terminer, commentaire, dossier, client, devis, accepter un devis, facture brouillon, note, rendez-vous).\n2. Vérifiez les actions proposées, corrigez-les si besoin, puis enregistrez-les. Rien n'est écrit dans le CRM avant cette confirmation, et rien n'est envoyé au client. La facture créée reste un brouillon.\n3. Retrouvez la dictée et ses effets dans Suivi → Copilote.\n\nLe micro peut être refusé par le navigateur : écrivez alors l'instruction. L'option Copilote prolonge l'usage après les quotas de l'essai ou de l'offre Essentiel.",
+      suggestions: [
+        { label: "Copilote", href: "/copilote" },
+        { label: "Ma journée", href: "/my-day" },
+      ],
       escalateToSupport: false,
     };
   }
@@ -497,7 +528,7 @@ function buildStepsForRoute(href: string, label: string): string {
     "/organization":
       "1. Ouvrez Mon organisation.\n2. Cliquez sur Modifier pour mettre à jour nom, contacts et adresse (le logo se change sur la fiche).\n3. Pour changer d’entreprise : utilisez le sélecteur d’organisation dans la barre latérale.",
     "/account":
-      "1. Ouvrez Mon compte.\n2. Consultez identité, mot de passe, préférences et sessions.\n3. Cliquez sur Modifier pour changer le nom ou l’affichage (thème, sidebar, commandes vocales).\n4. Le thème est aussi accessible via le toggle de l’en-tête.",
+      "1. Ouvrez Mon compte.\n2. Consultez identité, mot de passe, préférences et sessions.\n3. Cliquez sur Modifier pour changer le nom ou l’affichage (thème, sidebar).\n4. Le thème est aussi accessible via le toggle de l’en-tête.",
     "/search":
       "1. Utilisez le champ recherche de l’en-tête (ou ouvrez Recherche).\n2. Saisissez un nom / mot-clé.\n3. Seuls les types que vous pouvez consulter apparaissent (dossiers, factures, clients, etc.).\n4. Ouvrez le résultat.",
   };

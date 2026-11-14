@@ -1,6 +1,6 @@
 /**
- * Commandes vocales terrain (expérimental) — Ma journée uniquement.
- * Séparé de l’assistant guide produit (pas d’écriture via le chat).
+ * Reconnaissance des commandes terrain courtes (démarre, termine, commentaire, prochaine).
+ * Utilisée par le copilote pour compléter la proposition du modèle. Pas d'écriture directe.
  */
 
 import type { PermissionCode } from "./permissions";

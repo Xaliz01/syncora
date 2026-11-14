@@ -1,9 +1,11 @@
 import "reflect-metadata";
 import { RequestMethod } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
+import type { NestExpressApplication } from "@nestjs/platform-express";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { createNestLogger } from "@planwise/shared/nest";
 import { AppModule } from "./modules/app.module";
+import { configureHttpBodyParser } from "./http-app";
 import { defaultListenPort, processServiceName, runsHttp, runsMigrations } from "./process-role";
 import { runDatabaseMigrations } from "./run-migrations";
 
@@ -35,7 +37,12 @@ export async function startProcess(): Promise<void> {
     }
   }
 
-  const app = await NestFactory.create(AppModule, { logger, rawBody: true });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    logger,
+    rawBody: true,
+    bodyParser: false,
+  });
+  configureHttpBodyParser(app);
   app.getHttpAdapter().getInstance().set("trust proxy", 1);
   app.setGlobalPrefix("api", {
     exclude: [{ path: "webhooks/stripe", method: RequestMethod.POST }],

@@ -53,4 +53,10 @@ export abstract class AbstractInterventionsService {
     organizationId: string,
   ): Promise<{ signatureData?: string; signatoryName?: string }>;
   abstract listUpcomingInterventions(from: string, to: string): Promise<InterventionResponse[]>;
+  /** Enregistre le compte-rendu confirmé. N'envoie rien au client et ne change pas le statut. */
+  abstract confirmFieldReport(
+    id: string,
+    organizationId: string,
+    report: string,
+  ): Promise<InterventionResponse>;
 }

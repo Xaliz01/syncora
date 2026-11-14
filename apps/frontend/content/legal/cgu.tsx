@@ -26,11 +26,10 @@ export function CguContent() {
           celles en vigueur à la date d&apos;utilisation.
         </LegalParagraph>
         <LegalParagraph>
-          Des <strong>commandes vocales terrain</strong> peuvent être proposées sur Ma journée,
-          après activation volontaire dans les préférences du compte. Elles permettent de déclencher
-          par la voix des actions déjà disponibles à l&apos;écran (démarrage / clôture
-          d&apos;intervention, commentaire, etc.). La reconnaissance vocale repose sur le navigateur
-          ; l&apos;utilisateur reste responsable des actions qu&apos;il confirme.
+          Un <strong>copilote</strong> peut proposer, à partir d&apos;une instruction dictée ou
+          écrite, des actions métier (compte-rendu, intervention, commentaire, client, devis, note,
+          rendez-vous). Aucune de ces actions n&apos;est enregistrée tant que l&apos;utilisateur ne
+          l&apos;a pas confirmée. Il reste responsable des actions qu&apos;il valide.
         </LegalParagraph>
       </LegalSection>
 

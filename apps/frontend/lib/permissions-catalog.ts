@@ -340,6 +340,18 @@ export const PERMISSION_METADATA: Record<PermissionCode, PermissionMetadata> = {
     label: "Supprimer des commentaires",
     description: "Supprimer des commentaires sur les dossiers et interventions.",
   },
+  "ai.copilot": {
+    code: "ai.copilot",
+    label: "Utiliser le copilote",
+    description:
+      "Dicter une instruction, voir les actions proposées et consulter l'historique du copilote.",
+  },
+  "ai.field_report": {
+    code: "ai.field_report",
+    label: "Enregistrer un compte-rendu",
+    description:
+      "Confirmer un compte-rendu d'intervention proposé par le copilote. Le texte n'est pas envoyé au client.",
+  },
   "vehicles.read": {
     code: "vehicles.read",
     label: "Voir les véhicules",

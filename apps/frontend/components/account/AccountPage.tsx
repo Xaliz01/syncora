@@ -19,11 +19,7 @@ import {
   USER_THEME_PREFERENCE_CHANGED,
 } from "@/lib/user-preferences";
 import { ChangePasswordDialog } from "@/components/account/ChangePasswordDialog";
-import {
-  SidebarRadioGroup,
-  ThemeRadioGroup,
-  VoiceFieldPreferenceToggle,
-} from "@/components/account/AccountPreferenceFields";
+import { SidebarRadioGroup, ThemeRadioGroup } from "@/components/account/AccountPreferenceFields";
 import { LegalLinks } from "@/components/legal/LegalFooter";
 
 const outlineButtonClassName =
@@ -49,7 +45,6 @@ export function AccountPage() {
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [themePreference, setThemePreference] = useState<ThemePreference>("light");
   const [sidebarPreference, setSidebarPreference] = useState<SidebarPreference>("expanded");
-  const [voiceFieldEnabled, setVoiceFieldEnabled] = useState(false);
   const [prefsLoaded, setPrefsLoaded] = useState(false);
 
   const [sessions, setSessions] = useState<UserSessionResponse[]>([]);
@@ -71,7 +66,6 @@ export function AccountPage() {
         if (cancelled) return;
         setThemePreference(res.preferences.theme);
         setSidebarPreference(res.preferences.sidebarCollapsed);
-        setVoiceFieldEnabled(res.preferences.voiceFieldEnabled === true);
       })
       .catch(() => {
         if (!cancelled) syncDisplayPreferencesFromLive();
@@ -118,7 +112,6 @@ export function AccountPage() {
       const prefs = (event as CustomEvent<UserPreferences>).detail;
       setThemePreference(prefs.theme);
       setSidebarPreference(prefs.sidebarCollapsed);
-      setVoiceFieldEnabled(prefs.voiceFieldEnabled === true);
     };
 
     window.addEventListener(USER_THEME_PREFERENCE_CHANGED, onThemeChanged);
@@ -221,7 +214,6 @@ export function AccountPage() {
           <div className="space-y-6">
             <ThemeRadioGroup value={themePreference} readOnly />
             <SidebarRadioGroup value={sidebarPreference} readOnly />
-            <VoiceFieldPreferenceToggle value={voiceFieldEnabled} readOnly />
           </div>
         )}
       </section>
