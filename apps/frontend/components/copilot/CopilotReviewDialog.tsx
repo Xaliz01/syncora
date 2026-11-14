@@ -4,6 +4,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   COPILOT_ACTION_LABELS,
+  repairCopilotIntent,
+  repairCopilotPartyNames,
   type CopilotActionEdit,
   type CopilotProposedAction,
   type CopilotSessionResponse,
@@ -57,8 +59,9 @@ export function CopilotReviewDialog({
 
   useEffect(() => {
     if (!session) return;
+    const repaired = repairCopilotPartyNames(session.actions, session.transcript);
     setActions(
-      session.actions.map((action) => ({
+      repaired.map((action) => ({
         ...action,
         quote: action.quote
           ? { ...action.quote, lines: action.quote.lines.map((line) => ({ ...line })) }
@@ -67,10 +70,14 @@ export function CopilotReviewDialog({
         fieldReport: action.fieldReport ? { ...action.fieldReport } : undefined,
         note: action.note ? { ...action.note } : undefined,
         followUp: action.followUp ? { ...action.followUp } : undefined,
+        interventionStatus: action.interventionStatus
+          ? { ...action.interventionStatus }
+          : undefined,
+        open: action.open ? { ...action.open } : undefined,
       })),
     );
     const initial: Record<string, boolean> = {};
-    for (const action of session.actions) {
+    for (const action of repaired) {
       initial[action.id] =
         action.status === "proposed" && action.type !== "unsupported" && !action.blockReason;
     }
@@ -91,7 +98,11 @@ export function CopilotReviewDialog({
     [actions, selected],
   );
 
-  const selectedCount = actions.filter((action) => selected[action.id]).length;
+  const selectedActions = actions.filter((action) => selected[action.id]);
+  const selectedCount = selectedActions.length;
+  const confirmLabel = selectedActions.every((action) => action.type === "open_record")
+    ? "Ouvrir"
+    : "Enregistrer dans le CRM";
   const canConfirm =
     session?.status === "pending" && selectedCount > 0 && !priceMissing && !pending;
 
@@ -115,6 +126,8 @@ export function CopilotReviewDialog({
                 quote: action.quote,
                 note: action.note,
                 followUp: action.followUp,
+                interventionStatus: action.interventionStatus,
+                open: action.open,
               }))
           : [];
       const updated = await decideCopilotSession(session.id, {
@@ -152,7 +165,7 @@ export function CopilotReviewDialog({
               {pending === "reject" ? "Ignore…" : "Ignorer"}
             </FormDialogCancelButton>
             <FormDialogPrimaryButton disabled={!canConfirm} onClick={() => void submit("confirm")}>
-              {pending === "confirm" ? "Enregistrement…" : "Enregistrer dans le CRM"}
+              {pending === "confirm" ? "Enregistrement…" : confirmLabel}
             </FormDialogPrimaryButton>
           </>
         )
@@ -169,7 +182,9 @@ export function CopilotReviewDialog({
       <p className="text-sm text-slate-800 dark:text-slate-100 whitespace-pre-wrap">
         {view?.transcript}
       </p>
-      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{view?.intent}</p>
+      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+        {view ? repairCopilotIntent(view.intent, finished ? view.actions : actions) : null}
+      </p>
       <ul className="mt-4 space-y-3">
         {(finished ? (view?.actions ?? []) : actions).map((action) => (
           <li
@@ -193,7 +208,7 @@ export function CopilotReviewDialog({
                   {COPILOT_ACTION_LABELS[action.type]}
                 </p>
                 <p className="text-sm text-slate-800 dark:text-slate-100">{action.summary}</p>
-                {action.blockReason ? (
+                {action.blockReason && action.blockReason !== action.summary ? (
                   <p className={formFieldHintClassName}>{action.blockReason}</p>
                 ) : null}
                 {action.result ? (
@@ -346,6 +361,19 @@ function ActionFields({
     const quote = action.quote;
     return (
       <div className="mt-3 space-y-2">
+        <label className="block">
+          <span className={formFieldLabelClassName}>Client</span>
+          <input
+            className={formFieldInputClassName}
+            value={quote.customerName ?? ""}
+            onChange={(event) =>
+              onPatch((current) => ({
+                ...current,
+                quote: { ...current.quote!, customerName: event.target.value },
+              }))
+            }
+          />
+        </label>
         <label className="block">
           <span className={formFieldLabelClassName}>Objet</span>
           <input

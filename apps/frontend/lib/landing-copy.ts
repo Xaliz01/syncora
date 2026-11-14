@@ -59,13 +59,13 @@ export const LANDING_ASSISTANT_FEATURE = {
   ],
 } as const;
 
-/** Bloc fonctionnalités landing — commandes vocales terrain (Ma journée). */
+/** Bloc fonctionnalités landing — copilote terrain. */
 export const LANDING_VOICE_FEATURE = {
-  title: "Commandes vocales terrain (expérimental)",
+  title: "Copilote terrain",
   items: [
-    "Gardez les yeux sur la route et optimisez votre temps de travail",
-    "Sur Ma journée (mobile) : activez l’option, dites « Planwise » ou « Plan »",
-    "Démarrez, terminez ou commentez une intervention sans toucher l’écran",
+    "Dictez une instruction depuis n'importe quelle page",
+    "Démarrez, terminez, commentez ou rédigez le compte-rendu d'une intervention",
+    "Vous confirmez avant tout enregistrement. Rien n'est envoyé au client",
   ],
 } as const;
 

@@ -14,8 +14,6 @@ import {
 } from "@/components/interventions/InterventionPhotos";
 import { InterventionSignatureDialog } from "@/components/interventions/InterventionSignatureDialog";
 import { CommentsSection } from "@/components/comments/CommentsSection";
-import { MyDayVoiceField } from "@/components/my-day/MyDayVoiceField";
-import { MyDayVoiceFieldCta } from "@/components/my-day/MyDayVoiceFieldCta";
 import * as api from "@/lib/cases.api";
 import type { GeoLocation, InterventionResponse, InterventionStatus } from "@planwise/shared";
 import { MAX_PAGE_LIMIT_WIDE } from "@planwise/shared";
@@ -526,7 +524,6 @@ export function MyDayPage() {
   const queryClient = useQueryClient();
   const [activeFilter, setActiveFilter] = useState<FilterTab>("todo");
   const [actingOnId, setActingOnId] = useState<string | null>(null);
-  const [lastStartedId, setLastStartedId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState(() => startOfLocalDay(new Date()));
 
   const dayStart = useMemo(() => startOfLocalDay(selectedDate), [selectedDate]);
@@ -582,8 +579,7 @@ export function MyDayPage() {
       const location = await getGeoLocation();
       return api.startIntervention(interventionId, { location });
     },
-    onSuccess: (_data, interventionId) => {
-      setLastStartedId(interventionId);
+    onSuccess: () => {
       showToast("Intervention démarrée", "success");
       invalidateQueries();
     },
@@ -630,13 +626,6 @@ export function MyDayPage() {
           <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-slate-100">
             Ma journée
           </h1>
-          <MyDayVoiceField
-            interventions={interventions}
-            viewingToday={viewingToday}
-            onStart={handleStart}
-            onComplete={handleComplete}
-            lastStartedId={lastStartedId}
-          />
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <button
@@ -668,8 +657,6 @@ export function MyDayPage() {
           </p>
         </div>
       </div>
-
-      <MyDayVoiceFieldCta viewingToday={viewingToday} />
 
       {/* Stats summary — compteurs disjoints (planifiées / en cours / terminées) */}
       {stats.total > 0 && (

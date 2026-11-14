@@ -212,9 +212,9 @@ apps/frontend/tests/e2e/assistant.spec.ts # T4 ✓
 
 ---
 
-## Hors scope volontaire : commandes vocales terrain
+## Hors scope volontaire : commandes vocales de Ma journée
 
-Les **commandes vocales** sur Ma journée (préférence utilisateur, mobile uniquement) sont une expérimentation **séparée** : exécution d’actions terrain (démarrer / terminer / commentaire), pas le guide produit. Ne pas fusionner dans `POST /assistant/chat` (qui reste lecture + liens uniquement).
+L’écoute mains libres « Planwise » sur Ma journée a été retirée. Démarrer, terminer, commenter ou ouvrir un dossier se fait via le **copilote** (instruction confirmée), pas via `POST /assistant/chat` (qui reste un guide en lecture + liens).
 
 ---
 

@@ -13,14 +13,19 @@ import { Model } from "mongoose";
 import {
   COPILOT_SYSTEM_PROMPT,
   COPILOT_VOICE_USAGE,
+  MAX_COPILOT_AUDIO_BYTES,
   aiQuotaPeriod,
   applyCopilotPermissionGates,
+  applyCopilotQuoteBilling,
   assessCopilotAction,
+  augmentCopilotActionsFromVoice,
   copilotActionRequiredPermissions,
   copilotCustomerLabel,
   copilotQuotaExceededMessage,
+  includeCopilotCustomerCreates,
   parseCopilotModelOutput,
   planCopilotConfirmation,
+  repairCopilotPartyNames,
   resolveAiQuotaTier,
   type AuthUser,
   type CopilotAllowedIds,
@@ -28,6 +33,7 @@ import {
   type CopilotDecideBody,
   type CopilotPageContext,
   type CopilotProposedAction,
+  type CopilotQuoteRef,
   type CopilotSessionListResponse,
   type CopilotSessionResponse,
   type AiQuotaStatusResponse,
@@ -45,13 +51,12 @@ import { resolveCallerPermissions } from "./permissions/caller-access";
 import { AbstractSubscriptionsGatewayService } from "./ports/subscriptions.service.port";
 import { AbstractCustomersGatewayService } from "./ports/customers.service.port";
 import { AbstractCasesGatewayService } from "./ports/cases.service.port";
+import { AbstractBillingGatewayService } from "./ports/billing.service.port";
 import { AbstractCasesService } from "./cases/ports/cases.service.port";
 import { AbstractInterventionsService } from "./cases/ports/interventions.service.port";
 import { AbstractAiQuotaService } from "./ports/ai-quota.service.port";
 import { AbstractAiCopilotService } from "./ports/ai-copilot.service.port";
 import { toCopilotSessionResponse } from "./mappers/copilot-session.mapper";
-
-const MAX_AUDIO_BYTES = 1_500_000;
 
 function norm(value: string): string {
   return value.trim().toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
@@ -80,6 +85,7 @@ export class AiCopilotService extends AbstractAiCopilotService {
     private readonly cases: AbstractCasesService,
     private readonly interventions: AbstractInterventionsService,
     private readonly permissions: AbstractPermissionsService,
+    private readonly billing: AbstractBillingGatewayService,
   ) {
     super();
   }
@@ -143,7 +149,20 @@ export class AiCopilotService extends AbstractAiCopilotService {
       return this.scoped(user, doc, reserved.remaining + 1);
     }
 
-    const parsed = parseCopilotModelOutput(content, bundle.allowed);
+    const voiced = augmentCopilotActionsFromVoice(
+      body.transcript,
+      parseCopilotModelOutput(content, bundle.allowed, body.transcript),
+      bundle.interventions.map((item) => ({
+        id: item.id,
+        caseId: item.caseId,
+        title: item.title,
+        status: item.status,
+        scheduledStart: item.scheduledStart,
+      })),
+      bundle.allowed,
+    );
+    // Le modèle refuse parfois « valider + facturer » : on propose l'acceptation et le brouillon à partir du devis trouvé.
+    const parsed = applyCopilotQuoteBilling(body.transcript, voiced, bundle.quotes);
     let actions = applyCopilotPermissionGates(parsed.actions, (code) => granted.has(code));
     actions = await this.resolveCustomerUpdates(user, actions, bundle.allowed, granted);
     const doc = await this.persist(user, {
@@ -183,33 +202,36 @@ export class AiCopilotService extends AbstractAiCopilotService {
       return this.scoped(user, doc);
     }
 
-    const plan = planCopilotConfirmation(doc.actions, body.actions ?? []);
+    const repaired = repairCopilotPartyNames(doc.actions, doc.transcript ?? "");
+    doc.actions = repaired;
+    const plan = planCopilotConfirmation(repaired, body.actions ?? []);
     if (!plan.ok) throw new BadRequestException(plan.error);
+    const actions = includeCopilotCustomerCreates(repaired, plan.actions);
 
-    for (const action of plan.actions) {
+    for (const action of actions) {
       const missing = copilotActionRequiredPermissions(action).some((code) => !granted.has(code));
       if (missing) {
         throw new ForbiddenException("Vous n'avez pas le droit d'enregistrer cette action.");
       }
     }
 
-    const selectedIds = new Set(plan.actions.map((action) => action.id));
+    const selectedIds = new Set(actions.map((action) => action.id));
     const createdCustomers = new Map<string, string>();
     try {
-      for (const action of plan.actions) {
+      for (const action of actions) {
         action.result = await this.applyAction(user, action, createdCustomers, granted);
         action.status = "confirmed";
         action.blockReason = undefined;
       }
     } catch (err) {
-      this.mergeApplied(doc, plan.actions);
+      this.mergeApplied(doc, actions);
       doc.markModified("actions");
       await doc.save();
       throw err;
     }
 
     doc.actions = doc.actions.map((action) => {
-      const applied = plan.actions.find((item) => item.id === action.id);
+      const applied = actions.find((item) => item.id === action.id);
       if (applied) return applied;
       if (
         !selectedIds.has(action.id) &&
@@ -325,7 +347,7 @@ export class AiCopilotService extends AbstractAiCopilotService {
   ): { mimeType: string; data: Buffer } | undefined {
     if (!body.audioBase64) return undefined;
     const data = Buffer.from(body.audioBase64, "base64");
-    if (data.length === 0 || data.length > MAX_AUDIO_BYTES) return undefined;
+    if (data.length === 0 || data.length > MAX_COPILOT_AUDIO_BYTES) return undefined;
     return { mimeType: body.audioMimeType || "audio/webm", data };
   }
 
@@ -404,8 +426,7 @@ export class AiCopilotService extends AbstractAiCopilotService {
       }
     }
 
-    const pathname = context?.pathname ?? "";
-    if (canReadInterventions && pathname === "/my-day") {
+    if (canReadInterventions) {
       const bounds = localDayBounds();
       try {
         const listed = await this.interventions.listInterventions(user.organizationId, {
@@ -458,23 +479,71 @@ export class AiCopilotService extends AbstractAiCopilotService {
     for (const item of interventions) unique.set(item.id, item);
     const list = [...unique.values()].slice(0, 8);
     for (const item of list) caseIds.add(item.caseId);
+    const quotes = await this.loadQuotes(user, granted);
 
     return {
       allowed: {
         interventionIds: list.map((item) => item.id),
         caseIds: [...caseIds],
         customerIds: [...customerIds],
+        quoteIds: quotes.map((item) => item.id),
       } satisfies CopilotAllowedIds,
       interventions: list,
+      quotes,
       caseTitle,
       customerName,
     };
+  }
+
+  private async loadQuotes(
+    user: AuthUser,
+    granted: ReadonlySet<PermissionCode>,
+  ): Promise<CopilotQuoteRef[]> {
+    if (
+      !granted.has("quotes.read") &&
+      !granted.has("quotes.update") &&
+      !granted.has("billing.invoices.create")
+    ) {
+      return [];
+    }
+    try {
+      const listed = await this.casesGateway.listQuotes(user);
+      const recent = listed
+        .filter((quote) => quote.status !== "rejected" && quote.status !== "cancelled")
+        .slice(0, 15);
+      const names = new Map<string, string>();
+      for (const caseId of new Set(recent.map((quote) => quote.caseId))) {
+        try {
+          const row = await this.casesGateway.getCase(user, caseId);
+          const fromTitle = row.title?.replace(/^\d{4}-\d+\s*-\s*/, "").trim();
+          const name = row.customer?.displayName?.trim() || fromTitle;
+          if (name) names.set(caseId, name);
+        } catch {
+          /* dossier absent */
+        }
+      }
+      return recent.map((quote) => ({
+        id: quote.id,
+        caseId: quote.caseId,
+        quoteNumber: quote.quoteNumber,
+        subject: quote.subject,
+        status: quote.status,
+        customerName: names.get(quote.caseId),
+        totalHt: quote.totalHt,
+      }));
+    } catch (err) {
+      this.logger.warn(
+        `Copilot quote list failed: ${err instanceof Error ? err.message : "error"}`,
+      );
+      return [];
+    }
   }
 
   private userPrompt(
     transcript: string,
     bundle: {
       interventions: InterventionResponse[];
+      quotes: CopilotQuoteRef[];
       caseTitle?: string;
       customerName?: string;
       allowed: CopilotAllowedIds;
@@ -486,6 +555,24 @@ export class AiCopilotService extends AbstractAiCopilotService {
     if (bundle.allowed.caseIds.length) lines.push(`caseIds : ${bundle.allowed.caseIds.join(", ")}`);
     if (bundle.allowed.customerIds.length) {
       lines.push(`customerIds : ${bundle.allowed.customerIds.join(", ")}`);
+    }
+    if (bundle.quotes.length === 0) {
+      lines.push("Aucun devis récent.");
+    }
+    for (const quote of bundle.quotes) {
+      lines.push(
+        [
+          `- quoteId ${quote.id}`,
+          `caseId ${quote.caseId}`,
+          quote.quoteNumber,
+          quote.customerName ? `client ${quote.customerName}` : "",
+          quote.subject ? `objet ${quote.subject}` : "",
+          `statut ${quote.status}`,
+          quote.totalHt != null ? `totalHt ${quote.totalHt}` : "",
+        ]
+          .filter(Boolean)
+          .join(" | "),
+      );
     }
     if (bundle.interventions.length === 0) {
       lines.push("Aucune intervention autorisée.");
@@ -698,6 +785,92 @@ export class AiCopilotService extends AbstractAiCopilotService {
         caseId: created.caseId,
         label: created.title,
         ...(canReadCases ? { href: `/cases/${created.caseId}` } : {}),
+      };
+    }
+
+    if (action.type === "intervention_status" && action.interventionStatus?.interventionId) {
+      const interventionId = action.interventionStatus.interventionId;
+      try {
+        if (action.interventionStatus.operation === "complete") {
+          await this.interventions.completeIntervention(interventionId, {
+            organizationId: user.organizationId,
+          });
+        } else {
+          await this.interventions.startIntervention(interventionId, {
+            organizationId: user.organizationId,
+          });
+        }
+      } catch (err) {
+        if (err instanceof ConflictException || err instanceof NotFoundException) {
+          throw new BadRequestException(
+            action.interventionStatus.operation === "complete"
+              ? "Cette intervention ne peut pas être terminée. Elle doit être en cours."
+              : "Cette intervention ne peut pas être démarrée. Elle doit être planifiée.",
+          );
+        }
+        throw err;
+      }
+      const updated = await this.interventions.getIntervention(interventionId, user.organizationId);
+      return {
+        entityType: "intervention",
+        entityId: updated.id,
+        caseId: updated.caseId,
+        label: updated.title,
+        ...(canReadCases ? { href: `/cases/${updated.caseId}` } : {}),
+      };
+    }
+
+    if (action.type === "open_record" && action.open) {
+      const interventionId = action.open.interventionId;
+      const intervention = interventionId
+        ? await this.interventions.getIntervention(interventionId, user.organizationId)
+        : null;
+      const caseId = action.open.caseId || intervention?.caseId;
+      if (!caseId && !intervention) {
+        throw new BadRequestException("Aucun dossier à ouvrir.");
+      }
+      return {
+        entityType: intervention ? "intervention" : "case",
+        entityId: intervention?.id ?? caseId!,
+        caseId,
+        label:
+          action.open.target === "next" && intervention
+            ? `Prochaine : ${intervention.title}`
+            : (intervention?.title ?? "Dossier"),
+        ...(canReadCases && caseId ? { href: `/cases/${caseId}` } : {}),
+      };
+    }
+
+    if (action.type === "quote_accept" && action.quoteDecision?.quoteId) {
+      const current = await this.casesGateway.getQuote(user, action.quoteDecision.quoteId);
+      const quote =
+        current.status === "accepted"
+          ? current
+          : await this.casesGateway.updateQuote(user, current.id, { status: "accepted" });
+      return {
+        entityType: "quote",
+        entityId: quote.id,
+        caseId: quote.caseId,
+        label: quote.quoteNumber,
+        ...(canReadCases ? { href: `/cases/${quote.caseId}` } : {}),
+      };
+    }
+
+    if (action.type === "invoice_draft" && action.invoiceDraft?.quoteId) {
+      const current = await this.casesGateway.getQuote(user, action.invoiceDraft.quoteId);
+      if (current.status !== "accepted") {
+        await this.casesGateway.updateQuote(user, current.id, { status: "accepted" });
+      }
+      const invoice = await this.billing.createInvoice(user, current.caseId, {
+        quoteId: current.id,
+        draft: true,
+      });
+      return {
+        entityType: "invoice",
+        entityId: invoice.id,
+        caseId: invoice.caseId,
+        label: invoice.number ?? invoice.draftNumber ?? "Facture brouillon",
+        ...(canReadCases ? { href: `/cases/${invoice.caseId}` } : {}),
       };
     }
 

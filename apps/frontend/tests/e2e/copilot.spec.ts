@@ -38,6 +38,7 @@ test.describe("Copilote dictaphone", () => {
   };
 
   async function mockApp(page: import("@playwright/test").Page, user: typeof admin) {
+    const sessions: object[] = [];
     await page.addInitScript(() => {
       localStorage.setItem("planwise_access_token", "e2e-copilot-token");
     });
@@ -88,57 +89,46 @@ test.describe("Copilote dictaphone", () => {
         return;
       }
       if (method === "POST" && path.endsWith("/ai/copilot/sessions")) {
-        await route.fulfill({ json: proposal });
+        sessions.unshift({
+          ...proposal,
+          actions: proposal.actions.map((action) => ({ ...action })),
+        });
+        await route.fulfill({ json: sessions[0] });
         return;
       }
       if (method === "POST" && path.includes("/decide")) {
-        await route.fulfill({
-          json: {
-            ...proposal,
-            status: "confirmed",
-            decision: "confirmed",
-            message: "Actions enregistrées. Aucun envoi au client.",
-            actions: [
-              {
-                ...proposal.actions[0],
-                status: "confirmed",
-                result: {
-                  entityType: "intervention",
-                  entityId: "64b1c0c0c0c0c0c0c0c0c0c2",
-                  caseId: "64b1c0c0c0c0c0c0c0c0c0c3",
-                  label: "Fuite cuisine",
-                  href: "/cases/64b1c0c0c0c0c0c0c0c0c3",
+        const body = req.postDataJSON() as { decision?: string };
+        const rejected = body?.decision === "reject";
+        const updated = rejected
+          ? { ...proposal, status: "rejected", decision: "rejected" }
+          : {
+              ...proposal,
+              status: "confirmed",
+              decision: "confirmed",
+              message: "Actions enregistrées. Aucun envoi au client.",
+              actions: [
+                {
+                  ...proposal.actions[0],
+                  status: "confirmed",
+                  result: {
+                    entityType: "intervention",
+                    entityId: "64b1c0c0c0c0c0c0c0c0c0c2",
+                    caseId: "64b1c0c0c0c0c0c0c0c0c0c0c3",
+                    label: "Fuite cuisine",
+                    href: "/cases/64b1c0c0c0c0c0c0c0c0c3",
+                  },
                 },
-              },
-            ],
-          },
-        });
+              ],
+            };
+        const index = sessions.findIndex((item) => (item as { id?: string }).id === proposal.id);
+        if (index >= 0) sessions[index] = updated;
+        else sessions.unshift(updated);
+        await route.fulfill({ json: updated });
         return;
       }
       if (method === "GET" && path.includes("/ai/copilot/sessions")) {
         await route.fulfill({
-          json: {
-            total: 1,
-            sessions: [
-              {
-                ...proposal,
-                status: "confirmed",
-                decision: "confirmed",
-                actions: [
-                  {
-                    ...proposal.actions[0],
-                    status: "confirmed",
-                    result: {
-                      entityType: "intervention",
-                      entityId: "64b1c0c0c0c0c0c0c0c0c2",
-                      label: "Fuite cuisine",
-                      href: "/cases/64b1c0c0c0c0c0c0c0c0c3",
-                    },
-                  },
-                ],
-              },
-            ],
-          },
+          json: { total: sessions.length, sessions: [...sessions] },
         });
         return;
       }
@@ -175,6 +165,50 @@ test.describe("Copilote dictaphone", () => {
     await expect(page.getByRole("heading", { name: "Copilote" })).toBeVisible();
     await expect(page.getByText("J'ai remplacé le groupe de sécurité.")).toBeVisible();
     await expect(page.getByRole("link", { name: "Fuite cuisine" })).toBeVisible();
+  });
+
+  async function dictate(page: import("@playwright/test").Page) {
+    await page.getByRole("button", { name: "Dicter une instruction" }).click();
+    const dialog = page.getByRole("dialog", { name: "Dicter une instruction" });
+    await dialog.getByRole("button", { name: "Écrire à la place" }).click();
+    await dialog.getByLabel("Instruction").fill("J'ai remplacé le groupe de sécurité.");
+    await dialog.getByRole("button", { name: "Interpréter" }).click();
+    return page.getByRole("dialog", { name: "Instruction du copilote" });
+  }
+
+  test("affiche l'instruction dans l'historique dès qu'on ferme la relecture", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await mockApp(page, admin);
+    await page.goto("/copilote");
+    await expect(page.getByText("Aucune instruction pour le moment.")).toBeVisible();
+
+    const review = await dictate(page);
+    await expect(review.getByText("J'ai remplacé le groupe de sécurité.")).toBeVisible();
+    await review.getByRole("button", { name: "Fermer" }).click();
+    await expect(review).toBeHidden();
+
+    const history = page.locator("main");
+    await expect(history.getByText("J'ai remplacé le groupe de sécurité.")).toBeVisible();
+    await expect(history.getByText("En attente de confirmation")).toBeVisible();
+  });
+
+  test("affiche l'instruction ignorée dans l'historique sans recharger la page", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await mockApp(page, admin);
+    await page.goto("/copilote");
+    await expect(page.getByText("Aucune instruction pour le moment.")).toBeVisible();
+
+    const review = await dictate(page);
+    await review.getByRole("button", { name: "Ignorer" }).click();
+    await expect(page.locator("main").getByText("Ignorée")).toBeVisible();
+    await review.getByRole("button", { name: "Fermer" }).last().click();
+    await expect(review).toBeHidden();
+    await expect(
+      page.locator("main").getByText("J'ai remplacé le groupe de sécurité."),
+    ).toBeVisible();
+    await expect(page.locator("main").getByText("Ignorée")).toBeVisible();
   });
 
   test("masque le dictaphone sans le droit copilote", async ({ page }) => {

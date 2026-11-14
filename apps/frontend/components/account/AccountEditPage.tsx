@@ -18,11 +18,7 @@ import {
   formFieldInputClassName,
   formFieldLabelClassName,
 } from "@/components/ui/FormDialog";
-import {
-  SidebarRadioGroup,
-  ThemeRadioGroup,
-  VoiceFieldPreferenceToggle,
-} from "@/components/account/AccountPreferenceFields";
+import { SidebarRadioGroup, ThemeRadioGroup } from "@/components/account/AccountPreferenceFields";
 
 const DETAIL_HREF = "/account";
 
@@ -36,7 +32,6 @@ export function AccountEditPage() {
   const [name, setName] = useState(user?.name ?? "");
   const [themePreference, setThemePreference] = useState<ThemePreference>("light");
   const [sidebarPreference, setSidebarPreference] = useState<SidebarPreference>("expanded");
-  const [voiceFieldEnabled, setVoiceFieldEnabled] = useState(false);
   const [prefsLoaded, setPrefsLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -52,7 +47,6 @@ export function AccountEditPage() {
         if (cancelled) return;
         setThemePreference(res.preferences.theme);
         setSidebarPreference(res.preferences.sidebarCollapsed);
-        setVoiceFieldEnabled(res.preferences.voiceFieldEnabled === true);
       })
       .catch(() => undefined)
       .finally(() => {
@@ -76,7 +70,6 @@ export function AccountEditPage() {
       const res = await accountApi.updatePreferences({
         theme: themePreference,
         sidebarCollapsed: sidebarPreference,
-        voiceFieldEnabled,
       });
       applyUserPreferences(res.preferences, setTheme);
       void queryClient.invalidateQueries({ queryKey: ["account-preferences"] });
@@ -132,7 +125,6 @@ export function AccountEditPage() {
       <FormDialogSection title="Préférences">
         <ThemeRadioGroup value={themePreference} onChange={setThemePreference} />
         <SidebarRadioGroup value={sidebarPreference} onChange={setSidebarPreference} />
-        <VoiceFieldPreferenceToggle value={voiceFieldEnabled} onChange={setVoiceFieldEnabled} />
       </FormDialogSection>
     </FormPage>
   );

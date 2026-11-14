@@ -138,21 +138,37 @@ describe("AiCopilotService", () => {
       createQuote: jest.fn(),
       createComment: jest.fn(),
       createIntervention: jest.fn(),
+      listQuotes: jest.fn().mockResolvedValue([]),
+      getCase: jest.fn(),
+      getQuote: jest.fn(),
+      updateQuote: jest.fn(),
     };
     const cases = { getCase: jest.fn() };
     const interventions = {
-      getIntervention: jest.fn(),
-      listInterventions: jest.fn(),
+      listInterventions: jest.fn().mockResolvedValue({ interventions: [] }),
       confirmFieldReport: jest.fn().mockResolvedValue({
         id: INTERVENTION_ID,
         caseId: "64b1c0c0c0c0c0c0c0c0c0c3",
         title: "Fuite",
         organizationId: "org-1",
       }),
+      startIntervention: jest.fn().mockResolvedValue({
+        id: INTERVENTION_ID,
+        status: "in_progress",
+        startedAt: "2026-11-13T08:00:00.000Z",
+      }),
+      getIntervention: jest.fn().mockResolvedValue({
+        id: INTERVENTION_ID,
+        caseId: "64b1c0c0c0c0c0c0c0c0c0c3",
+        title: "Fuite",
+        organizationId: "org-1",
+        status: "in_progress",
+      }),
     };
     const permissions = {
       resolveEffectivePermissions: jest.fn(async () => ({ permissions: member.permissions })),
     };
+    const billing = { createInvoice: jest.fn() };
     const service = new AiCopilotService(
       sessions as never,
       quota as never,
@@ -163,8 +179,19 @@ describe("AiCopilotService", () => {
       cases as never,
       interventions as never,
       permissions as never,
+      billing as never,
     );
-    return { service, sessions, quota, llm, customers, casesGateway, interventions, permissions };
+    return {
+      service,
+      sessions,
+      quota,
+      llm,
+      customers,
+      casesGateway,
+      interventions,
+      permissions,
+      billing,
+    };
   }
 
   it("stores a proposal and does not write the CRM before confirmation", async () => {
@@ -245,6 +272,27 @@ describe("AiCopilotService", () => {
     expect(ctx.customers.createCustomer).not.toHaveBeenCalled();
   });
 
+  it("starts an intervention only after confirm", async () => {
+    const ctx = setup();
+    const action: CopilotProposedAction = {
+      id: "a1",
+      type: "intervention_status",
+      summary: "Démarrer",
+      status: "proposed",
+      interventionStatus: { operation: "start", interventionId: INTERVENTION_ID },
+    };
+    const pending = sessionDoc([action]);
+    ctx.sessions.findOne.mockReturnValue({ exec: async () => pending });
+    const confirmed = await ctx.service.decide(member, SESSION_ID, {
+      decision: "confirm",
+      actions: [{ id: "a1" }],
+    });
+    expect(ctx.interventions.startIntervention).toHaveBeenCalledWith(INTERVENTION_ID, {
+      organizationId: "org-1",
+    });
+    expect(confirmed.actions[0]?.result?.label).toBe("Fuite");
+  });
+
   it("does not create a quote when the confirmed draft has no price", async () => {
     const ctx = setup();
     const action: CopilotProposedAction = {
@@ -313,6 +361,78 @@ describe("AiCopilotService", () => {
       }),
     ).rejects.toBeInstanceOf(ForbiddenException);
     expect(ctx.interventions.confirmFieldReport).not.toHaveBeenCalled();
+  });
+
+  it("accepts Leon Marchand's quote and creates a draft invoice only after confirm", async () => {
+    const ctx = setup();
+    const quoteId = "64b1c0c0c0c0c0c0c0c0c0c4";
+    const caseId = "64b1c0c0c0c0c0c0c0c0c0c3";
+    const billingUser: AuthUser = {
+      ...member,
+      permissions: [
+        ...member.permissions,
+        "quotes.update",
+        "billing.invoices.create",
+        "quotes.read",
+      ],
+    };
+    ctx.casesGateway.getQuote.mockResolvedValue({
+      id: quoteId,
+      caseId,
+      quoteNumber: "D-2026-001",
+      status: "draft",
+      organizationId: "org-1",
+    });
+    ctx.casesGateway.updateQuote.mockResolvedValue({
+      id: quoteId,
+      caseId,
+      quoteNumber: "D-2026-001",
+      status: "accepted",
+      organizationId: "org-1",
+    });
+    ctx.permissions.resolveEffectivePermissions.mockResolvedValue({
+      permissions: billingUser.permissions,
+    });
+    ctx.billing.createInvoice.mockResolvedValue({
+      id: "64b1c0c0c0c0c0c0c0c0c0c5",
+      caseId,
+      organizationId: "org-1",
+      draftNumber: "Brouillon",
+      status: "draft",
+    });
+    const actions: CopilotProposedAction[] = [
+      {
+        id: "b1",
+        type: "quote_accept",
+        summary: "Accepter le devis D-2026-001 de Leon Marchand.",
+        status: "proposed",
+        quoteDecision: { quoteId, customerName: "Leon Marchand" },
+      },
+      {
+        id: "b2",
+        type: "invoice_draft",
+        summary: "Créer une facture brouillon pour Leon Marchand, sans l'envoyer.",
+        status: "proposed",
+        invoiceDraft: { quoteId, caseId, customerName: "Leon Marchand" },
+      },
+    ];
+    ctx.sessions.findOne.mockReturnValue({ exec: async () => sessionDoc(actions) });
+    const confirmed = await ctx.service.decide(billingUser, SESSION_ID, {
+      decision: "confirm",
+      actions: [{ id: "b1" }, { id: "b2" }],
+    });
+    expect(ctx.casesGateway.updateQuote).toHaveBeenCalledWith(billingUser, quoteId, {
+      status: "accepted",
+    });
+    expect(ctx.billing.createInvoice).toHaveBeenCalledWith(billingUser, caseId, {
+      quoteId,
+      draft: true,
+    });
+    expect(confirmed.actions.map((action) => action.result?.entityType)).toEqual([
+      "quote",
+      "invoice",
+    ]);
+    expect(confirmed.message).toMatch(/Aucun envoi/);
   });
 
   it("hides another organization's history", async () => {

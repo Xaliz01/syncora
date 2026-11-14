@@ -1,16 +1,25 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { COPILOT_ACTION_LABELS, type CopilotSessionResponse } from "@planwise/shared";
+import {
+  COPILOT_ACTION_LABELS,
+  repairCopilotIntent,
+  type CopilotSessionResponse,
+} from "@planwise/shared";
 import { ListPageHeader, ListPageRoot, ListPagination } from "@/components/ui/list-page";
 import { AppErrorAlert } from "@/components/ui/AppErrorAlert";
 import { PlanwiseLoader } from "@/components/ui/PlanwiseLoader";
 import { fetchCopilotAudio, listCopilotSessions } from "@/lib/ai-copilot.api";
 import { CopilotReviewDialog } from "./CopilotReviewDialog";
-
-const PAGE_SIZE = 20;
+import {
+  COPILOT_HISTORY_FOCUS_KEY,
+  COPILOT_HISTORY_PAGE_SIZE,
+  COPILOT_SESSIONS_QUERY_KEY,
+  mergePublishedCopilotSessions,
+  publishCopilotSession,
+} from "./copilot-history-cache";
 
 const DECISION_LABELS: Record<string, string> = {
   confirmed: "Confirmée",
@@ -35,10 +44,25 @@ export function CopilotHistoryPage() {
   const [offset, setOffset] = useState(0);
   const [review, setReview] = useState<CopilotSessionResponse | null>(null);
   const [audioError, setAudioError] = useState("");
-  const query = useQuery({
-    queryKey: ["copilot-sessions", offset],
-    queryFn: () => listCopilotSessions({ limit: PAGE_SIZE, offset }),
+  const focus = useQuery({
+    queryKey: COPILOT_HISTORY_FOCUS_KEY,
+    queryFn: () => 0,
+    enabled: false,
+    initialData: 0,
+    staleTime: Infinity,
   });
+  const query = useQuery({
+    queryKey: [...COPILOT_SESSIONS_QUERY_KEY, offset],
+    queryFn: async () =>
+      mergePublishedCopilotSessions(
+        await listCopilotSessions({ limit: COPILOT_HISTORY_PAGE_SIZE, offset }),
+        offset,
+      ),
+  });
+
+  useEffect(() => {
+    if ((focus.data ?? 0) > 0) setOffset(0);
+  }, [focus.data]);
 
   async function play(sessionId: string) {
     setAudioError("");
@@ -64,7 +88,7 @@ export function CopilotHistoryPage() {
         <AppErrorAlert error={query.error} fallbackMessage="L'historique est indisponible." />
       ) : null}
       {audioError ? <AppErrorAlert message={audioError} /> : null}
-      {query.data && query.data.total === 0 ? (
+      {query.data && query.data.sessions.length === 0 ? (
         <p className="text-sm text-slate-500 dark:text-slate-400">
           Aucune instruction pour le moment. Le bouton Dicter une instruction est disponible sur
           toutes les pages.
@@ -73,7 +97,7 @@ export function CopilotHistoryPage() {
       {query.data && query.data.sessions.length > 0 ? (
         <ListPagination
           offset={offset}
-          limit={PAGE_SIZE}
+          limit={COPILOT_HISTORY_PAGE_SIZE}
           total={query.data.total}
           onOffsetChange={setOffset}
         >
@@ -95,7 +119,7 @@ export function CopilotHistoryPage() {
                   {session.transcript}
                 </p>
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  {session.intent} ·{" "}
+                  {repairCopilotIntent(session.intent, session.actions)} ·{" "}
                   {DECISION_LABELS[session.decision ?? ""] ?? STATUS_LABELS[session.status]}
                 </p>
                 {session.message ? (
@@ -119,7 +143,9 @@ export function CopilotHistoryPage() {
                           </Link>
                         </>
                       ) : null}
-                      {action.blockReason && action.status !== "confirmed" ? (
+                      {action.blockReason &&
+                      action.blockReason !== action.summary &&
+                      action.status !== "confirmed" ? (
                         <span className="block text-xs text-slate-500">{action.blockReason}</span>
                       ) : null}
                     </li>
@@ -155,7 +181,7 @@ export function CopilotHistoryPage() {
         onClose={() => setReview(null)}
         onDecided={(updated) => {
           setReview(updated);
-          void queryClient.invalidateQueries({ queryKey: ["copilot-sessions"] });
+          publishCopilotSession(queryClient, updated);
         }}
       />
     </ListPageRoot>

@@ -9,6 +9,7 @@ import { AbstractAiQuotaService } from "../domain/ports/ai-quota.service.port";
 import { AiQuotaService } from "../domain/ai-quota.service";
 import { AssistantLlmClient } from "../infrastructure/assistant/llm.client";
 import { RequirePermissionGuard } from "../infrastructure/require-permission.guard";
+import { BillingModule } from "./billing.module";
 import { CasesModule } from "./cases.module";
 import { CustomersModule } from "./customers.module";
 import { PermissionsModule } from "./permissions.module";
@@ -26,6 +27,7 @@ import { CopilotSessionSchema } from "../persistence/organizations/copilot-sessi
       ],
       "organizations",
     ),
+    BillingModule,
     CasesModule,
     CustomersModule,
     PermissionsModule,

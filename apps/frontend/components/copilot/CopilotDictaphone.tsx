@@ -4,7 +4,9 @@ import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import {
+  MAX_COPILOT_AUDIO_BYTES,
   copilotContextFromPathname,
   copilotQuotaRemainingLabel,
   type CopilotSessionResponse,
@@ -21,6 +23,7 @@ import {
 } from "@/components/ui/FormDialog";
 import { createCopilotSession, getCopilotQuota } from "@/lib/ai-copilot.api";
 import { CopilotReviewDialog } from "./CopilotReviewDialog";
+import { publishCopilotSession } from "./copilot-history-cache";
 
 type SpeechRec = {
   lang: string;
@@ -61,6 +64,7 @@ function blobToBase64(blob: Blob): Promise<string> {
 export function CopilotDictaphone() {
   const { user } = useAuth();
   const pathname = usePathname() ?? "/";
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [recording, setRecording] = useState(false);
   const [writeMode, setWriteMode] = useState(false);
@@ -192,7 +196,7 @@ export function CopilotDictaphone() {
     try {
       const blob = await stopCapture();
       let audio: { audioBase64: string; audioMimeType: string } | undefined;
-      if (blob && blob.size > 1_400_000) {
+      if (blob && blob.size > MAX_COPILOT_AUDIO_BYTES) {
         setMicMessage("L'enregistrement est trop long pour être conservé. Le texte sera envoyé.");
       } else if (blob && blob.size > 0) {
         audio = { audioBase64: await blobToBase64(blob), audioMimeType: blob.type || "audio/webm" };
@@ -205,6 +209,7 @@ export function CopilotDictaphone() {
       });
       setOpen(false);
       setReview(session);
+      publishCopilotSession(queryClient, session, { focusLatest: true });
       setTranscript("");
       blobRef.current = null;
     } catch (err) {
@@ -248,7 +253,7 @@ export function CopilotDictaphone() {
           setOpen(false);
         }}
         title="Dicter une instruction"
-        description="Décrivez le compte-rendu, le client, le devis, la note ou le rendez-vous. Vous confirmerez avant tout enregistrement."
+        description="Décrivez le compte-rendu, le démarrage ou la fin d'intervention, le commentaire, le client, le devis, la note ou le rendez-vous. Vous confirmerez avant tout enregistrement."
         closeDisabled={busy}
         footer={
           <>
@@ -322,7 +327,19 @@ export function CopilotDictaphone() {
           </Link>
         </p>
       </FormDialog>
-      <CopilotReviewDialog session={review} onClose={() => setReview(null)} onDecided={setReview} />
+      <CopilotReviewDialog
+        session={review}
+        onClose={() => {
+          setReview((current) => {
+            if (current) publishCopilotSession(queryClient, current, { focusLatest: true });
+            return null;
+          });
+        }}
+        onDecided={(updated) => {
+          setReview(updated);
+          publishCopilotSession(queryClient, updated, { focusLatest: true });
+        }}
+      />
     </>
   );
 }

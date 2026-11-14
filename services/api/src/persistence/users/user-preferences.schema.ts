@@ -14,7 +14,7 @@ export class UserPreferencesDocument extends Document {
   @Prop({ type: String, required: true, enum: ["expanded", "collapsed"], default: "expanded" })
   sidebarCollapsed!: "expanded" | "collapsed";
 
-  /** Commandes vocales terrain (Ma journée). */
+  /** Ancienne préférence vocale Ma journée. Conservée, sans effet UI. */
   @Prop({ type: Boolean, default: false })
   voiceFieldEnabled!: boolean;
 

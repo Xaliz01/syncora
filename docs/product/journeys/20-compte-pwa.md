@@ -7,7 +7,7 @@ Gérer le compte personnel, le confort d’usage, et l’installation mobile.
 ## Mon compte (`/account`)
 
 1. Menu **Général → Mon compte** (pas de permission métier spéciale).
-2. Fiche lecture : identité, mot de passe, **thème**, sidebar, **commandes vocales**, **sessions**, liens légaux.
+2. Fiche lecture : identité, mot de passe, **thème**, sidebar, **sessions**, liens légaux.
 3. **Modifier** → `/account/edit` : nom et préférences d’affichage (formulaire pleine page, Enregistrer en bas à droite).
 4. Préférences synchronisées (serveur + local pour thème / sidebar). Le thème est aussi accessible via le toggle de l’en-tête.
 

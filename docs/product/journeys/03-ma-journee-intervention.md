@@ -17,15 +17,9 @@ Voir les interventions du jour, démarrer / clôturer, photos, signature, rappor
 4. Faire signer le client, terminer l’intervention.
 5. Générer / télécharger le **rapport PDF** si proposé.
 
-## Commandes vocales (expérimental)
+## Copilote
 
-Sur **Ma journée** (jour en cours), si les **commandes vocales** sont activées dans **Mon compte → Préférences**, sur **mobile** (ou en local pour les tests), et que le navigateur expose la reconnaissance vocale :
-
-- Si la préférence est désactivée : un bandeau invite à activer les commandes vocales (un clic, ou via Mon compte).
-- Écoute **mains libres** dès l’ouverture de Ma journée : dites **« Planwise »** ou **« Plan »** puis la commande (ou « Planwise démarre » / « Plan démarre » d’un coup). Le bouton micro sert surtout à couper / reprendre, ou à autoriser le micro si le navigateur l’exige une première fois.
-- Commandes : « démarre », « termine » (confirmation vocale : « oui » / « annuler »), « note que … », « prochaine », « ouvre le dossier ».
-- Cible possible **dans la même phrase** : « termine la première », « démarre Intervention démo », « ajoute un commentaire à la deuxième porte fermée », « ouvre le dossier de la troisième ». Sinon : focus / dernière démarrée / seule cohérente ; sinon choix (sauf « termine » avec plusieurs en cours → toujours le choix).
-- **Distinct** de l’assistant guide produit (panneau Aide) : ici on exécute des actions terrain, pas des explications.
+Les actions vocales de Ma journée passent par **Dicter une instruction** (droit `ai.copilot`), sur toutes les pages. Exemples : démarrer ou terminer une intervention, ajouter un commentaire, ouvrir le dossier, demander la prochaine intervention, rédiger ou mettre à jour le compte-rendu. Rien n'est enregistré avant confirmation. Détail : [24-copilote.md](./24-copilote.md).
 
 ## Liens utiles
 

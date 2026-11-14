@@ -7,6 +7,7 @@ import type {
 } from "@planwise/shared";
 import { getToken } from "./auth.api";
 import { fetchWithUserFacingErrors } from "./api-client";
+import { normalizeApiErrorMessage } from "./api-errors";
 
 const API_BASE =
   (typeof process !== "undefined" && process.env.NEXT_PUBLIC_API_URL) ||
@@ -27,10 +28,9 @@ async function authed(path: string, init?: RequestInit): Promise<Response> {
 
 async function parseError(response: Response, fallback: string): Promise<Error> {
   const err = await response.json().catch(() => ({}));
-  const message = (err as { message?: string | string[] }).message;
-  if (Array.isArray(message)) return new Error(message.join(", "));
-  if (typeof message === "string" && message.trim()) return new Error(message);
-  return new Error(fallback);
+  const raw = (err as { message?: string | string[] }).message;
+  const message = Array.isArray(raw) ? raw.join(", ") : raw;
+  return new Error(normalizeApiErrorMessage(response.status, message, fallback));
 }
 
 export async function createCopilotSession(
